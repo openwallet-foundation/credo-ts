@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
-import type { QuestionAnswerTags } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -90,9 +90,14 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving question message with id ${questionMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
-    const questionRecord = await this.getById(messageContext.agentContext, questionMessage.id)
-    questionRecord.assertState(QuestionAnswerState.QuestionSent)
-
+    const questionRecord = await this.findByThreadAndConnectionId(
+      messageContext.agentContext,
+      connection.id,
+      questionMessage.id
+    )
+    if (questionRecord) {
+      throw new AriesFrameworkError(`Question answer record with thread Id ${questionMessage.id} already exists.`)
+    }
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
       questionDetail: questionMessage.questionDetail,
@@ -148,14 +153,16 @@ export class QuestionAnswerService {
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)
 
     const connection = messageContext.assertReadyConnection()
-    const answerRecord = await this.getById(messageContext.agentContext, answerMessage.id)
-    answerRecord.assertState(QuestionAnswerState.AnswerSent)
-
-    const questionAnswerRecord: QuestionAnswerRecord = await this.getByThreadAndConnectionId(
+    const questionAnswerRecord = await this.findByThreadAndConnectionId(
       messageContext.agentContext,
-      answerMessage.threadId,
-      connection?.id
+      connection.id,
+      answerMessage.threadId
     )
+    if (!questionAnswerRecord) {
+      throw new AriesFrameworkError(`Question Answer record with thread Id ${answerMessage.threadId} not found.`)
+    }
+    questionAnswerRecord.assertState(QuestionAnswerState.QuestionSent)
+    questionAnswerRecord.assertRole(QuestionAnswerRole.Questioner)
 
     questionAnswerRecord.response = answerMessage.response
 
@@ -221,7 +228,7 @@ export class QuestionAnswerService {
    * @param threadId The thread id
    * @throws {RecordNotFoundError} If no record is found
    * @throws {RecordDuplicateError} If multiple records are found
-   * @returns The credential record
+   * @returns The question answer record
    */
   public getByThreadAndConnectionId(
     agentContext: AgentContext,
@@ -235,11 +242,29 @@ export class QuestionAnswerService {
   }
 
   /**
-   * Retrieve a connection record by id
+   * Retrieve a question answer record by thread id
+   *
+   * @param connectionId The connection id
+   * @param threadId The thread id
+   * @returns The question answer record or null if not found
+   */
+  public findByThreadAndConnectionId(
+    agentContext: AgentContext,
+    connectionId: string,
+    threadId: string
+  ): Promise<QuestionAnswerRecord | null> {
+    return this.questionAnswerRepository.findSingleByQuery(agentContext, {
+      connectionId,
+      threadId,
+    })
+  }
+
+  /**
+   * Retrieve a question answer record by id
    *
    * @param questionAnswerId The questionAnswer record id
    * @throws {RecordNotFoundError} If no record is found
-   * @return The connection record
+   * @return The question answer record
    *
    */
   public getById(agentContext: AgentContext, questionAnswerId: string): Promise<QuestionAnswerRecord> {
@@ -247,15 +272,28 @@ export class QuestionAnswerService {
   }
 
   /**
-   * Retrieve all QuestionAnswer records
+   * Retrieve a question answer record by id
    *
-   * @returns List containing all QuestionAnswer records
+   * @param questionAnswerId The questionAnswer record id
+   * @return The question answer record or null if not found
+   *
+   */
+  public findById(agentContext: AgentContext, questionAnswerId: string): Promise<QuestionAnswerRecord | null> {
+    return this.questionAnswerRepository.findById(agentContext, questionAnswerId)
+  }
+
+  /**
+   * Retrieve a question answer record by id
+   *
+   * @param questionAnswerId The questionAnswer record id
+   * @return The question answer record or null if not found
+   *
    */
   public getAll(agentContext: AgentContext) {
     return this.questionAnswerRepository.getAll(agentContext)
   }
 
-  public async findAllByQuery(agentContext: AgentContext, query: Partial<QuestionAnswerTags>) {
+  public async findAllByQuery(agentContext: AgentContext, query: Query<QuestionAnswerRecord>) {
     return this.questionAnswerRepository.findByQuery(agentContext, query)
   }
 }

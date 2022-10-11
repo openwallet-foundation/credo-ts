@@ -9,32 +9,37 @@ import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { OutOfBandInvitation } from '../messages'
 
+type DefaultOutOfBandRecordTags = {
+  role: OutOfBandRole
+  state: OutOfBandState
+  invitationId: string
+}
+
+interface CustomOutOfBandRecordTags extends TagsBase {
+  recipientKeyFingerprints: string[]
+}
+
 export interface OutOfBandRecordProps {
   id?: string
   createdAt?: Date
   updatedAt?: Date
-  tags?: TagsBase
+  tags?: CustomOutOfBandRecordTags
   outOfBandInvitation: OutOfBandInvitation
   role: OutOfBandRole
   state: OutOfBandState
+  alias?: string
   autoAcceptConnection?: boolean
   reusable?: boolean
   mediatorId?: string
   reuseConnectionId?: string
 }
 
-type DefaultOutOfBandRecordTags = {
-  role: OutOfBandRole
-  state: OutOfBandState
-  invitationId: string
-  recipientKeyFingerprints: string[]
-}
-
-export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
+export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
   @Type(() => OutOfBandInvitation)
   public outOfBandInvitation!: OutOfBandInvitation
   public role!: OutOfBandRole
   public state!: OutOfBandState
+  public alias?: string
   public reusable!: boolean
   public autoAcceptConnection?: boolean
   public mediatorId?: string
@@ -52,11 +57,12 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       this.outOfBandInvitation = props.outOfBandInvitation
       this.role = props.role
       this.state = props.state
+      this.alias = props.alias
       this.autoAcceptConnection = props.autoAcceptConnection
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
-      this._tags = props.tags ?? {}
+      this._tags = props.tags ?? { recipientKeyFingerprints: [] }
     }
   }
 
@@ -66,7 +72,6 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags> {
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation.id,
-      recipientKeyFingerprints: this.outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
     }
   }
 

@@ -302,7 +302,9 @@ export function getMockConnection({
 export function getMockOutOfBand({
   label,
   serviceEndpoint,
-  recipientKeys,
+  recipientKeys = [
+    new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+  ],
   mediatorId,
   role,
   state,
@@ -330,9 +332,7 @@ export function getMockOutOfBand({
         id: `#inline-0`,
         priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
-        recipientKeys: recipientKeys || [
-          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
-        ],
+        recipientKeys,
         routingKeys: [],
       }),
     ],
@@ -345,6 +345,9 @@ export function getMockOutOfBand({
     outOfBandInvitation: outOfBandInvitation,
     reusable,
     reuseConnectionId,
+    tags: {
+      recipientKeyFingerprints: recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+    },
   })
   return outOfBandRecord
 }

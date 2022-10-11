@@ -1,4 +1,5 @@
-import type { ValidResponse } from './models'
+import type { Query } from '../../storage/StorageService'
+import type { QuestionAnswerRecord } from './repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -8,6 +9,7 @@ import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
+import { ValidResponse } from './models'
 import { QuestionAnswerService } from './services'
 
 @injectable()
@@ -55,7 +57,7 @@ export class QuestionAnswerApi {
       connectionId,
       {
         question: config.question,
-        validResponses: config.validResponses,
+        validResponses: config.validResponses.map((item) => new ValidResponse(item)),
         detail: config?.detail,
       }
     )
@@ -96,6 +98,26 @@ export class QuestionAnswerApi {
    */
   public getAll() {
     return this.questionAnswerService.getAll(this.agentContext)
+  }
+
+  /**
+   * Get all QuestionAnswer records by specified query params
+   *
+   * @returns list containing all QuestionAnswer records matching specified query params
+   */
+  public findAllByQuery(query: Query<QuestionAnswerRecord>) {
+    return this.questionAnswerService.findAllByQuery(this.agentContext, query)
+  }
+
+  /**
+   * Retrieve a question answer record by id
+   *
+   * @param questionAnswerId The questionAnswer record id
+   * @return The question answer record or null if not found
+   *
+   */
+  public findById(questionAnswerId: string) {
+    return this.questionAnswerService.findById(this.agentContext, questionAnswerId)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

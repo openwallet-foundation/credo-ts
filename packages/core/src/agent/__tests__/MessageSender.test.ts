@@ -1,18 +1,20 @@
 import type { ConnectionRecord } from '../../modules/connections'
+import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { OutboundMessage, EncryptedMessage } from '../../types'
-import type { ResolvedDidCommService } from '../MessageSender'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../tests/helpers'
 import testLogger from '../../../tests/logger'
 import { Key, KeyType } from '../../crypto'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { DidDocument, VerificationMethod } from '../../modules/dids'
+import { DidCommDocumentService } from '../../modules/didcomm'
+import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
-import { DidResolverService } from '../../modules/dids/services/DidResolverService'
+import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
+import { OutOfBandRepository } from '../../modules/oob'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
@@ -24,11 +26,15 @@ import { DummyTransportSession } from './stubs'
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 jest.mock('../../modules/dids/services/DidResolverService')
+jest.mock('../../modules/didcomm/services/DidCommDocumentService')
+jest.mock('../../modules/oob/repository/OutOfBandRepository')
 
 const logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
+const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
+const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 
 class DummyHttpOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
@@ -76,7 +82,10 @@ describe('MessageSender', () => {
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
   const didResolverService = new DidResolverServiceMock()
+  const didCommDocumentService = new DidCommDocumentServiceMock()
+  const outOfBandRepository = new OutOfBandRepositoryMock()
   const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
+  const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -132,7 +141,9 @@ describe('MessageSender', () => {
         transportService,
         messageRepository,
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService,
+        outOfBandRepository
       )
       connection = getMockConnection({
         id: 'test-123',
@@ -149,6 +160,10 @@ describe('MessageSender', () => {
         service: [firstDidCommService, secondDidCommService],
       })
       didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([
+        getMockResolvedDidService(firstDidCommService),
+        getMockResolvedDidService(secondDidCommService),
+      ])
     })
 
     afterEach(() => {
@@ -165,6 +180,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
       didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
+      didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
       await expect(messageSender.sendMessage(agentContext, outboundMessage)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
@@ -190,14 +206,14 @@ describe('MessageSender', () => {
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
     })
 
-    test("resolves the did document using the did resolver if connection.theirDid starts with 'did:'", async () => {
+    test("resolves the did service using the did resolver if connection.theirDid starts with 'did:'", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(agentContext, outboundMessage)
 
-      expect(didResolverServiceResolveMock).toHaveBeenCalledWith(agentContext, connection.theirDid)
+      expect(didResolverServiceResolveDidServicesMock).toHaveBeenCalledWith(agentContext, connection.theirDid)
       expect(sendMessageSpy).toHaveBeenCalledWith({
         connectionId: 'test-123',
         payload: encryptedMessage,
@@ -332,7 +348,9 @@ describe('MessageSender', () => {
         transportService,
         new InMemoryMessageRepository(agentConfig.logger),
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService,
+        outOfBandRepository
       )
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
@@ -412,7 +430,9 @@ describe('MessageSender', () => {
         transportService,
         messageRepository,
         logger,
-        didResolverService
+        didResolverService,
+        didCommDocumentService,
+        outOfBandRepository
       )
       connection = getMockConnection()
 
@@ -459,4 +479,13 @@ function getMockDidDocument({ service }: { service: DidDocumentService[] }) {
       }),
     ],
   })
+}
+
+function getMockResolvedDidService(service: DidDocumentService): ResolvedDidCommService {
+  return {
+    id: service.id,
+    serviceEndpoint: service.serviceEndpoint,
+    recipientKeys: [verkeyToInstanceOfKey('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
+    routingKeys: [],
+  }
 }

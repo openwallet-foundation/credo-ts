@@ -1,6 +1,5 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, ValidateNested, IsString, IsEnum, IsInstance } from 'class-validator'
-import { Verkey } from 'indy-sdk'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
@@ -11,7 +10,7 @@ export enum KeylistUpdateAction {
 }
 
 export class KeylistUpdate {
-  public constructor(options: { recipientKey: Verkey; action: KeylistUpdateAction }) {
+  public constructor(options: { recipientKey: string; action: KeylistUpdateAction }) {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action
@@ -20,7 +19,7 @@ export class KeylistUpdate {
 
   @IsString()
   @Expose({ name: 'recipient_key' })
-  public recipientKey!: Verkey
+  public recipientKey!: string
 
   @IsEnum(KeylistUpdateAction)
   public action!: KeylistUpdateAction

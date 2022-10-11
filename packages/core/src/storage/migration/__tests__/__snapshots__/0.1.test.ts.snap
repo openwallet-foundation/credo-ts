@@ -782,7 +782,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
+        ],
+      },
+      "alias": "connection alias",
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.577Z",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -841,7 +846,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
+        ],
+      },
+      "alias": undefined,
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.608Z",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
@@ -900,7 +910,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
+        ],
+      },
+      "alias": undefined,
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.628Z",
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
@@ -959,7 +974,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6Mkmod8vp2nURVktVC5ceQeyr2VUz26iu2ZANLNVg9pMawa",
+        ],
+      },
+      "alias": undefined,
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.635Z",
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
@@ -1018,7 +1038,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
+        ],
+      },
+      "alias": undefined,
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.641Z",
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
@@ -1077,6 +1102,7 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
+      "alias": undefined,
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.646Z",
       "id": "6-4e4f-41d9-94c4-f49351b811f1",
@@ -1135,7 +1161,12 @@ Object {
     },
     "type": "OutOfBandRecord",
     "value": Object {
-      "_tags": Object {},
+      "_tags": Object {
+        "recipientKeyFingerprints": Array [
+          "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
+        ],
+      },
+      "alias": undefined,
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.653Z",
       "id": "7-4e4f-41d9-94c4-f49351b811f1",
@@ -1230,6 +1261,7 @@ Object {
     },
     "type": "ConnectionRecord",
     "value": Object {
+      "alias": "connection alias",
       "createdAt": "2022-04-30T13:02:21.577Z",
       "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "id": "8f4908ee-15ad-4058-9106-eda26eae735c",

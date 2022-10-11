@@ -1,8 +1,10 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { EncryptedMessage } from '../../../types'
+import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessage, KeylistUpdateMessage, MediationRequestMessage } from '../messages'
+import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -10,9 +12,12 @@ import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { didKeyToVerkey } from '../../dids/helpers'
+import { ConnectionService } from '../../connections'
+import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
+import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
+  KeylistUpdateMessage,
   KeylistUpdateAction,
   KeylistUpdated,
   KeylistUpdateResponseMessage,
@@ -32,17 +37,21 @@ export class MediatorService {
   private mediationRepository: MediationRepository
   private mediatorRoutingRepository: MediatorRoutingRepository
   private eventEmitter: EventEmitter
+  private connectionService: ConnectionService
+  private _mediatorRoutingRecord?: MediatorRoutingRecord
 
   public constructor(
     mediationRepository: MediationRepository,
     mediatorRoutingRepository: MediatorRoutingRepository,
     eventEmitter: EventEmitter,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
     this.eventEmitter = eventEmitter
     this.logger = logger
+    this.connectionService = connectionService
   }
 
   private async getRoutingKeys(agentContext: AgentContext) {
@@ -93,6 +102,15 @@ export class MediatorService {
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
 
+    // Update connection metadata to use their key format in further protocol messages
+    const connectionUsesDidKey = message.updates.some((update) => isDidKey(update.recipientKey))
+    await this.updateUseDidKeysFlag(
+      messageContext.agentContext,
+      connection,
+      KeylistUpdateMessage.type.protocolUri,
+      connectionUsesDidKey
+    )
+
     for (const update of message.updates) {
       const updated = new KeylistUpdated({
         action: update.action,
@@ -128,9 +146,14 @@ export class MediatorService {
 
     await this.updateState(agentContext, mediationRecord, MediationState.Granted)
 
+    // Use our useDidKey configuration, as this is the first interaction for this protocol
+    const useDidKey = agentContext.config.useDidKeyInProtocols
+
     const message = new MediationGrantMessage({
       endpoint: agentContext.config.endpoints[0],
-      routingKeys: await this.getRoutingKeys(agentContext),
+      routingKeys: useDidKey
+        ? (await this.getRoutingKeys(agentContext)).map(verkeyToDidKey)
+        : await this.getRoutingKeys(agentContext),
       threadId: mediationRecord.threadId,
     })
 
@@ -188,6 +211,10 @@ export class MediatorService {
     return routingRecord
   }
 
+  public async findAllByQuery(agentContext: AgentContext, query: Query<MediationRecord>): Promise<MediationRecord[]> {
+    return await this.mediationRepository.findByQuery(agentContext, query)
+  }
+
   private async updateState(agentContext: AgentContext, mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
 
@@ -211,5 +238,17 @@ export class MediatorService {
         previousState,
       },
     })
+  }
+
+  private async updateUseDidKeysFlag(
+    agentContext: AgentContext,
+    connection: ConnectionRecord,
+    protocolUri: string,
+    connectionUsesDidKey: boolean
+  ) {
+    const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
+    useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
+    connection.metadata.set(ConnectionMetadataKeys.UseDidKeysForProtocol, useDidKeysForProtocol)
+    await this.connectionService.update(agentContext, connection)
   }
 }

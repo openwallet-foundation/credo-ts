@@ -1,4 +1,6 @@
+import type { Query } from '../../storage/StorageService'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -214,6 +216,68 @@ export class ConnectionsApi {
    */
   public getAll() {
     return this.connectionService.getAll(this.agentContext)
+  }
+
+  /**
+   * Retrieve all connections records by specified query params
+   *
+   * @returns List containing all connection records matching specified query paramaters
+   */
+  public findAllByQuery(query: Query<ConnectionRecord>) {
+    return this.connectionService.findAllByQuery(this.agentContext, query)
+  }
+
+  /**
+   * Allows for the addition of connectionType to the record.
+   *  Either updates or creates an array of string conection types
+   * @param connectionId
+   * @param type
+   * @throws {RecordNotFoundError} If no record is found
+   */
+  public async addConnectionType(connectionId: string, type: ConnectionType | string) {
+    const record = await this.getById(connectionId)
+
+    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    record.setTag('connectionType', [type, ...tags])
+    await this.connectionService.update(this.agentContext, record)
+  }
+  /**
+   * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
+   * @param connectionId
+   * @param type
+   * @throws {RecordNotFoundError} If no record is found
+   */
+  public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
+    const record = await this.getById(connectionId)
+
+    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+
+    const newTags = tags.filter((value: string) => {
+      if (value != type) return value
+    })
+    record.setTag('connectionType', [...newTags])
+
+    await this.connectionService.update(this.agentContext, record)
+  }
+  /**
+   * Gets the known connection types for the record matching the given connectionId
+   * @param connectionId
+   * @returns An array of known connection types or null if none exist
+   * @throws {RecordNotFoundError} If no record is found
+   */
+  public async getConnectionTypes(connectionId: string) {
+    const record = await this.getById(connectionId)
+    const tags = record.getTag('connectionType') as string[]
+    return tags || null
+  }
+
+  /**
+   *
+   * @param connectionTypes An array of connection types to query for a match for
+   * @returns a promise of ab array of connection records
+   */
+  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
+    return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
   }
 
   /**
