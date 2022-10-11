@@ -1,12 +1,14 @@
-import type { Agent } from '../../../agent/Agent'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
-import type { QuestionAnswerRole } from '../QuestionAnswerRole'
-import type { QuestionAnswerState } from '../models'
+import type { Agent } from '@aries-framework/core'
+import type {
+  QuestionAnswerRole,
+  QuestionAnswerState,
+  QuestionAnswerStateChangedEvent,
+} from '@aries-framework/question-answer'
 import type { Observable } from 'rxjs'
 
 import { catchError, filter, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
+import { QuestionAnswerEventTypes } from '@aries-framework/question-answer'
 
 export async function waitForQuestionAnswerRecord(
   agent: Agent,

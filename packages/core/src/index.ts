@@ -10,6 +10,7 @@ export { EventEmitter } from './agent/EventEmitter'
 export { FeatureRegistry } from './agent/FeatureRegistry'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export * from './agent/models'
+export * from './agent/helpers'
 export { AgentConfig } from './agent/AgentConfig'
 export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
@@ -38,9 +39,6 @@ export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 export { Attachment } from './decorators/attachment/Attachment'
 
-import { parseInvitationUrl } from './utils/parseInvitation'
-import { uuid } from './utils/uuid'
-
 export * from './plugins'
 export * from './transport'
 export * from './modules/action-menu'
@@ -52,7 +50,6 @@ export * from './modules/proofs'
 export * from './modules/connections'
 export * from './modules/ledger'
 export * from './modules/routing'
-export * from './modules/question-answer'
 export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
@@ -60,11 +57,13 @@ export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedA
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
-export * from './crypto'
 export { parseMessageType, IsValidMessageType } from './utils/messageType'
 export type { Constructor } from './utils/mixins'
-
 export * from './agent/Events'
+export * from './crypto/'
+
+import { parseInvitationUrl } from './utils/parseInvitation'
+import { uuid } from './utils/uuid'
 
 const utils = {
   uuid,

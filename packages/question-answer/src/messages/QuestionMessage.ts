@@ -1,8 +1,7 @@
+import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { ValidResponse } from '../models'
 
 export class QuestionMessage extends AgentMessage {

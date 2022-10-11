@@ -1,29 +1,30 @@
-import type { AgentContext } from '../../../agent'
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { Repository } from '../../../storage/Repository'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
-import type { ValidResponse } from '../models'
-
-import { Subject } from 'rxjs'
+import type { AgentConfig, AgentContext, Repository } from '@aries-framework/core'
+import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-framework/question-answer'
 
 import {
-  agentDependencies,
-  getAgentConfig,
-  getAgentContext,
-  getMockConnection,
-  mockFunction,
-} from '../../../../tests/helpers'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
-import { IndyWallet } from '../../../wallet/IndyWallet'
-import { DidExchangeState } from '../../connections'
-import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
-import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { AnswerMessage, QuestionMessage } from '../messages'
-import { QuestionAnswerState } from '../models'
-import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
-import { QuestionAnswerService } from '../services'
+  EventEmitter,
+  IndyWallet,
+  SigningProviderRegistry,
+  InboundMessageContext,
+  DidExchangeState,
+} from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
+import { Subject } from 'rxjs'
+
+import { mockFunction } from '../../../core/tests/helpers'
+
+import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
+
+import {
+  QuestionAnswerRecord,
+  QuestionAnswerRepository,
+  QuestionAnswerEventTypes,
+  QuestionAnswerRole,
+  QuestionAnswerService,
+  QuestionAnswerState,
+  QuestionMessage,
+  AnswerMessage,
+} from '@aries-framework/question-answer'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>

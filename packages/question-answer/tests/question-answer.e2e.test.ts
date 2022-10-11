@@ -1,29 +1,45 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../connections/repository'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { ConnectionRecord } from '@aries-framework/core'
 
+import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, makeConnection } from '../../../../tests/helpers'
-import testLogger from '../../../../tests/logger'
-import { Agent } from '../../../agent/Agent'
-import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { QuestionAnswerState } from '../models'
+import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
-const bobAgentOptions = getAgentOptions('Bob Question Answer', {
-  endpoints: ['rxjs:bob'],
-})
+import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
 
-const aliceAgentOptions = getAgentOptions('Alice Question Answer', {
-  endpoints: ['rxjs:alice'],
-})
+const bobAgentOptions = getAgentOptions(
+  'Bob Question Answer',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  {
+    questionAnswer: new QuestionAnswerModule(),
+  }
+)
+
+const aliceAgentOptions = getAgentOptions(
+  'Alice Question Answer',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  {
+    questionAnswer: new QuestionAnswerModule(),
+  }
+)
 
 describe('Question Answer', () => {
-  let bobAgent: Agent
-  let aliceAgent: Agent
+  let bobAgent: Agent<{
+    questionAnswer: QuestionAnswerModule
+  }>
+  let aliceAgent: Agent<{
+    questionAnswer: QuestionAnswerModule
+  }>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
@@ -40,6 +56,7 @@ describe('Question Answer', () => {
     await bobAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
+
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
@@ -55,7 +72,7 @@ describe('Question Answer', () => {
 
   test('Alice sends a question and Bob answers', async () => {
     testLogger.test('Alice sends question to Bob')
-    let aliceQuestionAnswerRecord = await aliceAgent.questionAnswer.sendQuestion(aliceConnection.id, {
+    let aliceQuestionAnswerRecord = await aliceAgent.modules.questionAnswer.sendQuestion(aliceConnection.id, {
       question: 'Do you want to play?',
       validResponses: [{ text: 'Yes' }, { text: 'No' }],
     })
@@ -69,7 +86,7 @@ describe('Question Answer', () => {
     expect(bobQuestionAnswerRecord.questionText).toEqual('Do you want to play?')
     expect(bobQuestionAnswerRecord.validResponses).toEqual([{ text: 'Yes' }, { text: 'No' }])
     testLogger.test('Bob sends answer to Alice')
-    await bobAgent.questionAnswer.sendAnswer(bobQuestionAnswerRecord.id, 'Yes')
+    await bobAgent.modules.questionAnswer.sendAnswer(bobQuestionAnswerRecord.id, 'Yes')
 
     testLogger.test('Alice waits until Bob answers')
     aliceQuestionAnswerRecord = await waitForQuestionAnswerRecord(aliceAgent, {
@@ -79,7 +96,7 @@ describe('Question Answer', () => {
 
     expect(aliceQuestionAnswerRecord.response).toEqual('Yes')
 
-    const retrievedRecord = await aliceAgent.questionAnswer.findById(aliceQuestionAnswerRecord.id)
+    const retrievedRecord = await aliceAgent.modules.questionAnswer.findById(aliceQuestionAnswerRecord.id)
     expect(retrievedRecord).toMatchObject(
       expect.objectContaining({
         id: aliceQuestionAnswerRecord.id,

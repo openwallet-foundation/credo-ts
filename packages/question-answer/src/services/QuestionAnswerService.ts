@@ -1,19 +1,14 @@
-import type { AgentContext } from '../../../agent'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Query } from '../../../storage/StorageService'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
+import type { AgentContext, InboundMessageContext, Query } from '@aries-framework/core'
 
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { InjectionSymbols } from '../../../constants'
-import { AriesFrameworkError } from '../../../error'
-import { Logger } from '../../../logger'
-import { injectable, inject } from '../../../plugins'
+import { AriesFrameworkError, EventEmitter, inject, injectable, InjectionSymbols, Logger } from '@aries-framework/core'
+
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
 import { AnswerMessage, QuestionMessage } from '../messages'
 import { QuestionAnswerState } from '../models'
-import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
+import { QuestionAnswerRepository, QuestionAnswerRecord } from '../repository'
 
 @injectable()
 export class QuestionAnswerService {

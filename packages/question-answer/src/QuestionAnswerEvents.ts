@@ -1,6 +1,6 @@
-import type { BaseEvent } from '../../agent/Events'
 import type { QuestionAnswerState } from './models'
 import type { QuestionAnswerRecord } from './repository'
+import type { BaseEvent } from '@aries-framework/core'
 
 export enum QuestionAnswerEventTypes {
   QuestionAnswerStateChanged = 'QuestionAnswerStateChanged',

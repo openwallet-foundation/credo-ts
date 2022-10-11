@@ -1,12 +1,14 @@
-import type { Query } from '../../storage/StorageService'
 import type { QuestionAnswerRecord } from './repository'
+import type { Query } from '@aries-framework/core'
 
-import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
-import { injectable } from '../../plugins'
-import { ConnectionService } from '../connections'
+import {
+  AgentContext,
+  ConnectionService,
+  createOutboundMessage,
+  Dispatcher,
+  injectable,
+  MessageSender,
+} from '@aries-framework/core'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { ValidResponse } from './models'

@@ -12,6 +12,7 @@ import type {
   SchemaTemplate,
   Wallet,
 } from '../src'
+import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
@@ -73,7 +74,11 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
 
-export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentOptions<AgentModules extends AgentModulesInput>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  modules?: AgentModules
+) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -98,7 +103,7 @@ export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> =
     ...extraConfig,
   }
 
-  return { config, dependencies: agentDependencies } as const
+  return { config, modules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
