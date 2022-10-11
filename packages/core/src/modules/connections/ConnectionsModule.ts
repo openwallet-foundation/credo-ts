@@ -29,9 +29,12 @@ import {
   DidExchangeCompleteHandler,
   TrustPingResponseMessageV2Handler,
   TrustPingMessageV2Handler,
+  TellDidMessageHandler,
+  TellDidResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionRepository } from './repository'
+import { TellDidService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -43,6 +46,7 @@ export class ConnectionsModule {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandServiceV2
   private messageSender: MessageSender
+  private tellDidService: TellDidService
   private trustPingService: TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -54,6 +58,7 @@ export class ConnectionsModule {
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandServiceV2,
+    tellDidService: TellDidService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
@@ -64,6 +69,7 @@ export class ConnectionsModule {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
+    this.tellDidService = tellDidService
     this.trustPingService = trustPingService
     this.routingService = routingService
     this.didRepository = didRepository
@@ -396,6 +402,9 @@ export class ConnectionsModule {
       )
     )
     dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+
+    dispatcher.registerHandler(new TellDidMessageHandler(this.tellDidService))
+    dispatcher.registerHandler(new TellDidResponseHandler(this.tellDidService))
   }
 
   /**
@@ -408,6 +417,7 @@ export class ConnectionsModule {
     // Services
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
+    dependencyManager.registerSingleton(TellDidService)
     dependencyManager.registerSingleton(TrustPingService)
 
     // Repositories

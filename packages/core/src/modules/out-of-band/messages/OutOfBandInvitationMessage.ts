@@ -10,6 +10,7 @@ import { IsValidMessageType, parseMessageType } from '../../../utils/messageType
 
 export enum OutOfBandGoalCode {
   DidExchange = 'did-exchange',
+  TellDid = 'tell-did',
   MediatorProvision = 'mediator-provision',
   AndroidNearbyHandshake = 'android-nearby-handshake',
 }

@@ -9,6 +9,7 @@ import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { TellDidService } from '../../connections'
 import { DidService } from '../../dids'
 import { DidResolverService } from '../../dids/services/DidResolverService'
 import { ValueTransferGetterService } from '../../value-transfer/services/ValueTransferGetterService'
@@ -24,6 +25,7 @@ export class OutOfBandService {
   private eventEmitter: EventEmitter
   private valueTransferGetterService: ValueTransferGetterService
   private valueTransferGiverService: ValueTransferGiverService
+  private tellDidService: TellDidService
   private messageSender: MessageSender
 
   public constructor(
@@ -33,6 +35,7 @@ export class OutOfBandService {
     eventEmitter: EventEmitter,
     valueTransferGetterService: ValueTransferGetterService,
     valueTransferGiverService: ValueTransferGiverService,
+    tellDidService: TellDidService,
     messageSender: MessageSender
   ) {
     this.agentConfig = agentConfig
@@ -41,6 +44,7 @@ export class OutOfBandService {
     this.eventEmitter = eventEmitter
     this.valueTransferGetterService = valueTransferGetterService
     this.valueTransferGiverService = valueTransferGiverService
+    this.tellDidService = tellDidService
     this.messageSender = messageSender
   }
 
@@ -88,14 +92,23 @@ export class OutOfBandService {
   }
 
   public async acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
-    if (message.body.goalCode === OutOfBandGoalCode.DidExchange) {
+    const { goalCode, goal } = message.body
+
+    if (goalCode === OutOfBandGoalCode.DidExchange || goalCode === OutOfBandGoalCode.TellDid) {
       const did = await this.didResolverService.resolve(message.from)
+
       if (!did || !did.didDocument) {
         throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
       }
+
+      if (goalCode === OutOfBandGoalCode.TellDid) {
+        const tellDidMessage = await this.tellDidService.sendTellDidMessage(did.didDocument.id)
+        await this.tellDidService.awaitTellDidResponse(tellDidMessage.id)
+      }
+
       await this.didService.storeRemoteDid({
-        did: did.didDocument?.id,
-        label: did.didMeta?.label,
+        did: did.didDocument.id,
+        label: did.didMeta?.label ?? goal,
         logoUrl: did.didMeta?.logoUrl,
       })
     }
