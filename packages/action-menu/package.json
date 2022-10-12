@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/question-answer",
+  "name": "@aries-framework/action-menu",
   "main": "build/index",
   "types": "build/index",
   "version": "0.2.4",
@@ -11,11 +11,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/question-answer",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/action-menu",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/question-answer"
+    "directory": "packages/action-menu"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
