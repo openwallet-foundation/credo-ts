@@ -21,8 +21,8 @@
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "devDependencies": {
-    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
-    "@aries-framework/node": "npm:@sicpa-dlab/aries-framework-node",
+    "@aries-framework/core": "file:../packages/core",
+    "@aries-framework/node": "file:../packages/node",
     "@sicpa-dlab/value-transfer-protocol-ts": "0.1.7",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.1.3",

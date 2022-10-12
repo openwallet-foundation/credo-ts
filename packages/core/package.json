@@ -24,7 +24,9 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.1.7",
+    "@sicpa-dlab/value-transfer-protocol-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/value-transfer-protocol-ts/build",
+    "@sicpa-dlab/witness-gossip-protocol-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/witness-gossip-protocol-ts/build",
+    "@sicpa-dlab/value-transfer-common-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/value-transfer-common-ts/build",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/uuid": "^1.0.1",

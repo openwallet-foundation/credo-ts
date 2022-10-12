@@ -1,15 +1,15 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { TransactionRecord } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipInterface, TransactionRecord } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import {
   Gossip,
+  WitnessDetails,
   WitnessGossipInfo,
   WitnessState,
-  WitnessDetails,
   WitnessTableQuery,
-} from '@sicpa-dlab/value-transfer-protocol-ts'
+} from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -27,7 +27,7 @@ import { WitnessGossipStateService } from './GossipStateService'
 import { GossipTransportService } from './GossipTransportService'
 
 @injectable()
-export class GossipService {
+export class GossipService implements GossipInterface {
   private gossip: Gossip
   private config: AgentConfig
   private eventEmitter: EventEmitter
@@ -57,6 +57,7 @@ export class GossipService {
         logger: gossipLoggerService,
         crypto: gossipCryptoService,
         storage: gossipStateService,
+        storageV2: null!,
         transport: gossipTransportService,
         metrics: config.witnessGossipMetrics,
       },
@@ -69,6 +70,18 @@ export class GossipService {
         redeliveryThreshold: config.valueTransferConfig?.witness?.redeliveryThreshold,
       }
     )
+  }
+
+  public getWitnessDetails(): Promise<WitnessDetails> {
+    return this.gossip.getWitnessDetails()
+  }
+
+  public commitParticipantsTransition(giver: TransactionRecord, getter: TransactionRecord): Promise<void> {
+    return this.gossip.commitParticipantsTransition(giver, getter)
+  }
+
+  public commitSingleParticipantTransition(transition: TransactionRecord): Promise<void> {
+    return this.commitSingleParticipantTransition(transition)
   }
 
   public async init(): Promise<void> {
@@ -157,14 +170,6 @@ export class GossipService {
 
   public async checkPartyStateHash(hash: Uint8Array): Promise<Uint8Array | undefined> {
     return this.gossip.checkPartyStateHash(hash)
-  }
-
-  public async getWitnessDetails(): Promise<WitnessDetails> {
-    return this.gossip.getWitnessDetails()
-  }
-
-  public async settlePartyStateTransition(transactionRecord: TransactionRecord): Promise<void> {
-    return this.gossip.settlePartyStateTransition(transactionRecord)
   }
 
   public async askTransactionUpdates(id?: string) {
