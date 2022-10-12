@@ -342,6 +342,13 @@ export class ProofsApi<
     }
   }
 
+  /**
+   * Initiate a new presentation exchange as verifier by sending an out of band presentation
+   * request message
+   *
+   * @param options multiple properties like protocol version, proof Formats to build the proof request
+   * @returns the message itself and the proof record associated with the sent request message
+   */
   public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
     proofRecord: ProofRecord
