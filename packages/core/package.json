@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.5",
+  "version": "0.2.8",
   "files": [
     "build"
   ],
@@ -13,7 +13,7 @@
   "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/core",
   "scripts": {
     "build": "yarn run clean && yarn run compile",
-    "clean": "rimraf -rf ./build",
+    "clean": "npx rimraf -rf build node_modules",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "yarn run build"
   },
@@ -24,7 +24,9 @@
   },
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.1.7",
+    "@sicpa-dlab/value-transfer-common-ts": "0.2.3",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.2.3",
+    "@sicpa-dlab/witness-gossip-protocol-ts": "0.2.3",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/uuid": "^1.0.1",

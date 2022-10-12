@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { WitnessTableQuery } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { WitnessTableQuery } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsInstance, IsString, ValidateNested } from 'class-validator'
 

@@ -1,4 +1,4 @@
-import type { GossipTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipTransportInterface } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'

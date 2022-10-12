@@ -1,4 +1,4 @@
-import type { GossipStorageInterface, WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipStorageInterface, WitnessState } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import AsyncLock from 'async-lock'
 

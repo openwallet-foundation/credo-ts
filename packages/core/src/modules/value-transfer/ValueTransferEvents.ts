@@ -1,6 +1,7 @@
 import type { BaseEvent } from '../../agent/Events'
 import type { ValueTransferRecord } from './repository'
-import type { TransactionState, WitnessData } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessData } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 export enum ValueTransferEventTypes {
   ValueTransferStateChanged = 'ValueTransferStateChanged',

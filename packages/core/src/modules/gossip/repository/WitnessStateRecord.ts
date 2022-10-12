@@ -1,6 +1,6 @@
 import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
 
-import { WitnessState } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { WitnessState } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { Type } from 'class-transformer'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
