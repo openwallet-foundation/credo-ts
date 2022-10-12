@@ -24,6 +24,7 @@ import type {
   CreateRequestOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
@@ -996,6 +997,36 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
   }
 
+  public async getFormatData(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<GetFormatDataReturn<ProofFormat[]>> {
+    const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
+      this.findProposalMessage(agentContext, proofRecordId),
+      this.findRequestMessage(agentContext, proofRecordId),
+      this.findPresentationMessage(agentContext, proofRecordId),
+    ])
+
+    return {
+      proposalAttributes: proposalMessage?.presentationProposal?.attributes,
+      proposalPredicates: proposalMessage?.presentationProposal?.predicates,
+      proposal: proposalMessage
+        ? {
+            indy: proposalMessage,
+          }
+        : undefined,
+      request: requestMessage
+        ? {
+            indy: requestMessage,
+          }
+        : undefined,
+      presentation: presentationMessage
+        ? {
+            indy: presentationMessage,
+          }
+        : undefined,
+    }
+  }
   /**
    * Retrieve all proof records
    *

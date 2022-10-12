@@ -3,10 +3,12 @@ import type { IndyRevocationInterval } from '../../../credentials'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 import type { ProofRecord } from '../../repository/ProofRecord'
-import type { RequestedAttribute, RequestedPredicate } from '.././indy/models'
 import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
 import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
-import type { ProofRequest } from '.././indy/models/ProofRequest'
+import type { IndyRequestedCredentialsFormat } from './IndyProofFormat'
+import type { ProofRequest } from './models/ProofRequest'
+
+export type IndyPresentationProofFormat = IndyRequestedCredentialsFormat
 
 export interface IndyRequestProofFormat {
   name: string
@@ -22,12 +24,6 @@ export interface IndyRequestProofFormat {
 export interface IndyVerifyProofFormat {
   proofJson: Attachment
   proofRequest: Attachment
-}
-
-export interface IndyPresentationProofFormat {
-  requestedAttributes?: Record<string, RequestedAttribute>
-  requestedPredicates?: Record<string, RequestedPredicate>
-  selfAttestedAttributes?: Record<string, string>
 }
 
 export interface GetRequestedCredentialsFormat {

@@ -252,6 +252,66 @@ describe('Present Proof', () => {
       connectionId: expect.any(String),
       state: ProofState.Done,
     })
+
+    const proposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofRecord.id)
+    const requestMessage = await aliceAgent.proofs.findRequestMessage(aliceProofRecord.id)
+    const presentationMessage = await aliceAgent.proofs.findPresentationMessage(aliceProofRecord.id)
+
+    expect(proposalMessage).toBeInstanceOf(V1ProposePresentationMessage)
+    expect(requestMessage).toBeInstanceOf(V1RequestPresentationMessage)
+    expect(presentationMessage).toBeInstanceOf(V1PresentationMessage)
+
+    const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
+
+    expect(formatData).toMatchObject({
+      proposalAttributes: [
+        {
+          name: 'name',
+          credentialDefinitionId: credDefId,
+          value: 'John',
+          referent: '0',
+        },
+        {
+          name: 'image_0',
+          credentialDefinitionId: credDefId,
+        },
+      ],
+      proposalPredicates: [
+        {
+          name: 'age',
+          credentialDefinitionId: credDefId,
+          predicate: '>=',
+          threshold: 50,
+        },
+      ],
+      proposal: {
+        indy: {
+          type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
+          id: expect.any(String),
+        },
+      },
+      request: {
+        indy: {
+          type: 'https://didcomm.org/present-proof/1.0/request-presentation',
+          id: expect.any(String),
+          requestPresentationAttachments: expect.any(Object),
+          thread: {
+            threadId: expect.any(String),
+          },
+        },
+      },
+      presentation: {
+        indy: {
+          type: 'https://didcomm.org/present-proof/1.0/presentation',
+          id: expect.any(String),
+          presentationAttachments: expect.any(Object),
+          appendedAttachments: expect.any(Object),
+          thread: {
+            threadId: expect.any(String),
+          },
+        },
+      },
+    })
   })
 
   test('Faber starts with proof request to Alice', async () => {

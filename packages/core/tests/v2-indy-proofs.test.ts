@@ -4,10 +4,22 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import type { IndyProposeProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import {
+  AriesFrameworkError,
+  AttributeFilter,
+  PredicateType,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  ProofState,
+} from '../src'
 import {
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
@@ -242,6 +254,118 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
+    })
+
+    const proposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofRecord.id)
+    const requestMessage = await aliceAgent.proofs.findRequestMessage(aliceProofRecord.id)
+    const presentationMessage = await aliceAgent.proofs.findPresentationMessage(aliceProofRecord.id)
+
+    expect(proposalMessage).toBeInstanceOf(V2ProposalPresentationMessage)
+    expect(requestMessage).toBeInstanceOf(V2RequestPresentationMessage)
+    expect(presentationMessage).toBeInstanceOf(V2PresentationMessage)
+
+    const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
+
+    const format: IndyProposeProofFormat | undefined = formatData.proposal?.indy
+
+    if (!format) {
+      throw new AriesFrameworkError('missing indy propose format')
+    }
+    const requestedAttributes: PresentationPreviewAttribute[] = format[
+      'requested_attributes' as keyof IndyProposeProofFormat
+    ] as PresentationPreviewAttribute[]
+
+    const requestedPredicates: PresentationPreviewAttribute[] = format[
+      'requested_predicates' as keyof IndyProposeProofFormat
+    ] as PresentationPreviewAttribute[]
+
+    // this key is dynamically generated
+    const key1 = Object.keys(requestedAttributes)[1]
+    const key2 = Object.keys(requestedPredicates)[0]
+
+    expect(formatData).toMatchObject({
+      proposal: {
+        indy: {
+          name: 'abc',
+          version: '1.0',
+          nonce: '947121108704767252195126',
+          requested_attributes: {
+            0: {
+              name: 'name',
+            },
+            [key1]: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            [key2]: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+        },
+      },
+      request: {
+        indy: {
+          name: 'abc',
+          version: '1.0',
+          nonce: '947121108704767252195126',
+          requested_attributes: {
+            0: {
+              name: 'name',
+            },
+            [key1]: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            [key2]: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+        },
+      },
+      presentation: {
+        indy: {
+          proof: {
+            proofs: [
+              {
+                primary_proof: expect.any(Object),
+                non_revoc_proof: null,
+              },
+            ],
+            aggregated_proof: {
+              c_hash: expect.any(String),
+              c_list: expect.any(Array),
+            },
+          },
+          requested_proof: expect.any(Object),
+          identifiers: expect.any(Array),
+        },
+      },
     })
   })
 

@@ -1,8 +1,19 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
+import type {
+  PresentationPreviewAttributeOptions,
+  PresentationPreviewPredicateOptions,
+} from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
+
+export type FormatDataMessagePayload<
+  CFs extends ProofFormat[] = ProofFormat[],
+  M extends keyof ProofFormat['formatData'] = keyof ProofFormat['formatData']
+> = {
+  [ProofFormat in CFs[number] as ProofFormat['formatKey']]?: ProofFormat['formatData'][M]
+}
 
 interface BaseOptions {
   willConfirm?: boolean
@@ -69,4 +80,12 @@ export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
 
 export interface DeleteProofOptions {
   deleteAssociatedDidCommMessages?: boolean
+}
+
+export type GetFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> = {
+  proposalAttributes?: PresentationPreviewAttributeOptions[]
+  proposalPredicates?: PresentationPreviewPredicateOptions[]
+  proposal?: FormatDataMessagePayload<PFs, 'proposal'>
+  request?: FormatDataMessagePayload<PFs, 'request'>
+  presentation?: FormatDataMessagePayload<PFs, 'presentation'>
 }

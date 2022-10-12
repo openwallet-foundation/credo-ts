@@ -1091,7 +1091,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       // If any of the formats return false, we should not auto accept
       if (!shouldAutoRespondToFormat) return false
     }
-
     return true
   }
 
