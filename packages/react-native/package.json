@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-react-native",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.9",
+  "version": "0.2.6",
   "files": [
     "build"
   ],
