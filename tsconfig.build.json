@@ -6,7 +6,7 @@
     "sourceMap": true,
     "strict": true,
     "noEmitOnError": true,
-    "lib": [],
+    "lib": ["es2019"],
     "types": [],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
