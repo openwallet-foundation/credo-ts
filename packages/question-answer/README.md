@@ -54,25 +54,26 @@ In order for this plugin to work, we have to inject it into the agent to access 
 import { QuestionAnswerModule } from '@aries-framework/question-answer'
 
 const agent = new Agent({
-  config: { /* config */ },
+  config: {
+    /* config */
+  },
   dependencies: agentDependencies,
   modules: {
     questionAnswer: new QuestionAnswerModule(),
     /* other custom modules */
-   }
+  },
 })
 
 await agent.initialize()
 
 // To send a question to a given connection
 await agent.modules.questionAnswer.sendQuestion(connectionId, {
-      question: 'Do you want to play?',
-      validResponses: [{ text: 'Yes' }, { text: 'No' }],
-    })
+  question: 'Do you want to play?',
+  validResponses: [{ text: 'Yes' }, { text: 'No' }],
+})
 
 // Questions and Answers are received as QuestionAnswerStateChangedEvent
 
 // To send an answer related to a given question answer record
 await agent.modules.questionAnswer.sendAnswer(questionAnswerRecordId, 'Yes')
-
 ```

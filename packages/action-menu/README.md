@@ -54,25 +54,25 @@ In order for this plugin to work, we have to inject it into the agent to access 
 import { ActionMenuModule } from '@aries-framework/action-menu'
 
 const agent = new Agent({
-  config: { /* config */ },
+  config: {
+    /* config */
+  },
   dependencies: agentDependencies,
   modules: {
     actionMenu: new ActionMenuModule(),
     /* other custom modules */
-   }
+  },
 })
 
 await agent.initialize()
 
-// To request root menu to a given connection (menu will be received 
+// To request root menu to a given connection (menu will be received
 // asynchronously in a ActionMenuStateChangedEvent)
 await agent.modules.actionMenu.requestMenu({ connectionId })
 
 // To select an option from the action menu
 await agent.modules.actionMenu.performAction({
-      connectionId,
-      performedAction: { name: 'option-1' },
-    })
-
+  connectionId,
+  performedAction: { name: 'option-1' },
+})
 ```
-

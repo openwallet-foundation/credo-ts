@@ -31,7 +31,7 @@
   },
   "peerDependencies": {
     "@aries-framework/core": "0.2.4"
-  },  
+  },
   "devDependencies": {
     "@aries-framework/node": "0.2.4",
     "reflect-metadata": "^0.1.13",
