@@ -4,7 +4,7 @@ import type { AutoAcceptProof } from './models'
 import type { ProofConfig } from './models/ModuleOptions'
 
 /**
- * Get the supported protocol versions based on the provided credential services.
+ * Get the supported protocol versions based on the provided proof services.
  */
 export type ProtocolVersionType<PSs extends ProofService[]> = PSs[number]['version']
 export type FindProposalMessageReturn<PSs extends ProofService[]> = ReturnType<PSs[number]['findProposalMessage']>
@@ -14,15 +14,15 @@ export type FindPresentationMessageReturn<PSs extends ProofService[]> = ReturnTy
 >
 
 /**
- * Get the service map for usage in the credentials module. Will return a type mapping of protocol version to service.
+ * Get the service map for usage in the proofs module. Will return a type mapping of protocol version to service.
  *
  * @example
  * ```
- * type CredentialServiceMap = ServiceMap<[IndyCredentialFormat], [V1CredentialService]>
+ * type ProofServiceMap = ServiceMap<[IndyProofFormat], [V1ProofService]>
  *
  * // equal to
- * type CredentialServiceMap = {
- *   v1: V1CredentialService
+ * type ProofServiceMap = {
+ *   v1: V1ProofService
  * }
  * ```
  */
