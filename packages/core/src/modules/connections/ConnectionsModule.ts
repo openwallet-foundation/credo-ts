@@ -1,7 +1,7 @@
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { TrustPingMessageV2 } from './messages'
-import type { ConnectionType } from './models'
+import type { TrustPingMessageV2, TellDidMessage, TellDidResponseMessage } from './messages'
+import type { ConnectionType, TellDidState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -260,6 +260,49 @@ export class ConnectionsModule {
    */
   public async awaitTrustPingResponse(id: string, timeoutMs = 20000): Promise<void> {
     await this.trustPingService.awaitTrustPingResponse(id, timeoutMs)
+  }
+
+  /**
+   * Share public DID with other party by sending Tell Did message
+   *
+   * @param to DID of recipient
+   * @param parentThreadId ID of Out-of-Band message from recipient
+   *
+   * @returns The sent Trust Ping message
+   */
+  public sendTellDidMessage(to: string, parentThreadId?: string): Promise<TellDidMessage> {
+    return this.tellDidService.sendTellDidMessage(to, parentThreadId)
+  }
+
+  /**
+   * Await response on Tell Did message
+   *
+   * @param id ID of sent Tell Did message
+   * @param timeoutMs Milliseconds to wait for response
+   */
+  public async awaitTellDidCompleted(id: string, timeoutMs = 20000): Promise<TellDidState> {
+    const completionEvent = await this.tellDidService.awaitTellDidCompleted(id, timeoutMs)
+    return completionEvent.payload.state
+  }
+
+  /**
+   * Accept remote DID from Tell Did message
+   *
+   * @param did Remote Did to accept
+   * @param threadId Thread Id of Tell Did protocol
+   */
+  public async acceptRemoteDid(did: string, threadId: string): Promise<TellDidResponseMessage> {
+    return this.tellDidService.acceptRemoteDid(did, threadId)
+  }
+
+  /**
+   * Decline remote DID from Tell Did message
+   *
+   * @param did Remote Did to accept
+   * @param threadId Thread Id of Tell Did protocol
+   */
+  public async declineRemoteDid(did: string, threadId: string): Promise<TellDidResponseMessage> {
+    return this.tellDidService.declineRemoteDid(did, threadId)
   }
 
   /**

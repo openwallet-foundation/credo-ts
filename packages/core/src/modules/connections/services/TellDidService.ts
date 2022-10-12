@@ -1,5 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { TellDidMessageReceivedEvent, TellDidResponseReceivedEvent } from '../ConnectionEvents'
+import type { TellDidStateChangedEvent } from '../ConnectionEvents'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, timeout } from 'rxjs/operators'
@@ -13,7 +13,8 @@ import { injectable } from '../../../plugins'
 import { DidMarker } from '../../dids/domain/Did'
 import { DidService } from '../../dids/services/DidService'
 import { TellDidEventTypes } from '../ConnectionEvents'
-import { TellDidResult, TellDidMessage, TellDidResponseMessage } from '../messages'
+import { TellDidMessage, TellDidResponseMessage, TellDidResult } from '../messages'
+import { TellDidState } from '../models'
 
 @injectable()
 export class TellDidService {
@@ -56,13 +57,13 @@ export class TellDidService {
     return message
   }
 
-  public async acceptRemoteDid(message: TellDidMessage) {
-    await this.didService.storeRemoteDid(message.body)
-    return this.sendTellDidResponse({ to: message.from, threadId: message.thid, result: TellDidResult.Accepted })
+  public async acceptRemoteDid(did: string, threadId: string) {
+    await this.didService.storeRemoteDid({ did })
+    return this.sendTellDidResponse({ to: did, threadId: threadId, result: TellDidResult.Accepted })
   }
 
-  public async declineRemoteDid(message: TellDidMessage) {
-    return this.sendTellDidResponse({ to: message.from, threadId: message.thid, result: TellDidResult.Declined })
+  public async declineRemoteDid(did: string, threadId: string) {
+    return this.sendTellDidResponse({ to: did, threadId, result: TellDidResult.Declined })
   }
 
   public async sendTellDidResponse({
@@ -99,10 +100,12 @@ export class TellDidService {
   public async receiveTellDidMessage(inboundMessage: InboundMessageContext<TellDidMessage>) {
     const { message } = inboundMessage
 
-    this.eventEmitter.emit<TellDidMessageReceivedEvent>({
-      type: TellDidEventTypes.TellDidMessageReceived,
+    this.eventEmitter.emit<TellDidStateChangedEvent>({
+      type: TellDidEventTypes.TellDidStateChanged,
       payload: {
-        message,
+        remoteDid: message.from,
+        state: TellDidState.Received,
+        thid: message.pthid ?? message.id,
       },
     })
 
@@ -112,25 +115,29 @@ export class TellDidService {
   public async receiveTellDidResponse(inboundMessage: InboundMessageContext<TellDidResponseMessage>) {
     const { message } = inboundMessage
 
-    this.eventEmitter.emit<TellDidResponseReceivedEvent>({
-      type: TellDidEventTypes.TellDidResponseReceived,
+    this.eventEmitter.emit<TellDidStateChangedEvent>({
+      type: TellDidEventTypes.TellDidStateChanged,
       payload: {
-        message,
+        remoteDid: message.from,
+        state: message.body.result === TellDidResult.Accepted ? TellDidState.Accepted : TellDidState.Declined,
+        thid: message.thid ?? message.id,
       },
     })
 
     this.config.logger.info(`   < Received Tell Did response with threadId $${message.thid}`)
   }
 
-  public async awaitTellDidResponse(id: string, timeoutMs = 20000): Promise<TellDidResponseReceivedEvent> {
-    const observable = this.eventEmitter.observable<TellDidResponseReceivedEvent>(
-      TellDidEventTypes.TellDidResponseReceived
-    )
-    const subject = new ReplaySubject<TellDidResponseReceivedEvent>(1)
+  public async awaitTellDidCompleted(id: string, timeoutMs = 20000): Promise<TellDidStateChangedEvent> {
+    const observable = this.eventEmitter.observable<TellDidStateChangedEvent>(TellDidEventTypes.TellDidStateChanged)
+    const subject = new ReplaySubject<TellDidStateChangedEvent>(1)
 
     observable
       .pipe(
-        first((event) => id === event.payload.message.thid),
+        first(
+          (event) =>
+            id === event.payload.thid &&
+            (event.payload.state === TellDidState.Accepted || event.payload.state === TellDidState.Declined)
+        ),
         timeout(timeoutMs)
       )
       .subscribe(subject)

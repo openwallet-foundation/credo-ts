@@ -9,7 +9,7 @@ import { SendingMessageType } from '../../../agent/didcomm/types'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { TellDidService } from '../../connections'
+import { TellDidService, TellDidState } from '../../connections'
 import { DidService } from '../../dids'
 import { DidResolverService } from '../../dids/services/DidResolverService'
 import { ValueTransferGetterService } from '../../value-transfer/services/ValueTransferGetterService'
@@ -103,7 +103,8 @@ export class OutOfBandService {
 
       if (goalCode === OutOfBandGoalCode.TellDid) {
         const tellDidMessage = await this.tellDidService.sendTellDidMessage(did.didDocument.id)
-        await this.tellDidService.awaitTellDidResponse(tellDidMessage.id)
+        const completionEvent = await this.tellDidService.awaitTellDidCompleted(tellDidMessage.id)
+        if (completionEvent.payload.state === TellDidState.Declined) return
       }
 
       await this.didService.storeRemoteDid({

@@ -1,6 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { TellDidMessage, TellDidResponseMessage } from './messages'
-import type { DidExchangeState } from './models'
+import type { DidExchangeState, TellDidState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum ConnectionEventTypes {
@@ -12,8 +11,7 @@ export enum TrustPingEventTypes {
 }
 
 export enum TellDidEventTypes {
-  TellDidMessageReceived = 'TellDidResponseReceived',
-  TellDidResponseReceived = 'TellDidResponseReceived',
+  TellDidStateChanged = 'TellDidStateChanged',
 }
 
 export interface ConnectionStateChangedEvent extends BaseEvent {
@@ -31,16 +29,12 @@ export interface TrustPingReceivedEvent extends BaseEvent {
   }
 }
 
-export interface TellDidMessageReceivedEvent extends BaseEvent {
-  type: typeof TellDidEventTypes.TellDidMessageReceived
+export interface TellDidStateChangedEvent extends BaseEvent {
+  type: typeof TellDidEventTypes.TellDidStateChanged
   payload: {
-    message: TellDidMessage
-  }
-}
-
-export interface TellDidResponseReceivedEvent extends BaseEvent {
-  type: typeof TellDidEventTypes.TellDidResponseReceived
-  payload: {
-    message: TellDidResponseMessage
+    remoteDid: string
+    state: TellDidState
+    thid: string
+    label?: string
   }
 }
