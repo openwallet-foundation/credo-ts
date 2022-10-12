@@ -1,6 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-import { Mint, transformUint8Array } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { transformUint8Array } from '@sicpa-dlab/value-transfer-common-ts'
+import { Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
 

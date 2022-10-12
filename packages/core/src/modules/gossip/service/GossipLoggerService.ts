@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Logger } from '../../../logger'
-import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-common-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { injectable } from '../../../plugins'
