@@ -114,10 +114,14 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
       .pipe(
         takeUntil(stop$),
         concatMap((e) =>
-          this.messageReceiver.receiveMessage(e.payload.message, {
-            connection: e.payload.connection,
-            contextCorrelationId: e.payload.contextCorrelationId,
-          })
+          this.messageReceiver
+            .receiveMessage(e.payload.message, {
+              connection: e.payload.connection,
+              contextCorrelationId: e.payload.contextCorrelationId,
+            })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
         )
       )
       .subscribe()

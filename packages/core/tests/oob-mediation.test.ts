@@ -7,6 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+import { ConnectionType } from '../src/modules/connections/models/ConnectionType'
 import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
@@ -90,8 +91,16 @@ describe('out of band with mediation', () => {
     mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
     expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
 
-    // ========== Set meadiation between Alice and Mediator agents ==========
+    // ========== Set mediation between Alice and Mediator agents ==========
     const mediationRecord = await aliceAgent.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
+    const connectonTypes = await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)
+    expect(connectonTypes).toContain(ConnectionType.Mediator)
+    await aliceAgent.connections.addConnectionType(mediationRecord.connectionId, 'test')
+    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toContain('test')
+    await aliceAgent.connections.removeConnectionType(mediationRecord.connectionId, 'test')
+    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toEqual([
+      ConnectionType.Mediator,
+    ])
     expect(mediationRecord.state).toBe(MediationState.Granted)
 
     await aliceAgent.mediationRecipient.setDefaultMediator(mediationRecord)

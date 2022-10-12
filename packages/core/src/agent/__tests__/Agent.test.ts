@@ -251,6 +251,7 @@ describe('Agent', () => {
 
     expect(protocols).toEqual(
       expect.arrayContaining([
+        'https://didcomm.org/action-menu/1.0',
         'https://didcomm.org/basicmessage/1.0',
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/coordinate-mediation/1.0',
@@ -265,7 +266,6 @@ describe('Agent', () => {
         'https://didcomm.org/present-proof/1.0',
         'https://didcomm.org/revocation_notification/1.0',
         'https://didcomm.org/revocation_notification/2.0',
-        'https://didcomm.org/questionanswer/1.0',
       ])
     )
     expect(protocols.length).toEqual(15)

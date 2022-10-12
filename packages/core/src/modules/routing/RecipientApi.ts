@@ -1,11 +1,11 @@
-import type { OutboundWebSocketClosedEvent } from '../../transport'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
 import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
 
-import { firstValueFrom, interval, ReplaySubject, Subject, timer } from 'rxjs'
+import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
 import { AgentContext } from '../../agent'
@@ -51,6 +51,9 @@ export class RecipientApi {
   private routingService: RoutingService
   private agentContext: AgentContext
   private stop$: Subject<boolean>
+
+  // stopMessagePickup$ is used for stop message pickup signal
+  private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -148,7 +151,22 @@ export class RecipientApi {
   }
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
-    let interval = 50
+    const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.agentContext.config
+    let interval = baseMediatorReconnectionIntervalMs
+
+    const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
+
+    // Reset back off interval when the websocket is successfully opened again
+    this.eventEmitter
+      .observable<OutboundWebSocketOpenedEvent>(TransportEventTypes.OutboundWebSocketOpenedEvent)
+      .pipe(
+        // Stop when the agent shuts down or stop message pickup signal is received
+        takeUntil(stopConditions$),
+        filter((e) => e.payload.connectionId === mediator.connectionId)
+      )
+      .subscribe(() => {
+        interval = baseMediatorReconnectionIntervalMs
+      })
 
     // FIXME: this won't work for tenant agents created by the tenants module as the agent context session
     // could be closed. I'm not sure we want to support this as you probably don't want different tenants opening
@@ -162,30 +180,35 @@ export class RecipientApi {
     this.eventEmitter
       .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
       .pipe(
-        // Stop when the agent shuts down
-        takeUntil(this.stop$),
+        // Stop when the agent shuts down or stop message pickup signal is received
+        takeUntil(stopConditions$),
         filter((e) => e.payload.connectionId === mediator.connectionId),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
-        // Increase the interval (recursive back-off)
-        tap(() => (interval *= 2)),
         // Wait for interval time before reconnecting
-        delayWhen(() => timer(interval))
+        delayWhen(() => timer(interval)),
+        // Increase the interval (recursive back-off)
+        tap(() => {
+          interval = Math.min(interval * 2, maximumMediatorReconnectionIntervalMs)
+        })
       )
-      .subscribe(async () => {
-        this.logger.debug(
-          `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
-        )
-        try {
-          if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
-            // Start Pickup v2 protocol to receive messages received while websocket offline
-            await this.sendStatusRequest({ mediatorId: mediator.id })
-          } else {
-            await this.openMediationWebSocket(mediator)
+      .subscribe({
+        next: async () => {
+          this.logger.debug(
+            `Websocket connection to mediator with connectionId '${mediator.connectionId}' is closed, attempting to reconnect...`
+          )
+          try {
+            if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
+              // Start Pickup v2 protocol to receive messages received while websocket offline
+              await this.sendStatusRequest({ mediatorId: mediator.id })
+            } else {
+              await this.openMediationWebSocket(mediator)
+            }
+          } catch (error) {
+            this.logger.warn('Unable to re-open websocket connection to mediator', { error })
           }
-        } catch (error) {
-          this.logger.warn('Unable to re-open websocket connection to mediator', { error })
-        }
+        },
+        complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediator.id}'`),
       })
     try {
       if (pickupStrategy === MediatorPickupStrategy.Implicit) {
@@ -196,36 +219,61 @@ export class RecipientApi {
     }
   }
 
-  public async initiateMessagePickup(mediator: MediationRecord) {
+  /**
+   * Start a Message Pickup flow with a registered Mediator.
+   *
+   * @param mediator optional {MediationRecord} corresponding to the mediator to pick messages from. It will use
+   * default mediator otherwise
+   * @param pickupStrategy optional {MediatorPickupStrategy} to use in the loop. It will use Agent's default
+   * strategy or attempt to find it by Discover Features otherwise
+   * @returns
+   */
+  public async initiateMessagePickup(mediator?: MediationRecord, pickupStrategy?: MediatorPickupStrategy) {
     const { mediatorPollingInterval } = this.config
-    const mediatorPickupStrategy = await this.getPickupStrategyForMediator(mediator)
-    const mediatorConnection = await this.connectionService.getById(this.agentContext, mediator.connectionId)
+    const mediatorRecord = mediator ?? (await this.findDefaultMediator())
+    if (!mediatorRecord) {
+      throw new AriesFrameworkError('There is no mediator to pickup messages from')
+    }
+
+    const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+    const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
     switch (mediatorPickupStrategy) {
       case MediatorPickupStrategy.PickUpV2:
-        this.logger.info(`Starting pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
-        await this.sendStatusRequest({ mediatorId: mediator.id })
+        this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+        await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
         break
       case MediatorPickupStrategy.PickUpV1: {
+        const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
         // Explicit means polling every X seconds with batch message
-        this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediator.id}'`)
+        this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`)
         const subscription = interval(mediatorPollingInterval)
-          .pipe(takeUntil(this.stop$))
-          .subscribe(async () => {
-            await this.pickupMessages(mediatorConnection)
+          .pipe(takeUntil(stopConditions$))
+          .subscribe({
+            next: async () => {
+              await this.pickupMessages(mediatorConnection)
+            },
+            complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
         return subscription
       }
       case MediatorPickupStrategy.Implicit:
         // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
         // such as WebSockets to work
-        this.logger.info(`Starting implicit pickup of messages from mediator '${mediator.id}'`)
-        await this.openWebSocketAndPickUp(mediator, mediatorPickupStrategy)
+        this.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
+        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
         break
       default:
-        this.logger.info(`Skipping pickup of messages from mediator '${mediator.id}' due to pickup strategy none`)
+        this.logger.info(`Skipping pickup of messages from mediator '${mediatorRecord.id}' due to pickup strategy none`)
     }
+  }
+
+  /**
+   * Terminate all ongoing Message Pickup loops
+   */
+  public async stopMessagePickup() {
+    this.stopMessagePickup$.next(true)
   }
 
   private async sendStatusRequest(config: { mediatorId: string; recipientKey?: string }) {

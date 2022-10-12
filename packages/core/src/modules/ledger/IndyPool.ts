@@ -74,6 +74,7 @@ export class IndyPool {
     }
 
     this._poolHandle = undefined
+    this.poolConnected = undefined
 
     await this.indy.closePoolLedger(poolHandle)
   }
