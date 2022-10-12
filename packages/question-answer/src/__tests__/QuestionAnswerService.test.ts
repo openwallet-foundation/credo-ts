@@ -11,9 +11,7 @@ import {
 import { agentDependencies } from '@aries-framework/node'
 import { Subject } from 'rxjs'
 
-import { mockFunction } from '../../../core/tests/helpers'
-
-import { getAgentConfig, getAgentContext, getMockConnection } from './utils'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
 
 import {
   QuestionAnswerRecord,
