@@ -4,7 +4,7 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProposeProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { IndyProofProposal, IndyProposeProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type {
   PresentationPreview,
   PresentationPreviewAttribute,
@@ -266,22 +266,32 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
-    const format: IndyProposeProofFormat | undefined = formatData.proposal?.indy
+    const format: IndyProofProposal | undefined = formatData.proposal?.indy
 
     if (!format) {
       throw new AriesFrameworkError('missing indy propose format')
     }
-    const requestedAttributes: PresentationPreviewAttribute[] = format[
-      'requested_attributes' as keyof IndyProposeProofFormat
-    ] as PresentationPreviewAttribute[]
-
-    const requestedPredicates: PresentationPreviewAttribute[] = format[
-      'requested_predicates' as keyof IndyProposeProofFormat
-    ] as PresentationPreviewAttribute[]
 
     // this key is dynamically generated
-    const key1 = Object.keys(requestedAttributes)[1]
-    const key2 = Object.keys(requestedPredicates)[0]
+
+    if (!format) {
+      throw new AriesFrameworkError('missing indy propose format')
+    }
+
+    // let key1: string, key2: string
+
+    let key1: any
+    let key2: any
+    // // these keys is dynamically generated
+
+    if (format.requested_attributes) {
+      const requestedAttributes: PresentationPreviewAttribute[] = format.requested_attributes
+      key1 = Object.keys(requestedAttributes)[1]
+    }
+    if (format.requested_predicates) {
+      const requestedPredicates: PresentationPreviewAttribute[] = format.requested_predicates
+      key2 = Object.keys(requestedPredicates)[0]
+    }
 
     expect(formatData).toMatchObject({
       proposal: {

@@ -13,6 +13,7 @@ import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export type IndyProofRequest = ProofRequest
+export type IndyProofProposal = ProofRequest
 
 export interface RequestPresentationOptions {
   id?: string
