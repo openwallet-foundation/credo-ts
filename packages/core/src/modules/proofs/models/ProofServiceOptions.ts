@@ -1,9 +1,5 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import type {
-  PresentationPreviewAttributeOptions,
-  PresentationPreviewPredicateOptions,
-} from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
@@ -83,8 +79,6 @@ export interface DeleteProofOptions {
 }
 
 export type GetFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> = {
-  proposalAttributes?: PresentationPreviewAttributeOptions[]
-  proposalPredicates?: PresentationPreviewPredicateOptions[]
   proposal?: FormatDataMessagePayload<PFs, 'proposal'>
   request?: FormatDataMessagePayload<PFs, 'request'>
   presentation?: FormatDataMessagePayload<PFs, 'presentation'>

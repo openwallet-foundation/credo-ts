@@ -789,9 +789,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
     const formatData: GetFormatDataReturn = {}
 
-    // // We loop through all of the message keys as defined above
+    // We loop through all of the message keys as defined above
     for (const [messageKey, [formats, attachments]] of Object.entries(messages)) {
-      //   // Message can be undefined, so we continue if it is not defined
+      // Message can be undefined, so we continue if it is not defined
       if (!formats || !attachments) continue
 
       // Find all format services associated with the message

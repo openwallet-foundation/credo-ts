@@ -12,6 +12,8 @@ import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConsta
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
+export type IndyProofRequest = ProofRequest
+
 export interface RequestPresentationOptions {
   id?: string
   comment?: string
@@ -65,12 +67,12 @@ export class V1RequestPresentationMessage extends AgentMessage {
   @IsInstance(Attachment, { each: true })
   public requestPresentationAttachments!: Attachment[]
 
-  public get indyProofRequest(): ProofRequest | null {
+  public get indyProofRequest(): IndyProofRequest | null {
     const attachment = this.requestPresentationAttachments.find(
       (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
-    const proofRequestJson = attachment?.getDataAsJson<ProofRequest>() ?? null
+    const proofRequestJson = attachment?.getDataAsJson<IndyProofRequest>() ?? null
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
 
     return proofRequest

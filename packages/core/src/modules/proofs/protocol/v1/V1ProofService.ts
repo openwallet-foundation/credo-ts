@@ -1007,22 +1007,24 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       this.findPresentationMessage(agentContext, proofRecordId),
     ])
 
+    const indyProposeProof = proposalMessage?.indyProofProposal ?? undefined
+    const indyRequestProof = requestMessage?.indyProofRequest ?? undefined
+    const indyPresentProof = presentationMessage?.indyProof ?? undefined
+
     return {
-      proposalAttributes: proposalMessage?.presentationProposal?.attributes,
-      proposalPredicates: proposalMessage?.presentationProposal?.predicates,
       proposal: proposalMessage
         ? {
-            indy: proposalMessage,
+            indy: indyProposeProof,
           }
         : undefined,
       request: requestMessage
         ? {
-            indy: requestMessage,
+            indy: indyRequestProof,
           }
         : undefined,
       presentation: presentationMessage
         ? {
-            indy: presentationMessage,
+            indy: indyPresentProof,
           }
         : undefined,
     }

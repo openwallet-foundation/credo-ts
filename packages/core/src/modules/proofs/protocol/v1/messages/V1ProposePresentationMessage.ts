@@ -1,3 +1,5 @@
+import type { IndyProofProposal } from '../../../formats/indy/IndyProofFormat'
+
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -52,4 +54,11 @@ export class V1ProposePresentationMessage extends AgentMessage {
   @ValidateNested()
   @IsInstance(PresentationPreview)
   public presentationProposal!: PresentationPreview
+
+  public get indyProofProposal(): IndyProofProposal {
+    return {
+      requested_attributes: this.presentationProposal.attributes,
+      requested_predicates: this.presentationProposal.predicates,
+    }
+  }
 }

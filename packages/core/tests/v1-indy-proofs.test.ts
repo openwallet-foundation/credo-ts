@@ -38,8 +38,8 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent', 'Alice agent'))
+      ; ({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
+        await setupProofsTest('Faber agent', 'Alice agent'))
     testLogger.test('Issuing second credential')
   })
 
@@ -263,52 +263,41 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
+    // console.log("***** FORMAT DATA = ", formatData)
     expect(formatData).toMatchObject({
-      proposalAttributes: [
-        {
-          name: 'name',
-          credentialDefinitionId: credDefId,
-          value: 'John',
-          referent: '0',
-        },
-        {
-          name: 'image_0',
-          credentialDefinitionId: credDefId,
-        },
-      ],
-      proposalPredicates: [
-        {
-          name: 'age',
-          credentialDefinitionId: credDefId,
-          predicate: '>=',
-          threshold: 50,
-        },
-      ],
       proposal: {
         indy: {
-          type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
-          id: expect.any(String),
+          requested_attributes: [
+            {
+              name: 'name',
+              value: 'John',
+              referent: '0',
+            },
+            {
+              name: 'image_0',
+            },
+          ],
+          requested_predicates: [
+            {
+              name: 'age',
+              predicate: '>=',
+              threshold: 50,
+            },
+          ],
         },
       },
       request: {
         indy: {
-          type: 'https://didcomm.org/present-proof/1.0/request-presentation',
-          id: expect.any(String),
-          requestPresentationAttachments: expect.any(Object),
-          thread: {
-            threadId: expect.any(String),
-          },
+          name: 'Proof Request',
+          version: '1.0',
+          nonce: expect.any(String),
         },
       },
       presentation: {
         indy: {
-          type: 'https://didcomm.org/present-proof/1.0/presentation',
-          id: expect.any(String),
-          presentationAttachments: expect.any(Object),
-          appendedAttachments: expect.any(Object),
-          thread: {
-            threadId: expect.any(String),
-          },
+          proof: expect.any(Object),
+          requested_proof: expect.any(Object),
+          identifiers: expect.any(Array),
         },
       },
     })
