@@ -1,6 +1,6 @@
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../../credentials'
-import type { IndyProofProposal, IndyProofRequest } from '../../protocol/v1/messages/V1RequestPresentationMessage'
+import type { IndyProofRequest } from '../../protocol/v1/messages/V1RequestPresentationMessage'
 import type {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
@@ -43,6 +43,8 @@ export interface IndyRetrievedCredentialsFormat {
   requestedAttributes: Record<string, RequestedAttribute[]>
   requestedPredicates: Record<string, RequestedPredicate[]>
 }
+
+export type IndyProofProposal = IndyProofRequest
 
 export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'

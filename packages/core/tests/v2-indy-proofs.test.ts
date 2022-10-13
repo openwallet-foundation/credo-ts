@@ -4,11 +4,10 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofProposal, IndyProposeProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { IndyProofProposal } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type {
   PresentationPreview,
   PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
@@ -266,39 +265,28 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
-    const format: IndyProofProposal | undefined = formatData.proposal?.indy
-
+    const format = formatData.proposal?.indy
     if (!format) {
       throw new AriesFrameworkError('missing indy propose format')
     }
+    const requestedAttributes: PresentationPreviewAttribute[] = format[
+      'requested_attributes' as keyof IndyProofProposal
+    ] as PresentationPreviewAttribute[]
+
+    const requestedPredicates: PresentationPreviewAttribute[] = format[
+      'requested_predicates' as keyof IndyProofProposal
+    ] as PresentationPreviewAttribute[]
 
     // this key is dynamically generated
-
-    if (!format) {
-      throw new AriesFrameworkError('missing indy propose format')
-    }
-
-    // let key1: string, key2: string
-
-    let key1: any
-    let key2: any
-    // // these keys is dynamically generated
-
-    if (format.requested_attributes) {
-      const requestedAttributes: PresentationPreviewAttribute[] = format.requested_attributes
-      key1 = Object.keys(requestedAttributes)[1]
-    }
-    if (format.requested_predicates) {
-      const requestedPredicates: PresentationPreviewAttribute[] = format.requested_predicates
-      key2 = Object.keys(requestedPredicates)[0]
-    }
+    const key1 = Object.keys(requestedAttributes)[1]
+    const key2 = Object.keys(requestedPredicates)[0]
 
     expect(formatData).toMatchObject({
       proposal: {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: '947121108704767252195126',
+          nonce: expect.any(String),
           requested_attributes: {
             0: {
               name: 'name',

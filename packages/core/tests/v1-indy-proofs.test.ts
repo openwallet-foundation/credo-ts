@@ -263,11 +263,10 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
-    // console.log("***** FORMAT DATA = ", formatData)
     expect(formatData).toMatchObject({
       proposal: {
         indy: {
-          requested_attributes: [
+          requestedAttributes: [
             {
               name: 'name',
               value: 'John',
@@ -277,7 +276,7 @@ describe('Present Proof', () => {
               name: 'image_0',
             },
           ],
-          requested_predicates: [
+          requestedPredicates: [
             {
               name: 'age',
               predicate: '>=',

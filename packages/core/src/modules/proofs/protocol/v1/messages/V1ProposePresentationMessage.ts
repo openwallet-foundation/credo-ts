@@ -1,4 +1,4 @@
-import type { IndyProofProposal } from '../../../formats/indy/IndyProofFormat'
+import type { ProofProposal } from '../../../formats/indy/models/ProofProposal'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -55,10 +55,10 @@ export class V1ProposePresentationMessage extends AgentMessage {
   @IsInstance(PresentationPreview)
   public presentationProposal!: PresentationPreview
 
-  public get indyProofProposal(): IndyProofProposal {
+  public get indyProofProposal(): ProofProposal {
     return {
-      requested_attributes: this.presentationProposal.attributes,
-      requested_predicates: this.presentationProposal.predicates,
+      requestedAttributes: this.presentationProposal.attributes,
+      requestedPredicates: this.presentationProposal.predicates,
     }
   }
 }
