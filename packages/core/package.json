@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.5",
+  "version": "0.2.9",
   "files": [
     "build"
   ],
@@ -13,7 +13,7 @@
   "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/core",
   "scripts": {
     "build": "yarn run clean && yarn run compile",
-    "clean": "rimraf -rf ./build",
+    "clean": "npx rimraf -rf build node_modules",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "yarn run build"
   },

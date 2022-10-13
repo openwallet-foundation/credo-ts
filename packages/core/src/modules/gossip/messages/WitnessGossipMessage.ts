@@ -1,6 +1,6 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
-`import { GossipAttachment, WitnessGossipInfo, WitnessGossipInfoBody } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import { GossipAttachment, WitnessGossipInfo, WitnessGossipInfoBody } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
 

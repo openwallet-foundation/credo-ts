@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { GossipInterface, TransactionRecord } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { TransactionRecord } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import {
   Gossip,
