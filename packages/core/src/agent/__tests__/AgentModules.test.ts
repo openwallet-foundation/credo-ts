@@ -1,7 +1,6 @@
 import type { Module } from '../../plugins'
 
 import { getAgentConfig } from '../../../tests/helpers'
-import { ActionMenuModule } from '../../modules/action-menu'
 import { BasicMessagesModule } from '../../modules/basic-messages'
 import { ConnectionsModule } from '../../modules/connections'
 import { CredentialsModule } from '../../modules/credentials'
@@ -65,7 +64,6 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
-        actionMenu: expect.any(ActionMenuModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -90,7 +88,6 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
-        actionMenu: expect.any(ActionMenuModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -118,7 +115,6 @@ describe('AgentModules', () => {
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
-        actionMenu: expect.any(ActionMenuModule),
         genericRecords: expect.any(GenericRecordsModule),
         ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),

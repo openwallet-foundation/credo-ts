@@ -2,7 +2,6 @@ import type { Module, DependencyManager } from '../plugins'
 import type { Constructor } from '../utils/mixins'
 import type { AgentConfig } from './AgentConfig'
 
-import { ActionMenuModule } from '../modules/action-menu'
 import { BasicMessagesModule } from '../modules/basic-messages'
 import { ConnectionsModule } from '../modules/connections'
 import { CredentialsModule } from '../modules/credentials'
@@ -117,7 +116,6 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
         mediatorPollingInterval: agentConfig.mediatorPollingInterval,
       }),
     basicMessages: () => new BasicMessagesModule(),
-    actionMenu: () => new ActionMenuModule(),
     genericRecords: () => new GenericRecordsModule(),
     ledger: () =>
       new LedgerModule({
