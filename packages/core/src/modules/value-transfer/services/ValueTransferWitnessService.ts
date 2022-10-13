@@ -3,6 +3,7 @@ import type { ResumeValueTransferTransactionEvent } from '../ValueTransferEvents
 import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage } from '../messages'
 import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
+import type { Logger } from '@aries-framework/core'
 
 import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
 
@@ -12,6 +13,7 @@ import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { GossipService } from '../../gossip/service/GossipService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
+import { tryCreateSicpaContextLogger } from '../logger'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -21,7 +23,8 @@ import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateSer
 
 @injectable()
 export class ValueTransferWitnessService {
-  private config: AgentConfig
+  private readonly logger: Logger
+  private readonly label: string
   private valueTransferService: ValueTransferService
   private eventEmitter: EventEmitter
   private witness: Witness
@@ -36,7 +39,8 @@ export class ValueTransferWitnessService {
     gossipService: GossipService,
     eventEmitter: EventEmitter
   ) {
-    this.config = config
+    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-WitnessService'])
+    this.label = config.label
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
     this.gossipService = gossipService
@@ -53,7 +57,7 @@ export class ValueTransferWitnessService {
         crypto: valueTransferCryptoService,
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Witness']),
         gossip: gossipService,
       },
       {
@@ -79,8 +83,8 @@ export class ValueTransferWitnessService {
   }> {
     const { message: requestAcceptanceMessage } = messageContext
 
-    this.config.logger.info(
-      `> Witness ${this.config.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
+    this.logger.info(
+      `> Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
     )
 
     // Call VTP library to handle request acceptance
@@ -93,8 +97,8 @@ export class ValueTransferWitnessService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(
-      `< Witness ${this.config.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid} completed!`
+    this.logger.info(
+      `< Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid} completed!`
     )
 
     return { record }
@@ -115,15 +119,15 @@ export class ValueTransferWitnessService {
   }> {
     const { message: cashAcceptedMessage } = messageContext
 
-    this.config.logger.info(
-      `> Witness ${this.config.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
+    this.logger.info(
+      `> Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
     )
 
     // Call VTP library to handle cash acceptance
     const cashAcceptance = new CashAcceptance(cashAcceptedMessage)
     const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
     if (error || !transaction) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed. Error: ${error}`
       )
       return {}
@@ -132,8 +136,8 @@ export class ValueTransferWitnessService {
     // Rasie event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(
-      `< Witness ${this.config.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
+    this.logger.info(
+      `< Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
     )
 
     return { record }
@@ -154,8 +158,8 @@ export class ValueTransferWitnessService {
   }> {
     const { message: cashRemovedMessage } = messageContext
 
-    this.config.logger.info(
-      `> Witness ${this.config.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`
+    this.logger.info(
+      `> Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`
     )
 
     // Call VTP library to handle cash removal and create receipt
@@ -166,7 +170,7 @@ export class ValueTransferWitnessService {
     }
     const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !transaction) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed. Error: ${error}`
       )
       return {}
@@ -175,8 +179,8 @@ export class ValueTransferWitnessService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(
-      `< Witness ${this.config.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
+    this.logger.info(
+      `< Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
     )
 
     return { record }
@@ -193,9 +197,7 @@ export class ValueTransferWitnessService {
   public async processCashMint(messageContext: InboundMessageContext<MintMessage>): Promise<{
     message?: MintResponseMessage
   }> {
-    this.config.logger.info(
-      `> Witness ${this.config.label}: process cash mint request from '${messageContext.message.from}'`
-    )
+    this.logger.info(`> Witness ${this.label}: process cash mint request from '${messageContext.message.from}'`)
 
     const { message: mintMessage } = messageContext
 
@@ -206,14 +208,14 @@ export class ValueTransferWitnessService {
     }
     const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !message) {
-      this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
       return {}
     }
 
     const mintResponseMessage = new MintResponseMessage(message)
 
-    this.config.logger.info(
-      `< Witness ${this.config.label}: process cash mint request from '${messageContext.message.from}' completed!`
+    this.logger.info(
+      `< Witness ${this.label}: process cash mint request from '${messageContext.message.from}' completed!`
     )
 
     return { message: mintResponseMessage }
@@ -223,11 +225,11 @@ export class ValueTransferWitnessService {
    * Resume processing of VTP transaction
    * */
   public async resumeTransaction(id: string): Promise<void> {
-    this.config.logger.info(`> Witness ${this.config.label}: resume transaction '${id}'`)
+    this.logger.info(`> Witness ${this.label}: resume transaction '${id}'`)
 
     // Call VTP library to resume transaction
     await this.witness.resumeTransaction(id)
 
-    this.config.logger.info(`< Witness ${this.config.label}: transaction resumed ${id}`)
+    this.logger.info(`< Witness ${this.label}: transaction resumed ${id}`)
   }
 }

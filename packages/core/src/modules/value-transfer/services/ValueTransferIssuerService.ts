@@ -1,6 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { CashMintedEvent } from '../ValueTransferEvents'
 import type { MintResponseMessage } from '../messages/MintResponseMessage'
+import type { Logger } from '@aries-framework/core'
 
 import { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -11,6 +12,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
+import { tryCreateSicpaContextLogger } from '../logger'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
@@ -19,7 +21,8 @@ import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @injectable()
 export class ValueTransferIssuerService {
-  private config: AgentConfig
+  private logger: Logger
+  private label: string
   private valueTransferService: ValueTransferService
   private giver: Giver
   private eventEmitter: EventEmitter
@@ -32,7 +35,8 @@ export class ValueTransferIssuerService {
     valueTransferTransportService: ValueTransferTransportService,
     eventEmitter: EventEmitter
   ) {
-    this.config = config
+    this.label = config.label
+    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP'])
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
     this.giver = new Giver(
@@ -40,7 +44,7 @@ export class ValueTransferIssuerService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -67,7 +71,7 @@ export class ValueTransferIssuerService {
     awaitResponse = true,
     timeoutMs = 20000
   ): Promise<void> {
-    this.config.logger.info(`> Issuer ${this.config.label}: mint cash with`)
+    this.logger.info(`> Issuer ${this.label}: mint cash with`)
 
     // Get party public DID from the storage
     const publicDid = await this.valueTransferService.getPartyPublicDid()
@@ -78,7 +82,7 @@ export class ValueTransferIssuerService {
     // Call VTP library to start cash minting
     const { error, transaction, message } = await this.giver.startCashMinting(publicDid.did, amount, witness, send)
     if (error || !transaction || !message) {
-      this.config.logger.error(`Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`Issuer: Failed to mint cash: ${error?.message}`)
       return
     }
 
@@ -89,7 +93,7 @@ export class ValueTransferIssuerService {
       // Complete cash minting without awaiting response
       const { error } = await this.giver.completeCashMinting(transaction.id)
       if (error) {
-        this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+        this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
       }
     }
   }
@@ -102,12 +106,12 @@ export class ValueTransferIssuerService {
   }
 
   public async processCashMintResponse(messageContext: InboundMessageContext<MintResponseMessage>): Promise<void> {
-    this.config.logger.info(`> Issuer ${this.config.label}: process cash mint response ${messageContext.message.thid}`)
+    this.logger.info(`> Issuer ${this.label}: process cash mint response ${messageContext.message.thid}`)
 
     // Call VTP library to complete cash minting
     const { error, transaction } = await this.giver.completeCashMinting(messageContext.message.thid)
     if (error || !transaction) {
-      this.config.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
       return
     }
 
@@ -117,8 +121,6 @@ export class ValueTransferIssuerService {
       payload: {},
     })
 
-    this.config.logger.info(
-      `< Issuer ${this.config.label}: process cash mint response ${messageContext.message.thid} completed!`
-    )
+    this.logger.info(`< Issuer ${this.label}: process cash mint response ${messageContext.message.thid} completed!`)
   }
 }
