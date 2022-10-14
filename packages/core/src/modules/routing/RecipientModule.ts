@@ -16,6 +16,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { AriesFrameworkError } from '../../error'
+import { LogContexts } from '../../logger'
 import { injectable, module } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionService } from '../connections/services/ConnectionService'
@@ -127,7 +128,11 @@ export class RecipientModule {
     try {
       await this.messageSender.sendDIDCommV2Message(message, undefined, [Transports.WSS, Transports.WS])
     } catch (error) {
-      this.logger.warn('Unable to open websocket connection to mediator', { error })
+      this.logger.warn('Unable to open websocket connection to mediator', {
+        error,
+        context: LogContexts.mediationWebSocket.context,
+        logId: LogContexts.mediationWebSocket.unableToOpenConnection,
+      })
     }
   }
 
@@ -157,7 +162,8 @@ export class RecipientModule {
       )
       .subscribe(async () => {
         this.logger.warn(
-          `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
+          `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`,
+          { context: LogContexts.mediationWebSocket.context, logId: LogContexts.mediationWebSocket.reconnect }
         )
         // Try to reconnect to WebSocket and reset retry interval if successful
         await this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))

@@ -10,6 +10,7 @@ import { AbortController } from 'abort-controller'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { LogContexts } from '../logger'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
@@ -110,6 +111,8 @@ export class HttpOutboundTransport implements OutboundTransport {
         message: error.message,
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
+        context: LogContexts.httpOutboundTransport.context,
+        logId: LogContexts.httpOutboundTransport.errorSendingMessage,
       })
       throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }

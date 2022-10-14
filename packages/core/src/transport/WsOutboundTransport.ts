@@ -10,6 +10,7 @@ import { AgentConfig } from '../agent/AgentConfig'
 import { EventEmitter } from '../agent/EventEmitter'
 import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { LogContexts } from '../logger'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 import { TransportEventTypes } from './TransportEventTypes'
@@ -132,11 +133,17 @@ export class WsOutboundTransport implements OutboundTransport {
     connectionId?: string
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
-      this.logger.debug(`Connecting to WebSocket ${endpoint}`)
+      this.logger.debug(`Connecting to WebSocket ${endpoint}`, {
+        context: LogContexts.wsOutboundTransport.context,
+        logId: LogContexts.wsOutboundTransport.connecting,
+      })
       const socket = new this.WebSocketClass(endpoint, [], { headers: { 'agent-did': mediationDid } })
 
       socket.onopen = () => {
-        this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
+        this.logger.debug(`Successfully connected to WebSocket ${endpoint}`, {
+          context: LogContexts.wsOutboundTransport.context,
+          logId: LogContexts.wsOutboundTransport.connected,
+        })
 
         this.eventEmitter.emit<OutboundWebSocketOpenedEvent>({
           type: TransportEventTypes.OutboundWebSocketOpenedEvent,
@@ -152,13 +159,19 @@ export class WsOutboundTransport implements OutboundTransport {
 
       socket.onerror = (error) => {
         this.logger.error(`Error while connecting to WebSocket ${endpoint}`, {
+          context: LogContexts.wsOutboundTransport.context,
+          logId: LogContexts.wsOutboundTransport.connectError,
           error,
         })
         reject(error)
       }
 
       socket.onclose = async (event: WebSocket.CloseEvent) => {
-        this.logger.warn(`WebSocket closing to ${endpoint}`, { event })
+        this.logger.warn(`WebSocket closing to ${endpoint}`, {
+          context: LogContexts.wsOutboundTransport.context,
+          logId: LogContexts.wsOutboundTransport.closing,
+          event,
+        })
       }
       socket.onclose = async () => {
         this.logger.debug(`WebSocket closing to ${endpoint}`)

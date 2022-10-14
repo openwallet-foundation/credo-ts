@@ -11,14 +11,43 @@ export enum LogLevel {
   off = 7,
 }
 
+export interface LogData extends Record<string, any> {
+  context?: string
+  logId?: string
+}
+
 export interface Logger {
   logLevel: LogLevel
 
-  test(message: string, data?: Record<string, any>): void
-  trace(message: string, data?: Record<string, any>): void
-  debug(message: string, data?: Record<string, any>): void
-  info(message: string, data?: Record<string, any>): void
-  warn(message: string, data?: Record<string, any>): void
-  error(message: string, data?: Record<string, any>): void
-  fatal(message: string, data?: Record<string, any>): void
+  test(message: string, data?: LogData): void
+  trace(message: string, data?: LogData): void
+  debug(message: string, data?: LogData): void
+  info(message: string, data?: LogData): void
+  warn(message: string, data?: LogData): void
+  error(message: string, data?: LogData): void
+  fatal(message: string, data?: LogData): void
+}
+
+export interface LogContext extends Record<string, any> {
+  context: string
+  keys: { [key: string]: string }
+}
+
+export const LogContexts = {
+  mediationWebSocket: {
+    context: 'mediationWebSocket',
+    unableToOpenConnection: 'unable-to-open-connection',
+    reconnect: 'reconnect-attempt',
+  },
+  wsOutboundTransport: {
+    context: 'wbOutboundTransport',
+    connecting: 'connecting',
+    connected: 'connected',
+    connectError: 'connect-error',
+    closing: 'closing',
+  },
+  httpOutboundTransport: {
+    context: 'httpOutboundTransport',
+    errorSendingMessage: 'error-sending-message',
+  },
 }
