@@ -102,8 +102,8 @@ export class OutOfBandService {
       }
 
       if (goalCode === OutOfBandGoalCode.TellDid) {
-        const tellDidMessage = await this.tellDidService.sendTellDidMessage(did.didDocument.id)
-        const completionEvent = await this.tellDidService.awaitTellDidCompleted(tellDidMessage.id)
+        const tellDidMessage = await this.tellDidService.sendTellDidMessage(did.didDocument.id, message.id)
+        const completionEvent = await this.tellDidService.awaitTellDidCompleted(tellDidMessage.id, 60000)
         if (completionEvent.payload.state === TellDidState.Declined) return
       }
 

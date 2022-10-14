@@ -75,11 +75,11 @@ export class TellDidService {
     threadId?: string
     result: TellDidResult
   }): Promise<TellDidResponseMessage> {
-    this.config.logger.info(`   > Sending Tell Did message with thid $${to} to threadId $${threadId}`)
+    this.config.logger.info(`   > Sending Tell Did response with threadId $${threadId} to did $${to}`)
 
     const did = await this.didService.findStaticDid(DidMarker.Public)
     if (!did) {
-      throw new AriesFrameworkError('   < Error on processing Tell Did message: Public Did is not found!')
+      throw new AriesFrameworkError('   < Error on sending Tell Did response: Public Did is not found!')
     }
 
     const responseMessage = new TellDidResponseMessage({
@@ -93,7 +93,7 @@ export class TellDidService {
 
     await this.messageSender.sendDIDCommV2Message(responseMessage)
 
-    this.config.logger.info(`   < Process Tell Did message with threadId $${threadId} completed!`)
+    this.config.logger.info(`   < Sending Tell Did response with threadId $${threadId} completed!`)
     return responseMessage
   }
 
