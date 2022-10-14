@@ -23,10 +23,11 @@
     "directory": "packages/core"
   },
   "dependencies": {
+    "@mikro-orm/core": "^5.4.2",
     "@multiformats/base-x": "^4.0.1",
+    "@sicpa-dlab/value-transfer-common-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/value-transfer-common-ts/build",
     "@sicpa-dlab/value-transfer-protocol-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/value-transfer-protocol-ts/build",
     "@sicpa-dlab/witness-gossip-protocol-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/witness-gossip-protocol-ts/build",
-    "@sicpa-dlab/value-transfer-common-ts": "/Users/dmitry-vychikov/Projects/DSR/sicpa/value-transfer-protocol-ts/packages/value-transfer-common-ts/build",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/uuid": "^1.0.1",
@@ -48,6 +49,7 @@
     "lru_map": "^0.4.1",
     "luxon": "^1.27.0",
     "make-error": "^1.3.6",
+    "mikro-orm": "^5.4.2",
     "object-inspect": "^1.10.3",
     "query-string": "^7.0.1",
     "reflect-metadata": "^0.1.13",

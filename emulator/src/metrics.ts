@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import type { WriteOptions } from '@influxdata/influxdb-client'
-import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { InfluxDB, Point } from '@influxdata/influxdb-client'
 import os from 'os'

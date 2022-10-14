@@ -1,14 +1,14 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { TransactionRecord } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { GossipInterface, TransactionRecord, makeOrm } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import {
-  Gossip,
+  Gossip, GossipStorageOrmRepository, makeOrmGossipStorage,
   WitnessDetails,
   WitnessGossipInfo,
   WitnessState,
-  WitnessTableQuery,
+  WitnessTableQuery
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -25,6 +25,7 @@ import { GossipCryptoService } from './GossipCryptoService'
 import { GossipLoggerService } from './GossipLoggerService'
 import { WitnessGossipStateService } from './GossipStateService'
 import { GossipTransportService } from './GossipTransportService'
+import { MikroORM } from '@mikro-orm/core'
 
 @injectable()
 export class GossipService implements GossipInterface {
@@ -57,7 +58,7 @@ export class GossipService implements GossipInterface {
         logger: gossipLoggerService,
         crypto: gossipCryptoService,
         storage: gossipStateService,
-        storageV2: null!,
+        storageV2: makeOrmGossipStorage(config.agentDependencies.microOrmForWitness).gossipStorage,
         transport: gossipTransportService,
         metrics: config.witnessGossipMetrics,
       },

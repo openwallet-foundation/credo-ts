@@ -13,6 +13,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorDeliveryStrategy, MediatorPickupStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
+import type { MikroORM } from '@mikro-orm/core'
 import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 export enum KeyDerivationMethod {
@@ -133,6 +134,8 @@ export interface InitConfig {
   defaultPingAddress?: string
 
   autoUpdateStorageOnStartup?: boolean
+
+  microOrmForWitness?: MikroORM
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2

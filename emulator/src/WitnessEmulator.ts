@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
-import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { MikroORM } from '@mikro-orm/core'
+import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
@@ -18,6 +19,7 @@ export interface EmulatorWitnessConfig {
   publicDidSeed?: string
   tockTime?: number
   knownWitnesses?: WitnessDetails[]
+  orm: MikroORM
 }
 
 export class Witness {
@@ -52,6 +54,7 @@ export class Witness {
         },
       },
       transports: [Transports.HTTP],
+      microOrmForWitness: witnessConfig.orm,
     }
 
     this.agent = new Agent(config, agentDependencies)
