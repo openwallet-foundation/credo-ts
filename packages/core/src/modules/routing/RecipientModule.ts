@@ -7,8 +7,8 @@ import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { Subscription } from 'rxjs'
 
-import { of, firstValueFrom, interval, ReplaySubject, Subject, timer, merge } from 'rxjs'
-import { catchError, map, filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
+import { of, firstValueFrom, interval, ReplaySubject, Subject, merge, switchMap, startWith, throttleTime } from 'rxjs'
+import { catchError, map, filter, first, takeUntil, timeout, retry } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -139,44 +139,51 @@ export class RecipientModule {
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
-    let interval = DEFAULT_WS_RECONNECTION_INTERVAL
-
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
     // - Agent is not shutdown
     // - Socket was for current mediation DID
 
+    this.logger.info('INITIATING IMPLICIT PICKUP for mediator')
     merge(
       this.eventEmitter
         .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
-        .pipe(map((event) => ({ mediatorDid: event.payload.did }))),
+        .pipe(map((event) => ({ mediatorDid: event.payload.did || '' }))),
       this.triggerMediatorReconnect$.pipe(map(() => ({ mediatorDid: mediator.did })))
     )
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter(({ mediatorDid }) => mediatorDid === mediator.did),
-        // Make sure we're not reconnecting multiple times
-        throttleTime(interval),
-        // Increase the interval (recursive back-off)
-        tap(() => {
-          if (interval < MAX_WS_RECONNECTION_INTERVAL) {
-            interval += WS_RECONNECTION_INTERVAL_STEP
-          }
+        filter(({ mediatorDid }) => {
+          const result = mediatorDid === mediator.did
+          this.logger.info(`Pipe filter result is: ${result}`, { actual: mediatorDid, expected: mediator.did })
+          return result
         }),
-        // Wait for interval time before reconnecting
-        delayWhen(() => timer(interval))
+        //Start immediately
+        startWith(),
+        // Make sure we're not reconnecting multiple times
+        throttleTime(DEFAULT_WS_RECONNECTION_INTERVAL),
+        switchMap(async () => {
+          this.logger.warn(
+            `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`,
+            { context: LogContexts.mediationWebSocket.context, logId: LogContexts.mediationWebSocket.reconnect }
+          )
+          // throw new Error('Test error DV in AFJ source and build')
+          return this.openMediationWebSocket(mediator)
+        }),
+        retry(Infinity)
+        // retryBackoff({
+        //   initialInterval: WS_RECONNECTION_INTERVAL_STEP,
+        //   maxInterval: MAX_WS_RECONNECTION_INTERVAL,
+        //   resetOnSuccess: true,
+        //   maxRetries: Infinity,
+        //   shouldRetry: (error) => {
+        //     this.logger.info('Mediator connect error is. Retrying...', error)
+        //     return true
+        //   },
+        // })
       )
-      .subscribe(async () => {
-        this.logger.warn(
-          `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`,
-          { context: LogContexts.mediationWebSocket.context, logId: LogContexts.mediationWebSocket.reconnect }
-        )
-        // Try to reconnect to WebSocket and reset retry interval if successful
-        await this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))
-      })
-
-    await this.openMediationWebSocket(mediator)
+      .subscribe()
   }
 
   private async initiateExplicitPickup(mediator: MediationRecord): Promise<Subscription> {

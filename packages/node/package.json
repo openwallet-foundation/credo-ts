@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.8",
+  "version": "0.2.11-alpha.0",
   "files": [
     "build",
     "bin"
@@ -28,7 +28,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core@0.2.11-alpha.0",
     "didcomm-node": "0.3.4",
     "express": "^4.17.1",
     "ffi-napi": "^4.0.3",
