@@ -4,6 +4,7 @@ import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
+import type { Logger } from '@aries-framework/core'
 
 import {
   Getter,
@@ -32,6 +33,7 @@ import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQuer
 import { WitnessStateRepository } from '../../gossip/repository/WitnessStateRepository'
 import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
+import { tryCreateSicpaContextLogger } from '../logger'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -43,6 +45,7 @@ import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateSer
 
 @injectable()
 export class ValueTransferService {
+  protected readonly logger: Logger
   protected config: AgentConfig
   protected valueTransferRepository: ValueTransferRepository
   protected valueTransferStateRepository: ValueTransferStateRepository
@@ -73,6 +76,7 @@ export class ValueTransferService {
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
+    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-Service'])
     this.config = config
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
@@ -89,7 +93,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Getter']),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -101,7 +105,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -113,7 +117,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Witness']),
         gossip: gossipService,
       },
       {
@@ -155,7 +159,7 @@ export class ValueTransferService {
     const { message: problemReportMessage } = messageContext
     const record = await this.findByThread(problemReportMessage.pthid)
     if (!record) {
-      this.config.logger.error(`Value Transaction not for the received thread ${problemReportMessage.pthid}`)
+      this.logger.error(`Value Transaction not for the received thread ${problemReportMessage.pthid}`)
       return {}
     }
 
@@ -183,7 +187,7 @@ export class ValueTransferService {
   }> {
     const record = await this.findById(id)
     if (!record) {
-      this.config.logger.error(`Unable to abort transaction ${id}. Transaction does not exist`)
+      this.logger.error(`Unable to abort transaction ${id}. Transaction does not exist`)
       return {}
     }
 
@@ -220,7 +224,7 @@ export class ValueTransferService {
   public async requestWitnessTable(witnessId?: string): Promise<void> {
     const witness = witnessId || this.config.valueTransferWitnessDid
 
-    this.config.logger.info(`Requesting list of witnesses from the witness ${witness}`)
+    this.logger.info(`Requesting list of witnesses from the witness ${witness}`)
 
     if (!witness) {
       throw new AriesFrameworkError(`Unable to request witness table. Witness DID must be specified.`)
@@ -270,8 +274,8 @@ export class ValueTransferService {
   }
 
   public async sendMessage(message: DIDCommV2Message, transport?: Transports) {
-    this.config.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
-    this.config.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
+    this.logger.info(`Sending VTP message with type '${message.type}' to DID ${message?.to}`)
+    this.logger.debug(` Message: ${JsonEncoder.toString(message)}`)
     const sendingMessageType = message.to ? SendingMessageType.Encrypted : SendingMessageType.Signed
     const transports = transport ? [transport] : undefined
     await this.messageSender.sendDIDCommV2Message(message, sendingMessageType, transports)

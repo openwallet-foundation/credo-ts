@@ -2,6 +2,7 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { Transports } from '../../routing/types'
 import type { CashAcceptedWitnessedMessage, RequestMessage, GiverReceiptMessage } from '../messages'
 import type { ValueTransferRecord } from '../repository'
+import type { Logger } from '@aries-framework/core'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { CashAcceptanceWitnessed, Giver, GiverReceipt, Request } from '@sicpa-dlab/value-transfer-protocol-ts'
@@ -10,6 +11,7 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
+import { tryCreateSicpaContextLogger } from '../logger'
 import { OfferMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 
@@ -20,7 +22,7 @@ import { ValueTransferTransportService } from './ValueTransferTransportService'
 
 @injectable()
 export class ValueTransferGiverService {
-  private config: AgentConfig
+  private readonly logger: Logger
   private valueTransferRepository: ValueTransferRepository
   private valueTransferService: ValueTransferService
   private valueTransferCryptoService: ValueTransferCryptoService
@@ -37,7 +39,7 @@ export class ValueTransferGiverService {
     valueTransferTransportService: ValueTransferTransportService,
     eventEmitter: EventEmitter
   ) {
-    this.config = config
+    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-GiverService'])
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
@@ -49,7 +51,7 @@ export class ValueTransferGiverService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: this.config.logger,
+        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -89,7 +91,7 @@ export class ValueTransferGiverService {
     record: ValueTransferRecord
     message: OfferMessage
   }> {
-    this.config.logger.info(`> Giver: offer payment VTP transaction`)
+    this.logger.info(`> Giver: offer payment VTP transaction`)
 
     // Get party public DID from the storage if requested
     const giver = params.usePublicDid ? await this.valueTransferService.getPartyPublicDid() : undefined
@@ -119,7 +121,7 @@ export class ValueTransferGiverService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(`< Giver: offer payment VTP transaction completed!`)
+    this.logger.info(`< Giver: offer payment VTP transaction completed!`)
 
     return { record, message: offerMessage }
   }
@@ -138,12 +140,12 @@ export class ValueTransferGiverService {
   }> {
     const { message: requestMessage } = messageContext
 
-    this.config.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
+    this.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
 
     // Call VTP library to handle request
     const { error, transaction, message } = await this.giver.processRequest(new Request(requestMessage))
     if (error || !transaction || !message) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: process request message for VTP transaction ${requestMessage.id} failed. Error: ${error}`
       )
       return {}
@@ -152,9 +154,7 @@ export class ValueTransferGiverService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(
-      `< Giver: process payment request message for VTP transaction ${requestMessage.id} completed!`
-    )
+    this.logger.info(`< Giver: process payment request message for VTP transaction ${requestMessage.id} completed!`)
 
     return { record }
   }
@@ -174,14 +174,12 @@ export class ValueTransferGiverService {
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    this.config.logger.info(
-      `> Giver: accept payment request message for VTP transaction ${record.transaction.threadId}`
-    )
+    this.logger.info(`> Giver: accept payment request message for VTP transaction ${record.transaction.threadId}`)
 
     // Call VTP library to accept request
     const { error, transaction, message } = await this.giver.acceptRequest(record.transaction.id, timeouts)
     if (error || !transaction || !message) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: accept request message for VTP transaction ${record.transaction.threadId} failed. Error: ${error}`
       )
       throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
@@ -190,7 +188,7 @@ export class ValueTransferGiverService {
     // Raise event
     const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(`< Giver: accept payment request message for VTP transaction ${record.id} completed!`)
+    this.logger.info(`< Giver: accept payment request message for VTP transaction ${record.id} completed!`)
 
     return { record: updatedRecord }
   }
@@ -210,7 +208,7 @@ export class ValueTransferGiverService {
   }> {
     const { message: cashAcceptedWitnessedMessage } = messageContext
 
-    this.config.logger.info(
+    this.logger.info(
       `> Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid}`
     )
 
@@ -218,7 +216,7 @@ export class ValueTransferGiverService {
     const cashAcceptanceWitnessed = new CashAcceptanceWitnessed(cashAcceptedWitnessedMessage)
     const { error, transaction, message } = await this.giver.processCashAcceptance(cashAcceptanceWitnessed)
     if (error || !transaction || !message) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} failed. Error: ${error}`
       )
       return {}
@@ -227,7 +225,7 @@ export class ValueTransferGiverService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(
+    this.logger.info(
       `< Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} completed!`
     )
 
@@ -249,13 +247,13 @@ export class ValueTransferGiverService {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
 
-    this.config.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
+    this.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
 
     // Call VTP library to handle receipt
     const receipt = new GiverReceipt(receiptMessage)
     const { error, transaction, message } = await this.giver.processReceipt(receipt)
     if (error || !transaction || !message) {
-      this.config.logger.error(
+      this.logger.error(
         ` Giver: process receipt message for VTP transaction ${receiptMessage.thid} failed. Error: ${error}`
       )
       return {}
@@ -264,7 +262,7 @@ export class ValueTransferGiverService {
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.config.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
+    this.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
 
     return { record }
   }
