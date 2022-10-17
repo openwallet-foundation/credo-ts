@@ -20,7 +20,7 @@ import { inject, injectable } from 'tsyringe'
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
-import { Logger } from '../logger'
+import { LogContexts, Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
@@ -247,6 +247,13 @@ export class MessageSender {
     transports?: Transports[],
     mayProxyVia?: string
   ) {
+    this.logger.debug(`Prepare to send DIDCommV2 message ${message.id}`, {
+      context: LogContexts.messageSender.context,
+      logId: LogContexts.messageSender.prepareToSend,
+      message,
+      sendingMessageType,
+      mayProxyVia,
+    })
     // recipient is not specified -> send to defaultTransport
     if (!message.to?.length && transports?.length) {
       const service = new DidCommV2Service({
@@ -511,7 +518,7 @@ export class MessageSender {
   }
 
   public async sendOutboundPackage(outboundPackage: OutboundPackage, transport?: string) {
-    this.logger.debug(`Sending outbound message to transport:`, { transport })
+    this.logger.debug(`Sending outbound message to transport:`, { transport, outboundPackage })
     if (transport) {
       for (const outboundTransport of this.outboundTransports) {
         if (outboundTransport.supportedSchemes.includes(transport)) {
