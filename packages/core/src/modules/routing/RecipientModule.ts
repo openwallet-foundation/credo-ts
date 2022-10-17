@@ -7,7 +7,7 @@ import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { Subscription } from 'rxjs'
 
-import { of, firstValueFrom, interval, ReplaySubject, Subject, timer } from 'rxjs'
+import { of, firstValueFrom, interval, ReplaySubject, Subject, timer, merge } from 'rxjs'
 import { catchError, map, filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -38,9 +38,9 @@ import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
 import { Transports } from './types'
 
-const DEFAULT_WS_RECONNECTION_INTERVAL = 1500
-const WS_RECONNECTION_INTERVAL_STEP = 500
-const MAX_WS_RECONNECTION_INTERVAL = 5000
+const DEFAULT_WS_RECONNECTION_INTERVAL = 3_000
+const WS_RECONNECTION_INTERVAL_STEP = 5_000
+const MAX_WS_RECONNECTION_INTERVAL = 60_000
 
 @module()
 @injectable()
@@ -59,6 +59,8 @@ export class RecipientModule {
 
   // stopMessagePickup$ is used for stop message pickup signal
   private readonly stopMessagePickup$ = new Subject<boolean>()
+
+  private readonly triggerMediatorReconnect$ = new Subject<void>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -143,12 +145,17 @@ export class RecipientModule {
     // in a recursive back off strategy if it matches the following criteria:
     // - Agent is not shutdown
     // - Socket was for current mediation DID
-    this.eventEmitter
-      .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+
+    merge(
+      this.eventEmitter
+        .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+        .pipe(map((event) => ({ mediatorDid: event.payload.did }))),
+      this.triggerMediatorReconnect$.pipe(map(() => ({ mediatorDid: mediator.did })))
+    )
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter((e) => e.payload.did === mediator.did),
+        filter(({ mediatorDid }) => mediatorDid === mediator.did),
         // Make sure we're not reconnecting multiple times
         throttleTime(interval),
         // Increase the interval (recursive back-off)
@@ -403,5 +410,9 @@ export class RecipientModule {
     // Repositories
     dependencyManager.registerSingleton(MediationRepository)
     dependencyManager.registerSingleton(MediatorRoutingRepository)
+  }
+
+  public reconnectToMediator(): void {
+    this.triggerMediatorReconnect$.next()
   }
 }

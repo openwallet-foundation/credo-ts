@@ -30,7 +30,6 @@ export interface Logger {
 
 export interface LogContext extends Record<string, any> {
   context: string
-  keys: { [key: string]: string }
 }
 
 export const LogContexts = {
@@ -49,5 +48,9 @@ export const LogContexts = {
   httpOutboundTransport: {
     context: 'httpOutboundTransport',
     errorSendingMessage: 'error-sending-message',
+  },
+  messageSender: {
+    context: 'messageSender',
+    prepareToSend: 'prepare-to-send',
   },
 }
