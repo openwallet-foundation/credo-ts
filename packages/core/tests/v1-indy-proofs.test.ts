@@ -4,9 +4,11 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
+import type { ProofRequest } from '../src/modules/proofs/formats/indy/models'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
+import { AriesFrameworkError } from '../src'
 import {
   ProofAttributeInfo,
   AttributeFilter,
@@ -263,21 +265,46 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
+    const proofRequest: ProofRequest | undefined = formatData.request?.indy ?? undefined
+
+    let key1, key2: string
+
+    if (!proofRequest) {
+      throw new AriesFrameworkError('missing indy proof request')
+    }
+    const attributes: Map<string, ProofAttributeInfo> = proofRequest[
+      'requested_attributes' as keyof ProofRequest
+    ] as Map<string, ProofAttributeInfo>
+    // these key is dynamically generated from UUID
+
+    // eslint-disable-next-line prefer-const
+    key1 = Object.keys(attributes)[1]
+
+    const predicates: Map<string, ProofAttributeInfo> = proofRequest[
+      'requested_predicates' as keyof ProofRequest
+    ] as Map<string, ProofAttributeInfo>
+
+    // eslint-disable-next-line prefer-const
+    key2 = Object.keys(predicates)[0]
+
     expect(formatData).toMatchObject({
       proposal: {
         indy: {
-          requestedAttributes: [
+          requested_attributes: [
             {
+              cred_def_id: credDefId,
               name: 'name',
               value: 'John',
               referent: '0',
             },
             {
+              cred_def_id: credDefId,
               name: 'image_0',
             },
           ],
-          requestedPredicates: [
+          requested_predicates: [
             {
+              cred_def_id: credDefId,
               name: 'age',
               predicate: '>=',
               threshold: 50,
@@ -290,6 +317,31 @@ describe('Present Proof', () => {
           name: 'Proof Request',
           version: '1.0',
           nonce: expect.any(String),
+          requested_attributes: {
+            0: {
+              name: 'name',
+            },
+            [key1]: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            [key2]: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
         },
       },
       presentation: {

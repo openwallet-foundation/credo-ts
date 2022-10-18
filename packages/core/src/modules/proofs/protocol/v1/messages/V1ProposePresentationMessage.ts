@@ -55,10 +55,7 @@ export class V1ProposePresentationMessage extends AgentMessage {
   @IsInstance(PresentationPreview)
   public presentationProposal!: PresentationPreview
 
-  public get indyProofProposal(): ProofProposal {
-    return {
-      requestedAttributes: this.presentationProposal.attributes,
-      requestedPredicates: this.presentationProposal.predicates,
-    }
+  public get indyProofProposal(): Record<string, unknown> {
+    return this.presentationProposal.toJSON()
   }
 }

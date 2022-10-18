@@ -78,6 +78,14 @@ export class V1RequestPresentationMessage extends AgentMessage {
     return proofRequest
   }
 
+  public get indyProofRequestAsJSON(): IndyProofRequest | null {
+    const attachment = this.requestPresentationAttachments.find(
+      (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
+    )
+    // Extract proof request from attachment
+    return attachment?.getDataAsJson<IndyProofRequest>() ?? null
+  }
+
   public getAttachmentFormats(): ProofAttachmentFormat[] {
     const attachment = this.indyAttachment
 
