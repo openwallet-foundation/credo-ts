@@ -140,7 +140,7 @@ export class RecipientModule {
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', {
         error,
-        logId: LogContexts.RecipientModule.mediationWebSocket.unableToOpenConnection,
+        logId: LogContexts.RecipientModule.mediationWebSocketUnableToOpenConnection,
       })
       return Promise.reject('Failed to open mediation web socket')
     }
