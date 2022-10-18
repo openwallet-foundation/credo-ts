@@ -133,11 +133,10 @@ export interface InitConfig {
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
-  emulateOfflineCase?: boolean
-
-  defaultPingAddress?: string
 
   autoUpdateStorageOnStartup?: boolean
+
+  internetChecker?: InternetChecker
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
@@ -205,4 +204,8 @@ export interface TransportPriorityOptions {
 
 export type SendMessageOptions = {
   transportPriority?: TransportPriorityOptions
+}
+
+export interface InternetChecker {
+  hasInternetAccess(): Promise<boolean>
 }

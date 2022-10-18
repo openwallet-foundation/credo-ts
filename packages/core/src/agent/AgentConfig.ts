@@ -1,6 +1,6 @@
 import type { Logger } from '../logger'
 import type { FileSystem } from '../storage/FileSystem'
-import type { InitConfig } from '../types'
+import type { InitConfig, InternetChecker } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 
 import { Subject } from 'rxjs'
@@ -13,6 +13,8 @@ import { AutoAcceptProof } from '../modules/proofs/ProofAutoAcceptType'
 import { offlineTransports, onlineTransports } from '../modules/routing/types'
 import { AutoAcceptValueTransfer } from '../modules/value-transfer/ValueTransferAutoAcceptType'
 import { DidCommMimeType } from '../types'
+
+import { DefaultInternetChecker } from './defaultInternetChecker'
 
 export class AgentConfig {
   private initConfig: InitConfig
@@ -236,16 +238,10 @@ export class AgentConfig {
     return this.transports.filter((transport) => offlineTransports.includes(transport))
   }
 
-  public get pingAddress() {
-    return this.initConfig.mediatorConnectionsInvite || this.initConfig.defaultPingAddress || 'https://www.sicpa.com'
-  }
+  public get internetChecker(): InternetChecker {
+    if (this.initConfig.internetChecker) return this.initConfig.internetChecker
 
-  public async hasInternetAccess() {
-    if (this.initConfig.emulateOfflineCase) return false
-
-    return this.agentDependencies
-      .fetch(this.pingAddress)
-      .then(() => true)
-      .catch(() => false)
+    const pingUrl = this.initConfig.mediatorConnectionsInvite || 'https://www.google.com'
+    return new DefaultInternetChecker(pingUrl, this.agentDependencies)
   }
 }
