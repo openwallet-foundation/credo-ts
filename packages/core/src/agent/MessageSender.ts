@@ -66,7 +66,7 @@ export class MessageSender {
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
-    this.logger = logger
+    this.logger = logger.createContextLogger(LogContexts.MessageSender.context)
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
     this.outOfBandRepository = outOfBandRepository
@@ -248,8 +248,7 @@ export class MessageSender {
     mayProxyVia?: string
   ) {
     this.logger.debug(`Prepare to send DIDCommV2 message ${message.id}`, {
-      context: LogContexts.messageSender.context,
-      logId: LogContexts.messageSender.prepareToSend,
+      logId: LogContexts.MessageSender.prepareToSend,
       message,
       sendingMessageType,
       mayProxyVia,

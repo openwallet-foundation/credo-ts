@@ -34,23 +34,25 @@ export interface Logger {
 }
 
 export const LogContexts = {
-  mediationWebSocket: {
-    context: 'mediationWebSocket',
-    unableToOpenConnection: 'unable-to-open-connection',
-    reconnect: 'reconnect-attempt',
+  RecipientModule: {
+    context: 'RecipientModule',
+    mediationWebSocket: {
+      unableToOpenConnection: 'mediation-socket:unable-to-open-connection',
+      reconnect: 'mediation-socket:reconnect-attempt',
+    },
   },
-  wsOutboundTransport: {
-    context: 'wbOutboundTransport',
+  WsOutboundTransport: {
+    context: 'WsOutboundTransport',
     connecting: 'connecting',
     connected: 'connected',
     connectError: 'connect-error',
     closing: 'closing',
   },
-  httpOutboundTransport: {
+  HttpOutboundTransport: {
     context: 'httpOutboundTransport',
     errorSendingMessage: 'error-sending-message',
   },
-  messageSender: {
+  MessageSender: {
     context: 'messageSender',
     prepareToSend: 'prepare-to-send',
   },

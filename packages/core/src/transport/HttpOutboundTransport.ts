@@ -24,7 +24,7 @@ export class HttpOutboundTransport implements OutboundTransport {
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
     this.agentConfig = agent.dependencyManager.resolve(AgentConfig)
-    this.logger = this.agentConfig.logger
+    this.logger = this.agentConfig.logger.createContextLogger(LogContexts.HttpOutboundTransport.context)
     this.fetch = this.agentConfig.agentDependencies.fetch
 
     this.logger.debug('Starting HTTP outbound transport')
@@ -111,8 +111,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         message: error.message,
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
-        context: LogContexts.httpOutboundTransport.context,
-        logId: LogContexts.httpOutboundTransport.errorSendingMessage,
+        logId: LogContexts.HttpOutboundTransport.errorSendingMessage,
       })
       throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }

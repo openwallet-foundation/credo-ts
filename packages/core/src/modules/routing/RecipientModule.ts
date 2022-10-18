@@ -90,7 +90,7 @@ export class RecipientModule {
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.logger = agentConfig.logger
+    this.logger = agentConfig.logger.createContextLogger(LogContexts.RecipientModule.context)
     this.discoverFeaturesModule = discoverFeaturesModule
     this.mediationRepository = mediationRepository
     this.routingService = routingService
@@ -140,8 +140,7 @@ export class RecipientModule {
     } catch (error) {
       this.logger.warn('Unable to open websocket connection to mediator', {
         error,
-        context: LogContexts.mediationWebSocket.context,
-        logId: LogContexts.mediationWebSocket.unableToOpenConnection,
+        logId: LogContexts.RecipientModule.mediationWebSocket.unableToOpenConnection,
       })
       return Promise.reject('Failed to open mediation web socket')
     }
