@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.11-alpha.3",
+  "version": "0.2.11-alpha.4",
   "files": [
     "build",
     "bin"
