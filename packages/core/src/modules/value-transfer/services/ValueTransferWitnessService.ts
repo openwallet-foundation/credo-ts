@@ -1,9 +1,9 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { ResumeValueTransferTransactionEvent } from '../ValueTransferEvents'
 import type { CashAcceptedMessage, CashRemovedMessage, RequestAcceptedMessage } from '../messages'
 import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
-import type { Logger } from '@aries-framework/core'
 
 import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
 

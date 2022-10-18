@@ -1,10 +1,10 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { Transports } from '../../routing/types'
 import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
 import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
-import type { Logger } from '@aries-framework/core'
 
 import {
   Getter,

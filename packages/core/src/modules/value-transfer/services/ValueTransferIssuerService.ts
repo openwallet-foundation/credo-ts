@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { CashMintedEvent } from '../ValueTransferEvents'
 import type { MintResponseMessage } from '../messages/MintResponseMessage'
-import type { Logger } from '@aries-framework/core'
 
 import { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'

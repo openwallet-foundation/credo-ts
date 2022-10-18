@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Logger } from '@aries-framework/core'
+import type { Logger } from '../../../logger'
 import type { VtpTransportInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
