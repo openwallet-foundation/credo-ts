@@ -1,11 +1,11 @@
 import type { LinkedDataProofOptions } from '../LinkedDataProof'
-import type { W3cPresentationOptions } from './W3Presentation'
+import type { W3cPresentationOptions } from './W3cPresentation'
 
 import { SingleOrArray } from '../../../../utils/type'
 import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
 import { LinkedDataProof, LinkedDataProofTransformer } from '../LinkedDataProof'
 
-import { W3cPresentation } from './W3Presentation'
+import { W3cPresentation } from './W3cPresentation'
 
 export interface W3cVerifiablePresentationOptions extends W3cPresentationOptions {
   proof: LinkedDataProofOptions

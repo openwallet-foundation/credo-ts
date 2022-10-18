@@ -143,6 +143,7 @@ describe('ledger', () => {
       indyLedgers: [
         {
           id: 'pool-Faber Ledger Genesis Transactions',
+          indyNamespace: 'pool-faber-ledger-genesis-transactions',
           isProduction: false,
           genesisTransactions,
         },
