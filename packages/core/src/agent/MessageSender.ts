@@ -1,5 +1,6 @@
 import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
+import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
@@ -11,13 +12,13 @@ import type { AgentContext } from './context'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { AriesFrameworkError } from '../error'
+import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
-import { keyReferenceToKey } from '../modules/dids'
+import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
-import { DidCommV1Service, IndyAgentService } from '../modules/dids/domain/service'
-import { didKeyToInstanceOfKey, verkeyToInstanceOfKey } from '../modules/dids/helpers'
+import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { OutOfBandRepository } from '../modules/oob/repository'
 import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -25,13 +26,6 @@ import { getProtocolScheme } from '../utils/uri'
 
 import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
-
-export interface ResolvedDidCommService {
-  id: string
-  serviceEndpoint: string
-  recipientKeys: Key[]
-  routingKeys: Key[]
-}
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -45,6 +39,8 @@ export class MessageSender {
   private messageRepository: MessageRepository
   private logger: Logger
   private didResolverService: DidResolverService
+  private didCommDocumentService: DidCommDocumentService
+  private outOfBandRepository: OutOfBandRepository
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -52,13 +48,17 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    didCommDocumentService: DidCommDocumentService,
+    outOfBandRepository: OutOfBandRepository
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
     this.logger = logger
     this.didResolverService = didResolverService
+    this.didCommDocumentService = didCommDocumentService
+    this.outOfBandRepository = outOfBandRepository
     this.outboundTransports = []
   }
 
@@ -223,8 +223,9 @@ export class MessageSender {
 
     if (!connection.did) {
       this.logger.error(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
-      throw new AriesFrameworkError(
-        `Unable to send message using connection '${connection.id}' that doesn't have a did`
+      throw new MessageSendingError(
+        `Unable to send message using connection '${connection.id}' that doesn't have a did`,
+        { outboundMessage }
       )
     }
 
@@ -291,7 +292,10 @@ export class MessageSender {
       errors,
       connection,
     })
-    throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
+    throw new MessageSendingError(
+      `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
+      { outboundMessage }
+    )
   }
 
   public async sendMessageToService(
@@ -359,49 +363,6 @@ export class MessageSender {
     throw new AriesFrameworkError(`Unable to send message to service: ${service.serviceEndpoint}`)
   }
 
-  private async retrieveServicesFromDid(agentContext: AgentContext, did: string) {
-    this.logger.debug(`Resolving services for did ${did}.`)
-    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, did)
-
-    const didCommServices: ResolvedDidCommService[] = []
-
-    // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
-    // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
-    for (const didCommService of didDocument.didCommServices) {
-      if (didCommService instanceof IndyAgentService) {
-        // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
-        didCommServices.push({
-          id: didCommService.id,
-          recipientKeys: didCommService.recipientKeys.map(verkeyToInstanceOfKey),
-          routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
-          serviceEndpoint: didCommService.serviceEndpoint,
-        })
-      } else if (didCommService instanceof DidCommV1Service) {
-        // Resolve dids to DIDDocs to retrieve routingKeys
-        const routingKeys = []
-        for (const routingKey of didCommService.routingKeys ?? []) {
-          const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-          routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
-        }
-
-        // Dereference recipientKeys
-        const recipientKeys = didCommService.recipientKeys.map((recipientKey) =>
-          keyReferenceToKey(didDocument, recipientKey)
-        )
-
-        // DidCommV1Service has keys encoded as key references
-        didCommServices.push({
-          id: didCommService.id,
-          recipientKeys,
-          routingKeys,
-          serviceEndpoint: didCommService.serviceEndpoint,
-        })
-      }
-    }
-
-    return didCommServices
-  }
-
   private async retrieveServicesByConnection(
     agentContext: AgentContext,
     connection: ConnectionRecord,
@@ -417,14 +378,15 @@ export class MessageSender {
 
     if (connection.theirDid) {
       this.logger.debug(`Resolving services for connection theirDid ${connection.theirDid}.`)
-      didCommServices = await this.retrieveServicesFromDid(agentContext, connection.theirDid)
+      didCommServices = await this.didCommDocumentService.resolveServicesFromDid(agentContext, connection.theirDid)
     } else if (outOfBand) {
-      this.logger.debug(`Resolving services from out-of-band record ${outOfBand?.id}.`)
+      this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.outOfBandInvitation.services) {
+        for (const service of outOfBand.outOfBandInvitation.getServices()) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
-            didCommServices = await this.retrieveServicesFromDid(agentContext, service)
+            this.logger.debug(`Resolving services for did ${service}.`)
+            didCommServices.push(...(await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)))
           } else {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({

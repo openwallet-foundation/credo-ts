@@ -7,11 +7,18 @@ import { AriesFrameworkError } from '../../error'
 import { IndySdkError } from '../../error/IndySdkError'
 import { injectable } from '../../plugins'
 import { isIndyError } from '../../utils/indyError'
+import {
+  getLegacyCredentialDefinitionId,
+  getLegacySchemaId,
+  getQualifiedIndyCredentialDefinitionId,
+  getQualifiedIndySchemaId,
+} from '../../utils/indyIdentifiers'
+import { AnonCredsCredentialDefinitionRecord } from '../indy/repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRecord } from '../indy/repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
 import { LedgerModuleConfig } from './LedgerModuleConfig'
-import { generateCredentialDefinitionId, generateSchemaId } from './ledgerUtil'
 import { IndyLedgerService } from './services'
 
 @injectable()
@@ -73,16 +80,33 @@ export class LedgerApi {
       throw new AriesFrameworkError('Agent has no public DID.')
     }
 
-    const schemaId = generateSchemaId(did, schema.name, schema.version)
+    const schemaId = getLegacySchemaId(did, schema.name, schema.version)
+
+    // Generate the qualified ID
+    const qualifiedIdentifier = getQualifiedIndySchemaId(this.ledgerService.getDidIndyWriteNamespace(), schemaId)
 
     // Try find the schema in the wallet
-    const schemaRecord = await this.anonCredsSchemaRepository.findBySchemaId(this.agentContext, schemaId)
-    //  Schema in wallet
-    if (schemaRecord) return schemaRecord.schema
+    const schemaRecord = await this.anonCredsSchemaRepository.findById(this.agentContext, qualifiedIdentifier)
+    // Schema in wallet
+    if (schemaRecord) {
+      // Transform qualified to unqualified
+      return {
+        ...schemaRecord.schema,
+        id: schemaId,
+      }
+    }
 
     const schemaFromLedger = await this.findBySchemaIdOnLedger(schemaId)
+
     if (schemaFromLedger) return schemaFromLedger
-    return this.ledgerService.registerSchema(this.agentContext, did, schema)
+    const createdSchema = await this.ledgerService.registerSchema(this.agentContext, did, schema)
+
+    const anonCredsSchema = new AnonCredsSchemaRecord({
+      schema: { ...createdSchema, id: qualifiedIdentifier },
+    })
+    await this.anonCredsSchemaRepository.save(this.agentContext, anonCredsSchema)
+
+    return createdSchema
   }
 
   private async findBySchemaIdOnLedger(schemaId: string) {
@@ -115,18 +139,32 @@ export class LedgerApi {
     }
 
     // Construct credential definition ID
-    const credentialDefinitionId = generateCredentialDefinitionId(
+    const credentialDefinitionId = getLegacyCredentialDefinitionId(
       did,
       credentialDefinitionTemplate.schema.seqNo,
       credentialDefinitionTemplate.tag
     )
 
-    // Check if the credential exists in wallet. If so, return it
-    const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findByCredentialDefinitionId(
-      this.agentContext,
+    // Construct qualified identifier
+    const qualifiedIdentifier = getQualifiedIndyCredentialDefinitionId(
+      this.ledgerService.getDidIndyWriteNamespace(),
       credentialDefinitionId
     )
-    if (credentialDefinitionRecord) return credentialDefinitionRecord.credentialDefinition
+
+    // Check if the credential exists in wallet. If so, return it
+    const credentialDefinitionRecord = await this.anonCredsCredentialDefinitionRepository.findById(
+      this.agentContext,
+      qualifiedIdentifier
+    )
+
+    // Credential Definition in wallet
+    if (credentialDefinitionRecord) {
+      // Transform qualified to unqualified
+      return {
+        ...credentialDefinitionRecord.credentialDefinition,
+        id: credentialDefinitionId,
+      }
+    }
 
     // Check for the credential on the ledger.
     const credentialDefinitionOnLedger = await this.findByCredentialDefinitionIdOnLedger(credentialDefinitionId)
@@ -137,10 +175,17 @@ export class LedgerApi {
     }
 
     // Register the credential
-    return await this.ledgerService.registerCredentialDefinition(this.agentContext, did, {
+    const registeredDefinition = await this.ledgerService.registerCredentialDefinition(this.agentContext, did, {
       ...credentialDefinitionTemplate,
       signatureType: 'CL',
     })
+    // Replace the unqualified with qualified Identifier in anonCred
+    const anonCredCredential = new AnonCredsCredentialDefinitionRecord({
+      credentialDefinition: { ...registeredDefinition, id: qualifiedIdentifier },
+    })
+    await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, anonCredCredential)
+
+    return registeredDefinition
   }
 
   public async getCredentialDefinition(id: string) {

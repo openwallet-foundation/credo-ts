@@ -5,7 +5,7 @@
 // @ts-ignore
 import vc from '@digitalcredentials/vc'
 
-interface VC {
+export interface VC {
   issue(options: any): Promise<Record<string, unknown>>
   verifyCredential(options: any): Promise<Record<string, unknown>>
   createPresentation(options: any): Promise<Record<string, unknown>>

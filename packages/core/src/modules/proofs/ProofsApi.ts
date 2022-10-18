@@ -1,4 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
   AcceptPresentationOptions,
@@ -81,6 +82,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
 
   // Record Methods
   getAll(): Promise<ProofRecord[]>
+  findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]>
   getById(proofRecordId: string): Promise<ProofRecord>
   deleteById(proofId: string): Promise<void>
   findById(proofRecordId: string): Promise<ProofRecord | null>
@@ -489,6 +491,15 @@ export class ProofsApi<
    */
   public async getAll(): Promise<ProofRecord[]> {
     return this.proofRepository.getAll(this.agentContext)
+  }
+
+  /**
+   * Retrieve all proof records by specified query params
+   *
+   * @returns List containing all proof records matching specified params
+   */
+  public findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+    return this.proofRepository.findByQuery(this.agentContext, query)
   }
 
   /**

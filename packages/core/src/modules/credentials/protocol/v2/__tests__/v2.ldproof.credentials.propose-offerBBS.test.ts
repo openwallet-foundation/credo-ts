@@ -9,7 +9,7 @@ import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto/KeyType'
 import { DidKey } from '../../../../../modules/dids'
-import { BbsBlsSignature2020Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../../../../modules/vc'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
@@ -24,7 +24,33 @@ let aliceConnection: ConnectionRecord
 let aliceCredentialRecord: CredentialExchangeRecord
 let faberCredentialRecord: CredentialExchangeRecord
 
-describe('credentials, BBS+ signature', () => {
+const TEST_LD_DOCUMENT = {
+  '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://w3id.org/citizenship/v1', SECURITY_CONTEXT_BBS_URL],
+  id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+  type: ['VerifiableCredential', 'PermanentResidentCard'],
+  issuer: '',
+  identifier: '83627465',
+  name: 'Permanent Resident Card',
+  description: 'Government of Example Permanent Resident Card.',
+  issuanceDate: '2019-12-03T12:19:52Z',
+  expirationDate: '2029-12-03T12:19:52Z',
+  credentialSubject: {
+    id: 'did:example:b34ca6cd37bbf23',
+    type: ['PermanentResident', 'Person'],
+    givenName: 'JOHN',
+    familyName: 'SMITH',
+    gender: 'Male',
+    image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+    residentSince: '2015-01-01',
+    lprCategory: 'C09',
+    lprNumber: '999-999-999',
+    commuterClassification: 'C1',
+    birthCountry: 'Bahamas',
+    birthDate: '1958-07-17',
+  },
+}
+
+xdescribe('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
@@ -53,7 +79,7 @@ describe('credentials, BBS+ signature', () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options
 
-    const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT
+    const credentialJson = TEST_LD_DOCUMENT
     credentialJson.issuer = issuerDidKey.did
 
     const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)

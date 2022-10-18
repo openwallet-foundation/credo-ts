@@ -1,12 +1,11 @@
 import type { WalletConfig } from '../types'
 
-import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519'
 
 import { agentDependencies } from '../../tests/helpers'
 import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
-import { Bls12381g2SigningProvider, SigningProviderRegistry } from '../crypto/signing-provider'
+import { SigningProviderRegistry } from '../crypto/signing-provider'
 import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
@@ -21,17 +20,22 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
+const walletConfigWithMasterSecretId: WalletConfig = {
+  id: 'Wallet: WalletTestWithMasterSecretId',
+  // generated using indy.generateWalletKey
+  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+  keyDerivationMethod: KeyDerivationMethod.Raw,
+  masterSecretId: 'customMasterSecretId',
+}
+
 describe('IndyWallet', () => {
   let indyWallet: IndyWallet
+
   const seed = 'sample-seed'
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(
-      agentDependencies,
-      testLogger,
-      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
-    )
+    indyWallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
     await indyWallet.createAndOpen(walletConfig)
   })
 
@@ -84,18 +88,6 @@ describe('IndyWallet', () => {
     })
   })
 
-  test('Create bls12381g2 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
-      publicKeyBase58:
-        't54oLBmhhRcDLUyWTvfYRWw8VRXRy1p43pVm62hrpShrYPuHe9WNAgS33DPfeTK6xK7iPrtJDwCHZjYgbFYDVTJHxXex9xt2XEGF8D356jBT1HtqNeucv3YsPLfTWcLcpFA',
-      keyType: KeyType.Bls12381g2,
-    })
-  })
-
-  test('Fail to create bls12381g1g2 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
-  })
-
   test('Fail to create x25519 keypair', async () => {
     await expect(indyWallet.createKey({ seed, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
   })
@@ -109,15 +101,6 @@ describe('IndyWallet', () => {
     expect(signature.length).toStrictEqual(ED25519_SIGNATURE_LENGTH)
   })
 
-  test('Create a signature with a bls12381g2 keypair', async () => {
-    const bls12381g2Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
-    const signature = await indyWallet.sign({
-      data: message,
-      key: bls12381g2Key,
-    })
-    expect(signature.length).toStrictEqual(BBS_SIGNATURE_LENGTH)
-  })
-
   test('Verify a signed message with a ed25519 publicKey', async () => {
     const ed25519Key = await indyWallet.createKey({ keyType: KeyType.Ed25519 })
     const signature = await indyWallet.sign({
@@ -127,12 +110,24 @@ describe('IndyWallet', () => {
     await expect(indyWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
   })
 
-  test('Verify a signed message with a bls12381g2 publicKey', async () => {
-    const bls12381g2Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
-    const signature = await indyWallet.sign({
-      data: message,
-      key: bls12381g2Key,
-    })
-    await expect(indyWallet.verify({ key: bls12381g2Key, data: message, signature })).resolves.toStrictEqual(true)
+  test('masterSecretId is equal to wallet ID by default', async () => {
+    expect(indyWallet.masterSecretId).toEqual(walletConfig.id)
+  })
+})
+
+describe('IndyWallet with custom Master Secret Id', () => {
+  let indyWallet: IndyWallet
+
+  beforeEach(async () => {
+    indyWallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
+    await indyWallet.createAndOpen(walletConfigWithMasterSecretId)
+  })
+
+  afterEach(async () => {
+    await indyWallet.delete()
+  })
+
+  test('masterSecretId is set by config', async () => {
+    expect(indyWallet.masterSecretId).toEqual(walletConfigWithMasterSecretId.masterSecretId)
   })
 })

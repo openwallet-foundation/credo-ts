@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
-import type { BasicMessageTags } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { injectable } from '../../../plugins'
@@ -35,7 +35,7 @@ export class BasicMessageService {
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
     this.emitStateChangedEvent(agentContext, basicMessageRecord, basicMessage)
 
-    return basicMessage
+    return { message: basicMessage, record: basicMessageRecord }
   }
 
   /**
@@ -65,7 +65,16 @@ export class BasicMessageService {
     })
   }
 
-  public async findAllByQuery(agentContext: AgentContext, query: Partial<BasicMessageTags>) {
+  public async findAllByQuery(agentContext: AgentContext, query: Query<BasicMessageRecord>) {
     return this.basicMessageRepository.findByQuery(agentContext, query)
+  }
+
+  public async getById(agentContext: AgentContext, basicMessageRecordId: string) {
+    return this.basicMessageRepository.getById(agentContext, basicMessageRecordId)
+  }
+
+  public async deleteById(agentContext: AgentContext, basicMessageRecordId: string) {
+    const basicMessageRecord = await this.getById(agentContext, basicMessageRecordId)
+    return this.basicMessageRepository.delete(agentContext, basicMessageRecord)
   }
 }

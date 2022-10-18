@@ -1,5 +1,5 @@
 import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-import type { ModulesMap, DependencyManager, Module, EmptyModuleMap, Constructor } from '@aries-framework/core'
+import type { Constructor, ModulesMap, DependencyManager, Module, EmptyModuleMap } from '@aries-framework/core'
 
 import { InjectionSymbols } from '@aries-framework/core'
 

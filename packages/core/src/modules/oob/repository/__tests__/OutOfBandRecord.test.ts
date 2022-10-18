@@ -22,6 +22,9 @@ describe('OutOfBandRecord', () => {
           ],
           id: 'a-message-id',
         }),
+        tags: {
+          recipientKeyFingerprints: ['z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
+        },
       })
 
       expect(outOfBandRecord.getTags()).toEqual({

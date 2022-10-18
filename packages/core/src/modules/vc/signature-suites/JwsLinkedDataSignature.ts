@@ -1,8 +1,8 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
-import type { LdKeyPair } from '../../../crypto/LdKeyPair'
 import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
+import type { LdKeyPair } from '../models/LdKeyPair'
 
 import { AriesFrameworkError } from '../../../error'
 import { TypedArrayEncoder, JsonEncoder } from '../../../utils'

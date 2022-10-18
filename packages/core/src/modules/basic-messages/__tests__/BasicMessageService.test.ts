@@ -30,7 +30,7 @@ describe('BasicMessageService', () => {
 
   describe('createMessage', () => {
     it(`creates message and record, and emits message and basic message record`, async () => {
-      const message = await basicMessageService.createMessage(agentContext, 'hello', mockConnectionRecord)
+      const { message } = await basicMessageService.createMessage(agentContext, 'hello', mockConnectionRecord)
 
       expect(message.content).toBe('hello')
 

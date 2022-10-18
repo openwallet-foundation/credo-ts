@@ -102,9 +102,8 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      // FIXME: we need to update this to the `indyNamespace` once https://github.com/hyperledger/aries-framework-javascript/issues/944 has been resolved
-      const indyNamespace = this.indyPoolService.ledgerWritePool.config.id
-      const qualifiedIndyDid = `did:indy:${indyNamespace}:${unqualifiedIndyDid}`
+      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.indyNamespace
+      const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
@@ -122,7 +121,7 @@ export class SovDidRegistrar implements DidRegistrar {
           qualifiedIndyDid,
         },
         didRegistrationMetadata: {
-          indyNamespace,
+          didIndyNamespace,
         },
         didState: {
           state: 'finished',

@@ -9,12 +9,12 @@ import {
   //@ts-ignore
 } from '@digitalcredentials/jsonld-signatures'
 
-interface Suites {
+export interface Suites {
   LinkedDataSignature: any
   LinkedDataProof: any
 }
 
-interface Purposes {
+export interface Purposes {
   AssertionProofPurpose: any
 }
 

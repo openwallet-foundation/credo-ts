@@ -1,6 +1,7 @@
 import type { AgentDependencies } from '../../agent/AgentDependencies'
 import type { Logger } from '../../logger'
 import type { FileSystem } from '../../storage/FileSystem'
+import type { DidIndyNamespace } from '../../utils/indyIdentifiers'
 import type * as Indy from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
@@ -20,6 +21,7 @@ export interface IndyPoolConfig {
   genesisTransactions?: string
   id: string
   isProduction: boolean
+  indyNamespace: DidIndyNamespace
   transactionAuthorAgreement?: TransactionAuthorAgreement
 }
 
@@ -52,6 +54,10 @@ export class IndyPool {
     })
   }
 
+  public get didIndyNamespace(): string {
+    return this.didIndyNamespace
+  }
+
   public get id() {
     return this.poolConfig.id
   }
@@ -68,6 +74,7 @@ export class IndyPool {
     }
 
     this._poolHandle = undefined
+    this.poolConnected = undefined
 
     await this.indy.closePoolLedger(poolHandle)
   }
