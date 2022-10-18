@@ -105,7 +105,7 @@ export class TellDidService {
       payload: {
         remoteDid: message.from,
         state: TellDidState.Received,
-        thid: message.pthid ?? message.id,
+        thid: message.id,
       },
     })
 
