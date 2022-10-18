@@ -36,10 +36,8 @@ export interface Logger {
 export const LogContexts = {
   RecipientModule: {
     context: 'RecipientModule',
-    mediationWebSocket: {
-      unableToOpenConnection: 'mediation-socket:unable-to-open-connection',
-      reconnect: 'mediation-socket:reconnect-attempt',
-    },
+    mediationWebSocketUnableToOpenConnection: 'mediation-socket:unable-to-open-connection',
+    mediationWebSocketReconnect: 'mediation-socket:reconnect-attempt',
   },
   WsOutboundTransport: {
     context: 'WsOutboundTransport',
