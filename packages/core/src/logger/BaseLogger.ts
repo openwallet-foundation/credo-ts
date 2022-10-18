@@ -9,13 +9,12 @@ export abstract class BaseLogger implements Logger {
     return logLevel >= this.logLevel
   }
 
-  protected enrichLog(data?: LogData): EnrichedLogMessage {
-    const enricher: EnrichedLogMessage = {}
-
-    if (this.context) enricher.context = this.context
-    if (data?.logId) enricher.logId = data.logId
-
-    return enricher
+  protected getEnrichedMessage(data?: LogData): EnrichedLogMessage {
+    const message: EnrichedLogMessage = {
+      ...data,
+    }
+    if (this.context) message.context = this.context
+    return message
   }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */

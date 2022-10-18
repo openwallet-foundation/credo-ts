@@ -28,12 +28,8 @@ export class ConsoleLogger extends BaseLogger {
     // Return early if logging is not enabled for this level
     if (!this.isEnabled(level)) return
 
-    const { context, logId, ...restEnrichProperties } = this.enrichLog(data)
+    const { context, logId } = this.getEnrichedMessage(data)
     const enrichedLogString = [context, logId].filter((x) => x != null).join(':')
-    if (restEnrichProperties) {
-      data ??= {}
-      Object.assign(data, restEnrichProperties)
-    }
     // Log, with or without data
     if (data) {
       console[consoleLevel](`${prefix}:${enrichedLogString} ${message}`, JSON.stringify(data, replaceError, 2))
