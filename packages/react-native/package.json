@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core@0.2.11-alpha.3",
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core@0.2.11-alpha.4",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
     "events": "^3.3.0"
   },
