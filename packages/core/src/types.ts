@@ -114,6 +114,11 @@ export interface InitConfig {
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
+  mediatorWebSocketConfig?: Partial<{
+    startReconnectIntervalMs: number
+    maxReconnectIntervalMs: number
+    intervalStepMs: number
+  }>
   mediatorPickupStrategy?: MediatorPickupStrategy
   mediatorDeliveryStrategy?: MediatorDeliveryStrategy
   mediatorPushToken?: string

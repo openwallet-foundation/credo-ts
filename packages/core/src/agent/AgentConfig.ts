@@ -161,6 +161,15 @@ export class AgentConfig {
     return this.initConfig.mediatorConnectionsInvite
   }
 
+  public get mediatorWebSocketConfig() {
+    let { startReconnectIntervalMs, maxReconnectIntervalMs, intervalStepMs } =
+      this.initConfig.mediatorWebSocketConfig || {}
+    startReconnectIntervalMs ??= 3_000
+    maxReconnectIntervalMs ??= 60_000
+    intervalStepMs ??= 5_000
+    return { startReconnectIntervalMs, maxReconnectIntervalMs, intervalStepMs }
+  }
+
   public get autoAcceptMediationRequests() {
     return this.initConfig.autoAcceptMediationRequests ?? false
   }

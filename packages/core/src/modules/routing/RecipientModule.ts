@@ -7,7 +7,19 @@ import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { Subscription } from 'rxjs'
 
-import { of, firstValueFrom, interval, ReplaySubject, Subject, merge, switchMap, startWith, throttleTime } from 'rxjs'
+import {
+  of,
+  firstValueFrom,
+  interval,
+  ReplaySubject,
+  Subject,
+  startWith,
+  throttleTime,
+  tap,
+  delayWhen,
+  timer,
+  merge,
+} from 'rxjs'
 import { catchError, map, filter, first, takeUntil, timeout, retry } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
@@ -37,10 +49,6 @@ import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
 import { Transports } from './types'
-
-const DEFAULT_WS_RECONNECTION_INTERVAL = 3_000
-const WS_RECONNECTION_INTERVAL_STEP = 5_000
-const MAX_WS_RECONNECTION_INTERVAL = 60_000
 
 @module()
 @injectable()
@@ -135,6 +143,7 @@ export class RecipientModule {
         context: LogContexts.mediationWebSocket.context,
         logId: LogContexts.mediationWebSocket.unableToOpenConnection,
       })
+      return Promise.reject('Failed to open mediation web socket')
     }
   }
 
@@ -144,46 +153,45 @@ export class RecipientModule {
     // - Agent is not shutdown
     // - Socket was for current mediation DID
 
-    this.logger.info('INITIATING IMPLICIT PICKUP for mediator')
+    const { startReconnectIntervalMs, maxReconnectIntervalMs, intervalStepMs } =
+      this.agentConfig.mediatorWebSocketConfig
+
+    let interval = startReconnectIntervalMs
+
     merge(
       this.eventEmitter
         .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
-        .pipe(map((event) => ({ mediatorDid: event.payload.did || '' }))),
+        .pipe(map((event) => ({ mediatorDid: event.payload.did }))),
       this.triggerMediatorReconnect$.pipe(map(() => ({ mediatorDid: mediator.did })))
     )
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter(({ mediatorDid }) => {
-          const result = mediatorDid === mediator.did
-          this.logger.info(`Pipe filter result is: ${result}`, { actual: mediatorDid, expected: mediator.did })
-          return result
-        }),
-        //Start immediately
+        filter(({ mediatorDid }) => mediatorDid === mediator.did),
         startWith(),
         // Make sure we're not reconnecting multiple times
-        throttleTime(DEFAULT_WS_RECONNECTION_INTERVAL),
-        switchMap(async () => {
-          this.logger.warn(
-            `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`,
-            { context: LogContexts.mediationWebSocket.context, logId: LogContexts.mediationWebSocket.reconnect }
-          )
-          // throw new Error('Test error DV in AFJ source and build')
-          return this.openMediationWebSocket(mediator)
+        throttleTime(startReconnectIntervalMs),
+        // Increase the interval (recursive back-off)
+        tap(() => {
+          if (interval < maxReconnectIntervalMs) {
+            interval += intervalStepMs
+          }
         }),
-        retry(Infinity)
-        // retryBackoff({
-        //   initialInterval: WS_RECONNECTION_INTERVAL_STEP,
-        //   maxInterval: MAX_WS_RECONNECTION_INTERVAL,
-        //   resetOnSuccess: true,
-        //   maxRetries: Infinity,
-        //   shouldRetry: (error) => {
-        //     this.logger.info('Mediator connect error is. Retrying...', error)
-        //     return true
-        //   },
-        // })
+        // Wait for interval time before reconnecting
+        delayWhen(() => timer(interval))
       )
-      .subscribe()
+      .subscribe(async () => {
+        this.logger.warn(
+          `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
+        )
+        // Try to reconnect to WebSocket and reset retry interval if successful
+        await this.openMediationWebSocket(mediator)
+          .then(() => (interval = startReconnectIntervalMs))
+          .catch(() => {
+            //Nothing
+            //Silence the error because we don't care about it
+          })
+      })
   }
 
   private async initiateExplicitPickup(mediator: MediationRecord): Promise<Subscription> {
