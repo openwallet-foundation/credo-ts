@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../../agent'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import type {
   FormatAcceptOfferOptions,
@@ -107,8 +108,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const jsonLdFormat = credentialFormats?.jsonld
+    if (jsonLdFormat) {
+      // if there is an offer, validate
+      const jsonLdCredentialOffer = new JsonLdCredential(jsonLdFormat)
+      MessageValidator.validateSync(jsonLdCredentialOffer)
+    }
 
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const jsonLdCredentialProposal = new JsonLdCredential(credentialProposal)
+    MessageValidator.validateSync(jsonLdCredentialProposal)
 
     const offerData = jsonLdFormat ?? credentialProposal
 
@@ -135,7 +143,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const jsonLdFormat = credentialFormats?.jsonld
+    if (!jsonLdFormat) {
+      throw new AriesFrameworkError('Missing jsonld payload in createOffer')
+    }
 
+    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+
+    MessageValidator.validateSync(jsonLdCredential)
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
     return { format, attachment }
@@ -160,6 +174,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const requestData = jsonLdFormat ?? credentialOffer
+
+    const jsonLdCredential = new JsonLdCredential(requestData)
+    MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
       attachId,
@@ -250,7 +267,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @param credential the verifiable credential we want to sign
    * @return the verification method derived from this credential and its associated issuer did, keys etc.
    */
-  public async deriveVerificationMethod(
+  private async deriveVerificationMethod(
     agentContext: AgentContext,
     credential: W3cCredential,
     credentialRequest: SignCredentialOptionsRFC0593
@@ -268,11 +285,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const proofType = credentialRequest.options.proofType
 
     const keyType: string | undefined = proofTypeKeyTypeMapping[proofType]
+
+    // const keyType = this.w3cCredentialService.getKeyTypesByProofType(proofType)
     if (!keyType) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
     }
 
+    // const verificationMethodType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
     const verificationMethod = await findVerificationMethodByKeyType(keyType, issuerDidDocument)
+    // const verificationMethod = await findVerificationMethodByVerificationMethodType(verificationMethodType)
     if (!verificationMethod) {
       throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
     }
@@ -299,6 +320,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     if (Array.isArray(credential.proof)) {
       // question: what do we compare here, each element of the proof array with the request???
+      throw new AriesFrameworkError('Credential arrays are not supported')
     } else {
       // do checks here
       this.compareCredentialSubject(credential, request.credential)
@@ -350,7 +372,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public async deleteCredentialById(): Promise<void> {
-    throw new Error('Method not implemented.')
+    throw new Error('Not implemented.')
+  }
+
+  public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
+    // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
+    const obj1 = message1.getDataAsJson()
+    const obj2 = message2.getDataAsJson()
+
+    return deepEqual(obj1, obj2)
   }
 
   public shouldAutoRespondToProposal(
@@ -381,15 +411,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
-    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
-
     if (Array.isArray(credential.proof)) {
-      // question: what do we compare here, each element of the proof array with the request???
-      return true
+      throw new AriesFrameworkError('Credential arrays are not supported')
     } else {
       // do checks here
       try {
+        const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
         this.compareCredentialSubject(credential, request.credential)
         this.compareProofs(credential.proof, request.options)
         return true

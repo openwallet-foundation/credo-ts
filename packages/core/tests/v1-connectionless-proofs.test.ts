@@ -8,7 +8,6 @@ import { Subject, ReplaySubject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { InjectionSymbols } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections'
@@ -25,7 +24,6 @@ import {
 } from '../src/modules/proofs'
 import { MediatorPickupStrategy } from '../src/modules/routing'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
-import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import {
@@ -398,13 +396,7 @@ describe('Present Proof', () => {
 
     await faberProofRecordPromise
 
-    // We want to stop the mediator polling before the agent is shutdown.
-    // FIXME: add a way to stop mediator polling from the public api, and make sure this is
-    // being handled in the agent shutdown so we don't get any errors with wallets being closed.
-    const faberStop$ = faberAgent.injectionContainer.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
-    const aliceStop$ = aliceAgent.injectionContainer.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
-    faberStop$.next(true)
-    aliceStop$.next(true)
-    await sleep(2000)
+    await aliceAgent.mediationRecipient.stopMessagePickup()
+    await faberAgent.mediationRecipient.stopMessagePickup()
   })
 })

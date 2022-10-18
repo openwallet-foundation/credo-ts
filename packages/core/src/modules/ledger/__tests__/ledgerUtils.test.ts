@@ -42,20 +42,4 @@ describe('LedgerUtils', () => {
     }
     expect(LedgerUtil.isLedgerReqnackResponse(ledgerResponse)).toEqual(false)
   })
-
-  // generateSchemaId
-  it('Should return a valid schema ID given did name and version', () => {
-    const did = '12345',
-      name = 'backbench',
-      version = '420'
-    expect(LedgerUtil.generateSchemaId(did, name, version)).toEqual('12345:2:backbench:420')
-  })
-
-  // generateCredentialDefinitionId
-  it('Should return a valid schema ID given did name and version', () => {
-    const did = '12345',
-      seqNo = 420,
-      tag = 'someTag'
-    expect(LedgerUtil.generateCredentialDefinitionId(did, seqNo, tag)).toEqual('12345:3:CL:420:someTag')
-  })
 })

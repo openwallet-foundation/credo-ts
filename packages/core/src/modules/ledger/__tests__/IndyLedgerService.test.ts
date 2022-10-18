@@ -23,10 +23,11 @@ const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 
 const pools: IndyPoolConfig[] = [
   {
-    id: 'sovrinMain',
+    id: 'sovrin',
+    indyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
-    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+    transactionAuthorAgreement: { version: '1.0', acceptanceMechanism: 'accept' },
   },
 ]
 
@@ -74,7 +75,7 @@ describe('IndyLedgerService', () => {
       // @ts-ignore
       jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
-        version: 'abdcg',
+        version: '2.0',
         text: 'jhsdhbv',
         ratification_ts: 12345678,
         acceptanceMechanisms: {
@@ -92,7 +93,7 @@ describe('IndyLedgerService', () => {
           'Heinz57'
         )
       ).rejects.toThrowError(
-        'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["accept"] and version 3 in pool.'
+        'Unable to satisfy matching TAA with mechanism "accept" and version "1.0" in pool.\n Found ["accept"] and version 2.0 in pool.'
       )
     })
 
@@ -101,7 +102,7 @@ describe('IndyLedgerService', () => {
       // @ts-ignore
       jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
-        version: 'abdcg',
+        version: '1.0',
         text: 'jhsdhbv',
         ratification_ts: 12345678,
         acceptanceMechanisms: {
@@ -119,7 +120,7 @@ describe('IndyLedgerService', () => {
           'Heinz57'
         )
       ).rejects.toThrowError(
-        'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["decline"] and version 1 in pool.'
+        'Unable to satisfy matching TAA with mechanism "accept" and version "1.0" in pool.\n Found ["decline"] and version 1.0 in pool.'
       )
     })
 
@@ -132,7 +133,7 @@ describe('IndyLedgerService', () => {
       // @ts-ignore
       jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
-        version: 'abdcg',
+        version: '1.0',
         text: 'jhsdhbv',
         ratification_ts: 12345678,
         acceptanceMechanisms: {

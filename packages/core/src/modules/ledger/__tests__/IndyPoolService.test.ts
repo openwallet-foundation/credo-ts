@@ -24,30 +24,35 @@ const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 const pools: IndyPoolConfig[] = [
   {
     id: 'sovrinMain',
+    indyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'sovrinBuilder',
+    indyNamespace: 'sovrin:builder',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
-    id: 'sovrinStaging',
+    id: 'sovringStaging',
+    indyNamespace: 'sovrin:staging',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'indicioMain',
+    indyNamespace: 'indicio',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
     id: 'bcovrinTest',
+    indyNamespace: 'bcovrin:test',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
@@ -280,6 +285,7 @@ describe('IndyPoolService', () => {
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe('sovrinBuilder')
+      expect(pool.config.indyNamespace).toBe('sovrin:builder')
 
       const cacheRecord = spy.mock.calls[0][1]
       expect(cacheRecord.entries.length).toBe(1)

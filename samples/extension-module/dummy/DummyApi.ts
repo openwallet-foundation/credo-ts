@@ -1,4 +1,5 @@
 import type { DummyRecord } from './repository/DummyRecord'
+import type { Query } from '@aries-framework/core'
 
 import { AgentContext, ConnectionService, Dispatcher, injectable, MessageSender } from '@aries-framework/core'
 
@@ -71,6 +72,15 @@ export class DummyApi {
    */
   public getAll(): Promise<DummyRecord[]> {
     return this.dummyService.getAll(this.agentContext)
+  }
+
+  /**
+   * Retrieve all dummy records
+   *
+   * @returns List containing all records
+   */
+  public findAllByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
+    return this.dummyService.findAllByQuery(this.agentContext, query)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {

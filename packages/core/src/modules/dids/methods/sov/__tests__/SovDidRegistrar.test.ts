@@ -21,7 +21,7 @@ const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 jest.mock('../../../../ledger/services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 const indyPoolServiceMock = new IndyPoolServiceMock()
-mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1' } } as IndyPool)
+mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1', indyNamespace: 'pool1' } } as IndyPool)
 
 const agentConfig = getAgentConfig('SovDidRegistrar')
 
@@ -148,7 +148,7 @@ describe('DidRegistrar', () => {
           qualifiedIndyDid: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ',
         },
         didRegistrationMetadata: {
-          indyNamespace: 'pool1',
+          didIndyNamespace: 'pool1',
         },
         didState: {
           state: 'finished',
@@ -222,7 +222,7 @@ describe('DidRegistrar', () => {
           qualifiedIndyDid: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ',
         },
         didRegistrationMetadata: {
-          indyNamespace: 'pool1',
+          didIndyNamespace: 'pool1',
         },
         didState: {
           state: 'finished',

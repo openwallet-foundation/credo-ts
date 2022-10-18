@@ -25,8 +25,8 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
 }
 
 export const proofTypeKeyTypeMapping: Record<string, string> = {
-  ['Ed25519Signature2018']: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  ['BbsBlsSignature2020']: VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
+  Ed25519Signature2018: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
+  BbsBlsSignature2020: VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
 }
 
 /**

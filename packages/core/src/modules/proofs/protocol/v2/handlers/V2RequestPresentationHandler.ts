@@ -69,6 +69,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         },
       })
 
+    console.log("RETRIEVED CREDENTIALS = ", retrievedCredentials)
     const requestedCredentials: FormatRequestedCredentialReturn<PFs> =
       await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
