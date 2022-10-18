@@ -63,7 +63,7 @@ export class DidService {
     this.logger.debug(`creating DID with type ${didType_}`)
 
     // restrict transports for offline if there is no internet connection
-    const hasInternetAccess = await this.agentConfig.hasInternetAccess()
+    const hasInternetAccess = await this.agentConfig.internetChecker.hasInternetAccess()
     const transports = params.transports
       ? params.transports
       : hasInternetAccess

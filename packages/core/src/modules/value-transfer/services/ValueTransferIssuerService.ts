@@ -1,7 +1,7 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
 import type { CashMintedEvent } from '../ValueTransferEvents'
 import type { MintResponseMessage } from '../messages/MintResponseMessage'
-import type { Logger } from '@aries-framework/core'
 
 import { Giver } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -12,7 +12,6 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { tryCreateSicpaContextLogger } from '../logger'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
@@ -36,7 +35,7 @@ export class ValueTransferIssuerService {
     eventEmitter: EventEmitter
   ) {
     this.label = config.label
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP'])
+    this.logger = config.logger.createContextLogger('VTP')
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
     this.giver = new Giver(
@@ -44,7 +43,7 @@ export class ValueTransferIssuerService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
+        logger: this.logger.createContextLogger('Giver'),
       },
       {
         witness: config.valueTransferWitnessDid,
