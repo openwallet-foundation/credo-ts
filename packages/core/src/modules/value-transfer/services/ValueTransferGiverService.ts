@@ -11,7 +11,6 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { tryCreateSicpaContextLogger } from '../logger'
 import { OfferMessage } from '../messages'
 import { ValueTransferRepository } from '../repository'
 
@@ -39,7 +38,7 @@ export class ValueTransferGiverService {
     valueTransferTransportService: ValueTransferTransportService,
     eventEmitter: EventEmitter
   ) {
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-GiverService'])
+    this.logger = config.logger.createContextLogger('VTP-GiverService')
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferService = valueTransferService
     this.valueTransferCryptoService = valueTransferCryptoService
@@ -51,7 +50,7 @@ export class ValueTransferGiverService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
+        logger: this.logger.createContextLogger('Giver'),
       },
       {
         witness: config.valueTransferWitnessDid,

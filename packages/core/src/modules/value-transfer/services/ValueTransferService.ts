@@ -33,7 +33,6 @@ import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQuer
 import { WitnessStateRepository } from '../../gossip/repository/WitnessStateRepository'
 import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { tryCreateSicpaContextLogger } from '../logger'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
@@ -76,7 +75,7 @@ export class ValueTransferService {
     eventEmitter: EventEmitter,
     messageSender: MessageSender
   ) {
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-Service'])
+    this.logger = config.logger.createContextLogger('VTP-Service')
     this.config = config
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
@@ -93,7 +92,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Getter']),
+        logger: this.logger.createContextLogger('Getter'),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -105,7 +104,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Giver']),
+        logger: this.logger.createContextLogger('Giver'),
       },
       {
         witness: config.valueTransferWitnessDid,
@@ -117,7 +116,7 @@ export class ValueTransferService {
         crypto: valueTransferCryptoService,
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Witness']),
+        logger: this.logger.createContextLogger('Witness'),
         gossip: gossipService,
       },
       {

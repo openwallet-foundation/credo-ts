@@ -9,7 +9,6 @@ import { DIDCommV2Message } from '../../../agent/didcomm/v2/DIDCommV2Message'
 import { injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidResolverService } from '../../dids/services/DidResolverService'
-import { tryCreateSicpaContextLogger } from '../logger'
 
 @injectable()
 export class ValueTransferTransportService implements VtpTransportInterface {
@@ -18,7 +17,7 @@ export class ValueTransferTransportService implements VtpTransportInterface {
   private messageSender: MessageSender
 
   public constructor(config: AgentConfig, messageSender: MessageSender, didResolverService: DidResolverService) {
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-TransportService'])
+    this.logger = config.logger.createContextLogger('VTP-TransportService')
     this.messageSender = messageSender
     this.didResolverService = didResolverService
   }

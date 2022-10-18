@@ -12,8 +12,11 @@ export enum LogLevel {
 }
 
 export interface LogData extends Record<string, any> {
-  context?: string
   logId?: string
+}
+
+export interface EnrichedLogMessage extends LogData {
+  context?: string
 }
 
 export interface Logger {
@@ -26,10 +29,8 @@ export interface Logger {
   warn(message: string, data?: LogData): void
   error(message: string, data?: LogData): void
   fatal(message: string, data?: LogData): void
-}
 
-export interface LogContext extends Record<string, any> {
-  context: string
+  createContextLogger(context: string): Logger
 }
 
 export const LogContexts = {

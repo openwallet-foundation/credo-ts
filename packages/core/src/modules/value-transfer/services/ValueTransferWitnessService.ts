@@ -13,7 +13,6 @@ import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { GossipService } from '../../gossip/service/GossipService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
-import { tryCreateSicpaContextLogger } from '../logger'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
@@ -39,7 +38,7 @@ export class ValueTransferWitnessService {
     gossipService: GossipService,
     eventEmitter: EventEmitter
   ) {
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-WitnessService'])
+    this.logger = config.logger.createContextLogger('VTP-WitnessService')
     this.label = config.label
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
@@ -57,7 +56,7 @@ export class ValueTransferWitnessService {
         crypto: valueTransferCryptoService,
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
-        logger: tryCreateSicpaContextLogger(this.logger, ['Witness']),
+        logger: this.logger.createContextLogger('Witness'),
         gossip: gossipService,
       },
       {
