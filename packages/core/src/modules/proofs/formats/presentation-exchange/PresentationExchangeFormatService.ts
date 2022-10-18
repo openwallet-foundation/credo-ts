@@ -2,8 +2,6 @@ import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
 import type { Query } from '../../../../storage/StorageService'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
-import type { W3cCredentialRecord } from '../../../vc/models/credential/W3cCredentialRecord'
-import type { W3cPresentation } from '../../../vc/models/presentation/W3Presentation'
 import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
@@ -46,7 +44,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { DidResolverService, keyReferenceToKey, keyTypeToProofType } from '../../../dids'
-import { W3cCredentialService } from '../../../vc'
+import { W3cCredentialRecord, W3cCredentialService, W3cPresentation } from '../../../vc'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
@@ -328,7 +326,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     const params: PresentationSignOptions = {
       holder: subject.id,
       proofOptions: {
-        // type: ProofType.Ed25519Signature2018, // TO-CHECK - signature in the presentation or get it from DIDDoc
         type: proofType,
         proofPurpose: ProofPurpose.assertionMethod,
         challenge: requestPresentation.options?.challenge,
@@ -336,7 +333,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       signatureOptions: {
         verificationMethod: (didResolutionResult.didDocument?.authentication[0]).toString(),
         keyEncoding: KeyEncoding.Base58,
-        // privateKey: didResolutionResult.didDocument.verificationMethod[0].publicKeyBase58,
         privateKey: privateKey.publicKeyBase58,
       },
     }
@@ -472,7 +468,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       !presentationExchange.formats.verifiableCredential ||
       presentationExchange.formats.verifiableCredential.length === 0
     ) {
-      throw new AriesFrameworkError('')
+      throw new AriesFrameworkError('No credentials provided')
     }
 
     // check if this is INFO / (maybe WARNING. check when this is warning?)
@@ -483,6 +479,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     //  for each group I need to know which credentials it needs
 
     // How to auto select the credentials:
+    for (const credential of presentationExchange.formats.verifiableCredential) {
+      console.log("CREDENTIAL = ", credential)
+    }
     //  1. loop over all matches and find the first match for each submission requirement
     //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
     // We probably also need to return the selected matches we used so we can use those to create the presentation submission

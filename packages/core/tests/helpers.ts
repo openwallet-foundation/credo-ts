@@ -12,6 +12,7 @@ import type {
   SchemaTemplate,
   Wallet,
 } from '../src'
+import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { SignCredentialOptionsRFC0593 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
@@ -77,7 +78,11 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
 
-export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentOptions<AgentModules extends AgentModulesInput>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  modules?: AgentModules
+) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -92,6 +97,7 @@ export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> =
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        indyNamespace: `pool:localtest`,
         transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
@@ -101,7 +107,7 @@ export function getAgentOptions(name: string, extraConfig: Partial<InitConfig> =
     ...extraConfig,
   }
 
-  return { config, dependencies: agentDependencies } as const
+  return { config, modules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -130,6 +136,7 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
     indyLedgers: [
       {
         id: `pool-${name}`,
+        indyNamespace: `pool:localtest`,
         isProduction: false,
         genesisPath,
       },
@@ -222,7 +229,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 20000,
+    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -304,7 +311,9 @@ export function getMockConnection({
 export function getMockOutOfBand({
   label,
   serviceEndpoint,
-  recipientKeys,
+  recipientKeys = [
+    new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
+  ],
   mediatorId,
   role,
   state,
@@ -332,9 +341,7 @@ export function getMockOutOfBand({
         id: `#inline-0`,
         priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
-        recipientKeys: recipientKeys || [
-          new DidKey(Key.fromPublicKeyBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7', KeyType.Ed25519)).did,
-        ],
+        recipientKeys,
         routingKeys: [],
       }),
     ],
@@ -347,6 +354,9 @@ export function getMockOutOfBand({
     outOfBandInvitation: outOfBandInvitation,
     reusable,
     reuseConnectionId,
+    tags: {
+      recipientKeyFingerprints: recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+    },
   })
   return outOfBandRecord
 }

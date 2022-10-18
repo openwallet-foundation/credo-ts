@@ -2,9 +2,11 @@ import type { Schema } from 'indy-sdk'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { didFromSchemaId } from '../../../utils/did'
+import { uuid } from '../../../utils/uuid'
 
 export interface AnonCredsSchemaRecordProps {
   schema: Schema
+  id?: string
 }
 
 export type DefaultAnonCredsSchemaTags = {
@@ -17,12 +19,14 @@ export type DefaultAnonCredsSchemaTags = {
 export class AnonCredsSchemaRecord extends BaseRecord<DefaultAnonCredsSchemaTags> {
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
+
   public readonly schema!: Schema
 
   public constructor(props: AnonCredsSchemaRecordProps) {
     super()
 
     if (props) {
+      this.id = props.id ?? uuid()
       this.schema = props.schema
     }
   }

@@ -105,6 +105,24 @@ export class AgentConfig {
     return this.initConfig.maximumMessagePickup ?? 10
   }
 
+  public get baseMediatorReconnectionIntervalMs() {
+    return this.initConfig.baseMediatorReconnectionIntervalMs ?? 100
+  }
+
+  public get maximumMediatorReconnectionIntervalMs() {
+    return this.initConfig.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
+  }
+
+  /**
+   * Encode keys in did:key format instead of 'naked' keys, as stated in Aries RFC 0360.
+   *
+   * This setting will not be taken into account if the other party has previously used naked keys
+   * in a given protocol (i.e. it does not support Aries RFC 0360).
+   */
+  public get useDidKeyInProtocols() {
+    return this.initConfig.useDidKeyInProtocols ?? false
+  }
+
   public get endpoints(): [string, ...string[]] {
     // if endpoints is not set, return queue endpoint
     // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875

@@ -946,16 +946,8 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       if (!shouldAutoRespondToFormat) return false
     }
 
-    // not all formats use the proposal and preview, we only check if they're present on
-    // either or both of the messages
-    const noProposePreview =
-      !proposalMessage.credentialPreview || proposalMessage.credentialPreview.attributes.length === 0
-    const noOfferPreview = !offerMessage.credentialPreview || offerMessage.credentialPreview.attributes.length === 0
-
-    if (noProposePreview || noOfferPreview) {
-      // if one of the message doesn't have a preview, we should not auto accept
-      if (!noProposePreview || !noOfferPreview) return false
-
+    // if one of the message doesn't have a preview, we should not auto accept
+    if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
       // Check if preview values match
       return arePreviewAttributesEqual(
         proposalMessage.credentialPreview?.attributes ?? [],

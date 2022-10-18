@@ -66,6 +66,7 @@
       "theirLabel": "Agent: PopulateWallet2",
       "state": "complete",
       "role": "invitee",
+      "alias": "connection alias",
       "invitation": {
         "@type": "https://didcomm.org/connections/1.0/invitation",
         "@id": "d56fd7af-852e-458e-b750-7a4f4e53d6e6",

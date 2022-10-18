@@ -1,4 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 import type { DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
   AcceptCredentialOptions,
@@ -74,6 +75,7 @@ export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends Cred
 
   // Record Methods
   getAll(): Promise<CredentialExchangeRecord[]>
+  findAllByQuery(query: Query<CredentialExchangeRecord>): Promise<CredentialExchangeRecord[]>
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
@@ -579,6 +581,15 @@ export class CredentialsApi<
    */
   public getAll(): Promise<CredentialExchangeRecord[]> {
     return this.credentialRepository.getAll(this.agentContext)
+  }
+
+  /**
+   * Retrieve all credential records by specified query params
+   *
+   * @returns List containing all credential records matching specified query paramaters
+   */
+  public findAllByQuery(query: Query<CredentialExchangeRecord>) {
+    return this.credentialRepository.findByQuery(this.agentContext, query)
   }
 
   /**

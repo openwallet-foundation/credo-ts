@@ -1,9 +1,9 @@
 import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
+import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
-import type { ResolvedDidCommService } from './MessageSender'
 
 export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   connection: ConnectionRecord,

@@ -3,9 +3,11 @@ import type { Wallet } from '../../../wallet'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { getAgentOptions } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { InjectionSymbols } from '../../../constants'
+import { Key, KeyType } from '../../../crypto'
+import { JsonTransformer } from '../../../utils'
 import { sleep } from '../../../utils/sleep'
-
-import { InjectionSymbols, Key, KeyType, JsonTransformer, Agent } from '@aries-framework/core'
 
 describe('dids', () => {
   let agent: Agent

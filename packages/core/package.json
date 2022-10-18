@@ -2,7 +2,7 @@
   "name": "@aries-framework/core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "files": [
     "build"
   ],
@@ -26,8 +26,6 @@
     "@digitalcredentials/jsonld": "^5.2.1",
     "@digitalcredentials/jsonld-signatures": "^9.3.1",
     "@digitalcredentials/vc": "^1.1.2",
-    "@mattrglobal/bbs-signatures": "^1.0.0",
-    "@mattrglobal/bls12381-key-pair": "^1.0.0",
     "@multiformats/base-x": "^4.0.1",
     "@sphereon/pex": "^1.1.0",
     "@stablelib/ed25519": "^1.0.2",
