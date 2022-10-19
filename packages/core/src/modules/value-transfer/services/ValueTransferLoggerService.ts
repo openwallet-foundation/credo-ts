@@ -4,7 +4,6 @@ import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { injectable } from '../../../plugins'
-import { tryCreateSicpaContextLogger } from '../logger'
 
 @injectable()
 export class ValueTransferLoggerService implements ValueTransferLogger {
@@ -12,7 +11,7 @@ export class ValueTransferLoggerService implements ValueTransferLogger {
   private logger: Logger
 
   public constructor(config: AgentConfig) {
-    this.logger = tryCreateSicpaContextLogger(config.logger, ['VTP-LogService'])
+    this.logger = config.logger.createContextLogger('VTP-LogService')
     this.logLevel = config.logger.logLevel
   }
 

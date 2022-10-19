@@ -1,5 +1,7 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
+import type { Logger } from './Logger'
+
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 import { replaceError } from './replaceError'
@@ -26,11 +28,13 @@ export class ConsoleLogger extends BaseLogger {
     // Return early if logging is not enabled for this level
     if (!this.isEnabled(level)) return
 
+    const { context, logId } = this.getEnrichedMessage(data)
+    const enrichedLogString = [context, logId].filter((x) => x != null).join(':')
     // Log, with or without data
     if (data) {
-      console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, replaceError, 2))
+      console[consoleLevel](`${prefix}:${enrichedLogString} ${message}`, JSON.stringify(data, replaceError, 2))
     } else {
-      console[consoleLevel](`${prefix}: ${message}`)
+      console[consoleLevel](`${prefix}:${enrichedLogString} ${message}`)
     }
   }
 
@@ -60,5 +64,10 @@ export class ConsoleLogger extends BaseLogger {
 
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
+  }
+
+  public createContextLogger(context: string): Logger {
+    const mergedContext = [this.context, context].filter((x) => x != null).join('|')
+    return new ConsoleLogger(this.logLevel, mergedContext)
   }
 }

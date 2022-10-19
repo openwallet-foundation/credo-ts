@@ -115,6 +115,11 @@ export interface InitConfig {
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
+  mediatorWebSocketConfig?: Partial<{
+    startReconnectIntervalMs: number
+    maxReconnectIntervalMs: number
+    intervalStepMs: number
+  }>
   mediatorPickupStrategy?: MediatorPickupStrategy
   mediatorDeliveryStrategy?: MediatorDeliveryStrategy
   mediatorPushToken?: string
@@ -129,11 +134,10 @@ export interface InitConfig {
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
-  emulateOfflineCase?: boolean
-
-  defaultPingAddress?: string
 
   autoUpdateStorageOnStartup?: boolean
+
+  internetChecker?: InternetChecker
 
   microOrmForWitness?: MikroORM
 }
@@ -203,4 +207,8 @@ export interface TransportPriorityOptions {
 
 export type SendMessageOptions = {
   transportPriority?: TransportPriorityOptions
+}
+
+export interface InternetChecker {
+  hasInternetAccess(): Promise<boolean>
 }

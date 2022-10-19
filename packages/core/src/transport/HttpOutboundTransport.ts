@@ -10,6 +10,7 @@ import { AbortController } from 'abort-controller'
 import { AgentConfig } from '../agent/AgentConfig'
 import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
+import { LogContexts } from '../logger'
 import { isValidJweStructure, JsonEncoder } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
@@ -23,7 +24,7 @@ export class HttpOutboundTransport implements OutboundTransport {
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
     this.agentConfig = agent.dependencyManager.resolve(AgentConfig)
-    this.logger = this.agentConfig.logger
+    this.logger = this.agentConfig.logger.createContextLogger(LogContexts.HttpOutboundTransport.context)
     this.fetch = this.agentConfig.agentDependencies.fetch
 
     this.logger.debug('Starting HTTP outbound transport')
@@ -110,6 +111,7 @@ export class HttpOutboundTransport implements OutboundTransport {
         message: error.message,
         body: payload,
         didCommMimeType: this.agentConfig.didCommMimeType,
+        logId: LogContexts.HttpOutboundTransport.errorSendingMessage,
       })
       throw new AriesFrameworkError(`Error sending message to ${endpoint}: ${error.message}`, { cause: error })
     }
