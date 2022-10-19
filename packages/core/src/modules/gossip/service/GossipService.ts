@@ -1,8 +1,14 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { GossipInterface, TransactionRecord, WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { SqliteDriver } from '@mikro-orm/sqlite'
+import type {
+  GossipInterface,
+  TransactionRecord,
+  GossipStorageOrmRepository,
+} from '@sicpa-dlab/witness-gossip-protocol-ts'
 
+import { MikroORM } from '@mikro-orm/core'
 import {
   makeOrmGossipStorage,
   WitnessGossipInfo,
@@ -10,6 +16,11 @@ import {
   WitnessTableQuery,
   Gossip,
   initGossipSqlite,
+  PartyStateHashEntity,
+  WitnessDetailsEntity,
+  WitnessMappingTableEntity,
+  WitnessDetails,
+  MappingTable,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -56,14 +67,30 @@ export class GossipService implements GossipInterface {
   }
 
   public async init(dbConnectionString: string): Promise<void> {
-    const orm = await initGossipSqlite(dbConnectionString)
+    // const orm = await initGossipSqlite(dbConnectionString)
 
+    const orm = await MikroORM.init<SqliteDriver>({
+      debug: true,
+      // entitiesTs: ['./src/data-access/entities'],
+      // entities: ['./build/data-access/entities'],
+      entities: [PartyStateHashEntity, WitnessDetailsEntity, WitnessMappingTableEntity],
+      type: 'sqlite',
+      dbName: dbConnectionString,
+      schemaGenerator: {},
+      // baseDir:
+      //   '/Users/dmitry-vychikov/Projects/DSR/sicpa/aries-framework-javascript/emulator/node_modules/@sicpa-dlab/witness-gossip-protocol-ts',
+    })
+
+    const generator = orm.getSchemaGenerator()
+    await generator.refreshDatabase()
+
+    const storageV2 = makeOrmGossipStorage(orm).gossipStorage
     this.gossip = new Gossip(
       {
         logger: this.gossipLoggerService,
         crypto: this.gossipCryptoService,
         storage: this.witnessGossipStateService,
-        storageV2: makeOrmGossipStorage(orm).gossipStorage,
+        storageV2: storageV2,
         transport: this.gossipTransportService,
         metrics: this.config.witnessGossipMetrics,
       },
@@ -77,11 +104,11 @@ export class GossipService implements GossipInterface {
       }
     )
 
-    await this.initState()
+    await this.initState(storageV2)
     await this.startGossiping()
   }
 
-  private async initState(): Promise<void> {
+  private async initState(gossipRepository: GossipStorageOrmRepository): Promise<void> {
     this.config.logger.info('> Witness Gossip state initialization started')
 
     const existingState = await this.witnessStateRepository.findSingleByQuery({})
@@ -109,8 +136,16 @@ export class GossipService implements GossipInterface {
     const state = new WitnessStateRecord({
       witnessState,
     })
-
     await this.witnessStateRepository.save(state)
+
+    const info = new WitnessDetails({ wid: config.wid, did: did.did })
+    const mappingTable = new MappingTable(config.knownWitnesses)
+
+    this.config.logger.info('Setting info to db', info)
+    await gossipRepository.setMyInfo(info)
+    this.config.logger.info('Info set to db')
+
+    await gossipRepository.setMappingTable(mappingTable)
 
     this.config.logger.info('< Witness Gossip state initialization completed!')
   }
