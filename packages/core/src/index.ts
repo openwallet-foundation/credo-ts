@@ -2,6 +2,7 @@
 import 'reflect-metadata'
 
 export { Agent } from './agent/Agent'
+export { InternetChecker } from './types'
 export { EventEmitter } from './agent/EventEmitter'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export { InboundMessageContext } from './agent/models/InboundMessageContext'

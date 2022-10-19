@@ -20,7 +20,7 @@ import { inject, injectable } from 'tsyringe'
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
-import { Logger } from '../logger'
+import { LogContexts, Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
@@ -66,7 +66,7 @@ export class MessageSender {
     this.envelopeService = envelopeService
     this.transportService = transportService
     this.messageRepository = messageRepository
-    this.logger = logger
+    this.logger = logger.createContextLogger(LogContexts.MessageSender.context)
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
     this.outOfBandRepository = outOfBandRepository
@@ -248,6 +248,7 @@ export class MessageSender {
     mayProxyVia?: string
   ) {
     this.logger.debug(`Prepare to send DIDCommV2 message ${message.id}`, {
+      logId: LogContexts.MessageSender.prepareToSend,
       message,
       sendingMessageType,
       mayProxyVia,

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { Logger as AriesLoggerInterface } from '../src/logger/Logger'
 import type { ILogObject } from 'tslog'
 
 import { appendFileSync } from 'fs'
@@ -27,7 +28,7 @@ export class TestLogger extends BaseLogger {
     [LogLevel.fatal]: 'fatal',
   } as const
 
-  public constructor(logLevel: LogLevel, name?: string) {
+  public constructor(logLevel: LogLevel, private name?: string) {
     super(logLevel)
 
     this.logger = new Logger({
@@ -90,6 +91,10 @@ export class TestLogger extends BaseLogger {
 
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
+  }
+
+  public createContextLogger(context: string): AriesLoggerInterface {
+    return new TestLogger(this.logLevel, context ?? this.name)
   }
 }
 

@@ -7,8 +7,20 @@ import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { Subscription } from 'rxjs'
 
-import { of, firstValueFrom, interval, ReplaySubject, Subject, timer } from 'rxjs'
-import { catchError, map, filter, first, takeUntil, throttleTime, timeout, tap, delayWhen } from 'rxjs/operators'
+import {
+  of,
+  firstValueFrom,
+  interval,
+  ReplaySubject,
+  Subject,
+  startWith,
+  throttleTime,
+  tap,
+  delayWhen,
+  timer,
+  merge,
+} from 'rxjs'
+import { catchError, map, filter, first, takeUntil, timeout, retry } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -16,6 +28,7 @@ import { EventEmitter } from '../../agent/EventEmitter'
 import { AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { AriesFrameworkError } from '../../error'
+import { LogContexts } from '../../logger'
 import { injectable, module } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
 import { ConnectionService } from '../connections/services/ConnectionService'
@@ -37,10 +50,6 @@ import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
 import { Transports } from './types'
 
-const DEFAULT_WS_RECONNECTION_INTERVAL = 1500
-const WS_RECONNECTION_INTERVAL_STEP = 500
-const MAX_WS_RECONNECTION_INTERVAL = 5000
-
 @module()
 @injectable()
 export class RecipientModule {
@@ -58,6 +67,8 @@ export class RecipientModule {
 
   // stopMessagePickup$ is used for stop message pickup signal
   private readonly stopMessagePickup$ = new Subject<boolean>()
+
+  private readonly triggerMediatorReconnect$ = new Subject<void>()
 
   public constructor(
     dispatcher: Dispatcher,
@@ -79,7 +90,7 @@ export class RecipientModule {
     this.mediationRecipientService = mediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.logger = agentConfig.logger
+    this.logger = agentConfig.logger.createContextLogger(LogContexts.RecipientModule.context)
     this.discoverFeaturesModule = discoverFeaturesModule
     this.mediationRepository = mediationRepository
     this.routingService = routingService
@@ -127,29 +138,42 @@ export class RecipientModule {
     try {
       await this.messageSender.sendDIDCommV2Message(message, undefined, [Transports.WSS, Transports.WS])
     } catch (error) {
-      this.logger.warn('Unable to open websocket connection to mediator', { error })
+      this.logger.warn('Unable to open websocket connection to mediator', {
+        error,
+        logId: LogContexts.RecipientModule.mediationWebSocketUnableToOpenConnection,
+      })
+      return Promise.reject('Failed to open mediation web socket')
     }
   }
 
   private async initiateImplicitPickup(mediator: MediationRecord) {
-    let interval = DEFAULT_WS_RECONNECTION_INTERVAL
-
     // Listens to Outbound websocket closed events and will reopen the websocket connection
     // in a recursive back off strategy if it matches the following criteria:
     // - Agent is not shutdown
     // - Socket was for current mediation DID
-    this.eventEmitter
-      .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+
+    const { startReconnectIntervalMs, maxReconnectIntervalMs, intervalStepMs } =
+      this.agentConfig.mediatorWebSocketConfig
+
+    let interval = startReconnectIntervalMs
+
+    merge(
+      this.eventEmitter
+        .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+        .pipe(map((event) => ({ mediatorDid: event.payload.did }))),
+      this.triggerMediatorReconnect$.pipe(map(() => ({ mediatorDid: mediator.did })))
+    )
       .pipe(
         // Stop when the agent shuts down
         takeUntil(this.agentConfig.stop$),
-        filter((e) => e.payload.did === mediator.did),
+        filter(({ mediatorDid }) => mediatorDid === mediator.did),
+        startWith(),
         // Make sure we're not reconnecting multiple times
-        throttleTime(interval),
+        throttleTime(startReconnectIntervalMs),
         // Increase the interval (recursive back-off)
         tap(() => {
-          if (interval < MAX_WS_RECONNECTION_INTERVAL) {
-            interval += WS_RECONNECTION_INTERVAL_STEP
+          if (interval < maxReconnectIntervalMs) {
+            interval += intervalStepMs
           }
         }),
         // Wait for interval time before reconnecting
@@ -160,10 +184,13 @@ export class RecipientModule {
           `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
         )
         // Try to reconnect to WebSocket and reset retry interval if successful
-        await this.openMediationWebSocket(mediator).then(() => (interval = DEFAULT_WS_RECONNECTION_INTERVAL))
+        await this.openMediationWebSocket(mediator)
+          .then(() => (interval = startReconnectIntervalMs))
+          .catch(() => {
+            //Nothing
+            //Silence the error because we don't care about it
+          })
       })
-
-    await this.openMediationWebSocket(mediator)
   }
 
   private async initiateExplicitPickup(mediator: MediationRecord): Promise<Subscription> {
@@ -397,5 +424,9 @@ export class RecipientModule {
     // Repositories
     dependencyManager.registerSingleton(MediationRepository)
     dependencyManager.registerSingleton(MediatorRoutingRepository)
+  }
+
+  public reconnectToMediator(): void {
+    this.triggerMediatorReconnect$.next()
   }
 }
