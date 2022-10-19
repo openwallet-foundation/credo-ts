@@ -15,11 +15,8 @@ import type {
 import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
-import type { GetFormatDataReturn } from '../src/modules/proofs/models/ProofServiceOptions'
-import type { CredDef, IndyProofRequest, Schema } from 'indy-sdk'
+import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
