@@ -1,7 +1,7 @@
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { TrustPingMessageV2, TellDidMessage, TellDidResponseMessage } from './messages'
-import type { ConnectionType, TellDidState } from './models'
+import type { TrustPingMessageV2, ShareContactRequestMessage, ShareContactResponseMessage } from './messages'
+import type { ConnectionType, ShareContactState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -29,12 +29,12 @@ import {
   DidExchangeCompleteHandler,
   TrustPingResponseMessageV2Handler,
   TrustPingMessageV2Handler,
-  TellDidMessageHandler,
-  TellDidResponseHandler,
+  ShareContactRequestHandler,
+  ShareContactResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionRepository } from './repository'
-import { TellDidService } from './services'
+import { ShareContactService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -46,7 +46,7 @@ export class ConnectionsModule {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandServiceV2
   private messageSender: MessageSender
-  private tellDidService: TellDidService
+  private shareContactService: ShareContactService
   private trustPingService: TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -58,7 +58,7 @@ export class ConnectionsModule {
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandServiceV2,
-    tellDidService: TellDidService,
+    shareContactService: ShareContactService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
@@ -69,7 +69,7 @@ export class ConnectionsModule {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
-    this.tellDidService = tellDidService
+    this.shareContactService = shareContactService
     this.trustPingService = trustPingService
     this.routingService = routingService
     this.didRepository = didRepository
@@ -263,46 +263,46 @@ export class ConnectionsModule {
   }
 
   /**
-   * Share public DID with other party by sending Tell Did message
+   * Share public DID with other party by sending Share Contact Request message
    *
    * @param to DID of recipient
-   * @param parentThreadId ID of Out-of-Band message from recipient
+   * @param invitationId ID of Out-of-Band invitation from recipient
    *
-   * @returns The sent Trust Ping message
+   * @returns The sent Share Contact Request message
    */
-  public sendTellDidMessage(to: string, parentThreadId?: string): Promise<TellDidMessage> {
-    return this.tellDidService.sendTellDidMessage(to, parentThreadId)
+  public sendShareContactRequest(to: string, invitationId: string): Promise<ShareContactRequestMessage> {
+    return this.shareContactService.sendShareContactRequest(to, invitationId)
   }
 
   /**
-   * Await response on Tell Did message
+   * Await response on Share Contact message
    *
-   * @param id ID of sent Tell Did message
+   * @param id ID of sent Share Contact message
    * @param timeoutMs Milliseconds to wait for response
    */
-  public async awaitTellDidCompleted(id: string, timeoutMs = 20000): Promise<TellDidState> {
-    const completionEvent = await this.tellDidService.awaitTellDidCompleted(id, timeoutMs)
+  public async awaitShareContactCompleted(id: string, timeoutMs = 20000): Promise<ShareContactState> {
+    const completionEvent = await this.shareContactService.awaitShareContactCompleted(id, timeoutMs)
     return completionEvent.payload.state
   }
 
   /**
-   * Accept remote DID from Tell Did message
+   * Accept contact request from Share Contact Request message
    *
-   * @param did Remote Did to accept
-   * @param threadId Thread Id of Tell Did protocol
+   * @param contactDid Contact Did
+   * @param threadId Thread Id of Share Contact protocol
    */
-  public async acceptRemoteDid(did: string, threadId: string): Promise<TellDidResponseMessage> {
-    return this.tellDidService.acceptRemoteDid(did, threadId)
+  public async acceptContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.acceptContact(contactDid, threadId)
   }
 
   /**
-   * Decline remote DID from Tell Did message
+   * Decline contact request from Share Contact Request message
    *
-   * @param did Remote Did to accept
-   * @param threadId Thread Id of Tell Did protocol
+   * @param contactDid Contact Did
+   * @param threadId Thread Id of Share Contact protocol
    */
-  public async declineRemoteDid(did: string, threadId: string): Promise<TellDidResponseMessage> {
-    return this.tellDidService.declineRemoteDid(did, threadId)
+  public async declineContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.declineContact(contactDid, threadId)
   }
 
   /**
@@ -446,8 +446,8 @@ export class ConnectionsModule {
     )
     dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
 
-    dispatcher.registerHandler(new TellDidMessageHandler(this.tellDidService))
-    dispatcher.registerHandler(new TellDidResponseHandler(this.tellDidService))
+    dispatcher.registerHandler(new ShareContactRequestHandler(this.shareContactService))
+    dispatcher.registerHandler(new ShareContactResponseHandler(this.shareContactService))
   }
 
   /**
@@ -460,7 +460,7 @@ export class ConnectionsModule {
     // Services
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
-    dependencyManager.registerSingleton(TellDidService)
+    dependencyManager.registerSingleton(ShareContactService)
     dependencyManager.registerSingleton(TrustPingService)
 
     // Repositories
