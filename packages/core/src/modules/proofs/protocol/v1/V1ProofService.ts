@@ -122,9 +122,6 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { connectionRecord, proofFormats } = options
 
-    if (!connectionRecord) {
-      throw new AriesFrameworkError('Missing Connection Record in CreateProposalOptions')
-    }
     // Assert
     connectionRecord.assertReady()
 
