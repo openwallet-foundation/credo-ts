@@ -1,7 +1,8 @@
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
+import type { ShareContactStateChangedEvent } from './ConnectionEvents'
 import type { TrustPingMessageV2, ShareContactRequestMessage, ShareContactResponseMessage } from './messages'
-import type { ConnectionType, ShareContactState } from './models'
+import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -280,9 +281,8 @@ export class ConnectionsModule {
    * @param id ID of sent Share Contact message
    * @param timeoutMs Milliseconds to wait for response
    */
-  public async awaitShareContactCompleted(id: string, timeoutMs = 20000): Promise<ShareContactState> {
-    const completionEvent = await this.shareContactService.awaitShareContactCompleted(id, timeoutMs)
-    return completionEvent.payload.state
+  public async awaitShareContactCompleted(id: string, timeoutMs = 20000): Promise<ShareContactStateChangedEvent> {
+    return this.shareContactService.awaitShareContactCompleted(id, timeoutMs)
   }
 
   /**

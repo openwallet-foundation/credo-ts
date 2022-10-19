@@ -103,9 +103,11 @@ export class ShareContactService {
     this.eventEmitter.emit<ShareContactStateChangedEvent>({
       type: ShareContactEventTypes.ShareContactStateChanged,
       payload: {
-        contactDid: message.from,
-        state: ShareContactState.Received,
-        thid: message.id,
+        request: {
+          contactDid: message.from,
+          state: ShareContactState.Received,
+          thid: message.id,
+        },
       },
     })
 
@@ -118,10 +120,14 @@ export class ShareContactService {
     this.eventEmitter.emit<ShareContactStateChangedEvent>({
       type: ShareContactEventTypes.ShareContactStateChanged,
       payload: {
-        contactDid: message.from,
-        state:
-          message.body.result === ShareContactResult.Accepted ? ShareContactState.Accepted : ShareContactState.Declined,
-        thid: message.thid ?? message.id,
+        request: {
+          contactDid: message.from,
+          state:
+            message.body.result === ShareContactResult.Accepted
+              ? ShareContactState.Accepted
+              : ShareContactState.Declined,
+          thid: message.thid ?? message.id,
+        },
       },
     })
 
@@ -136,11 +142,13 @@ export class ShareContactService {
 
     observable
       .pipe(
-        first(
-          (event) =>
-            id === event.payload.thid &&
-            (event.payload.state === ShareContactState.Accepted || event.payload.state === ShareContactState.Declined)
-        ),
+        first((event) => {
+          const request = event.payload.request
+          return (
+            request.thid === id &&
+            (request.state === ShareContactState.Accepted || request.state === ShareContactState.Declined)
+          )
+        }),
         timeout(timeoutMs)
       )
       .subscribe(subject)

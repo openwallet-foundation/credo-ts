@@ -107,7 +107,7 @@ export class OutOfBandService {
           message.id
         )
         const completionEvent = await this.shareContactService.awaitShareContactCompleted(shareContactRequest.id, 60000)
-        if (completionEvent.payload.state === ShareContactState.Declined) return
+        if (completionEvent.payload.request.state === ShareContactState.Declined) return
       }
 
       await this.didService.storeRemoteDid({
