@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
-import type { MikroORM } from '@mikro-orm/core'
 import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
@@ -19,7 +18,6 @@ export interface EmulatorWitnessConfig {
   publicDidSeed?: string
   tockTime?: number
   knownWitnesses?: WitnessDetails[]
-  orm: MikroORM
 }
 
 export class Witness {
@@ -34,7 +32,7 @@ export class Witness {
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
-      logger: new ConsoleLogger(LogLevel.error),
+      logger: new ConsoleLogger(LogLevel.debug),
       staticDids: [
         {
           seed: witnessConfig.publicDidSeed,
@@ -54,7 +52,7 @@ export class Witness {
         },
       },
       transports: [Transports.HTTP],
-      microOrmForWitness: witnessConfig.orm,
+      gossipConnectionString: `gossip-emulator-${witnessConfig.label}`,
     }
 
     this.agent = new Agent(config, agentDependencies)
