@@ -1,6 +1,5 @@
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../../credentials'
-import type { IndyProofRequest } from '../../protocol/v1/messages/V1RequestPresentationMessage'
 import type {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
@@ -10,7 +9,7 @@ import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOpti
 import type { RequestedAttribute } from './models/RequestedAttribute'
 import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
 import type { RequestedPredicate } from './models/RequestedPredicate'
-import type { IndyProof } from 'indy-sdk'
+import type { IndyProof, IndyProofRequest } from 'indy-sdk'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
@@ -44,8 +43,6 @@ export interface IndyRetrievedCredentialsFormat {
   requestedPredicates: Record<string, RequestedPredicate[]>
 }
 
-export type IndyProofProposal = IndyProofRequest
-
 export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'
   proofRecordType: 'indy'
@@ -65,7 +62,7 @@ export interface IndyProofFormat extends ProofFormat {
   }
 
   formatData: {
-    proposal: IndyProofProposal
+    proposal: IndyProofRequest
     request: IndyProofRequest
     presentation: IndyProof
   }

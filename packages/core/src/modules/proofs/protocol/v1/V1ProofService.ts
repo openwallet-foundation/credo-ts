@@ -8,9 +8,8 @@ import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { IndyProofFormat, IndyProofProposal, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
+import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
-import type { ProofProposalOptions } from '../../formats/indy/models/ProofProposal'
 import type {
   CreateProblemReportOptions,
   FormatCreatePresentationOptions,
@@ -29,6 +28,7 @@ import type {
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
+import type { ProofRequestFormats } from '../../models/SharedOptions'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -45,7 +45,7 @@ import { MessageValidator } from '../../../../utils/MessageValidator'
 import { Wallet } from '../../../../wallet'
 import { AckStatus } from '../../../common/messages/AckMessage'
 import { ConnectionService } from '../../../connections'
-import { CredentialRepository, V1ProposeCredentialMessage } from '../../../credentials'
+import { CredentialRepository } from '../../../credentials'
 import { IndyCredentialInfo } from '../../../credentials/formats/indy/models/IndyCredentialInfo'
 import { IndyHolderService, IndyRevocationService } from '../../../indy'
 import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
@@ -53,7 +53,6 @@ import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
-import { ProofProposal } from '../../formats/indy/models/ProofProposal'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
 import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
@@ -123,6 +122,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
     const { connectionRecord, proofFormats } = options
 
+    if (!connectionRecord) {
+      throw new AriesFrameworkError('Missing Connection Record in CreateProposalOptions')
+    }
     // Assert
     connectionRecord.assertReady()
 
@@ -1010,9 +1012,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     ])
 
     const indyProposeProof = proposalMessage
-      ? JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage))
+      ? JsonTransformer.toJSON(await this.rfc0592ProposalFromV1ProposeMessage(proposalMessage))
       : undefined
-    const indyRequestProof = requestMessage?.indyProofRequestAsJSON ?? undefined
+    const indyRequestProof = requestMessage?.indyProofRequestJson ?? undefined
     const indyPresentProof = presentationMessage?.indyProof ?? undefined
 
     return {
@@ -1034,14 +1036,30 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     }
   }
 
-  private rfc0592ProposalFromV1ProposeMessage(proposalMessage: V1ProposePresentationMessage) {
-    const options: ProofProposalOptions = {
-      requestedAttributes: proposalMessage.presentationProposal.attributes,
-      requestedPredicates: proposalMessage.presentationProposal.predicates,
+  private async rfc0592ProposalFromV1ProposeMessage(
+    proposalMessage: V1ProposePresentationMessage
+  ): Promise<ProofRequest> {
+    const indyFormat: IndyProposeProofFormat = {
+      name: 'Proof Request',
+      version: '1.0',
+      nonce: await this.generateProofRequestNonce(),
+      attributes: proposalMessage.presentationProposal.attributes,
+      predicates: proposalMessage.presentationProposal.predicates,
     }
-    const indyProofProposal: ProofProposal = new ProofProposal(options)
 
-    return indyProofProposal
+    if (!indyFormat) {
+      throw new AriesFrameworkError('No Indy format found.')
+    }
+
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
+
+    if (!preview) {
+      throw new AriesFrameworkError(`No preview found`)
+    }
+    return IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
   }
   /**
    * Retrieve all proof records

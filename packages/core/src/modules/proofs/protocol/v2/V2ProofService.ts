@@ -109,6 +109,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       parentThreadId: options.parentThreadId,
     })
 
+    if (!options.connectionRecord) {
+      throw new AriesFrameworkError('Missing connection record')
+    }
     const proofRecord = new ProofRecord({
       connectionId: options.connectionRecord.id,
       threadId: proposalMessage.threadId,

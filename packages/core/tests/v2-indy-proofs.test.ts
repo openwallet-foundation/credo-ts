@@ -4,21 +4,10 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofProposal } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
-import {
-  AriesFrameworkError,
-  AttributeFilter,
-  PredicateType,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
-  ProofState,
-} from '../src'
+import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
 import {
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
@@ -32,7 +21,7 @@ import {
 } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { getKeysFromFormatData, setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -265,21 +254,8 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
-    const format = formatData.proposal?.indy
-    if (!format) {
-      throw new AriesFrameworkError('missing indy propose format')
-    }
-    const requestedAttributes: PresentationPreviewAttribute[] = format[
-      'requested_attributes' as keyof IndyProofProposal
-    ] as PresentationPreviewAttribute[]
-
-    const requestedPredicates: PresentationPreviewAttribute[] = format[
-      'requested_predicates' as keyof IndyProofProposal
-    ] as PresentationPreviewAttribute[]
-
-    // this key is dynamically generated
-    const key1 = Object.keys(requestedAttributes)[1]
-    const key2 = Object.keys(requestedPredicates)[0]
+    // eslint-disable-next-line prefer-const
+    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getKeysFromFormatData(formatData)
 
     expect(formatData).toMatchObject({
       proposal: {
@@ -291,7 +267,7 @@ describe('Present Proof', () => {
             0: {
               name: 'name',
             },
-            [key1]: {
+            [proposeKey1]: {
               name: 'image_0',
               restrictions: [
                 {
@@ -301,7 +277,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            [key2]: {
+            [proposeKey2]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -323,7 +299,7 @@ describe('Present Proof', () => {
             0: {
               name: 'name',
             },
-            [key1]: {
+            [requestKey1]: {
               name: 'image_0',
               restrictions: [
                 {
@@ -333,7 +309,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            [key2]: {
+            [requestKey2]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,

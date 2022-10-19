@@ -1,5 +1,3 @@
-import type { ProofProposal } from '../../../formats/indy/models/ProofProposal'
-
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -54,8 +52,4 @@ export class V1ProposePresentationMessage extends AgentMessage {
   @ValidateNested()
   @IsInstance(PresentationPreview)
   public presentationProposal!: PresentationPreview
-
-  public get indyProofProposal(): Record<string, unknown> {
-    return this.presentationProposal.toJSON()
-  }
 }

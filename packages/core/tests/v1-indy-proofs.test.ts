@@ -4,9 +4,10 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { ProofRequest } from '../src/modules/proofs/formats/indy/models'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { GetFormatDataReturn } from '../src/modules/proofs/models/ProofServiceOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { CredDefId } from 'indy-sdk'
+import type { CredDefId, IndyProofRequest } from 'indy-sdk'
 
 import { AriesFrameworkError } from '../src'
 import {
@@ -24,7 +25,7 @@ import {
 } from '../src/modules/proofs/protocol/v1/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupProofsTest, waitForProofRecord } from './helpers'
+import { getKeysFromFormatData, setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -265,51 +266,40 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
-    const proofRequest: ProofRequest | undefined = formatData.request?.indy ?? undefined
-
-    let key1, key2: string
-
-    if (!proofRequest) {
-      throw new AriesFrameworkError('missing indy proof request')
-    }
-    const attributes: Map<string, ProofAttributeInfo> = proofRequest[
-      'requested_attributes' as keyof ProofRequest
-    ] as Map<string, ProofAttributeInfo>
-    // these key is dynamically generated from UUID
-
     // eslint-disable-next-line prefer-const
-    key1 = Object.keys(attributes)[1]
-
-    const predicates: Map<string, ProofAttributeInfo> = proofRequest[
-      'requested_predicates' as keyof ProofRequest
-    ] as Map<string, ProofAttributeInfo>
-
-    // eslint-disable-next-line prefer-const
-    key2 = Object.keys(predicates)[0]
+    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getKeysFromFormatData(formatData)
 
     expect(formatData).toMatchObject({
       proposal: {
         indy: {
-          requested_attributes: [
-            {
-              cred_def_id: credDefId,
+          name: 'Proof Request',
+          version: '1.0',
+          nonce: expect.any(String),
+          requested_attributes: {
+            0: {
               name: 'name',
-              value: 'John',
-              referent: '0',
             },
-            {
-              cred_def_id: credDefId,
+            [proposeKey1]: {
               name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
             },
-          ],
-          requested_predicates: [
-            {
-              cred_def_id: credDefId,
+          },
+          requested_predicates: {
+            [proposeKey2]: {
               name: 'age',
-              predicate: '>=',
-              threshold: 50,
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
             },
-          ],
+          },
         },
       },
       request: {
@@ -321,7 +311,7 @@ describe('Present Proof', () => {
             0: {
               name: 'name',
             },
-            [key1]: {
+            [requestKey1]: {
               name: 'image_0',
               restrictions: [
                 {
@@ -331,7 +321,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            [key2]: {
+            [requestKey2]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
