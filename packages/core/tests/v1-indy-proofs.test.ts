@@ -4,12 +4,10 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { GetFormatDataReturn } from '../src/modules/proofs/models/ProofServiceOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { CredDefId, IndyProofRequest } from 'indy-sdk'
+import type { CredDefId } from 'indy-sdk'
 
-import { AriesFrameworkError } from '../src'
+import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
 import {
   ProofAttributeInfo,
   AttributeFilter,
@@ -25,7 +23,7 @@ import {
 } from '../src/modules/proofs/protocol/v1/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { getKeysFromFormatData, setupProofsTest, waitForProofRecord } from './helpers'
+import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -267,7 +265,7 @@ describe('Present Proof', () => {
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
     // eslint-disable-next-line prefer-const
-    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getKeysFromFormatData(formatData)
+    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getGroupKeysFromIndyProofFormatData(formatData)
 
     expect(formatData).toMatchObject({
       proposal: {

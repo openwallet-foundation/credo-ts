@@ -1053,9 +1053,6 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       predicates: indyFormat.predicates,
     })
 
-    if (!preview) {
-      throw new AriesFrameworkError(`No preview found`)
-    }
     return IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
   }
   /**

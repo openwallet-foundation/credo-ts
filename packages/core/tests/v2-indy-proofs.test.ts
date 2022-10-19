@@ -8,6 +8,7 @@ import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/mode
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
+import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
 import {
   V2_INDY_PRESENTATION_PROPOSAL,
   V2_INDY_PRESENTATION_REQUEST,
@@ -21,7 +22,7 @@ import {
 } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { getKeysFromFormatData, setupProofsTest, waitForProofRecord } from './helpers'
+import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -255,7 +256,7 @@ describe('Present Proof', () => {
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
 
     // eslint-disable-next-line prefer-const
-    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getKeysFromFormatData(formatData)
+    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getGroupKeysFromIndyProofFormatData(formatData)
 
     expect(formatData).toMatchObject({
       proposal: {
