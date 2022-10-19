@@ -244,4 +244,10 @@ export class AgentConfig {
     const pingUrl = this.initConfig.mediatorConnectionsInvite || 'https://www.google.com'
     return new DefaultInternetChecker(pingUrl, this.agentDependencies)
   }
+
+  public get gossipStorageConfig(): string {
+    const { gossipConnectionString } = this.initConfig
+    if (!gossipConnectionString) throw new Error('Gossip connection string is not provided')
+    return gossipConnectionString
+  }
 }

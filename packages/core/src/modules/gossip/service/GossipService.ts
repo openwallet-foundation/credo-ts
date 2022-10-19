@@ -1,14 +1,15 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
-import type { GossipInterface, TransactionRecord, makeOrm } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { GossipInterface, TransactionRecord, WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import {
-  Gossip, GossipStorageOrmRepository, makeOrmGossipStorage,
-  WitnessDetails,
+  makeOrmGossipStorage,
   WitnessGossipInfo,
   WitnessState,
-  WitnessTableQuery
+  WitnessTableQuery,
+  Gossip,
+  initGossipSqlite,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
@@ -25,53 +26,22 @@ import { GossipCryptoService } from './GossipCryptoService'
 import { GossipLoggerService } from './GossipLoggerService'
 import { WitnessGossipStateService } from './GossipStateService'
 import { GossipTransportService } from './GossipTransportService'
-import { MikroORM } from '@mikro-orm/core'
 
 @injectable()
 export class GossipService implements GossipInterface {
-  private gossip: Gossip
-  private config: AgentConfig
-  private eventEmitter: EventEmitter
-  private witnessStateRepository: WitnessStateRepository
-  private witnessGossipStateService: WitnessGossipStateService
-  private didService: DidService
+  private gossip!: Gossip
   private gossipingStarted = false
 
   public constructor(
-    config: AgentConfig,
-    gossipCryptoService: GossipCryptoService,
-    gossipStateService: WitnessGossipStateService,
-    gossipTransportService: GossipTransportService,
-    gossipLoggerService: GossipLoggerService,
-    witnessStateRepository: WitnessStateRepository,
-    didService: DidService,
-    eventEmitter: EventEmitter
-  ) {
-    this.config = config
-    this.witnessStateRepository = witnessStateRepository
-    this.witnessGossipStateService = gossipStateService
-    this.didService = didService
-    this.eventEmitter = eventEmitter
-
-    this.gossip = new Gossip(
-      {
-        logger: gossipLoggerService,
-        crypto: gossipCryptoService,
-        storage: gossipStateService,
-        storageV2: makeOrmGossipStorage(config.agentDependencies.microOrmForWitness).gossipStorage,
-        transport: gossipTransportService,
-        metrics: config.witnessGossipMetrics,
-      },
-      {
-        label: config.label,
-        tockTime: config.valueTransferConfig?.witness?.tockTime,
-        cleanupTime: config.valueTransferConfig?.witness?.cleanupTime,
-        redeliverTime: config.valueTransferConfig?.witness?.redeliverTime,
-        historyThreshold: config.valueTransferConfig?.witness?.historyThreshold,
-        redeliveryThreshold: config.valueTransferConfig?.witness?.redeliveryThreshold,
-      }
-    )
-  }
+    private readonly config: AgentConfig,
+    private readonly gossipCryptoService: GossipCryptoService,
+    private readonly witnessGossipStateService: WitnessGossipStateService,
+    private readonly gossipTransportService: GossipTransportService,
+    private readonly gossipLoggerService: GossipLoggerService,
+    private readonly witnessStateRepository: WitnessStateRepository,
+    private readonly didService: DidService,
+    private readonly eventEmitter: EventEmitter
+  ) {}
 
   public getWitnessDetails(): Promise<WitnessDetails> {
     return this.gossip.getWitnessDetails()
@@ -85,7 +55,28 @@ export class GossipService implements GossipInterface {
     return this.commitSingleParticipantTransition(transition)
   }
 
-  public async init(): Promise<void> {
+  public async init(dbConnectionString: string): Promise<void> {
+    const orm = await initGossipSqlite(dbConnectionString)
+
+    this.gossip = new Gossip(
+      {
+        logger: this.gossipLoggerService,
+        crypto: this.gossipCryptoService,
+        storage: this.witnessGossipStateService,
+        storageV2: makeOrmGossipStorage(orm).gossipStorage,
+        transport: this.gossipTransportService,
+        metrics: this.config.witnessGossipMetrics,
+      },
+      {
+        label: this.config.label,
+        tockTime: this.config.valueTransferConfig?.witness?.tockTime,
+        cleanupTime: this.config.valueTransferConfig?.witness?.cleanupTime,
+        redeliverTime: this.config.valueTransferConfig?.witness?.redeliverTime,
+        historyThreshold: this.config.valueTransferConfig?.witness?.historyThreshold,
+        redeliveryThreshold: this.config.valueTransferConfig?.witness?.redeliveryThreshold,
+      }
+    )
+
     await this.initState()
     await this.startGossiping()
   }
@@ -111,13 +102,7 @@ export class GossipService implements GossipInterface {
       throw new AriesFrameworkError('Witness table must be provided.')
     }
 
-    const info = new WitnessDetails({
-      wid: config.wid,
-      did: did.did,
-    })
-
     const witnessState = new WitnessState({
-      info,
       mappingTable: config.knownWitnesses,
     })
 

@@ -309,7 +309,7 @@ export class Agent {
     // VTP state initialization
     if (valueTransferConfig) {
       if (valueTransferConfig.witness) {
-        await this.gossipService.init()
+        await this.gossipService.init(this.agentConfig.gossipStorageConfig)
       } else {
         await this.valueTransferService.initPartyState()
       }

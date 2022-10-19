@@ -139,7 +139,7 @@ export interface InitConfig {
 
   internetChecker?: InternetChecker
 
-  microOrmForWitness?: MikroORM
+  gossipConnectionString?: string
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2

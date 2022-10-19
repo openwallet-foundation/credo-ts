@@ -34,7 +34,7 @@ export class WitnessStateRecord extends BaseRecord<DefaultWitnessStateTags, Cust
   }
 
   public get did(): string {
-    return this.witnessState.info.did
+    throw new Error('Getting DID from witness state record is Not support anymore!')
   }
 
   public getTags() {
