@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/module-tenants"
+    <a href="https://www.npmjs.com/package/@aries-framework/tenants"
     ><img
-      alt="@aries-framework/module-tenants version"
-      src="https://img.shields.io/npm/v/@aries-framework/module-tenants"
+      alt="@aries-framework/tenants version"
+      src="https://img.shields.io/npm/v/@aries-framework/tenants"
   /></a>
 
 </p>
