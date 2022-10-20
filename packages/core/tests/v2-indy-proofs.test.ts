@@ -1,5 +1,9 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type {
+  AcceptProposalOptions,
+  ProposeProofOptions,
+  RequestProofOptions,
+} from '../src/modules/proofs/ProofsApiOptions'
 import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
@@ -12,7 +16,6 @@ import {
   V2_INDY_PRESENTATION_REQUEST,
   V2_INDY_PRESENTATION,
 } from '../src/modules/proofs/formats/ProofFormatConstants'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import {
   V2PresentationMessage,
   V2ProposalPresentationMessage,
@@ -54,7 +57,7 @@ describe('Present Proof', () => {
 
     const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V2ProofService]> = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'abc',
@@ -106,7 +109,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
@@ -208,7 +211,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
@@ -376,8 +379,8 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V2,
+    const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+      protocolVersion: 'v2',
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
@@ -431,7 +434,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -489,7 +492,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
@@ -559,8 +562,8 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V2,
+    const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+      protocolVersion: 'v2',
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
@@ -633,8 +636,8 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions = {
-      protocolVersion: ProofProtocolVersion.V2,
+    const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+      protocolVersion: 'v2',
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
@@ -688,7 +691,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     const faberProofRecordPromise = waitForProofRecord(faberAgent, {
@@ -703,7 +706,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.Abandoned,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 })

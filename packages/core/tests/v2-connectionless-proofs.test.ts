@@ -21,7 +21,6 @@ import {
   AutoAcceptProof,
   ProofEventTypes,
 } from '../src/modules/proofs'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
@@ -80,7 +79,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'test-proof-request',
@@ -183,7 +182,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'test-proof-request',
@@ -349,7 +348,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'test-proof-request',

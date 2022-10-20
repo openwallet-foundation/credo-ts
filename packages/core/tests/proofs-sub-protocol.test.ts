@@ -8,7 +8,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src/modules/proofs/formats/indy/models'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { uuid } from '../src/utils/uuid'
 

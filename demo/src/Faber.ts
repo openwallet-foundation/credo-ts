@@ -5,7 +5,6 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import {
   AttributeFilter,
   ProofAttributeInfo,
-  ProofProtocolVersion,
   utils,
   V1CredentialPreview,
   ConnectionEventTypes,

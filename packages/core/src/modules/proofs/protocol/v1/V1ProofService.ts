@@ -55,7 +55,6 @@ import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatServic
 import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { ProofRecord } from '../../repository/ProofRecord'
 import { ProofRepository } from '../../repository/ProofRepository'

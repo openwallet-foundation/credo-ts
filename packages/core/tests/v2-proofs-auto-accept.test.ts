@@ -1,5 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { ProposeProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
@@ -12,7 +12,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -100,8 +99,8 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions = {
-        protocolVersion: ProofProtocolVersion.V2,
+      const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+        protocolVersion: 'v2',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {
@@ -220,8 +219,8 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions = {
-        protocolVersion: ProofProtocolVersion.V2,
+      const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+        protocolVersion: 'v2',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {

@@ -12,7 +12,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -100,8 +99,8 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions = {
-        protocolVersion: ProofProtocolVersion.V1,
+      const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V1ProofService]> = {
+        protocolVersion: 'v1',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {
@@ -155,7 +154,7 @@ describe('Auto accept present proof', () => {
 
       const proposal: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
         proofFormats: {
           indy: {
             nonce: '1298236324864',
@@ -222,7 +221,7 @@ describe('Auto accept present proof', () => {
       }
 
       const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V1ProofService]> = {
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {

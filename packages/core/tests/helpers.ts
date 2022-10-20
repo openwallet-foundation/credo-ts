@@ -57,7 +57,6 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { PredicateType } from '../src/modules/proofs/formats/indy/models'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import {
   PresentationPreview,
@@ -594,7 +593,7 @@ export async function presentProof({
         nonce: '947121108704767252195123',
       },
     },
-    protocolVersion: ProofProtocolVersion.V2,
+    protocolVersion: 'v2',
   }
 
   let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {

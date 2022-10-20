@@ -13,7 +13,6 @@ import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachm
 import { HandshakeProtocol } from '../src/modules/connections'
 import { V1CredentialPreview } from '../src/modules/credentials'
 import {
-  ProofProtocolVersion,
   PredicateType,
   ProofState,
   ProofAttributeInfo,
@@ -80,7 +79,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'test-proof-request',
@@ -181,7 +180,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'test-proof-request',
@@ -347,7 +346,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'test-proof-request',
