@@ -42,7 +42,11 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions<[IndyProofFormat], [V2ProofService]> = {
+    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       proofFormats: {
@@ -55,13 +59,7 @@ describe('Present Proof', () => {
         },
       },
       comment: 'V2 propose proof test',
-    }
-
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberPresentationRecordPromise

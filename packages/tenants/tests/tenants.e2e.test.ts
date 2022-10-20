@@ -1,11 +1,11 @@
 import type { InitConfig } from '@aries-framework/core'
 
 import { OutOfBandRecord, Agent } from '@aries-framework/core'
-import testLogger from '@aries-framework/core/tests/logger'
 import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import testLogger from '../../core/tests/logger'
 
 import { TenantsModule } from '@aries-framework/tenants'
 

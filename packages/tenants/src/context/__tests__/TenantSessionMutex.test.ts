@@ -1,5 +1,4 @@
-import testLogger from '@aries-framework/core/tests/logger'
-
+import testLogger from '../../../../core/tests/logger'
 import { TenantSessionMutex } from '../TenantSessionMutex'
 
 describe('TenantSessionMutex', () => {

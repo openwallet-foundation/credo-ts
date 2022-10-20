@@ -1,6 +1,6 @@
 import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
-import { getAgentContext, getAgentOptions, mockFunction } from '@aries-framework/core/tests/helpers'
 
+import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests/helpers'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'

@@ -582,7 +582,11 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
+    state: ProofState.RequestReceived,
+  })
+
+  let verifierRecord = await verifierAgent.proofs.requestProof({
     connectionId: verifierConnectionId,
     proofFormats: {
       indy: {
@@ -594,13 +598,7 @@ export async function presentProof({
       },
     },
     protocolVersion: 'v2',
-  }
-
-  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
   })
-
-  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
   let holderRecord = await holderProofRecordPromise
 

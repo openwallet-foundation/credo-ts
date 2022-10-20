@@ -78,7 +78,12 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.RequestReceived,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -89,14 +94,7 @@ describe('Present Proof', () => {
           requestedPredicates: predicates,
         },
       },
-    }
-
-    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
     })
-
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,
@@ -181,7 +179,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -193,18 +200,7 @@ describe('Present Proof', () => {
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
-    }
-
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.Done,
     })
-
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
-    // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,
@@ -347,7 +343,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V2ProofService]> = {
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -359,18 +364,7 @@ describe('Present Proof', () => {
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
-    }
-
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.Done,
     })
-
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
-    // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,

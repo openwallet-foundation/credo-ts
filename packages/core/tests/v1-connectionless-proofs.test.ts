@@ -1,8 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { V1ProofService } from '../src/modules/proofs/protocol/v1'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
@@ -78,7 +75,12 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
+    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.RequestReceived,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -89,14 +91,7 @@ describe('Present Proof', () => {
           requestedPredicates: predicates,
         },
       },
-    }
-
-    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
     })
-
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,
@@ -179,7 +174,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -191,18 +195,7 @@ describe('Present Proof', () => {
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
-    }
-
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.Done,
     })
-
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
-    // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,
@@ -345,7 +338,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[IndyProofFormat], [V1ProofService]> = {
+    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -357,18 +359,7 @@ describe('Present Proof', () => {
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
-    }
-
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      state: ProofState.Done,
     })
-
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
-    // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofRecord.id,
