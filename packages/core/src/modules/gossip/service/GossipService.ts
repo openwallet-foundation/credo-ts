@@ -60,7 +60,7 @@ export class GossipService implements GossipInterface {
   }
 
   public commitSingleParticipantTransition(transition: TransactionRecord): Promise<void> {
-    return this.commitSingleParticipantTransition(transition)
+    return this.gossip.commitSingleParticipantTransition(transition)
   }
 
   public async init(dbConnectionString: string): Promise<void> {
