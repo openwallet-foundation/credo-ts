@@ -81,7 +81,7 @@ export class ValueTransferIssuerService {
     // Call VTP library to start cash minting
     const { error, transaction, message } = await this.giver.startCashMinting(publicDid.did, amount, witness, send)
     if (error || !transaction || !message) {
-      this.logger.error(`Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`Issuer: startCashMinting error`, { error })
       return
     }
 
@@ -92,7 +92,7 @@ export class ValueTransferIssuerService {
       // Complete cash minting without awaiting response
       const { error } = await this.giver.completeCashMinting(transaction.id)
       if (error) {
-        this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+        this.logger.error(`Issuer: completeCashMinting error`, { error })
       }
     }
   }
@@ -110,7 +110,7 @@ export class ValueTransferIssuerService {
     // Call VTP library to complete cash minting
     const { error, transaction } = await this.giver.completeCashMinting(messageContext.message.thid)
     if (error || !transaction) {
-      this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`Issuer: processCashMintResponse -> completeCashMinting error`, { error })
       return
     }
 
