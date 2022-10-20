@@ -52,7 +52,7 @@ describe('Present Proof Subprotocol', () => {
 
     aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       parentThreadId,
       proofFormats: {
         indy: {
@@ -157,7 +157,7 @@ describe('Present Proof Subprotocol', () => {
     const faberProofRecord = await faberAgent.proofs.requestProof({
       connectionId: faberConnection.id,
       parentThreadId,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -227,7 +227,7 @@ describe('Present Proof Subprotocol', () => {
 
     aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       parentThreadId,
       proofFormats: {
         indy: {
@@ -332,7 +332,7 @@ describe('Present Proof Subprotocol', () => {
     const faberProofRecord = await faberAgent.proofs.requestProof({
       connectionId: faberConnection.id,
       parentThreadId,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'proof-request',

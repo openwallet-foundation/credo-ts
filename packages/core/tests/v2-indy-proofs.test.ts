@@ -1,10 +1,8 @@
 import type { Agent, ConnectionRecord, ProofRecord } from '../src'
-import type {
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/ProofsApiOptions'
+import type { AcceptProposalOptions, ProposeProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
@@ -54,7 +52,7 @@ describe('Present Proof', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    const proposeProofOptions: ProposeProofOptions = {
+    const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V2ProofService]> = {
       connectionId: aliceConnection.id,
       protocolVersion: ProofProtocolVersion.V2,
       proofFormats: {

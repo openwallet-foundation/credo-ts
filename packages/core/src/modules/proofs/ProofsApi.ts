@@ -164,7 +164,7 @@ export class ProofsApi<
    * to include in the message
    * @returns Proof record associated with the sent proposal message
    */
-  public async proposeProof(options: ProposeProofOptions): Promise<ProofRecord> {
+  public async proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofRecord> {
     const service = this.getService(options.protocolVersion)
 
     const { connectionId } = options

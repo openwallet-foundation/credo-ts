@@ -1,8 +1,10 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../ProofsApiOptions'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofRecord } from '../../../repository'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
+import type { V2ProofService } from '../V2ProofService'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -39,9 +41,9 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions = {
+    const proposeOptions: ProposeProofOptions<[IndyProofFormat], [V2ProofService]> = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -94,7 +96,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberPresentationRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 })

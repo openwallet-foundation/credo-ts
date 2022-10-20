@@ -114,7 +114,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       threadId: proposalMessage.threadId,
       parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     await this.proofRepository.save(agentContext, proofRecord)
@@ -214,7 +214,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V2,
+        protocolVersion: 'v2',
       })
 
       // Assert
@@ -264,7 +264,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       threadId: requestMessage.threadId,
       parentThreadId: requestMessage.thread?.parentThreadId,
       state: ProofState.RequestSent,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     await this.proofRepository.save(agentContext, proofRecord)
@@ -397,7 +397,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V2,
+        protocolVersion: 'v2',
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {

@@ -1,5 +1,7 @@
 import type { Agent, ConnectionRecord } from '../src'
 import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { V1ProofService } from '../src/modules/proofs/protocol/v1/V1ProofService'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
@@ -42,9 +44,9 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const proposeProofOptions: ProposeProofOptions = {
+      const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
         proofFormats: {
           indy: {
             nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
@@ -151,7 +153,7 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const proposal: ProposeProofOptions = {
+      const proposal: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
         connectionId: aliceConnection.id,
         protocolVersion: ProofProtocolVersion.V1,
         proofFormats: {
@@ -219,7 +221,7 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions = {
+      const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V1ProofService]> = {
         protocolVersion: ProofProtocolVersion.V1,
         connectionId: faberConnection.id,
         proofFormats: {
