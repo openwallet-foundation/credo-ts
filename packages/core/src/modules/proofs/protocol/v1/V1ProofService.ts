@@ -24,9 +24,11 @@ import type {
   CreateRequestOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
+import type { ProofRequestFormats } from '../../models/SharedOptions'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -996,6 +998,63 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
   }
 
+  public async getFormatData(
+    agentContext: AgentContext,
+    proofRecordId: string
+  ): Promise<GetFormatDataReturn<ProofFormat[]>> {
+    const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
+      this.findProposalMessage(agentContext, proofRecordId),
+      this.findRequestMessage(agentContext, proofRecordId),
+      this.findPresentationMessage(agentContext, proofRecordId),
+    ])
+
+    const indyProposeProof = proposalMessage
+      ? JsonTransformer.toJSON(await this.rfc0592ProposalFromV1ProposeMessage(proposalMessage))
+      : undefined
+    const indyRequestProof = requestMessage?.indyProofRequestJson ?? undefined
+    const indyPresentProof = presentationMessage?.indyProof ?? undefined
+
+    return {
+      proposal: proposalMessage
+        ? {
+            indy: indyProposeProof,
+          }
+        : undefined,
+      request: requestMessage
+        ? {
+            indy: indyRequestProof,
+          }
+        : undefined,
+      presentation: presentationMessage
+        ? {
+            indy: indyPresentProof,
+          }
+        : undefined,
+    }
+  }
+
+  private async rfc0592ProposalFromV1ProposeMessage(
+    proposalMessage: V1ProposePresentationMessage
+  ): Promise<ProofRequest> {
+    const indyFormat: IndyProposeProofFormat = {
+      name: 'Proof Request',
+      version: '1.0',
+      nonce: await this.generateProofRequestNonce(),
+      attributes: proposalMessage.presentationProposal.attributes,
+      predicates: proposalMessage.presentationProposal.predicates,
+    }
+
+    if (!indyFormat) {
+      throw new AriesFrameworkError('No Indy format found.')
+    }
+
+    const preview = new PresentationPreview({
+      attributes: indyFormat.attributes,
+      predicates: indyFormat.predicates,
+    })
+
+    return IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
+  }
   /**
    * Retrieve all proof records
    *

@@ -4,6 +4,13 @@ import type { ProofRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 
+export type FormatDataMessagePayload<
+  CFs extends ProofFormat[] = ProofFormat[],
+  M extends keyof ProofFormat['formatData'] = keyof ProofFormat['formatData']
+> = {
+  [ProofFormat in CFs[number] as ProofFormat['formatKey']]?: ProofFormat['formatData'][M]
+}
+
 interface BaseOptions {
   willConfirm?: boolean
   goalCode?: string
@@ -69,4 +76,10 @@ export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
 
 export interface DeleteProofOptions {
   deleteAssociatedDidCommMessages?: boolean
+}
+
+export type GetFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> = {
+  proposal?: FormatDataMessagePayload<PFs, 'proposal'>
+  request?: FormatDataMessagePayload<PFs, 'request'>
+  presentation?: FormatDataMessagePayload<PFs, 'presentation'>
 }

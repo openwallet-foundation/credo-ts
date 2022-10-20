@@ -7,6 +7,7 @@ import type {
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
+import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
 import {
   ProofAttributeInfo,
   AttributeFilter,
@@ -251,6 +252,93 @@ describe('Present Proof', () => {
       threadId: faberProofRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
+    })
+
+    const proposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofRecord.id)
+    const requestMessage = await aliceAgent.proofs.findRequestMessage(aliceProofRecord.id)
+    const presentationMessage = await aliceAgent.proofs.findPresentationMessage(aliceProofRecord.id)
+
+    expect(proposalMessage).toBeInstanceOf(V1ProposePresentationMessage)
+    expect(requestMessage).toBeInstanceOf(V1RequestPresentationMessage)
+    expect(presentationMessage).toBeInstanceOf(V1PresentationMessage)
+
+    const formatData = await aliceAgent.proofs.getFormatData(aliceProofRecord.id)
+
+    // eslint-disable-next-line prefer-const
+    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getGroupKeysFromIndyProofFormatData(formatData)
+
+    expect(formatData).toMatchObject({
+      proposal: {
+        indy: {
+          name: 'Proof Request',
+          version: '1.0',
+          nonce: expect.any(String),
+          requested_attributes: {
+            0: {
+              name: 'name',
+            },
+            [proposeKey1]: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            [proposeKey2]: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+        },
+      },
+      request: {
+        indy: {
+          name: 'Proof Request',
+          version: '1.0',
+          nonce: expect.any(String),
+          requested_attributes: {
+            0: {
+              name: 'name',
+            },
+            [requestKey1]: {
+              name: 'image_0',
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            [requestKey2]: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credDefId,
+                },
+              ],
+            },
+          },
+        },
+      },
+      presentation: {
+        indy: {
+          proof: expect.any(Object),
+          requested_proof: expect.any(Object),
+          identifiers: expect.any(Array),
+        },
+      },
     })
   })
 

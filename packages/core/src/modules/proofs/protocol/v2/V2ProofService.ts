@@ -2,6 +2,7 @@ import type { AgentContext } from '../../../../agent'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
@@ -17,8 +18,10 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
+  FormatDataMessagePayload,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
@@ -766,6 +769,82 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       associatedRecordId: proofRecordId,
       messageClass: V2ProposalPresentationMessage,
     })
+  }
+
+  public async getFormatData(agentContext: AgentContext, proofRecordId: string): Promise<GetFormatDataReturn> {
+    // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
+    const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
+      this.findProposalMessage(agentContext, proofRecordId),
+      this.findRequestMessage(agentContext, proofRecordId),
+      this.findPresentationMessage(agentContext, proofRecordId),
+    ])
+
+    // Create object with the keys and the message formats/attachments. We can then loop over this in a generic
+    // way so we don't have to add the same operation code four times
+    const messages = {
+      proposal: [proposalMessage?.formats, proposalMessage?.proposalsAttach],
+      request: [requestMessage?.formats, requestMessage?.requestPresentationsAttach],
+      presentation: [presentationMessage?.formats, presentationMessage?.presentationsAttach],
+    } as const
+
+    const formatData: GetFormatDataReturn = {}
+
+    // We loop through all of the message keys as defined above
+    for (const [messageKey, [formats, attachments]] of Object.entries(messages)) {
+      // Message can be undefined, so we continue if it is not defined
+      if (!formats || !attachments) continue
+
+      // Find all format services associated with the message
+      const formatServices = this.getFormatServicesFromMessage(formats)
+
+      const messageFormatData: FormatDataMessagePayload = {}
+
+      // Loop through all of the format services, for each we will extract the attachment data and assign this to the object
+      // using the unique format key (e.g. indy)
+      for (const formatService of formatServices) {
+        const attachment = this.getAttachmentForService(formatService, formats, attachments)
+        messageFormatData[formatService.formatKey] = attachment.getDataAsJson()
+      }
+
+      formatData[messageKey as Exclude<keyof GetFormatDataReturn, 'proposalAttributes' | 'proposalPredicates'>] =
+        messageFormatData
+    }
+
+    return formatData
+  }
+
+  private getFormatServicesFromMessage(messageFormats: ProofFormatSpec[]): ProofFormatService[] {
+    const formatServices = new Set<ProofFormatService>()
+
+    for (const msg of messageFormats) {
+      const service = this.getFormatServiceForFormat(msg)
+      if (service) formatServices.add(service)
+    }
+
+    return Array.from(formatServices)
+  }
+
+  private getAttachmentForService(
+    proofFormatService: ProofFormatService,
+    formats: ProofFormatSpec[],
+    attachments: Attachment[]
+  ) {
+    const attachmentId = this.getAttachmentIdForService(proofFormatService, formats)
+    const attachment = attachments.find((attachment) => attachment.id === attachmentId)
+
+    if (!attachment) {
+      throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
+    }
+
+    return attachment
+  }
+
+  private getAttachmentIdForService(proofFormatService: ProofFormatService, formats: ProofFormatSpec[]) {
+    const format = formats.find((format) => proofFormatService.supportsFormat(format.format))
+
+    if (!format) throw new AriesFrameworkError(`No attachment found for service ${proofFormatService.formatKey}`)
+
+    return format.attachmentId
   }
 
   public async getRequestedCredentialsForProofRequest(

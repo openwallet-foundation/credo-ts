@@ -24,6 +24,7 @@ import type {
   DeleteProofOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
+  GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
@@ -193,14 +194,12 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     routingService: RoutingService
   ): void
 
+  public abstract findProposalMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
   public abstract findRequestMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
-
   public abstract findPresentationMessage(
     agentContext: AgentContext,
     proofRecordId: string
   ): Promise<AgentMessage | null>
-
-  public abstract findProposalMessage(agentContext: AgentContext, proofRecordId: string): Promise<AgentMessage | null>
 
   public async saveOrUpdatePresentationMessage(
     agentContext: AgentContext,
@@ -249,4 +248,6 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     agentContext: AgentContext,
     options: CreateProofRequestFromProposalOptions
   ): Promise<ProofRequestFromProposalOptions<PFs>>
+
+  public abstract getFormatData(agentContext: AgentContext, proofRecordId: string): Promise<GetFormatDataReturn<PFs>>
 }

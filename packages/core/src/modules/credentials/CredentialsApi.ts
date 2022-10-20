@@ -45,31 +45,33 @@ import { V2CredentialService } from './protocol/v2/V2CredentialService'
 import { CredentialRepository } from './repository/CredentialRepository'
 
 export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends CredentialService<CFs>[]> {
-  // Proposal methods
+  // Propose Credential methods
   proposeCredential(options: ProposeCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord>
   acceptProposal(options: AcceptProposalOptions<CFs>): Promise<CredentialExchangeRecord>
   negotiateProposal(options: NegotiateProposalOptions<CFs>): Promise<CredentialExchangeRecord>
 
-  // Offer methods
+  // Offer Credential Methods
   offerCredential(options: OfferCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord>
   acceptOffer(options: AcceptOfferOptions<CFs>): Promise<CredentialExchangeRecord>
   declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
   negotiateOffer(options: NegotiateOfferOptions<CFs>): Promise<CredentialExchangeRecord>
+
+  // Request Credential Methods
+  // This is for beginning the exchange with a request (no proposal or offer). Only possible
+  // (currently) with W3C. We will not implement this in phase I
+
+  // when the issuer accepts the request he issues the credential to the holder
+  acceptRequest(options: AcceptRequestOptions<CFs>): Promise<CredentialExchangeRecord>
+
+  // Issue Credential Methods
+  acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
+
   // out of band
   createOffer(options: CreateOfferOptions<CFs, CSs>): Promise<{
     message: AgentMessage
     credentialRecord: CredentialExchangeRecord
   }>
-  // Request
-  // This is for beginning the exchange with a request (no proposal or offer). Only possible
-  // (currently) with W3C. We will not implement this in phase I
-  // requestCredential(credentialOptions: RequestCredentialOptions): Promise<CredentialExchangeRecord>
 
-  // when the issuer accepts the request he issues the credential to the holder
-  acceptRequest(options: AcceptRequestOptions<CFs>): Promise<CredentialExchangeRecord>
-
-  // Credential
-  acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
   sendProblemReport(options: SendProblemReportOptions): Promise<CredentialExchangeRecord>
 
   // Record Methods
@@ -78,6 +80,7 @@ export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends Cred
   getById(credentialRecordId: string): Promise<CredentialExchangeRecord>
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
+  update(credentialRecord: CredentialExchangeRecord): Promise<void>
   getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>>
 
   // DidComm Message Records
@@ -611,6 +614,15 @@ export class CredentialsApi<
     const credentialRecord = await this.getById(credentialId)
     const service = this.getService(credentialRecord.protocolVersion)
     return service.delete(this.agentContext, credentialRecord, options)
+  }
+
+  /**
+   * Update a credential exchange record
+   *
+   * @param credentialRecord the credential exchange record
+   */
+  public async update(credentialRecord: CredentialExchangeRecord): Promise<void> {
+    await this.credentialRepository.update(this.agentContext, credentialRecord)
   }
 
   public async findProposalMessage(credentialExchangeId: string): Promise<FindProposalMessageReturn<CSs>> {
