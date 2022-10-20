@@ -2,10 +2,10 @@ import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import type { DependencyManager } from '@aries-framework/core'
 
 import { AgentContext, AgentConfig, WalletApi } from '@aries-framework/core'
-import { Mutex, withTimeout } from 'async-mutex'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '@aries-framework/core/tests/helpers'
 import testLogger from '@aries-framework/core/tests/logger'
+import { Mutex, withTimeout } from 'async-mutex'
+
 import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecord } from '../../repository'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'

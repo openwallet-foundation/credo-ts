@@ -1,9 +1,8 @@
 import type { InitConfig } from '@aries-framework/core'
 
 import { Agent } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
-
 import testLogger from '@aries-framework/core/tests/logger'
+import { agentDependencies } from '@aries-framework/node'
 
 import { TenantsModule } from '@aries-framework/tenants'
 

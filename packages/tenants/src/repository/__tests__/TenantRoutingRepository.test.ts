@@ -2,6 +2,7 @@ import type { StorageService, EventEmitter } from '@aries-framework/core/src'
 
 import { Key } from '@aries-framework/core/src'
 import { getAgentContext, mockFunction } from '@aries-framework/core/tests/helpers'
+
 import { TenantRoutingRecord } from '../TenantRoutingRecord'
 import { TenantRoutingRepository } from '../TenantRoutingRepository'
 

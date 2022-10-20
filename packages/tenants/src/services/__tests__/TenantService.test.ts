@@ -1,8 +1,8 @@
 import type { Wallet } from '@aries-framework/core'
 
 import { Key } from '@aries-framework/core'
-
 import { getAgentContext, mockFunction } from '@aries-framework/core/tests/helpers'
+
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'

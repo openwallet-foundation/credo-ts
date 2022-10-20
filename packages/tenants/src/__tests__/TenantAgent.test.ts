@@ -1,6 +1,6 @@
 import { Agent, AgentContext } from '@aries-framework/core'
-
 import { agentDependencies, getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
+
 import { TenantAgent } from '../TenantAgent'
 
 describe('TenantAgent', () => {

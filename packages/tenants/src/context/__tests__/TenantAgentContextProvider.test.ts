@@ -1,9 +1,9 @@
 import type { AgentContext } from '@aries-framework/core'
 
 import { Key } from '@aries-framework/core'
-
 import { EventEmitter } from '@aries-framework/core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '@aries-framework/core/tests/helpers'
+
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
