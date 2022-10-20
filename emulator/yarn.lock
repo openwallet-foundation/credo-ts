@@ -3,13 +3,13 @@
 
 
 "@aries-framework/core@file:../packages/core":
-  version "0.2.9"
+  version "0.2.11"
   dependencies:
     "@mikro-orm/core" "^5.4.2"
     "@multiformats/base-x" "^4.0.1"
-    "@sicpa-dlab/value-transfer-common-ts" "file:../../value-transfer-protocol-ts/packages/value-transfer-common-ts/build"
-    "@sicpa-dlab/value-transfer-protocol-ts" "file:../../value-transfer-protocol-ts/packages/value-transfer-protocol-ts/build"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "file:../../value-transfer-protocol-ts/packages/witness-gossip-protocol-ts/build"
+    "@sicpa-dlab/value-transfer-common-ts" "0.3.0-alpha.2"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.0-alpha.6"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.0-alpha.5"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
@@ -41,49 +41,10 @@
     varint "^6.0.0"
     web-did-resolver "2.0.8"
 
-"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.2.9"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.2.9/77c0d6c6198e2b627263dcdae92a085ee3a183d7#77c0d6c6198e2b627263dcdae92a085ee3a183d7"
-  integrity sha512-XSJh2L8W18ZWdF7fnLQq/c7rfhTn0jcZYlS3PQYOGqYJT3dSxAaJaBS/jhOgJaLm06nUS1/+Hys3XTntQHgOsw==
-  dependencies:
-    "@multiformats/base-x" "^4.0.1"
-    "@sicpa-dlab/value-transfer-common-ts" "0.2.3"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.2.3"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "0.2.3"
-    "@stablelib/ed25519" "^1.0.2"
-    "@stablelib/sha256" "^1.0.1"
-    "@stablelib/uuid" "^1.0.1"
-    "@types/async-lock" "^1.1.5"
-    "@types/indy-sdk" "^1.16.16"
-    "@types/node-fetch" "^2.5.10"
-    "@types/ws" "^7.4.6"
-    abort-controller "^3.0.0"
-    async-lock "^1.3.2"
-    bloom-filters "^3.0.0"
-    bn.js "^5.2.0"
-    borc "^3.0.0"
-    buffer "^6.0.3"
-    class-transformer "0.5.1"
-    class-validator "0.13.1"
-    did-resolver "3.1.3"
-    didcomm "0.3.4"
-    fast-json-patch "^3.1.1"
-    lru_map "^0.4.1"
-    luxon "^1.27.0"
-    make-error "^1.3.6"
-    object-inspect "^1.10.3"
-    query-string "^7.0.1"
-    reflect-metadata "^0.1.13"
-    rxjs "^7.2.0"
-    tsyringe "^4.5.0"
-    uuid "^8.3.2"
-    varint "^6.0.0"
-    web-did-resolver "2.0.8"
-
 "@aries-framework/node@file:../packages/node":
-  version "0.2.8"
+  version "0.2.11"
   dependencies:
-    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core"
+    "@aries-framework/core" "file:../../../../../Library/Caches/Yarn/v6/npm-@aries-framework-node-0.2.11-fb2841df-1c87-4e4f-b603-6b74eed34d5a-1666288934615/node_modules/@aries-framework/core"
     didcomm-node "0.3.4"
     express "^4.17.1"
     ffi-napi "^4.0.3"
@@ -104,7 +65,7 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
   integrity sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==
 
-"@influxdata/influxdb-client@^1.29.0":
+"@influxdata/influxdb-client@^1.29.0", "@influxdata/influxdb-client@^1.31.0":
   version "1.31.0"
   resolved "https://registry.yarnpkg.com/@influxdata/influxdb-client/-/influxdb-client-1.31.0.tgz#4356356a3e6f886f717f3d2805a05cb5c5fbdcd1"
   integrity sha512-8DVT3ZB/VeCK5Nn+BxhgMrAMSTseQAEgV20AK+ZMO5Fcup9XWsA9L2zE+3eBFl0Y+lF3UeKiASkiKMQvws35GA==
@@ -216,36 +177,42 @@
     mkdirp "^1.0.4"
     rimraf "^3.0.2"
 
-"@sicpa-dlab/value-transfer-common-ts@*", "@sicpa-dlab/value-transfer-common-ts@0.2.3":
-  version "0.2.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.2.3/431e26abd20573576b34d8e19b64140f43ef0072#431e26abd20573576b34d8e19b64140f43ef0072"
-  integrity sha512-XopjcL7hSzGTIArYC1Z6VMTmbDrzMrK6/SGonyEfRMD6Ttm70IOHzd0XpWDbGHScy+b5C1j8TAvNslwIya/fdA==
+"@sicpa-dlab/value-transfer-common-ts@0.3.0-alpha.2", "@sicpa-dlab/value-transfer-common-ts@^0.3.0-alpha.2":
+  version "0.3.0-alpha.2"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.3.0-alpha.2/cbe785c6a8859d9f9c0bb905040fc1812e083b58#cbe785c6a8859d9f9c0bb905040fc1812e083b58"
+  integrity sha512-RT/FqVEdxL2B1XaFN2VUrbej8hJslSh4HNouq+UxDAKG5bs3DgJWc8HC2YxCmlKMr5ajrgXtFL0nblMpgUUfow==
   dependencies:
     "@stablelib/sha256" "^1.0.1"
     buffer "^6.0.3"
     class-transformer "^0.5.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-common-ts@0.3.0-alpha.1":
-  version "0.3.0-alpha.1"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.3.0-alpha.1/8ba03e7f87efa36d06b6a07efbb4a2135a5e7ed7#8ba03e7f87efa36d06b6a07efbb4a2135a5e7ed7"
-  integrity sha512-8dcbY48dHrUR0ImGbmH4P8Gzz6eYfnQ3kQL2oSbWb7PwO+UMaA8ObwJDXvsn+73l4tzl14ZIksItOD9fQiEhcw==
+"@sicpa-dlab/value-transfer-common-ts@^0.2.4":
+  version "0.2.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.2.4/9aec82e56130461755d4a08443f187c70676e6d4#9aec82e56130461755d4a08443f187c70676e6d4"
+  integrity sha512-a60Wh6b/Q0H8rBD6uPpQeBEiQ4e9wwdDScbMhfq/y1lqUSHAB5QLfxIXaN/6VG2EzhgQiPLu4nkwTZpIq7RJrg==
   dependencies:
     "@stablelib/sha256" "^1.0.1"
     buffer "^6.0.3"
     class-transformer "^0.5.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-common-ts@file:../../value-transfer-protocol-ts/packages/value-transfer-common-ts/build":
-  version "0.0.0"
-
-"@sicpa-dlab/value-transfer-protocol-ts@0.2.3":
-  version "0.2.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.2.3/31bb391b524a426ac5cbc97f5c808a2773bb427f#31bb391b524a426ac5cbc97f5c808a2773bb427f"
-  integrity sha512-fJzJTi5N+/o5QS0EzglpTY4PgEP1zPRhGZf2k7oKAM5aw3GejyCTHQ9dSoDlqzttlEOQQzsbeP6RdXzTmvaTcQ==
+"@sicpa-dlab/value-transfer-metrics-ts@^0.1.0":
+  version "0.1.0"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-metrics-ts/0.1.0/6fe2ba0324fa2c25e05012544ae508df4ad01e9f#6fe2ba0324fa2c25e05012544ae508df4ad01e9f"
+  integrity sha512-EeV8+ZE5BT821/G/mEziJxAn169BUBLV4zpwaRUxUk/7Xs2wypqb1TnltSSq5adOI7MPMsbZGaMrBJ/UupE2Ng==
   dependencies:
-    "@sicpa-dlab/value-transfer-common-ts" "*"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "*"
+    "@influxdata/influxdb-client" "^1.31.0"
+    "@sicpa-dlab/value-transfer-common-ts" "^0.2.4"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "^0.2.4"
+
+"@sicpa-dlab/value-transfer-protocol-ts@0.3.0-alpha.6":
+  version "0.3.0-alpha.6"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.0-alpha.6/a34bd448f039ed8bafe9dc0a839f5178538efe4d#a34bd448f039ed8bafe9dc0a839f5178538efe4d"
+  integrity sha512-XKvbhjCPsLlcRrW0lERyh/XCOeIErxefzql48fZ9TBy8Jppfan05Rgwskzj4VQIP/WP0aGGgsqhqjVG/n0jjaA==
+  dependencies:
+    "@sicpa-dlab/value-transfer-common-ts" "^0.3.0-alpha.2"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "^0.3.0-alpha.5"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
     class-transformer "^0.5.1"
@@ -257,55 +224,31 @@
     reflect-metadata "^0.1.13"
     ulid "^2.3.0"
 
-"@sicpa-dlab/value-transfer-protocol-ts@^0.3.0-alpha.1":
-  version "0.3.0-alpha.1"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.0-alpha.1/5b1626fd9bddf5bec254e14d438dbc68e23c748a#5b1626fd9bddf5bec254e14d438dbc68e23c748a"
-  integrity sha512-cooxarVZ7vRK30HTPK/uR1tabNxHkgOhVvLyaLuMEko+H7pGWMCRRBTC0bFj8wvbSFqzuwhjniL+MaHP6VS4iQ==
-  dependencies:
-    "@sicpa-dlab/value-transfer-common-ts" "0.3.0-alpha.1"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.0-alpha.1"
-    "@stablelib/sha256" "^1.0.1"
-    "@stablelib/uuid" "^1.0.1"
-    class-transformer "^0.5.1"
-    class-validator "^0.13.2"
-    currency-codes "^2.1.0"
-    fast-json-patch "^3.1.1"
-    iso-639-language "^1.0.1"
-    query-string "^7.1.1"
-    reflect-metadata "^0.1.13"
-    ulid "^2.3.0"
-
-"@sicpa-dlab/value-transfer-protocol-ts@file:../../value-transfer-protocol-ts/packages/value-transfer-protocol-ts/build":
-  version "0.0.0"
-
-"@sicpa-dlab/witness-gossip-protocol-ts@*", "@sicpa-dlab/witness-gossip-protocol-ts@0.2.3":
-  version "0.2.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.2.3/8f52f98e0df54c76ee837e8e9e995961f8d290ba#8f52f98e0df54c76ee837e8e9e995961f8d290ba"
-  integrity sha512-E9cjE4yZ6+KvR9Vhbng7KJomLemEamzOnwyM5U9KkOAC/OBFaesR+PER9SFTo6osdCeItpQnfQoK1rxaAq6pSg==
-  dependencies:
-    "@sicpa-dlab/value-transfer-common-ts" "*"
-    "@stablelib/uuid" "^1.0.1"
-    class-transformer "^0.5.1"
-    class-validator "^0.13.2"
-    reflect-metadata "^0.1.13"
-    rxjs "^7.5.6"
-
-"@sicpa-dlab/witness-gossip-protocol-ts@0.3.0-alpha.1":
-  version "0.3.0-alpha.1"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.0-alpha.1/f82ed3f6aba8aab5f5d89cfec2751a5372f7bfac#f82ed3f6aba8aab5f5d89cfec2751a5372f7bfac"
-  integrity sha512-yiwwfCTCHjkbKT7pgCJbtwC2ta4Rvo4usgRgpooPX69ETZugmHXtihvZAvvPk7F07uydSJOWLhxMP+7elacvNw==
+"@sicpa-dlab/witness-gossip-protocol-ts@0.3.0-alpha.5", "@sicpa-dlab/witness-gossip-protocol-ts@^0.3.0-alpha.5":
+  version "0.3.0-alpha.5"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.0-alpha.5/dcf1d762c924aeed1f56897e86cc73c85cd70405#dcf1d762c924aeed1f56897e86cc73c85cd70405"
+  integrity sha512-zfTwTo3H65yujz4/VroY8EUiiS4BhgCz+8UH2tvBvgF4Em5WSK+q4Nw8hMNshBzsTLNBRYy98O8mwb+ehQ70kA==
   dependencies:
     "@mikro-orm/core" "^5.4.2"
     "@mikro-orm/sqlite" "^5.4.2"
-    "@sicpa-dlab/value-transfer-common-ts" "0.3.0-alpha.1"
+    "@sicpa-dlab/value-transfer-common-ts" "^0.3.0-alpha.2"
     "@stablelib/uuid" "^1.0.1"
     class-transformer "^0.5.1"
     class-validator "^0.13.2"
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@file:../../value-transfer-protocol-ts/packages/witness-gossip-protocol-ts/build":
-  version "0.0.0"
+"@sicpa-dlab/witness-gossip-protocol-ts@^0.2.4":
+  version "0.2.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.2.4/aa79647531b6c4b236caff964a6c341a2ede337b#aa79647531b6c4b236caff964a6c341a2ede337b"
+  integrity sha512-/LLhe/ZCHi3MPcd8asg4TVuafvysna7D4lwhAKOdYiPO4HzJPSPh5ha/stnT327Hklc1cSva9g74v2+jr6ho7A==
+  dependencies:
+    "@sicpa-dlab/value-transfer-common-ts" "^0.2.4"
+    "@stablelib/uuid" "^1.0.1"
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
+    reflect-metadata "^0.1.13"
+    rxjs "^7.5.6"
 
 "@sovpro/delimited-stream@^1.1.0":
   version "1.1.0"
@@ -429,14 +372,14 @@
     form-data "^3.0.0"
 
 "@types/node@*":
-  version "18.8.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.8.5.tgz#6a31f820c1077c3f8ce44f9e203e68a176e8f59e"
-  integrity sha512-Bq7G3AErwe5A/Zki5fdD3O6+0zDChhg671NfPjtIcbtzDNZTv4NPKMRFr7gtYPG7y+B8uTiNK4Ngd9T0FTar6Q==
+  version "18.11.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.3.tgz#78a6d7ec962b596fc2d2ec102c4dd3ef073fea6a"
+  integrity sha512-fNjDQzzOsZeKZu5NATgXUPsaFaTxeRgFXoosrHivTl8RGeV733OLawXsGfEk9a8/tySyZUyiZ6E8LcjPFZ2y1A==
 
 "@types/validator@^13.1.3":
-  version "13.7.7"
-  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.7.tgz#e87cf34dd08522d21acf30130fd8941f433b81b5"
-  integrity sha512-jiEw2kTUJ8Jsh4A1K4b5Pkjj9Xz6FktLLOQ36ZVLRkmxFbpTvAV2VRoKMojz8UlZxNg/2dZqzpigH4JYn1bkQg==
+  version "13.7.8"
+  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-13.7.8.tgz#1340c85e51d5deee03df95721c4ff5c28dae5ff8"
+  integrity sha512-HKayOBe2ThTcQykiycCQYf70Fvo0WaJEJdxxNjvX3D/mnC0IUAhMe6wsIb1wwthmjiqBAR3qGkEzHYx74MS2yw==
 
 "@types/ws@^7.4.6":
   version "7.4.7"
@@ -1353,9 +1296,9 @@ is-buffer@^2.0.5:
   integrity sha512-i2R6zNFDwgEHJyQUtJEk0XFi1i0dPFn/oqjK3/vPCcDeJvW5NQ83V8QbicfF1SupOaB0h8ntgBC2YiE7dfyctQ==
 
 is-core-module@^2.9.0:
-  version "2.10.0"
-  resolved "https://registry.yarnpkg.com/is-core-module/-/is-core-module-2.10.0.tgz#9012ede0a91c69587e647514e1d5277019e728ed"
-  integrity sha512-Erxj2n/LDAZ7H8WNJXd9tw38GYM3dv8rk8Zcs+jJuxYTW7sozH+SS8NtrSjVL1/vpLvWi1hxy96IzjJ3EHTJJg==
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/is-core-module/-/is-core-module-2.11.0.tgz#ad4cb3e3863e814523c96f3f58d26cc570ff0144"
+  integrity sha512-RRjxlvLDkD1YJwDbroBHMb+cukurkDWNyHx7D3oNB5x9rb5ogcksMC5wHCadcXoo67gVr/+3GFySh3134zi6rw==
   dependencies:
     has "^1.0.3"
 
@@ -2148,7 +2091,7 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
 
-ts-node@^10.4.0:
+ts-node@^10.9.1:
   version "10.9.1"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.1.tgz#e73de9102958af9e1f0b168a6ff320e25adcff4b"
   integrity sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==

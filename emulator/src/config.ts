@@ -14,27 +14,27 @@ export const createConfig: () => Promise<EmulatorConfig> = async () => {
     port: 8080,
     users: [
       {
-        interval: 1000 * 6,
+        interval: 6_000,
         witnessIndex: 0,
       },
-      {
-        interval: 1000 * 7,
-        witnessIndex: 0,
-      },
+      // {
+      //   interval: 7_000,
+      //   witnessIndex: 0,
+      // },
     ],
     witnesses: [
       {
-        tockTime: 1000 * 5,
+        tockTime: 5_000,
         label: 'witness-1',
       },
       {
-        tockTime: 1000 * 5,
+        tockTime: 5_000,
         label: 'witness-2',
       },
-      {
-        tockTime: 1000 * 5,
-        label: 'witness-3',
-      },
+      // {
+      //   tockTime: 1000 * 5,
+      //   label: 'witness-3',
+      // },
     ],
   }
 }

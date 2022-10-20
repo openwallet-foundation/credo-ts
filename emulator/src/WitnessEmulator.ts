@@ -1,12 +1,10 @@
-/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
 import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { randomUUID } from 'crypto'
-
-import { MetricsService } from './metrics'
 
 export interface EmulatorWitnessConfig {
   host?: string
@@ -48,7 +46,7 @@ export class Witness {
           knownWitnesses: witnessConfig.knownWitnesses || [],
           issuerDids: witnessConfig.issuerDids,
           tockTime: witnessConfig.tockTime,
-          gossipMetricsService: new MetricsService(),
+          gossipMetricsService: new DummyGossipMetrics(),
         },
       },
       transports: [Transports.HTTP],

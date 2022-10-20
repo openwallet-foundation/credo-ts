@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { randomString } from '@aries-framework/core'
 
 import { UserEmulator } from './UserEmulator'
