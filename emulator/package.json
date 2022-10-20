@@ -18,7 +18,7 @@
     "@influxdata/influxdb-client": "^1.29.0",
     "@mikro-orm/core": "^5.4.2",
     "@mikro-orm/sqlite": "^5.4.2",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.0-alpha.3",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.0-alpha.4",
     "@stablelib/ed25519": "^1.0.3"
   },
   "devDependencies": {
