@@ -1,4 +1,4 @@
-import { JsonTransformer } from '../../../../core/src'
+import { JsonTransformer } from '@aries-framework/core/src'
 import { TenantRecord } from '../TenantRecord'
 
 describe('TenantRecord', () => {

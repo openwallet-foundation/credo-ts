@@ -3,9 +3,9 @@ import type { InitConfig } from '@aries-framework/core'
 import { Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-import testLogger from '../../core/tests/logger'
+import testLogger from '@aries-framework/core/tests/logger'
 
-import { TenantsModule } from '@aries-framework/module-tenants'
+import { TenantsModule } from '@aries-framework/tenants'
 
 jest.setTimeout(2000000)
 

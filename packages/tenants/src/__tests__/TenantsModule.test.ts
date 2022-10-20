@@ -1,6 +1,6 @@
 import { InjectionSymbols } from '@aries-framework/core'
 
-import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
+import { DependencyManager } from '@aries-framework/core/src/plugins/DependencyManager'
 import { TenantsApi } from '../TenantsApi'
 import { TenantsModule } from '../TenantsModule'
 import { TenantsModuleConfig } from '../TenantsModuleConfig'

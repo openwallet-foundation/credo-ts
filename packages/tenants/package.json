@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/module-tenants",
+  "name": "@aries-framework/tenants",
   "main": "build/index",
   "types": "build/index",
   "version": "0.2.5",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/module-tenants",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/tenants",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/module-tenants"
+    "directory": "packages/tenants"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
