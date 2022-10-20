@@ -378,7 +378,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
+    const requestProofsOptions = {
       protocolVersion: ProofProtocolVersion.V2,
       connectionId: faberConnection.id,
       proofFormats: {
@@ -561,7 +561,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
+    const requestProofsOptions = {
       protocolVersion: ProofProtocolVersion.V2,
       connectionId: faberConnection.id,
       proofFormats: {
@@ -635,7 +635,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
+    const requestProofsOptions = {
       protocolVersion: ProofProtocolVersion.V2,
       connectionId: faberConnection.id,
       proofFormats: {

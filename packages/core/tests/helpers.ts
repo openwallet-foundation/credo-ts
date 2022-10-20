@@ -66,6 +66,8 @@ import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
+import { V2ProofService } from '../src/modules/proofs/protocol/v2'
+import { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -581,8 +583,7 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  const requestProofsOptions: RequestProofOptions = {
-    protocolVersion: 'v1',
+  const requestProofsOptions: RequestProofOptions<[IndyProofFormat], [V2ProofService]> = {
     connectionId: verifierConnectionId,
     proofFormats: {
       indy: {
@@ -593,6 +594,7 @@ export async function presentProof({
         nonce: '947121108704767252195123',
       },
     },
+    protocolVersion: ProofProtocolVersion.V2,
   }
 
   let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {

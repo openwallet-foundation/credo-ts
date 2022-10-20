@@ -98,7 +98,7 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofOptions = {
+      const requestProofsOptions = {
         protocolVersion: ProofProtocolVersion.V1,
         connectionId: faberConnection.id,
         proofFormats: {
@@ -219,7 +219,7 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofOptions = {
+      const requestProofsOptions = {
         protocolVersion: ProofProtocolVersion.V1,
         connectionId: faberConnection.id,
         proofFormats: {
