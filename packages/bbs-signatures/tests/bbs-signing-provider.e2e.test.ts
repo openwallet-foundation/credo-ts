@@ -11,7 +11,7 @@ import {
 import { agentDependencies } from '@aries-framework/node'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
-import testLogger from '../../core/tests/logger'
+import testLogger from '@aries-framework/core/tests/logger'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'

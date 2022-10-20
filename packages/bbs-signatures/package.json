@@ -11,11 +11,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/module-bbs",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/bbs-signatures",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/module-bbs"
+    "directory": "packages/bbs-signatures"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",

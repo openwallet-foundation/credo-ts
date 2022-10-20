@@ -1,4 +1,4 @@
-import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository'
+import type { W3cCredentialRepository } from '@aries-framework/core/src/modules/vc/repository'
 import type { AgentContext } from '@aries-framework/core'
 
 import {
@@ -23,9 +23,9 @@ import {
   Ed25519Signature2018,
 } from '@aries-framework/core'
 
-import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
-import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
-import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { SignatureSuiteRegistry } from '@aries-framework/core/src/modules/vc/SignatureSuiteRegistry'
+import { customDocumentLoader } from '@aries-framework/core/src/modules/vc/__tests__/documentLoader'
+import { getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
