@@ -1,4 +1,5 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { ValueTransferWitnessConfig } from '../../../types'
 import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
 import type { WitnessGossipMessage, WitnessTableQueryMessage } from '../messages'
 import type { SqliteDriver } from '@mikro-orm/sqlite'
@@ -109,12 +110,44 @@ export class GossipService implements GossipInterface {
   }
 
   private async initState(gossipRepository: GossipStorageOrmRepository): Promise<void> {
-    this.config.logger.info('> Witness Gossip state initialization started')
+    const config = this.config.valueWitnessConfig
+    if (!config) throw new Error('Value transfer config is not available')
 
+    await this.initAriesFrameworkState(config)
+    await this.initGossipOrmState(config, gossipRepository)
+  }
+
+  private async initAriesFrameworkState(config: ValueTransferWitnessConfig): Promise<void> {
+    this.config.logger.info('> initAriesFrameworkState started')
     const existingState = await this.witnessStateRepository.findSingleByQuery({})
 
-    // witness has already been initialized
-    if (existingState) return
+    if (existingState) {
+      this.config.logger.info('> initAriesFrameworkState: state already exists, returning...')
+      return
+    }
+
+    const witnessState = new WitnessState({
+      mappingTable: config.knownWitnesses,
+    })
+    const state = new WitnessStateRecord({
+      witnessState,
+    })
+    await this.witnessStateRepository.save(state)
+
+    this.config.logger.info('> initAriesFrameworkState completed successfull')
+  }
+
+  private async initGossipOrmState(
+    config: ValueTransferWitnessConfig,
+    gossipRepository: GossipStorageOrmRepository
+  ): Promise<void> {
+    this.config.logger.info('> initGossipOrmState')
+    const existingOrmState = await gossipRepository.isInitialized()
+
+    if (existingOrmState) {
+      this.config.logger.info('> initGossipOrmState already exists, returning')
+      return
+    }
 
     const did = await this.didService.findStaticDid(DidMarker.Public)
     if (!did) {
@@ -123,31 +156,17 @@ export class GossipService implements GossipInterface {
       )
     }
 
-    const config = this.config.valueWitnessConfig
-
     if (!config || !config?.knownWitnesses.length) {
       throw new AriesFrameworkError('Witness table must be provided.')
     }
 
-    const witnessState = new WitnessState({
-      mappingTable: config.knownWitnesses,
-    })
-
-    const state = new WitnessStateRecord({
-      witnessState,
-    })
-    await this.witnessStateRepository.save(state)
-
     const info = new WitnessDetails({ wid: config.wid, did: did.did })
     const mappingTable = new MappingTable(config.knownWitnesses)
 
-    this.config.logger.info('Setting info to db', info)
     await gossipRepository.setMyInfo(info)
-    this.config.logger.info('Info set to db')
-
     await gossipRepository.setMappingTable(mappingTable)
 
-    this.config.logger.info('< Witness Gossip state initialization completed!')
+    this.config.logger.info('< initGossipOrmState completed!')
   }
 
   private async startGossiping() {
