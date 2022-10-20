@@ -9,7 +9,6 @@ import type {
   GossipStorageOrmRepository,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
-import { MikroORM } from '@mikro-orm/core'
 import {
   makeOrmGossipStorage,
   WitnessGossipInfo,
@@ -17,9 +16,6 @@ import {
   WitnessTableQuery,
   Gossip,
   initGossipSqlite,
-  PartyStateHashEntity,
-  WitnessDetailsEntity,
-  WitnessMappingTableEntity,
   WitnessDetails,
   MappingTable,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
@@ -70,17 +66,7 @@ export class GossipService implements GossipInterface {
   public async init(dbConnectionString: string): Promise<void> {
     // const orm = await initGossipSqlite(dbConnectionString)
 
-    const orm = await MikroORM.init<SqliteDriver>({
-      debug: true,
-      // entitiesTs: ['./src/data-access/entities'],
-      // entities: ['./build/data-access/entities'],
-      entities: [PartyStateHashEntity, WitnessDetailsEntity, WitnessMappingTableEntity],
-      type: 'sqlite',
-      dbName: dbConnectionString,
-      schemaGenerator: {},
-      // baseDir:
-      //   '/Users/dmitry-vychikov/Projects/DSR/sicpa/aries-framework-javascript/emulator/node_modules/@sicpa-dlab/witness-gossip-protocol-ts',
-    })
+    const orm = await initGossipSqlite(dbConnectionString, { debug: true })
 
     const generator = orm.getSchemaGenerator()
     await generator.refreshDatabase()
