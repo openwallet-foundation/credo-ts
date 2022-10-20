@@ -4,6 +4,8 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
 } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { V1ProofService } from '../src/modules/proofs/protocol/v1'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
@@ -14,7 +16,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src/modules/proofs/formats/indy/models'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import {
   V1ProposePresentationMessage,
@@ -56,9 +57,9 @@ describe('Present Proof', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    const proposeProofOptions: ProposeProofOptions = {
+    const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'abc',
@@ -118,7 +119,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     const acceptProposalOptions: AcceptProposalOptions = {
@@ -219,7 +220,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
@@ -376,8 +377,14 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
+    let aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofRecord = await faberAgent.proofs.requestProof({
+      protocolVersion: 'v1',
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
@@ -388,15 +395,7 @@ describe('Present Proof', () => {
           requestedPredicates: predicates,
         },
       },
-    }
-
-    let aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
     })
-
-    // Faber sends a presentation request to Alice
-    testLogger.test('Faber sends a presentation request to Alice')
-    faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
@@ -427,7 +426,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -489,7 +488,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
@@ -552,23 +551,21 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
-      connectionId: faberConnection.id,
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '1298236324864',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+    await expect(
+      faberAgent.proofs.requestProof({
+        protocolVersion: 'v1',
+        connectionId: faberConnection.id,
+        proofFormats: {
+          indy: {
+            name: 'proof-request',
+            version: '1.0',
+            nonce: '1298236324864',
+            requestedAttributes: attributes,
+            requestedPredicates: predicates,
+          },
         },
-      },
-    }
-
-    await expect(faberAgent.proofs.requestProof(requestProofsOptions)).rejects.toThrowError(
-      `The proof request contains duplicate predicates and attributes: age`
-    )
+      })
+    ).rejects.toThrowError(`The proof request contains duplicate predicates and attributes: age`)
   })
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
@@ -605,8 +602,14 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofsOptions: RequestProofOptions = {
-      protocolVersion: ProofProtocolVersion.V1,
+    const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofRecord = await faberAgent.proofs.requestProof({
+      protocolVersion: 'v1',
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
@@ -617,15 +620,7 @@ describe('Present Proof', () => {
           requestedPredicates: predicates,
         },
       },
-    }
-
-    const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
     })
-
-    // Faber sends a presentation request to Alice
-    testLogger.test('Faber sends a presentation request to Alice')
-    faberProofRecord = await faberAgent.proofs.requestProof(requestProofsOptions)
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
@@ -656,7 +651,7 @@ describe('Present Proof', () => {
     expect(aliceProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     const faberProofRecordPromise = waitForProofRecord(faberAgent, {
@@ -671,7 +666,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: aliceProofRecord.threadId,
       state: ProofState.Abandoned,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
   })
 })

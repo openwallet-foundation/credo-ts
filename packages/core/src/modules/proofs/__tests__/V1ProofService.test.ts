@@ -18,7 +18,6 @@ import { IndyLedgerService } from '../../ledger/services'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
-import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V1ProofService } from '../protocol/v1'
 import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../protocol/v1/messages'
@@ -83,7 +82,7 @@ const mockProofRecord = ({
   })
 
   const proofRecord = new ProofRecord({
-    protocolVersion: ProofProtocolVersion.V1,
+    protocolVersion: 'v1',
     id,
     state: state || ProofState.RequestSent,
     threadId: threadId ?? requestPresentationMessage.id,

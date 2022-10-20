@@ -1,13 +1,14 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../ProofsApiOptions'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { V1ProofService } from '../V1ProofService'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V1ProposePresentationMessage } from '../messages'
 
@@ -38,9 +39,13 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions = {
+    const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -51,13 +56,7 @@ describe('Present Proof', () => {
         },
       },
       comment: 'V1 propose proof test',
-    }
-
-    const faberProofRecordPromise = waitForProofRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberProofRecordPromise
@@ -102,7 +101,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
   })
 })

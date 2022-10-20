@@ -1,14 +1,15 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../ProofsApiOptions'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofRecord } from '../../../repository'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
+import type { V2ProofService } from '../V2ProofService'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatConstants'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -39,9 +40,13 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions = {
+    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -52,13 +57,7 @@ describe('Present Proof', () => {
         },
       },
       comment: 'V2 propose proof test',
-    }
-
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberPresentationRecord = await faberPresentationRecordPromise
@@ -94,7 +93,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberPresentationRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 })
