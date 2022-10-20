@@ -40,7 +40,7 @@ describe('Present Proof', () => {
 
     const proposeOptions: ProposeProofOptions = {
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -102,7 +102,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
   })
 })

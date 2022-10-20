@@ -582,7 +582,7 @@ export async function presentProof({
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
   const requestProofsOptions: RequestProofOptions = {
-    protocolVersion: ProofProtocolVersion.V1,
+    protocolVersion: 'v1',
     connectionId: verifierConnectionId,
     proofFormats: {
       indy: {

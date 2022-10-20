@@ -83,7 +83,7 @@ const mockProofRecord = ({
   })
 
   const proofRecord = new ProofRecord({
-    protocolVersion: ProofProtocolVersion.V1,
+    protocolVersion: 'v1',
     id,
     state: state || ProofState.RequestSent,
     threadId: threadId ?? requestPresentationMessage.id,

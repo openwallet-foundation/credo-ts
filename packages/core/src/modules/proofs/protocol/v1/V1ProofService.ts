@@ -148,7 +148,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -244,7 +244,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
       })
 
       // Assert
@@ -337,7 +337,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       parentThreadId: requestPresentationMessage.thread?.parentThreadId,
       state: ProofState.RequestSent,
       autoAcceptProof: options?.autoAcceptProof,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
     })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -424,7 +424,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
