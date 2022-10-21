@@ -456,6 +456,7 @@ export class ProofsApi<
   /**
    * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   *
    * If restrictions allow, self attested attributes will be used.
    *
    * @param options multiple properties like proof record id and optional configuration
