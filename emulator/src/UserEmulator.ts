@@ -1,6 +1,4 @@
-/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
-import type { MikroORM } from '@mikro-orm/core'
 
 import { Agent, DidMarker, HttpOutboundTransport, Transports, ConsoleLogger, LogLevel } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
