@@ -100,6 +100,17 @@ export class ShareContactService {
   public async receiveShareContactRequest(inboundMessage: InboundMessageContext<ShareContactRequestMessage>) {
     const { message } = inboundMessage
 
+    const existingDid = await this.didService.findById(message.from)
+    if (existingDid) {
+      this.config.logger.warn(`Received Share Contact Request from known DID: ${existingDid.did}. Declining contact...`)
+      await this.sendShareContactResponse({
+        to: message.from,
+        threadId: message.id,
+        result: ShareContactResult.Accepted,
+      })
+      return
+    }
+
     this.eventEmitter.emit<ShareContactStateChangedEvent>({
       type: ShareContactEventTypes.ShareContactStateChanged,
       payload: {

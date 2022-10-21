@@ -101,6 +101,11 @@ export class OutOfBandService {
         throw new AriesFrameworkError(`Unable to resolve info for the DID: ${message.from}`)
       }
 
+      const existingDid = await this.didService.findById(did.didDocument.id)
+      if (existingDid) {
+        throw new AriesFrameworkError(`Did already exists: ${did.didDocument.id}`)
+      }
+
       if (goalCode === OutOfBandGoalCode.ShareContact) {
         const shareContactRequest = await this.shareContactService.sendShareContactRequest(
           did.didDocument.id,
