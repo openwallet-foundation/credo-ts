@@ -127,7 +127,8 @@ export class ValueTransferWitnessService {
     const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
     if (error || !transaction) {
       this.logger.error(
-        ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed. Error: ${error}`
+        ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed.`,
+        { error }
       )
       return {}
     }
@@ -169,9 +170,9 @@ export class ValueTransferWitnessService {
     }
     const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !transaction) {
-      this.logger.error(
-        ` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed. Error: ${error}`
-      )
+      this.logger.error(` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed.`, {
+        error,
+      })
       return {}
     }
 
@@ -207,7 +208,7 @@ export class ValueTransferWitnessService {
     }
     const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (error || !message) {
-      this.logger.error(`  Issuer: Failed to mint cash: ${error?.message}`)
+      this.logger.error(`Issuer: processCashMint failed`, { error })
       return {}
     }
 
