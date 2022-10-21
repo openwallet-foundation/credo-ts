@@ -50,7 +50,7 @@ const TEST_LD_DOCUMENT = {
   },
 }
 
-xdescribe('credentials, BBS+ signature', () => {
+describe('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository

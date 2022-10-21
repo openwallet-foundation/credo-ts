@@ -26,6 +26,7 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { BbsModule } from '../../module-bbs/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   Agent,
@@ -102,7 +103,6 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
-
   return { config, modules, dependencies: agentDependencies } as const
 }
 
@@ -670,15 +670,27 @@ export async function setupCredentialTests(
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberAgentOptions = getAgentOptions(faberName, {
-    endpoints: ['rxjs:faber'],
-    autoAcceptCredentials,
-  })
 
-  const aliceAgentOptions = getAgentOptions(aliceName, {
-    endpoints: ['rxjs:alice'],
-    autoAcceptCredentials,
-  })
+  const modules = {
+    bbs: new BbsModule(),
+  }
+  const faberAgentOptions = getAgentOptions(
+    faberName,
+    {
+      endpoints: ['rxjs:faber'],
+      autoAcceptCredentials,
+    },
+    modules
+  )
+
+  const aliceAgentOptions = getAgentOptions(
+    aliceName,
+    {
+      endpoints: ['rxjs:alice'],
+      autoAcceptCredentials,
+    },
+    modules
+  )
   const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
