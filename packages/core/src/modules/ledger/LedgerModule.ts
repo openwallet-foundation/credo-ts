@@ -1,100 +1,37 @@
-import type { DependencyManager } from '../../plugins'
-import type { SchemaTemplate, CredentialDefinitionTemplate } from './services'
-import type { NymRole } from 'indy-sdk'
+import type { DependencyManager, Module } from '../../plugins'
+import type { LedgerModuleConfigOptions } from './LedgerModuleConfig'
 
-import { InjectionSymbols } from '../../constants'
-import { AriesFrameworkError } from '../../error'
-import { injectable, module, inject } from '../../plugins'
-import { Wallet } from '../../wallet/Wallet'
+import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
 
-import { IndyPoolService, IndyLedgerService } from './services'
+import { LedgerApi } from './LedgerApi'
+import { LedgerModuleConfig } from './LedgerModuleConfig'
+import { IndyLedgerService, IndyPoolService } from './services'
 
-@module()
-@injectable()
-export class LedgerModule {
-  private ledgerService: IndyLedgerService
-  private wallet: Wallet
+export class LedgerModule implements Module {
+  public readonly config: LedgerModuleConfig
+  public readonly api = LedgerApi
 
-  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, ledgerService: IndyLedgerService) {
-    this.ledgerService = ledgerService
-    this.wallet = wallet
-  }
-
-  /**
-   * Connect to all the ledger pools
-   */
-  public async connectToPools() {
-    await this.ledgerService.connectToPools()
-  }
-
-  public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
-    const myPublicDid = this.wallet.publicDid?.did
-
-    if (!myPublicDid) {
-      throw new AriesFrameworkError('Agent has no public DID.')
-    }
-
-    return this.ledgerService.registerPublicDid(myPublicDid, did, verkey, alias, role)
-  }
-
-  public async getPublicDid(did: string) {
-    return this.ledgerService.getPublicDid(did)
-  }
-
-  public async registerSchema(schema: SchemaTemplate) {
-    const did = this.wallet.publicDid?.did
-
-    if (!did) {
-      throw new AriesFrameworkError('Agent has no public DID.')
-    }
-
-    return this.ledgerService.registerSchema(did, schema)
-  }
-
-  public async getSchema(id: string) {
-    return this.ledgerService.getSchema(id)
-  }
-
-  public async registerCredentialDefinition(
-    credentialDefinitionTemplate: Omit<CredentialDefinitionTemplate, 'signatureType'>
-  ) {
-    const did = this.wallet.publicDid?.did
-
-    if (!did) {
-      throw new AriesFrameworkError('Agent has no public DID.')
-    }
-
-    return this.ledgerService.registerCredentialDefinition(did, {
-      ...credentialDefinitionTemplate,
-      signatureType: 'CL',
-    })
-  }
-
-  public async getCredentialDefinition(id: string) {
-    return this.ledgerService.getCredentialDefinition(id)
-  }
-
-  public async getRevocationRegistryDefinition(revocationRegistryDefinitionId: string) {
-    return this.ledgerService.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
-  }
-
-  public async getRevocationRegistryDelta(
-    revocationRegistryDefinitionId: string,
-    fromSeconds = 0,
-    toSeconds = new Date().getTime()
-  ) {
-    return this.ledgerService.getRevocationRegistryDelta(revocationRegistryDefinitionId, fromSeconds, toSeconds)
+  public constructor(config?: LedgerModuleConfigOptions) {
+    this.config = new LedgerModuleConfig(config)
   }
 
   /**
    * Registers the dependencies of the ledger module on the dependency manager.
    */
-  public static register(dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(LedgerModule)
+    dependencyManager.registerContextScoped(LedgerApi)
+
+    // Config
+    dependencyManager.registerInstance(LedgerModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(IndyLedgerService)
     dependencyManager.registerSingleton(IndyPoolService)
+
+    // Repositories
+    dependencyManager.registerSingleton(AnonCredsCredentialDefinitionRepository)
+    dependencyManager.registerSingleton(AnonCredsSchemaRepository)
   }
 }

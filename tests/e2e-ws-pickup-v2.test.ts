@@ -1,24 +1,24 @@
-import { getBaseConfig } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
 import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
 
-const recipientConfig = getBaseConfig('E2E WS Pickup V2 Recipient ', {
+const recipientOptions = getAgentOptions('E2E WS Pickup V2 Recipient ', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
 })
 
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
 const mediatorPort = 4100
-const mediatorConfig = getBaseConfig('E2E WS Pickup V2 Mediator', {
+const mediatorOptions = getAgentOptions('E2E WS Pickup V2 Mediator', {
   endpoints: [`ws://localhost:${mediatorPort}`],
   autoAcceptMediationRequests: true,
 })
 
 const senderPort = 4101
-const senderConfig = getBaseConfig('E2E WS Pickup V2 Sender', {
+const senderOptions = getAgentOptions('E2E WS Pickup V2 Sender', {
   endpoints: [`ws://localhost:${senderPort}`],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -31,9 +31,9 @@ describe('E2E WS Pickup V2 tests', () => {
   let senderAgent: Agent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
+    recipientAgent = new Agent(recipientOptions)
+    mediatorAgent = new Agent(mediatorOptions)
+    senderAgent = new Agent(senderOptions)
   })
 
   afterEach(async () => {

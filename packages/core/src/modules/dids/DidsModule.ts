@@ -1,48 +1,44 @@
-import type { DependencyManager } from '../../plugins'
-import type { Key } from './domain/Key'
-import type { DidResolutionOptions } from './types'
+import type { DependencyManager, Module } from '../../plugins'
+import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 
-import { injectable, module } from '../../plugins'
-
+import { DidsApi } from './DidsApi'
+import { DidsModuleConfig } from './DidsModuleConfig'
+import { DidResolverToken, DidRegistrarToken } from './domain'
 import { DidRepository } from './repository'
-import { DidResolverService } from './services/DidResolverService'
+import { DidResolverService, DidRegistrarService } from './services'
 
-@module()
-@injectable()
-export class DidsModule {
-  private resolverService: DidResolverService
-  private didRepository: DidRepository
+export class DidsModule implements Module {
+  public readonly config: DidsModuleConfig
 
-  public constructor(resolverService: DidResolverService, didRepository: DidRepository) {
-    this.resolverService = resolverService
-    this.didRepository = didRepository
+  public constructor(config?: DidsModuleConfigOptions) {
+    this.config = new DidsModuleConfig(config)
   }
 
-  public resolve(didUrl: string, options?: DidResolutionOptions) {
-    return this.resolverService.resolve(didUrl, options)
-  }
-
-  public resolveDidDocument(didUrl: string) {
-    return this.resolverService.resolveDidDocument(didUrl)
-  }
-
-  public findByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findByRecipientKey(recipientKey)
-  }
-
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.didRepository.findAllByRecipientKey(recipientKey)
-  }
+  public readonly api = DidsApi
 
   /**
    * Registers the dependencies of the dids module module on the dependency manager.
    */
-  public static register(dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(DidsModule)
+    dependencyManager.registerContextScoped(DidsApi)
+
+    // Config
+    dependencyManager.registerInstance(DidsModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(DidResolverService)
+    dependencyManager.registerSingleton(DidRegistrarService)
     dependencyManager.registerSingleton(DidRepository)
+
+    // Register all did resolvers
+    for (const Resolver of this.config.resolvers) {
+      dependencyManager.registerSingleton(DidResolverToken, Resolver)
+    }
+
+    // Register all did registrars
+    for (const Registrar of this.config.registrars) {
+      dependencyManager.registerSingleton(DidRegistrarToken, Registrar)
+    }
   }
 }

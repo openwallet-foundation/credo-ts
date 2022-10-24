@@ -1,4 +1,4 @@
-import type { ProofRequest } from '../modules/proofs/models/ProofRequest'
+import type { ProofRequest } from '../modules/proofs/formats/indy/models/ProofRequest'
 
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 

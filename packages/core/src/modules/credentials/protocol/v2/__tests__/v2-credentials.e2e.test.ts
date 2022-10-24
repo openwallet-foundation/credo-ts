@@ -124,7 +124,7 @@ describe('v2 credentials', () => {
     })
 
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
-    const offerMessage = await didCommMessageRepository.findAgentMessage({
+    const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V2OfferCredentialMessage,
     })
@@ -236,7 +236,11 @@ describe('v2 credentials', () => {
       deleteAssociatedCredentials: true,
       deleteAssociatedDidCommMessages: true,
     })
-    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(1, holderCredential.credentials[0].credentialRecordId)
+    expect(deleteCredentialSpy).toHaveBeenNthCalledWith(
+      1,
+      aliceAgent.context,
+      holderCredential.credentials[0].credentialRecordId
+    )
 
     return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
       `CredentialRecord: record with id ${holderCredential.id} not found.`
@@ -361,6 +365,7 @@ describe('v2 credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
+    // testLogger.test('Alice sends credential ack to Faber')
     await aliceAgent.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
@@ -423,7 +428,6 @@ describe('v2 credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-
     faberCredentialRecord = await faberAgent.credentials.negotiateProposal({
       credentialRecordId: faberCredentialRecord.id,
       credentialFormats: {

@@ -3,7 +3,7 @@ import { isValidJweStructure } from '../JWE'
 describe('ValidJWEStructure', () => {
   test('throws error when the response message has an invalid JWE structure', async () => {
     const responseMessage = 'invalid JWE structure'
-    await expect(isValidJweStructure(responseMessage)).toBeFalsy()
+    expect(isValidJweStructure(responseMessage)).toBe(false)
   })
 
   test('valid JWE structure', async () => {
@@ -14,6 +14,6 @@ describe('ValidJWEStructure', () => {
       ciphertext: 'mwRMpVg9wkF4rIZcBeWLcc0fWhs=',
       tag: '0yW0Lx8-vWevj3if91R06g==',
     }
-    await expect(isValidJweStructure(responseMessage)).toBeTruthy()
+    expect(isValidJweStructure(responseMessage)).toBe(true)
   })
 })

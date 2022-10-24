@@ -10,18 +10,18 @@ import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { ConnectionType } from '../src/modules/connections/models/ConnectionType'
 import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 
-import { getBaseConfig, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberConfig = getBaseConfig('OOB mediation - Faber Agent', {
+const faberAgentOptions = getAgentOptions('OOB mediation - Faber Agent', {
   endpoints: ['rxjs:faber'],
 })
-const aliceConfig = getBaseConfig('OOB mediation - Alice Recipient Agent', {
+const aliceAgentOptions = getAgentOptions('OOB mediation - Alice Recipient Agent', {
   endpoints: ['rxjs:alice'],
   // FIXME: discover features returns that we support this protocol, but we don't support all roles
   // we should return that we only support the mediator role so we don't have to explicitly declare this
   mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
-const mediatorConfig = getBaseConfig('OOB mediation - Mediator Agent', {
+const mediatorAgentOptions = getAgentOptions('OOB mediation - Mediator Agent', {
   endpoints: ['rxjs:mediator'],
   autoAcceptMediationRequests: true,
 })
@@ -49,17 +49,17 @@ describe('out of band with mediation', () => {
       'rxjs:mediator': mediatorMessages,
     }
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
+    mediatorAgent = new Agent(mediatorAgentOptions)
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await mediatorAgent.initialize()

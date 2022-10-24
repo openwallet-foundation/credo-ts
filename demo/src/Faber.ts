@@ -3,10 +3,11 @@ import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
-  V1CredentialPreview,
   AttributeFilter,
   ProofAttributeInfo,
+  ProofProtocolVersion,
   utils,
+  V1CredentialPreview,
   ConnectionEventTypes,
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
@@ -187,8 +188,18 @@ export class Faber extends BaseAgent {
     const connectionRecord = await this.getConnectionRecord()
     const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
-    await this.agent.proofs.requestProof(connectionRecord.id, {
-      requestedAttributes: proofAttribute,
+
+    await this.agent.proofs.requestProof({
+      protocolVersion: ProofProtocolVersion.V1,
+      connectionId: connectionRecord.id,
+      proofFormats: {
+        indy: {
+          name: 'proof-request',
+          version: '1.0',
+          nonce: '1298236324864',
+          requestedAttributes: proofAttribute,
+        },
+      },
     })
     this.ui.updateBottomBar(
       `\nProof request sent!\n\nGo to the Alice agent to accept the proof request\n\n${Color.Reset}`

@@ -1,32 +1,23 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { AutoAcceptProof } from '../ProofAutoAcceptType'
-import type { ProofState } from '../ProofState'
-
-import { Type } from 'class-transformer'
+import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
+import type { ProofState } from '../models/ProofState'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { ProposePresentationMessage, RequestPresentationMessage, PresentationMessage } from '../messages'
 
 export interface ProofRecordProps {
   id?: string
   createdAt?: Date
-
+  protocolVersion: string
   isVerified?: boolean
   state: ProofState
   connectionId?: string
   threadId: string
   parentThreadId?: string
-  presentationId?: string
   tags?: CustomProofTags
   autoAcceptProof?: AutoAcceptProof
   errorMessage?: string
-
-  // message data
-  proposalMessage?: ProposePresentationMessage
-  requestMessage?: RequestPresentationMessage
-  presentationMessage?: PresentationMessage
 }
 
 export type CustomProofTags = TagsBase
@@ -37,23 +28,17 @@ export type DefaultProofTags = {
   state: ProofState
 }
 
+// T-TODO: rename to proof exchange record
+
 export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string
+  public protocolVersion!: string
   public parentThreadId?: string
   public isVerified?: boolean
-  public presentationId?: string
   public state!: ProofState
   public autoAcceptProof?: AutoAcceptProof
   public errorMessage?: string
-
-  // message data
-  @Type(() => ProposePresentationMessage)
-  public proposalMessage?: ProposePresentationMessage
-  @Type(() => RequestPresentationMessage)
-  public requestMessage?: RequestPresentationMessage
-  @Type(() => PresentationMessage)
-  public presentationMessage?: PresentationMessage
 
   public static readonly type = 'ProofRecord'
   public readonly type = ProofRecord.type
@@ -64,15 +49,13 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.proposalMessage = props.proposalMessage
-      this.requestMessage = props.requestMessage
-      this.presentationMessage = props.presentationMessage
+      this.protocolVersion = props.protocolVersion
+
       this.isVerified = props.isVerified
       this.state = props.state
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
-      this.presentationId = props.presentationId
       this.autoAcceptProof = props.autoAcceptProof
       this._tags = props.tags ?? {}
       this.errorMessage = props.errorMessage

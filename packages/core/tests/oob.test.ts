@@ -9,8 +9,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { Key } from '../src/modules/dids'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -20,7 +20,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
 import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getBaseConfig, prepareForIssuance, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
 
 import {
   AgentEventTypes,
@@ -30,10 +30,10 @@ import {
   V1CredentialPreview,
 } from '@aries-framework/core'
 
-const faberConfig = getBaseConfig('Faber Agent OOB', {
+const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
 })
-const aliceConfig = getBaseConfig('Alice Agent OOB', {
+const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -68,12 +68,12 @@ describe('out of band', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
@@ -246,6 +246,9 @@ describe('out of band', () => {
 
       expect(eventListener).toHaveBeenCalledWith({
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: null,
@@ -611,6 +614,9 @@ describe('out of band', () => {
       // Receiving the invitation
       expect(eventListener).toHaveBeenNthCalledWith(1, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord: expect.objectContaining({ state: OutOfBandState.Initial }),
           previousState: null,
@@ -620,6 +626,9 @@ describe('out of band', () => {
       // Accepting the invitation
       expect(eventListener).toHaveBeenNthCalledWith(2, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: OutOfBandState.Initial,
@@ -726,7 +735,7 @@ describe('out of band', () => {
         message,
       })
 
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,

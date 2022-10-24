@@ -1,58 +1,67 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  AutoAcceptProof,
+  AcceptOfferOptions,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
   ProofStateChangedEvent,
   SchemaTemplate,
+  Wallet,
 } from '../src'
-import type { AcceptOfferOptions } from '../src/modules/credentials'
+import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { Schema, CredDef } from 'indy-sdk'
+import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
+import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
 import path from 'path'
-import { firstValueFrom, Subject, ReplaySubject } from 'rxjs'
+import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-  HandshakeProtocol,
-  DidExchangeState,
-  DidExchangeRole,
-  LogLevel,
+  Agent,
   AgentConfig,
+  AgentContext,
   AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
-  PredicateType,
+  DependencyManager,
+  DidExchangeRole,
+  DidExchangeState,
+  HandshakeProtocol,
+  InjectionSymbols,
+  LogLevel,
   ProofEventTypes,
-  ProofState,
-  Agent,
 } from '../src'
-import { KeyType } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
-import { DidCommV1Service, DidKey, Key } from '../src/modules/dids'
+import { DidCommV1Service } from '../src/modules/dids'
+import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
+import { PredicateType } from '../src/modules/proofs/formats/indy/models'
+import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
+import { ProofState } from '../src/modules/proofs/models/ProofState'
+import {
+  PresentationPreview,
+  PresentationPreviewAttribute,
+  PresentationPreviewPredicate,
+} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -65,7 +74,11 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
 
-export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentOptions<AgentModules extends AgentModulesInput>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  modules?: AgentModules
+) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -80,6 +93,7 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
         id: `pool-${name}`,
         isProduction: false,
         genesisPath,
+        indyNamespace: `pool:localtest`,
         transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
       },
     ],
@@ -89,10 +103,10 @@ export function getBaseConfig(name: string, extraConfig: Partial<InitConfig> = {
     ...extraConfig,
   }
 
-  return { config, agentDependencies } as const
+  return { config, modules, dependencies: agentDependencies } as const
 }
 
-export function getBasePostgresConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -118,6 +132,7 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
     indyLedgers: [
       {
         id: `pool-${name}`,
+        indyNamespace: `pool:localtest`,
         isProduction: false,
         genesisPath,
       },
@@ -126,12 +141,28 @@ export function getBasePostgresConfig(name: string, extraConfig: Partial<InitCon
     ...extraConfig,
   }
 
-  return { config, agentDependencies } as const
+  return { config, dependencies: agentDependencies } as const
 }
 
 export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
-  const { config, agentDependencies } = getBaseConfig(name, extraConfig)
-  return new AgentConfig(config, agentDependencies)
+  const { config, dependencies } = getAgentOptions(name, extraConfig)
+  return new AgentConfig(config, dependencies)
+}
+
+export function getAgentContext({
+  dependencyManager = new DependencyManager(),
+  wallet,
+  agentConfig,
+  contextCorrelationId = 'mock',
+}: {
+  dependencyManager?: DependencyManager
+  wallet?: Wallet
+  agentConfig?: AgentConfig
+  contextCorrelationId?: string
+} = {}) {
+  if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
+  if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+  return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
 export async function waitForProofRecord(
@@ -178,6 +209,7 @@ export function waitForProofRecordSubject(
           `ProofStateChangedEvent event not emitted within specified timeout: {
   previousState: ${previousState},
   threadId: ${threadId},
+  parentThreadId: ${parentThreadId},
   state: ${state}
 }`
         )
@@ -549,34 +581,57 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  let verifierRecord = await verifierAgent.proofs.requestProof(verifierConnectionId, {
-    name: 'test-proof-request',
-    requestedAttributes: attributes,
-    requestedPredicates: predicates,
-  })
+  const requestProofsOptions: RequestProofOptions = {
+    protocolVersion: ProofProtocolVersion.V1,
+    connectionId: verifierConnectionId,
+    proofFormats: {
+      indy: {
+        name: 'test-proof-request',
+        requestedAttributes: attributes,
+        requestedPredicates: predicates,
+        version: '1.0',
+        nonce: '947121108704767252195123',
+      },
+    },
+  }
 
-  let holderRecord = await waitForProofRecordSubject(holderReplay, {
-    threadId: verifierRecord.threadId,
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     state: ProofState.RequestReceived,
   })
 
-  const retrievedCredentials = await holderAgent.proofs.getRequestedCredentialsForProofRequest(holderRecord.id)
-  const requestedCredentials = holderAgent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-  await holderAgent.proofs.acceptRequest(holderRecord.id, requestedCredentials)
+  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
-  verifierRecord = await waitForProofRecordSubject(verifierReplay, {
+  let holderRecord = await holderProofRecordPromise
+
+  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
+    proofRecordId: holderRecord.id,
+    config: {
+      filterByPresentationPreview: true,
+    },
+  })
+
+  const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
 
+  await holderAgent.proofs.acceptRequest({
+    proofRecordId: holderRecord.id,
+    proofFormats: { indy: requestedCredentials.proofFormats.indy },
+  })
+
+  verifierRecord = await verifierProofRecordPromise
+
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await waitForProofRecordSubject(holderReplay, {
+  holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
+
+  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  holderRecord = await holderProofRecordPromise
 
   return {
     verifierProof: verifierRecord,
@@ -615,21 +670,21 @@ export async function setupCredentialTests(
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberConfig = getBaseConfig(faberName, {
+  const faberAgentOptions = getAgentOptions(faberName, {
     endpoints: ['rxjs:faber'],
     autoAcceptCredentials,
   })
 
-  const aliceConfig = getBaseConfig(aliceName, {
+  const aliceAgentOptions = getAgentOptions(aliceName, {
     endpoints: ['rxjs:alice'],
     autoAcceptCredentials,
   })
-  const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+  const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
-  const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+  const aliceAgent = new Agent(aliceAgentOptions)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()
@@ -662,12 +717,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
 
   const unique = uuid().substring(0, 4)
 
-  const faberConfig = getBaseConfig(`${faberName}-${unique}`, {
+  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
-  const aliceConfig = getBaseConfig(`${aliceName}-${unique}`, {
+  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
@@ -679,12 +734,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+  const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await faberAgent.initialize()
 
-  const aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+  const aliceAgent = new Agent(aliceAgentOptions)
   aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
   aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await aliceAgent.initialize()

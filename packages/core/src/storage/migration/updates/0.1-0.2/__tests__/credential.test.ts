@@ -1,7 +1,7 @@
 import type { CredentialRecordBinding } from '../../../../../../src/modules/credentials'
 
 import { CredentialExchangeRecord, CredentialState } from '../../../../../../src/modules/credentials'
-import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialRepository } from '../../../../../modules/credentials/repository/CredentialRepository'
 import { JsonTransformer } from '../../../../../utils'
@@ -10,6 +10,7 @@ import { DidCommMessageRepository } from '../../../../didcomm/DidCommMessageRepo
 import * as testModule from '../credential'
 
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
+const agentContext = getAgentContext()
 
 jest.mock('../../../../../modules/credentials/repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -23,6 +24,7 @@ jest.mock('../../../../../agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,
+      context: agentContext,
       dependencyManager: {
         resolve: jest.fn((token) =>
           token === CredentialRepositoryMock ? credentialRepository : didCommMessageRepository
@@ -75,7 +77,7 @@ describe('0.1-0.2 | Credential', () => {
       expect(credentialRepository.getAll).toHaveBeenCalledTimes(1)
       expect(credentialRepository.update).toHaveBeenCalledTimes(records.length)
 
-      const updatedRecord = mockFunction(credentialRepository.update).mock.calls[0][0]
+      const updatedRecord = mockFunction(credentialRepository.update).mock.calls[0][1]
 
       // Check first object is transformed correctly
       expect(updatedRecord.toJSON()).toMatchObject({
@@ -277,7 +279,7 @@ describe('0.1-0.2 | Credential', () => {
       await testModule.moveDidCommMessages(agent, credentialRecord)
 
       expect(didCommMessageRepository.save).toHaveBeenCalledTimes(4)
-      const [[proposalMessageRecord], [offerMessageRecord], [requestMessageRecord], [credentialMessageRecord]] =
+      const [[, proposalMessageRecord], [, offerMessageRecord], [, requestMessageRecord], [, credentialMessageRecord]] =
         mockFunction(didCommMessageRepository.save).mock.calls
 
       expect(proposalMessageRecord).toMatchObject({
@@ -340,7 +342,7 @@ describe('0.1-0.2 | Credential', () => {
       await testModule.moveDidCommMessages(agent, credentialRecord)
 
       expect(didCommMessageRepository.save).toHaveBeenCalledTimes(2)
-      const [[proposalMessageRecord], [offerMessageRecord]] = mockFunction(didCommMessageRepository.save).mock.calls
+      const [[, proposalMessageRecord], [, offerMessageRecord]] = mockFunction(didCommMessageRepository.save).mock.calls
 
       expect(proposalMessageRecord).toMatchObject({
         role: DidCommMessageRole.Sender,
@@ -388,7 +390,7 @@ describe('0.1-0.2 | Credential', () => {
       await testModule.moveDidCommMessages(agent, credentialRecord)
 
       expect(didCommMessageRepository.save).toHaveBeenCalledTimes(4)
-      const [[proposalMessageRecord], [offerMessageRecord], [requestMessageRecord], [credentialMessageRecord]] =
+      const [[, proposalMessageRecord], [, offerMessageRecord], [, requestMessageRecord], [, credentialMessageRecord]] =
         mockFunction(didCommMessageRepository.save).mock.calls
 
       expect(proposalMessageRecord).toMatchObject({

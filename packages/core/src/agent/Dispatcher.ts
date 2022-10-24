@@ -1,13 +1,13 @@
-import type { Logger } from '../logger'
 import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
-import { AgentConfig } from '../agent/AgentConfig'
+import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
-import { injectable } from '../plugins'
+import { Logger } from '../logger'
+import { injectable, inject } from '../plugins'
 import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
@@ -23,10 +23,14 @@ class Dispatcher {
   private eventEmitter: EventEmitter
   private logger: Logger
 
-  public constructor(messageSender: MessageSender, eventEmitter: EventEmitter, agentConfig: AgentConfig) {
+  public constructor(
+    messageSender: MessageSender,
+    eventEmitter: EventEmitter,
+    @inject(InjectionSymbols.Logger) logger: Logger
+  ) {
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.logger = agentConfig.logger
+    this.logger = logger
   }
 
   public registerHandler(handler: Handler) {
@@ -70,7 +74,7 @@ class Dispatcher {
     }
 
     if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
-      await this.messageSender.sendMessageToService({
+      await this.messageSender.sendMessageToService(messageContext.agentContext, {
         message: outboundMessage.payload,
         service: outboundMessage.service,
         senderKey: outboundMessage.senderKey,
@@ -78,11 +82,11 @@ class Dispatcher {
       })
     } else if (outboundMessage) {
       outboundMessage.sessionId = messageContext.sessionId
-      await this.messageSender.sendMessage(outboundMessage)
+      await this.messageSender.sendMessage(messageContext.agentContext, outboundMessage)
     }
 
     // Emit event that allows to hook into received messages
-    this.eventEmitter.emit<AgentMessageProcessedEvent>({
+    this.eventEmitter.emit<AgentMessageProcessedEvent>(messageContext.agentContext, {
       type: AgentEventTypes.AgentMessageProcessed,
       payload: {
         message: messageContext.message,

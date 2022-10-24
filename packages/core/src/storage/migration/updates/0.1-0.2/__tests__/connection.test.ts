@@ -1,4 +1,4 @@
-import { getAgentConfig, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import {
   ConnectionRecord,
@@ -24,6 +24,7 @@ import legacyDidPeer4kgVt6CidfKgo1MoWMqsQX from './__fixtures__/legacyDidPeer4kg
 import legacyDidPeerR1xKJw17sUoXhejEpugMYJ from './__fixtures__/legacyDidPeerR1xKJw17sUoXhejEpugMYJ.json'
 
 const agentConfig = getAgentConfig('Migration ConnectionRecord 0.1-0.2')
+const agentContext = getAgentContext()
 
 jest.mock('../../../../../modules/connections/repository/ConnectionRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
@@ -41,6 +42,7 @@ jest.mock('../../../../../agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,
+      context: agentContext,
       dependencyManager: {
         resolve: jest.fn((cls) => {
           if (cls === ConnectionRepository) {
@@ -122,7 +124,7 @@ describe('0.1-0.2 | Connection', () => {
 
       expect(connectionRepository.getAll).toHaveBeenCalledTimes(1)
       expect(connectionRepository.update).toHaveBeenCalledTimes(records.length)
-      const [[updatedConnectionRecord]] = mockFunction(connectionRepository.update).mock.calls
+      const [[, updatedConnectionRecord]] = mockFunction(connectionRepository.update).mock.calls
 
       // Check first object is transformed correctly.
       //  - removed invitation, theirDidDoc, didDoc
@@ -210,7 +212,7 @@ describe('0.1-0.2 | Connection', () => {
 
       expect(didRepository.save).toHaveBeenCalledTimes(2)
 
-      const [[didRecord], [theirDidRecord]] = mockFunction(didRepository.save).mock.calls
+      const [[, didRecord], [, theirDidRecord]] = mockFunction(didRepository.save).mock.calls
 
       expect(didRecord.toJSON()).toMatchObject({
         id: didPeerR1xKJw17sUoXhejEpugMYJ.id,
@@ -314,15 +316,15 @@ describe('0.1-0.2 | Connection', () => {
       )
 
       // Both did records already exist
-      mockFunction(didRepository.findById).mockImplementation((id) =>
+      mockFunction(didRepository.findById).mockImplementation((_, id) =>
         Promise.resolve(id === didPeerR1xKJw17sUoXhejEpugMYJ.id ? didRecord : theirDidRecord)
       )
 
       await testModule.extractDidDocument(agent, connectionRecord)
 
       expect(didRepository.save).not.toHaveBeenCalled()
-      expect(didRepository.findById).toHaveBeenNthCalledWith(1, didPeerR1xKJw17sUoXhejEpugMYJ.id)
-      expect(didRepository.findById).toHaveBeenNthCalledWith(2, didPeer4kgVt6CidfKgo1MoWMqsQX.id)
+      expect(didRepository.findById).toHaveBeenNthCalledWith(1, agentContext, didPeerR1xKJw17sUoXhejEpugMYJ.id)
+      expect(didRepository.findById).toHaveBeenNthCalledWith(2, agentContext, didPeer4kgVt6CidfKgo1MoWMqsQX.id)
 
       expect(connectionRecord.toJSON()).toEqual({
         _tags: {},
@@ -376,7 +378,7 @@ describe('0.1-0.2 | Connection', () => {
 
       await testModule.migrateToOobRecord(agent, connectionRecord)
 
-      const [[outOfBandRecord]] = mockFunction(outOfBandRepository.save).mock.calls
+      const [[, outOfBandRecord]] = mockFunction(outOfBandRepository.save).mock.calls
 
       expect(outOfBandRepository.save).toHaveBeenCalledTimes(1)
       expect(connectionRecord.outOfBandId).toEqual(outOfBandRecord.id)
@@ -419,7 +421,7 @@ describe('0.1-0.2 | Connection', () => {
       await testModule.migrateToOobRecord(agent, connectionRecord)
 
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
-      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
+      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
       })
@@ -469,7 +471,7 @@ describe('0.1-0.2 | Connection', () => {
       await testModule.migrateToOobRecord(agent, connectionRecord)
 
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
-      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
+      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
       })
@@ -535,13 +537,13 @@ describe('0.1-0.2 | Connection', () => {
       await testModule.migrateToOobRecord(agent, connectionRecord)
 
       expect(outOfBandRepository.findByQuery).toHaveBeenCalledTimes(1)
-      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, {
+      expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
-      expect(outOfBandRepository.update).toHaveBeenCalledWith(outOfBandRecord)
-      expect(connectionRepository.delete).toHaveBeenCalledWith(connectionRecord)
+      expect(outOfBandRepository.update).toHaveBeenCalledWith(agentContext, outOfBandRecord)
+      expect(connectionRepository.delete).toHaveBeenCalledWith(agentContext, connectionRecord)
 
       expect(outOfBandRecord.toJSON()).toEqual({
         id: '3c52cc26-577d-4200-8753-05f1f425c342',

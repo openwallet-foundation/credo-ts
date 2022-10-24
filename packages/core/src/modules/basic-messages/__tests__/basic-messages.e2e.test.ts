@@ -6,18 +6,18 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getBaseConfig, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
+import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
 import { MessageSendingError, RecordNotFoundError } from '../../../error'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const faberConfig = getBaseConfig('Faber Basic Messages', {
+const faberConfig = getAgentOptions('Faber Basic Messages', {
   endpoints: ['rxjs:faber'],
 })
 
-const aliceConfig = getBaseConfig('Alice Basic Messages', {
+const aliceConfig = getAgentOptions('Alice Basic Messages', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -35,12 +35,12 @@ describe('Basic Messages E2E', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberConfig)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceConfig)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()

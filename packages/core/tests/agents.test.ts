@@ -9,12 +9,12 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
-import { waitForBasicMessage, getBaseConfig } from './helpers'
+import { waitForBasicMessage, getAgentOptions } from './helpers'
 
-const aliceConfig = getBaseConfig('Agents Alice', {
+const aliceAgentOptions = getAgentOptions('Agents Alice', {
   endpoints: ['rxjs:alice'],
 })
-const bobConfig = getBaseConfig('Agents Bob', {
+const bobAgentOptions = getAgentOptions('Agents Bob', {
   endpoints: ['rxjs:bob'],
 })
 
@@ -40,12 +40,12 @@ describe('agents', () => {
       'rxjs:bob': bobMessages,
     }
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
+    bobAgent = new Agent(bobAgentOptions)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()

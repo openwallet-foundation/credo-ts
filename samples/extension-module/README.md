@@ -28,7 +28,7 @@ import { DummyModule, DummyApi } from './dummy'
 const agent = new Agent(/** agent config... */)
 
 // Register the module with it's dependencies
-agent.dependencyManager.registerModules(DummyModule)
+agent.dependencyManager.registerModules(new DummyModule())
 
 const dummyApi = agent.dependencyManager.resolve(DummyApi)
 

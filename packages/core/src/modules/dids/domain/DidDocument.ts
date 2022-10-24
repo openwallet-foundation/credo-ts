@@ -3,11 +3,10 @@ import type { DidDocumentService } from './service'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { KeyType } from '../../../crypto'
+import { KeyType, Key } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { Key } from './Key'
 import { getKeyDidMappingByVerificationMethod } from './key-type'
 import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
