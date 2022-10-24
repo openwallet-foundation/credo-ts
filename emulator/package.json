@@ -15,7 +15,7 @@
   "dependencies": {
     "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core",
     "@aries-framework/node": "npm:@sicpa-dlab/aries-framework-node",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.2.5",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.2.6",
     "@stablelib/ed25519": "^1.0.3",
     "@influxdata/influxdb-client": "^1.29.0"
   },
