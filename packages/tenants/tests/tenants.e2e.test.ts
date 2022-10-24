@@ -9,8 +9,6 @@ import testLogger from '../../core/tests/logger'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
-jest.setTimeout(2000000)
-
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
   walletConfig: {
