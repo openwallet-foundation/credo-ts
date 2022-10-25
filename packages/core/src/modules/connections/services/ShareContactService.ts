@@ -1,5 +1,6 @@
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ShareContactStateChangedEvent } from '../ConnectionEvents'
+import type { ShareContactRequest } from '../models'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, timeout } from 'rxjs/operators'
@@ -12,9 +13,11 @@ import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { DidMarker } from '../../dids/domain/Did'
 import { DidService } from '../../dids/services/DidService'
-import { ShareContactEventTypes } from '../ConnectionEvents'
+import { ConnectionEventTypes, ConnectionStateChangedEvent, ShareContactEventTypes } from '../ConnectionEvents'
 import { ShareContactRequestMessage, ShareContactResponseMessage, ShareContactResult } from '../messages'
-import { ShareContactState } from '../models'
+import { DidExchangeState, ShareContactState } from '../models'
+
+import { ConnectionRecord, JsonTransformer } from '@aries-framework/core'
 
 @injectable()
 export class ShareContactService {
@@ -57,13 +60,38 @@ export class ShareContactService {
     return message
   }
 
-  public async acceptContact(contactDid: string, threadId: string) {
+  public async acceptContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
     await this.didService.storeRemoteDid({ did: contactDid })
-    return this.sendShareContactResponse({ to: contactDid, threadId: threadId, result: ShareContactResult.Accepted })
+
+    const responseMessage = await this.sendShareContactResponse({
+      to: contactDid,
+      threadId: threadId,
+      result: ShareContactResult.Accepted,
+    })
+
+    this.emitStateChangedEvent({
+      contactDid,
+      state: ShareContactState.Accepted,
+      thid: threadId,
+    })
+
+    return responseMessage
   }
 
   public async declineContact(contactDid: string, threadId: string) {
-    return this.sendShareContactResponse({ to: contactDid, threadId, result: ShareContactResult.Declined })
+    const responseMessage = await this.sendShareContactResponse({
+      to: contactDid,
+      threadId,
+      result: ShareContactResult.Declined,
+    })
+
+    this.emitStateChangedEvent({
+      contactDid,
+      state: ShareContactState.Declined,
+      thid: threadId,
+    })
+
+    return responseMessage
   }
 
   public async sendShareContactResponse({
@@ -72,7 +100,7 @@ export class ShareContactService {
     result,
   }: {
     to: string
-    threadId?: string
+    threadId: string
     result: ShareContactResult
   }): Promise<ShareContactResponseMessage> {
     this.config.logger.info(`   > Sending Share Contact response with threadId $${threadId} to did $${to}`)
@@ -111,15 +139,10 @@ export class ShareContactService {
       return
     }
 
-    this.eventEmitter.emit<ShareContactStateChangedEvent>({
-      type: ShareContactEventTypes.ShareContactStateChanged,
-      payload: {
-        request: {
-          contactDid: message.from,
-          state: ShareContactState.Received,
-          thid: message.id,
-        },
-      },
+    this.emitStateChangedEvent({
+      contactDid: message.from,
+      state: ShareContactState.Received,
+      thid: message.id,
     })
 
     this.config.logger.info(`   < Received Share Contact message with id $${message.id}`)
@@ -127,22 +150,16 @@ export class ShareContactService {
 
   public async receiveShareContactResponse(inboundMessage: InboundMessageContext<ShareContactResponseMessage>) {
     const { message } = inboundMessage
+    const threadId = message.thid ?? message.id
 
-    this.eventEmitter.emit<ShareContactStateChangedEvent>({
-      type: ShareContactEventTypes.ShareContactStateChanged,
-      payload: {
-        request: {
-          contactDid: message.from,
-          state:
-            message.body.result === ShareContactResult.Accepted
-              ? ShareContactState.Accepted
-              : ShareContactState.Declined,
-          thid: message.thid ?? message.id,
-        },
-      },
+    this.emitStateChangedEvent({
+      contactDid: message.from,
+      state:
+        message.body.result === ShareContactResult.Accepted ? ShareContactState.Accepted : ShareContactState.Declined,
+      thid: threadId,
     })
 
-    this.config.logger.info(`   < Received Share Did response with threadId $${message.thid}`)
+    this.config.logger.info(`   < Received Share Did response with threadId $${threadId}`)
   }
 
   public async awaitShareContactCompleted(id: string, timeoutMs = 20000): Promise<ShareContactStateChangedEvent> {
@@ -165,5 +182,14 @@ export class ShareContactService {
       .subscribe(subject)
 
     return firstValueFrom(subject)
+  }
+
+  private emitStateChangedEvent(request: ShareContactRequest) {
+    this.eventEmitter.emit<ShareContactStateChangedEvent>({
+      type: ShareContactEventTypes.ShareContactStateChanged,
+      payload: {
+        request,
+      },
+    })
   }
 }
