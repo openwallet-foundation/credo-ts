@@ -1,7 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { AcceptProposalOptions } from '../../../ProofsApiOptions'
-import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
@@ -13,6 +12,7 @@ import {
   V2_INDY_PRESENTATION,
 } from '../../../formats/ProofFormatConstants'
 import { ProofState } from '../../../models/ProofState'
+import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -230,7 +230,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -240,7 +240,7 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,

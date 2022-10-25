@@ -160,7 +160,7 @@ describe('V1ProofService', () => {
 
       // then
       const expectedProofExchangeRecord = {
-        type: ProofExchangeRecord.name,
+        type: ProofExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         state: ProofState.RequestReceived,

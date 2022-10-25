@@ -1,8 +1,9 @@
-import type { Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
+import type { Agent, ConnectionRecord } from '../src'
 import type { AcceptProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
+import { ProofExchangeRecord } from '../src'
 import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
 import {
   ProofAttributeInfo,
@@ -229,7 +230,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -239,7 +240,7 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
@@ -497,7 +498,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -507,7 +508,7 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,

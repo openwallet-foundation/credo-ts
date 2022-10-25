@@ -1,12 +1,12 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage/didcomm'
 import { ProofState } from '../../../models/ProofState'
+import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 describe('Present Proof', () => {
@@ -224,7 +224,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -234,7 +234,7 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      // type: ProofExchangeRecord.name,
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,

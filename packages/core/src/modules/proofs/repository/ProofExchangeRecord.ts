@@ -28,8 +28,6 @@ export type DefaultProofTags = {
   state: ProofState
 }
 
-// T-TODO: rename to proof exchange record
-
 export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string
@@ -40,7 +38,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
   public autoAcceptProof?: AutoAcceptProof
   public errorMessage?: string
 
-  public static readonly type = 'ProofExchangeRecord'
+  public static readonly type = 'ProofRecord'
   public readonly type = ProofExchangeRecord.type
 
   public constructor(props: ProofExchangeRecordProps) {
