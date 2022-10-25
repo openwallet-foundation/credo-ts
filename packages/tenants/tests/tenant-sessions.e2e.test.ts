@@ -7,8 +7,6 @@ import testLogger from '../../core/tests/logger'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
-jest.setTimeout(2000000)
-
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
   walletConfig: {
@@ -25,7 +23,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    tenants: new TenantsModule(),
+    tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
   },
 })
 
