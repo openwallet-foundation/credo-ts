@@ -165,7 +165,7 @@ Object {
       "state": "done",
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.261Z",
@@ -336,7 +336,7 @@ Object {
       "state": "done",
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.208Z",
@@ -442,7 +442,7 @@ Object {
       "state": "done",
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.261Z",
@@ -462,7 +462,7 @@ Object {
       "state": "done",
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.208Z",
@@ -641,7 +641,7 @@ Object {
       "state": "done",
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.261Z",
@@ -812,7 +812,7 @@ Object {
       "state": "done",
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.208Z",
@@ -918,7 +918,7 @@ Object {
       "state": "done",
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.261Z",
@@ -938,7 +938,7 @@ Object {
       "state": "done",
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
     },
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "value": Object {
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
       "createdAt": "2022-09-08T19:36:06.208Z",

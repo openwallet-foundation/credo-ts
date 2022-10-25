@@ -166,7 +166,7 @@ export function getAgentContext({
   return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
-export async function waitForProofRecord(
+export async function waitForProofExchangeRecord(
   agent: Agent,
   options: {
     threadId?: string
@@ -178,10 +178,10 @@ export async function waitForProofRecord(
 ) {
   const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
 
-  return waitForProofRecordSubject(observable, options)
+  return waitForProofExchangeRecordSubject(observable, options)
 }
 
-export function waitForProofRecordSubject(
+export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
   {
     threadId,
@@ -582,7 +582,7 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
+  let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     state: ProofState.RequestReceived,
   })
 
@@ -600,7 +600,7 @@ export async function presentProof({
     protocolVersion: 'v2',
   })
 
-  let holderRecord = await holderProofRecordPromise
+  let holderRecord = await holderProofExchangeRecordPromise
 
   const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
     proofRecordId: holderRecord.id,
@@ -609,7 +609,7 @@ export async function presentProof({
     },
   })
 
-  const verifierProofRecordPromise = waitForProofRecordSubject(verifierReplay, {
+  const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.PresentationReceived,
   })
@@ -619,18 +619,18 @@ export async function presentProof({
     proofFormats: { indy: requestedCredentials.proofFormats.indy },
   })
 
-  verifierRecord = await verifierProofRecordPromise
+  verifierRecord = await verifierProofExchangeRecordPromise
 
   // assert presentation is valid
   expect(verifierRecord.isVerified).toBe(true)
 
-  holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
+  holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     threadId: holderRecord.threadId,
     state: ProofState.Done,
   })
 
   verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await holderProofRecordPromise
+  holderRecord = await holderProofExchangeRecordPromise
 
   return {
     verifierProof: verifierRecord,

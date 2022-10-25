@@ -2,11 +2,11 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions } from '../../../ProofsApiOptions'
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofState } from '../../../models/ProofState'
@@ -17,7 +17,7 @@ describe('Present Proof', () => {
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-  let faberProofRecord: ProofRecord
+  let faberProofExchangeRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -39,7 +39,7 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       state: ProofState.ProposalReceived,
     })
 
@@ -59,12 +59,12 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberProofRecordPromise
+    faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
+      associatedRecordId: faberProofExchangeRecord.id,
       messageClass: V1ProposePresentationMessage,
     })
 
@@ -97,9 +97,9 @@ describe('Present Proof', () => {
       },
     })
 
-    expect(faberProofRecord).toMatchObject({
+    expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
-      threadId: faberProofRecord.threadId,
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: 'v1',
     })

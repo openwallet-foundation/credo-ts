@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../agent/context/AgentContext'
-import type { ProofRecord } from './repository'
+import type { ProofExchangeRecord } from './repository'
 
 import { injectable } from '../../plugins'
 
@@ -34,7 +34,7 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a proposal
    */
-  public shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord) {
+  public shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofExchangeRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       agentContext.config.autoAcceptProofs
@@ -54,7 +54,7 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a request
    */
-  public shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord) {
+  public shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofExchangeRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       agentContext.config.autoAcceptProofs
@@ -74,7 +74,7 @@ export class ProofResponseCoordinator {
   /**
    * Checks whether it should automatically respond to a presentation of proof
    */
-  public shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofRecord) {
+  public shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofExchangeRecord) {
     const autoAccept = ProofResponseCoordinator.composeAutoAccept(
       proofRecord.autoAcceptProof,
       agentContext.config.autoAcceptProofs

@@ -68,7 +68,7 @@
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5"
     },
     "id": "72c96cd1-1f26-4bf3-8a00-5c00926859a8",
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "tags": {
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
@@ -115,7 +115,7 @@
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82"
     },
     "id": "ea840186-3c77-45f4-a2e6-349811ad8994",
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "tags": {
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
@@ -179,7 +179,7 @@
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5"
     },
     "id": "ec02ba64-63e3-46bc-b2a4-9d549d642d30",
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "tags": {
       "threadId": "00cdd404-82fc-431d-9c18-fb643636d2a5",
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",
@@ -225,7 +225,7 @@
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82"
     },
     "id": "3d5d7ad4-f0aa-4b1b-8c2c-780ee383564e",
-    "type": "ProofRecord",
+    "type": "ProofExchangeRecord",
     "tags": {
       "threadId": "7fcfc074-43ac-43cc-92b9-76afceeebe82",
       "connectionId": "946f660f-bfa6-4a98-a801-ebde5da95e2c",

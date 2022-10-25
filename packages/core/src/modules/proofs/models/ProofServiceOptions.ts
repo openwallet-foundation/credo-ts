@@ -1,6 +1,6 @@
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import type { ProofRecord } from '../repository'
+import type { ProofExchangeRecord } from '../repository'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { AutoAcceptProof } from './ProofAutoAcceptType'
 
@@ -25,13 +25,13 @@ export interface CreateProposalOptions<PFs extends ProofFormat[]> extends BaseOp
 }
 
 export interface CreateProposalAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   proofFormats: ProofFormatPayload<PFs, 'createProposalAsResponse'>
 }
 
 export interface CreateRequestAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
   id?: string
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
 }
 
@@ -43,7 +43,7 @@ export interface CreateRequestOptions<PFs extends ProofFormat[]> extends BaseOpt
 
 export interface CreateProofRequestFromProposalOptions extends BaseOptions {
   id?: string
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
 }
 
 export interface FormatRetrievedCredentialOptions<PFs extends ProofFormat[]> {
@@ -55,22 +55,22 @@ export interface FormatRequestedCredentialReturn<PFs extends ProofFormat[]> {
 }
 
 export interface CreatePresentationOptions<PFs extends ProofFormat[]> extends BaseOptions {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   proofFormats: ProofFormatPayload<PFs, 'createPresentation'> //
   lastPresentation?: boolean
 }
 
 export interface CreateAckOptions {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
 }
 
 export interface GetRequestedCredentialsForProofRequestOptions {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   config?: GetRequestedCredentialsConfig
 }
 
 export interface ProofRequestFromProposalOptions<PFs extends ProofFormat[]> {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   proofFormats: ProofFormatPayload<PFs, 'createProofRequestFromProposal'>
 }
 

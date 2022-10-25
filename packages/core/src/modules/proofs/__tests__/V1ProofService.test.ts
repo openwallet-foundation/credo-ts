@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { CustomProofTags } from './../repository/ProofRecord'
+import type { CustomProofTags } from './../repository/ProofExchangeRecord'
 
 import { Subject } from 'rxjs'
 
@@ -22,7 +22,7 @@ import { ProofState } from '../models/ProofState'
 import { V1ProofService } from '../protocol/v1'
 import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../protocol/v1/messages'
 import { V1PresentationProblemReportMessage } from '../protocol/v1/messages/V1PresentationProblemReportMessage'
-import { ProofRecord } from '../repository/ProofRecord'
+import { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 import { ProofRepository } from '../repository/ProofRepository'
 
 import { credDef } from './fixtures'
@@ -62,7 +62,7 @@ const requestAttachment = new Attachment({
 
 // A record is deserialized to JSON when it's stored into the storage. We want to simulate this behaviour for `offer`
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
-const mockProofRecord = ({
+const mockProofExchangeRecord = ({
   state,
   threadId,
   connectionId,
@@ -81,7 +81,7 @@ const mockProofRecord = ({
     requestPresentationAttachments: [requestAttachment],
   })
 
-  const proofRecord = new ProofRecord({
+  const proofRecord = new ProofExchangeRecord({
     protocolVersion: 'v1',
     id,
     state: state || ProofState.RequestSent,
@@ -156,11 +156,11 @@ describe('V1ProofService', () => {
       const repositorySaveSpy = jest.spyOn(proofRepository, 'save')
 
       // when
-      const returnedProofRecord = await proofService.processRequest(messageContext)
+      const returnedProofExchangeRecord = await proofService.processRequest(messageContext)
 
       // then
-      const expectedProofRecord = {
-        type: ProofRecord.name,
+      const expectedProofExchangeRecord = {
+        type: ProofExchangeRecord.name,
         id: expect.any(String),
         createdAt: expect.any(Date),
         state: ProofState.RequestReceived,
@@ -168,9 +168,9 @@ describe('V1ProofService', () => {
         connectionId: connection.id,
       }
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
-      const [[, createdProofRecord]] = repositorySaveSpy.mock.calls
-      expect(createdProofRecord).toMatchObject(expectedProofRecord)
-      expect(returnedProofRecord).toMatchObject(expectedProofRecord)
+      const [[, createdProofExchangeRecord]] = repositorySaveSpy.mock.calls
+      expect(createdProofExchangeRecord).toMatchObject(expectedProofExchangeRecord)
+      expect(returnedProofExchangeRecord).toMatchObject(expectedProofExchangeRecord)
     })
 
     test(`emits stateChange event with ${ProofState.RequestReceived}`, async () => {
@@ -198,10 +198,10 @@ describe('V1ProofService', () => {
 
   describe('createProblemReport', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let proof: ProofRecord
+    let proof: ProofExchangeRecord
 
     beforeEach(() => {
-      proof = mockProofRecord({
+      proof = mockProofExchangeRecord({
         state: ProofState.RequestReceived,
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -233,11 +233,11 @@ describe('V1ProofService', () => {
   })
 
   describe('processProblemReport', () => {
-    let proof: ProofRecord
+    let proof: ProofExchangeRecord
     let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
 
     beforeEach(() => {
-      proof = mockProofRecord({
+      proof = mockProofExchangeRecord({
         state: ProofState.RequestReceived,
       })
 

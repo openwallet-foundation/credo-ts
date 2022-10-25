@@ -6,7 +6,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
-export interface ProofRecordProps {
+export interface ProofExchangeRecordProps {
   id?: string
   createdAt?: Date
   protocolVersion: string
@@ -30,7 +30,7 @@ export type DefaultProofTags = {
 
 // T-TODO: rename to proof exchange record
 
-export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
+export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public connectionId?: string
   public threadId!: string
   public protocolVersion!: string
@@ -40,10 +40,10 @@ export class ProofRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
   public autoAcceptProof?: AutoAcceptProof
   public errorMessage?: string
 
-  public static readonly type = 'ProofRecord'
-  public readonly type = ProofRecord.type
+  public static readonly type = 'ProofExchangeRecord'
+  public readonly type = ProofExchangeRecord.type
 
-  public constructor(props: ProofRecordProps) {
+  public constructor(props: ProofExchangeRecordProps) {
     super()
 
     if (props) {
