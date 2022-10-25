@@ -2,6 +2,7 @@ import type {
   DidProps,
   InboundTransport,
   InitConfig,
+  InternetChecker,
   Logger,
   OutboundTransport,
   ValueTransferConfig,
@@ -11,6 +12,7 @@ import {
   Agent,
   AutoAcceptCredential,
   AutoAcceptProof,
+  ConsoleLogger,
   HttpOutboundTransport,
   LogLevel,
   MediatorDeliveryStrategy,
@@ -30,6 +32,9 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 export const logger: Logger = {
+  createContextLogger(context: string): Logger {
+    return new ConsoleLogger(this.logLevel, context)
+  },
   logLevel: LogLevel.info,
   test: (message: string) => {
     console.log(message)
@@ -51,6 +56,18 @@ export const logger: Logger = {
   },
   fatal: (message: string) => {
     console.log(message)
+  },
+}
+
+export const internetChecker: InternetChecker = {
+  hasInternetAccess(): Promise<boolean> {
+    return Promise.resolve(true)
+  },
+}
+
+export const doesNotHasInternetChecker: InternetChecker = {
+  hasInternetAccess(): Promise<boolean> {
+    return Promise.resolve(false)
   },
 }
 
@@ -93,6 +110,7 @@ export class BaseAgent {
     mediatorConnectionsInvite?: string
     endpoints?: string[]
     emulateOfflineCase?: boolean
+    internetChecker?: InternetChecker
   }) {
     this.name = props.name
     this.port = props.port
@@ -123,7 +141,7 @@ export class BaseAgent {
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
-      emulateOfflineCase: props.emulateOfflineCase,
+      internetChecker: props.internetChecker ? props.internetChecker : internetChecker,
       logger,
     }
 
