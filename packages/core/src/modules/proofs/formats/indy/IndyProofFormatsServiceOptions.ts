@@ -1,12 +1,8 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { IndyRevocationInterval } from '../../../credentials'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-} from '../../protocol/v1/models/V1PresentationPreview'
-import type { ProofRecord } from '../../repository/ProofRecord'
+import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
+import type { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
 import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
 import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
 import type { IndyRequestedCredentialsFormat } from './IndyProofFormat'
@@ -37,7 +33,7 @@ export interface GetRequestedCredentialsFormat {
 }
 
 export interface IndyProofRequestFromProposalOptions {
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
   name?: string
   version?: string
   nonce?: string

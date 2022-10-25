@@ -1,13 +1,13 @@
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { ProofRecord, ProofState } from '../../../../../modules/proofs'
+import { ProofExchangeRecord, ProofState } from '../../../../../modules/proofs'
 import { ProofRepository } from '../../../../../modules/proofs/repository/ProofRepository'
 import { JsonTransformer } from '../../../../../utils'
 import { DidCommMessageRole } from '../../../../didcomm'
 import { DidCommMessageRepository } from '../../../../didcomm/DidCommMessageRepository'
 import * as testModule from '../proof'
 
-const agentConfig = getAgentConfig('Migration ProofRecord 0.2-0.3')
+const agentConfig = getAgentConfig('Migration ProofExchangeRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
 jest.mock('../../../../../modules/proofs/repository/ProofRepository')
@@ -44,13 +44,13 @@ describe('0.2-0.3 | Proof', () => {
     mockFunction(didCommMessageRepository.save).mockReset()
   })
 
-  describe('migrateProofRecordToV0_3()', () => {
+  describe('migrateProofExchangeRecordToV0_3()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: ProofRecord[] = [getProof({})]
+      const records: ProofExchangeRecord[] = [getProof({})]
 
       mockFunction(proofRepository.getAll).mockResolvedValue(records)
 
-      await testModule.migrateProofRecordToV0_3(agent)
+      await testModule.migrateProofExchangeRecordToV0_3(agent)
 
       expect(proofRepository.getAll).toHaveBeenCalledTimes(1)
       expect(proofRepository.update).toHaveBeenCalledTimes(records.length)
@@ -64,11 +64,11 @@ describe('0.2-0.3 | Proof', () => {
     })
   })
 
-  describe('migrateInternalProofRecordProperties()', () => {
+  describe('migrateInternalProofExchangeRecordProperties()', () => {
     it('should set the protocol version to v1 if not set on the record', async () => {
       const proofRecord = getProof({})
 
-      await testModule.migrateInternalProofRecordProperties(agent, proofRecord)
+      await testModule.migrateInternalProofExchangeRecordProperties(agent, proofRecord)
 
       expect(proofRecord).toMatchObject({
         protocolVersion: 'v1',
@@ -80,7 +80,7 @@ describe('0.2-0.3 | Proof', () => {
         protocolVersion: 'v2',
       })
 
-      await testModule.migrateInternalProofRecordProperties(agent, proofRecord)
+      await testModule.migrateInternalProofExchangeRecordProperties(agent, proofRecord)
 
       expect(proofRecord).toMatchObject({
         protocolVersion: 'v2',
@@ -305,6 +305,6 @@ function getProof({
       isVerified,
       id,
     },
-    ProofRecord
+    ProofExchangeRecord
   )
 }

@@ -1,12 +1,9 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { AcceptProposalOptions } from '../../../ProofsApiOptions'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
-import type { V2ProofService } from '../V2ProofService'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import {
@@ -15,6 +12,7 @@ import {
   V2_INDY_PRESENTATION,
 } from '../../../formats/ProofFormatConstants'
 import { ProofState } from '../../../models/ProofState'
+import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -23,8 +21,8 @@ describe('Present Proof', () => {
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-  let faberProofRecord: ProofRecord
-  let aliceProofRecord: ProofRecord
+  let faberProofExchangeRecord: ProofExchangeRecord
+  let aliceProofExchangeRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -46,11 +44,11 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+    const faberPresentationRecordPromise = waitForProofExchangeRecord(faberAgent, {
       state: ProofState.ProposalReceived,
     })
 
-    aliceProofRecord = await aliceAgent.proofs.proposeProof({
+    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       proofFormats: {
@@ -66,12 +64,12 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberPresentationRecordPromise
+    faberProofExchangeRecord = await faberPresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
+      associatedRecordId: faberProofExchangeRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
 
@@ -95,9 +93,9 @@ describe('Present Proof', () => {
       id: expect.any(String),
       comment: 'V2 propose proof test',
     })
-    expect(faberProofRecord).toMatchObject({
+    expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
-      threadId: faberProofRecord.threadId,
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
@@ -106,24 +104,24 @@ describe('Present Proof', () => {
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
     const acceptProposalOptions: AcceptProposalOptions = {
-      proofRecordId: faberProofRecord.id,
+      proofRecordId: faberProofExchangeRecord.id,
     }
 
-    const alicePresentationRecordPromise = waitForProofRecord(aliceAgent, {
-      threadId: faberProofRecord.threadId,
+    const alicePresentationRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
+    faberProofExchangeRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
 
     testLogger.test('Alice waits for proof request from Faber')
-    aliceProofRecord = await alicePresentationRecordPromise
+    aliceProofExchangeRecord = await alicePresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const request = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
+      associatedRecordId: faberProofExchangeRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
@@ -146,12 +144,12 @@ describe('Present Proof', () => {
       ],
       id: expect.any(String),
       thread: {
-        threadId: faberProofRecord.threadId,
+        threadId: faberProofExchangeRecord.threadId,
       },
     })
-    expect(aliceProofRecord).toMatchObject({
+    expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
-      threadId: faberProofRecord.threadId,
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
       protocolVersion: 'v2',
     })
@@ -162,28 +160,28 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       config: {
         filterByPresentationPreview: true,
       },
     })
 
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-      threadId: aliceProofRecord.threadId,
+    const faberPresentationRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
     await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberPresentationRecordPromise
+    faberProofExchangeRecord = await faberPresentationRecordPromise
 
     const presentation = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
+      associatedRecordId: faberProofExchangeRecord.id,
       messageClass: V2PresentationMessage,
     })
 
@@ -206,46 +204,46 @@ describe('Present Proof', () => {
       ],
       id: expect.any(String),
       thread: {
-        threadId: faberProofRecord.threadId,
+        threadId: faberProofExchangeRecord.threadId,
       },
     })
-    expect(faberProofRecord.id).not.toBeNull()
-    expect(faberProofRecord).toMatchObject({
-      threadId: faberProofRecord.threadId,
+    expect(faberProofExchangeRecord.id).not.toBeNull()
+    expect(faberProofExchangeRecord).toMatchObject({
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
       protocolVersion: 'v2',
     })
   })
 
   test(`Faber accepts the presentation provided by Alice`, async () => {
-    const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-      threadId: aliceProofRecord.threadId,
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    aliceProofRecord = await aliceProofRecordPromise
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    expect(faberProofRecord).toMatchObject({
-      // type: ProofRecord.name,
+    expect(faberProofExchangeRecord).toMatchObject({
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      threadId: aliceProofRecord.threadId,
+      threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
       state: ProofState.PresentationReceived,
     })
 
-    expect(aliceProofRecord).toMatchObject({
-      // type: ProofRecord.name,
+    expect(aliceProofExchangeRecord).toMatchObject({
+      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      threadId: faberProofRecord.threadId,
+      threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
     })

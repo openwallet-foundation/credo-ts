@@ -1,8 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
@@ -31,7 +28,7 @@ import {
   makeConnection,
   prepareForIssuance,
   setupProofsTest,
-  waitForProofRecordSubject,
+  waitForProofExchangeRecordSubject,
 } from './helpers'
 import testLogger from './logger'
 
@@ -78,12 +75,12 @@ describe('Present Proof', () => {
       }),
     }
 
-    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    let aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.RequestReceived,
     })
 
     // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofRecord, message } = await faberAgent.proofs.createRequest({
+    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -97,7 +94,7 @@ describe('Present Proof', () => {
     })
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
@@ -105,43 +102,43 @@ describe('Present Proof', () => {
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await aliceProofRecordPromise
+    let aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       config: {
         filterByPresentationPreview: true,
       },
     })
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
-      threadId: aliceProofRecord.threadId,
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
     })
 
     await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberProofRecordPromise
+    faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
     // assert presentation is valid
-    expect(faberProofRecord.isVerified).toBe(true)
+    expect(faberProofExchangeRecord.isVerified).toBe(true)
 
-    aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
-      threadId: aliceProofRecord.threadId,
+    aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await aliceProofRecordPromise
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
@@ -179,16 +176,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
     })
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -203,15 +200,15 @@ describe('Present Proof', () => {
     })
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofRecordPromise
+    await aliceProofExchangeRecordPromise
 
-    await faberProofRecordPromise
+    await faberProofExchangeRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
@@ -343,16 +340,16 @@ describe('Present Proof', () => {
       }),
     }
 
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
     })
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest({
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -367,7 +364,7 @@ describe('Present Proof', () => {
     })
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
@@ -387,8 +384,8 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofRecordPromise
+    await aliceProofExchangeRecordPromise
 
-    await faberProofRecordPromise
+    await faberProofExchangeRecordPromise
   })
 })
