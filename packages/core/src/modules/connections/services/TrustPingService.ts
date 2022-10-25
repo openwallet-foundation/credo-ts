@@ -58,6 +58,7 @@ export class TrustPingService {
     const did = await this.didService.findStaticDid(DidMarker.Queries)
 
     const message = new TrustPingMessageV2({
+      id,
       from: did?.did,
       to: to,
       body: { responseRequested },

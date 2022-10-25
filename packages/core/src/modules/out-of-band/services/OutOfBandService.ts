@@ -17,6 +17,8 @@ import { ValueTransferGiverService } from '../../value-transfer/services/ValueTr
 import { OutOfBandEventTypes } from '../OutOfBandEvents'
 import { AndroidNearbyHandshakeAttachment, OutOfBandGoalCode, OutOfBandInvitationMessage } from '../messages'
 
+const SHARE_CONTACT_TIMEOUT_MS = 60000
+
 @injectable()
 export class OutOfBandService {
   private agentConfig: AgentConfig
@@ -111,13 +113,16 @@ export class OutOfBandService {
           did.didDocument.id,
           message.id
         )
-        const completionEvent = await this.shareContactService.awaitShareContactCompleted(shareContactRequest.id, 60000)
+        const completionEvent = await this.shareContactService.awaitShareContactCompleted(
+          shareContactRequest.id,
+          SHARE_CONTACT_TIMEOUT_MS
+        )
         if (completionEvent.payload.request.state === ShareContactState.Declined) return
       }
 
       await this.didService.storeRemoteDid({
         did: did.didDocument.id,
-        label: did.didMeta?.label ?? goal,
+        label: did.didMeta?.label,
         logoUrl: did.didMeta?.logoUrl,
       })
     }

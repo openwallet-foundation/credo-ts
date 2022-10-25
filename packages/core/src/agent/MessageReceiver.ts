@@ -9,9 +9,7 @@ import type { DecryptedMessageContext, PackedMessage, PlaintextMessage } from '.
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { ConnectionRepository } from '../modules/connections/repository/ConnectionRepository'
-import { DidService } from '../modules/dids'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
-import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
 import {
   ProblemReportError,
@@ -345,11 +343,12 @@ export class MessageReceiver {
   private async sendProblemReportMessageV2(message: string, plaintextMessage: PlaintextMessage) {
     const plainTextMessageV2 = plaintextMessage as unknown as DIDCommV2Message
 
-    // Cannot send problem report to unknown message sender or recipient
+    // Cannot send problem report for message with unknown sender or recipient
     if (!plainTextMessageV2.from || !plainTextMessageV2.to?.length) return
 
     const problemReportMessage = new ProblemReportV2Message({
       pthid: plainTextMessageV2.id,
+      // FIXME Consider adding validation for 'plainTextMessageV2.to' value
       from: plainTextMessageV2.to[0],
       to: plainTextMessageV2.from,
       body: {

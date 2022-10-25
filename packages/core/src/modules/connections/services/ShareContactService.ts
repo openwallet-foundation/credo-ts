@@ -13,11 +13,9 @@ import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { DidMarker } from '../../dids/domain/Did'
 import { DidService } from '../../dids/services/DidService'
-import { ConnectionEventTypes, ConnectionStateChangedEvent, ShareContactEventTypes } from '../ConnectionEvents'
+import { ShareContactEventTypes } from '../ConnectionEvents'
 import { ShareContactRequestMessage, ShareContactResponseMessage, ShareContactResult } from '../messages'
-import { DidExchangeState, ShareContactState } from '../models'
-
-import { ConnectionRecord, JsonTransformer } from '@aries-framework/core'
+import { ShareContactState } from '../models'
 
 @injectable()
 export class ShareContactService {
@@ -48,6 +46,7 @@ export class ShareContactService {
     }
 
     const message = new ShareContactRequestMessage({
+      id,
       from: did.did,
       to: to,
       pthid: invitationId,
@@ -152,10 +151,12 @@ export class ShareContactService {
     const { message } = inboundMessage
     const threadId = message.thid ?? message.id
 
+    const state =
+      message.body.result === ShareContactResult.Accepted ? ShareContactState.Accepted : ShareContactState.Declined
+
     this.emitStateChangedEvent({
       contactDid: message.from,
-      state:
-        message.body.result === ShareContactResult.Accepted ? ShareContactState.Accepted : ShareContactState.Declined,
+      state,
       thid: threadId,
     })
 
