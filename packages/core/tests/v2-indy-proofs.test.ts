@@ -1,12 +1,6 @@
 import type { Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
-import type {
-  AcceptProposalOptions,
-  ProposeProofOptions,
-  RequestProofOptions,
-} from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { AcceptProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 import type { CredDefId } from 'indy-sdk'
 
 import { AttributeFilter, PredicateType, ProofAttributeInfo, ProofPredicateInfo, ProofState } from '../src'
@@ -55,7 +49,11 @@ describe('Present Proof', () => {
     // Alice sends a presentation proposal to Faber
     testLogger.test('Alice sends a presentation proposal to Faber')
 
-    const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V2ProofService]> = {
+    let faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       proofFormats: {
@@ -67,13 +65,7 @@ describe('Present Proof', () => {
           predicates: presentationPreview.predicates,
         },
       },
-    }
-
-    let faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof(proposeProofOptions)
 
     // Faber waits for a presentation proposal from Alice
     testLogger.test('Faber waits for a presentation proposal from Alice')
@@ -693,7 +685,10 @@ describe('Present Proof', () => {
       state: ProofState.Abandoned,
     })
 
-    aliceProofExchangeRecord = await aliceAgent.proofs.sendProblemReport(aliceProofExchangeRecord.id, 'Problem inside proof request')
+    aliceProofExchangeRecord = await aliceAgent.proofs.sendProblemReport(
+      aliceProofExchangeRecord.id,
+      'Problem inside proof request'
+    )
 
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 

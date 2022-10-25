@@ -1,9 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions } from '../../../ProofsApiOptions'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V1ProofService } from '../V1ProofService'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'

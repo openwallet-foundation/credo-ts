@@ -1,8 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
-import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 
 import { Subject, ReplaySubject } from 'rxjs'
 

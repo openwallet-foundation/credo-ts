@@ -28,7 +28,6 @@ import type {
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../../models/SharedOptions'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -516,7 +515,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return { message: presentationMessage, proofRecord }
   }
 
-  public async processPresentation(messageContext: InboundMessageContext<V1PresentationMessage>): Promise<ProofExchangeRecord> {
+  public async processPresentation(
+    messageContext: InboundMessageContext<V1PresentationMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
@@ -573,7 +574,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return proofRecord
   }
 
-  public async processAck(messageContext: InboundMessageContext<V1PresentationAckMessage>): Promise<ProofExchangeRecord> {
+  public async processAck(
+    messageContext: InboundMessageContext<V1PresentationAckMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationAckMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
@@ -755,7 +758,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return attachments.length ? attachments : undefined
   }
 
-  public async shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
@@ -827,7 +833,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return true
   }
 
-  public async shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
@@ -843,7 +852,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
 
     if (!request) {
-      throw new AriesFrameworkError(`Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`)
+      throw new AriesFrameworkError(
+        `Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`
+      )
     }
 
     const proofRequest = request.indyProofRequest
@@ -899,7 +910,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return true
   }
 
-  public async shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToPresentation(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     this.logger.debug(`Should auto respond to presentation for proof record id: ${proofRecord.id}`)
     return true
   }

@@ -458,7 +458,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     return { message: presentationMessage, proofRecord: options.proofRecord }
   }
 
-  public async processPresentation(messageContext: InboundMessageContext<V2PresentationMessage>): Promise<ProofExchangeRecord> {
+  public async processPresentation(
+    messageContext: InboundMessageContext<V2PresentationMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationMessage, connection: connectionRecord } = messageContext
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
@@ -559,7 +561,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     }
   }
 
-  public async processAck(messageContext: InboundMessageContext<V2PresentationAckMessage>): Promise<ProofExchangeRecord> {
+  public async processAck(
+    messageContext: InboundMessageContext<V2PresentationAckMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: ackMessage, connection: connectionRecord } = messageContext
 
     const proofRecord = await this.proofRepository.getSingleByQuery(messageContext.agentContext, {
@@ -671,7 +675,10 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     return retVal
   }
 
-  public async shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposalPresentationMessage,
@@ -700,7 +707,10 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     return true
   }
 
-  public async shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposalPresentationMessage,
@@ -716,7 +726,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     })
 
     if (!request) {
-      throw new AriesFrameworkError(`Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`)
+      throw new AriesFrameworkError(
+        `Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`
+      )
     }
 
     const proposalAttachments = proposal.getAttachmentFormats()
@@ -731,7 +743,10 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     return equalityResults.every((x) => x === true)
   }
 
-  public async shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean> {
+  public async shouldAutoRespondToPresentation(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const request = await this.didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,

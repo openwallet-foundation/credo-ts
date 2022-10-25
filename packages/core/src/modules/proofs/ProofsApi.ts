@@ -382,7 +382,7 @@ export class ProofsApi<
    * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
-   * @param proofRecordId The id of the proof record for which to accept the presentation
+   * @param proofRecordId The id of the proof exchange record for which to accept the presentation
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
@@ -582,7 +582,10 @@ export class ProofsApi<
    * @param parentThreadId The parent thread id
    * @returns List containing all proof records matching the given query
    */
-  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofExchangeRecord[]> {
+  public async getByParentThreadAndConnectionId(
+    parentThreadId: string,
+    connectionId?: string
+  ): Promise<ProofExchangeRecord[]> {
     return this.proofRepository.getByParentThreadAndConnectionId(this.agentContext, parentThreadId, connectionId)
   }
 

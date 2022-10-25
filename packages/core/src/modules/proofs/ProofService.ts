@@ -64,7 +64,11 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     return await this.wallet.generateNonce()
   }
 
-  public emitStateChangedEvent(agentContext: AgentContext, proofRecord: ProofExchangeRecord, previousState: ProofState | null) {
+  public emitStateChangedEvent(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord,
+    previousState: ProofState | null
+  ) {
     const clonedProof = JsonTransformer.clone(proofRecord)
 
     this.eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
@@ -177,9 +181,15 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
 
   abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
-  public abstract shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean>
+  public abstract shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean>
 
-  public abstract shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<boolean>
+  public abstract shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean>
 
   public abstract shouldAutoRespondToPresentation(
     agentContext: AgentContext,
