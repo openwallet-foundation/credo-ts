@@ -113,6 +113,8 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
         maximumMessagePickup: agentConfig.maximumMessagePickup,
         mediatorInvitationUrl: agentConfig.mediatorConnectionsInvite,
         mediatorPickupStrategy: agentConfig.mediatorPickupStrategy,
+        baseMediatorReconnectionIntervalMs: agentConfig.baseMediatorReconnectionIntervalMs,
+        maximumMediatorReconnectionIntervalMs: agentConfig.maximumMediatorReconnectionIntervalMs,
         mediatorPollingInterval: agentConfig.mediatorPollingInterval,
       }),
     basicMessages: () => new BasicMessagesModule(),

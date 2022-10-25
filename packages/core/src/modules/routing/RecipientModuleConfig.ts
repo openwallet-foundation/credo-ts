@@ -37,6 +37,29 @@ export interface RecipientModuleConfigOptions {
   maximumMessagePickup?: number
 
   /**
+   * Initial interval in milliseconds between reconnection attempts when losing connection with the mediator. This value is doubled after
+   * each retry, resulting in an exponential backoff strategy.
+   *
+   * For instance, if maximumMediatorReconnectionIntervalMs is b, the agent will attempt to reconnect after b, 2*b, 4*b, 8*b, 16*b, ... ms.
+   *
+   * This is only applicable when pickup protocol v2 or implicit pickup is used.
+   *
+   * @default 100
+   */
+  baseMediatorReconnectionIntervalMs?: number
+
+  /**
+   * Maximum interval in milliseconds between reconnection attempts when losing connection with the mediator.
+   *
+   * For instance, if maximumMediatorReconnectionIntervalMs is set to 1000 and maximumMediatorReconnectionIntervalMs is set to 10000,
+   * the agent will attempt to reconnect after 1000, 2000, 4000, 8000, 10000, ..., 10000 ms.
+   *
+   * This is only applicable when pickup protocol v2 or implicit pickup is used.
+   * @default Number.POSITIVE_INFINITY
+   */
+  maximumMediatorReconnectionIntervalMs?: number
+
+  /**
    * Invitation url for connection to a mediator. If provided, a connection to the mediator will be made, and the mediator will be set as default.
    * This is meant as the simplest form of connecting to a mediator, if more control is desired the api should be used.
    *
@@ -65,6 +88,16 @@ export class RecipientModuleConfig {
   /** See {@link RecipientModuleConfigOptions.maximumMessagePickup} */
   public get maximumMessagePickup() {
     return this.options.maximumMessagePickup ?? 10
+  }
+
+  /** See {@link RecipientModuleConfigOptions.baseMediatorReconnectionIntervalMs} */
+  public get baseMediatorReconnectionIntervalMs() {
+    return this.options.baseMediatorReconnectionIntervalMs ?? 100
+  }
+
+  /** See {@link RecipientModuleConfigOptions.maximumMediatorReconnectionIntervalMs} */
+  public get maximumMediatorReconnectionIntervalMs() {
+    return this.options.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
   }
 
   /** See {@link RecipientModuleConfigOptions.mediatorInvitationUrl} */
