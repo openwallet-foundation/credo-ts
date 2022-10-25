@@ -117,7 +117,9 @@ export class OutOfBandService {
           shareContactRequest.id,
           SHARE_CONTACT_TIMEOUT_MS
         )
-        if (completionEvent.payload.request.state === ShareContactState.Declined) return
+        if (completionEvent.payload.request.state === ShareContactState.Declined) {
+          throw new AriesFrameworkError('Contact request declined by other party')
+        }
       }
 
       await this.didService.storeRemoteDid({
