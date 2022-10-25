@@ -164,7 +164,7 @@ export class ProofsApi<
    * to include in the message
    * @returns Proof record associated with the sent proposal message
    */
-  public async proposeProof(options: ProposeProofOptions): Promise<ProofRecord> {
+  public async proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofRecord> {
     const service = this.getService(options.protocolVersion)
 
     const { connectionId } = options
@@ -247,7 +247,7 @@ export class ProofsApi<
    * @param options multiple properties like connection id, protocol version, proof Formats to build the proof request
    * @returns Proof record associated with the sent request message
    */
-  public async requestProof(options: RequestProofOptions): Promise<ProofRecord> {
+  public async requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofRecord> {
     const service = this.getService(options.protocolVersion)
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
@@ -456,6 +456,7 @@ export class ProofsApi<
   /**
    * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   *
    * If restrictions allow, self attested attributes will be used.
    *
    * @param options multiple properties like proof record id and optional configuration

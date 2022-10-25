@@ -5,7 +5,6 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import {
   AttributeFilter,
   ProofAttributeInfo,
-  ProofProtocolVersion,
   utils,
   V1CredentialPreview,
   ConnectionEventTypes,
@@ -190,7 +189,7 @@ export class Faber extends BaseAgent {
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
     await this.agent.proofs.requestProof({
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       connectionId: connectionRecord.id,
       proofFormats: {
         indy: {

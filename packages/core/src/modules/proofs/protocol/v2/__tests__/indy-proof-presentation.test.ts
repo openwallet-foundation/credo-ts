@@ -1,8 +1,10 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProposeProofOptions, AcceptProposalOptions } from '../../../ProofsApiOptions'
+import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { ProofRecord } from '../../../repository/ProofRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
+import type { V2ProofService } from '../V2ProofService'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -12,7 +14,6 @@ import {
   V2_INDY_PRESENTATION_REQUEST,
   V2_INDY_PRESENTATION,
 } from '../../../formats/ProofFormatConstants'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -45,9 +46,13 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions = {
+    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
@@ -58,13 +63,7 @@ describe('Present Proof', () => {
         },
       },
       comment: 'V2 propose proof test',
-    }
-
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberPresentationRecordPromise
@@ -100,7 +99,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 
@@ -154,7 +153,7 @@ describe('Present Proof', () => {
       id: expect.anything(),
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 
@@ -214,7 +213,7 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.PresentationReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 

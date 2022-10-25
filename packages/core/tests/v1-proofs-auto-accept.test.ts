@@ -1,5 +1,7 @@
 import type { Agent, ConnectionRecord } from '../src'
 import type { ProposeProofOptions, RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
+import type { V1ProofService } from '../src/modules/proofs/protocol/v1/V1ProofService'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 
 import {
@@ -10,7 +12,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 
 import { setupProofsTest, waitForProofRecord } from './helpers'
 import testLogger from './logger'
@@ -42,9 +43,9 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const proposeProofOptions: ProposeProofOptions = {
+      const proposeProofOptions: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
         proofFormats: {
           indy: {
             nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
@@ -98,8 +99,16 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofOptions = {
-        protocolVersion: ProofProtocolVersion.V1,
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+      })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      await faberAgent.proofs.requestProof({
+        protocolVersion: 'v1',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {
@@ -110,16 +119,7 @@ describe('Auto accept present proof', () => {
             requestedPredicates: predicates,
           },
         },
-      }
-      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
-        state: ProofState.Done,
       })
-
-      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-        state: ProofState.Done,
-      })
-
-      await faberAgent.proofs.requestProof(requestProofsOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
 
@@ -151,9 +151,9 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const proposal: ProposeProofOptions = {
+      const proposal: ProposeProofOptions<[IndyProofFormat], [V1ProofService]> = {
         connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V1,
+        protocolVersion: 'v1',
         proofFormats: {
           indy: {
             nonce: '1298236324864',
@@ -219,8 +219,16 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const requestProofsOptions: RequestProofOptions = {
-        protocolVersion: ProofProtocolVersion.V1,
+      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
+        state: ProofState.Done,
+      })
+
+      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      await faberAgent.proofs.requestProof({
+        protocolVersion: 'v1',
         connectionId: faberConnection.id,
         proofFormats: {
           indy: {
@@ -231,17 +239,7 @@ describe('Auto accept present proof', () => {
             requestedPredicates: predicates,
           },
         },
-      }
-
-      const faberProofRecordPromise = waitForProofRecord(faberAgent, {
-        state: ProofState.Done,
       })
-
-      const aliceProofRecordPromise = waitForProofRecord(aliceAgent, {
-        state: ProofState.Done,
-      })
-
-      await faberAgent.proofs.requestProof(requestProofsOptions)
 
       testLogger.test('Faber waits for presentation from Alice')
       await faberProofRecordPromise

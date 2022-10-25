@@ -16,7 +16,6 @@ import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
-import { ProofProtocolVersion } from '../models/ProofProtocolVersion'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
 import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from '../protocol/v2/messages'
@@ -85,7 +84,7 @@ const mockProofRecord = ({
   })
 
   const proofRecord = new ProofRecord({
-    protocolVersion: ProofProtocolVersion.V2,
+    protocolVersion: 'v2',
     id,
     state: state || ProofState.RequestSent,
     threadId: threadId ?? requestPresentationMessage.id,
