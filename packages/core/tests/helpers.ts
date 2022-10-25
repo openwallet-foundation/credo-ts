@@ -15,8 +15,10 @@ import type {
 import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { RequestProofOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { IndyProofFormat } from '../src/modules/proofs/formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { V2ProofService } from '../src/modules/proofs/protocol/v2'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -55,7 +57,6 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { PredicateType } from '../src/modules/proofs/formats/indy/models'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import {
   PresentationPreview,
@@ -581,8 +582,11 @@ export async function presentProof({
   verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
 
-  const requestProofsOptions: RequestProofOptions = {
-    protocolVersion: ProofProtocolVersion.V1,
+  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
+    state: ProofState.RequestReceived,
+  })
+
+  let verifierRecord = await verifierAgent.proofs.requestProof({
     connectionId: verifierConnectionId,
     proofFormats: {
       indy: {
@@ -593,13 +597,8 @@ export async function presentProof({
         nonce: '947121108704767252195123',
       },
     },
-  }
-
-  let holderProofRecordPromise = waitForProofRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
+    protocolVersion: 'v2',
   })
-
-  let verifierRecord = await verifierAgent.proofs.requestProof(requestProofsOptions)
 
   let holderRecord = await holderProofRecordPromise
 
