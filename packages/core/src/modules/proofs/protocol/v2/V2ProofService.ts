@@ -42,7 +42,6 @@ import { PresentationProblemReportReason } from '../../errors/PresentationProble
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
-import { ProofProtocolVersion } from '../../models/ProofProtocolVersion'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofRecord, ProofRepository } from '../../repository'
 
@@ -114,7 +113,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       threadId: proposalMessage.threadId,
       parentThreadId: proposalMessage.thread?.parentThreadId,
       state: ProofState.ProposalSent,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     await this.proofRepository.save(agentContext, proofRecord)
@@ -214,7 +213,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
         state: ProofState.ProposalReceived,
-        protocolVersion: ProofProtocolVersion.V2,
+        protocolVersion: 'v2',
       })
 
       // Assert
@@ -264,7 +263,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       threadId: requestMessage.threadId,
       parentThreadId: requestMessage.thread?.parentThreadId,
       state: ProofState.RequestSent,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     await this.proofRepository.save(agentContext, proofRecord)
@@ -397,7 +396,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
         state: ProofState.RequestReceived,
-        protocolVersion: ProofProtocolVersion.V2,
+        protocolVersion: 'v2',
       })
 
       await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {

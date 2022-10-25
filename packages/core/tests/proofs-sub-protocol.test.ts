@@ -8,7 +8,6 @@ import {
   ProofPredicateInfo,
   PredicateType,
 } from '../src/modules/proofs/formats/indy/models'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { uuid } from '../src/utils/uuid'
 
@@ -52,7 +51,7 @@ describe('Present Proof Subprotocol', () => {
 
     aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       parentThreadId,
       proofFormats: {
         indy: {
@@ -157,7 +156,7 @@ describe('Present Proof Subprotocol', () => {
     const faberProofRecord = await faberAgent.proofs.requestProof({
       connectionId: faberConnection.id,
       parentThreadId,
-      protocolVersion: ProofProtocolVersion.V1,
+      protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -227,7 +226,7 @@ describe('Present Proof Subprotocol', () => {
 
     aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       parentThreadId,
       proofFormats: {
         indy: {
@@ -332,7 +331,7 @@ describe('Present Proof Subprotocol', () => {
     const faberProofRecord = await faberAgent.proofs.requestProof({
       connectionId: faberConnection.id,
       parentThreadId,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'proof-request',
