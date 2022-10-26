@@ -221,11 +221,10 @@ export class ValueTransferGetterService {
     const { error, transaction, message } = await this.getter.acceptCash(requestAcceptanceWitnessed)
     if (error || !transaction || !message) {
       this.logger.error(`VTP: Failed to process Request Acceptance: ${error?.message}`)
-      return {}
     }
 
     // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(requestAcceptanceWitnessed.thid)
 
     this.logger.info(
       `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
@@ -253,11 +252,10 @@ export class ValueTransferGetterService {
     const { error, transaction, message } = await this.getter.processReceipt(receipt)
     if (error || !transaction || !message) {
       this.logger.error(`VTP: Failed to process Receipt: ${error?.message}`)
-      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(receipt.thid)
 
     this.logger.info(`< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`)
     return { record }
