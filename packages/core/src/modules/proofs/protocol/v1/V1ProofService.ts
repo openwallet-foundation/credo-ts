@@ -652,10 +652,6 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return proofRecord
   }
 
-  public async generateProofRequestNonce() {
-    return this.wallet.generateNonce()
-  }
-
   public async createProofRequestFromProposal(
     agentContext: AgentContext,
     options: CreateProofRequestFromProposalOptions
