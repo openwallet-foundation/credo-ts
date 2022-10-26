@@ -94,7 +94,7 @@ export class OutOfBandService {
   }
 
   public async acceptOutOfBandInvitation(message: OutOfBandInvitationMessage) {
-    const { goalCode, goal } = message.body
+    const { goalCode } = message.body
 
     if (goalCode === OutOfBandGoalCode.DidExchange || goalCode === OutOfBandGoalCode.ShareContact) {
       const did = await this.didResolverService.resolve(message.from)
