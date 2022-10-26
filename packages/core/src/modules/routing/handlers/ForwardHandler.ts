@@ -29,7 +29,7 @@ export class ForwardHandler implements Handler {
     // message to the connection associated with it
     const service = await this.messageSender.findCommonSupportedServices(undefined, messageContext.message.body.next)
     if (service) {
-      await this.messageSender.sendMessage(encryptedMessage, service, messageContext.message.body.next)
+      await this.messageSender.sendPackedMessage(encryptedMessage, service, messageContext.message.body.next)
     }
   }
 }

@@ -228,7 +228,8 @@ export class MessageReceiver {
       this.logger.warn('Message cannot handled as relay because there is not supported transport to deliver it.')
       return
     }
-    await this.messageSender.sendMessage(message.message, services, did)
+
+    await this.messageSender.sendPackedMessage(message.message, services, did)
 
     this.logger.info('> Handle message as relay completed!')
     return
