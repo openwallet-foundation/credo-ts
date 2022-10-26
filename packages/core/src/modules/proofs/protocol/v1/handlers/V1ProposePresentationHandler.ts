@@ -5,7 +5,7 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type { IndyProofRequestFromProposalOptions } from '../../../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
@@ -39,7 +39,7 @@ export class V1ProposePresentationHandler implements Handler {
   }
 
   private async createRequest(
-    proofRecord: ProofRecord,
+    proofRecord: ProofExchangeRecord,
     messageContext: HandlerInboundMessage<V1ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(

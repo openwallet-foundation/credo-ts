@@ -13,7 +13,7 @@
 
 import type { DeriveProofOptions, VerifyProofOptions, CreateVerifyDataOptions, CanonizeOptions } from '../types'
 import type { VerifyProofResult } from '../types/VerifyProofResult'
-import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core/src'
+import type { JsonObject, DocumentLoader, Proof } from '@aries-framework/core'
 
 import { AriesFrameworkError, TypedArrayEncoder, SECURITY_CONTEXT_URL, vcLibraries } from '@aries-framework/core'
 import { blsCreateProof, blsVerifyProof } from '@mattrglobal/bbs-signatures'

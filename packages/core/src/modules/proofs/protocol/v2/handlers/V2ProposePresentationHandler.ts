@@ -8,7 +8,7 @@ import type {
   CreateRequestAsResponseOptions,
   ProofRequestFromProposalOptions,
 } from '../../../models/ProofServiceOptions'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
 import { createOutboundMessage } from '../../../../../agent/helpers'
@@ -43,7 +43,7 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
   }
 
   private async createRequest(
-    proofRecord: ProofRecord,
+    proofRecord: ProofExchangeRecord,
     messageContext: HandlerInboundMessage<V2ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(

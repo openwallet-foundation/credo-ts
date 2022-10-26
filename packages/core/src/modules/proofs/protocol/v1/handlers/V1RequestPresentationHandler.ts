@@ -8,7 +8,7 @@ import type {
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
 } from '../../../models/ProofServiceOptions'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
@@ -50,7 +50,7 @@ export class V1RequestPresentationHandler implements Handler {
   }
 
   private async createPresentation(
-    record: ProofRecord,
+    record: ProofExchangeRecord,
     messageContext: HandlerInboundMessage<V1RequestPresentationHandler>
   ) {
     const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {

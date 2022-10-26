@@ -9,6 +9,7 @@ import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOpti
 import type { RequestedAttribute } from './models/RequestedAttribute'
 import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
 import type { RequestedPredicate } from './models/RequestedPredicate'
+import type { IndyProof, IndyProofRequest } from 'indy-sdk'
 
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
@@ -59,19 +60,10 @@ export interface IndyProofFormat extends ProofFormat {
     requestCredentials: IndyRequestedCredentialsFormat
     retrieveCredentials: IndyRetrievedCredentialsFormat
   }
-  // Format data is based on RFC 0592
-  // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
-  // formatData: {
-  //   proposal: {
-  //     schema_issuer_did?: string
-  //     schema_name?: string
-  //     schema_version?: string
-  //     schema_id?: string
-  //     issuer_did?: string
-  //     cred_def_id?: string
-  //   }
-  //   offer: CredOffer
-  //   request: CredReq
-  //   credential: Cred
-  // }
+
+  formatData: {
+    proposal: IndyProofRequest
+    request: IndyProofRequest
+    presentation: IndyProof
+  }
 }

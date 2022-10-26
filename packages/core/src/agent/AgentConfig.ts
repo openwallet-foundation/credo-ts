@@ -104,11 +104,16 @@ export class AgentConfig {
   public get maximumMessagePickup() {
     return this.initConfig.maximumMessagePickup ?? 10
   }
-
+  /**
+   * @deprecated use baseMediatorReconnectionIntervalMs from the `RecipientModuleConfig` class
+   */
   public get baseMediatorReconnectionIntervalMs() {
     return this.initConfig.baseMediatorReconnectionIntervalMs ?? 100
   }
 
+  /**
+   * @deprecated use maximumMediatorReconnectionIntervalMs from the `RecipientModuleConfig` class
+   */
   public get maximumMediatorReconnectionIntervalMs() {
     return this.initConfig.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
   }

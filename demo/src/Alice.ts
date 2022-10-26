@@ -1,4 +1,4 @@
-import type { ConnectionRecord, CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -51,7 +51,7 @@ export class Alice extends BaseAgent {
     })
   }
 
-  public async acceptProofRequest(proofRecord: ProofRecord) {
+  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
     const requestedCredentials = await this.agent.proofs.autoSelectCredentialsForProofRequest({
       proofRecordId: proofRecord.id,
       config: {
