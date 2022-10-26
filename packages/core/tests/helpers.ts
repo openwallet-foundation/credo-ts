@@ -25,7 +25,7 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { BbsModule } from '../../module-bbs/src/BbsModule'
+import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   Agent,
