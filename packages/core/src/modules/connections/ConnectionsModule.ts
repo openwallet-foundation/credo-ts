@@ -1,6 +1,7 @@
 import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { TrustPingMessageV2 } from './messages'
+import type { ShareContactStateChangedEvent } from './ConnectionEvents'
+import type { TrustPingMessageV2, ShareContactRequestMessage, ShareContactResponseMessage } from './messages'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
@@ -29,9 +30,12 @@ import {
   DidExchangeCompleteHandler,
   TrustPingResponseMessageV2Handler,
   TrustPingMessageV2Handler,
+  ShareContactRequestHandler,
+  ShareContactResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionRepository } from './repository'
+import { ShareContactService } from './services'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -43,6 +47,7 @@ export class ConnectionsModule {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandServiceV2
   private messageSender: MessageSender
+  private shareContactService: ShareContactService
   private trustPingService: TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -54,6 +59,7 @@ export class ConnectionsModule {
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandServiceV2,
+    shareContactService: ShareContactService,
     trustPingService: TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
@@ -64,6 +70,7 @@ export class ConnectionsModule {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
+    this.shareContactService = shareContactService
     this.trustPingService = trustPingService
     this.routingService = routingService
     this.didRepository = didRepository
@@ -257,6 +264,48 @@ export class ConnectionsModule {
   }
 
   /**
+   * Share public DID with other party by sending Share Contact Request message
+   *
+   * @param to DID of recipient
+   * @param invitationId ID of Out-of-Band invitation from recipient
+   *
+   * @returns The sent Share Contact Request message
+   */
+  public sendShareContactRequest(to: string, invitationId: string): Promise<ShareContactRequestMessage> {
+    return this.shareContactService.sendShareContactRequest(to, invitationId)
+  }
+
+  /**
+   * Await response on Share Contact message
+   *
+   * @param id ID of sent Share Contact message
+   * @param timeoutMs Milliseconds to wait for response
+   */
+  public async awaitShareContactCompleted(id: string, timeoutMs = 20000): Promise<ShareContactStateChangedEvent> {
+    return this.shareContactService.awaitShareContactCompleted(id, timeoutMs)
+  }
+
+  /**
+   * Accept contact request from Share Contact Request message
+   *
+   * @param contactDid Contact Did
+   * @param threadId Thread Id of Share Contact protocol
+   */
+  public async acceptContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.acceptContact(contactDid, threadId)
+  }
+
+  /**
+   * Decline contact request from Share Contact Request message
+   *
+   * @param contactDid Contact Did
+   * @param threadId Thread Id of Share Contact protocol
+   */
+  public async declineContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.declineContact(contactDid, threadId)
+  }
+
+  /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
    * @returns An array of known connection types or null if none exist
@@ -396,6 +445,9 @@ export class ConnectionsModule {
       )
     )
     dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+
+    dispatcher.registerHandler(new ShareContactRequestHandler(this.shareContactService))
+    dispatcher.registerHandler(new ShareContactResponseHandler(this.shareContactService))
   }
 
   /**
@@ -408,6 +460,7 @@ export class ConnectionsModule {
     // Services
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
+    dependencyManager.registerSingleton(ShareContactService)
     dependencyManager.registerSingleton(TrustPingService)
 
     // Repositories

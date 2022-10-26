@@ -3,6 +3,7 @@ import type { TransactionRole } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Transaction } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { Type } from 'class-transformer'
+import { IsOptional, IsString } from 'class-validator'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -25,6 +26,10 @@ export interface ValueTransferStorageProps {
 export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, CustomValueTransferTags> {
   @Type(() => Transaction)
   public transaction!: Transaction
+
+  @IsString()
+  @IsOptional()
+  public secondPartyDid?: string
 
   public static readonly type = 'ValueTransferRecord'
   public readonly type = ValueTransferRecord.type

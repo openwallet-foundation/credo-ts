@@ -16,7 +16,7 @@
     "directory": "packages/peer-did-ts"
   },
   "scripts": {
-    "build": "yarn run clean && yarn run compile",
+    "build": "npx rimraf -rf build && yarn run compile",
     "clean": "npx rimraf -rf build node_modules",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "yarn run build",
