@@ -73,7 +73,7 @@ export const doesNotHasInternetChecker: InternetChecker = {
 
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =
-    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6ImIwMWNiNTI2LTNkNjAtNDY3OC1hMDRhLWY4NDVjMzZkYjRlNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
+    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjEzNjk0YzJmLTM4ZTktNGUzNC1hNDlhLTI5OWY5NDViY2Y3OSIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
 
   public static witnessTable = [
     {
@@ -135,14 +135,14 @@ export class BaseAgent {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      mediatorPickupStrategy: MediatorPickupStrategy.Implicit,
-      mediatorPollingInterval: 500000,
+      mediatorPickupStrategy: MediatorPickupStrategy.Combined,
+      mediatorPollingInterval: 5000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
       internetChecker: props.internetChecker ? props.internetChecker : internetChecker,
-      logger,
+      // logger,
     }
 
     this.config = config

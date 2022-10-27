@@ -222,13 +222,14 @@ export class MessageReceiver {
       return
     }
 
-    const service = await this.messageSender.findCommonSupportedService(undefined, did)
-    if (!service) {
+    const services = await this.messageSender.findCommonSupportedServices(undefined, did)
+    if (!services?.length) {
       // if service not found - log error and return
       this.logger.warn('Message cannot handled as relay because there is not supported transport to deliver it.')
       return
     }
-    await this.messageSender.sendMessage(message.message, service, did)
+
+    await this.messageSender.sendPackedMessage(message.message, services, did)
 
     this.logger.info('> Handle message as relay completed!')
     return

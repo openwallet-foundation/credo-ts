@@ -20,7 +20,7 @@ import {
   timer,
   merge,
 } from 'rxjs'
-import { catchError, map, filter, first, takeUntil, timeout, retry } from 'rxjs/operators'
+import { catchError, map, filter, first, takeUntil, timeout } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'

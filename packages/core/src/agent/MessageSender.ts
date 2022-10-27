@@ -262,11 +262,11 @@ export class MessageSender {
 
       if (sendingMessageType === SendingMessageType.Plain) {
         // send message plaintext
-        return await this.sendPlaintextMessage(message, service)
+        return await this.sendPlaintextMessage(message, [service])
       }
 
       if (sendingMessageType === SendingMessageType.Signed) {
-        return await this.sendSignedMessage(message, service)
+        return await this.sendSignedMessage(message, [service])
       }
 
       if (sendingMessageType === SendingMessageType.Encrypted) {
@@ -280,9 +280,9 @@ export class MessageSender {
 
     // find service transport supported for both sender and receiver
     const recipient = message.recipient()
-    const senderToRecipientService = await this.findCommonSupportedService(message.sender, recipient, transports)
+    const senderToRecipientService = await this.findCommonSupportedServices(message.sender, recipient, transports)
 
-    if (senderToRecipientService) {
+    if (senderToRecipientService?.length) {
       if (sendingMessageType === SendingMessageType.Plain) {
         // send message plaintext
         return await this.sendPlaintextMessage(message, senderToRecipientService)
@@ -309,11 +309,11 @@ export class MessageSender {
     )
   }
 
-  public async findCommonSupportedService(
+  public async findCommonSupportedServices(
     sender?: string,
     recipient?: string,
     priorityTransports?: Transports[]
-  ): Promise<DidCommV2Service | undefined> {
+  ): Promise<DidCommV2Service[] | undefined> {
     if (!recipient) return undefined
 
     const { didDocument: senderDidDocument } = await this.didResolverService.resolve(sender)
@@ -341,11 +341,11 @@ export class MessageSender {
       return priority.indexOf(a.protocolScheme) - priority.indexOf(b.protocolScheme)
     })
 
-    const service = services.find((service) => {
+    const commonServices = services.filter((service) => {
       if (priority.includes(service.protocolScheme)) return service
     })
 
-    return service
+    return commonServices
   }
 
   private async encryptedMessage(message: DIDCommV2Message, service: DidDocumentService, forward?: boolean) {
@@ -364,36 +364,40 @@ export class MessageSender {
     return this.envelopeService.packMessageEncrypted(message, params)
   }
 
-  private async sendPlaintextMessage(message: DIDCommV2Message, service: DidDocumentService) {
+  private async sendPlaintextMessage(message: DIDCommV2Message, services: DidDocumentService[]) {
     this.agentConfig.logger.debug(`Sending plaintext message ${message.id}`)
     const recipientDid = message.recipient()
-    const payload = { ...message }
-    return this.sendMessage(payload, service, recipientDid)
+    return this.sendMessage(message, services, recipientDid)
   }
 
-  private async sendSignedMessage(message: DIDCommV2Message, service: DidDocumentService) {
-    if (!message.from) {
-      throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
-    }
-
+  private async sendSignedMessage(message: DIDCommV2Message, services: DidDocumentService[]) {
     this.agentConfig.logger.debug(`Sending JWS message ${message.id}`)
 
-    const params = { signByDID: message.from, serviceId: service?.id }
     const recipientDid = message.recipient()
 
-    const payload = await this.envelopeService.packMessageSigned(message, params)
+    const pack = async (message: DIDCommV2Message, service: DidDocumentService) => {
+      if (!message.from) {
+        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
+      }
+      const params = { signByDID: message.from, serviceId: service?.id }
+      return this.envelopeService.packMessageSigned(message, params)
+    }
 
-    return this.sendMessage(payload, service, recipientDid)
+    return this.sendMessage(message, services, recipientDid, pack)
   }
 
-  private async sendEncryptedMessage(message: DIDCommV2Message, service: DidDocumentService) {
+  private async sendEncryptedMessage(message: DIDCommV2Message, services: DidDocumentService[]) {
     const recipientDid = message.recipient()
     if (!recipientDid) {
       throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
     }
     this.agentConfig.logger.debug(`Sending JWE message ${message.id}`)
-    const encryptedMessage = await this.encryptedMessage(message, service)
-    return this.sendMessage(encryptedMessage, service, recipientDid)
+
+    const pack = async (message: DIDCommV2Message, service: DidDocumentService) => {
+      return await this.encryptedMessage(message, service)
+    }
+
+    return this.sendMessage(message, services, recipientDid, pack)
   }
 
   private async sendMessageViaProxy(
@@ -405,38 +409,67 @@ export class MessageSender {
     // only encrypted message can be sent via proxy
     if (sendingMessageType !== SendingMessageType.Encrypted) return
 
-    this.agentConfig.logger.info(`Sending message ${message.id} using proxy: ${proxy}`)
+    this.agentConfig.logger.info(`Sending message ${message.id} using proxy ${proxy}`)
 
     // Try to use proxy
     // find service transport supported for both proxy and receiver + sender and proxy
-    const proxyToRecipientSupportedService = await this.findCommonSupportedService(
+    const proxyToRecipientSupportedServices = await this.findCommonSupportedServices(
       proxy,
       message.recipient(),
       transports
     )
-    if (!proxyToRecipientSupportedService) return
+    if (!proxyToRecipientSupportedServices?.length) {
+      this.agentConfig.logger.warn(
+        `Could not send message ${
+          message.id
+        } to ${message.recipient()} using proxy ${proxy} because common transport between proxy and recipient is not found!`
+      )
+      return
+    }
 
-    const senderToProxyService = await this.findCommonSupportedService(message.sender, proxy, transports)
-    if (!senderToProxyService) return
+    const senderToProxyServices = await this.findCommonSupportedServices(message.sender, proxy, transports)
+    if (!senderToProxyServices?.length) {
+      this.agentConfig.logger.warn(
+        `Could not send message ${message.id} from ${message.sender} using proxy ${proxy} because common transport between sender and proxy is not found!`
+      )
+      return
+    }
 
-    const encryptedMessage = await this.prepareMessageForProxy(
-      message,
-      proxy,
-      proxyToRecipientSupportedService,
-      senderToProxyService
-    )
+    const encryptedMessage = await this.encryptedMessage(message, proxyToRecipientSupportedServices[0])
 
-    return this.sendMessage(encryptedMessage, senderToProxyService, proxy)
+    for (const service of senderToProxyServices) {
+      try {
+        this.logger.info(
+          `Sending message ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
+        const encryptedMessageForProxy = await this.prepareMessageForProxy(message, encryptedMessage, proxy, service)
+        const outboundPackage = {
+          payload: encryptedMessageForProxy,
+          recipientDid: proxy,
+          endpoint: service.serviceEndpoint,
+        }
+        await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+        this.logger.info(
+          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
+        return
+      } catch (error) {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+          errors: error,
+        })
+        // ignore and try another transport
+      }
+    }
+    this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
   }
 
   private async prepareMessageForProxy(
     message: DIDCommV2Message,
+    encryptedMessage: EncryptedMessage,
     proxy: string,
-    proxyToRecipientSupportedService: DidCommV2Service,
     senderToProxyService: DidCommV2Service
   ): Promise<EncryptedMessage> {
     this.agentConfig.logger.debug(`Prepare message ${message.id} for proxy: ${proxy}`)
-    let encryptedMessage = await this.encryptedMessage(message, proxyToRecipientSupportedService)
 
     // if proxy uses mediator -> we need to wrap our encrypted message into additional forward
     if (senderToProxyService.routingKeys?.length) {
@@ -455,9 +488,48 @@ export class MessageSender {
     return encryptedMessage
   }
 
-  public async sendMessage(message: OutboundPackagePayload, service: DidDocumentService, recipient?: string) {
-    const outboundPackage = { payload: message, recipientDid: recipient, endpoint: service.serviceEndpoint }
-    await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+  public async sendMessage(
+    message: DIDCommV2Message,
+    services: DidDocumentService[],
+    recipientDid?: string,
+    packMessage?: (message: DIDCommV2Message, service: DidDocumentService) => Promise<OutboundPackagePayload>
+  ) {
+    for (const service of services) {
+      try {
+        this.logger.info(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        const payload = packMessage ? await packMessage(message, service) : { ...message }
+        const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
+        await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+        this.logger.info(
+          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
+        return
+      } catch (error) {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+          errors: error,
+        })
+        // ignore and try another transport
+      }
+    }
+    this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
+  }
+
+  public async sendPackedMessage(message: EncryptedMessage, services: DidDocumentService[], recipientDid?: string) {
+    for (const service of services) {
+      try {
+        this.logger.info(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        const outboundPackage = { payload: message, recipientDid, endpoint: service.serviceEndpoint }
+        await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+        this.logger.info(`Message sent to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        return
+      } catch (error) {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+          errors: error,
+        })
+        // ignore and try another transport
+      }
+    }
+    this.logger.error(`Unable to send message through any commonly supported transport.`)
   }
 
   public async packAndSendMessage({
