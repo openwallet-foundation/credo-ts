@@ -4,8 +4,6 @@ import type { DIDCommV2MessageParams } from '../DIDCommV2BaseMessage'
 import type { PlaintextMessage } from '../DIDCommV2EnvelopeService'
 import type { Secret } from 'didcomm'
 
-import { Equals } from 'class-validator'
-
 import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
 import { DidType } from '../../../../modules/dids/domain/Did'
 import { DidDocument } from '../../../../modules/dids/domain/DidDocument'
