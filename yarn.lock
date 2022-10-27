@@ -10,11 +10,6 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@animo-id/react-native-bbs-signatures@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@animo-id/react-native-bbs-signatures/-/react-native-bbs-signatures-0.1.0.tgz#f62bc16b867c9f690977982d66f0a03566b21ad2"
-  integrity sha512-7qvsiWhGfUev8ngE8YzF6ON9PtCID5LiYVYM4EC5eyj80gCdhx3R46CI7K1qbqIlGsoTYQ/Xx5Ubo5Ji9eaUEA==
-
 "@azure/core-asynciterator-polyfill@^1.0.0":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@azure/core-asynciterator-polyfill/-/core-asynciterator-polyfill-1.0.2.tgz#0dd3849fb8d97f062a39db0e5cadc9ffaf861fec"
