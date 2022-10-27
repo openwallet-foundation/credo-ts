@@ -109,15 +109,10 @@ export class OutOfBandService {
       }
 
       if (goalCode === OutOfBandGoalCode.ShareContact) {
-        // Workaround to pass contact request label from client side
-        // FIXME: Find better way to do this
-        const attachment = message.getOutOfBandAttachment()
-        const contactRequestLabel = attachment?.contactRequestLabel as string | undefined
-
         const shareContactRequest = await this.shareContactService.sendShareContactRequest({
           to: did.didDocument.id,
           invitationId: message.id,
-          contactLabel: contactRequestLabel,
+          contactLabel: this.agentConfig.label,
         })
 
         const completionEvent = await this.shareContactService.awaitShareContactCompleted(
