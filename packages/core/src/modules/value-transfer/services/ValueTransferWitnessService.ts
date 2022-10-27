@@ -130,11 +130,10 @@ export class ValueTransferWitnessService {
         ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed.`,
         { error }
       )
-      return {}
     }
 
     // Rasie event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(cashAcceptedMessage.thid)
 
     this.logger.info(
       `< Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
@@ -173,11 +172,10 @@ export class ValueTransferWitnessService {
       this.logger.error(` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed.`, {
         error,
       })
-      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(cashRemovedMessage.thid)
 
     this.logger.info(
       `< Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`

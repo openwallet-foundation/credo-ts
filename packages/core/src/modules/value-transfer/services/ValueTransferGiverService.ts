@@ -151,11 +151,10 @@ export class ValueTransferGiverService {
       this.logger.error(
         ` Giver: process request message for VTP transaction ${requestMessage.id} failed. Error: ${error}`
       )
-      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(requestMessage.id)
 
     // Save second party Did
     record.secondPartyDid = requestMessage.from
@@ -226,11 +225,10 @@ export class ValueTransferGiverService {
       this.logger.error(
         ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} failed. Error: ${error}`
       )
-      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(cashAcceptedWitnessedMessage.thid)
 
     this.logger.info(
       `< Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} completed!`
@@ -263,11 +261,10 @@ export class ValueTransferGiverService {
       this.logger.error(
         ` Giver: process receipt message for VTP transaction ${receiptMessage.thid} failed. Error: ${error}`
       )
-      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(receipt.thid)
 
     this.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
 
