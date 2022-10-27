@@ -63,7 +63,6 @@ describe('Present Proof', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: '947121108704767252195126',
           attributes: presentationPreview.attributes,
           predicates: presentationPreview.predicates,
         },
@@ -383,7 +382,6 @@ describe('Present Proof', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },

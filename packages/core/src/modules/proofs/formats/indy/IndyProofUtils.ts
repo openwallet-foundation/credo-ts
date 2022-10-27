@@ -13,15 +13,7 @@ import { ProofPredicateInfo } from './models/ProofPredicateInfo'
 import { ProofRequest } from './models/ProofRequest'
 
 export class IndyProofUtils {
-  public static async createRequestFromPreview(
-    options: CreateProposalOptions<[IndyProofFormat]>
-  ): Promise<ProofRequestFormats> {
-    const indyFormat = options.proofFormats?.indy
-
-    if (!indyFormat) {
-      throw new AriesFrameworkError('No Indy format found.')
-    }
-
+  public static async createRequestFromPreview(indyFormat: IndyProposeProofFormat): Promise<ProofRequestFormats> {
     const preview = new PresentationPreview({
       attributes: indyFormat.attributes,
       predicates: indyFormat.predicates,

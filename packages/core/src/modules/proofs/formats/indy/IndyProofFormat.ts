@@ -1,3 +1,4 @@
+import type { Optional } from '../../../../utils'
 import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
 import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
@@ -29,9 +30,9 @@ export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'
   proofRecordType: 'indy'
   proofFormats: {
-    createProposal: IndyProposeProofFormat
+    createProposal: Optional<IndyProposeProofFormat, 'nonce'>
     acceptProposal: unknown
-    createRequest: IndyRequestProofFormat
+    createRequest: Optional<IndyRequestProofFormat, 'nonce'>
     acceptRequest: unknown
     createPresentation: IndyRequestedCredentialsOptions
     acceptPresentation: unknown

@@ -669,7 +669,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     const indyProposeProofFormat: IndyProposeProofFormat = {
       name: 'Proof Request',
       version: '1.0',
-      nonce: await this.generateProofRequestNonce(),
+      nonce: await this.wallet.generateNonce(),
     }
 
     const proofRequest: ProofRequest = IndyProofUtils.createReferentForProofRequest(
@@ -1048,7 +1048,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     const indyFormat: IndyProposeProofFormat = {
       name: 'Proof Request',
       version: '1.0',
-      nonce: await this.generateProofRequestNonce(),
+      nonce: await this.wallet.generateNonce(),
       attributes: proposalMessage.presentationProposal.attributes,
       predicates: proposalMessage.presentationProposal.predicates,
     }

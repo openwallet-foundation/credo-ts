@@ -135,7 +135,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     return await this.createProofAttachment({
       id: options.id ?? uuid(),
-      proofProposalOptions: indyFormat,
+      proofProposalOptions: { ...indyFormat, nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()) },
     })
   }
 
@@ -183,9 +183,11 @@ export class IndyProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing indy format to create proof request attachment format.')
     }
 
+    const indyFormat = options.formats.indy
+
     return this.createRequestAttachment({
       id: options.id ?? uuid(),
-      proofRequestOptions: options.formats.indy,
+      proofRequestOptions: { ...indyFormat, nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()) },
     })
   }
 

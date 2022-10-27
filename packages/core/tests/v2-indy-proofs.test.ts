@@ -391,7 +391,6 @@ describe('Present Proof', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },

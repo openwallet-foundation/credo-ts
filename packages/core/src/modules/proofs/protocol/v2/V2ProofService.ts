@@ -6,6 +6,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { IndyProofFormat } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
@@ -87,21 +88,29 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     agentContext: AgentContext,
     options: CreateProposalOptions<PFs>
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
-    const formats = []
+    const attachmentInfo = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(
-        await service.createProposal({
-          formats:
-            key === PresentationRecordType.Indy
-              ? await IndyProofUtils.createRequestFromPreview(options)
-              : options.proofFormats,
+
+      let formats
+      if (key === PresentationRecordType.Indy) {
+        const indyFormat = (options as CreateProposalOptions<[IndyProofFormat]>).proofFormats.indy
+        if (!indyFormat) {
+          throw new AriesFrameworkError('No Indy format found.')
+        }
+        formats = await IndyProofUtils.createRequestFromPreview({
+          ...indyFormat,
+          nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()),
         })
-      )
+      } else {
+        formats = options.proofFormats
+      }
+
+      attachmentInfo.push(await service.createProposal({ formats }))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
-      attachmentInfo: formats,
+      attachmentInfo,
       comment: options.comment,
       willConfirm: options.willConfirm,
       goalCode: options.goalCode,
