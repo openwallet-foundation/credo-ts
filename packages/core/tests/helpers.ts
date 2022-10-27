@@ -900,7 +900,7 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const holderDidKey = new DidKey(aliceKey)
 
   const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_2
-  const credentialJsonDL = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_DL
+  const credentialJsonDL = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_2
 
   credentialJson.id = 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd'
   credentialJson.credentialSubject.id = holderDidKey.did

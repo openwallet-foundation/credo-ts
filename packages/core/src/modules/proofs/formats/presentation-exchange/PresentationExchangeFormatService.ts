@@ -1,6 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
 import type { Query } from '../../../../storage/StorageService'
+import type { W3cCredentialRecord, W3cPresentation } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
   CreateProposalOptions,
@@ -44,7 +45,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { DidResolverService, keyReferenceToKey, keyTypeToProofType } from '../../../dids'
-import { W3cCredentialRecord, W3cCredentialService, W3cPresentation } from '../../../vc'
+import { W3cCredentialService } from '../../../vc'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
@@ -459,7 +460,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     options: FormatRetrievedCredentialOptions<[PresentationExchangeProofFormat]>
   ): Promise<FormatRequestedCredentialReturn<[PresentationExchangeProofFormat]>> {
     const presentationExchange = options.proofFormats.presentationExchange
-
     if (!presentationExchange) {
       throw new AriesFrameworkError('No presentation options provided')
     }
@@ -478,10 +478,12 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // 4 groups in total that satisfy the proof request
     //  for each group I need to know which credentials it needs
 
+    console.log("WOOOOOOOOOOOOOOO QUACK options = ", options.proofFormats.presentationExchange?.formats.matches)
     // How to auto select the credentials:
-    for (const credential of presentationExchange.formats.verifiableCredential) {
-      console.log("CREDENTIAL = ", credential)
-    }
+    // let i = 0
+    // for (const credential of presentationExchange.formats.verifiableCredential) {
+    //   console.log(i++, " QUACK CREDENTIAL = ", credential)
+    // }
     //  1. loop over all matches and find the first match for each submission requirement
     //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
     // We probably also need to return the selected matches we used so we can use those to create the presentation submission

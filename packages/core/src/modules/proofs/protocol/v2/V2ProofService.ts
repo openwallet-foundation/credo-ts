@@ -829,10 +829,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     let returnValue = {
       proofFormats: {},
     }
-
     for (const [id] of Object.entries(options.proofFormats)) {
-      const service = this.formatServiceMap[id]
-      const credentials = await service.autoSelectCredentialsForProofRequest(options)
+      const formatService = this.formatServiceMap[id]
+      const credentials = await formatService.autoSelectCredentialsForProofRequest(options)
       returnValue = { ...returnValue, ...credentials }
     }
 
