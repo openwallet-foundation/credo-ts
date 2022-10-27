@@ -14,6 +14,7 @@ import { OutOfBandGoalCode } from '../modules/out-of-band/messages'
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
+import { contactInvitationLabelRegex } from './regex'
 
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {
   const abortController = new AbortController()
@@ -129,7 +130,7 @@ export function tryParseShareContactLabel(invitationMessage: OutOfBandInvitation
   const { goalCode, goal } = invitationMessage.body
   if (goalCode !== OutOfBandGoalCode.ShareContact || !goal) return
 
-  const match = goal.match('Invitation from \\s*(.*?) to share contact')
+  const match = goal.match(contactInvitationLabelRegex)
   if (!match?.length) return
 
   return match[1]
