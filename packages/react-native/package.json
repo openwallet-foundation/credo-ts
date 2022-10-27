@@ -29,7 +29,6 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "@animo-id/react-native-bbs-signatures": "^0.1.0",
     "@types/indy-sdk-react-native": "npm:@types/indy-sdk@^1.16.21",
     "@types/react-native": "^0.64.10",
     "indy-sdk-react-native": "^0.2.2",
@@ -43,7 +42,6 @@
   "peerDependencies": {
     "indy-sdk-react-native": "^0.2.2",
     "react-native-fs": "^2.18.0",
-    "react-native-get-random-values": "^1.7.0",
-    "@animo-id/react-native-bbs-signatures": "^0.1.0"
+    "react-native-get-random-values": "^1.7.0"
   }
 }
