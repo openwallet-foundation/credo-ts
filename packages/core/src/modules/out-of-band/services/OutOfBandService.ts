@@ -109,6 +109,8 @@ export class OutOfBandService {
       }
 
       if (goalCode === OutOfBandGoalCode.ShareContact) {
+        // Workaround to pass contact request label from client side
+        // FIXME: Find better way to do this
         const attachment = message.getOutOfBandAttachment()
         const contactRequestLabel = attachment?.contactRequestLabel as string | undefined
 
