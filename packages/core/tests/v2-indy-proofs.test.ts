@@ -1,5 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { AcceptProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { AcceptProofProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
@@ -111,7 +111,7 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
     })
 
-    const acceptProposalOptions: AcceptProposalOptions = {
+    const acceptProposalOptions: AcceptProofProposalOptions = {
       proofRecordId: faberProofExchangeRecord.id,
     }
 
