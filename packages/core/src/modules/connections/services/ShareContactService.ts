@@ -36,7 +36,15 @@ export class ShareContactService {
     this.eventEmitter = eventEmitter
   }
 
-  public async sendShareContactRequest(to: string, invitationId: string): Promise<ShareContactRequestMessage> {
+  public async sendShareContactRequest({
+    to,
+    invitationId,
+    contactLabel,
+  }: {
+    to: string
+    invitationId: string
+    contactLabel?: string
+  }): Promise<ShareContactRequestMessage> {
     const id = v4()
     this.config.logger.info(`   > Sending Share Contact message with id ${id} to did ${to}`)
 
@@ -50,7 +58,7 @@ export class ShareContactService {
       from: did.did,
       to: to,
       pthid: invitationId,
-      body: {},
+      body: { label: contactLabel },
     })
 
     await this.messageSender.sendDIDCommV2Message(message)
@@ -59,36 +67,32 @@ export class ShareContactService {
     return message
   }
 
-  public async acceptContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
+  public async acceptContact(request: ShareContactRequest): Promise<ShareContactResponseMessage> {
+    const { contactDid, threadId } = request
+
     await this.didService.storeRemoteDid({ did: contactDid })
 
     const responseMessage = await this.sendShareContactResponse({
       to: contactDid,
-      threadId: threadId,
+      threadId,
       result: ShareContactResult.Accepted,
     })
 
-    this.emitStateChangedEvent({
-      contactDid,
-      state: ShareContactState.Accepted,
-      thid: threadId,
-    })
+    this.emitStateChangedEvent({ ...request, state: ShareContactState.Accepted }, request.state)
 
     return responseMessage
   }
 
-  public async declineContact(contactDid: string, threadId: string) {
+  public async declineContact(request: ShareContactRequest) {
+    const { contactDid, threadId } = request
+
     const responseMessage = await this.sendShareContactResponse({
       to: contactDid,
       threadId,
       result: ShareContactResult.Declined,
     })
 
-    this.emitStateChangedEvent({
-      contactDid,
-      state: ShareContactState.Declined,
-      thid: threadId,
-    })
+    this.emitStateChangedEvent({ ...request, state: ShareContactState.Declined }, request.state)
 
     return responseMessage
   }
@@ -138,11 +142,15 @@ export class ShareContactService {
       return
     }
 
-    this.emitStateChangedEvent({
-      contactDid: message.from,
-      state: ShareContactState.Received,
-      thid: message.id,
-    })
+    this.emitStateChangedEvent(
+      {
+        contactDid: message.from,
+        state: ShareContactState.Received,
+        threadId: message.id,
+        label: message.body.label,
+      },
+      null
+    )
 
     this.config.logger.info(`   < Received Share Contact message with id $${message.id}`)
   }
@@ -154,11 +162,16 @@ export class ShareContactService {
     const state =
       message.body.result === ShareContactResult.Accepted ? ShareContactState.Accepted : ShareContactState.Declined
 
-    this.emitStateChangedEvent({
-      contactDid: message.from,
-      state,
-      thid: threadId,
-    })
+    // TODO We probably want to have contact label from initial Share Contact request here
+    // It will require storing Share Contact request somewhere (at least the ongoing one)
+    this.emitStateChangedEvent(
+      {
+        contactDid: message.from,
+        state,
+        threadId: threadId,
+      },
+      ShareContactState.Received
+    )
 
     this.config.logger.info(`   < Received Share Did response with threadId $${threadId}`)
   }
@@ -174,7 +187,7 @@ export class ShareContactService {
         first((event) => {
           const request = event.payload.request
           return (
-            request.thid === id &&
+            request.threadId === id &&
             (request.state === ShareContactState.Accepted || request.state === ShareContactState.Declined)
           )
         }),
@@ -185,11 +198,12 @@ export class ShareContactService {
     return firstValueFrom(subject)
   }
 
-  private emitStateChangedEvent(request: ShareContactRequest) {
+  private emitStateChangedEvent(request: ShareContactRequest, previousState: ShareContactState | null) {
     this.eventEmitter.emit<ShareContactStateChangedEvent>({
       type: ShareContactEventTypes.ShareContactStateChanged,
       payload: {
         request,
+        previousState,
       },
     })
   }

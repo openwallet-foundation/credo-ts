@@ -27,6 +27,8 @@ export { DIDCommV1Message, DIDCommV2Message } from './agent/didcomm'
 export { JsonEncoder } from './utils'
 export { sleep } from './utils/sleep'
 export { Attachment } from './decorators/attachment/Attachment'
+export { parseMessageType, IsValidMessageType } from './utils/messageType'
+export { tryParseShareContactLabel } from './utils/parseInvitation'
 
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
@@ -52,7 +54,6 @@ export * from './logger'
 export * from './error'
 export * from './wallet/error'
 export * from './crypto'
-export { parseMessageType, IsValidMessageType } from './utils/messageType'
 
 export * from './agent/Events'
 
