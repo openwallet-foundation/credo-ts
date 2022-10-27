@@ -41,7 +41,7 @@ export class CentralBankIssuer extends BaseAgent {
     }
 
     const trustPing = await centralBankIssuer.agent.connections.sendTrustPing(CentralBankIssuer.witnessDid)
-    console.log('AWAIT')
+    console.log('Awaiting Trust Ping response...')
     await centralBankIssuer.agent.connections.awaitTrustPingResponse(trustPing.id)
     console.log(`Trust Ping response received from the Witness`)
 
