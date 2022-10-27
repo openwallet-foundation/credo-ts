@@ -142,7 +142,7 @@ export class BaseAgent {
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
       internetChecker: props.internetChecker ? props.internetChecker : internetChecker,
-      logger,
+      // logger,
     }
 
     this.config = config

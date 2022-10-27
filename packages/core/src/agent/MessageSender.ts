@@ -409,7 +409,7 @@ export class MessageSender {
     // only encrypted message can be sent via proxy
     if (sendingMessageType !== SendingMessageType.Encrypted) return
 
-    this.agentConfig.logger.info(`Sending message ${message.id} using proxy: ${proxy}`)
+    this.agentConfig.logger.info(`Sending message ${message.id} using proxy ${proxy}`)
 
     // Try to use proxy
     // find service transport supported for both proxy and receiver + sender and proxy
@@ -418,16 +418,30 @@ export class MessageSender {
       message.recipient(),
       transports
     )
-    if (!proxyToRecipientSupportedServices?.length) return
+    if (!proxyToRecipientSupportedServices?.length) {
+      this.agentConfig.logger.warn(
+        `Could not send message ${
+          message.id
+        } to ${message.recipient()} using proxy ${proxy} because common transport between proxy and recipient is not found!`
+      )
+      return
+    }
 
-    const senderToProxyService = await this.findCommonSupportedServices(message.sender, proxy, transports)
-    if (!senderToProxyService?.length) return
+    const senderToProxyServices = await this.findCommonSupportedServices(message.sender, proxy, transports)
+    if (!senderToProxyServices?.length) {
+      this.agentConfig.logger.warn(
+        `Could not send message ${message.id} from ${message.sender} using proxy ${proxy} because common transport between sender and proxy is not found!`
+      )
+      return
+    }
 
     const encryptedMessage = await this.encryptedMessage(message, proxyToRecipientSupportedServices[0])
 
-    for (const service of senderToProxyService) {
+    for (const service of senderToProxyServices) {
       try {
-        this.logger.error(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        this.logger.info(
+          `Sending message ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
         const encryptedMessageForProxy = await this.prepareMessageForProxy(message, encryptedMessage, proxy, service)
         const outboundPackage = {
           payload: encryptedMessageForProxy,
@@ -435,14 +449,18 @@ export class MessageSender {
           endpoint: service.serviceEndpoint,
         }
         await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+        this.logger.info(
+          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
         return
       } catch (error) {
-        this.logger.error(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
           errors: error,
         })
         // ignore and try another transport
       }
     }
+    this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
   }
 
   private async prepareMessageForProxy(
@@ -482,15 +500,18 @@ export class MessageSender {
         const payload = packMessage ? await packMessage(message, service) : { ...message }
         const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
         await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
-        this.logger.info(`Message sent to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        this.logger.info(
+          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
         return
       } catch (error) {
-        this.logger.error(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
           errors: error,
         })
         // ignore and try another transport
       }
     }
+    this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
   }
 
   public async sendPackedMessage(message: EncryptedMessage, services: DidDocumentService[], recipientDid?: string) {
@@ -499,14 +520,16 @@ export class MessageSender {
         this.logger.info(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
         const outboundPackage = { payload: message, recipientDid, endpoint: service.serviceEndpoint }
         await this.sendOutboundPackage(outboundPackage, service.protocolScheme)
+        this.logger.info(`Message sent to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
         return
       } catch (error) {
-        this.logger.info(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
           errors: error,
         })
         // ignore and try another transport
       }
     }
+    this.logger.error(`Unable to send message through any commonly supported transport.`)
   }
 
   public async packAndSendMessage({
