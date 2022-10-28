@@ -41,9 +41,9 @@
     web-did-resolver "^2.0.8"
 
 "@aries-framework/core@npm:@sicpa-dlab/aries-framework-core":
-  version "0.2.18-alpha.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.2.18-alpha.3/ef4735e2345cd4da6c0fbc304b6ac56beb0ac1ae#ef4735e2345cd4da6c0fbc304b6ac56beb0ac1ae"
-  integrity sha512-U3UjbneEaEB1b5ehbey6yGyiy0J5PB0UkELukeGV/VP4XyPx0K5fmMVihz0jPOtFIXH3UIEO3VzTWc5l3FFi1Q==
+  version "0.2.19-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.2.19-alpha.0/ec53fb0d3fc10d8d8e3063112543a78e5ef14bba#ec53fb0d3fc10d8d8e3063112543a78e5ef14bba"
+  integrity sha512-aHR5VOb4DNSNHGsEjvI9yO1cnXXV9+2c8fUgCfzPGJCOiZ/PtdbbBGO72Lqd/HFw7Qn9aHrbmfWQpRQlGHVlmA==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-common-ts" "0.2.4"
@@ -2217,7 +2217,7 @@
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/didcomm-react-native/0.0.19/bccfb6081f048d9218f27a2d92cb52e02f99cf8f#bccfb6081f048d9218f27a2d92cb52e02f99cf8f"
   integrity sha512-Y6oeeZVFt9kkWj0we61HeHSzb6tbniZrZKLSUJYMfXLA1QnpBQ/eMwGnQGdKnBHzYjEed6Wii7mYD3mVW3zD2A==
 
-"@sicpa-dlab/value-transfer-common-ts@0.2.4", "@sicpa-dlab/value-transfer-common-ts@^0.2.4":
+"@sicpa-dlab/value-transfer-common-ts@0.2.4":
   version "0.2.4"
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.2.4/9aec82e56130461755d4a08443f187c70676e6d4#9aec82e56130461755d4a08443f187c70676e6d4"
   integrity sha512-a60Wh6b/Q0H8rBD6uPpQeBEiQ4e9wwdDScbMhfq/y1lqUSHAB5QLfxIXaN/6VG2EzhgQiPLu4nkwTZpIq7RJrg==
@@ -2227,7 +2227,7 @@
     class-transformer "^0.5.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-common-ts@0.2.5", "@sicpa-dlab/value-transfer-common-ts@^0.2.5":
+"@sicpa-dlab/value-transfer-common-ts@0.2.5", "@sicpa-dlab/value-transfer-common-ts@^0.2.4", "@sicpa-dlab/value-transfer-common-ts@^0.2.5":
   version "0.2.5"
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.2.5/0a1ab91a3ee31849a2685247b61294a0326ee8d1#0a1ab91a3ee31849a2685247b61294a0326ee8d1"
   integrity sha512-a0y4s3Vm4SR3GJKdKMEWk16rbCLrD00pYJ0eSYMWd7L0Bk1V/8oqtMHFSpH0Qs9GBz1CmjFhD4Gd6Cug2gAjHg==
@@ -2315,7 +2315,7 @@
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@0.2.8", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.8":
+"@sicpa-dlab/witness-gossip-protocol-ts@0.2.8", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.5", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.6", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.8":
   version "0.2.8"
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.2.8/1535618042ea6d6dca1f981d54c5f25f8c55900d#1535618042ea6d6dca1f981d54c5f25f8c55900d"
   integrity sha512-lRJULznqWJIdeJfXn98GVX4WOq6RE6hyQI4b31ktL00p97n8Aiclg7lB3/RW67wrMRfVtx5hLZ3qy2Fw3H7rSw==
