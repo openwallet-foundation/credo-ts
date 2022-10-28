@@ -78,7 +78,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   /**
-   * The version of the issue credential protocol this service supports
+   * The version of the present proof protocol this service supports
    */
   public readonly version = 'v2' as const
 
@@ -86,14 +86,14 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     agentContext: AgentContext,
     options: CreateProposalOptions<PFs>
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
-    const attachmentInfo = []
+    const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      attachmentInfo.push(await service.createProposal({ formats: options.proofFormats }))
+      formats.push(await service.createProposal({ formats: options.proofFormats }))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({
-      attachmentInfo,
+      attachmentInfo: formats,
       comment: options.comment,
       willConfirm: options.willConfirm,
       goalCode: options.goalCode,

@@ -112,6 +112,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     this.indyRevocationService = indyRevocationService
   }
 
+  /**
+   * The version of the present proof protocol this service supports
+   */
   public readonly version = 'v1' as const
 
   public async createProposal(
