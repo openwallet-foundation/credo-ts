@@ -1,4 +1,3 @@
-import type { Optional } from '../../../utils'
 import type { IndyProposeProofFormat } from '../formats/indy/IndyProofFormat'
 import type { IndyRequestProofFormat, IndyVerifyProofFormat } from '../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
@@ -9,12 +8,12 @@ import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsCon
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
   // any of the other properties you should pass an empty object
-  indy?: Optional<IndyProposeProofFormat, 'nonce'>
+  indy?: IndyProposeProofFormat
   presentationExchange?: never
 }
 
 export interface RequestProofFormats {
-  indy?: Optional<IndyRequestProofFormat, 'nonce'>
+  indy?: IndyRequestProofFormat
   presentationExchange?: never
 }
 

@@ -7,7 +7,6 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
-import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type {
@@ -51,7 +50,6 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
 import { ProofState } from '../../models/ProofState'
@@ -88,7 +86,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   private ledgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
   private indyRevocationService: IndyRevocationService
-  private indyProofFormatService: ProofFormatService
+  private indyProofFormatService: IndyProofFormatService
 
   public constructor(
     proofRepository: ProofRepository,
@@ -675,7 +673,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       nonce: await this.wallet.generateNonce(),
     }
 
-    const proofRequest: ProofRequest = IndyProofUtils.createReferentForProofRequest(
+    const proofRequest: ProofRequest = await this.indyProofFormatService.createReferentForProofRequest(
       indyProposeProofFormat,
       proposalMessage.presentationProposal
     )
@@ -1065,7 +1063,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       predicates: indyFormat.predicates,
     })
 
-    return IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
+    return this.indyProofFormatService.createReferentForProofRequest(indyFormat, preview)
   }
   /**
    * Retrieve all proof records

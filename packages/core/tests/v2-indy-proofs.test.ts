@@ -263,7 +263,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: expect.any(String),
+          nonce: '947121108704767252195126',
           requested_attributes: {
             0: {
               name: 'name',
@@ -389,8 +389,6 @@ describe('Present Proof', () => {
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
-          name: 'proof-request',
-          version: '1.0',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },

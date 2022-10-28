@@ -1,4 +1,3 @@
-import type { Optional } from '../../../../utils'
 import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
 import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
@@ -10,9 +9,9 @@ import type { IndyProof, IndyProofRequest } from 'indy-sdk'
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
   predicates?: PresentationPreviewPredicate[]
-  nonce: string
-  name: string
-  version: string
+  nonce?: string
+  name?: string
+  version?: string
 }
 
 export interface IndyRequestedCredentialsFormat {
@@ -30,9 +29,9 @@ export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'
   proofRecordType: 'indy'
   proofFormats: {
-    createProposal: Optional<IndyProposeProofFormat, 'nonce'>
+    createProposal: IndyProposeProofFormat
     acceptProposal: unknown
-    createRequest: Optional<IndyRequestProofFormat, 'nonce'>
+    createRequest: IndyRequestProofFormat
     acceptRequest: unknown
     createPresentation: IndyRequestedCredentialsOptions
     acceptPresentation: unknown

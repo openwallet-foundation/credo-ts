@@ -61,8 +61,6 @@ describe('Present Proof', () => {
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
-          name: 'abc',
-          version: '1.0',
           attributes: presentationPreview.attributes,
           predicates: presentationPreview.predicates,
         },
