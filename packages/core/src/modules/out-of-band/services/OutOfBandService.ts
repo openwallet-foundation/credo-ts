@@ -109,14 +109,17 @@ export class OutOfBandService {
       }
 
       if (goalCode === OutOfBandGoalCode.ShareContact) {
-        const shareContactRequest = await this.shareContactService.sendShareContactRequest(
-          did.didDocument.id,
-          message.id
-        )
+        const shareContactRequest = await this.shareContactService.sendShareContactRequest({
+          to: did.didDocument.id,
+          invitationId: message.id,
+          contactLabel: this.agentConfig.label,
+        })
+
         const completionEvent = await this.shareContactService.awaitShareContactCompleted(
           shareContactRequest.id,
           SHARE_CONTACT_TIMEOUT_MS
         )
+
         if (completionEvent.payload.request.state === ShareContactState.Declined) {
           throw new AriesFrameworkError('Contact request declined by other party')
         }

@@ -2,7 +2,7 @@ import type { DependencyManager } from '../../plugins'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ShareContactStateChangedEvent } from './ConnectionEvents'
 import type { TrustPingMessageV2, ShareContactRequestMessage, ShareContactResponseMessage } from './messages'
-import type { ConnectionType } from './models'
+import type { ConnectionType, ShareContactRequest } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
 
@@ -266,13 +266,21 @@ export class ConnectionsModule {
   /**
    * Share public DID with other party by sending Share Contact Request message
    *
-   * @param to DID of recipient
-   * @param invitationId ID of Out-of-Band invitation from recipient
+   * @param params - Options to use for Share Contact request creation
+   * {
+   *  to - DID of recipient
+   *  invitationId - ID of Out-of-Band invitation from recipient
+   *  contactLabel - Contact label to send with Share Contact Request
+   * }
    *
    * @returns The sent Share Contact Request message
    */
-  public sendShareContactRequest(to: string, invitationId: string): Promise<ShareContactRequestMessage> {
-    return this.shareContactService.sendShareContactRequest(to, invitationId)
+  public sendShareContactRequest(params: {
+    to: string
+    invitationId: string
+    contactLabel?: string
+  }): Promise<ShareContactRequestMessage> {
+    return this.shareContactService.sendShareContactRequest(params)
   }
 
   /**
@@ -288,21 +296,23 @@ export class ConnectionsModule {
   /**
    * Accept contact request from Share Contact Request message
    *
-   * @param contactDid Contact Did
-   * @param threadId Thread Id of Share Contact protocol
+   * @param request Share Contact request
+   *
+   * @returns Share Contact Response message that was sent to requester
    */
-  public async acceptContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
-    return this.shareContactService.acceptContact(contactDid, threadId)
+  public async acceptContact(request: ShareContactRequest): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.acceptContact(request)
   }
 
   /**
    * Decline contact request from Share Contact Request message
    *
-   * @param contactDid Contact Did
-   * @param threadId Thread Id of Share Contact protocol
+   * @param request Share Contact request
+   *
+   * @returns Share Contact Response message that was sent to requester
    */
-  public async declineContact(contactDid: string, threadId: string): Promise<ShareContactResponseMessage> {
-    return this.shareContactService.declineContact(contactDid, threadId)
+  public async declineContact(request: ShareContactRequest): Promise<ShareContactResponseMessage> {
+    return this.shareContactService.declineContact(request)
   }
 
   /**

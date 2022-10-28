@@ -1,5 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { DidExchangeState, ShareContactRequest } from './models'
+import type { DidExchangeState, ShareContactRequest, ShareContactState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum ConnectionEventTypes {
@@ -33,5 +33,6 @@ export interface ShareContactStateChangedEvent extends BaseEvent {
   type: typeof ShareContactEventTypes.ShareContactStateChanged
   payload: {
     request: ShareContactRequest
+    previousState: ShareContactState | null
   }
 }

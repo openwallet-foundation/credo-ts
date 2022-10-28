@@ -3,6 +3,6 @@ import type { ShareContactState } from './ShareContactState'
 export interface ShareContactRequest {
   contactDid: string
   state: ShareContactState
-  thid: string
+  threadId: string
   label?: string
 }
