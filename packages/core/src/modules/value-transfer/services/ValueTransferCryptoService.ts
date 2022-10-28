@@ -76,4 +76,9 @@ export class ValueTransferCryptoService implements VtpCryptoInterface {
     const didRecord = await this.didService.createDID()
     return didRecord.did
   }
+
+  public async doesDidExist(did: string): Promise<boolean> {
+    const foundDid = await this.didService.findById(did)
+    return !!foundDid
+  }
 }
