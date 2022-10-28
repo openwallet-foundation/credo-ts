@@ -2227,6 +2227,34 @@
     class-transformer "^0.5.1"
     reflect-metadata "^0.1.13"
 
+"@sicpa-dlab/value-transfer-common-ts@0.2.5", "@sicpa-dlab/value-transfer-common-ts@^0.2.5":
+  version "0.2.5"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.2.5/0a1ab91a3ee31849a2685247b61294a0326ee8d1#0a1ab91a3ee31849a2685247b61294a0326ee8d1"
+  integrity sha512-a0y4s3Vm4SR3GJKdKMEWk16rbCLrD00pYJ0eSYMWd7L0Bk1V/8oqtMHFSpH0Qs9GBz1CmjFhD4Gd6Cug2gAjHg==
+  dependencies:
+    "@stablelib/sha256" "^1.0.1"
+    buffer "^6.0.3"
+    class-transformer "^0.5.1"
+    reflect-metadata "^0.1.13"
+
+"@sicpa-dlab/value-transfer-protocol-ts@0.2.11":
+  version "0.2.11"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.2.11/2aa7e6054d1586ea1a06676ffde2702852c65037#2aa7e6054d1586ea1a06676ffde2702852c65037"
+  integrity sha512-gySgWJaHLjYQ/zX7qSCtHiqqtgKmDZK0L4pTK38MBGKA9YegILnvYbJsq1eJmZ+SX55ZKNKfAIkP+yOEKJp/Yw==
+  dependencies:
+    "@sicpa-dlab/value-transfer-common-ts" "^0.2.5"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "^0.2.8"
+    "@stablelib/sha256" "^1.0.1"
+    "@stablelib/uuid" "^1.0.1"
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
+    currency-codes "^2.1.0"
+    fast-json-patch "^3.1.1"
+    iso-639-language "^1.0.1"
+    query-string "^7.1.1"
+    reflect-metadata "^0.1.13"
+    ulid "^2.3.0"
+
 "@sicpa-dlab/value-transfer-protocol-ts@0.2.6":
   version "0.2.6"
   resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.2.6/204e38dff4795a7680b476b3845704dd14d424fc#204e38dff4795a7680b476b3845704dd14d424fc"
@@ -2287,12 +2315,12 @@
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@^0.2.5", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.6":
-  version "0.2.7"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.2.7/c0bc29d888eaffda55d31fb6478a007847795d48#c0bc29d888eaffda55d31fb6478a007847795d48"
-  integrity sha512-WlTQM2hSN8YgfBhEZv1hweKfakMYrkpsKSOVWAHnbFSxf2swdWJrOwm3sgi78lyDdswbTftB5+jFDNEF9He+Kg==
+"@sicpa-dlab/witness-gossip-protocol-ts@0.2.8", "@sicpa-dlab/witness-gossip-protocol-ts@^0.2.8":
+  version "0.2.8"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.2.8/1535618042ea6d6dca1f981d54c5f25f8c55900d#1535618042ea6d6dca1f981d54c5f25f8c55900d"
+  integrity sha512-lRJULznqWJIdeJfXn98GVX4WOq6RE6hyQI4b31ktL00p97n8Aiclg7lB3/RW67wrMRfVtx5hLZ3qy2Fw3H7rSw==
   dependencies:
-    "@sicpa-dlab/value-transfer-common-ts" "^0.2.4"
+    "@sicpa-dlab/value-transfer-common-ts" "^0.2.5"
     "@stablelib/uuid" "^1.0.1"
     class-transformer "^0.5.1"
     class-validator "^0.13.2"

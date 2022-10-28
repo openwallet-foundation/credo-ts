@@ -107,6 +107,7 @@ export class ValueTransferGiverService {
       send: false,
     })
     if (error || !transaction || !message) {
+      this.logger.error(`Failed to create Payment Offer`, { error })
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request. Error: ${error?.message}`)
     }
 
@@ -146,15 +147,14 @@ export class ValueTransferGiverService {
     this.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
 
     // Call VTP library to handle request
-    const { error, transaction, message } = await this.giver.processRequest(new Request(requestMessage))
-    if (error || !transaction || !message) {
-      this.logger.error(
-        ` Giver: process request message for VTP transaction ${requestMessage.id} failed. Error: ${error}`
-      )
+    const { error, transaction } = await this.giver.processRequest(new Request(requestMessage))
+    if (!transaction) {
+      this.logger.error(` Giver: process request message for VTP transaction ${requestMessage.id} failed.`, { error })
+      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(requestMessage.id)
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     // Save second party Did
     record.secondPartyDid = requestMessage.from
@@ -180,21 +180,21 @@ export class ValueTransferGiverService {
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    this.logger.info(`> Giver: accept payment request message for VTP transaction ${record.transaction.threadId}`)
+    this.logger.info(`> Giver: accept payment request message for VTP transaction ${record.transaction.id}`)
 
     // Call VTP library to accept request
-    const { error, transaction, message } = await this.giver.acceptRequest(record.transaction.id, timeouts)
-    if (error || !transaction || !message) {
-      this.logger.error(
-        ` Giver: accept request message for VTP transaction ${record.transaction.threadId} failed. Error: ${error}`
-      )
-      throw new AriesFrameworkError(`Failed to accept Payment Request: ${error?.message}`)
+    const { error, transaction } = await this.giver.acceptRequest(record.transaction.id, timeouts)
+    if (!transaction) {
+      this.logger.error(` Giver: accept request message for VTP transaction ${record.transaction.id} failed.`, {
+        error,
+      })
+      return {}
     }
 
     // Raise event
     const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.logger.info(`< Giver: accept payment request message for VTP transaction ${record.id} completed!`)
+    this.logger.info(`< Giver: accept payment request message for VTP transaction ${record.transaction.id} completed!`)
 
     return { record: updatedRecord }
   }
@@ -214,24 +214,21 @@ export class ValueTransferGiverService {
   }> {
     const { message: cashAcceptedWitnessedMessage } = messageContext
 
-    this.logger.info(
-      `> Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid}`
-    )
+    this.logger.info(`> Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.id}`)
 
     // Call VTP library to handle cash acceptance
     const cashAcceptanceWitnessed = new CashAcceptanceWitnessed(cashAcceptedWitnessedMessage)
-    const { error, transaction, message } = await this.giver.processCashAcceptance(cashAcceptanceWitnessed)
-    if (error || !transaction || !message) {
-      this.logger.error(
-        ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} failed. Error: ${error}`
-      )
+    const { error, transaction } = await this.giver.processCashAcceptance(cashAcceptanceWitnessed)
+    if (!transaction) {
+      this.logger.error(` Giver: process cash acceptance message ${cashAcceptedWitnessedMessage.id} failed.`, { error })
+      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(cashAcceptedWitnessedMessage.thid)
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.thid} completed!`
+      `< Giver: process cash acceptance message for VTP transaction ${cashAcceptedWitnessedMessage.id} completed!`
     )
 
     return { record }
@@ -252,21 +249,20 @@ export class ValueTransferGiverService {
     // Verify that we are in appropriate state to perform action
     const { message: receiptMessage } = messageContext
 
-    this.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.thid}`)
+    this.logger.info(`> Giver: process receipt message for VTP transaction ${receiptMessage.id}`)
 
     // Call VTP library to handle receipt
     const receipt = new GiverReceipt(receiptMessage)
-    const { error, transaction, message } = await this.giver.processReceipt(receipt)
-    if (error || !transaction || !message) {
-      this.logger.error(
-        ` Giver: process receipt message for VTP transaction ${receiptMessage.thid} failed. Error: ${error}`
-      )
+    const { error, transaction } = await this.giver.processReceipt(receipt)
+    if (!transaction) {
+      this.logger.error(` Giver: process receipt message ${receiptMessage.id} failed.`, { error })
+      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(receipt.thid)
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.thid} completed!`)
+    this.logger.info(`< Giver: process receipt message for VTP transaction ${receiptMessage.id} completed!`)
 
     return { record }
   }

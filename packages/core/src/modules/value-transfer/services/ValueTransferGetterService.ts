@@ -106,7 +106,7 @@ export class ValueTransferGetterService {
       send: false,
     })
     if (error || !transaction || !message) {
-      this.logger.error(`Failed to create Payment Request: ${error?.message}`)
+      this.logger.error(`Failed to create Payment Request`, { error })
       throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
@@ -147,9 +147,9 @@ export class ValueTransferGetterService {
 
     // Call VTP library to handle offer
     const offer = new Offer(offerMessage)
-    const { error, transaction, message } = await this.getter.processOffer(offer)
-    if (error || !transaction || !message) {
-      this.logger.error(` Getter: process offer message for VTP transaction ${offerMessage.id} failed. Error: ${error}`)
+    const { error, transaction } = await this.getter.processOffer(offer)
+    if (!transaction) {
+      this.logger.error(` Getter: process offer message ${offerMessage.id} failed.`, { error })
       return {}
     }
 
@@ -179,21 +179,21 @@ export class ValueTransferGetterService {
     witnessDid?: string,
     timeouts?: Timeouts
   ): Promise<{
-    record: ValueTransferRecord
+    record?: ValueTransferRecord
   }> {
-    this.logger.info(`> Getter: accept offer message for VTP transaction ${record.id}`)
+    this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id}`)
 
     // Call VTP library to accept offer
-    const { error, transaction, message } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
-    if (error || !transaction || !message) {
-      this.logger.error(`VTP: Failed to accept Payment Offer: ${error?.message}`)
-      throw new AriesFrameworkError(`Failed to accept Payment Offer: ${error?.message}`)
+    const { error, transaction } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
+    if (!transaction) {
+      this.logger.error(` Getter: accept offer for VTP transaction ${record.transaction.id} failed.`, { error })
+      return {}
     }
 
     // Raise event
     const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
-    this.logger.info(`> Getter: accept offer message for VTP transaction ${record.id} completed!`)
+    this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id} completed!`)
     return { record: updatedRecord }
   }
 
@@ -213,21 +213,24 @@ export class ValueTransferGetterService {
     const { message: requestAcceptedWitnessedMessage } = messageContext
 
     this.logger.info(
-      `> Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
+      `> Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.id}`
     )
 
     // Call VTP library to handle request acceptance
     const requestAcceptanceWitnessed = new RequestAcceptanceWitnessed(requestAcceptedWitnessedMessage)
-    const { error, transaction, message } = await this.getter.acceptCash(requestAcceptanceWitnessed)
-    if (error || !transaction || !message) {
-      this.logger.error(`VTP: Failed to process Request Acceptance: ${error?.message}`)
+    const { error, transaction } = await this.getter.acceptCash(requestAcceptanceWitnessed)
+    if (!transaction) {
+      this.logger.error(` Giver: process request acceptance message ${requestAcceptedWitnessedMessage.id} failed.`, {
+        error,
+      })
+      return {}
     }
 
     // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(requestAcceptanceWitnessed.thid)
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
+      `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.id}`
     )
     return { record: updatedRecord }
   }
@@ -245,19 +248,20 @@ export class ValueTransferGetterService {
   }> {
     const { message: getterReceiptMessage } = messageContext
 
-    this.logger.info(`> Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid}`)
+    this.logger.info(`> Getter: process receipt message for VTP transaction ${getterReceiptMessage.id}`)
 
     // Call VTP library to handle receipt
     const receipt = new GetterReceipt(getterReceiptMessage)
-    const { error, transaction, message } = await this.getter.processReceipt(receipt)
-    if (error || !transaction || !message) {
-      this.logger.error(`VTP: Failed to process Receipt: ${error?.message}`)
+    const { error, transaction } = await this.getter.processReceipt(receipt)
+    if (!transaction) {
+      this.logger.error(` Giver: process receipt message ${getterReceiptMessage.id} failed.`, { error })
+      return {}
     }
 
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(receipt.thid)
 
-    this.logger.info(`< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`)
+    this.logger.info(`< Getter: process receipt message for VTP transaction ${getterReceiptMessage.id} completed!`)
     return { record }
   }
 }
