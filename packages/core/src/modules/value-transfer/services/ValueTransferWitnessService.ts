@@ -9,7 +9,6 @@ import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { GossipService } from '../../gossip/service/GossipService'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
@@ -90,9 +89,9 @@ export class ValueTransferWitnessService {
     const requestAcceptance = new RequestAcceptance(requestAcceptanceMessage)
     const { error, transaction } = await this.witness.processRequestAcceptance(requestAcceptance)
     if (!transaction) {
-      this.logger.error(
-        ` Witness: process request acceptance message ${requestAcceptanceMessage.id} failed. Error: ${error}`
-      )
+      this.logger.error(` Witness: process request acceptance message ${requestAcceptanceMessage.id} failed.`, {
+        error,
+      })
       return {}
     }
 
@@ -129,7 +128,7 @@ export class ValueTransferWitnessService {
     const cashAcceptance = new CashAcceptance(cashAcceptedMessage)
     const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
     if (!transaction) {
-      this.logger.error(` Witness: process cash acceptance message ${cashAcceptedMessage.id} failed. Error: ${error}`)
+      this.logger.error(` Witness: process cash acceptance message ${cashAcceptedMessage.id} failed.`, { error })
       return {}
     }
 
@@ -170,7 +169,7 @@ export class ValueTransferWitnessService {
     }
     const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
     if (!transaction) {
-      this.logger.error(` Witness: process cash removal message ${cashRemovedMessage.id} failed. Error: ${error}`)
+      this.logger.error(` Witness: process cash removal message ${cashRemovedMessage.id} failed.`, { error })
       return {}
     }
 

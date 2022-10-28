@@ -106,7 +106,7 @@ export class ValueTransferGetterService {
       send: false,
     })
     if (error || !transaction || !message) {
-      this.logger.error(`Failed to create Payment Request: ${error?.message}`)
+      this.logger.error(`Failed to create Payment Request`, { error })
       throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
@@ -149,7 +149,7 @@ export class ValueTransferGetterService {
     const offer = new Offer(offerMessage)
     const { error, transaction } = await this.getter.processOffer(offer)
     if (!transaction) {
-      this.logger.error(` Getter: process offer message ${offerMessage.id} failed. Error: ${error}`)
+      this.logger.error(` Getter: process offer message ${offerMessage.id} failed.`, { error })
       return {}
     }
 
@@ -186,12 +186,12 @@ export class ValueTransferGetterService {
     // Call VTP library to accept offer
     const { error, transaction } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
     if (!transaction) {
-      this.logger.error(` Getter: accept offer for VTP transaction ${record.transaction.id} failed. Error: ${error}`)
+      this.logger.error(` Getter: accept offer for VTP transaction ${record.transaction.id} failed.`, { error })
       return {}
     }
 
     // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(record.transaction.id)
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id} completed!`)
     return { record: updatedRecord }
@@ -220,17 +220,17 @@ export class ValueTransferGetterService {
     const requestAcceptanceWitnessed = new RequestAcceptanceWitnessed(requestAcceptedWitnessedMessage)
     const { error, transaction } = await this.getter.acceptCash(requestAcceptanceWitnessed)
     if (!transaction) {
-      this.logger.error(
-        ` Giver: process request acceptance message ${requestAcceptedWitnessedMessage.id} failed. Error: ${error}`
-      )
+      this.logger.error(` Giver: process request acceptance message ${requestAcceptedWitnessedMessage.id} failed.`, {
+        error,
+      })
       return {}
     }
 
     // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(requestAcceptanceWitnessed.thid)
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.thid}`
+      `< Getter: process request acceptance message for VTP transaction ${requestAcceptedWitnessedMessage.id}`
     )
     return { record: updatedRecord }
   }
@@ -254,14 +254,14 @@ export class ValueTransferGetterService {
     const receipt = new GetterReceipt(getterReceiptMessage)
     const { error, transaction } = await this.getter.processReceipt(receipt)
     if (!transaction) {
-      this.logger.error(` Giver: process receipt message ${getterReceiptMessage.id} failed. Error: ${error}`)
+      this.logger.error(` Giver: process receipt message ${getterReceiptMessage.id} failed.`, { error })
       return {}
     }
 
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(receipt.thid)
 
-    this.logger.info(`< Getter: process receipt message for VTP transaction ${getterReceiptMessage.thid} completed!`)
+    this.logger.info(`< Getter: process receipt message for VTP transaction ${getterReceiptMessage.id} completed!`)
     return { record }
   }
 }

@@ -107,6 +107,7 @@ export class ValueTransferGiverService {
       send: false,
     })
     if (error || !transaction || !message) {
+      this.logger.error(`Failed to create Payment Offer`, { error })
       throw new AriesFrameworkError(`VTP: Failed to create Payment Request. Error: ${error?.message}`)
     }
 
@@ -148,9 +149,7 @@ export class ValueTransferGiverService {
     // Call VTP library to handle request
     const { error, transaction } = await this.giver.processRequest(new Request(requestMessage))
     if (!transaction) {
-      this.logger.error(
-        ` Giver: process request message for VTP transaction ${requestMessage.id} failed. Error: ${error}`
-      )
+      this.logger.error(` Giver: process request message for VTP transaction ${requestMessage.id} failed.`, { error })
       return {}
     }
 
@@ -186,9 +185,9 @@ export class ValueTransferGiverService {
     // Call VTP library to accept request
     const { error, transaction } = await this.giver.acceptRequest(record.transaction.id, timeouts)
     if (!transaction) {
-      this.logger.error(
-        ` Giver: accept request message for VTP transaction ${record.transaction.id} failed. Error: ${error}`
-      )
+      this.logger.error(` Giver: accept request message for VTP transaction ${record.transaction.id} failed.`, {
+        error,
+      })
       return {}
     }
 
@@ -221,9 +220,7 @@ export class ValueTransferGiverService {
     const cashAcceptanceWitnessed = new CashAcceptanceWitnessed(cashAcceptedWitnessedMessage)
     const { error, transaction } = await this.giver.processCashAcceptance(cashAcceptanceWitnessed)
     if (!transaction) {
-      this.logger.error(
-        ` Giver: process cash acceptance message ${cashAcceptedWitnessedMessage.id} failed. Error: ${error}`
-      )
+      this.logger.error(` Giver: process cash acceptance message ${cashAcceptedWitnessedMessage.id} failed.`, { error })
       return {}
     }
 
@@ -258,7 +255,7 @@ export class ValueTransferGiverService {
     const receipt = new GiverReceipt(receiptMessage)
     const { error, transaction } = await this.giver.processReceipt(receipt)
     if (!transaction) {
-      this.logger.error(` Giver: process receipt message ${receiptMessage.id} failed. Error: ${error}`)
+      this.logger.error(` Giver: process receipt message ${receiptMessage.id} failed.`, { error })
       return {}
     }
 
