@@ -83,21 +83,24 @@ export class ValueTransferWitnessService {
     const { message: requestAcceptanceMessage } = messageContext
 
     this.logger.info(
-      `> Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid}`
+      `> Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.id}`
     )
 
     // Call VTP library to handle request acceptance
     const requestAcceptance = new RequestAcceptance(requestAcceptanceMessage)
     const { error, transaction } = await this.witness.processRequestAcceptance(requestAcceptance)
-    if (error || !transaction) {
-      throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
+    if (!transaction) {
+      this.logger.error(
+        ` Witness: process request acceptance message ${requestAcceptanceMessage.id} failed. Error: ${error}`
+      )
+      return {}
     }
 
     // Raise event
     const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.thid} completed!`
+      `< Witness ${this.label}: process request acceptance message for VTP transaction ${requestAcceptanceMessage.id} completed!`
     )
 
     return { record }
@@ -119,24 +122,22 @@ export class ValueTransferWitnessService {
     const { message: cashAcceptedMessage } = messageContext
 
     this.logger.info(
-      `> Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid}`
+      `> Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.id}`
     )
 
     // Call VTP library to handle cash acceptance
     const cashAcceptance = new CashAcceptance(cashAcceptedMessage)
     const { error, transaction } = await this.witness.processCashAcceptance(cashAcceptance)
-    if (error || !transaction) {
-      this.logger.error(
-        ` Giver: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} failed.`,
-        { error }
-      )
+    if (!transaction) {
+      this.logger.error(` Witness: process cash acceptance message ${cashAcceptedMessage.id} failed. Error: ${error}`)
+      return {}
     }
 
-    // Rasie event
-    const record = await this.valueTransferService.emitStateChangedEvent(cashAcceptedMessage.thid)
+    // Raise event
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.thid} completed!`
+      `< Witness ${this.label}: process cash acceptance message for VTP transaction ${cashAcceptedMessage.id} completed!`
     )
 
     return { record }
@@ -158,7 +159,7 @@ export class ValueTransferWitnessService {
     const { message: cashRemovedMessage } = messageContext
 
     this.logger.info(
-      `> Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid}`
+      `> Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.id}`
     )
 
     // Call VTP library to handle cash removal and create receipt
@@ -168,17 +169,16 @@ export class ValueTransferWitnessService {
       return this.witness.createReceipt(cashRemoval)
     }
     const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
-    if (error || !transaction) {
-      this.logger.error(` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed.`, {
-        error,
-      })
+    if (!transaction) {
+      this.logger.error(` Witness: process cash removal message ${cashRemovedMessage.id} failed. Error: ${error}`)
+      return {}
     }
 
     // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(cashRemovedMessage.thid)
+    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
 
     this.logger.info(
-      `< Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.thid} completed!`
+      `< Witness ${this.label}: process cash removal message for VTP transaction ${cashRemovedMessage.id} completed!`
     )
 
     return { record }
