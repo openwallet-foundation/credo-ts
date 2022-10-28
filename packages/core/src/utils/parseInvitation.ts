@@ -9,12 +9,10 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/helpers'
 import { OutOfBandInvitation } from '../modules/oob/messages'
-import { OutOfBandGoalCode } from '../modules/out-of-band/messages'
 
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
-import { contactInvitationLabelRegex } from './regex'
 
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {
   const abortController = new AbortController()
@@ -117,21 +115,4 @@ export const parseInvitationShortUrl = async (
       )
     }
   }
-}
-
-/**
- * Tries to parse contact label from Share Contact protocol invitation
- *
- * @param invitationMessage Invitation message
- *
- * @returns Parsed contact label string or undefined
- */
-export function tryParseShareContactLabel(invitationMessage: OutOfBandInvitationMessage): string | undefined {
-  const { goalCode, goal } = invitationMessage.body
-  if (goalCode !== OutOfBandGoalCode.ShareContact || !goal) return
-
-  const match = goal.match(contactInvitationLabelRegex)
-  if (!match?.length) return
-
-  return match[1]
 }
