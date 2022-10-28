@@ -1,9 +1,6 @@
-import type { CreateProposalOptions } from '../../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models/V1PresentationPreview'
-import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
+import type { IndyProposeProofFormat } from './IndyProofFormat'
 
-import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { uuid } from '../../../../utils/uuid'
 import { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
 
@@ -13,21 +10,15 @@ import { ProofPredicateInfo } from './models/ProofPredicateInfo'
 import { ProofRequest } from './models/ProofRequest'
 
 export class IndyProofUtils {
-  public static async createRequestFromPreview(indyFormat: IndyProposeProofFormat): Promise<ProofRequestFormats> {
+  public static async createRequestFromPreview(indyFormat: IndyProposeProofFormat): Promise<ProofRequest> {
     const preview = new PresentationPreview({
       attributes: indyFormat.attributes,
       predicates: indyFormat.predicates,
     })
 
-    if (!preview) {
-      throw new AriesFrameworkError(`No preview found`)
-    }
-
     const proofRequest = IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
 
-    return {
-      indy: proofRequest,
-    }
+    return proofRequest
   }
 
   public static createReferentForProofRequest(

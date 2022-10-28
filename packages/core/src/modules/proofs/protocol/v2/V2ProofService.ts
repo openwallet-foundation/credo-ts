@@ -6,7 +6,6 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { IndyProofFormat } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
@@ -42,7 +41,6 @@ import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofExchangeRecord, ProofRepository } from '../../repository'
 
@@ -91,22 +89,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     const attachmentInfo = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-
-      let formats
-      if (key === PresentationRecordType.Indy) {
-        const indyFormat = (options as CreateProposalOptions<[IndyProofFormat]>).proofFormats.indy
-        if (!indyFormat) {
-          throw new AriesFrameworkError('No Indy format found.')
-        }
-        formats = await IndyProofUtils.createRequestFromPreview({
-          ...indyFormat,
-          nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()),
-        })
-      } else {
-        formats = options.proofFormats
-      }
-
-      attachmentInfo.push(await service.createProposal({ formats }))
+      attachmentInfo.push(await service.createProposal({ formats: options.proofFormats }))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({

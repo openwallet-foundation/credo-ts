@@ -51,6 +51,7 @@ import {
 } from '../ProofFormatConstants'
 import { ProofFormatService } from '../ProofFormatService'
 
+import { IndyProofUtils } from './IndyProofUtils'
 import { InvalidEncodedValueError } from './errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from './errors/MissingIndyProofMessageError'
 import { RequestedAttribute, RequestedPredicate } from './models'
@@ -133,9 +134,14 @@ export class IndyProofFormatService extends ProofFormatService {
     }
     const indyFormat = options.formats.indy
 
+    const proofRequest = await IndyProofUtils.createRequestFromPreview({
+      ...indyFormat,
+      nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()),
+    })
+
     return await this.createProofAttachment({
       id: options.id ?? uuid(),
-      proofProposalOptions: { ...indyFormat, nonce: indyFormat.nonce ?? (await this.wallet.generateNonce()) },
+      proofProposalOptions: proofRequest,
     })
   }
 
