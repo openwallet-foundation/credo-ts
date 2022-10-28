@@ -6,9 +6,10 @@
 
 ## Configuration
 
-Ledgers to be used by the agent can be specified in the agent configuration using the `indyLedgers` config. Only indy ledgers are supported at the moment. The `indyLedgers` property is an array of objects with the following properties. Either `genesisPath` or `genesisTransactions` must be set, but not both:
+Ledgers to be used by the agent can be specified in the agent configuration using the `indyLedgers` config. Only indy ledgers are supported at the moment. The `indyLedgers` property is an array of objects with the following properties. Either `genesisPath` or `genesisTransactions` must be set, but **_NOT_** both:
 
 - `id`\*: The id (or name) of the ledger, also used as the pool name
+- `indyNamespace`: The Indy namespace aka the name identifying the name of the network connecting to.
 - `isProduction`\*: Whether the ledger is a production ledger. This is used by the pool selector algorithm to know which ledger to use for certain interactions (i.e. prefer production ledgers over non-production ledgers)
 - `genesisPath`: The path to the genesis file to use for connecting to an Indy ledger.
 - `genesisTransactions`: String of genesis transactions to use for connecting to an Indy ledger.
@@ -18,15 +19,17 @@ const agentConfig: InitConfig = {
   indyLedgers: [
     {
       id: 'sovrin-main',
-      didIndyNamespace: 'sovrin',
+      indyNamespace: 'sovrin',
       isProduction: true,
       genesisPath: './genesis/sovrin-main.txn',
+      transactionAuthorAgreement: { version: '1.0', acceptanceMechanism: 'accept' },
     },
     {
       id: 'bcovrin-test',
-      didIndyNamespace: 'bcovrin:test',
+      indyNamespace: 'bcovrin:test',
       isProduction: false,
-      genesisTransactions: 'XXXX',
+      genesisTransactions: 'xyz',
+      transactionAuthorAgreement: { version: '1.0', acceptanceMechanism: 'accept' },
     },
   ],
 }
@@ -111,3 +114,12 @@ Helpful resources:
 
 - https://pubs.opengroup.org/onlinepubs/009695399/functions/getrlimit.html
 - https://stackoverflow.com/a/62074374
+
+### Side notes
+
+As of v0.3.0 you should keep in mind that:
+
+1. When when attempting to register a credential on the ledger that is not in your wallet, AFJ will throw an error (as opposed to returning the credential definition from the ledger in prior versions)
+2. Attempting to register a new credential definition that is already in the wallet AFJ will return the stored definition _without_ attempting to register it on the ledger.
+
+These choices are intentional. In case 1, it is assumed that this workflow is a mistake. In case 2. it is assumed that having registered the credential on the ledger is implied.
