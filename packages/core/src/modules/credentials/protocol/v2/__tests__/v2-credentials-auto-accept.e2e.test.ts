@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsApiOptions'
+import type { AcceptCredentialOfferOptions, AcceptCredentialProposalOptions } from '../../../CredentialsApiOptions'
 import type { Schema } from 'indy-sdk'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
@@ -204,7 +204,7 @@ describe('v2 credentials', () => {
         state: CredentialState.Done,
       })
 
-      const options: AcceptProposalOptions = {
+      const options: AcceptCredentialProposalOptions = {
         credentialRecordId: faberPropReceivedRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
@@ -308,7 +308,7 @@ describe('v2 credentials', () => {
         state: CredentialState.Done,
       })
 
-      const acceptOfferOptions: AcceptOfferOptions = {
+      const acceptOfferOptions: AcceptCredentialOfferOptions = {
         credentialRecordId: aliceOfferReceivedRecord.id,
       }
       testLogger.test('alice sends credential request to faber')

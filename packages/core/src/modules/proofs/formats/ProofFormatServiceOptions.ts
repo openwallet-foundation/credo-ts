@@ -8,15 +8,15 @@ import type { ProofFormatService } from './ProofFormatService'
  *
  * @example
  * ```
- * type ProofFormatServiceMap = FormatServiceMap<[IndyProofFormat]>
+ * type FormatServiceMap = ProofFormatServiceMap<[IndyProofFormat]>
  *
  * // equal to
- * type ProofFormatServiceMap = {
- *   indy: ProofFormatService<IndyCredentialFormat>
+ * type FormatServiceMap = {
+ *   indy: ProofFormatServiceMap<IndyCredentialFormat>
  * }
  * ```
  */
-export type FormatServiceMap<PFs extends ProofFormat[]> = {
+export type ProofFormatServiceMap<PFs extends ProofFormat[]> = {
   [PF in PFs[number] as PF['formatKey']]: ProofFormatService<PF>
 }
 
@@ -25,7 +25,7 @@ export type FormatServiceMap<PFs extends ProofFormat[]> = {
  *
  * It requires an attachment and a format to be returned.
  */
-export interface FormatCreateReturn {
+export interface ProofFormatCreateReturn {
   format: ProofFormatSpec
   attachment: Attachment
 }

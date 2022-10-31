@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { AcceptProposalOptions } from '../../../ProofsApiOptions'
+import type { AcceptProofProposalOptions } from '../../../ProofsApiOptions'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
@@ -103,7 +103,7 @@ describe('Present Proof', () => {
 
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
-    const acceptProposalOptions: AcceptProposalOptions = {
+    const acceptProposalOptions: AcceptProofProposalOptions = {
       proofRecordId: faberProofExchangeRecord.id,
     }
 

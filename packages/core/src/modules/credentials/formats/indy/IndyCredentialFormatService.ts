@@ -15,7 +15,7 @@ import type {
   FormatCreateOfferReturn,
   FormatCreateProposalOptions,
   FormatCreateProposalReturn,
-  FormatCreateReturn,
+  CredentialFormatCreateReturn,
   FormatProcessOptions,
 } from '../CredentialFormatServiceOptions'
 import type { IndyCredentialFormat } from './IndyCredentialFormat'
@@ -213,7 +213,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   public async acceptOffer(
     agentContext: AgentContext,
     { credentialFormats, credentialRecord, attachId, offerAttachment }: FormatAcceptOfferOptions<IndyCredentialFormat>
-  ): Promise<FormatCreateReturn> {
+  ): Promise<CredentialFormatCreateReturn> {
     const indyFormat = credentialFormats?.indy
 
     const holderDid = indyFormat?.holderDid ?? (await this.getIndyHolderDid(agentContext, credentialRecord))
@@ -251,7 +251,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   /**
    * Starting from a request is not supported for indy credentials, this method only throws an error.
    */
-  public async createRequest(): Promise<FormatCreateReturn> {
+  public async createRequest(): Promise<CredentialFormatCreateReturn> {
     throw new AriesFrameworkError('Starting from a request is not supported for indy credentials')
   }
 
@@ -266,7 +266,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   public async acceptRequest(
     agentContext: AgentContext,
     { credentialRecord, attachId, offerAttachment, requestAttachment }: FormatAcceptRequestOptions<IndyCredentialFormat>
-  ): Promise<FormatCreateReturn> {
+  ): Promise<CredentialFormatCreateReturn> {
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {

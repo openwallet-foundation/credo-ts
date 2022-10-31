@@ -60,10 +60,6 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   }
   abstract readonly version: string
 
-  public async generateProofRequestNonce() {
-    return await this.wallet.generateNonce()
-  }
-
   public emitStateChangedEvent(
     agentContext: AgentContext,
     proofRecord: ProofExchangeRecord,

@@ -11,9 +11,9 @@ import type { ProofRequest } from './models/ProofRequest'
 export type IndyPresentationProofFormat = IndyRequestedCredentialsFormat
 
 export interface IndyRequestProofFormat {
-  name: string
-  version: string
-  nonce: string
+  name?: string
+  version?: string
+  nonce?: string
   nonRevoked?: IndyRevocationInterval
   ver?: '1.0' | '2.0'
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
