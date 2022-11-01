@@ -118,12 +118,14 @@ export class ValueTransferGiverService {
       await this.valueTransferService.sendMessage(offerMessage, params.transport)
     }
 
-    // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.getById(transaction.id)
 
     // Save second party Did
     record.secondPartyDid = offerMessage.to?.length ? offerMessage.to[0] : undefined
     await this.valueTransferRepository.update(record)
+
+    // Raise event
+    await this.valueTransferService.emitStateChangedEvent(record.id)
 
     this.logger.info(`< Giver: offer payment VTP transaction completed!`)
 
@@ -153,12 +155,14 @@ export class ValueTransferGiverService {
       return {}
     }
 
-    // Raise event
-    const record = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+    const record = await this.valueTransferService.getById(transaction.id)
 
     // Save second party Did
     record.secondPartyDid = requestMessage.from
     await this.valueTransferRepository.update(record)
+
+    // Raise event
+    await this.valueTransferService.emitStateChangedEvent(record.id)
 
     this.logger.info(`< Giver: process payment request message for VTP transaction ${requestMessage.id} completed!`)
 
