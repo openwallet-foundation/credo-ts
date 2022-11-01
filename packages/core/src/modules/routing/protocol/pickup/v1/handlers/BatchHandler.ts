@@ -25,10 +25,6 @@ export class BatchHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<BatchHandler>) {
     const { message } = messageContext
-    const ackMessage = await this.messagePickupService.generateAckResponse(messageContext)
-    if (ackMessage) {
-      await this.messageSender.sendDIDCommV2Message(ackMessage)
-    }
     const forwardedMessages = message.body.messages
     forwardedMessages.forEach((message) => {
       this.eventEmitter.emit<AgentMessageReceivedEvent>({
@@ -38,5 +34,9 @@ export class BatchHandler implements Handler {
         },
       })
     })
+    const ackMessage = await this.messagePickupService.generateAckResponse(messageContext)
+    if (ackMessage) {
+      await this.messageSender.sendDIDCommV2Message(ackMessage)
+    }
   }
 }

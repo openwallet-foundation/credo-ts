@@ -45,9 +45,9 @@ export class MessagePickupService {
 
   public async generateAckResponse(messageContext: InboundMessageContext<BatchMessageV2>) {
     const { message } = messageContext
-    if (!message.from || !message.to || !message.attachments) return
+    if (!message.from || !message.to) return
 
-    const recievedIds = message.attachments.flatMap((a) => (a.id ? [a.id] : []))
+    const recievedIds = message.body.messages.flatMap((a) => (a.id ? [a.id] : []))
     const ackMessage = new BatchAckMessageV2({
       from: message.to[0],
       to: message.from,
