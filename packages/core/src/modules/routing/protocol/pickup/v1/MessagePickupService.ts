@@ -7,7 +7,7 @@ import { injectable, inject } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
 import { uuid } from '../../../../../utils/uuid'
 
-import { BatchMessageItemV2, BatchMessageV2 } from './messages'
+import { BatchAckMessageV2, BatchMessageItemV2, BatchMessageV2 } from './messages'
 
 @injectable()
 export class MessagePickupService {
@@ -41,6 +41,20 @@ export class MessagePickupService {
     })
 
     return batchMessage
+  }
+
+  public async generateAckResponse(messageContext: InboundMessageContext<BatchMessageV2>) {
+    const { message } = messageContext
+    if (!message.from || !message.to || !message.attachments) return
+
+    const recievedIds = message.attachments.flatMap((a) => (a.id ? [a.id] : []))
+    const ackMessage = new BatchAckMessageV2({
+      from: message.to[0],
+      to: message.from,
+      ack: recievedIds,
+    })
+
+    return ackMessage
   }
 
   public queueMessage(connectionId: string, message: EncryptedMessage) {
