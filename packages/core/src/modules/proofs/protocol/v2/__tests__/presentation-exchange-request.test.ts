@@ -2,7 +2,6 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { AcceptProposalOptions, ProposeProofOptions } from '../../../ProofsApiOptions'
 import type { ProofRecord } from '../../../repository/ProofRecord'
-import type { SubmissionRequirement } from '@sphereon/pex-models'
 
 import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -24,8 +23,7 @@ describe('Present Proof', () => {
   let aliceProofRecord: ProofRecord
   let didCommMessageRepository: DidCommMessageRepository
 
-  const inputDescriptor =
-  {
+  const inputDescriptor = {
     constraints: {
       fields: [
         {
@@ -53,12 +51,12 @@ describe('Present Proof', () => {
     name: "EU Driver's License",
     group: ['A'],
     id: 'citizenship_input_1',
-  },
+  }
 
-    beforeAll(async () => {
-      testLogger.test('Initializing the agents')
-        ; ({ faberAgent, aliceAgent, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
-    })
+  beforeAll(async () => {
+    testLogger.test('Initializing the agents')
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
+  })
 
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
@@ -242,97 +240,5 @@ describe('Present Proof', () => {
       state: ProofState.RequestReceived,
       protocolVersion: ProofProtocolVersion.V2,
     })
-  })
-
-  xtest(`Submission Requirements`, async () => {
-    {
-      // Submission Requirements are an optional field within the presentation definition v1
-
-      // export interface PresentationDefinitionV1 {
-      //   id: string;
-      //   name?: string;
-      //   purpose?: string;
-      //   format?: Format;
-      //   submission_requirements?: Array<SubmissionRequirement>; // <----- HERE
-      //   input_descriptors: Array<InputDescriptorV1>;
-      // }
-      const submissionRequirements: SubmissionRequirement[] = [
-        {
-          name: 'Banking Information',
-          purpose: 'We need you to prove you currently hold a bank account older than 12months.',
-          rule: 'pick',
-          count: 1,
-          from: 'A',
-        },
-        {
-          name: 'Employment Information',
-          purpose:
-            'We are only verifying one current employment relationship, not any other information about employment.',
-          rule: 'all',
-          from: 'B',
-        },
-        {
-          name: 'Citizenship Information',
-          rule: 'pick',
-          count: 1,
-          from_nested: [
-            {
-              name: 'United States Citizenship Proofs',
-              purpose: 'We need you to prove your US citizenship.',
-              rule: 'all',
-              from: 'C',
-            },
-            {
-              name: 'European Union Citizenship Proofs',
-              purpose: 'We need you to prove you are a citizen of an EU member state.',
-              rule: 'pick',
-              count: 1,
-              from: 'D',
-            },
-          ],
-        },
-      ]
-
-      let id1 = inputDescriptor
-      let id2 = inputDescriptor
-      let id3 = inputDescriptor
-      let id4 = inputDescriptor
-
-      id1.group = ['A']
-      id1.group = ['B']
-      id1.group = ['C']
-      id1.group = ['D']
-
-      const proposeOptions: ProposeProofOptions = {
-        connectionId: aliceConnection.id,
-        protocolVersion: ProofProtocolVersion.V2,
-        proofFormats: {
-          presentationExchange: {
-            // this is of type PresentationDefinitionV1 (see pex library)
-            presentationDefinition: {
-              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [id1, id2, id3, id4],
-              submission_requirements: submissionRequirements,
-            },
-          },
-        },
-        comment: 'V2 Presentation Exchange propose proof test',
-      }
-      const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-        state: ProofState.ProposalReceived,
-      })
-  
-      aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
-  
-      testLogger.test('Faber waits for presentation from Alice')
-      faberProofRecord = await faberPresentationRecordPromise
-  
-      didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-  
-      const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-        associatedRecordId: faberProofRecord.id,
-        messageClass: V2ProposalPresentationMessage,
-      })
-    }
   })
 })

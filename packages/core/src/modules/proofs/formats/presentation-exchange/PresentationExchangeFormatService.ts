@@ -24,18 +24,18 @@ import type {
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { InputDescriptorsSchema } from './models'
 import type { RequestPresentationExchangeOptions } from './models/RequestPresentation'
+import type { PresentationSignCallBackParams, PresentationSignOptions, Validated } from '@sphereon/pex'
+import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type {
   ICredentialSubject,
   IPresentation,
   IVerifiableCredential,
   IVerifiablePresentation,
-  PresentationSignCallBackParams,
-  PresentationSignOptions,
-  Validated,
-} from '@sphereon/pex'
-import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
+} from '@sphereon/ssi-types'
 
-import { KeyEncoding, ProofPurpose, Status, PEXv1 } from '@sphereon/pex'
+import { KeyEncoding, Status, PEXv1 } from '@sphereon/pex'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { IProofPurpose } from '@sphereon/ssi-types'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -303,7 +303,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`No did verification method found for did ${subject.id} in did document`)
     }
 
-    const proofPurpose = ProofPurpose.authentication
+    const proofPurpose = IProofPurpose.authentication
 
     // the signature suite to use for the presentation is dependant on the credentials we share.
 
@@ -328,7 +328,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       holder: subject.id,
       proofOptions: {
         type: proofType,
-        proofPurpose: ProofPurpose.assertionMethod,
+        proofPurpose: IProofPurpose.assertionMethod,
         challenge: requestPresentation.options?.challenge,
       },
       signatureOptions: {
@@ -435,11 +435,16 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       }
     }
 
+    // query the wallet ourselves first to avoid the need to query the pex library for all
+    // credentials for every proof request
+
     const credentials = await this.w3cCredentialService.findCredentialRecordsByQuery(agentContext, {
       $or: [...query],
     })
 
     const pexCredentials = credentials.map((c) => JsonTransformer.toJSON(c) as IVerifiableCredential)
+
+    // console.log("QUACK 888 pexCredentials = ",pexCredentials)
 
     const pex: PEXv1 = new PEXv1()
     const selectResults = pex.selectFrom(presentationDefinition, pexCredentials)
@@ -447,6 +452,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
+
+    // console.log("QUACK 999 selectResults = ",selectResults)
     return {
       proofFormats: {
         presentationExchange: {
@@ -478,7 +485,8 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // 4 groups in total that satisfy the proof request
     //  for each group I need to know which credentials it needs
 
-    console.log("WOOOOOOOOOOOOOOO QUACK options = ", options.proofFormats.presentationExchange?.formats.matches)
+    // console.log("WOOOOOOOOOOOOOOO QUACK options = ", options.proofFormats.presentationExchange?.formats.matches)
+   
     // How to auto select the credentials:
     // let i = 0
     // for (const credential of presentationExchange.formats.verifiableCredential) {

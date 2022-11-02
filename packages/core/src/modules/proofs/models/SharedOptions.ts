@@ -7,7 +7,8 @@ import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCrede
 import type { RequestPresentationExchangeOptions } from '../formats/presentation-exchange/models/RequestPresentation'
 import type { RequestPresentationOptions } from '../protocol/v1/messages'
 import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
-import type { IVerifiableCredential, SelectResults } from '@sphereon/pex'
+import type { SelectResults } from '@sphereon/pex'
+import type { IVerifiableCredential } from '@sphereon/ssi-types'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or
