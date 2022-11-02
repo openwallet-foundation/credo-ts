@@ -6,6 +6,9 @@
   "command": {
     "version": {
       "allowBranch": "main"
+    },
+    "publish": {
+      "graphType": "all"
     }
   }
 }
