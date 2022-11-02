@@ -3,6 +3,7 @@ import type { Query, AgentContext, ConnectionRecord, InboundMessageContext } fro
 
 import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
 
+import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
 import { DummyRecord } from '../repository/DummyRecord'
 import { DummyRepository } from '../repository/DummyRepository'
@@ -14,8 +15,14 @@ import { DummyEventTypes } from './DummyEvents'
 export class DummyService {
   private dummyRepository: DummyRepository
   private eventEmitter: EventEmitter
+  private dummyModuleConfig: DummyModuleConfig
 
-  public constructor(dummyRepository: DummyRepository, eventEmitter: EventEmitter) {
+  public constructor(
+    dummyModuleConfig: DummyModuleConfig,
+    dummyRepository: DummyRepository,
+    eventEmitter: EventEmitter
+  ) {
+    this.dummyModuleConfig = dummyModuleConfig
     this.dummyRepository = dummyRepository
     this.eventEmitter = eventEmitter
   }
@@ -80,7 +87,9 @@ export class DummyService {
 
     this.emitStateChangedEvent(messageContext.agentContext, record, null)
 
-    return record
+    if (this.dummyModuleConfig.autoAcceptRequests) {
+      return await this.createResponse(messageContext.agentContext, record)
+    }
   }
 
   /**
