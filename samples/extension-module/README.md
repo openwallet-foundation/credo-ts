@@ -16,7 +16,7 @@ This example consists of a module that implements a very simple request-response
 - Define events (inherited from `BaseEvent`)
 - Create a singleton service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
 - Create a singleton api class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `MessageSender`
-- Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance, and also register the features (such as protocols) the module adds to the Agent
+- Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance, and also register the features (such as protocols) the module adds to the Agent.
 
 ## Usage
 

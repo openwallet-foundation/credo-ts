@@ -33,7 +33,7 @@ const aliceAgentOptions = getAgentOptions(
   }
 )
 
-describe('Dummy', () => {
+describe('Dummy extension module test', () => {
   let bobAgent: Agent<{
     dummy: DummyModule
   }>
