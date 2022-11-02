@@ -61,7 +61,6 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
       `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
 
-    console.log("QUACK 1 -> GOING TO GET REQUESTED CREDENTIALS FOR PROOF REQUEST!")
     const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
       await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
         proofRecord: record,
@@ -70,7 +69,6 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         },
       })
 
-    console.log("QUACK RETRIEVED CREDENTIALS = ", retrievedCredentials)
     const requestedCredentials: FormatRequestedCredentialReturn<PFs> =
       await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 

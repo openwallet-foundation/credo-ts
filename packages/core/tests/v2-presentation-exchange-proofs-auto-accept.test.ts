@@ -15,7 +15,7 @@ describe('Auto accept present proof', () => {
   let aliceConnection: ConnectionRecord
 
   // MJR:
-  //  input_descriptors define the fields to be requested in a presentation definition for a given credential 
+  //  input_descriptors define the fields to be requested in a presentation definition for a given credential
   // submission_requirements specify combinations of input descriptors to allow multiple credentials
   // to be retrieved
 
@@ -168,7 +168,7 @@ describe('Auto accept present proof', () => {
   }
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
-      ; ({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
+      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
         AutoAcceptProof.Always
@@ -329,11 +329,11 @@ describe('Auto accept present proof', () => {
   xdescribe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
-        ; ({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
-          'Faber Auto Accept Content Approved Proofs',
-          'Alice Auto Accept Content Approved Proofs',
-          AutoAcceptProof.ContentApproved
-        ))
+      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
+        'Faber Auto Accept Content Approved Proofs',
+        'Alice Auto Accept Content Approved Proofs',
+        AutoAcceptProof.ContentApproved
+      ))
     })
     afterAll(async () => {
       testLogger.test('Shutting down both agents')
