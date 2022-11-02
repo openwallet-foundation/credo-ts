@@ -2,15 +2,15 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
-  AcceptPresentationOptions,
-  AcceptProposalOptions,
+  AcceptProofPresentationOptions,
+  AcceptProofProposalOptions,
   CreateProofRequestOptions,
-  FindPresentationMessageReturn,
-  FindProposalMessageReturn,
-  FindRequestMessageReturn,
+  FindProofPresentationMessageReturn,
+  FindProofProposalMessageReturn,
+  FindProofRequestMessageReturn,
   ProposeProofOptions,
   RequestProofOptions,
-  ServiceMap,
+  ProofServiceMap,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
@@ -56,11 +56,11 @@ import { ProofRepository } from './repository/ProofRepository'
 export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<PFs>[]> {
   // Proposal methods
   proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
-  acceptProposal(options: AcceptProposalOptions): Promise<ProofExchangeRecord>
+  acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord>
 
   // Request methods
   requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
-  acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofExchangeRecord>
+  acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord>
   declineRequest(proofRecordId: string): Promise<ProofExchangeRecord>
 
   // Present
@@ -94,9 +94,9 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>>
 
   // DidComm Message Records
-  findProposalMessage(proofRecordId: string): Promise<FindProposalMessageReturn<PSs>>
-  findRequestMessage(proofRecordId: string): Promise<FindRequestMessageReturn<PSs>>
-  findPresentationMessage(proofRecordId: string): Promise<FindPresentationMessageReturn<PSs>>
+  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>>
+  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>>
+  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>>
 }
 
 @injectable()
@@ -112,7 +112,7 @@ export class ProofsApi<
   private agentContext: AgentContext
   private agentConfig: AgentConfig
   private logger: Logger
-  private serviceMap: ServiceMap<PFs, PSs>
+  private serviceMap: ProofServiceMap<PFs, PSs>
 
   public constructor(
     dispatcher: Dispatcher,
@@ -141,7 +141,7 @@ export class ProofsApi<
         [service.version]: service,
       }),
       {}
-    ) as ServiceMap<PFs, PSs>
+    ) as ProofServiceMap<PFs, PSs>
 
     this.logger.debug(`Initializing Proofs Module for agent ${this.agentContext.config.label}`)
 
@@ -198,7 +198,7 @@ export class ProofsApi<
    * @param options multiple properties like proof record id, additional configuration for creating the request
    * @returns Proof record associated with the presentation request
    */
-  public async acceptProposal(options: AcceptProposalOptions): Promise<ProofExchangeRecord> {
+  public async acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord> {
     const { proofRecordId } = options
     const proofRecord = await this.getById(proofRecordId)
 
@@ -278,7 +278,7 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofExchangeRecord> {
+  public async acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord> {
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)
@@ -598,19 +598,19 @@ export class ProofsApi<
     await this.proofRepository.update(this.agentContext, proofRecord)
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<FindProposalMessageReturn<PSs>> {
+  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
     return service.findProposalMessage(this.agentContext, proofRecordId)
   }
 
-  public async findRequestMessage(proofRecordId: string): Promise<FindRequestMessageReturn<PSs>> {
+  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
     return service.findRequestMessage(this.agentContext, proofRecordId)
   }
 
-  public async findPresentationMessage(proofRecordId: string): Promise<FindPresentationMessageReturn<PSs>> {
+  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
     return service.findPresentationMessage(this.agentContext, proofRecordId)

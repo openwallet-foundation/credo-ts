@@ -14,7 +14,7 @@ import type {
   FormatCreateProposalOptions,
   FormatCreateProposalReturn,
   FormatCreateRequestOptions,
-  FormatCreateReturn,
+  CredentialFormatCreateReturn,
   FormatProcessCredentialOptions,
   FormatProcessOptions,
 } from '../CredentialFormatServiceOptions'
@@ -169,7 +169,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   public async acceptOffer(
     agentContext: AgentContext,
     { credentialFormats, attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateReturn> {
+  ): Promise<CredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
@@ -197,7 +197,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   public async createRequest(
     agentContext: AgentContext,
     { credentialFormats }: FormatCreateRequestOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateReturn> {
+  ): Promise<CredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     const format = new CredentialFormatSpec({
@@ -230,7 +230,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   public async acceptRequest(
     agentContext: AgentContext,
     { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateReturn> {
+  ): Promise<CredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     // sign credential here. credential to be signed is received as the request attachment

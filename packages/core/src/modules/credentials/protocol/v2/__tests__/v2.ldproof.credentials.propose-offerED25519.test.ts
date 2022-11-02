@@ -1,7 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptProposalOptions, AcceptRequestOptions } from '../../../CredentialsApiOptions'
 import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
@@ -189,11 +188,10 @@ describe('credentials', () => {
 
       testLogger.test('Faber sends credential to Alice')
 
-      const acceptRequestOptions: AcceptRequestOptions = {
+      await faberAgent.credentials.acceptRequest({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
-      }
-      await faberAgent.credentials.acceptRequest(acceptRequestOptions)
+      })
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -302,7 +300,7 @@ describe('credentials', () => {
 
     testLogger.test('Faber sends credential offer to Alice')
 
-    const options: AcceptProposalOptions = {
+    await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C & INDY Proposals',
       credentialFormats: {
@@ -312,8 +310,7 @@ describe('credentials', () => {
         },
         jsonld: signCredentialOptions,
       },
-    }
-    await faberAgent.credentials.acceptProposal(options)
+    })
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -434,11 +431,10 @@ describe('credentials', () => {
 
       testLogger.test('Faber sends credential to Alice')
 
-      const acceptRequestOptions: AcceptRequestOptions = {
+      await faberAgent.credentials.acceptRequest({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Credential',
-      }
-      await faberAgent.credentials.acceptRequest(acceptRequestOptions)
+      })
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {

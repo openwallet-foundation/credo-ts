@@ -64,7 +64,7 @@ export class V1ProposePresentationHandler implements Handler {
     const proofRequestFromProposalOptions: IndyProofRequestFromProposalOptions = {
       name: 'proof-request',
       version: '1.0',
-      nonce: await this.proofService.generateProofRequestNonce(),
+      nonce: await messageContext.agentContext.wallet.generateNonce(),
       proofRecord,
     }
 

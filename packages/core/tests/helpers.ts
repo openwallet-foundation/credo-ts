@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  AcceptOfferOptions,
+  AcceptCredentialOfferOptions,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
@@ -468,7 +468,7 @@ export async function issueCredential({
     state: CredentialState.OfferReceived,
   })
 
-  const acceptOfferOptions: AcceptOfferOptions = {
+  const acceptOfferOptions: AcceptCredentialOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
@@ -536,7 +536,7 @@ export async function issueConnectionLessCredential({
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.OfferReceived,
   })
-  const acceptOfferOptions: AcceptOfferOptions = {
+  const acceptOfferOptions: AcceptCredentialOfferOptions = {
     credentialRecordId: holderCredentialRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   }
