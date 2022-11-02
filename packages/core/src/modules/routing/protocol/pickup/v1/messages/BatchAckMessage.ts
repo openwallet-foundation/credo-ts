@@ -25,6 +25,7 @@ export class BatchAckMessageV2 extends DIDCommV2Message {
   public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/ack')
 
   // custom_ack can be removed once didcomm-jvm will implement V2 spec
+  // Related issue: https://github.com/sicpa-dlab/cbdc-projects/issues/1597
   @IsArray()
   @IsString({ each: true })
   @Expose({ name: 'custom_ack' })
