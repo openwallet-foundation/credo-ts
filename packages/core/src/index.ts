@@ -38,6 +38,7 @@ export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 export { Attachment } from './decorators/attachment/Attachment'
+export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
 export * from './plugins'
 export * from './transport'
