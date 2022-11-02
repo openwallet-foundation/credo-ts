@@ -486,7 +486,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     //  for each group I need to know which credentials it needs
 
     // console.log("WOOOOOOOOOOOOOOO QUACK options = ", options.proofFormats.presentationExchange?.formats.matches)
-   
+
     // How to auto select the credentials:
     // let i = 0
     // for (const credential of presentationExchange.formats.verifiableCredential) {
