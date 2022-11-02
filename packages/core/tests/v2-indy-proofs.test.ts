@@ -1,5 +1,5 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { AcceptProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { AcceptProofProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
@@ -111,7 +111,7 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
     })
 
-    const acceptProposalOptions: AcceptProposalOptions = {
+    const acceptProposalOptions: AcceptProofProposalOptions = {
       proofRecordId: faberProofExchangeRecord.id,
     }
 
@@ -263,7 +263,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: expect.any(String),
+          nonce: '947121108704767252195126',
           requested_attributes: {
             0: {
               name: 'name',
@@ -389,9 +389,6 @@ describe('Present Proof', () => {
       connectionId: faberConnection.id,
       proofFormats: {
         indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },

@@ -94,6 +94,10 @@ export class WalletApi {
     await this.wallet.rotateKey(walletConfig)
   }
 
+  public async generateNonce(): Promise<string> {
+    return await this.wallet.generateNonce()
+  }
+
   public async delete(): Promise<void> {
     await this.wallet.delete()
   }

@@ -1,6 +1,5 @@
 import type { Agent } from '../../core/src/agent/Agent'
 import type { ConnectionRecord } from '../../core/src/modules/connections'
-import type { AcceptProposalOptions } from '../../core/src/modules/credentials/CredentialsApiOptions'
 import type { SignCredentialOptionsRFC0593 } from '../../core/src/modules/credentials/formats/jsonld'
 import type { Wallet } from '../../core/src/wallet'
 
@@ -113,15 +112,14 @@ describe('credentials, BBS+ signature', () => {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
-    const options: AcceptProposalOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+    await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-    }
-    testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal(options)
+    })
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -197,7 +195,13 @@ describe('credentials, BBS+ signature', () => {
 
     testLogger.test('Faber sends credential to Alice')
 
-    await faberAgent.credentials.acceptRequest(options)
+    await faberAgent.credentials.acceptRequest({
+      credentialRecordId: faberCredentialRecord.id,
+      comment: 'V2 W3C Offer',
+      credentialFormats: {
+        jsonld: signCredentialOptions,
+      },
+    })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {

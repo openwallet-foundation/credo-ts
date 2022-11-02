@@ -41,7 +41,6 @@ import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofState } from '../../models/ProofState'
 import { PresentationRecordType, ProofExchangeRecord, ProofRepository } from '../../repository'
 
@@ -79,7 +78,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   /**
-   * The version of the issue credential protocol this service supports
+   * The version of the present proof protocol this service supports
    */
   public readonly version = 'v2' as const
 
@@ -90,15 +89,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-
-      formats.push(
-        await service.createProposal({
-          formats:
-            key === PresentationRecordType.Indy
-              ? await IndyProofUtils.createRequestFromPreview(options)
-              : options.proofFormats,
-        })
-      )
+      formats.push(await service.createProposal({ formats: options.proofFormats }))
     }
 
     const proposalMessage = new V2ProposalPresentationMessage({

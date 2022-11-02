@@ -15,7 +15,7 @@ export interface CreateProofAttachmentOptions {
   proofProposalOptions: ProofRequestOptions
 }
 
-export interface FormatCreateProposalOptions {
+export interface FormatCreateProofProposalOptions {
   id?: string
   formats: ProposeProofFormats
 }
