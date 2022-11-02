@@ -7,7 +7,6 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
-import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type {
@@ -28,7 +27,6 @@ import type {
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
 } from '../../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../../models/SharedOptions'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'
@@ -52,11 +50,10 @@ import { IndyLedgerService } from '../../../ledger/services/IndyLedgerService'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { IndyProofUtils } from '../../formats/indy/IndyProofUtils'
 import { ProofRequest } from '../../formats/indy/models/ProofRequest'
 import { RequestedCredentials } from '../../formats/indy/models/RequestedCredentials'
 import { ProofState } from '../../models/ProofState'
-import { ProofRecord } from '../../repository/ProofRecord'
+import { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
 import { ProofRepository } from '../../repository/ProofRepository'
 
 import { V1PresentationProblemReportError } from './errors'
@@ -89,7 +86,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   private ledgerService: IndyLedgerService
   private indyHolderService: IndyHolderService
   private indyRevocationService: IndyRevocationService
-  private indyProofFormatService: ProofFormatService
+  private indyProofFormatService: IndyProofFormatService
 
   public constructor(
     proofRepository: ProofRepository,
@@ -113,12 +110,15 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     this.indyRevocationService = indyRevocationService
   }
 
+  /**
+   * The version of the present proof protocol this service supports
+   */
   public readonly version = 'v1' as const
 
   public async createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const { connectionRecord, proofFormats } = options
 
     // Assert
@@ -141,7 +141,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
 
     // Create record
-    const proofRecord = new ProofRecord({
+    const proofRecord = new ProofExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: proposalMessage.threadId,
       parentThreadId: proposalMessage.thread?.parentThreadId,
@@ -165,7 +165,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createProposalAsResponse(
     agentContext: AgentContext,
     options: CreateProposalAsResponseOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const { proofRecord, proofFormats, comment } = options
 
     // Assert
@@ -202,8 +202,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
 
   public async processProposal(
     messageContext: InboundMessageContext<V1ProposePresentationMessage>
-  ): Promise<ProofRecord> {
-    let proofRecord: ProofRecord
+  ): Promise<ProofExchangeRecord> {
+    let proofRecord: ProofExchangeRecord
     const { message: proposalMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation proposal with id ${proposalMessage.id}`)
@@ -238,7 +238,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       await this.updateState(messageContext.agentContext, proofRecord, ProofState.ProposalReceived)
     } catch {
       // No proof record exists with thread id
-      proofRecord = new ProofRecord({
+      proofRecord = new ProofExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
@@ -267,7 +267,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createRequestAsResponse(
     agentContext: AgentContext,
     options: CreateRequestAsResponseOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const { proofRecord, comment, proofFormats } = options
     if (!proofFormats.indy) {
       throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
@@ -305,7 +305,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     this.logger.debug(`Creating proof request`)
 
     // Assert
@@ -330,7 +330,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
 
     // Create record
-    const proofRecord = new ProofRecord({
+    const proofRecord = new ProofExchangeRecord({
       connectionId: options.connectionRecord?.id,
       threadId: requestPresentationMessage.threadId,
       parentThreadId: requestPresentationMessage.thread?.parentThreadId,
@@ -353,8 +353,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
 
   public async processRequest(
     messageContext: InboundMessageContext<V1RequestPresentationMessage>
-  ): Promise<ProofRecord> {
-    let proofRecord: ProofRecord
+  ): Promise<ProofExchangeRecord> {
+    let proofRecord: ProofExchangeRecord
     const { message: proofRequestMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
@@ -418,7 +418,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       await this.updateState(messageContext.agentContext, proofRecord, ProofState.RequestReceived)
     } catch {
       // No proof record exists with thread id
-      proofRecord = new ProofRecord({
+      proofRecord = new ProofExchangeRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
@@ -446,7 +446,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createPresentation(
     agentContext: AgentContext,
     options: CreatePresentationOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const { proofRecord, proofFormats } = options
 
     this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
@@ -516,7 +516,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return { message: presentationMessage, proofRecord }
   }
 
-  public async processPresentation(messageContext: InboundMessageContext<V1PresentationMessage>): Promise<ProofRecord> {
+  public async processPresentation(
+    messageContext: InboundMessageContext<V1PresentationMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
@@ -573,7 +575,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return proofRecord
   }
 
-  public async processAck(messageContext: InboundMessageContext<V1PresentationAckMessage>): Promise<ProofRecord> {
+  public async processAck(
+    messageContext: InboundMessageContext<V1PresentationAckMessage>
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationAckMessage, connection } = messageContext
 
     this.logger.debug(`Processing presentation ack with id ${presentationAckMessage.id}`)
@@ -610,7 +614,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const msg = new V1PresentationProblemReportMessage({
       description: {
         code: PresentationProblemReportReason.Abandoned,
@@ -631,7 +635,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
 
   public async processProblemReport(
     messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
-  ): Promise<ProofRecord> {
+  ): Promise<ProofExchangeRecord> {
     const { message: presentationProblemReportMessage } = messageContext
 
     const connection = messageContext.assertReadyConnection()
@@ -647,10 +651,6 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     proofRecord.errorMessage = `${presentationProblemReportMessage.description.code}: ${presentationProblemReportMessage.description.en}`
     await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
     return proofRecord
-  }
-
-  public async generateProofRequestNonce() {
-    return this.wallet.generateNonce()
   }
 
   public async createProofRequestFromProposal(
@@ -670,10 +670,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     const indyProposeProofFormat: IndyProposeProofFormat = {
       name: 'Proof Request',
       version: '1.0',
-      nonce: await this.generateProofRequestNonce(),
+      nonce: await this.wallet.generateNonce(),
     }
 
-    const proofRequest: ProofRequest = IndyProofUtils.createReferentForProofRequest(
+    const proofRequest: ProofRequest = await this.indyProofFormatService.createReferentForProofRequest(
       indyProposeProofFormat,
       proposalMessage.presentationProposal
     )
@@ -755,7 +755,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return attachments.length ? attachments : undefined
   }
 
-  public async shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
+  public async shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
@@ -827,7 +830,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return true
   }
 
-  public async shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
+  public async shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     const proposal = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1ProposePresentationMessage,
@@ -843,7 +849,9 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     })
 
     if (!request) {
-      throw new AriesFrameworkError(`Expected to find a request message for ProofRecord with id ${proofRecord.id}`)
+      throw new AriesFrameworkError(
+        `Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`
+      )
     }
 
     const proofRequest = request.indyProofRequest
@@ -899,7 +907,10 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return true
   }
 
-  public async shouldAutoRespondToPresentation(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean> {
+  public async shouldAutoRespondToPresentation(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean> {
     this.logger.debug(`Should auto respond to presentation for proof record id: ${proofRecord.id}`)
     return true
   }
@@ -1038,7 +1049,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     const indyFormat: IndyProposeProofFormat = {
       name: 'Proof Request',
       version: '1.0',
-      nonce: await this.generateProofRequestNonce(),
+      nonce: await this.wallet.generateNonce(),
       attributes: proposalMessage.presentationProposal.attributes,
       predicates: proposalMessage.presentationProposal.predicates,
     }
@@ -1052,14 +1063,14 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       predicates: indyFormat.predicates,
     })
 
-    return IndyProofUtils.createReferentForProofRequest(indyFormat, preview)
+    return this.indyProofFormatService.createReferentForProofRequest(indyFormat, preview)
   }
   /**
    * Retrieve all proof records
    *
    * @returns List containing all proof records
    */
-  public async getAll(agentContext: AgentContext): Promise<ProofRecord[]> {
+  public async getAll(agentContext: AgentContext): Promise<ProofExchangeRecord[]> {
     return this.proofRepository.getAll(agentContext)
   }
 
@@ -1076,14 +1087,14 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
-  ): Promise<ProofRecord> {
+  ): Promise<ProofExchangeRecord> {
     return this.proofRepository.getSingleByQuery(agentContext, { threadId, connectionId })
   }
 
   public async createAck(
     gentContext: AgentContext,
     options: CreateAckOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     const { proofRecord } = options
     this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
 

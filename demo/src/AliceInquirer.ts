@@ -1,4 +1,4 @@
-import type { CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
+import type { CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -78,7 +78,7 @@ export class AliceInquirer extends BaseInquirer {
     }
   }
 
-  public async acceptProofRequest(proofRecord: ProofRecord) {
+  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.proofs.declineRequest(proofRecord.id)

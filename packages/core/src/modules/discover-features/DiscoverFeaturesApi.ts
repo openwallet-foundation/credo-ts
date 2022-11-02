@@ -1,5 +1,9 @@
 import type { Feature } from '../../agent/models'
-import type { DiscloseFeaturesOptions, QueryFeaturesOptions, ServiceMap } from './DiscoverFeaturesApiOptions'
+import type {
+  DiscloseFeaturesOptions,
+  QueryFeaturesOptions,
+  DiscoverFeaturesServiceMap,
+} from './DiscoverFeaturesApiOptions'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
 import type { DiscoverFeaturesService } from './services'
 
@@ -42,7 +46,7 @@ export class DiscoverFeaturesApi<
   private eventEmitter: EventEmitter
   private stop$: Subject<boolean>
   private agentContext: AgentContext
-  private serviceMap: ServiceMap<DFSs>
+  private serviceMap: DiscoverFeaturesServiceMap<DFSs>
 
   public constructor(
     connectionService: ConnectionService,
@@ -68,7 +72,7 @@ export class DiscoverFeaturesApi<
         [service.version]: service,
       }),
       {}
-    ) as ServiceMap<DFSs>
+    ) as DiscoverFeaturesServiceMap<DFSs>
   }
 
   public getService<PVT extends DiscoverFeaturesService['version']>(protocolVersion: PVT): DiscoverFeaturesService {

@@ -22,7 +22,7 @@ import type {
   CredentialFormat,
   CredentialFormatPayload,
   CredentialFormatService,
-  FormatServiceMap,
+  CredentialFormatServiceMap,
 } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 
@@ -96,7 +96,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         [formatService.formatKey]: formatService,
       }),
       {}
-    ) as FormatServiceMap<CFs>
+    ) as CredentialFormatServiceMap<CFs>
 
     this.registerHandlers()
   }

@@ -1,12 +1,9 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProposeProofOptions } from '../../../ProofsApiOptions'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type { ProofRecord } from '../../../repository'
+import type { ProofExchangeRecord } from '../../../repository'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
-import type { V2ProofService } from '../V2ProofService'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatConstants'
@@ -18,7 +15,7 @@ describe('Present Proof', () => {
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
   let presentationPreview: PresentationPreview
-  let faberPresentationRecord: ProofRecord
+  let faberPresentationRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -40,7 +37,7 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
+    const faberPresentationRecordPromise = waitForProofExchangeRecord(faberAgent, {
       state: ProofState.ProposalReceived,
     })
 

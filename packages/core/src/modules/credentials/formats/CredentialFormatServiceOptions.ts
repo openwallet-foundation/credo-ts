@@ -10,15 +10,15 @@ import type { CredentialFormatService } from './CredentialFormatService'
  *
  * @example
  * ```
- * type CredentialFormatServiceMap = FormatServiceMap<[IndyCredentialFormat]>
+ * type FormatServiceMap = CredentialFormatServiceMap<[IndyCredentialFormat]>
  *
  * // equal to
- * type CredentialFormatServiceMap = {
+ * type FormatServiceMap = {
  *   indy: CredentialFormatService<IndyCredentialFormat>
  * }
  * ```
  */
-export type FormatServiceMap<CFs extends CredentialFormat[]> = {
+export type CredentialFormatServiceMap<CFs extends CredentialFormat[]> = {
   [CF in CFs[number] as CF['formatKey']]: CredentialFormatService<CF>
 }
 
@@ -27,7 +27,7 @@ export type FormatServiceMap<CFs extends CredentialFormat[]> = {
  *
  * It requires an attachment and a format to be returned.
  */
-export interface FormatCreateReturn {
+export interface CredentialFormatCreateReturn {
   format: CredentialFormatSpec
   attachment: Attachment
 }
@@ -53,7 +53,7 @@ export interface FormatAcceptProposalOptions<CF extends CredentialFormat> {
   proposalAttachment: Attachment
 }
 
-export interface FormatCreateProposalReturn extends FormatCreateReturn {
+export interface FormatCreateProposalReturn extends CredentialFormatCreateReturn {
   previewAttributes?: CredentialPreviewAttribute[]
 }
 
@@ -71,7 +71,7 @@ export interface FormatAcceptOfferOptions<CF extends CredentialFormat> {
   offerAttachment: Attachment
 }
 
-export interface FormatCreateOfferReturn extends FormatCreateReturn {
+export interface FormatCreateOfferReturn extends CredentialFormatCreateReturn {
   previewAttributes?: CredentialPreviewAttribute[]
 }
 

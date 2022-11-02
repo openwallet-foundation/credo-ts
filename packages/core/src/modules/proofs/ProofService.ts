@@ -29,7 +29,7 @@ import type {
   ProofRequestFromProposalOptions,
 } from './models/ProofServiceOptions'
 import type { ProofState } from './models/ProofState'
-import type { ProofRecord, ProofRepository } from './repository'
+import type { ProofExchangeRecord, ProofRepository } from './repository'
 
 import { JsonTransformer } from '../../utils/JsonTransformer'
 
@@ -60,11 +60,11 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   }
   abstract readonly version: string
 
-  public async generateProofRequestNonce() {
-    return await this.wallet.generateNonce()
-  }
-
-  public emitStateChangedEvent(agentContext: AgentContext, proofRecord: ProofRecord, previousState: ProofState | null) {
+  public emitStateChangedEvent(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord,
+    previousState: ProofState | null
+  ) {
     const clonedProof = JsonTransformer.clone(proofRecord)
 
     this.eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
@@ -84,7 +84,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
    * @param newState The state to update to
    *
    */
-  public async updateState(agentContext: AgentContext, proofRecord: ProofRecord, newState: ProofState) {
+  public async updateState(agentContext: AgentContext, proofRecord: ProofExchangeRecord, newState: ProofState) {
     const previousState = proofRecord.state
     proofRecord.state = newState
     await this.proofRepository.update(agentContext, proofRecord)
@@ -92,7 +92,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     this.emitStateChangedEvent(agentContext, proofRecord, previousState)
   }
 
-  public update(agentContext: AgentContext, proofRecord: ProofRecord) {
+  public update(agentContext: AgentContext, proofRecord: ProofExchangeRecord) {
     return this.proofRepository.update(agentContext, proofRecord)
   }
 
@@ -107,7 +107,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   abstract createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<PFs>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
   /**
    * Create a proposal message in response to a received proof request message
@@ -122,7 +122,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   abstract createProposalAsResponse(
     agentContext: AgentContext,
     options: CreateProposalAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
   /**
    * Process a received proposal message (does not accept yet)
@@ -142,48 +142,54 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
    *    4. Loop through all format services to process proposal message
    *    5. Save & return record
    */
-  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
   abstract createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<PFs>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
   abstract createRequestAsResponse(
     agentContext: AgentContext,
     options: CreateRequestAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
-  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
   abstract createPresentation(
     agentContext: AgentContext,
     options: CreatePresentationOptions<PFs>
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
-  abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
   abstract createAck(
     agentContext: AgentContext,
     options: CreateAckOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
-  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
   abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofRecord; message: AgentMessage }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }>
 
-  abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofRecord>
+  abstract processProblemReport(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
 
-  public abstract shouldAutoRespondToProposal(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean>
+  public abstract shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean>
 
-  public abstract shouldAutoRespondToRequest(agentContext: AgentContext, proofRecord: ProofRecord): Promise<boolean>
+  public abstract shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    proofRecord: ProofExchangeRecord
+  ): Promise<boolean>
 
   public abstract shouldAutoRespondToPresentation(
     agentContext: AgentContext,
-    proofRecord: ProofRecord
+    proofRecord: ProofExchangeRecord
   ): Promise<boolean>
 
   public abstract registerHandlers(
@@ -204,7 +210,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public async saveOrUpdatePresentationMessage(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofRecord
+      proofRecord: ProofExchangeRecord
       message: AgentMessage
       role: DidCommMessageRole
     }
@@ -218,7 +224,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
 
   public async delete(
     agentContext: AgentContext,
-    proofRecord: ProofRecord,
+    proofRecord: ProofExchangeRecord,
     options?: DeleteProofOptions
   ): Promise<void> {
     await this.proofRepository.delete(agentContext, proofRecord)
