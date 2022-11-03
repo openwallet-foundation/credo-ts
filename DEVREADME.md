@@ -2,11 +2,6 @@
 
 This file is intended for developers working on the internals of the framework. If you're just looking how to get started with the framework, see the [docs](./docs)
 
-## Installing dependencies
-
-Right now, as a patch that will later be changed, some platforms will have an "error" when installing the dependencies with yarn. This is because the BBS signatures library that we use is built for Linux x86 and MacOS x86 (and not Windows and MacOS arm). This means that it will show that it could not download the binary.
-This is not an error for developers, the library that fails is `node-bbs-signaturs` and is an optional dependency for perfomance improvements. It will fallback to a, slower, wasm build.
-
 ## Running tests
 
 Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
@@ -76,7 +71,7 @@ GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=00
 Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
 
 ```sh
-yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.test.ts -u
+yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.e2e.test.ts -u
 ```
 
 In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:

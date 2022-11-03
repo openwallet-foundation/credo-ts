@@ -4,23 +4,23 @@ import type { DiscoverFeaturesService } from './services'
 /**
  * Get the supported protocol versions based on the provided discover features services.
  */
-export type ProtocolVersionType<DFSs extends DiscoverFeaturesService[]> = DFSs[number]['version']
+export type DiscoverFeaturesProtocolVersionType<DFSs extends DiscoverFeaturesService[]> = DFSs[number]['version']
 
 /**
  * Get the service map for usage in the discover features module. Will return a type mapping of protocol version to service.
  *
  * @example
  * ```
- * type DiscoverFeaturesServiceMap = ServiceMap<[V1DiscoverFeaturesService,V2DiscoverFeaturesService]>
+ * type ServiceMap = DiscoverFeaturesServiceMap<[V1DiscoverFeaturesService,V2DiscoverFeaturesService]>
  *
  * // equal to
- * type DiscoverFeaturesServiceMap = {
+ * type ServiceMap = {
  *   v1: V1DiscoverFeatureService
  *   v2: V2DiscoverFeaturesService
  * }
  * ```
  */
-export type ServiceMap<DFSs extends DiscoverFeaturesService[]> = {
+export type DiscoverFeaturesServiceMap<DFSs extends DiscoverFeaturesService[]> = {
   [DFS in DFSs[number] as DFS['version']]: DiscoverFeaturesService
 }
 
@@ -30,7 +30,7 @@ interface BaseOptions {
 
 export interface QueryFeaturesOptions<DFSs extends DiscoverFeaturesService[] = DiscoverFeaturesService[]>
   extends BaseOptions {
-  protocolVersion: ProtocolVersionType<DFSs>
+  protocolVersion: DiscoverFeaturesProtocolVersionType<DFSs>
   queries: FeatureQueryOptions[]
   awaitDisclosures?: boolean
   awaitDisclosuresTimeoutMs?: number
@@ -39,7 +39,7 @@ export interface QueryFeaturesOptions<DFSs extends DiscoverFeaturesService[] = D
 
 export interface DiscloseFeaturesOptions<DFSs extends DiscoverFeaturesService[] = DiscoverFeaturesService[]>
   extends BaseOptions {
-  protocolVersion: ProtocolVersionType<DFSs>
+  protocolVersion: DiscoverFeaturesProtocolVersionType<DFSs>
   disclosureQueries: FeatureQueryOptions[]
   threadId?: string
 }

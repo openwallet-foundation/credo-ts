@@ -1,42 +1,62 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ProposeProofFormats } from '../../models/SharedOptions'
-import type { ProofRecord } from '../../repository'
+import type { ProofExchangeRecord } from '../../repository'
 import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
-export interface FormatCreateRequestAttachmentOptions {
+export interface CreateRequestAttachmentOptions {
   id?: string
   proofRequestOptions: ProofRequestOptions
 }
 
-export interface FormatCreateProofAttachmentOptions {
+export interface CreateProofAttachmentOptions {
   id?: string
   proofProposalOptions: ProofRequestOptions
 }
 
-// export interface FormatCreateProposalOptions {
-//   id?: string
-//   formats: ProposeProofFormats
-// }
-
-export interface FormatCreateProposalOptions<PF extends ProofFormat> {
-  id?: string
-  proofFormats: ProofFormatPayload<[PF], 'createProposal'>
-}
-
-export interface FormatProcessProposalOptions {
-  proposal: ProofAttachmentFormat
-  record?: ProofRecord
-}
-
-export interface FormatCreateRequestOptions {
+export interface FormatCreateProofProposalOptions {
   id?: string
   formats: ProposeProofFormats
 }
 
-export interface FormatProcessRequestOptions<PF extends ProofFormat> {
-  proofFormats: ProofFormatPayload<[PF], 'acceptRequest'>
+export interface ProcessProposalOptions {
+  proposal: ProofAttachmentFormat
+  record?: ProofExchangeRecord
+}
+
+export interface CreateRequestOptions {
+  id?: string
+  formats: ProposeProofFormats
+}
+
+export interface ProcessRequestOptions {
+  requestAttachment: ProofAttachmentFormat
+  record?: ProofExchangeRecord
+}
+
+export interface CreatePresentationOptions<PF extends ProofFormat> {
+  id?: string
+  attachment: Attachment
+  proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
+}
+
+export interface ProcessPresentationOptions {
+  record: ProofExchangeRecord
+  formatAttachments: {
+    request: ProofAttachmentFormat[]
+    presentation: ProofAttachmentFormat[]
+  }
+}
+
+export interface VerifyProofOptions {
+  request: Attachment
+  proof: Attachment
+}
+
+export interface CreateProblemReportOptions {
+  proofRecord: ProofExchangeRecord
+  description: string
 }
 
 export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
@@ -45,24 +65,6 @@ export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
   proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
 }
 
-export interface FormatProcessPresentationOptions {
-  record: ProofRecord
-  formatAttachments: {
-    request: ProofAttachmentFormat[]
-    presentation: ProofAttachmentFormat[]
-  }
-}
-
-export interface FormatVerifyProofOptions {
-  request: Attachment
-  proof: Attachment
-}
-
-export interface FormatCreateProblemReportOptions {
-  proofRecord: ProofRecord
-  description: string
-}
-
-export interface FormatCreatePresentationFormatsOptions {
+export interface CreatePresentationFormatsOptions {
   presentationAttachment: Attachment
 }

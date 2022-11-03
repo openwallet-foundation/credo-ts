@@ -4,7 +4,6 @@ import type { Query } from '../../../../storage/StorageService'
 import type { W3cCredentialRecord, W3cPresentation } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type {
-  CreateProposalOptions,
   CreateRequestAsResponseOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
@@ -13,13 +12,13 @@ import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
-  FormatCreatePresentationFormatsOptions,
-  FormatCreatePresentationOptions,
-  FormatCreateProposalOptions,
-  FormatCreateRequestOptions,
-  FormatProcessPresentationOptions,
-  FormatProcessProposalOptions,
-  FormatProcessRequestOptions,
+  CreatePresentationFormatsOptions,
+  CreatePresentationOptions,
+  CreateRequestOptions,
+  FormatCreateProofProposalOptions,
+  ProcessPresentationOptions,
+  ProcessProposalOptions,
+  ProcessRequestOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { InputDescriptorsSchema } from './models'
@@ -75,24 +74,14 @@ export class PresentationExchangeFormatService extends ProofFormatService {
   public readonly formatKey = 'presentationExchange' as const
   public readonly proofRecordType = 'presentationExchange' as const
 
-  public async getProposalFormatOptions(
-    options: CreateProposalOptions<[PresentationExchangeProofFormat]>
-  ): Promise<FormatCreateProposalOptions<PresentationExchangeProofFormat>> {
-    return {
-      proofFormats: options.proofFormats,
-    }
-  }
-
-  public async createProposal(
-    options: FormatCreateProposalOptions<PresentationExchangeProofFormat>
-  ): Promise<ProofAttachmentFormat> {
-    if (!options.proofFormats.presentationExchange) {
+  public async createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat> {
+    if (!options) {
       throw Error('Presentation Exchange format missing while creating proof proposal.')
     }
 
-    const presentationExchangeFormat = options.proofFormats.presentationExchange
+    const presentationExchangeFormat = options.formats.presentationExchange
 
-    if (!presentationExchangeFormat.presentationDefinition) {
+    if (!presentationExchangeFormat?.presentationDefinition) {
       throw Error('Presentation definition with Input Descriptor is missing while creating proof proposal.')
     }
 
@@ -123,7 +112,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async processProposal(options: FormatProcessProposalOptions): Promise<void> {
+  public async processProposal(options: ProcessProposalOptions): Promise<void> {
     if (!options.proposal) {
       throw Error('Proposal message is missing while processing proof proposal.')
     }
@@ -142,9 +131,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     }
   }
 
-  public async createProofRequestFromProposal(
-    options: FormatCreatePresentationFormatsOptions
-  ): Promise<ProofRequestFormats> {
+  public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
     const presentationDefinitionJson = options.presentationAttachment.getDataAsJson<PresentationDefinitionV1>() ?? null
 
     const pex: PEXv1 = new PEXv1()
@@ -198,7 +185,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async createRequest(options: FormatCreateRequestOptions): Promise<ProofAttachmentFormat> {
+  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.presentationExchange) {
       throw Error('Presentation Exchange format missing')
     }
@@ -244,14 +231,14 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     return { format, attachment }
   }
-  public async processRequest(options: FormatProcessRequestOptions<PresentationExchangeProofFormat>): Promise<void> {
-    if (!options.proofFormats.presentationExchange?.formatAttachments) {
+  public async processRequest(options: ProcessRequestOptions): Promise<void> {
+    if (!options.requestAttachment) {
       throw Error('Request message is missing while processing proof request in presentation exchange.')
     }
 
-    const requestMessage = options.proofFormats.presentationExchange?.formatAttachments
+    const requestMessage = options.requestAttachment
 
-    const requestPresentation = requestMessage.request.attachment.getDataAsJson<RequestPresentationExchangeOptions>()
+    const requestPresentation = requestMessage.attachment.getDataAsJson<RequestPresentationExchangeOptions>()
 
     const pex: PEXv1 = new PEXv1()
     const result: Validated = pex.validateDefinition(requestPresentation.presentationDefinition)
@@ -265,7 +252,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public async createPresentation(
     agentContext: AgentContext,
-    options: FormatCreatePresentationOptions<PresentationExchangeProofFormat>
+    options: CreatePresentationOptions<PresentationExchangeProofFormat>
   ): Promise<ProofAttachmentFormat> {
     if (!options.proofFormats.presentationExchange) {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
@@ -364,10 +351,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     return { format, attachment }
   }
-  public async processPresentation(
-    agentContext: AgentContext,
-    options: FormatProcessPresentationOptions
-  ): Promise<boolean> {
+  public async processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean> {
     if (!options.formatAttachments) {
       throw Error('Presentation  missing while processing presentation in presentation exchange service.')
     }
@@ -578,17 +562,9 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     ) as unknown as IVerifiablePresentation
   }
 
-  public createProcessRequestOptions(
-    request: ProofAttachmentFormat
-  ): FormatProcessRequestOptions<PresentationExchangeProofFormat> {
+  public createProcessRquestOptions(request: ProofAttachmentFormat): ProcessRequestOptions {
     return {
-      proofFormats: {
-        presentationExchange: {
-          formatAttachments: {
-            request,
-          },
-        },
-      },
+      requestAttachment: request,
     }
   }
 }

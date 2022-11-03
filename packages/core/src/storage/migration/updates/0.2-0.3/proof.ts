@@ -1,5 +1,5 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { ProofRecord } from '../../../../modules/proofs'
+import type { ProofExchangeRecord } from '../../../../modules/proofs'
 import type { JsonObject } from '../../../../types'
 
 import { ProofState } from '../../../../modules/proofs/models'
@@ -7,15 +7,15 @@ import { ProofRepository } from '../../../../modules/proofs/repository/ProofRepo
 import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../didcomm'
 
 /**
- * Migrates the {@link ProofRecord} to 0.3 compatible format. It fetches all records from storage
+ * Migrates the {@link ProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage
  * and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
  * The following transformations are applied:
- *  - {@link migrateInternalProofRecordProperties}
+ *  - {@link migrateInternalProofExchangeRecordProperties}
  *  - {@link moveDidCommMessages}
  */
-export async function migrateProofRecordToV0_3<Agent extends BaseAgent>(agent: Agent) {
+export async function migrateProofExchangeRecordToV0_3<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating proof records to storage version 0.3')
   const proofRepository = agent.dependencyManager.resolve(ProofRepository)
 
@@ -26,7 +26,7 @@ export async function migrateProofRecordToV0_3<Agent extends BaseAgent>(agent: A
   for (const proofRecord of allProofs) {
     agent.config.logger.debug(`Migrating proof record with id ${proofRecord.id} to storage version 0.3`)
 
-    await migrateInternalProofRecordProperties(agent, proofRecord)
+    await migrateInternalProofExchangeRecordProperties(agent, proofRecord)
     await moveDidCommMessages(agent, proofRecord)
 
     await proofRepository.update(agent.context, proofRecord)
@@ -63,7 +63,7 @@ const didCommMessageRoleMapping = {
 
 const proofRecordMessageKeys = ['proposalMessage', 'requestMessage', 'presentationMessage'] as const
 
-export function getProofRole(proofRecord: ProofRecord) {
+export function getProofRole(proofRecord: ProofExchangeRecord) {
   // Proofs will only have an isVerified value when a presentation is verified, meaning we're the verifier
   if (proofRecord.isVerified !== undefined) {
     return ProofRole.Verifier
@@ -99,9 +99,9 @@ export function getProofRole(proofRecord: ProofRecord) {
  * }
  * ```
  */
-export async function migrateInternalProofRecordProperties<Agent extends BaseAgent>(
+export async function migrateInternalProofExchangeRecordProperties<Agent extends BaseAgent>(
   agent: Agent,
-  proofRecord: ProofRecord
+  proofRecord: ProofExchangeRecord
 ) {
   agent.config.logger.debug(`Migrating internal proof record ${proofRecord.id} properties to storage version 0.3`)
 
@@ -120,7 +120,7 @@ export async function migrateInternalProofRecordProperties<Agent extends BaseAge
  * This migration scripts extracts all message (proposalMessage, requestMessage, presentationMessage) and moves
  * them into the DidCommMessageRepository.
  */
-export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent, proofRecord: ProofRecord) {
+export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent, proofRecord: ProofExchangeRecord) {
   agent.config.logger.debug(
     `Moving didcomm messages from proof record with id ${proofRecord.id} to DidCommMessageRecord`
   )

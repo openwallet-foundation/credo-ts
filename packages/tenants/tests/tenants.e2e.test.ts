@@ -7,9 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import testLogger from '../../core/tests/logger'
 
-import { TenantsModule } from '@aries-framework/module-tenants'
-
-jest.setTimeout(2000000)
+import { TenantsModule } from '@aries-framework/tenants'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',

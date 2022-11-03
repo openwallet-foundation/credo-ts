@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsApiOptions'
+import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
 import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { ReplaySubject, Subject } from 'rxjs'
@@ -126,11 +126,10 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    const options: AcceptRequestOptions = {
+    faberCredentialRecord = await faberAgent.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
-    }
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
+    })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {

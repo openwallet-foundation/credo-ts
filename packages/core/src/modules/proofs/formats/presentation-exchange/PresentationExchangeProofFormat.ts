@@ -5,7 +5,7 @@ import type {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../../protocol/v1/models/V1PresentationPreview'
-import type { ProofRecord } from '../../repository'
+import type { ProofExchangeRecord } from '../../repository'
 import type { ProofFormat } from '../ProofFormat'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type { SelectResults } from '@sphereon/pex'
@@ -51,7 +51,7 @@ export interface PresentationExchangeRequestAsResponseFormat {
 }
 
 export interface PresentationExchangeAcceptRequestFormat {
-  record?: ProofRecord
+  record?: ProofExchangeRecord
   formatAttachments: {
     request: ProofAttachmentFormat
   }

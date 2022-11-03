@@ -45,7 +45,7 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
-
+    extendModulesWithDefaultModules
     // Register internal dependencies
     dependencyManager.registerSingleton(EventEmitter)
     dependencyManager.registerSingleton(MessageSender)

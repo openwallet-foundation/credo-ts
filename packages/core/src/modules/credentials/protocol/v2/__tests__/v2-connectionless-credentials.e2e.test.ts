@@ -1,6 +1,10 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptOfferOptions, AcceptRequestOptions, CreateOfferOptions } from '../../../CredentialsApiOptions'
+import type {
+  AcceptCredentialOfferOptions,
+  AcceptCredentialRequestOptions,
+  CreateOfferOptions,
+} from '../../../CredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -104,7 +108,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     testLogger.test('Alice sends credential request to Faber')
-    const acceptOfferOptions: AcceptOfferOptions = {
+    const acceptOfferOptions: AcceptCredentialOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
     }
     const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
@@ -116,7 +120,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    const options: AcceptRequestOptions = {
+    const options: AcceptCredentialRequestOptions = {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }

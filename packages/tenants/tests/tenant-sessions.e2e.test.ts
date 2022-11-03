@@ -5,9 +5,7 @@ import { agentDependencies } from '@aries-framework/node'
 
 import testLogger from '../../core/tests/logger'
 
-import { TenantsModule } from '@aries-framework/module-tenants'
-
-jest.setTimeout(2000000)
+import { TenantsModule } from '@aries-framework/tenants'
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
@@ -25,7 +23,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    tenants: new TenantsModule(),
+    tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
   },
 })
 
