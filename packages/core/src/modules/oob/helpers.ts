@@ -26,6 +26,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     id: oldInvitation.id,
     label: oldInvitation.label,
     imageUrl: oldInvitation.imageUrl,
+    appendedAttachments: oldInvitation.appendedAttachments,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     services: [service],
     handshakeProtocols: [HandshakeProtocol.Connections],
@@ -36,7 +37,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
 
 export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   // Taking first service, as we can only include one service in a legacy invitation.
-  const [service] = newInvitation.services
+  const [service] = newInvitation.getServices()
 
   let options
   if (typeof service === 'string') {
@@ -45,6 +46,7 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
       label: newInvitation.label,
       did: service,
       imageUrl: newInvitation.imageUrl,
+      appendedAttachments: newInvitation.appendedAttachments,
     }
   } else {
     options = {
@@ -54,6 +56,7 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
       routingKeys: service.routingKeys?.map(didKeyToVerkey),
       serviceEndpoint: service.serviceEndpoint,
       imageUrl: newInvitation.imageUrl,
+      appendedAttachments: newInvitation.appendedAttachments,
     }
   }
 

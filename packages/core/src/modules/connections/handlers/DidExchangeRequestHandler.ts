@@ -1,8 +1,8 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { MediationRecipientService } from '../../routing/services/MediationRecipientService'
+import type { RoutingService } from '../../routing/services/RoutingService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { createOutboundMessage } from '../../../agent/helpers'
@@ -13,23 +13,23 @@ import { DidExchangeRequestMessage } from '../messages'
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
-  private agentConfig: AgentConfig
-  private mediationRecipientService: MediationRecipientService
+  private routingService: RoutingService
   private didRepository: DidRepository
+  private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
-    mediationRecipientService: MediationRecipientService,
-    didRepository: DidRepository
+    routingService: RoutingService,
+    didRepository: DidRepository,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
-    this.agentConfig = agentConfig
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
-    this.mediationRecipientService = mediationRecipientService
+    this.routingService = routingService
     this.didRepository = didRepository
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
@@ -42,7 +42,10 @@ export class DidExchangeRequestHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(message.thread.parentThreadId)
+    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+      messageContext.agentContext,
+      message.thread.parentThreadId
+    )
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
@@ -54,7 +57,7 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(senderKey)
+    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
     if (didRecord) {
       throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
     }
@@ -69,12 +72,19 @@ export class DidExchangeRequestHandler implements Handler {
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)
 
-    if (connectionRecord?.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
+    if (connectionRecord.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable ? await this.mediationRecipientService.getRouting() : undefined
+      const routing = outOfBandRecord.reusable
+        ? await this.routingService.getRouting(messageContext.agentContext)
+        : undefined
 
-      const message = await this.didExchangeProtocol.createResponse(connectionRecord, outOfBandRecord, routing)
+      const message = await this.didExchangeProtocol.createResponse(
+        messageContext.agentContext,
+        connectionRecord,
+        outOfBandRecord,
+        routing
+      )
       return createOutboundMessage(connectionRecord, message, outOfBandRecord)
     }
   }

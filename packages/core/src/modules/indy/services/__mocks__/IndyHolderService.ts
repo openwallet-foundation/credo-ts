@@ -1,11 +1,11 @@
 import type { CreateCredentialRequestOptions, StoreCredentialOptions } from '../IndyHolderService'
 
 export const IndyHolderService = jest.fn(() => ({
-  storeCredential: jest.fn(({ credentialId }: StoreCredentialOptions) =>
+  storeCredential: jest.fn((_, { credentialId }: StoreCredentialOptions) =>
     Promise.resolve(credentialId ?? 'some-random-uuid')
   ),
   deleteCredential: jest.fn(() => Promise.resolve()),
-  createCredentialRequest: jest.fn(({ holderDid, credentialDefinition }: CreateCredentialRequestOptions) =>
+  createCredentialRequest: jest.fn((_, { holderDid, credentialDefinition }: CreateCredentialRequestOptions) =>
     Promise.resolve([
       {
         prover_did: holderDid,

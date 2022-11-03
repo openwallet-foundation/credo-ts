@@ -3,11 +3,9 @@ import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 import type { OutboundTransport } from './OutboundTransport'
-import type { OutboundWebSocketClosedEvent } from './TransportEventTypes'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
-import { AgentConfig } from '../agent/AgentConfig'
-import { EventEmitter } from '../agent/EventEmitter'
 import { AgentEventTypes } from '../agent/Events'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { isValidJweStructure, JsonEncoder } from '../utils'
@@ -19,18 +17,16 @@ export class WsOutboundTransport implements OutboundTransport {
   private transportTable: Map<string, WebSocket> = new Map<string, WebSocket>()
   private agent!: Agent
   private logger!: Logger
-  private eventEmitter!: EventEmitter
   private WebSocketClass!: typeof WebSocket
   public supportedSchemes = ['ws', 'wss']
 
   public async start(agent: Agent): Promise<void> {
     this.agent = agent
-    const agentConfig = agent.injectionContainer.resolve(AgentConfig)
 
-    this.logger = agentConfig.logger
-    this.eventEmitter = agent.injectionContainer.resolve(EventEmitter)
+    this.logger = agent.config.logger
+
     this.logger.debug('Starting WS outbound transport')
-    this.WebSocketClass = agentConfig.agentDependencies.WebSocketClass
+    this.WebSocketClass = agent.config.agentDependencies.WebSocketClass
   }
 
   public async stop() {
@@ -103,7 +99,7 @@ export class WsOutboundTransport implements OutboundTransport {
   // so 'this' is scoped to the 'WsOutboundTransport' class instance
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleMessageEvent = (event: any) => {
-    this.logger.trace('WebSocket message event received.', { url: event.target.url, data: event.data })
+    this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)
     if (!isValidJweStructure(payload)) {
       throw new Error(
@@ -111,7 +107,8 @@ export class WsOutboundTransport implements OutboundTransport {
       )
     }
     this.logger.debug('Payload received from mediator:', payload)
-    this.eventEmitter.emit<AgentMessageReceivedEvent>({
+
+    this.agent.events.emit<AgentMessageReceivedEvent>(this.agent.context, {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {
         message: payload,
@@ -139,6 +136,14 @@ export class WsOutboundTransport implements OutboundTransport {
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)
         resolve(socket)
+
+        this.agent.events.emit<OutboundWebSocketOpenedEvent>(this.agent.context, {
+          type: TransportEventTypes.OutboundWebSocketOpenedEvent,
+          payload: {
+            socketId,
+            connectionId: connectionId,
+          },
+        })
       }
 
       socket.onerror = (error) => {
@@ -153,7 +158,7 @@ export class WsOutboundTransport implements OutboundTransport {
         socket.removeEventListener('message', this.handleMessageEvent)
         this.transportTable.delete(socketId)
 
-        this.eventEmitter.emit<OutboundWebSocketClosedEvent>({
+        this.agent.events.emit<OutboundWebSocketClosedEvent>(this.agent.context, {
           type: TransportEventTypes.OutboundWebSocketClosedEvent,
           payload: {
             socketId,

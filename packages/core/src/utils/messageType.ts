@@ -95,6 +95,10 @@ export function parseMessageType(messageType: string): ParsedMessageType {
  *  - majorVersion
  *  - messageName
  *
+ * If allowLegacyDidSovPrefixMismatch is true (default) it will allow for the case where the incoming message type still has the legacy
+ * did:sov:BzCbsNYhMrjHiqZDTUASHg;spec did prefix, but the expected message type does not. This only works for incoming messages with a prefix
+ * of did:sov:BzCbsNYhMrjHiqZDTUASHg;spec and the expected message type having a prefix value of https:/didcomm.org
+ *
  * @example
  * const incomingMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
  * const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.4/request')
@@ -102,12 +106,25 @@ export function parseMessageType(messageType: string): ParsedMessageType {
  * // Returns true because the incoming message type is equal to the expected message type, except for
  * // the minor version, which is lower
  * const isIncomingMessageTypeSupported = supportsIncomingMessageType(incomingMessageType, expectedMessageType)
+ *
+ * @example
+ * const incomingMessageType = parseMessageType('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/request')
+ * const expectedMessageType = parseMessageType('https://didcomm.org/connections/1.0/request')
+ *
+ * // Returns true because the incoming message type is equal to the expected message type, except for
+ * // the legacy did sov prefix.
+ * const isIncomingMessageTypeSupported = supportsIncomingMessageType(incomingMessageType, expectedMessageType)
  */
 export function supportsIncomingMessageType(
   incomingMessageType: ParsedMessageType,
-  expectedMessageType: ParsedMessageType
+  expectedMessageType: ParsedMessageType,
+  { allowLegacyDidSovPrefixMismatch = true }: { allowLegacyDidSovPrefixMismatch?: boolean } = {}
 ) {
-  const documentUriMatches = expectedMessageType.documentUri === incomingMessageType.documentUri
+  const incomingDocumentUri = allowLegacyDidSovPrefixMismatch
+    ? replaceLegacyDidSovPrefix(incomingMessageType.documentUri)
+    : incomingMessageType.documentUri
+
+  const documentUriMatches = expectedMessageType.documentUri === incomingDocumentUri
   const protocolNameMatches = expectedMessageType.protocolName === incomingMessageType.protocolName
   const majorVersionMatches = expectedMessageType.protocolMajorVersion === incomingMessageType.protocolMajorVersion
   const messageNameMatches = expectedMessageType.messageName === incomingMessageType.messageName

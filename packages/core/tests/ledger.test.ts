@@ -4,19 +4,16 @@ import * as indy from 'indy-sdk'
 import { Agent } from '../src/agent/Agent'
 import { DID_IDENTIFIER_REGEX, isAbbreviatedVerkey, isFullVerkey, VERKEY_REGEX } from '../src/utils/did'
 import { sleep } from '../src/utils/sleep'
-import { IndyWallet } from '../src/wallet/IndyWallet'
 
-import { genesisPath, getBaseConfig } from './helpers'
+import { genesisPath, getAgentOptions } from './helpers'
 import testLogger from './logger'
-
-const { config: faberConfig, agentDependencies: faberDependencies } = getBaseConfig('Faber Ledger')
 
 describe('ledger', () => {
   let faberAgent: Agent
   let schemaId: indy.SchemaId
 
   beforeAll(async () => {
-    faberAgent = new Agent(faberConfig, faberDependencies)
+    faberAgent = new Agent(getAgentOptions('Faber Ledger'))
     await faberAgent.initialize()
   })
 
@@ -65,7 +62,7 @@ describe('ledger', () => {
       throw new Error('Agent does not have public did.')
     }
 
-    const faberWallet = faberAgent.injectionContainer.resolve(IndyWallet)
+    const faberWallet = faberAgent.context.wallet
     const didInfo = await faberWallet.createDid()
 
     const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')
@@ -142,16 +139,17 @@ describe('ledger', () => {
 
   it('should correctly store the genesis file if genesis transactions is passed', async () => {
     const genesisTransactions = await promises.readFile(genesisPath, { encoding: 'utf-8' })
-    const { config, agentDependencies: dependencies } = getBaseConfig('Faber Ledger Genesis Transactions', {
+    const agentOptions = getAgentOptions('Faber Ledger Genesis Transactions', {
       indyLedgers: [
         {
           id: 'pool-Faber Ledger Genesis Transactions',
+          indyNamespace: 'pool-faber-ledger-genesis-transactions',
           isProduction: false,
           genesisTransactions,
         },
       ],
     })
-    const agent = new Agent(config, dependencies)
+    const agent = new Agent(agentOptions)
     await agent.initialize()
 
     if (!faberAgent.publicDid?.did) {

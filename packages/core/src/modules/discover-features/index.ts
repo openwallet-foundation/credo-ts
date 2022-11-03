@@ -1,4 +1,3 @@
+export * from './DiscoverFeaturesApi'
 export * from './DiscoverFeaturesModule'
-export * from './handlers'
-export * from './messages'
-export * from './services'
+export * from './protocol'

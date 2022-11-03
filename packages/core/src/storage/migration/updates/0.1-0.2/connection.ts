@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../agent/Agent'
+import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ConnectionRecord } from '../../../../modules/connections'
 import type { JsonObject } from '../../../../types'
 
@@ -12,6 +12,7 @@ import {
   DidExchangeRole,
 } from '../../../../modules/connections'
 import { convertToNewDidDocument } from '../../../../modules/connections/services/helpers'
+import { DidKey } from '../../../../modules/dids'
 import { DidDocumentRole } from '../../../../modules/dids/domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../../../modules/dids/repository'
 import { DidRecordMetadataKeys } from '../../../../modules/dids/repository/didRecordMetadataTypes'
@@ -31,12 +32,12 @@ import { JsonEncoder, JsonTransformer } from '../../../../utils'
  *  - {@link extractDidDocument}
  *  - {@link migrateToOobRecord}
  */
-export async function migrateConnectionRecordToV0_2(agent: Agent) {
+export async function migrateConnectionRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating connection records to storage version 0.2')
-  const connectionRepository = agent.injectionContainer.resolve(ConnectionRepository)
+  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
   agent.config.logger.debug(`Fetching all connection records from storage`)
-  const allConnections = await connectionRepository.getAll()
+  const allConnections = await connectionRepository.getAll(agent.context)
 
   agent.config.logger.debug(`Found a total of ${allConnections.length} connection records to update.`)
   for (const connectionRecord of allConnections) {
@@ -53,7 +54,7 @@ export async function migrateConnectionRecordToV0_2(agent: Agent) {
     // migrateToOobRecord will return the connection record if it has not been deleted. When using multiUseInvitation the connection record
     // will be removed after processing, in which case the update method will throw an error.
     if (_connectionRecord) {
-      await connectionRepository.update(connectionRecord)
+      await connectionRepository.update(agent.context, connectionRecord)
     }
 
     agent.config.logger.debug(
@@ -87,7 +88,10 @@ export async function migrateConnectionRecordToV0_2(agent: Agent) {
  * }
  * ```
  */
-export async function updateConnectionRoleAndState(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function updateConnectionRoleAndState<Agent extends BaseAgent>(
+  agent: Agent,
+  connectionRecord: ConnectionRecord
+) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
@@ -140,12 +144,12 @@ export async function updateConnectionRoleAndState(agent: Agent, connectionRecor
  * }
  * ```
  */
-export async function extractDidDocument(agent: Agent, connectionRecord: ConnectionRecord) {
+export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, connectionRecord: ConnectionRecord) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
 
-  const didRepository = agent.injectionContainer.resolve(DidRepository)
+  const didRepository = agent.dependencyManager.resolve(DidRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldDidDocJson = untypedConnectionRecord.didDoc as JsonObject | undefined
@@ -161,7 +165,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
     const newDidDocument = convertToNewDidDocument(oldDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
-    let didRecord = await didRepository.findById(newDidDocument.id)
+    let didRecord = await didRepository.findById(agent.context, newDidDocument.id)
 
     if (!didRecord) {
       agent.config.logger.debug(`Creating did record for did ${newDidDocument.id}`)
@@ -180,7 +184,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
         didDocumentString: JsonEncoder.toString(oldDidDocJson),
       })
 
-      await didRepository.save(didRecord)
+      await didRepository.save(agent.context, didRecord)
 
       agent.config.logger.debug(`Successfully saved did record for did ${newDidDocument.id}`)
     } else {
@@ -207,7 +211,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
     const newTheirDidDocument = convertToNewDidDocument(oldTheirDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
-    let didRecord = await didRepository.findById(newTheirDidDocument.id)
+    let didRecord = await didRepository.findById(agent.context, newTheirDidDocument.id)
 
     if (!didRecord) {
       agent.config.logger.debug(`Creating did record for theirDid ${newTheirDidDocument.id}`)
@@ -227,7 +231,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
         didDocumentString: JsonEncoder.toString(oldTheirDidDocJson),
       })
 
-      await didRepository.save(didRecord)
+      await didRepository.save(agent.context, didRecord)
 
       agent.config.logger.debug(`Successfully saved did record for theirDid ${newTheirDidDocument.id}`)
     } else {
@@ -286,7 +290,7 @@ export async function extractDidDocument(agent: Agent, connectionRecord: Connect
  * }
  * ```
  */
-export async function migrateToOobRecord(
+export async function migrateToOobRecord<Agent extends BaseAgent>(
   agent: Agent,
   connectionRecord: ConnectionRecord
 ): Promise<ConnectionRecord | undefined> {
@@ -294,8 +298,8 @@ export async function migrateToOobRecord(
     `Migrating properties from connection record with id ${connectionRecord.id} to out of band record`
   )
 
-  const oobRepository = agent.injectionContainer.resolve(OutOfBandRepository)
-  const connectionRepository = agent.injectionContainer.resolve(ConnectionRepository)
+  const oobRepository = agent.dependencyManager.resolve(OutOfBandRepository)
+  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
   const oldInvitationJson = untypedConnectionRecord.invitation as JsonObject | undefined
@@ -310,9 +314,15 @@ export async function migrateToOobRecord(
     const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
     // If both the recipientKeys and the @id match we assume the connection was created using the same invitation.
-    const oobRecords = await oobRepository.findByQuery({
+    const recipientKeyFingerprints = outOfBandInvitation
+      .getInlineServices()
+      .map((s) => s.recipientKeys)
+      .reduce((acc, curr) => [...acc, ...curr], [])
+      .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
+
+    const oobRecords = await oobRepository.findByQuery(agent.context, {
       invitationId: oldInvitation.id,
-      recipientKeyFingerprints: outOfBandInvitation.getRecipientKeys().map((key) => key.fingerprint),
+      recipientKeyFingerprints,
     })
 
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
@@ -330,14 +340,16 @@ export async function migrateToOobRecord(
       oobRecord = new OutOfBandRecord({
         role: oobRole,
         state: oobState,
+        alias: connectionRecord.alias,
         autoAcceptConnection: connectionRecord.autoAcceptConnection,
         outOfBandInvitation,
         reusable: oldMultiUseInvitation,
         mediatorId: connectionRecord.mediatorId,
         createdAt: connectionRecord.createdAt,
+        tags: { recipientKeyFingerprints },
       })
 
-      await oobRepository.save(oobRecord)
+      await oobRepository.save(agent.context, oobRecord)
       agent.config.logger.debug(`Successfully saved out of band record for invitation @id ${oldInvitation.id}`)
     } else {
       agent.config.logger.debug(
@@ -353,8 +365,8 @@ export async function migrateToOobRecord(
       oobRecord.mediatorId = connectionRecord.mediatorId
       oobRecord.autoAcceptConnection = connectionRecord.autoAcceptConnection
 
-      await oobRepository.update(oobRecord)
-      await connectionRepository.delete(connectionRecord)
+      await oobRepository.update(agent.context, oobRecord)
+      await connectionRepository.delete(agent.context, connectionRecord)
       agent.config.logger.debug(
         `Set reusable=true for out of band record with invitation @id ${oobRecord.outOfBandInvitation.id}.`
       )

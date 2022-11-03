@@ -118,12 +118,16 @@ export interface AcceptCredentialOptions {
   credentialRecord: CredentialExchangeRecord
 }
 
+export interface CreateProblemReportOptions {
+  message: string
+}
+
 export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
   message: MessageType
   credentialRecord: CredentialExchangeRecord
 }
 
 export interface DeleteCredentialOptions {
-  deleteAssociatedCredentials: boolean
-  deleteAssociatedDidCommMessages: boolean
+  deleteAssociatedCredentials?: boolean
+  deleteAssociatedDidCommMessages?: boolean
 }

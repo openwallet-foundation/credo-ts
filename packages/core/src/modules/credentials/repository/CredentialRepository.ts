@@ -1,13 +1,12 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
 import { CredentialExchangeRecord } from './CredentialExchangeRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class CredentialRepository extends Repository<CredentialExchangeRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<CredentialExchangeRecord>,

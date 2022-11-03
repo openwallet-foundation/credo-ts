@@ -1,13 +1,14 @@
+import type { FileSystem } from '../../../../src'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
 import { unlinkSync, readFileSync } from 'fs'
 import path from 'path'
-import { container as baseContainer } from 'tsyringe'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { Agent } from '../../../../src'
-import { agentDependencies } from '../../../../tests/helpers'
+import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
+import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
@@ -35,18 +36,19 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     for (const mediationRoleUpdateStrategy of mediationRoleUpdateStrategies) {
-      const container = baseContainer.createChildContainer()
+      const dependencyManager = new DependencyManager()
       const storageService = new InMemoryStorageService()
-      container.registerInstance(InjectionSymbols.StorageService, storageService)
+      dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
       const agent = new Agent(
         {
-          label: 'Test Agent',
-          walletConfig,
+          config: { label: 'Test Agent', walletConfig },
+          dependencies,
         },
-        agentDependencies,
-        container
+        dependencyManager
       )
+
+      const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
@@ -60,7 +62,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       // is opened as an existing wallet instead of a new wallet
       storageService.records = JSON.parse(aliceMediationRecordsString)
 
-      expect(await updateAssistant.getNeededUpdates()).toEqual([
+      expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
         {
           fromVersion: '0.1',
           toVersion: '0.2',
@@ -68,14 +70,17 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         },
       ])
 
-      await updateAssistant.update()
+      await updateAssistant.update('0.2')
 
-      expect(await updateAssistant.isUpToDate()).toBe(true)
-      expect(await updateAssistant.getNeededUpdates()).toEqual([])
+      expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+      expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
+
+      // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+      delete storageService.records.MEDIATOR_ROUTING_RECORD
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
       // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+      const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
       unlinkSync(backupPath)
 
       await agent.shutdown()
@@ -93,19 +98,19 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
+        config: { label: 'Test Agent', walletConfig },
+        dependencies,
       },
-      agentDependencies,
-      container
+      dependencyManager
     )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -119,8 +124,8 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceCredentialRecordsString)
 
-    expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
       {
         fromVersion: '0.1',
         toVersion: '0.2',
@@ -128,14 +133,17 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
     ])
 
-    await updateAssistant.update()
+    await updateAssistant.update('0.2')
 
-    expect(await updateAssistant.isUpToDate()).toBe(true)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -154,37 +162,52 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
-        autoUpdateStorageOnStartup: true,
+        config: { label: 'Test Agent', walletConfig, autoUpdateStorageOnStartup: true },
+        dependencies,
       },
-      agentDependencies,
-      container
+      dependencyManager
     )
 
-    // We need to manually initialize the wallet as we're using the in memory wallet service
-    // When we call agent.initialize() it will create the wallet and store the current framework
-    // version in the in memory storage service. We need to manually set the records between initializing
-    // the wallet and calling agent.initialize()
-    await agent.wallet.initialize(walletConfig)
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
+    const updateAssistant = new UpdateAssistant(agent, {
+      v0_1ToV0_2: {
+        mediationRoleUpdateStrategy: 'doNotChange',
+      },
+    })
+
+    await updateAssistant.initialize()
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceCredentialRecordsString)
 
-    await agent.initialize()
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
+      {
+        fromVersion: '0.1',
+        toVersion: '0.2',
+        doUpdate: expect.any(Function),
+      },
+    ])
 
+    await updateAssistant.update('0.2')
+
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -203,37 +226,56 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const container = baseContainer.createChildContainer()
+    const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
-
-    container.registerInstance(InjectionSymbols.StorageService, storageService)
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(
       {
-        label: 'Test Agent',
-        walletConfig,
-        autoUpdateStorageOnStartup: true,
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+          autoUpdateStorageOnStartup: true,
+        },
+        dependencies,
       },
-      agentDependencies,
-      container
+      dependencyManager
     )
 
-    // We need to manually initialize the wallet as we're using the in memory wallet service
-    // When we call agent.initialize() it will create the wallet and store the current framework
-    // version in the in memory storage service. We need to manually set the records between initializing
-    // the wallet and calling agent.initialize()
-    await agent.wallet.initialize(walletConfig)
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
+    const updateAssistant = new UpdateAssistant(agent, {
+      v0_1ToV0_2: {
+        mediationRoleUpdateStrategy: 'doNotChange',
+      },
+    })
+
+    await updateAssistant.initialize()
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
     storageService.records = JSON.parse(aliceConnectionRecordsString)
 
-    await agent.initialize()
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(false)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([
+      {
+        fromVersion: '0.1',
+        toVersion: '0.2',
+        doUpdate: expect.any(Function),
+      },
+    ])
 
+    await updateAssistant.update('0.2')
+
+    expect(await updateAssistant.isUpToDate('0.2')).toBe(true)
+    expect(await updateAssistant.getNeededUpdates('0.2')).toEqual([])
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${agent.config.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()

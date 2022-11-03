@@ -1,3 +1,4 @@
+import type { AgentContext } from '../agent'
 import type { CacheRepository } from './CacheRepository'
 
 import { LRUMap } from 'lru_map'
@@ -16,22 +17,22 @@ export class PersistedLruCache<CacheValue> {
     this.cacheRepository = cacheRepository
   }
 
-  public async get(key: string) {
-    const cache = await this.getCache()
+  public async get(agentContext: AgentContext, key: string) {
+    const cache = await this.getCache(agentContext)
 
     return cache.get(key)
   }
 
-  public async set(key: string, value: CacheValue) {
-    const cache = await this.getCache()
+  public async set(agentContext: AgentContext, key: string, value: CacheValue) {
+    const cache = await this.getCache(agentContext)
 
     cache.set(key, value)
-    await this.persistCache()
+    await this.persistCache(agentContext)
   }
 
-  private async getCache() {
+  private async getCache(agentContext: AgentContext) {
     if (!this._cache) {
-      const cacheRecord = await this.fetchCacheRecord()
+      const cacheRecord = await this.fetchCacheRecord(agentContext)
       this._cache = this.lruFromRecord(cacheRecord)
     }
 
@@ -45,8 +46,8 @@ export class PersistedLruCache<CacheValue> {
     )
   }
 
-  private async fetchCacheRecord() {
-    let cacheRecord = await this.cacheRepository.findById(this.cacheId)
+  private async fetchCacheRecord(agentContext: AgentContext) {
+    let cacheRecord = await this.cacheRepository.findById(agentContext, this.cacheId)
 
     if (!cacheRecord) {
       cacheRecord = new CacheRecord({
@@ -54,16 +55,17 @@ export class PersistedLruCache<CacheValue> {
         entries: [],
       })
 
-      await this.cacheRepository.save(cacheRecord)
+      await this.cacheRepository.save(agentContext, cacheRecord)
     }
 
     return cacheRecord
   }
 
-  private async persistCache() {
-    const cache = await this.getCache()
+  private async persistCache(agentContext: AgentContext) {
+    const cache = await this.getCache(agentContext)
 
     await this.cacheRepository.update(
+      agentContext,
       new CacheRecord({
         entries: cache.toJSON(),
         id: this.cacheId,

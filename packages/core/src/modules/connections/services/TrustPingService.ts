@@ -2,12 +2,11 @@ import type { InboundMessageContext } from '../../../agent/models/InboundMessage
 import type { TrustPingMessage } from '../messages'
 import type { ConnectionRecord } from '../repository/ConnectionRecord'
 
-import { Lifecycle, scoped } from 'tsyringe'
-
 import { createOutboundMessage } from '../../../agent/helpers'
+import { injectable } from '../../../plugins'
 import { TrustPingResponseMessage } from '../messages'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class TrustPingService {
   public processPing({ message }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
     if (message.responseRequested) {

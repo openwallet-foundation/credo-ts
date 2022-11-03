@@ -1,13 +1,14 @@
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import type { AgentContext } from '../../../agent'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
 import { MediationRecord } from './MediationRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class MediationRepository extends Repository<MediationRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<MediationRecord>,
@@ -16,13 +17,13 @@ export class MediationRepository extends Repository<MediationRecord> {
     super(MediationRecord, storageService, eventEmitter)
   }
 
-  public getSingleByRecipientKey(recipientKey: string) {
-    return this.getSingleByQuery({
+  public getSingleByRecipientKey(agentContext: AgentContext, recipientKey: string) {
+    return this.getSingleByQuery(agentContext, {
       recipientKeys: [recipientKey],
     })
   }
 
-  public async getByConnectionId(connectionId: string): Promise<MediationRecord> {
-    return this.getSingleByQuery({ connectionId })
+  public async getByConnectionId(agentContext: AgentContext, connectionId: string): Promise<MediationRecord> {
+    return this.getSingleByQuery(agentContext, { connectionId })
   }
 }

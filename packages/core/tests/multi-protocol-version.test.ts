@@ -10,12 +10,12 @@ import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { createOutboundMessage } from '../src/agent/helpers'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const aliceConfig = getBaseConfig('Multi Protocol Versions - Alice', {
+const aliceAgentOptions = getAgentOptions('Multi Protocol Versions - Alice', {
   endpoints: ['rxjs:alice'],
 })
-const bobConfig = getBaseConfig('Multi Protocol Versions - Bob', {
+const bobAgentOptions = getAgentOptions('Multi Protocol Versions - Bob', {
   endpoints: ['rxjs:bob'],
 })
 
@@ -41,17 +41,17 @@ describe('multi version protocols', () => {
 
     const mockHandle = jest.fn()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
 
     // Register the test handler with the v1.3 version of the message
-    const dispatcher = aliceAgent.injectionContainer.resolve(Dispatcher)
+    const dispatcher = aliceAgent.dependencyManager.resolve(Dispatcher)
     dispatcher.registerHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
 
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
+    bobAgent = new Agent(bobAgentOptions)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
@@ -74,7 +74,7 @@ describe('multi version protocols', () => {
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
 
-    const bobMessageSender = bobAgent.injectionContainer.resolve(MessageSender)
+    const bobMessageSender = bobAgent.dependencyManager.resolve(MessageSender)
 
     // Start event listener for message processed
     const agentMessageV11ProcessedPromise = firstValueFrom(
@@ -84,7 +84,7 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(createOutboundMessage(bobConnection, new TestMessageV11()))
+    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV11()))
 
     // Wait for the agent message processed event to be called
     await agentMessageV11ProcessedPromise
@@ -99,7 +99,7 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(createOutboundMessage(bobConnection, new TestMessageV15()))
+    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV15()))
     await agentMessageV15ProcessedPromise
 
     expect(mockHandle).toHaveBeenCalledTimes(2)

@@ -4,6 +4,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 import { MessageValidator } from '../../utils/MessageValidator'
 import { Compose } from '../../utils/mixins'
 
+import { AckValues } from './AckDecorator'
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {
@@ -15,7 +16,7 @@ describe('Decorators | AckDecoratorExtension', () => {
 
   test('transforms AckDecorator class to JSON', () => {
     const message = new TestMessage()
-    message.setPleaseAck()
+    message.setPleaseAck([AckValues.Receipt])
     expect(message.toJSON()).toEqual({
       '@id': undefined,
       '@type': undefined,

@@ -1,15 +1,16 @@
-import type { Key } from '../domain/Key'
-
-import { inject, scoped, Lifecycle } from 'tsyringe'
+import type { AgentContext } from '../../../agent'
+import type { Key } from '../../../crypto'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
+import { DidDocumentRole } from '../domain/DidDocumentRole'
 
 import { DidRecord } from './DidRecord'
 
-@scoped(Lifecycle.ContainerScoped)
+@injectable()
 export class DidRepository extends Repository<DidRecord> {
   public constructor(
     @inject(InjectionSymbols.StorageService) storageService: StorageService<DidRecord>,
@@ -18,11 +19,18 @@ export class DidRepository extends Repository<DidRecord> {
     super(DidRecord, storageService, eventEmitter)
   }
 
-  public findByRecipientKey(recipientKey: Key) {
-    return this.findSingleByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+    return this.findSingleByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
-  public findAllByRecipientKey(recipientKey: Key) {
-    return this.findByQuery({ recipientKeyFingerprints: [recipientKey.fingerprint] })
+  public findAllByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+    return this.findByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
+  }
+
+  public getCreatedDids(agentContext: AgentContext, { method }: { method?: string }) {
+    return this.findByQuery(agentContext, {
+      role: DidDocumentRole.Created,
+      method,
+    })
   }
 }

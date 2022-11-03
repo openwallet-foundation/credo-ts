@@ -1,31 +1,32 @@
-import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { createOutboundMessage } from '../../../agent/helpers'
+import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
 
 export class ConnectionResponseHandler implements Handler {
-  private agentConfig: AgentConfig
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
+  private connectionsModuleConfig: ConnectionsModuleConfig
 
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
-    agentConfig: AgentConfig,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    didResolverService: DidResolverService
+    didResolverService: DidResolverService,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
-    this.agentConfig = agentConfig
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.didResolverService = didResolverService
+    this.connectionsModuleConfig = connectionsModuleConfig
   }
 
   public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
@@ -35,7 +36,7 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(message.threadId)
+    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
@@ -44,7 +45,10 @@ export class ConnectionResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
     }
 
-    const ourDidDocument = await this.didResolverService.resolveDidDocument(connectionRecord.did)
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(
+      messageContext.agentContext,
+      connectionRecord.did
+    )
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved!`)
     }
@@ -58,21 +62,27 @@ export class ConnectionResponseHandler implements Handler {
     }
 
     const outOfBandRecord =
-      connectionRecord.outOfBandId && (await this.outOfBandService.findById(connectionRecord.outOfBandId))
+      connectionRecord.outOfBandId &&
+      (await this.outOfBandService.findById(messageContext.agentContext, connectionRecord.outOfBandId))
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} was not found.`)
     }
 
     messageContext.connection = connectionRecord
-    // The presence of outOfBandRecord is not mandatory when the old connection invitation is used
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
-    if (connection.autoAcceptConnection ?? this.agentConfig.autoAcceptConnections) {
-      const { message } = await this.connectionService.createTrustPing(connection, { responseRequested: false })
+    if (connection.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
+      const { message } = await this.connectionService.createTrustPing(messageContext.agentContext, connection, {
+        responseRequested: false,
+      })
+
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      message.setReturnRouting(ReturnRouteTypes.none)
       return createOutboundMessage(connection, message)
     }
   }

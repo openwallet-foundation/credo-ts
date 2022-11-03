@@ -1,4 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
+import type { Routing } from '../connections'
 import type { KeylistUpdate } from './messages/KeylistUpdateMessage'
 import type { MediationState } from './models/MediationState'
 import type { MediationRecord } from './repository/MediationRecord'
@@ -6,6 +7,14 @@ import type { MediationRecord } from './repository/MediationRecord'
 export enum RoutingEventTypes {
   MediationStateChanged = 'MediationStateChanged',
   RecipientKeylistUpdated = 'RecipientKeylistUpdated',
+  RoutingCreatedEvent = 'RoutingCreatedEvent',
+}
+
+export interface RoutingCreatedEvent extends BaseEvent {
+  type: typeof RoutingEventTypes.RoutingCreatedEvent
+  payload: {
+    routing: Routing
+  }
 }
 
 export interface MediationStateChangedEvent extends BaseEvent {

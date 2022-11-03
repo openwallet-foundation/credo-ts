@@ -3,6 +3,80 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.5](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.4...v0.2.5) (2022-10-13)
+
+### Bug Fixes
+
+- **oob:** allow encoding in content type header ([#1037](https://github.com/hyperledger/aries-framework-javascript/issues/1037)) ([e1d6592](https://github.com/hyperledger/aries-framework-javascript/commit/e1d6592b818bc4348078ca6593eea4641caafae5))
+- **oob:** set connection alias when creating invitation ([#1047](https://github.com/hyperledger/aries-framework-javascript/issues/1047)) ([7be979a](https://github.com/hyperledger/aries-framework-javascript/commit/7be979a74b86c606db403c8df04cfc8be2aae249))
+
+### Features
+
+- connection type ([#994](https://github.com/hyperledger/aries-framework-javascript/issues/994)) ([0d14a71](https://github.com/hyperledger/aries-framework-javascript/commit/0d14a7157e2118592829109dbc5c793faee1e201))
+- expose findAllByQuery method in modules and services ([#1044](https://github.com/hyperledger/aries-framework-javascript/issues/1044)) ([9dd95e8](https://github.com/hyperledger/aries-framework-javascript/commit/9dd95e81770d3140558196d2b5b508723f918f04))
+- improve sending error handling ([#1045](https://github.com/hyperledger/aries-framework-javascript/issues/1045)) ([a230841](https://github.com/hyperledger/aries-framework-javascript/commit/a230841aa99102bcc8b60aa2a23040f13a929a6c))
+- possibility to set masterSecretId inside of WalletConfig ([#1043](https://github.com/hyperledger/aries-framework-javascript/issues/1043)) ([8a89ad2](https://github.com/hyperledger/aries-framework-javascript/commit/8a89ad2624922e5e5455f8881d1ccc656d6b33ec))
+- use did:key flag ([#1029](https://github.com/hyperledger/aries-framework-javascript/issues/1029)) ([8efade5](https://github.com/hyperledger/aries-framework-javascript/commit/8efade5b2a885f0767ac8b10cba8582fe9ff486a))
+
+## [0.2.4](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.3...v0.2.4) (2022-09-10)
+
+### Bug Fixes
+
+- avoid crash when an unexpected message arrives ([#1019](https://github.com/hyperledger/aries-framework-javascript/issues/1019)) ([2cfadd9](https://github.com/hyperledger/aries-framework-javascript/commit/2cfadd9167438a9446d26b933aa64521d8be75e7))
+- **ledger:** check taa version instad of aml version ([#1013](https://github.com/hyperledger/aries-framework-javascript/issues/1013)) ([4ca56f6](https://github.com/hyperledger/aries-framework-javascript/commit/4ca56f6b677f45aa96c91b5c5ee8df210722609e))
+- **ledger:** remove poolConnected on pool close ([#1011](https://github.com/hyperledger/aries-framework-javascript/issues/1011)) ([f0ca8b6](https://github.com/hyperledger/aries-framework-javascript/commit/f0ca8b6346385fc8c4811fbd531aa25a386fcf30))
+- **question-answer:** question answer protocol state/role check ([#1001](https://github.com/hyperledger/aries-framework-javascript/issues/1001)) ([4b90e87](https://github.com/hyperledger/aries-framework-javascript/commit/4b90e876cc8377e7518e05445beb1a6b524840c4))
+
+### Features
+
+- Action Menu protocol (Aries RFC 0509) implementation ([#974](https://github.com/hyperledger/aries-framework-javascript/issues/974)) ([60a8091](https://github.com/hyperledger/aries-framework-javascript/commit/60a8091d6431c98f764b2b94bff13ee97187b915))
+- **routing:** add settings to control back off strategy on mediator reconnection ([#1017](https://github.com/hyperledger/aries-framework-javascript/issues/1017)) ([543437c](https://github.com/hyperledger/aries-framework-javascript/commit/543437cd94d3023139b259ee04d6ad51cf653794))
+
+## [0.2.3](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.2...v0.2.3) (2022-08-30)
+
+### Bug Fixes
+
+- export the KeyDerivationMethod ([#958](https://github.com/hyperledger/aries-framework-javascript/issues/958)) ([04ab1cc](https://github.com/hyperledger/aries-framework-javascript/commit/04ab1cca853284d144fd64d35e26e9dfe77d4a1b))
+- expose oob domain ([#990](https://github.com/hyperledger/aries-framework-javascript/issues/990)) ([dad975d](https://github.com/hyperledger/aries-framework-javascript/commit/dad975d9d9b658c6b37749ece2a91381e2a314c9))
+- **generic-records:** support custom id property ([#964](https://github.com/hyperledger/aries-framework-javascript/issues/964)) ([0f690a0](https://github.com/hyperledger/aries-framework-javascript/commit/0f690a0564a25204cacfae7cd958f660f777567e))
+
+### Features
+
+- always initialize mediator ([#985](https://github.com/hyperledger/aries-framework-javascript/issues/985)) ([b699977](https://github.com/hyperledger/aries-framework-javascript/commit/b69997744ac9e30ffba22daac7789216d2683e36))
+- delete by record id ([#983](https://github.com/hyperledger/aries-framework-javascript/issues/983)) ([d8a30d9](https://github.com/hyperledger/aries-framework-javascript/commit/d8a30d94d336cf3417c2cd00a8110185dde6a106))
+- **ledger:** handle REQNACK response for write request ([#967](https://github.com/hyperledger/aries-framework-javascript/issues/967)) ([6468a93](https://github.com/hyperledger/aries-framework-javascript/commit/6468a9311c8458615871e1e85ba3f3b560453715))
+- OOB public did ([#930](https://github.com/hyperledger/aries-framework-javascript/issues/930)) ([c99f3c9](https://github.com/hyperledger/aries-framework-javascript/commit/c99f3c9152a79ca6a0a24fdc93e7f3bebbb9d084))
+- **proofs:** present proof as nested protocol ([#972](https://github.com/hyperledger/aries-framework-javascript/issues/972)) ([52247d9](https://github.com/hyperledger/aries-framework-javascript/commit/52247d997c5910924d3099c736dd2e20ec86a214))
+- **routing:** manual mediator pickup lifecycle management ([#989](https://github.com/hyperledger/aries-framework-javascript/issues/989)) ([69d4906](https://github.com/hyperledger/aries-framework-javascript/commit/69d4906a0ceb8a311ca6bdad5ed6d2048335109a))
+- **routing:** pickup v2 mediator role basic implementation ([#975](https://github.com/hyperledger/aries-framework-javascript/issues/975)) ([a989556](https://github.com/hyperledger/aries-framework-javascript/commit/a98955666853471d504f8a5c8c4623e18ba8c8ed))
+- **routing:** support promise in message repo ([#959](https://github.com/hyperledger/aries-framework-javascript/issues/959)) ([79c5d8d](https://github.com/hyperledger/aries-framework-javascript/commit/79c5d8d76512b641167bce46e82f34cf22bc285e))
+
+## [0.2.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.1...v0.2.2) (2022-07-15)
+
+### Bug Fixes
+
+- no return routing and wait for ping ([#946](https://github.com/hyperledger/aries-framework-javascript/issues/946)) ([f48f3c1](https://github.com/hyperledger/aries-framework-javascript/commit/f48f3c18bcc550b5304f43d8564dbeb1192490e0))
+
+### Features
+
+- **oob:** support fetching shortened invitation urls ([#840](https://github.com/hyperledger/aries-framework-javascript/issues/840)) ([60ee0e5](https://github.com/hyperledger/aries-framework-javascript/commit/60ee0e59bbcdf7fab0e5880a714f0ca61d5da508))
+- **routing:** support did:key in RFC0211 ([#950](https://github.com/hyperledger/aries-framework-javascript/issues/950)) ([dc45c01](https://github.com/hyperledger/aries-framework-javascript/commit/dc45c01a27fa68f8caacf3e51382c37f26b1d4fa))
+
+## [0.2.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.0...v0.2.1) (2022-07-08)
+
+### Bug Fixes
+
+- clone record before emitting event ([#938](https://github.com/hyperledger/aries-framework-javascript/issues/938)) ([f907fe9](https://github.com/hyperledger/aries-framework-javascript/commit/f907fe99558dd77dc2f77696be2a1b846466ab95))
+- missing module exports ([#927](https://github.com/hyperledger/aries-framework-javascript/issues/927)) ([95f90a5](https://github.com/hyperledger/aries-framework-javascript/commit/95f90a5dbe16a90ecb697d164324db20115976ae))
+- **oob:** support legacy prefix in attachments ([#931](https://github.com/hyperledger/aries-framework-javascript/issues/931)) ([82863f3](https://github.com/hyperledger/aries-framework-javascript/commit/82863f326d95025c4c01349a4c14b37e6ff6a1db))
+
+### Features
+
+- **credentials:** added credential sendProblemReport method ([#906](https://github.com/hyperledger/aries-framework-javascript/issues/906)) ([90dc7bb](https://github.com/hyperledger/aries-framework-javascript/commit/90dc7bbdb18a77e62026f4d837723ed9a208c19b))
+- initial plugin api ([#907](https://github.com/hyperledger/aries-framework-javascript/issues/907)) ([6d88aa4](https://github.com/hyperledger/aries-framework-javascript/commit/6d88aa4537ab2a9494ffea8cdfb4723cf915f291))
+- **oob:** allow to append attachments to invitations ([#926](https://github.com/hyperledger/aries-framework-javascript/issues/926)) ([4800700](https://github.com/hyperledger/aries-framework-javascript/commit/4800700e9f138f02e67c93e8882f45d723dd22cb))
+- **routing:** add routing service ([#909](https://github.com/hyperledger/aries-framework-javascript/issues/909)) ([6e51e90](https://github.com/hyperledger/aries-framework-javascript/commit/6e51e9023cca524252f40a18bf37ec81ec582a1a))
+
 # [0.2.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.1.0...v0.2.0) (2022-06-24)
 
 ### Bug Fixes

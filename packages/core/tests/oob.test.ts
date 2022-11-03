@@ -9,8 +9,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
+import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { Key } from '../src/modules/dids'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -20,7 +20,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
 import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getBaseConfig, prepareForIssuance, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
 
 import {
   AgentEventTypes,
@@ -30,10 +30,10 @@ import {
   V1CredentialPreview,
 } from '@aries-framework/core'
 
-const faberConfig = getBaseConfig('Faber Agent OOB', {
+const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
 })
-const aliceConfig = getBaseConfig('Alice Agent OOB', {
+const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -42,6 +42,7 @@ describe('out of band', () => {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',
     label: 'Faber College',
+    alias: `Faber's connection with Alice`,
   }
 
   const issueCredentialConfig = {
@@ -67,12 +68,12 @@ describe('out of band', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberConfig.config, faberConfig.agentDependencies)
+    faberAgent = new Agent(faberAgentOptions)
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
@@ -158,10 +159,11 @@ describe('out of band', () => {
       expect(outOfBandRecord.autoAcceptConnection).toBe(true)
       expect(outOfBandRecord.role).toBe(OutOfBandRole.Sender)
       expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
+      expect(outOfBandRecord.alias).toBe(makeConnectionConfig.alias)
       expect(outOfBandRecord.reusable).toBe(false)
-      expect(outOfBandRecord.outOfBandInvitation.goal).toBe('To make a connection')
-      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe('p2p-messaging')
-      expect(outOfBandRecord.outOfBandInvitation.label).toBe('Faber College')
+      expect(outOfBandRecord.outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
+      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
+      expect(outOfBandRecord.outOfBandInvitation.label).toBe(makeConnectionConfig.label)
     })
 
     test('create OOB message only with handshake', async () => {
@@ -172,7 +174,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toBeUndefined()
 
       // expect contains services
-      const [service] = outOfBandInvitation.services as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -196,7 +198,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandInvitation.services
+      const [service] = outOfBandInvitation.getServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -220,7 +222,7 @@ describe('out of band', () => {
       expect(outOfBandInvitation.getRequests()).toHaveLength(1)
 
       // expect contains services
-      const [service] = outOfBandInvitation.services as OutOfBandDidCommService[]
+      const [service] = outOfBandInvitation.getInlineServices()
       expect(service).toMatchObject(
         new OutOfBandDidCommService({
           id: expect.any(String),
@@ -244,6 +246,9 @@ describe('out of band', () => {
 
       expect(eventListener).toHaveBeenCalledWith({
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: null,
@@ -290,6 +295,7 @@ describe('out of band', () => {
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection!)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })
 
     test(`make a connection with ${HandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
@@ -311,6 +317,7 @@ describe('out of band', () => {
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
@@ -345,6 +352,30 @@ describe('out of band', () => {
 
     test('process credential offer requests based on OOB message', async () => {
       const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
+        ...issueCredentialConfig,
+        messages: [message],
+      })
+
+      const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+      })
+      await aliceAgent.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+    })
+
+    test('process credential offer requests with legacy did:sov prefix on message type based on OOB message', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+
+      // we need to override the message type to use the legacy did:sov prefix
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
       const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
@@ -443,8 +474,8 @@ describe('out of band', () => {
       const outOfBandRecord2 = await faberAgent.oob.createInvitation(makeConnectionConfig)
 
       // Take over the recipientKeys from the first invitation so they match when encoded
-      const firstInvitationService = outOfBandRecord.outOfBandInvitation.services[0] as OutOfBandDidCommService
-      const secondInvitationService = outOfBandRecord2.outOfBandInvitation.services[0] as OutOfBandDidCommService
+      const [firstInvitationService] = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      const [secondInvitationService] = outOfBandRecord2.outOfBandInvitation.getInlineServices()
       secondInvitationService.recipientKeys = firstInvitationService.recipientKeys
 
       aliceAgent.events.on(OutOfBandEventTypes.HandshakeReused, aliceReuseListener)
@@ -583,6 +614,9 @@ describe('out of band', () => {
       // Receiving the invitation
       expect(eventListener).toHaveBeenNthCalledWith(1, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord: expect.objectContaining({ state: OutOfBandState.Initial }),
           previousState: null,
@@ -592,6 +626,9 @@ describe('out of band', () => {
       // Accepting the invitation
       expect(eventListener).toHaveBeenNthCalledWith(2, {
         type: OutOfBandEventTypes.OutOfBandStateChanged,
+        metadata: {
+          contextCorrelationId: 'default',
+        },
         payload: {
           outOfBandRecord,
           previousState: OutOfBandState.Initial,
@@ -656,19 +693,6 @@ describe('out of band', () => {
         new AriesFrameworkError('There is no message in requests~attach supported by agent.')
       )
     })
-
-    test('throw an error when a did is used in the out of band message', async () => {
-      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
-      const { outOfBandInvitation } = await faberAgent.oob.createInvitation({
-        ...issueCredentialConfig,
-        messages: [message],
-      })
-      outOfBandInvitation.services = ['somedid']
-
-      await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)).rejects.toEqual(
-        new AriesFrameworkError('Dids are not currently supported in out-of-band invitation services attribute.')
-      )
-    })
   })
 
   describe('createLegacyConnectionlessInvitation', () => {
@@ -700,7 +724,7 @@ describe('out of band', () => {
     test('updates the message in the didCommMessageRepository', async () => {
       const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
 
-      const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
+      const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
       const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
       saveOrUpdateSpy.mockResolvedValue()
@@ -711,7 +735,7 @@ describe('out of band', () => {
         message,
       })
 
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith({
+      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
         agentMessage: message,
         associatedRecordId: credentialRecord.id,
         role: DidCommMessageRole.Sender,

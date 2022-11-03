@@ -1,4 +1,4 @@
-import type { CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
+import type { CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -17,7 +17,7 @@ export const runAlice = async () => {
 }
 
 enum PromptOptions {
-  CreateConnection = 'Create connection invitation',
+  ReceiveConnectionUrl = 'Receive connection invitation',
   SendMessage = 'Send message',
   Exit = 'Exit',
   Restart = 'Restart',
@@ -42,9 +42,9 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.alice.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.alice.connectionRecordFaberId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
@@ -53,7 +53,7 @@ export class AliceInquirer extends BaseInquirer {
     if (this.listener.on) return
 
     switch (choice.options) {
-      case PromptOptions.CreateConnection:
+      case PromptOptions.ReceiveConnectionUrl:
         await this.connection()
         break
       case PromptOptions.SendMessage:
@@ -78,7 +78,7 @@ export class AliceInquirer extends BaseInquirer {
     }
   }
 
-  public async acceptProofRequest(proofRecord: ProofRecord) {
+  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
     const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.proofs.declineRequest(proofRecord.id)
@@ -88,7 +88,9 @@ export class AliceInquirer extends BaseInquirer {
   }
 
   public async connection() {
-    await this.alice.setupConnection()
+    const title = Title.InvitationTitle
+    const getUrl = await inquirer.prompt([this.inquireInput(title)])
+    await this.alice.acceptConnection(getUrl.input)
     if (!this.alice.connected) return
 
     this.listener.credentialOfferListener(this.alice, this)

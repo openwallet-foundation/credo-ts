@@ -1,9 +1,9 @@
 import type { DidDocument } from '../../dids'
 import type { DidDoc, PublicKey } from '../models'
 
-import { KeyType } from '../../../crypto'
+import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { IndyAgentService, DidCommV1Service, Key, DidDocumentBuilder } from '../../dids'
+import { IndyAgentService, DidCommV1Service, DidDocumentBuilder } from '../../dids'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { EmbeddedAuthentication } from '../models'

@@ -95,8 +95,8 @@ describe('v1 credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
-    const offerMessageRecord = await didCommMessageRepository.findAgentMessage({
+    const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
+    const offerMessageRecord = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
       messageClass: V1OfferCredentialMessage,
     })

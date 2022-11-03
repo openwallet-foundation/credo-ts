@@ -1,44 +1,102 @@
-import type { Wallet } from '../../wallet/Wallet'
+import type { DependencyManager, Module } from '../../plugins'
 
-import { getBaseConfig } from '../../../tests/helpers'
+import { injectable } from 'tsyringe'
+
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
-import { BasicMessagesModule } from '../../modules/basic-messages/BasicMessagesModule'
-import { ConnectionsModule } from '../../modules/connections/ConnectionsModule'
+import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
+import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
-import { CredentialsModule } from '../../modules/credentials/CredentialsModule'
+import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
 import { IndyLedgerService } from '../../modules/ledger'
-import { LedgerModule } from '../../modules/ledger/LedgerModule'
-import { ProofRepository, ProofService } from '../../modules/proofs'
-import { ProofsModule } from '../../modules/proofs/ProofsModule'
+import { LedgerApi } from '../../modules/ledger/LedgerApi'
+import { ProofRepository } from '../../modules/proofs'
+import { ProofsApi } from '../../modules/proofs/ProofsApi'
+import { V1ProofService } from '../../modules/proofs/protocol/v1'
+import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
-  MediatorModule,
-  RecipientModule,
-  MediationRepository,
-  MediatorService,
   MediationRecipientService,
+  MediationRepository,
+  MediatorApi,
+  MediatorService,
+  RecipientApi,
+  RecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../../storage/IndyStorageService'
-import { IndyWallet } from '../../wallet/IndyWallet'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
 import { EnvelopeService } from '../EnvelopeService'
+import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const { config, agentDependencies: dependencies } = getBaseConfig('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test')
+
+const myModuleMethod = jest.fn()
+@injectable()
+class MyApi {
+  public myModuleMethod = myModuleMethod
+}
+
+class MyModule implements Module {
+  public api = MyApi
+  public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerContextScoped(MyApi)
+  }
+}
 
 describe('Agent', () => {
+  describe('Module registration', () => {
+    test('does not return default modules on modules key if no modules were provided', () => {
+      const agent = new Agent(agentOptions)
+
+      expect(agent.modules).toEqual({})
+    })
+
+    test('registers custom and default modules if custom modules are provided', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+        },
+      })
+
+      expect(agent.modules.myModule.myModuleMethod).toBe(myModuleMethod)
+      expect(agent.modules).toEqual({
+        myModule: expect.any(MyApi),
+      })
+    })
+
+    test('override default module configuration', () => {
+      const agent = new Agent({
+        ...agentOptions,
+        modules: {
+          myModule: new MyModule(),
+          mediationRecipient: new RecipientModule({
+            maximumMessagePickup: 42,
+          }),
+        },
+      })
+
+      // Should be custom module config property, not the default value
+      expect(agent.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.modules).toEqual({
+        myModule: expect.any(MyApi),
+      })
+    })
+  })
+
   describe('Initialization', () => {
     let agent: Agent
 
     afterEach(async () => {
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      const wallet = agent.context.wallet
 
       if (wallet.isInitialized) {
         await wallet.delete()
@@ -48,7 +106,7 @@ describe('Agent', () => {
     it('isInitialized should only return true after initialization', async () => {
       expect.assertions(2)
 
-      agent = new Agent(config, dependencies)
+      agent = new Agent(agentOptions)
 
       expect(agent.isInitialized).toBe(false)
       await agent.initialize()
@@ -58,8 +116,8 @@ describe('Agent', () => {
     it('wallet isInitialized should return true after agent initialization if wallet config is set in agent constructor', async () => {
       expect.assertions(4)
 
-      agent = new Agent(config, dependencies)
-      const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      agent = new Agent(agentOptions)
+      const wallet = agent.context.wallet
 
       expect(agent.isInitialized).toBe(false)
       expect(wallet.isInitialized).toBe(false)
@@ -71,8 +129,8 @@ describe('Agent', () => {
     it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
       expect.assertions(9)
 
-      const { walletConfig, ...withoutWalletConfig } = config
-      agent = new Agent(withoutWalletConfig, dependencies)
+      const { walletConfig, ...withoutWalletConfig } = agentOptions.config
+      agent = new Agent({ ...agentOptions, config: withoutWalletConfig })
 
       expect(agent.isInitialized).toBe(false)
       expect(agent.wallet.isInitialized).toBe(false)
@@ -92,55 +150,40 @@ describe('Agent', () => {
     })
   })
 
-  describe('Change label', () => {
-    let agent: Agent
-
-    it('should return new label after setter is called', async () => {
-      expect.assertions(2)
-      const newLabel = 'Agent: Agent Class Test 2'
-
-      agent = new Agent(config, dependencies)
-      expect(agent.config.label).toBe(config.label)
-
-      agent.config.label = newLabel
-      expect(agent.config.label).toBe(newLabel)
-    })
-  })
-
   describe('Dependency Injection', () => {
     it('should be able to resolve registered instances', () => {
-      const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const agent = new Agent(agentOptions)
+      const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsModule)).toBeInstanceOf(ConnectionsModule)
+      expect(container.resolve(ConnectionsApi)).toBeInstanceOf(ConnectionsApi)
       expect(container.resolve(ConnectionService)).toBeInstanceOf(ConnectionService)
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
-      expect(container.resolve(ProofsModule)).toBeInstanceOf(ProofsModule)
-      expect(container.resolve(ProofService)).toBeInstanceOf(ProofService)
+      expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
+      expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
+      expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
-      expect(container.resolve(CredentialsModule)).toBeInstanceOf(CredentialsModule)
+      expect(container.resolve(CredentialsApi)).toBeInstanceOf(CredentialsApi)
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
-      expect(container.resolve(BasicMessagesModule)).toBeInstanceOf(BasicMessagesModule)
+      expect(container.resolve(BasicMessagesApi)).toBeInstanceOf(BasicMessagesApi)
       expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
-      expect(container.resolve(MediatorModule)).toBeInstanceOf(MediatorModule)
-      expect(container.resolve(RecipientModule)).toBeInstanceOf(RecipientModule)
+      expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
+      expect(container.resolve(RecipientApi)).toBeInstanceOf(RecipientApi)
       expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
       expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
 
-      expect(container.resolve(LedgerModule)).toBeInstanceOf(LedgerModule)
+      expect(container.resolve(LedgerApi)).toBeInstanceOf(LedgerApi)
       expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Wallet)).toBeInstanceOf(IndyWallet)
-      expect(container.resolve(InjectionSymbols.Logger)).toBe(config.logger)
+      expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
       expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
@@ -152,37 +195,37 @@ describe('Agent', () => {
     })
 
     it('should return the same instance for consequent resolves', () => {
-      const agent = new Agent(config, dependencies)
-      const container = agent.injectionContainer
+      const agent = new Agent(agentOptions)
+      const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsModule)).toBe(container.resolve(ConnectionsModule))
+      expect(container.resolve(ConnectionsApi)).toBe(container.resolve(ConnectionsApi))
       expect(container.resolve(ConnectionService)).toBe(container.resolve(ConnectionService))
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
-      expect(container.resolve(ProofsModule)).toBe(container.resolve(ProofsModule))
-      expect(container.resolve(ProofService)).toBe(container.resolve(ProofService))
+      expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
+      expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
+      expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
-      expect(container.resolve(CredentialsModule)).toBe(container.resolve(CredentialsModule))
+      expect(container.resolve(CredentialsApi)).toBe(container.resolve(CredentialsApi))
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
-      expect(container.resolve(BasicMessagesModule)).toBe(container.resolve(BasicMessagesModule))
+      expect(container.resolve(BasicMessagesApi)).toBe(container.resolve(BasicMessagesApi))
       expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
-      expect(container.resolve(MediatorModule)).toBe(container.resolve(MediatorModule))
-      expect(container.resolve(RecipientModule)).toBe(container.resolve(RecipientModule))
+      expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
+      expect(container.resolve(RecipientApi)).toBe(container.resolve(RecipientApi))
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
       expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
 
-      expect(container.resolve(LedgerModule)).toBe(container.resolve(LedgerModule))
+      expect(container.resolve(LedgerApi)).toBe(container.resolve(LedgerApi))
       expect(container.resolve(IndyLedgerService)).toBe(container.resolve(IndyLedgerService))
 
       // Symbols, interface based
-      expect(container.resolve(InjectionSymbols.Wallet)).toBe(container.resolve(InjectionSymbols.Wallet))
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
         container.resolve(InjectionSymbols.MessageRepository)
@@ -195,7 +238,35 @@ describe('Agent', () => {
       expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))
       expect(container.resolve(MessageReceiver)).toBe(container.resolve(MessageReceiver))
       expect(container.resolve(Dispatcher)).toBe(container.resolve(Dispatcher))
+      expect(container.resolve(FeatureRegistry)).toBe(container.resolve(FeatureRegistry))
       expect(container.resolve(EnvelopeService)).toBe(container.resolve(EnvelopeService))
     })
+  })
+
+  it('all core features are properly registered', () => {
+    const agent = new Agent(agentOptions)
+    const registry = agent.dependencyManager.resolve(FeatureRegistry)
+
+    const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
+
+    expect(protocols).toEqual(
+      expect.arrayContaining([
+        'https://didcomm.org/basicmessage/1.0',
+        'https://didcomm.org/connections/1.0',
+        'https://didcomm.org/coordinate-mediation/1.0',
+        'https://didcomm.org/didexchange/1.0',
+        'https://didcomm.org/discover-features/1.0',
+        'https://didcomm.org/discover-features/2.0',
+        'https://didcomm.org/issue-credential/1.0',
+        'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/messagepickup/1.0',
+        'https://didcomm.org/messagepickup/2.0',
+        'https://didcomm.org/out-of-band/1.1',
+        'https://didcomm.org/present-proof/1.0',
+        'https://didcomm.org/revocation_notification/1.0',
+        'https://didcomm.org/revocation_notification/2.0',
+      ])
+    )
+    expect(protocols.length).toEqual(14)
   })
 })

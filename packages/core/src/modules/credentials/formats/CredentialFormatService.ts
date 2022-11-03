@@ -1,5 +1,4 @@
-import type { EventEmitter } from '../../../agent/EventEmitter'
-import type { CredentialRepository } from '../repository'
+import type { AgentContext } from '../../../agent'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   FormatCreateProposalOptions,
@@ -8,7 +7,7 @@ import type {
   FormatCreateOfferOptions,
   FormatCreateOfferReturn,
   FormatCreateRequestOptions,
-  FormatCreateReturn,
+  CredentialFormatCreateReturn,
   FormatAcceptRequestOptions,
   FormatAcceptOfferOptions,
   FormatAcceptProposalOptions,
@@ -22,42 +21,55 @@ import { Attachment, AttachmentData } from '../../../decorators/attachment/Attac
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 
 export abstract class CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
-  protected credentialRepository: CredentialRepository
-  protected eventEmitter: EventEmitter
-
-  public constructor(credentialRepository: CredentialRepository, eventEmitter: EventEmitter) {
-    this.credentialRepository = credentialRepository
-    this.eventEmitter = eventEmitter
-  }
-
   abstract readonly formatKey: CF['formatKey']
   abstract readonly credentialRecordType: CF['credentialRecordType']
 
   // proposal methods
-  abstract createProposal(options: FormatCreateProposalOptions<CF>): Promise<FormatCreateProposalReturn>
-  abstract processProposal(options: FormatProcessOptions): Promise<void>
-  abstract acceptProposal(options: FormatAcceptProposalOptions<CF>): Promise<FormatCreateOfferReturn>
+  abstract createProposal(
+    agentContext: AgentContext,
+    options: FormatCreateProposalOptions<CF>
+  ): Promise<FormatCreateProposalReturn>
+  abstract processProposal(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract acceptProposal(
+    agentContext: AgentContext,
+    options: FormatAcceptProposalOptions<CF>
+  ): Promise<FormatCreateOfferReturn>
 
   // offer methods
-  abstract createOffer(options: FormatCreateOfferOptions<CF>): Promise<FormatCreateOfferReturn>
-  abstract processOffer(options: FormatProcessOptions): Promise<void>
-  abstract acceptOffer(options: FormatAcceptOfferOptions<CF>): Promise<FormatCreateReturn>
+  abstract createOffer(
+    agentContext: AgentContext,
+    options: FormatCreateOfferOptions<CF>
+  ): Promise<FormatCreateOfferReturn>
+  abstract processOffer(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract acceptOffer(
+    agentContext: AgentContext,
+    options: FormatAcceptOfferOptions<CF>
+  ): Promise<CredentialFormatCreateReturn>
 
   // request methods
-  abstract createRequest(options: FormatCreateRequestOptions<CF>): Promise<FormatCreateReturn>
-  abstract processRequest(options: FormatProcessOptions): Promise<void>
-  abstract acceptRequest(options: FormatAcceptRequestOptions<CF>): Promise<FormatCreateReturn>
+  abstract createRequest(
+    agentContext: AgentContext,
+    options: FormatCreateRequestOptions<CF>
+  ): Promise<CredentialFormatCreateReturn>
+  abstract processRequest(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract acceptRequest(
+    agentContext: AgentContext,
+    options: FormatAcceptRequestOptions<CF>
+  ): Promise<CredentialFormatCreateReturn>
 
   // credential methods
-  abstract processCredential(options: FormatProcessOptions): Promise<void>
+  abstract processCredential(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
 
   // auto accept methods
-  abstract shouldAutoRespondToProposal(options: FormatAutoRespondProposalOptions): boolean
-  abstract shouldAutoRespondToOffer(options: FormatAutoRespondOfferOptions): boolean
-  abstract shouldAutoRespondToRequest(options: FormatAutoRespondRequestOptions): boolean
-  abstract shouldAutoRespondToCredential(options: FormatAutoRespondCredentialOptions): boolean
+  abstract shouldAutoRespondToProposal(agentContext: AgentContext, options: FormatAutoRespondProposalOptions): boolean
+  abstract shouldAutoRespondToOffer(agentContext: AgentContext, options: FormatAutoRespondOfferOptions): boolean
+  abstract shouldAutoRespondToRequest(agentContext: AgentContext, options: FormatAutoRespondRequestOptions): boolean
+  abstract shouldAutoRespondToCredential(
+    agentContext: AgentContext,
+    options: FormatAutoRespondCredentialOptions
+  ): boolean
 
-  abstract deleteCredentialById(credentialId: string): Promise<void>
+  abstract deleteCredentialById(agentContext: AgentContext, credentialId: string): Promise<void>
 
   abstract supportsFormat(format: string): boolean
 
@@ -67,7 +79,6 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
-   * @returns attachment to the credential proposal
    */
   protected getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({
