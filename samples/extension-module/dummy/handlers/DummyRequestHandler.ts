@@ -1,6 +1,8 @@
 import type { DummyService } from '../services'
 import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
+import { createOutboundMessage } from '@aries-framework/core'
+
 import { DummyRequestMessage } from '../messages'
 
 export class DummyRequestHandler implements Handler {
@@ -12,8 +14,11 @@ export class DummyRequestHandler implements Handler {
   }
 
   public async handle(inboundMessage: HandlerInboundMessage<DummyRequestHandler>) {
-    inboundMessage.assertReadyConnection()
+    const connection = inboundMessage.assertReadyConnection()
+    const responseMessage = await this.dummyService.processRequest(inboundMessage)
 
-    await this.dummyService.processRequest(inboundMessage)
+    if (responseMessage) {
+      return createOutboundMessage(connection, responseMessage)
+    }
   }
 }

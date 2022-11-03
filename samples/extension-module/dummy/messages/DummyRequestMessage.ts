@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { AgentMessage, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@aries-framework/core'
 
 export interface DummyRequestMessageOptions {
   id?: string
@@ -11,6 +11,8 @@ export class DummyRequestMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
     }
+
+    this.setReturnRouting(ReturnRouteTypes.all)
   }
 
   @IsValidMessageType(DummyRequestMessage.type)

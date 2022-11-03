@@ -16,35 +16,42 @@ This example consists of a module that implements a very simple request-response
 - Define events (inherited from `BaseEvent`)
 - Create a singleton service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
 - Create a singleton api class that registers handlers in Agent's `Dispatcher` and provides a simple API to do requests and responses, with the aid of service classes and Agent's `MessageSender`
-- Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance.
+- Create a module class that registers all the above on the dependency manager so it can be be injected from the `Agent` instance, and also register the features (such as protocols) the module adds to the Agent.
 
 ## Usage
 
-In order to use this module, you first need to register `DummyModule` on the `Agent` instance. After that you need to resolve the `DummyApi` to interact with the public api of the module. Make sure to register and resolve the api **before** initializing the agent.
+In order to use this module, you first need to register `DummyModule` on the `Agent` instance. This can be done by adding an entry for it in `AgentOptions`'s modules property:
 
 ```ts
-import { DummyModule, DummyApi } from './dummy'
-
-const agent = new Agent(/** agent config... */)
+import { DummyModule } from './dummy'
 
 // Register the module with it's dependencies
-agent.dependencyManager.registerModules(new DummyModule())
-
-const dummyApi = agent.dependencyManager.resolve(DummyApi)
+const agent = new Agent({
+  config: {
+    /* config */
+  },
+  dependencies: agentDependencies,
+  modules: {
+    dummy: new DummyModule({
+      /* module config */
+    }),
+    /* other custom modules */
+  },
+})
 
 await agent.initialize()
 ```
 
-Then, Dummy module API methods can be called, and events listeners can be created:
+Then, Dummy module API methods can be called from `agent.modules.dummy` namespace, and events listeners can be created:
 
 ```ts
 agent.events.on(DummyEventTypes.StateChanged, async (event: DummyStateChangedEvent) => {
   if (event.payload.dummyRecord.state === DummyState.RequestReceived) {
-    await dummyApi.respond(event.payload.dummyRecord)
+    await agent.modules.dummy.respond(event.payload.dummyRecord)
   }
 })
 
-const record = await dummyApi.request(connection)
+const record = await agent.modules.dummy.request(connection)
 ```
 
 ## Run demo
