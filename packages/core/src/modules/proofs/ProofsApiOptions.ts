@@ -4,24 +4,29 @@ import type { AutoAcceptProof } from './models'
 import type { ProofConfig } from './models/ModuleOptions'
 
 /**
- * Get the supported protocol versions based on the provided credential services.
+ * Get the supported protocol versions based on the provided proof services.
  */
-export type ProtocolVersionType<PSs extends ProofService[]> = PSs[number]['version']
+export type ProofsProtocolVersionType<PSs extends ProofService[]> = PSs[number]['version']
+export type FindProofProposalMessageReturn<PSs extends ProofService[]> = ReturnType<PSs[number]['findProposalMessage']>
+export type FindProofRequestMessageReturn<PSs extends ProofService[]> = ReturnType<PSs[number]['findRequestMessage']>
+export type FindProofPresentationMessageReturn<PSs extends ProofService[]> = ReturnType<
+  PSs[number]['findPresentationMessage']
+>
 
 /**
- * Get the service map for usage in the credentials module. Will return a type mapping of protocol version to service.
+ * Get the service map for usage in the proofs module. Will return a type mapping of protocol version to service.
  *
  * @example
  * ```
- * type CredentialServiceMap = ServiceMap<[IndyCredentialFormat], [V1CredentialService]>
+ * type ServiceMap = ProofServiceMap<[IndyProofFormat], [V1ProofService]>
  *
  * // equal to
- * type CredentialServiceMap = {
- *   v1: V1CredentialService
+ * type ServiceMap = {
+ *   v1: V1ProofService
  * }
  * ```
  */
-export type ServiceMap<PFs extends ProofFormat[], PSs extends ProofService<PFs>[]> = {
+export type ProofServiceMap<PFs extends ProofFormat[], PSs extends ProofService<PFs>[]> = {
   [PS in PSs[number] as PS['version']]: ProofService<PFs>
 }
 
@@ -30,20 +35,20 @@ export interface ProposeProofOptions<
   PSs extends ProofService[] = ProofService[]
 > {
   connectionId: string
-  protocolVersion: ProtocolVersionType<PSs>
+  protocolVersion: ProofsProtocolVersionType<PSs>
   proofFormats: ProofFormatPayload<PFs, 'createProposal'>
   comment?: string
   goalCode?: string
   autoAcceptProof?: AutoAcceptProof
   parentThreadId?: string
 }
-export interface AcceptPresentationOptions<PFs extends ProofFormat[] = ProofFormat[]> {
+export interface AcceptProofPresentationOptions<PFs extends ProofFormat[] = ProofFormat[]> {
   proofRecordId: string
   comment?: string
   proofFormats: ProofFormatPayload<PFs, 'createPresentation'>
 }
 
-export interface AcceptProposalOptions {
+export interface AcceptProofProposalOptions {
   proofRecordId: string
   config?: ProofConfig
   goalCode?: string
@@ -55,7 +60,7 @@ export interface RequestProofOptions<
   PFs extends ProofFormat[] = ProofFormat[],
   PSs extends ProofService[] = ProofService[]
 > {
-  protocolVersion: ProtocolVersionType<PSs>
+  protocolVersion: ProofsProtocolVersionType<PSs>
   connectionId: string
   proofFormats: ProofFormatPayload<PFs, 'createRequest'>
   comment?: string
@@ -67,7 +72,7 @@ export interface CreateProofRequestOptions<
   PFs extends ProofFormat[] = ProofFormat[],
   PSs extends ProofService[] = ProofService[]
 > {
-  protocolVersion: ProtocolVersionType<PSs>
+  protocolVersion: ProofsProtocolVersionType<PSs>
   proofFormats: ProofFormatPayload<PFs, 'createRequest'>
   comment?: string
   autoAcceptProof?: AutoAcceptProof

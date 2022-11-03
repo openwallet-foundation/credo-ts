@@ -1,16 +1,14 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { AcceptProposalOptions, ProposeProofOptions } from '../../../ProofsApiOptions'
-import type { ProofRecord } from '../../../repository/ProofRecord'
+import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 
-import { setupProofsTest, waitForProofRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
 } from '../../../formats/ProofFormats'
-import { ProofProtocolVersion } from '../../../models/ProofProtocolVersion'
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -19,8 +17,8 @@ describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
-  let faberProofRecord: ProofRecord
-  let aliceProofRecord: ProofRecord
+  let faberProofRecord: ProofExchangeRecord
+  let aliceProofRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   const inputDescriptor = {
@@ -69,9 +67,13 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const proposeOptions: ProposeProofOptions = {
+    const faberPresentationRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      state: ProofState.ProposalReceived,
+    })
+
+    aliceProofRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnection.id,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         presentationExchange: {
           // this is of type PresentationDefinitionV1 (see pex library)
@@ -119,13 +121,7 @@ describe('Present Proof', () => {
         },
       },
       comment: 'V2 Presentation Exchange propose proof test',
-    }
-
-    const faberPresentationRecordPromise = waitForProofRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
     })
-
-    aliceProofRecord = await aliceAgent.proofs.proposeProof(proposeOptions)
 
     testLogger.test('Faber waits for presentation from Alice')
     faberProofRecord = await faberPresentationRecordPromise
@@ -163,17 +159,17 @@ describe('Present Proof', () => {
     expect(faberProofRecord).toMatchObject({
       threadId: faberProofRecord.threadId,
       state: ProofState.ProposalReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 
   test(`Faber accepts the Proposal send by Alice`, async () => {
     // Accept Proposal
-    const acceptProposalOptions: AcceptProposalOptions = {
+    const acceptProposalOptions = {
       proofRecordId: faberProofRecord.id,
     }
 
-    const alicePresentationRecordPromise = waitForProofRecord(aliceAgent, {
+    const alicePresentationRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
     })
@@ -238,7 +234,7 @@ describe('Present Proof', () => {
       id: expect.any(String),
       threadId: faberProofRecord.threadId,
       state: ProofState.RequestReceived,
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
   })
 })

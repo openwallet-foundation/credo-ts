@@ -6,15 +6,15 @@ import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
-import { ProofRecord } from './ProofRecord'
+import { ProofExchangeRecord } from './ProofExchangeRecord'
 
 @injectable()
-export class ProofRepository extends Repository<ProofRecord> {
+export class ProofRepository extends Repository<ProofExchangeRecord> {
   public constructor(
-    @inject(InjectionSymbols.StorageService) storageService: StorageService<ProofRecord>,
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<ProofExchangeRecord>,
     eventEmitter: EventEmitter
   ) {
-    super(ProofRecord, storageService, eventEmitter)
+    super(ProofExchangeRecord, storageService, eventEmitter)
   }
 
   /**
@@ -30,7 +30,7 @@ export class ProofRepository extends Repository<ProofRecord> {
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
-  ): Promise<ProofRecord> {
+  ): Promise<ProofExchangeRecord> {
     return this.getSingleByQuery(agentContext, { threadId, connectionId })
   }
 
@@ -45,7 +45,7 @@ export class ProofRepository extends Repository<ProofRecord> {
     agentContext: AgentContext,
     parentThreadId: string,
     connectionId?: string
-  ): Promise<ProofRecord[]> {
+  ): Promise<ProofExchangeRecord[]> {
     return this.findByQuery(agentContext, { parentThreadId, connectionId })
   }
 }

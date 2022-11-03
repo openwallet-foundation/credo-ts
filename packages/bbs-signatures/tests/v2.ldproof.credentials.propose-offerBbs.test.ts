@@ -1,22 +1,21 @@
-import type { Agent } from '../../../../../agent/Agent'
-import type { Wallet } from '../../../../../wallet'
-import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptProposalOptions } from '../../../CredentialsApiOptions'
-import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { Agent } from '../../core/src/agent/Agent'
+import type { ConnectionRecord } from '../../core/src/modules/connections'
+import type { SignCredentialOptionsRFC0593 } from '../../core/src/modules/credentials/formats/jsonld'
+import type { Wallet } from '../../core/src/wallet'
 
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { InjectionSymbols } from '../../../../../constants'
-import { KeyType } from '../../../../../crypto/KeyType'
-import { DidKey } from '../../../../../modules/dids'
-import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../../../../modules/vc'
-import { DidCommMessageRepository } from '../../../../../storage'
-import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
-import { CredentialState } from '../../../models'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { InjectionSymbols } from '../../core/src/constants'
+import { KeyType } from '../../core/src/crypto'
+import { CredentialState } from '../../core/src/modules/credentials/models'
+import { V2IssueCredentialMessage } from '../../core/src/modules/credentials/protocol/v2/messages/V2IssueCredentialMessage'
+import { V2OfferCredentialMessage } from '../../core/src/modules/credentials/protocol/v2/messages/V2OfferCredentialMessage'
+import { CredentialExchangeRecord } from '../../core/src/modules/credentials/repository/CredentialExchangeRecord'
+import { DidKey } from '../../core/src/modules/dids'
+import { CREDENTIALS_CONTEXT_V1_URL, SECURITY_CONTEXT_BBS_URL } from '../../core/src/modules/vc'
+import { W3cCredential } from '../../core/src/modules/vc/models/credential/W3cCredential'
+import { DidCommMessageRepository } from '../../core/src/storage'
+import { JsonTransformer } from '../../core/src/utils/JsonTransformer'
+import { setupCredentialTests, waitForCredentialRecord } from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 
 let faberAgent: Agent
 let aliceAgent: Agent
@@ -50,7 +49,7 @@ const TEST_LD_DOCUMENT = {
   },
 }
 
-xdescribe('credentials, BBS+ signature', () => {
+describe('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
@@ -113,15 +112,14 @@ xdescribe('credentials, BBS+ signature', () => {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
-    const options: AcceptProposalOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+    await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-    }
-    testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.credentials.acceptProposal(options)
+    })
 
     testLogger.test('Alice waits for credential offer from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -197,7 +195,13 @@ xdescribe('credentials, BBS+ signature', () => {
 
     testLogger.test('Faber sends credential to Alice')
 
-    await faberAgent.credentials.acceptRequest(options)
+    await faberAgent.credentials.acceptRequest({
+      credentialRecordId: faberCredentialRecord.id,
+      comment: 'V2 W3C Offer',
+      credentialFormats: {
+        jsonld: signCredentialOptions,
+      },
+    })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {

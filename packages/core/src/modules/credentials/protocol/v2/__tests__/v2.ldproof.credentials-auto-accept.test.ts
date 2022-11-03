@@ -2,7 +2,6 @@ import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { AcceptOfferOptions, AcceptProposalOptions } from '../../../CredentialsApiOptions'
 import type {
   JsonLdCredentialFormat,
   SignCredentialOptionsRFC0593,
@@ -178,14 +177,13 @@ describe('credentials', () => {
       })
 
       testLogger.test('Faber sends credential offer to Alice')
-      const options: AcceptProposalOptions = {
+      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 JsonLd Offer',
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-      }
-      const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal(options)
+      })
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
@@ -249,11 +247,10 @@ describe('credentials', () => {
 
       // we do not need to specify connection id in this object
       // it is either connectionless or included in the offer message
-      const acceptOfferOptions: AcceptOfferOptions = {
-        credentialRecordId: aliceCredentialRecord.id,
-      }
       testLogger.test('Alice sends credential request to faber')
-      faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+      faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {

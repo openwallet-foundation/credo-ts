@@ -2,7 +2,7 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofRecord } from '../../../repository'
+import type { ProofExchangeRecord } from '../../../repository'
 import type { V1ProofService } from '../V1ProofService'
 
 import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
@@ -35,7 +35,7 @@ export class V1PresentationHandler implements Handler {
     }
   }
 
-  private async createAck(record: ProofRecord, messageContext: HandlerInboundMessage<V1PresentationHandler>) {
+  private async createAck(record: ProofExchangeRecord, messageContext: HandlerInboundMessage<V1PresentationHandler>) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )

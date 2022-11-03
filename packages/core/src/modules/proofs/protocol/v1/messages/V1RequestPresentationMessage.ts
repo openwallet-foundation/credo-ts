@@ -1,4 +1,5 @@
 import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
+import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
@@ -66,14 +67,19 @@ export class V1RequestPresentationMessage extends AgentMessage {
   public requestPresentationAttachments!: Attachment[]
 
   public get indyProofRequest(): ProofRequest | null {
+    // Extract proof request from attachment
+    const proofRequestJson = this.indyProofRequestJson
+    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
+
+    return proofRequest
+  }
+
+  public get indyProofRequestJson(): IndyProofRequest | null {
     const attachment = this.requestPresentationAttachments.find(
       (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
     )
     // Extract proof request from attachment
-    const proofRequestJson = attachment?.getDataAsJson<ProofRequest>() ?? null
-    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
-
-    return proofRequest
+    return attachment?.getDataAsJson<IndyProofRequest>() ?? null
   }
 
   public getAttachmentFormats(): ProofAttachmentFormat[] {

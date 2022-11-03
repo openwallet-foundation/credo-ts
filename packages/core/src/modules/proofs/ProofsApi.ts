@@ -2,12 +2,15 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
-  AcceptPresentationOptions,
-  AcceptProposalOptions,
+  AcceptProofPresentationOptions,
+  AcceptProofProposalOptions,
   CreateProofRequestOptions,
+  FindProofPresentationMessageReturn,
+  FindProofProposalMessageReturn,
+  FindProofRequestMessageReturn,
   ProposeProofOptions,
   RequestProofOptions,
-  ServiceMap,
+  ProofServiceMap,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
@@ -25,8 +28,9 @@ import type {
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
   DeleteProofOptions,
+  GetFormatDataReturn,
 } from './models/ProofServiceOptions'
-import type { ProofRecord } from './repository/ProofRecord'
+import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 
 import { inject, injectable } from 'tsyringe'
 
@@ -52,22 +56,22 @@ import { ProofRepository } from './repository/ProofRepository'
 
 export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<PFs>[]> {
   // Proposal methods
-  proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofRecord>
-  acceptProposal(options: AcceptProposalOptions): Promise<ProofRecord>
+  proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
+  acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord>
 
   // Request methods
-  requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofRecord>
-  acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord>
-  declineRequest(proofRecordId: string): Promise<ProofRecord>
+  requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
+  acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord>
+  declineRequest(proofRecordId: string): Promise<ProofExchangeRecord>
+
+  // Present
+  acceptPresentation(proofRecordId: string): Promise<ProofExchangeRecord>
 
   // out of band
   createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
-    proofRecord: ProofRecord
+    proofRecord: ProofExchangeRecord
   }>
-
-  // Present
-  acceptPresentation(proofRecordId: string): Promise<ProofRecord>
 
   // Auto Select
   autoSelectCredentialsForProofRequest(
@@ -79,15 +83,21 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
     options: AutoSelectCredentialsForProofRequestOptions
   ): Promise<FormatRetrievedCredentialOptions<PFs>>
 
-  sendProblemReport(proofRecordId: string, message: string): Promise<ProofRecord>
+  sendProblemReport(proofRecordId: string, message: string): Promise<ProofExchangeRecord>
 
   // Record Methods
-  getAll(): Promise<ProofRecord[]>
-  findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]>
-  getById(proofRecordId: string): Promise<ProofRecord>
-  deleteById(proofId: string): Promise<void>
-  findById(proofRecordId: string): Promise<ProofRecord | null>
-  update(proofRecord: ProofRecord): Promise<void>
+  getAll(): Promise<ProofExchangeRecord[]>
+  findAllByQuery(query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]>
+  getById(proofRecordId: string): Promise<ProofExchangeRecord>
+  findById(proofRecordId: string): Promise<ProofExchangeRecord | null>
+  deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
+  update(proofRecord: ProofExchangeRecord): Promise<void>
+  getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>>
+
+  // DidComm Message Records
+  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>>
+  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>>
+  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>>
 }
 
 @injectable()
@@ -103,7 +113,7 @@ export class ProofsApi<
   private agentContext: AgentContext
   private agentConfig: AgentConfig
   private logger: Logger
-  private serviceMap: ServiceMap<PFs, PSs>
+  private serviceMap: ProofServiceMap<PFs, PSs>
 
   public constructor(
     dispatcher: Dispatcher,
@@ -132,7 +142,7 @@ export class ProofsApi<
         [service.version]: service,
       }),
       {}
-    ) as ServiceMap<PFs, PSs>
+    ) as ProofServiceMap<PFs, PSs>
 
     this.logger.debug(`Initializing Proofs Module for agent ${this.agentContext.config.label}`)
 
@@ -155,7 +165,7 @@ export class ProofsApi<
    * to include in the message
    * @returns Proof record associated with the sent proposal message
    */
-  public async proposeProof(options: ProposeProofOptions): Promise<ProofRecord> {
+  public async proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord> {
     const service = this.getService(options.protocolVersion)
 
     const { connectionId } = options
@@ -189,7 +199,7 @@ export class ProofsApi<
    * @param options multiple properties like proof record id, additional configuration for creating the request
    * @returns Proof record associated with the presentation request
    */
-  public async acceptProposal(options: AcceptProposalOptions): Promise<ProofRecord> {
+  public async acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord> {
     const { proofRecordId } = options
     const proofRecord = await this.getById(proofRecordId)
 
@@ -238,7 +248,7 @@ export class ProofsApi<
    * @param options multiple properties like connection id, protocol version, proof Formats to build the proof request
    * @returns Proof record associated with the sent request message
    */
-  public async requestProof(options: RequestProofOptions): Promise<ProofRecord> {
+  public async requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord> {
     const service = this.getService(options.protocolVersion)
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
@@ -269,7 +279,7 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptPresentationOptions<PFs>): Promise<ProofRecord> {
+  public async acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord> {
     const { proofRecordId, proofFormats, comment } = options
 
     const record = await this.getById(proofRecordId)
@@ -336,9 +346,16 @@ export class ProofsApi<
     }
   }
 
+  /**
+   * Initiate a new presentation exchange as verifier by sending an out of band presentation
+   * request message
+   *
+   * @param options multiple properties like protocol version, proof Formats to build the proof request
+   * @returns the message itself and the proof record associated with the sent request message
+   */
   public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
     message: AgentMessage
-    proofRecord: ProofRecord
+    proofRecord: ProofExchangeRecord
   }> {
     const service = this.getService(options.protocolVersion)
 
@@ -352,7 +369,7 @@ export class ProofsApi<
     return await service.createRequest(this.agentContext, createProofRequest)
   }
 
-  public async declineRequest(proofRecordId: string): Promise<ProofRecord> {
+  public async declineRequest(proofRecordId: string): Promise<ProofExchangeRecord> {
     const proofRecord = await this.getById(proofRecordId)
     const service = this.getService(proofRecord.protocolVersion)
 
@@ -367,11 +384,11 @@ export class ProofsApi<
    * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
-   * @param proofRecordId The id of the proof record for which to accept the presentation
+   * @param proofRecordId The id of the proof exchange record for which to accept the presentation
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
-  public async acceptPresentation(proofRecordId: string): Promise<ProofRecord> {
+  public async acceptPresentation(proofRecordId: string): Promise<ProofExchangeRecord> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
 
@@ -441,6 +458,7 @@ export class ProofsApi<
   /**
    * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
    * use credentials in the wallet to build indy requested credentials object for input to proof creation.
+   *
    * If restrictions allow, self attested attributes will be used.
    *
    * @param options multiple properties like proof record id and optional configuration
@@ -465,7 +483,7 @@ export class ProofsApi<
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(proofRecordId: string, message: string): Promise<ProofRecord> {
+  public async sendProblemReport(proofRecordId: string, message: string): Promise<ProofExchangeRecord> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
     if (!record.connectionId) {
@@ -486,12 +504,20 @@ export class ProofsApi<
 
     return record
   }
+
+  public async getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>> {
+    const proofRecord = await this.getById(proofRecordId)
+    const service = this.getService(proofRecord.protocolVersion)
+
+    return service.getFormatData(this.agentContext, proofRecordId)
+  }
+
   /**
    * Retrieve all proof records
    *
    * @returns List containing all proof records
    */
-  public async getAll(): Promise<ProofRecord[]> {
+  public async getAll(): Promise<ProofExchangeRecord[]> {
     return this.proofRepository.getAll(this.agentContext)
   }
 
@@ -500,7 +526,7 @@ export class ProofsApi<
    *
    * @returns List containing all proof records matching specified params
    */
-  public findAllByQuery(query: Query<ProofRecord>): Promise<ProofRecord[]> {
+  public findAllByQuery(query: Query<ProofExchangeRecord>): Promise<ProofExchangeRecord[]> {
     return this.proofRepository.findByQuery(this.agentContext, query)
   }
 
@@ -512,7 +538,7 @@ export class ProofsApi<
    * @return The proof record
    *
    */
-  public async getById(proofRecordId: string): Promise<ProofRecord> {
+  public async getById(proofRecordId: string): Promise<ProofExchangeRecord> {
     return await this.proofRepository.getById(this.agentContext, proofRecordId)
   }
 
@@ -523,7 +549,7 @@ export class ProofsApi<
    * @return The proof record or null if not found
    *
    */
-  public async findById(proofRecordId: string): Promise<ProofRecord | null> {
+  public async findById(proofRecordId: string): Promise<ProofExchangeRecord | null> {
     return await this.proofRepository.findById(this.agentContext, proofRecordId)
   }
 
@@ -547,7 +573,7 @@ export class ProofsApi<
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofRecord> {
+  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofExchangeRecord> {
     return this.proofRepository.getByThreadAndConnectionId(this.agentContext, threadId, connectionId)
   }
 
@@ -558,7 +584,10 @@ export class ProofsApi<
    * @param parentThreadId The parent thread id
    * @returns List containing all proof records matching the given query
    */
-  public async getByParentThreadAndConnectionId(parentThreadId: string, connectionId?: string): Promise<ProofRecord[]> {
+  public async getByParentThreadAndConnectionId(
+    parentThreadId: string,
+    connectionId?: string
+  ): Promise<ProofExchangeRecord[]> {
     return this.proofRepository.getByParentThreadAndConnectionId(this.agentContext, parentThreadId, connectionId)
   }
 
@@ -567,8 +596,26 @@ export class ProofsApi<
    *
    * @param proofRecord the proof record
    */
-  public async update(proofRecord: ProofRecord) {
+  public async update(proofRecord: ProofExchangeRecord): Promise<void> {
     await this.proofRepository.update(this.agentContext, proofRecord)
+  }
+
+  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>> {
+    const record = await this.getById(proofRecordId)
+    const service = this.getService(record.protocolVersion)
+    return service.findProposalMessage(this.agentContext, proofRecordId)
+  }
+
+  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>> {
+    const record = await this.getById(proofRecordId)
+    const service = this.getService(record.protocolVersion)
+    return service.findRequestMessage(this.agentContext, proofRecordId)
+  }
+
+  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>> {
+    const record = await this.getById(proofRecordId)
+    const service = this.getService(record.protocolVersion)
+    return service.findPresentationMessage(this.agentContext, proofRecordId)
   }
 
   private registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {

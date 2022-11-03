@@ -151,7 +151,7 @@ export class RecipientApi {
   }
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
-    const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.agentContext.config
+    const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.config
     let interval = baseMediatorReconnectionIntervalMs
 
     const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()

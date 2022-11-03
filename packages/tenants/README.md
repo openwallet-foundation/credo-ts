@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript - BBS Module</b></h1>
+<h1 align="center"><b>Aries Framework JavaScript - Tenant Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -19,13 +19,13 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/bbs-signatures"
+    <a href="https://www.npmjs.com/package/@aries-framework/tenants"
     ><img
-      alt="@aries-framework/bbs-signatures version"
-      src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"
+      alt="@aries-framework/tenants version"
+      src="https://img.shields.io/npm/v/@aries-framework/tenants"
   /></a>
 
 </p>
 <br />
 
-Aries Framework JavaScript BBS Module provides an optional addon to Aries Framework JavaScript to use BBS signatures in W3C VC exchange.
+Aries Framework JavaScript Tenant Module provides an optional addon to Aries Framework JavaScript to use an agent with multiple tenants.

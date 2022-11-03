@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
 import type { SignCredentialOptionsRFC0593 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
-import type { AcceptPresentationOptions, CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
+import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationExchangeProofFormat } from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
 import type { V2ProofService } from '../src/modules/proofs/protocol/v2/V2ProofService'
 import type { Wallet } from '../src/wallet/Wallet'
@@ -19,7 +19,6 @@ import { HandshakeProtocol } from '../src/modules/connections/models/HandshakePr
 import { AutoAcceptCredential, CredentialEventTypes, CredentialState } from '../src/modules/credentials'
 import { DidKey } from '../src/modules/dids'
 import { ProofEventTypes, ProofState, AutoAcceptProof } from '../src/modules/proofs'
-import { ProofProtocolVersion } from '../src/modules/proofs/models/ProofProtocolVersion'
 import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
 import { W3cCredential } from '../src/modules/vc/models'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
@@ -30,7 +29,7 @@ import {
   makeConnection,
   setupProofsTest,
   waitForCredentialRecordSubject,
-  waitForProofRecordSubject,
+  waitForProofExchangeRecordSubject,
 } from './helpers'
 import testLogger from './logger'
 
@@ -108,7 +107,7 @@ describe('Present Proof', () => {
       },
     }
 
-    let aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    let aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.RequestReceived,
     })
 
@@ -134,12 +133,12 @@ describe('Present Proof', () => {
       },
     })
 
-    const acceptPresentationOptions: AcceptPresentationOptions = {
+    const acceptPresentationOptions = {
       proofRecordId: aliceProofRecord.id,
       proofFormats: { presentationExchange: requestedCredentials.proofFormats.presentationExchange },
     }
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.PresentationReceived,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
@@ -152,7 +151,7 @@ describe('Present Proof', () => {
     // assert presentation is valid
     expect(faberProofRecord.isVerified).toBe(true)
 
-    aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofRecord.threadId,
       state: ProofState.Done,
     })
@@ -218,7 +217,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[PresentationExchangeProofFormat], [V2ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         presentationExchange: {
           options: {
@@ -231,12 +230,12 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    const aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
@@ -394,7 +393,7 @@ describe('Present Proof', () => {
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
     })
 
     // Because we use auto-accept it can take a while to have the whole credential flow finished
@@ -457,7 +456,7 @@ describe('Present Proof', () => {
     }
 
     const outOfBandRequestOptions: CreateProofRequestOptions<[PresentationExchangeProofFormat], [V2ProofService]> = {
-      protocolVersion: ProofProtocolVersion.V2,
+      protocolVersion: 'v2',
       proofFormats: {
         presentationExchange: {
           options: {
@@ -470,12 +469,12 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
-    const aliceProofRecordPromise = waitForProofRecordSubject(aliceReplay, {
+    const aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    const faberProofRecordPromise = waitForProofRecordSubject(faberReplay, {
+    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
