@@ -6,32 +6,35 @@ import type * as Indy from 'indy-sdk'
 
 import { AgentDependencies } from '../../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../../constants'
+import { IndySdkError } from '../../../../error'
+import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
+import { isIndyError } from '../../../../utils/indyError'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
-import { IndyLedgerService, IndyPoolService } from '../../../ledger'
+import { IndyPoolService } from '../../../ledger'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 
 @injectable()
-export class SovDidRegistrar implements DidRegistrar {
+export class IndySdkSovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
   private didRepository: DidRepository
   private indy: typeof Indy
-  private indyLedgerService: IndyLedgerService
   private indyPoolService: IndyPoolService
+  private logger: Logger
 
   public constructor(
     didRepository: DidRepository,
-    indyLedgerService: IndyLedgerService,
     indyPoolService: IndyPoolService,
-    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.didRepository = didRepository
     this.indy = agentDependencies.indy
-    this.indyLedgerService = indyLedgerService
     this.indyPoolService = indyPoolService
+    this.logger = logger
   }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
@@ -76,21 +79,14 @@ export class SovDidRegistrar implements DidRegistrar {
 
       // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
       // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
-      await this.indyLedgerService.registerPublicDid(
-        agentContext,
-        unqualifiedSubmitterDid,
-        unqualifiedIndyDid,
-        verkey,
-        alias,
-        role
-      )
+      await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, role)
 
       // Create did document
       const didDocumentBuilder = sovDidDocumentFromDid(qualifiedSovDid, verkey)
 
       // Add services if endpoints object was passed.
       if (options.options.endpoints) {
-        await this.indyLedgerService.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints)
+        await this.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints)
         addServicesFromEndpointsAttrib(
           didDocumentBuilder,
           qualifiedSovDid,
@@ -169,6 +165,71 @@ export class SovDidRegistrar implements DidRegistrar {
         state: 'failed',
         reason: `notImplemented: deactivating did:sov not implemented yet`,
       },
+    }
+  }
+
+  public async registerPublicDid(
+    agentContext: AgentContext,
+    submitterDid: string,
+    targetDid: string,
+    verkey: string,
+    alias: string,
+    role?: Indy.NymRole
+  ) {
+    const pool = this.indyPoolService.ledgerWritePool
+
+    try {
+      this.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
+
+      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, submitterDid)
+
+      this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
+        response,
+      })
+
+      return targetDid
+    } catch (error) {
+      this.logger.error(`Error registering public did '${targetDid}' on ledger '${pool.id}'`, {
+        error,
+        submitterDid,
+        targetDid,
+        verkey,
+        alias,
+        role,
+        pool: pool.id,
+      })
+
+      throw error
+    }
+  }
+
+  public async setEndpointsForDid(
+    agentContext: AgentContext,
+    did: string,
+    endpoints: IndyEndpointAttrib
+  ): Promise<void> {
+    const pool = this.indyPoolService.ledgerWritePool
+
+    try {
+      this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
+
+      const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
+
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
+      this.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
+        response,
+        endpoints,
+      })
+    } catch (error) {
+      this.logger.error(`Error setting endpoints for did '${did}' on ledger '${pool.id}'`, {
+        error,
+        did,
+        endpoints,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

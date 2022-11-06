@@ -1,6 +1,6 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
-import type { SovDidCreateOptions } from '../methods/sov/SovDidRegistrar'
+import type { SovDidCreateOptions } from '../methods/sov/IndySdkSovDidRegistrar'
 import type { Wallet } from '@aries-framework/core'
 
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'

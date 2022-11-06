@@ -4,19 +4,16 @@ import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
+import { ConsoleLogger } from '../../../../../logger'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
-import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
 import { IndyPoolService } from '../../../../ledger/services/IndyPoolService'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
-import { SovDidRegistrar } from '../SovDidRegistrar'
+import { IndySdkSovDidRegistrar } from '../IndySdkSovDidRegistrar'
 
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
-
-jest.mock('../../../../ledger/services/IndyLedgerService')
-const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 
 jest.mock('../../../../ledger/services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
@@ -26,32 +23,39 @@ mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
   config: { id: 'pool1', indyNamespace: 'pool1' },
 } as IndyPool)
 
-const agentConfig = getAgentConfig('SovDidRegistrar')
+const agentConfig = getAgentConfig('IndySdkSovDidRegistrar')
 
 const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'])
 
 const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
 mockProperty(wallet, 'handle', 10)
 
+jest.mock('../../../../../logger/Logger')
+const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+
 const agentContext = getAgentContext({
   wallet,
 })
 
 const didRepositoryMock = new DidRepositoryMock()
-const indyLedgerServiceMock = new IndyLedgerServiceMock()
-const sovDidRegistrar = new SovDidRegistrar(didRepositoryMock, indyLedgerServiceMock, indyPoolServiceMock, {
-  ...agentConfig.agentDependencies,
-  indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
-})
+const indySdkSovDidRegistrar = new IndySdkSovDidRegistrar(
+  didRepositoryMock,
+  indyPoolServiceMock,
+  {
+    ...agentConfig.agentDependencies,
+    indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
+  },
+  new LoggerMock()
+)
 
 describe('DidRegistrar', () => {
-  describe('SovDidRegistrar', () => {
+  describe('IndySdkSovDidRegistrar', () => {
     afterEach(() => {
       jest.clearAllMocks()
     })
 
     it('should return an error state if an invalid seed is provided', async () => {
-      const result = await sovDidRegistrar.create(agentContext, {
+      const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
 
         options: {
@@ -78,7 +82,7 @@ describe('DidRegistrar', () => {
         wallet: {} as unknown as Wallet,
       })
 
-      const result = await sovDidRegistrar.create(agentContext, {
+      const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
 
         options: {
@@ -101,7 +105,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state if the submitter did is not qualified with did:sov', async () => {
-      const result = await sovDidRegistrar.create(agentContext, {
+      const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
         options: {
           submitterDid: 'BzCbsNYhMrjHiqZDTUASHg',
@@ -121,7 +125,11 @@ describe('DidRegistrar', () => {
 
     it('should correctly create a did:sov document without services', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
-      const result = await sovDidRegistrar.create(agentContext, {
+
+      const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
+      registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
+
+      const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
         options: {
           alias: 'Hello',
@@ -133,7 +141,7 @@ describe('DidRegistrar', () => {
         },
       })
 
-      expect(indyLedgerServiceMock.registerPublicDid).toHaveBeenCalledWith(
+      expect(registerPublicDidSpy).toHaveBeenCalledWith(
         agentContext,
         // Unqualified submitter did
         'BzCbsNYhMrjHiqZDTUASHg',
@@ -190,7 +198,14 @@ describe('DidRegistrar', () => {
 
     it('should correctly create a did:sov document with services', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
-      const result = await sovDidRegistrar.create(agentContext, {
+
+      const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
+      registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
+
+      const setEndpointsForDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'setEndpointsForDid')
+      setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
+
+      const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
         options: {
           alias: 'Hello',
@@ -207,7 +222,7 @@ describe('DidRegistrar', () => {
         },
       })
 
-      expect(indyLedgerServiceMock.registerPublicDid).toHaveBeenCalledWith(
+      expect(registerPublicDidSpy).toHaveBeenCalledWith(
         agentContext,
         // Unqualified submitter did
         'BzCbsNYhMrjHiqZDTUASHg',
@@ -288,7 +303,14 @@ describe('DidRegistrar', () => {
 
     it('should store the did document', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
-      await sovDidRegistrar.create(agentContext, {
+
+      const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
+      registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('did'))
+
+      const setEndpointsForDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'setEndpointsForDid')
+      setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
+
+      await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
         options: {
           alias: 'Hello',
@@ -320,7 +342,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state when calling update', async () => {
-      const result = await sovDidRegistrar.update()
+      const result = await indySdkSovDidRegistrar.update()
 
       expect(result).toEqual({
         didDocumentMetadata: {},
@@ -333,7 +355,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state when calling deactivate', async () => {
-      const result = await sovDidRegistrar.deactivate()
+      const result = await indySdkSovDidRegistrar.deactivate()
 
       expect(result).toEqual({
         didDocumentMetadata: {},

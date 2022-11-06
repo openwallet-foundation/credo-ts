@@ -1,27 +1,46 @@
 import type { AgentContext } from '../../../../../agent'
+import type { IndyPool } from '../../../../ledger'
 import type { IndyEndpointAttrib } from '../../../../ledger/services/IndyLedgerService'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../../../tests/helpers'
+import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
+import { ConsoleLogger } from '../../../../../logger'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
+import { IndyWallet } from '../../../../../wallet/IndyWallet'
+import { IndyPoolService } from '../../../../ledger/services/IndyPoolService'
 import didSovR1xKJw17sUoXhejEpugMYJFixture from '../../../__tests__/__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
 import didSovWJz9mHyW9BZksioQnRsrAoFixture from '../../../__tests__/__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
 import { parseDid } from '../../../domain/parse'
-import { SovDidResolver } from '../SovDidResolver'
+import { IndySdkSovDidResolver } from '../IndySdkSovDidResolver'
 
-jest.mock('../../../../ledger/services/IndyLedgerService')
-const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
+jest.mock('../../../../ledger/services/IndyPoolService')
+const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
+const indyPoolServiceMock = new IndyPoolServiceMock()
+mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1', indyNamespace: 'pool1' } } as IndyPool)
+mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
+  config: { id: 'pool1', indyNamespace: 'pool1' },
+} as IndyPool)
+
+jest.mock('../../../../../logger/Logger')
+const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+
+const agentConfig = getAgentConfig('IndySdkSovDidResolver')
+
+const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+mockProperty(wallet, 'handle', 10)
 
 describe('DidResolver', () => {
-  describe('SovDidResolver', () => {
-    let ledgerService: IndyLedgerService
-    let sovDidResolver: SovDidResolver
+  describe('IndySdkSovDidResolver', () => {
+    let indySdkSovDidResolver: IndySdkSovDidResolver
     let agentContext: AgentContext
 
     beforeEach(() => {
-      ledgerService = new IndyLedgerServiceMock()
-      sovDidResolver = new SovDidResolver(ledgerService)
+      indySdkSovDidResolver = new IndySdkSovDidResolver(
+        indyPoolServiceMock,
+        agentConfig.agentDependencies,
+        new LoggerMock()
+      )
       agentContext = getAgentContext()
     })
 
@@ -40,10 +59,13 @@ describe('DidResolver', () => {
         hub: 'https://hub.com',
       }
 
-      mockFunction(ledgerService.getPublicDid).mockResolvedValue(nymResponse)
-      mockFunction(ledgerService.getEndpointsForDid).mockResolvedValue(endpoints)
+      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver, 'getPublicDid')
+      getPublicDidSpy.mockResolvedValue(nymResponse)
 
-      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
+      const getEndpointsForDidSpy = jest.spyOn(indySdkSovDidResolver, 'getEndpointsForDid')
+      getEndpointsForDidSpy.mockResolvedValue(endpoints)
+
+      const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovR1xKJw17sUoXhejEpugMYJFixture,
@@ -69,10 +91,13 @@ describe('DidResolver', () => {
         routingKeys: ['routingKey1', 'routingKey2'],
       }
 
-      mockFunction(ledgerService.getPublicDid).mockReturnValue(Promise.resolve(nymResponse))
-      mockFunction(ledgerService.getEndpointsForDid).mockReturnValue(Promise.resolve(endpoints))
+      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver, 'getPublicDid')
+      getPublicDidSpy.mockResolvedValue(nymResponse)
 
-      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
+      const getEndpointsForDidSpy = jest.spyOn(indySdkSovDidResolver, 'getEndpointsForDid')
+      getEndpointsForDidSpy.mockResolvedValue(endpoints)
+
+      const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovWJz9mHyW9BZksioQnRsrAoFixture,
@@ -86,9 +111,10 @@ describe('DidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
-      mockFunction(ledgerService.getPublicDid).mockRejectedValue(new Error('Error retrieving did'))
+      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver, 'getPublicDid')
+      getPublicDidSpy.mockRejectedValue(new Error('Error retrieving did'))
 
-      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
+      const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(result).toMatchObject({
         didDocument: null,

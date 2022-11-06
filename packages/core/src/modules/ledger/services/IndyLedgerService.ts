@@ -59,6 +59,9 @@ export class IndyLedgerService {
     return this.indyPoolService.connectToPools()
   }
 
+  /**
+   * @deprecated
+   */
   public async registerPublicDid(
     agentContext: AgentContext,
     submitterDid: string,
@@ -96,6 +99,9 @@ export class IndyLedgerService {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public async getPublicDid(agentContext: AgentContext, did: string) {
     // Getting the pool for a did also retrieves the DID. We can just use that
     const { did: didResponse } = await this.indyPoolService.getPoolForDid(agentContext, did)
@@ -103,6 +109,9 @@ export class IndyLedgerService {
     return didResponse
   }
 
+  /**
+   * @deprecated
+   */
   public async setEndpointsForDid(
     agentContext: AgentContext,
     did: string,
@@ -131,6 +140,9 @@ export class IndyLedgerService {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public async getEndpointsForDid(agentContext: AgentContext, did: string) {
     const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
