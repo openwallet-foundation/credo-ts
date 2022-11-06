@@ -98,7 +98,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const pool = this.indyPoolService.getPoolForNamespace()
+      const pool = this.indyPoolService.getPoolForNamespace(options.indyNamespace)
       const didIndyNamespace = pool.config.indyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
