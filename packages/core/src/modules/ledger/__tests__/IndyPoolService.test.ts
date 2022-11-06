@@ -316,7 +316,7 @@ describe('IndyPoolService', () => {
 
     it('should throw a LedgerNotFoundError error if any of the pools did not have the provided indyNamespace', async () => {
       const indyNameSpace = 'test'
-      const responses = ['sovrin', 'sovrin:builder', 'sovrin:main', 'sovrin:staging', 'indicio']
+      const responses = pools.map((pool) => pool.indyNamespace)
 
       poolService.pools.forEach((pool, index) => {
         const spy = jest.spyOn(pool, 'didIndyNamespace', 'get')
