@@ -171,6 +171,30 @@ export class IndyPoolService {
     }
   }
 
+  /**
+   * Get the most appropriate pool for the given indyNamespace
+   */
+  public getPoolForNamespace(indyNamespace?: string) {
+    if (this.pools.length === 0) {
+      throw new LedgerNotConfiguredError(
+        "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
+      )
+    }
+
+    if (!indyNamespace) {
+      this.logger.warn('Not passing the indyNamespace is deprecated and will be removed in the future version.')
+      return this.pools[0]
+    }
+
+    const pool = this.pools.find((pool) => pool.didIndyNamespace === indyNamespace)
+
+    if (!pool) {
+      throw new LedgerNotFoundError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
+    }
+
+    return pool
+  }
+
   private async getDidFromPool(did: string, pool: IndyPool): Promise<PublicDidRequest> {
     try {
       this.logger.trace(`Get public did '${did}' from ledger '${pool.id}'`)

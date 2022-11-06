@@ -300,4 +300,45 @@ describe('IndyPoolService', () => {
       })
     })
   })
+
+  describe('getPoolForNamespace', () => {
+    it('should throw a LedgerNotConfiguredError error if no pools are configured on the pool service', async () => {
+      poolService.setPools([])
+
+      expect(() => poolService.getPoolForNamespace()).toThrow(LedgerNotConfiguredError)
+    })
+
+    it('should return the first pool if indyNamespace is not provided', async () => {
+      const expectedPool = pools[0]
+
+      expect(poolService.getPoolForNamespace().id).toEqual(expectedPool.id)
+    })
+
+    it('should throw a LedgerNotFoundError error if any of the pools did not have the provided indyNamespace', async () => {
+      const indyNameSpace = 'test'
+      const responses = ['sovrin', 'sovrin:builder', 'sovrin:main', 'sovrin:staging', 'indicio']
+
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'didIndyNamespace', 'get')
+        spy.mockReturnValueOnce(responses[index])
+      })
+
+      expect(() => poolService.getPoolForNamespace(indyNameSpace)).toThrow(LedgerNotFoundError)
+    })
+
+    it('should return the first pool that indyNamespace matches', async () => {
+      const expectedPool = pools[3]
+      const indyNameSpace = 'indicio'
+      const responses = pools.map((pool) => pool.indyNamespace)
+
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'didIndyNamespace', 'get')
+        spy.mockReturnValueOnce(responses[index])
+      })
+
+      const pool = poolService.getPoolForNamespace(indyNameSpace)
+
+      expect(pool.id).toEqual(expectedPool.id)
+    })
+  })
 })

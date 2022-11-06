@@ -102,7 +102,8 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.indyNamespace
+      const pool = this.indyPoolService.getPoolForNamespace()
+      const didIndyNamespace = pool.config.indyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
@@ -178,6 +179,7 @@ export interface SovDidCreateOptions extends DidCreateOptions {
   // As did:sov is so limited, we require everything needed to construct the did document to be passed
   // through the options object. Once we support did:indy we can allow the didDocument property.
   didDocument?: never
+  indyNamespace?: string
   options: {
     alias: string
     role?: Indy.NymRole
