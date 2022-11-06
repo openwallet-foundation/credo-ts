@@ -112,6 +112,7 @@ describe('DidResolver', () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
       const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver, 'getPublicDid')
+
       getPublicDidSpy.mockRejectedValue(new Error('Error retrieving did'))
 
       const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
