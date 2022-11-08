@@ -208,7 +208,7 @@ export class RecipientModule {
         try {
           const hasInternetAccess = await this.agentConfig.internetChecker.hasInternetAccess()
           if (!hasInternetAccess) {
-            this.logger.warn('Internet connection is not available, explicit messages pickup skipped')
+            this.logger.debug('Internet connection is not available, explicit messages pickup skipped')
             return
           }
           await this.pickupMessages(mediator)
