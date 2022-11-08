@@ -209,7 +209,11 @@ export class RecipientModule {
       .subscribe(async () => {
         try {
           const hasInternetAccess = await this.agentConfig.internetChecker.hasInternetAccess()
-          if (!hasInternetAccess) return
+          if (!hasInternetAccess) {
+            this.logger.warn('Internet connection is not available, explicit messages pickup cancelled')
+            return
+          }
+
           await this.pickupMessages(mediator)
         } catch (e) {
           this.agentConfig.logger.error(`Unable to send pickup message to mediator. Error: ${e}`)
