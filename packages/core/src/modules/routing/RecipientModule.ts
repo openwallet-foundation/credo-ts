@@ -157,8 +157,6 @@ export class RecipientModule {
 
     let interval = startReconnectIntervalMs
 
-    this.agentConfig.internetChecker.hasInternetAccess()
-
     merge(
       this.eventEmitter
         .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
