@@ -94,7 +94,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
-      throw new AriesFrameworkError('Missing indy payload createProposal')
+      throw new AriesFrameworkError('Missing indy payload in createProposal')
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -170,10 +170,9 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   /**
-   * Create a {@link AttachmentFormats} object dependent on the message type.
+   * Create a credential attachment format for a credential request.
    *
    * @param options The object containing all the options for the credential offer
-   * @param messageType the type of message which can be Indy, JsonLd etc eg "CRED_20_OFFER"
    * @returns object containing associated attachment, formats and offersAttach elements
    *
    */
@@ -361,7 +360,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     credentialRecord.credentials.push({
-      credentialRecordType: 'indy',
+      credentialRecordType: this.credentialRecordType,
       credentialRecordId: credentialId,
     })
   }

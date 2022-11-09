@@ -24,7 +24,7 @@ import type {
   CredentialFormatService,
   CredentialFormatServiceMap,
 } from '../../formats'
-import type { CredentialFormatSpec } from '../../models'
+import type { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
@@ -40,6 +40,7 @@ import { RoutingService } from '../../../routing/services/RoutingService'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
+import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { AutoAcceptCredential, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import { CredentialService } from '../../services/CredentialService'
@@ -49,12 +50,12 @@ import { arePreviewAttributesEqual } from '../../util/previewAttributes'
 import { CredentialFormatCoordinator } from './CredentialFormatCoordinator'
 import {
   V2CredentialAckHandler,
-  V2CredentialProblemReportHandler,
   V2IssueCredentialHandler,
   V2OfferCredentialHandler,
   V2ProposeCredentialHandler,
   V2RequestCredentialHandler,
 } from './handlers'
+import { V2CredentialProblemReportHandler } from './handlers/V2CredentialProblemReportHandler'
 import {
   V2CredentialAckMessage,
   V2CredentialProblemReportMessage,
@@ -80,6 +81,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,
     indyCredentialFormatService: IndyCredentialFormatService,
+    jsonLdCredentialFormatService: JsonLdCredentialFormatService,
     @inject(InjectionSymbols.Logger) logger: Logger,
     credentialsModuleConfig: CredentialsModuleConfig
   ) {
@@ -90,7 +92,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     this.credentialsModuleConfig = credentialsModuleConfig
 
     // Dynamically build format service map. This will be extracted once services are registered dynamically
-    this.formatServiceMap = [indyCredentialFormatService].reduce(
+    this.formatServiceMap = [indyCredentialFormatService, jsonLdCredentialFormatService].reduce(
       (formatServiceMap, formatService) => ({
         ...formatServiceMap,
         [formatService.formatKey]: formatService,
@@ -567,7 +569,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
    * or send a credential. It will only update the existing credential record with
    * the information from the credential request message. Use {@link createCredential}
    * after calling this method to create a credential.
-   *
+   *z
    * @param messageContext The message context containing a v2 credential request message
    * @returns credential record associated with the credential request message
    *
@@ -675,7 +677,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         `Unable to accept request. No supported formats provided as input or in request message`
       )
     }
-
     const message = await this.credentialFormatCoordinator.acceptRequest(agentContext, {
       credentialRecord,
       formatServices,
@@ -738,6 +739,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     await this.credentialFormatCoordinator.processCredential(messageContext.agentContext, {
       credentialRecord,
       formatServices,
+      requestMessage: requestMessage,
       message: credentialMessage,
     })
 
@@ -876,7 +878,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         offerAttachment,
         proposalAttachment,
       })
-
       // If any of the formats return false, we should not auto accept
       if (!shouldAutoRespondToFormat) return false
     }
@@ -942,22 +943,18 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       })
 
       // If any of the formats return false, we should not auto accept
+
       if (!shouldAutoRespondToFormat) return false
     }
 
-    // not all formats use the proposal and preview, we only check if they're present on
-    // either or both of the messages
+    // if one of the message doesn't have a preview, we should not auto accept
     if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
-      // if one of the message doesn't have a preview, we should not auto accept
-      if (!proposalMessage.credentialPreview || !offerMessage.credentialPreview) return false
-
       // Check if preview values match
       return arePreviewAttributesEqual(
-        proposalMessage.credentialPreview.attributes,
-        offerMessage.credentialPreview.attributes
+        proposalMessage.credentialPreview?.attributes ?? [],
+        offerMessage.credentialPreview?.attributes ?? []
       )
     }
-
     return true
   }
 
