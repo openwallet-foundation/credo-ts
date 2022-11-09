@@ -1,38 +1,44 @@
 import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
-import { Agent, AriesFrameworkError, ConsoleLogger, LogLevel, WsOutboundTransport } from '@aries-framework/core'
+import {
+  HttpOutboundTransport,
+  Agent,
+  AriesFrameworkError,
+  ConsoleLogger,
+  LogLevel,
+  WsOutboundTransport,
+} from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 
-import { DummyEventTypes, DummyApi, DummyState, DummyModule } from './dummy'
+import { DummyEventTypes, DummyState, DummyModule } from './dummy'
 
 const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const wsOutboundTransport = new WsOutboundTransport()
+  const httpOutboundTransport = new HttpOutboundTransport()
 
   // Setup the agent
-  const agent = new Agent(
-    {
+  const agent = new Agent({
+    config: {
       label: 'Dummy-powered agent - requester',
       walletConfig: {
         id: 'requester',
         key: 'requester',
       },
-      logger: new ConsoleLogger(LogLevel.test),
+      logger: new ConsoleLogger(LogLevel.info),
       autoAcceptConnections: true,
     },
-    agentDependencies
-  )
-
-  // Register the DummyModule
-  agent.dependencyManager.registerModules(DummyModule)
+    modules: {
+      dummy: new DummyModule(),
+    },
+    dependencies: agentDependencies,
+  })
 
   // Register transports
   agent.registerOutboundTransport(wsOutboundTransport)
-
-  // Inject DummyApi
-  const dummyApi = agent.dependencyManager.resolve(DummyApi)
+  agent.registerOutboundTransport(httpOutboundTransport)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -61,8 +67,8 @@ const run = async () => {
     .subscribe(subject)
 
   // Send a dummy request and wait for response
-  const record = await dummyApi.request(connectionRecord.id)
-  agent.config.logger.info(`Request received for Dummy Record: ${record.id}`)
+  const record = await agent.modules.dummy.request(connectionRecord.id)
+  agent.config.logger.info(`Request sent for Dummy Record: ${record.id}`)
 
   const dummyRecord = await firstValueFrom(subject)
   agent.config.logger.info(`Response received for Dummy Record: ${dummyRecord.id}`)

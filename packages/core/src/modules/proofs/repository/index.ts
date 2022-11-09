@@ -1,2 +1,3 @@
-export * from './ProofRecord'
+export * from './ProofExchangeRecord'
 export * from './ProofRepository'
+export * from './PresentationExchangeRecord'

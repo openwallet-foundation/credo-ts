@@ -1,14 +1,17 @@
+import type { AgentContext } from '../../../../agent'
 import type { DidDocument } from '../../domain'
 import type { DidResolver } from '../../domain/DidResolver'
-import type { DidRepository } from '../../repository'
 import type { DidResolutionResult } from '../../types'
 
 import { AriesFrameworkError } from '../../../../error'
+import { injectable } from '../../../../plugins'
+import { DidRepository } from '../../repository'
 
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
+@injectable()
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
 
@@ -18,7 +21,7 @@ export class PeerDidResolver implements DidResolver {
     this.didRepository = didRepository
   }
 
-  public async resolve(did: string): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {
@@ -36,7 +39,7 @@ export class PeerDidResolver implements DidResolver {
       }
       // For Method 1, retrieve from storage
       else if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
-        const didDocumentRecord = await this.didRepository.getById(did)
+        const didDocumentRecord = await this.didRepository.getById(agentContext, did)
 
         if (!didDocumentRecord.didDocument) {
           throw new AriesFrameworkError(`Found did record for method 1 peer did (${did}), but no did document.`)

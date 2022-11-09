@@ -1,4 +1,4 @@
-import type { ConnectionRecord, CredentialExchangeRecord, ProofRecord } from '@aries-framework/core'
+import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
 
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
@@ -51,12 +51,18 @@ export class Alice extends BaseAgent {
     })
   }
 
-  public async acceptProofRequest(proofRecord: ProofRecord) {
-    const retrievedCredentials = await this.agent.proofs.getRequestedCredentialsForProofRequest(proofRecord.id, {
-      filterByPresentationPreview: true,
+  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
+    const requestedCredentials = await this.agent.proofs.autoSelectCredentialsForProofRequest({
+      proofRecordId: proofRecord.id,
+      config: {
+        filterByPresentationPreview: true,
+      },
     })
-    const requestedCredentials = this.agent.proofs.autoSelectCredentialsForProofRequest(retrievedCredentials)
-    await this.agent.proofs.acceptRequest(proofRecord.id, requestedCredentials)
+
+    await this.agent.proofs.acceptRequest({
+      proofRecordId: proofRecord.id,
+      proofFormats: requestedCredentials.proofFormats,
+    })
     console.log(greenText('\nProof request accepted!\n'))
   }
 

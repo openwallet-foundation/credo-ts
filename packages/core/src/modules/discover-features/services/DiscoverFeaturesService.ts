@@ -1,42 +1,46 @@
-import { Dispatcher } from '../../../agent/Dispatcher'
-import { injectable } from '../../../plugins'
-import { QueryMessage, DiscloseMessage } from '../messages'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { Dispatcher } from '../../../agent/Dispatcher'
+import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Logger } from '../../../logger'
+import type { DiscoverFeaturesModuleConfig } from '../DiscoverFeaturesModuleConfig'
+import type {
+  CreateDisclosureOptions,
+  CreateQueryOptions,
+  DiscoverFeaturesProtocolMsgReturnType,
+} from '../DiscoverFeaturesServiceOptions'
 
-@injectable()
-export class DiscoverFeaturesService {
-  private dispatcher: Dispatcher
+export abstract class DiscoverFeaturesService {
+  protected featureRegistry: FeatureRegistry
+  protected eventEmitter: EventEmitter
+  protected dispatcher: Dispatcher
+  protected logger: Logger
+  protected discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
 
-  public constructor(dispatcher: Dispatcher) {
+  public constructor(
+    featureRegistry: FeatureRegistry,
+    eventEmitter: EventEmitter,
+    dispatcher: Dispatcher,
+    logger: Logger,
+    discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
+  ) {
+    this.featureRegistry = featureRegistry
+    this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
+    this.logger = logger
+    this.discoverFeaturesModuleConfig = discoverFeaturesModuleConfig
   }
 
-  public async createQuery(options: { query: string; comment?: string }) {
-    const queryMessage = new QueryMessage(options)
+  abstract readonly version: string
 
-    return queryMessage
-  }
+  abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  abstract processQuery(
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
 
-  public async createDisclose(queryMessage: QueryMessage) {
-    const { query } = queryMessage
-
-    const messageFamilies = this.dispatcher.supportedProtocols
-
-    let protocols: string[] = []
-
-    if (query === '*') {
-      protocols = messageFamilies
-    } else if (query.endsWith('*')) {
-      const match = query.slice(0, -1)
-      protocols = messageFamilies.filter((m) => m.startsWith(match))
-    } else if (messageFamilies.includes(query)) {
-      protocols = [query]
-    }
-
-    const discloseMessage = new DiscloseMessage({
-      threadId: queryMessage.threadId,
-      protocols: protocols.map((protocolId) => ({ protocolId })),
-    })
-
-    return discloseMessage
-  }
+  abstract createDisclosure(
+    options: CreateDisclosureOptions
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>
 }

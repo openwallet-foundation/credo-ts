@@ -5,7 +5,11 @@ import base from './jest.config.base'
 const config: Config.InitialOptions = {
   ...base,
   roots: ['<rootDir>'],
-  projects: ['<rootDir>/packages/*', '<rootDir>/tests/jest.config.ts'],
+  projects: [
+    '<rootDir>/packages/*',
+    '<rootDir>/tests/jest.config.ts',
+    '<rootDir>/samples/extension-module/jest.config.ts',
+  ],
 }
 
 export default config

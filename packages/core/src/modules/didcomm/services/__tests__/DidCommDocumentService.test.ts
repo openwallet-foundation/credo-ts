@@ -1,8 +1,9 @@
+import type { AgentContext } from '../../../../agent'
 import type { VerificationMethod } from '../../../dids'
 
-import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
-import { KeyType } from '../../../../crypto'
-import { DidCommV1Service, DidDocument, IndyAgentService, Key } from '../../../dids'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { Key, KeyType } from '../../../../crypto'
+import { DidCommV1Service, DidDocument, IndyAgentService } from '../../../dids'
 import { verkeyToInstanceOfKey } from '../../../dids/helpers'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { DidCommDocumentService } from '../DidCommDocumentService'
@@ -14,10 +15,12 @@ describe('DidCommDocumentService', () => {
   const agentConfig = getAgentConfig('DidCommDocumentService')
   let didCommDocumentService: DidCommDocumentService
   let didResolverService: DidResolverService
+  let agentContext: AgentContext
 
   beforeEach(async () => {
     didResolverService = new DidResolverServiceMock()
     didCommDocumentService = new DidCommDocumentService(agentConfig, didResolverService)
+    agentContext = getAgentContext()
   })
 
   describe('resolveServicesFromDid', () => {
@@ -25,7 +28,7 @@ describe('DidCommDocumentService', () => {
       const error = new Error('test')
       mockFunction(didResolverService.resolveDidDocument).mockRejectedValue(error)
 
-      await expect(didCommDocumentService.resolveServicesFromDid('did')).rejects.toThrowError(error)
+      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did')).rejects.toThrowError(error)
     })
 
     test('resolves IndyAgentService', async () => {
@@ -45,8 +48,11 @@ describe('DidCommDocumentService', () => {
         })
       )
 
-      const resolved = await didCommDocumentService.resolveServicesFromDid('did:sov:Q4zqM7aXqm7gDQkUVLng9h')
-      expect(didResolverService.resolveDidDocument).toHaveBeenCalledWith('did:sov:Q4zqM7aXqm7gDQkUVLng9h')
+      const resolved = await didCommDocumentService.resolveServicesFromDid(
+        agentContext,
+        'did:sov:Q4zqM7aXqm7gDQkUVLng9h'
+      )
+      expect(didResolverService.resolveDidDocument).toHaveBeenCalledWith(agentContext, 'did:sov:Q4zqM7aXqm7gDQkUVLng9h')
 
       expect(resolved).toHaveLength(1)
       expect(resolved[0]).toMatchObject({
@@ -97,8 +103,11 @@ describe('DidCommDocumentService', () => {
         })
       )
 
-      const resolved = await didCommDocumentService.resolveServicesFromDid('did:sov:Q4zqM7aXqm7gDQkUVLng9h')
-      expect(didResolverService.resolveDidDocument).toHaveBeenCalledWith('did:sov:Q4zqM7aXqm7gDQkUVLng9h')
+      const resolved = await didCommDocumentService.resolveServicesFromDid(
+        agentContext,
+        'did:sov:Q4zqM7aXqm7gDQkUVLng9h'
+      )
+      expect(didResolverService.resolveDidDocument).toHaveBeenCalledWith(agentContext, 'did:sov:Q4zqM7aXqm7gDQkUVLng9h')
 
       const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58Ed25519, KeyType.Ed25519)
       expect(resolved).toHaveLength(1)

@@ -27,6 +27,7 @@ export interface OutOfBandRecordProps {
   outOfBandInvitation: OutOfBandInvitation
   role: OutOfBandRole
   state: OutOfBandState
+  alias?: string
   autoAcceptConnection?: boolean
   reusable?: boolean
   mediatorId?: string
@@ -38,6 +39,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
   public outOfBandInvitation!: OutOfBandInvitation
   public role!: OutOfBandRole
   public state!: OutOfBandState
+  public alias?: string
   public reusable!: boolean
   public autoAcceptConnection?: boolean
   public mediatorId?: string
@@ -55,6 +57,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.outOfBandInvitation = props.outOfBandInvitation
       this.role = props.role
       this.state = props.state
+      this.alias = props.alias
       this.autoAcceptConnection = props.autoAcceptConnection
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId

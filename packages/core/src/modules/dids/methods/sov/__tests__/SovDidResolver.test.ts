@@ -1,7 +1,8 @@
+import type { AgentContext } from '../../../../../agent'
 import type { IndyEndpointAttrib } from '../../../../ledger/services/IndyLedgerService'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { mockFunction } from '../../../../../../tests/helpers'
+import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
 import didSovR1xKJw17sUoXhejEpugMYJFixture from '../../../__tests__/__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
@@ -16,10 +17,12 @@ describe('DidResolver', () => {
   describe('SovDidResolver', () => {
     let ledgerService: IndyLedgerService
     let sovDidResolver: SovDidResolver
+    let agentContext: AgentContext
 
     beforeEach(() => {
       ledgerService = new IndyLedgerServiceMock()
       sovDidResolver = new SovDidResolver(ledgerService)
+      agentContext = getAgentContext()
     })
 
     it('should correctly resolve a did:sov document', async () => {
@@ -40,7 +43,7 @@ describe('DidResolver', () => {
       mockFunction(ledgerService.getPublicDid).mockResolvedValue(nymResponse)
       mockFunction(ledgerService.getEndpointsForDid).mockResolvedValue(endpoints)
 
-      const result = await sovDidResolver.resolve(did, parseDid(did))
+      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovR1xKJw17sUoXhejEpugMYJFixture,
@@ -69,7 +72,7 @@ describe('DidResolver', () => {
       mockFunction(ledgerService.getPublicDid).mockReturnValue(Promise.resolve(nymResponse))
       mockFunction(ledgerService.getEndpointsForDid).mockReturnValue(Promise.resolve(endpoints))
 
-      const result = await sovDidResolver.resolve(did, parseDid(did))
+      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didSovWJz9mHyW9BZksioQnRsrAoFixture,
@@ -85,7 +88,7 @@ describe('DidResolver', () => {
 
       mockFunction(ledgerService.getPublicDid).mockRejectedValue(new Error('Error retrieving did'))
 
-      const result = await sovDidResolver.resolve(did, parseDid(did))
+      const result = await sovDidResolver.resolve(agentContext, did, parseDid(did))
 
       expect(result).toMatchObject({
         didDocument: null,

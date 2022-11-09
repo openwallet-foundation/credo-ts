@@ -1,7 +1,7 @@
 import type { VerificationMethod } from '../../../dids'
 
-import { KeyType } from '../../../../crypto'
-import { DidDocument, Key } from '../../../dids'
+import { Key, KeyType } from '../../../../crypto'
+import { DidDocument } from '../../../dids'
 import { findMatchingEd25519Key } from '../matchingEd25519Key'
 
 describe('findMatchingEd25519Key', () => {

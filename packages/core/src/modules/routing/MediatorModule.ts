@@ -1,89 +1,57 @@
-import type { DependencyManager } from '../../plugins'
-import type { EncryptedMessage } from '../../types'
-import type { MediationRecord } from './repository'
+import type { FeatureRegistry } from '../../agent/FeatureRegistry'
+import type { DependencyManager, Module } from '../../plugins'
+import type { MediatorModuleConfigOptions } from './MediatorModuleConfig'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { EventEmitter } from '../../agent/EventEmitter'
-import { MessageReceiver } from '../../agent/MessageReceiver'
-import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
-import { injectable, module } from '../../plugins'
-import { ConnectionService } from '../connections/services'
+import { Protocol } from '../../agent/models'
 
-import { KeylistUpdateHandler, ForwardHandler } from './handlers'
-import { MediationRequestHandler } from './handlers/MediationRequestHandler'
+import { MediatorApi } from './MediatorApi'
+import { MediatorModuleConfig } from './MediatorModuleConfig'
+import { MediationRole } from './models'
 import { MessagePickupService, V2MessagePickupService } from './protocol'
-import { MediatorService } from './services/MediatorService'
+import { MediationRepository, MediatorRoutingRepository } from './repository'
+import { MediatorService } from './services'
 
-@module()
-@injectable()
-export class MediatorModule {
-  private mediatorService: MediatorService
-  private messagePickupService: MessagePickupService
-  private messageSender: MessageSender
-  public eventEmitter: EventEmitter
-  public agentConfig: AgentConfig
-  public connectionService: ConnectionService
+export class MediatorModule implements Module {
+  public readonly config: MediatorModuleConfig
+  public readonly api = MediatorApi
 
-  public constructor(
-    dispatcher: Dispatcher,
-    mediationService: MediatorService,
-    messagePickupService: MessagePickupService,
-    messageSender: MessageSender,
-    messageReceiver: MessageReceiver,
-    eventEmitter: EventEmitter,
-    agentConfig: AgentConfig,
-    connectionService: ConnectionService
-  ) {
-    this.mediatorService = mediationService
-    this.messagePickupService = messagePickupService
-    this.messageSender = messageSender
-    this.eventEmitter = eventEmitter
-    this.agentConfig = agentConfig
-    this.connectionService = connectionService
-    this.registerHandlers(dispatcher)
-  }
-
-  public async initialize() {
-    await this.mediatorService.initialize()
-  }
-
-  public async grantRequestedMediation(mediatorId: string): Promise<MediationRecord> {
-    const record = await this.mediatorService.getById(mediatorId)
-    const connectionRecord = await this.connectionService.getById(record.connectionId)
-
-    const { message, mediationRecord } = await this.mediatorService.createGrantMediationMessage(record)
-    const outboundMessage = createOutboundMessage(connectionRecord, message)
-
-    await this.messageSender.sendMessage(outboundMessage)
-
-    return mediationRecord
-  }
-
-  public queueMessage(connectionId: string, message: EncryptedMessage) {
-    return this.messagePickupService.queueMessage(connectionId, message)
-  }
-
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
-    dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig))
+  public constructor(config?: MediatorModuleConfigOptions) {
+    this.config = new MediatorModuleConfig(config)
   }
 
   /**
-   * Registers the dependencies of the mediator module on the dependency manager.
+   * Registers the dependencies of the question answer module on the dependency manager.
    */
-  public static register(dependencyManager: DependencyManager) {
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
-    dependencyManager.registerContextScoped(MediatorModule)
+    dependencyManager.registerContextScoped(MediatorApi)
+
+    // Config
+    dependencyManager.registerInstance(MediatorModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(MediatorService)
     dependencyManager.registerSingleton(MessagePickupService)
     dependencyManager.registerSingleton(V2MessagePickupService)
 
-    // FIXME: Inject in constructor
-    dependencyManager.resolve(V2MessagePickupService)
+    // Repositories
+    dependencyManager.registerSingleton(MediationRepository)
+    dependencyManager.registerSingleton(MediatorRoutingRepository)
+
+    // Features
+    featureRegistry.register(
+      new Protocol({
+        id: 'https://didcomm.org/coordinate-mediation/1.0',
+        roles: [MediationRole.Mediator],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/messagepickup/1.0',
+        roles: ['message_holder', 'recipient', 'batch_sender', 'batch_recipient'],
+      }),
+      new Protocol({
+        id: 'https://didcomm.org/messagepickup/2.0',
+        roles: ['mediator', 'recipient'],
+      })
+    )
   }
 }

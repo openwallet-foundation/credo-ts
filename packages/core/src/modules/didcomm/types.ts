@@ -1,4 +1,4 @@
-import type { Key } from '../dids/domain'
+import type { Key } from '../../crypto'
 
 export interface ResolvedDidCommService {
   id: string

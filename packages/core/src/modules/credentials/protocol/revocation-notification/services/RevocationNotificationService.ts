@@ -1,15 +1,16 @@
+import type { AgentContext } from '../../../../../agent'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../../../logger'
 import type { ConnectionRecord } from '../../../../connections'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 import type { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 
-import { AgentConfig } from '../../../../../agent/AgentConfig'
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../../constants'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { injectable } from '../../../../../plugins'
+import { Logger } from '../../../../../logger'
+import { inject, injectable } from '../../../../../plugins'
 import { JsonTransformer } from '../../../../../utils'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
@@ -27,18 +28,19 @@ export class RevocationNotificationService {
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    agentConfig: AgentConfig,
-    dispatcher: Dispatcher
+    dispatcher: Dispatcher,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
-    this.logger = agentConfig.logger
+    this.logger = logger
 
     this.registerHandlers()
   }
 
   private async processRevocationNotification(
+    agentContext: AgentContext,
     indyRevocationRegistryId: string,
     indyCredentialRevocationId: string,
     connection: ConnectionRecord,
@@ -47,16 +49,16 @@ export class RevocationNotificationService {
     const query = { indyRevocationRegistryId, indyCredentialRevocationId, connectionId: connection.id }
 
     this.logger.trace(`Getting record by query for revocation notification:`, query)
-    const credentialRecord = await this.credentialRepository.getSingleByQuery(query)
+    const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
 
     credentialRecord.revocationNotification = new RevocationNotification(comment)
-    await this.credentialRepository.update(credentialRecord)
+    await this.credentialRepository.update(agentContext, credentialRecord)
 
     // Clone record to prevent mutations after emitting event.
     const clonedCredentialRecord = JsonTransformer.clone(credentialRecord)
 
     this.logger.trace('Emitting RevocationNotificationReceivedEvent')
-    this.eventEmitter.emit<RevocationNotificationReceivedEvent>({
+    this.eventEmitter.emit<RevocationNotificationReceivedEvent>(agentContext, {
       type: CredentialEventTypes.RevocationNotificationReceived,
       payload: {
         credentialRecord: clonedCredentialRecord,
@@ -91,6 +93,7 @@ export class RevocationNotificationService {
       const connection = messageContext.assertReadyConnection()
 
       await this.processRevocationNotification(
+        messageContext.agentContext,
         indyRevocationRegistryId,
         indyCredentialRevocationId,
         connection,
@@ -132,6 +135,7 @@ export class RevocationNotificationService {
       const comment = messageContext.message.comment
       const connection = messageContext.assertReadyConnection()
       await this.processRevocationNotification(
+        messageContext.agentContext,
         indyRevocationRegistryId,
         indyCredentialRevocationId,
         connection,

@@ -1,7 +1,9 @@
-import { getAgentConfig, mockFunction } from '../../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { Key } from '../../../../crypto'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
-import { Key } from '../../../dids'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import { MediationRecipientService } from '../MediationRecipientService'
 import { RoutingService } from '../RoutingService'
@@ -15,10 +17,14 @@ const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<Med
 const agentConfig = getAgentConfig('RoutingService', {
   endpoints: ['http://endpoint.com'],
 })
-const eventEmitter = new EventEmitter(agentConfig)
+const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 const wallet = new IndyWalletMock()
+const agentContext = getAgentContext({
+  wallet,
+  agentConfig,
+})
 const mediationRecipientService = new MediationRecipientServiceMock()
-const routingService = new RoutingService(mediationRecipientService, agentConfig, wallet, eventEmitter)
+const routingService = new RoutingService(mediationRecipientService, eventEmitter)
 
 const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 
@@ -40,12 +46,12 @@ describe('RoutingService', () => {
 
   describe('getRouting', () => {
     test('calls mediation recipient service', async () => {
-      const routing = await routingService.getRouting({
+      const routing = await routingService.getRouting(agentContext, {
         mediatorId: 'mediator-id',
         useDefaultMediator: true,
       })
 
-      expect(mediationRecipientService.addMediationRouting).toHaveBeenCalledWith(routing, {
+      expect(mediationRecipientService.addMediationRouting).toHaveBeenCalledWith(agentContext, routing, {
         mediatorId: 'mediator-id',
         useDefaultMediator: true,
       })
@@ -55,11 +61,14 @@ describe('RoutingService', () => {
       const routingListener = jest.fn()
       eventEmitter.on(RoutingEventTypes.RoutingCreatedEvent, routingListener)
 
-      const routing = await routingService.getRouting()
+      const routing = await routingService.getRouting(agentContext)
 
       expect(routing).toEqual(routing)
       expect(routingListener).toHaveBeenCalledWith({
         type: RoutingEventTypes.RoutingCreatedEvent,
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
         payload: {
           routing,
         },
