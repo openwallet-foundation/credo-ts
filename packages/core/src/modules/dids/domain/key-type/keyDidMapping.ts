@@ -1,12 +1,12 @@
-import type { Key } from '../Key'
+import type { Key } from '../../../../crypto/Key'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto'
 
 import { keyDidBls12381g1 } from './bls12381g1'
 import { keyDidBls12381g1g2 } from './bls12381g1g2'
-import { keyDidBls12381g2 } from './bls12381g2'
-import { keyDidEd25519 } from './ed25519'
+import { keyDidBls12381g2, VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 } from './bls12381g2'
+import { keyDidEd25519, VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 } from './ed25519'
 import { keyDidX25519 } from './x25519'
 
 export interface KeyDidMapping {

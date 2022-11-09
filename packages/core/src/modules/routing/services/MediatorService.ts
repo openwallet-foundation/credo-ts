@@ -1,16 +1,17 @@
+import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { Query } from '../../../storage/StorageService'
 import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { inject, injectable } from '../../../plugins'
+import { Logger } from '../../../logger'
+import { injectable, inject } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { Wallet } from '../../../wallet/Wallet'
 import { ConnectionService } from '../../connections'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
@@ -18,10 +19,10 @@ import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateMessage,
   KeylistUpdateAction,
-  KeylistUpdateResult,
   KeylistUpdated,
-  MediationGrantMessage,
   KeylistUpdateResponseMessage,
+  KeylistUpdateResult,
+  MediationGrantMessage,
 } from '../messages'
 import { MediationRole } from '../models/MediationRole'
 import { MediationState } from '../models/MediationState'
@@ -32,10 +33,9 @@ import { MediatorRoutingRepository } from '../repository/MediatorRoutingReposito
 
 @injectable()
 export class MediatorService {
-  private agentConfig: AgentConfig
+  private logger: Logger
   private mediationRepository: MediationRepository
   private mediatorRoutingRepository: MediatorRoutingRepository
-  private wallet: Wallet
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private _mediatorRoutingRecord?: MediatorRoutingRecord
@@ -43,48 +43,26 @@ export class MediatorService {
   public constructor(
     mediationRepository: MediationRepository,
     mediatorRoutingRepository: MediatorRoutingRepository,
-    agentConfig: AgentConfig,
-    @inject(InjectionSymbols.Wallet) wallet: Wallet,
     eventEmitter: EventEmitter,
+    @inject(InjectionSymbols.Logger) logger: Logger,
     connectionService: ConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
-    this.agentConfig = agentConfig
-    this.wallet = wallet
     this.eventEmitter = eventEmitter
+    this.logger = logger
     this.connectionService = connectionService
   }
 
-  public async initialize() {
-    this.agentConfig.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
-    let routingRecord = await this.mediatorRoutingRepository.findById(
-      this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
-    )
+  private async getRoutingKeys(agentContext: AgentContext) {
+    const mediatorRoutingRecord = await this.findMediatorRoutingRecord(agentContext)
 
-    // If we don't have a routing record yet, create it
-    if (!routingRecord) {
-      this.agentConfig.logger.debug('Mediator routing record does not exist yet, creating routing keys and record')
-      const { verkey } = await this.wallet.createDid()
-
-      routingRecord = new MediatorRoutingRecord({
-        id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-        routingKeys: [verkey],
-      })
-
-      await this.mediatorRoutingRepository.save(routingRecord)
-    }
-
-    this._mediatorRoutingRecord = routingRecord
-  }
-
-  private getRoutingKeys() {
-    if (this._mediatorRoutingRecord) {
+    if (mediatorRoutingRecord) {
       // Return the routing keys
-      this.agentConfig.logger.debug(`Returning mediator routing keys ${this._mediatorRoutingRecord.routingKeys}`)
-      return this._mediatorRoutingRecord.routingKeys
+      this.logger.debug(`Returning mediator routing keys ${mediatorRoutingRecord.routingKeys}`)
+      return mediatorRoutingRecord.routingKeys
     }
-    throw new AriesFrameworkError(`Mediation service has not been initialized yet.`)
+    throw new AriesFrameworkError(`Mediator has not been initialized yet.`)
   }
 
   public async processForwardMessage(
@@ -97,7 +75,10 @@ export class MediatorService {
       throw new AriesFrameworkError('Invalid Message: Missing required attribute "to"')
     }
 
-    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(message.to)
+    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(
+      messageContext.agentContext,
+      message.to
+    )
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
@@ -116,14 +97,19 @@ export class MediatorService {
     const { message } = messageContext
     const keylist: KeylistUpdated[] = []
 
-    const mediationRecord = await this.mediationRepository.getByConnectionId(connection.id)
+    const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
 
     // Update connection metadata to use their key format in further protocol messages
     const connectionUsesDidKey = message.updates.some((update) => isDidKey(update.recipientKey))
-    await this.updateUseDidKeysFlag(connection, KeylistUpdateMessage.type.protocolUri, connectionUsesDidKey)
+    await this.updateUseDidKeysFlag(
+      messageContext.agentContext,
+      connection,
+      KeylistUpdateMessage.type.protocolUri,
+      connectionUsesDidKey
+    )
 
     for (const update of message.updates) {
       const updated = new KeylistUpdated({
@@ -148,24 +134,26 @@ export class MediatorService {
       }
     }
 
-    await this.mediationRepository.update(mediationRecord)
+    await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
     return new KeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
   }
 
-  public async createGrantMediationMessage(mediationRecord: MediationRecord) {
+  public async createGrantMediationMessage(agentContext: AgentContext, mediationRecord: MediationRecord) {
     // Assert
     mediationRecord.assertState(MediationState.Requested)
     mediationRecord.assertRole(MediationRole.Mediator)
 
-    await this.updateState(mediationRecord, MediationState.Granted)
+    await this.updateState(agentContext, mediationRecord, MediationState.Granted)
 
     // Use our useDidKey configuration, as this is the first interaction for this protocol
-    const useDidKey = this.agentConfig.useDidKeyInProtocols
+    const useDidKey = agentContext.config.useDidKeyInProtocols
 
     const message = new MediationGrantMessage({
-      endpoint: this.agentConfig.endpoints[0],
-      routingKeys: useDidKey ? this.getRoutingKeys().map(verkeyToDidKey) : this.getRoutingKeys(),
+      endpoint: agentContext.config.endpoints[0],
+      routingKeys: useDidKey
+        ? (await this.getRoutingKeys(agentContext)).map(verkeyToDidKey)
+        : await this.getRoutingKeys(agentContext),
       threadId: mediationRecord.threadId,
     })
 
@@ -183,37 +171,67 @@ export class MediatorService {
       threadId: messageContext.message.threadId,
     })
 
-    await this.mediationRepository.save(mediationRecord)
-    this.emitStateChangedEvent(mediationRecord, null)
+    await this.mediationRepository.save(messageContext.agentContext, mediationRecord)
+    this.emitStateChangedEvent(messageContext.agentContext, mediationRecord, null)
 
     return mediationRecord
   }
 
-  public async findById(mediatorRecordId: string): Promise<MediationRecord | null> {
-    return this.mediationRepository.findById(mediatorRecordId)
+  public async findById(agentContext: AgentContext, mediatorRecordId: string): Promise<MediationRecord | null> {
+    return this.mediationRepository.findById(agentContext, mediatorRecordId)
   }
 
-  public async getById(mediatorRecordId: string): Promise<MediationRecord> {
-    return this.mediationRepository.getById(mediatorRecordId)
+  public async getById(agentContext: AgentContext, mediatorRecordId: string): Promise<MediationRecord> {
+    return this.mediationRepository.getById(agentContext, mediatorRecordId)
   }
 
-  public async getAll(): Promise<MediationRecord[]> {
-    return await this.mediationRepository.getAll()
+  public async getAll(agentContext: AgentContext): Promise<MediationRecord[]> {
+    return await this.mediationRepository.getAll(agentContext)
   }
 
-  private async updateState(mediationRecord: MediationRecord, newState: MediationState) {
+  public async findMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
+    const routingRecord = await this.mediatorRoutingRepository.findById(
+      agentContext,
+      this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+    )
+
+    return routingRecord
+  }
+
+  public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
+    const { verkey } = await agentContext.wallet.createDid()
+
+    const routingRecord = new MediatorRoutingRecord({
+      id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
+      routingKeys: [verkey],
+    })
+
+    await this.mediatorRoutingRepository.save(agentContext, routingRecord)
+
+    return routingRecord
+  }
+
+  public async findAllByQuery(agentContext: AgentContext, query: Query<MediationRecord>): Promise<MediationRecord[]> {
+    return await this.mediationRepository.findByQuery(agentContext, query)
+  }
+
+  private async updateState(agentContext: AgentContext, mediationRecord: MediationRecord, newState: MediationState) {
     const previousState = mediationRecord.state
 
     mediationRecord.state = newState
 
-    await this.mediationRepository.update(mediationRecord)
+    await this.mediationRepository.update(agentContext, mediationRecord)
 
-    this.emitStateChangedEvent(mediationRecord, previousState)
+    this.emitStateChangedEvent(agentContext, mediationRecord, previousState)
   }
 
-  private emitStateChangedEvent(mediationRecord: MediationRecord, previousState: MediationState | null) {
+  private emitStateChangedEvent(
+    agentContext: AgentContext,
+    mediationRecord: MediationRecord,
+    previousState: MediationState | null
+  ) {
     const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
-    this.eventEmitter.emit<MediationStateChangedEvent>({
+    this.eventEmitter.emit<MediationStateChangedEvent>(agentContext, {
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
         mediationRecord: clonedMediationRecord,
@@ -222,10 +240,15 @@ export class MediatorService {
     })
   }
 
-  private async updateUseDidKeysFlag(connection: ConnectionRecord, protocolUri: string, connectionUsesDidKey: boolean) {
+  private async updateUseDidKeysFlag(
+    agentContext: AgentContext,
+    connection: ConnectionRecord,
+    protocolUri: string,
+    connectionUsesDidKey: boolean
+  ) {
     const useDidKeysForProtocol = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol) ?? {}
     useDidKeysForProtocol[protocolUri] = connectionUsesDidKey
     connection.metadata.set(ConnectionMetadataKeys.UseDidKeysForProtocol, useDidKeysForProtocol)
-    await this.connectionService.update(connection)
+    await this.connectionService.update(agentContext, connection)
   }
 }

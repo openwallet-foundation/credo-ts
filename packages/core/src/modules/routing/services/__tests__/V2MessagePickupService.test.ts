@@ -1,7 +1,7 @@
 import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../types'
 
-import { getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { InMemoryMessageRepository } from '../../../../storage/InMemoryMessageRepository'
@@ -30,6 +30,8 @@ const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<Med
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 const InMessageRepositoryMock = InMemoryMessageRepository as jest.Mock<InMemoryMessageRepository>
 
+const agentContext = getAgentContext()
+
 const encryptedMessage: EncryptedMessage = {
   protected: 'base64url',
   iv: 'base64url',
@@ -56,7 +58,7 @@ describe('V2MessagePickupService', () => {
 
       const statusRequest = new StatusRequestMessage({})
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processStatusRequest(messageContext)
 
@@ -75,7 +77,7 @@ describe('V2MessagePickupService', () => {
       mockFunction(messageRepository.getAvailableMessageCount).mockResolvedValue(5)
       const statusRequest = new StatusRequestMessage({})
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processStatusRequest(messageContext)
 
@@ -97,7 +99,7 @@ describe('V2MessagePickupService', () => {
         recipientKey: 'recipientKey',
       })
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       await expect(pickupService.processStatusRequest(messageContext)).rejects.toThrowError(
         'recipient_key parameter not supported'
@@ -111,7 +113,7 @@ describe('V2MessagePickupService', () => {
 
       const deliveryRequest = new DeliveryRequestMessage({ limit: 10 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
 
@@ -131,7 +133,7 @@ describe('V2MessagePickupService', () => {
 
       const deliveryRequest = new DeliveryRequestMessage({ limit: 10 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
 
@@ -158,7 +160,7 @@ describe('V2MessagePickupService', () => {
 
       const deliveryRequest = new DeliveryRequestMessage({ limit: 2 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
 
@@ -188,7 +190,7 @@ describe('V2MessagePickupService', () => {
         recipientKey: 'recipientKey',
       })
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       await expect(pickupService.processStatusRequest(messageContext)).rejects.toThrowError(
         'recipient_key parameter not supported'
@@ -205,7 +207,7 @@ describe('V2MessagePickupService', () => {
         messageIdList: ['1', '2'],
       })
 
-      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processMessagesReceived(messageContext)
 
@@ -229,7 +231,7 @@ describe('V2MessagePickupService', () => {
         messageIdList: ['1', '2'],
       })
 
-      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
       const { connection, payload } = await pickupService.processMessagesReceived(messageContext)
 

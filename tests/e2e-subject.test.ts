@@ -2,7 +2,7 @@ import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
 import { Subject } from 'rxjs'
 
-import { getBaseConfig } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
@@ -10,15 +10,15 @@ import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
-const recipientConfig = getBaseConfig('E2E Subject Recipient', {
+const recipientAgentOptions = getAgentOptions('E2E Subject Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
-const mediatorConfig = getBaseConfig('E2E Subject Mediator', {
+const mediatorAgentOptions = getAgentOptions('E2E Subject Mediator', {
   endpoints: ['rxjs:mediator'],
   autoAcceptMediationRequests: true,
 })
-const senderConfig = getBaseConfig('E2E Subject Sender', {
+const senderAgentOptions = getAgentOptions('E2E Subject Sender', {
   endpoints: ['rxjs:sender'],
   mediatorPollingInterval: 1000,
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
@@ -31,9 +31,9 @@ describe('E2E Subject tests', () => {
   let senderAgent: Agent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientConfig.config, recipientConfig.agentDependencies)
-    mediatorAgent = new Agent(mediatorConfig.config, mediatorConfig.agentDependencies)
-    senderAgent = new Agent(senderConfig.config, senderConfig.agentDependencies)
+    recipientAgent = new Agent(recipientAgentOptions)
+    mediatorAgent = new Agent(mediatorAgentOptions)
+    senderAgent = new Agent(senderAgentOptions)
   })
 
   afterEach(async () => {

@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.5](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.4...v0.2.5) (2022-10-13)
+
+### Bug Fixes
+
+- **oob:** allow encoding in content type header ([#1037](https://github.com/hyperledger/aries-framework-javascript/issues/1037)) ([e1d6592](https://github.com/hyperledger/aries-framework-javascript/commit/e1d6592b818bc4348078ca6593eea4641caafae5))
+- **oob:** set connection alias when creating invitation ([#1047](https://github.com/hyperledger/aries-framework-javascript/issues/1047)) ([7be979a](https://github.com/hyperledger/aries-framework-javascript/commit/7be979a74b86c606db403c8df04cfc8be2aae249))
+
+### Features
+
+- connection type ([#994](https://github.com/hyperledger/aries-framework-javascript/issues/994)) ([0d14a71](https://github.com/hyperledger/aries-framework-javascript/commit/0d14a7157e2118592829109dbc5c793faee1e201))
+- expose findAllByQuery method in modules and services ([#1044](https://github.com/hyperledger/aries-framework-javascript/issues/1044)) ([9dd95e8](https://github.com/hyperledger/aries-framework-javascript/commit/9dd95e81770d3140558196d2b5b508723f918f04))
+- improve sending error handling ([#1045](https://github.com/hyperledger/aries-framework-javascript/issues/1045)) ([a230841](https://github.com/hyperledger/aries-framework-javascript/commit/a230841aa99102bcc8b60aa2a23040f13a929a6c))
+- possibility to set masterSecretId inside of WalletConfig ([#1043](https://github.com/hyperledger/aries-framework-javascript/issues/1043)) ([8a89ad2](https://github.com/hyperledger/aries-framework-javascript/commit/8a89ad2624922e5e5455f8881d1ccc656d6b33ec))
+- use did:key flag ([#1029](https://github.com/hyperledger/aries-framework-javascript/issues/1029)) ([8efade5](https://github.com/hyperledger/aries-framework-javascript/commit/8efade5b2a885f0767ac8b10cba8582fe9ff486a))
+
 ## [0.2.4](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.3...v0.2.4) (2022-09-10)
 
 ### Bug Fixes

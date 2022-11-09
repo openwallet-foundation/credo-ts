@@ -1,6 +1,8 @@
+import type { AgentContext } from '../../../agent'
+
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { inject, injectable } from '../../../plugins'
+import { injectable, inject } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
@@ -15,14 +17,14 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
     super(ConnectionRecord, storageService, eventEmitter)
   }
 
-  public async findByDids({ ourDid, theirDid }: { ourDid: string; theirDid: string }) {
-    return this.findSingleByQuery({
+  public async findByDids(agentContext: AgentContext, { ourDid, theirDid }: { ourDid: string; theirDid: string }) {
+    return this.findSingleByQuery(agentContext, {
       did: ourDid,
       theirDid,
     })
   }
 
-  public getByThreadId(threadId: string): Promise<ConnectionRecord> {
-    return this.getSingleByQuery({ threadId })
+  public getByThreadId(agentContext: AgentContext, threadId: string): Promise<ConnectionRecord> {
+    return this.getSingleByQuery(agentContext, { threadId })
   }
 }

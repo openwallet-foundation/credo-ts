@@ -99,7 +99,16 @@ module.exports = {
       },
     },
     {
-      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', 'jest.*.ts', 'samples/**', 'demo/**', 'scripts/**'],
+      files: [
+        '*.test.ts',
+        '**/__tests__/**',
+        '**/tests/**',
+        'jest.*.ts',
+        'samples/**',
+        'demo/**',
+        'scripts/**',
+        '**/tests/**',
+      ],
       env: {
         jest: true,
         node: false,

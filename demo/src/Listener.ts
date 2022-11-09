@@ -7,7 +7,7 @@ import type {
   BasicMessageStateChangedEvent,
   CredentialExchangeRecord,
   CredentialStateChangedEvent,
-  ProofRecord,
+  ProofExchangeRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
@@ -78,7 +78,7 @@ export class Listener {
     })
   }
 
-  private async newProofRequestPrompt(proofRecord: ProofRecord, aliceInquirer: AliceInquirer) {
+  private async newProofRequestPrompt(proofRecord: ProofExchangeRecord, aliceInquirer: AliceInquirer) {
     this.turnListenerOn()
     await aliceInquirer.acceptProofRequest(proofRecord)
     this.turnListenerOff()

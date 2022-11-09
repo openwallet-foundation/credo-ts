@@ -1,13 +1,14 @@
 import type { AgentMessage } from './agent/AgentMessage'
+import type { Key } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
 import type { ResolvedDidCommService } from './modules/didcomm'
-import type { Key } from './modules/dids/domain/Key'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
+import type { BaseRecord } from './storage/BaseRecord'
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -26,6 +27,7 @@ export interface WalletConfig {
     type: string
     [key: string]: unknown
   }
+  masterSecretId?: string
 }
 
 export interface WalletConfigRekey {
@@ -85,6 +87,7 @@ export interface InitConfig {
   autoUpdateStorageOnStartup?: boolean
 }
 
+export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string
   '@id': string
@@ -96,6 +99,7 @@ export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   connection: ConnectionRecord
   sessionId?: string
   outOfBand?: OutOfBandRecord
+  associatedRecord?: BaseRecord
 }
 
 export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {

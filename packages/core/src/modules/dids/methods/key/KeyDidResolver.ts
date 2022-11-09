@@ -1,12 +1,16 @@
+import type { AgentContext } from '../../../../agent'
 import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult } from '../../types'
 
+import { injectable } from '../../../../plugins'
+
 import { DidKey } from './DidKey'
 
+@injectable()
 export class KeyDidResolver implements DidResolver {
   public readonly supportedMethods = ['key']
 
-  public async resolve(did: string): Promise<DidResolutionResult> {
+  public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
 
     try {

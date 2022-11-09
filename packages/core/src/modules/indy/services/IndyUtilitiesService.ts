@@ -1,11 +1,12 @@
-import type { Logger } from '../../../logger'
-import type { FileSystem } from '../../../storage/FileSystem'
-import type { default as Indy, BlobReaderHandle } from 'indy-sdk'
+import type { BlobReaderHandle, default as Indy } from 'indy-sdk'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
+import { AgentDependencies } from '../../../agent/AgentDependencies'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { IndySdkError } from '../../../error/IndySdkError'
-import { injectable } from '../../../plugins'
+import { Logger } from '../../../logger'
+import { injectable, inject } from '../../../plugins'
+import { FileSystem } from '../../../storage/FileSystem'
 import { isIndyError } from '../../../utils/indyError'
 import { getDirFromFilePath } from '../../../utils/path'
 
@@ -15,10 +16,14 @@ export class IndyUtilitiesService {
   private logger: Logger
   private fileSystem: FileSystem
 
-  public constructor(agentConfig: AgentConfig) {
-    this.indy = agentConfig.agentDependencies.indy
-    this.logger = agentConfig.logger
-    this.fileSystem = agentConfig.fileSystem
+  public constructor(
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+  ) {
+    this.indy = agentDependencies.indy
+    this.logger = logger
+    this.fileSystem = fileSystem
   }
 
   /**

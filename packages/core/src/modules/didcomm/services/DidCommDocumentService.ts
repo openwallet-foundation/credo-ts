@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../../agent'
 import type { Logger } from '../../../logger'
 import type { ResolvedDidCommService } from '../types'
 
@@ -19,8 +20,8 @@ export class DidCommDocumentService {
     this.didResolverService = didResolverService
   }
 
-  public async resolveServicesFromDid(did: string): Promise<ResolvedDidCommService[]> {
-    const didDocument = await this.didResolverService.resolveDidDocument(did)
+  public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, did)
 
     const didCommServices: ResolvedDidCommService[] = []
 
@@ -39,7 +40,7 @@ export class DidCommDocumentService {
         // Resolve dids to DIDDocs to retrieve routingKeys
         const routingKeys = []
         for (const routingKey of didCommService.routingKeys ?? []) {
-          const routingDidDocument = await this.didResolverService.resolveDidDocument(routingKey)
+          const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
           routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
         }
 

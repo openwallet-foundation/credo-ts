@@ -1,11 +1,14 @@
+import type { AgentContext } from '../../../../agent'
 import type { Wallet } from '../../../../wallet/Wallet'
 import type { Routing } from '../../../connections/services/ConnectionService'
 
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import { Key } from '../../../../crypto'
+import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
@@ -14,8 +17,9 @@ import { DidExchangeState } from '../../../connections'
 import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
-import { Key } from '../../../dids'
 import { DidRepository } from '../../../dids/repository/DidRepository'
+import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
+import { RecipientModuleConfig } from '../../RecipientModuleConfig'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -44,6 +48,9 @@ const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 jest.mock('../../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
+jest.mock('../../../dids/services/DidRegistrarService')
+const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
+
 const connectionImageUrl = 'https://example.com/image.png'
 
 const mockConnection = getMockConnection({
@@ -59,15 +66,20 @@ describe('MediationRecipientService', () => {
   let wallet: Wallet
   let mediationRepository: MediationRepository
   let didRepository: DidRepository
+  let didRegistrarService: DidRegistrarService
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
   let messageSender: MessageSender
   let mediationRecipientService: MediationRecipientService
   let mediationRecord: MediationRecord
+  let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config)
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    agentContext = getAgentContext({
+      agentConfig: config,
+    })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })
@@ -80,7 +92,14 @@ describe('MediationRecipientService', () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    connectionService = new ConnectionService(wallet, config, connectionRepository, didRepository, eventEmitter)
+    didRegistrarService = new DidRegistrarServiceMock()
+    connectionService = new ConnectionService(
+      config.logger,
+      connectionRepository,
+      didRepository,
+      didRegistrarService,
+      eventEmitter
+    )
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 
@@ -96,9 +115,9 @@ describe('MediationRecipientService', () => {
     mediationRecipientService = new MediationRecipientService(
       connectionService,
       messageSender,
-      config,
       mediationRepository,
-      eventEmitter
+      eventEmitter,
+      new RecipientModuleConfig()
     )
   })
 
@@ -115,7 +134,7 @@ describe('MediationRecipientService', () => {
         state: DidExchangeState.Completed,
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection })
+      const messageContext = new InboundMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -137,7 +156,7 @@ describe('MediationRecipientService', () => {
         state: DidExchangeState.Completed,
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection })
+      const messageContext = new InboundMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -196,7 +215,7 @@ describe('MediationRecipientService', () => {
         keylist,
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdateResponse, { connection })
+      const messageContext = new InboundMessageContext(keyListUpdateResponse, { connection, agentContext })
 
       expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
 
@@ -206,7 +225,7 @@ describe('MediationRecipientService', () => {
         'https://didcomm.org/coordinate-mediation/1.0': true,
       })
 
-      expect(eventEmitter.emit).toHaveBeenCalledWith({
+      expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
         type: RoutingEventTypes.RecipientKeylistUpdated,
         payload: {
           mediationRecord,
@@ -225,7 +244,7 @@ describe('MediationRecipientService', () => {
         messageCount: 0,
       })
 
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
       const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage).toBeNull()
     })
@@ -235,7 +254,7 @@ describe('MediationRecipientService', () => {
         threadId: uuid(),
         messageCount: 1,
       })
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
 
       const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage)
@@ -245,7 +264,10 @@ describe('MediationRecipientService', () => {
 
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
-      const messageContext = new InboundMessageContext({} as MessageDeliveryMessage, { connection: mockConnection })
+      const messageContext = new InboundMessageContext({} as MessageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
 
       await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
         new AriesFrameworkError('Error processing attachments')
@@ -266,7 +288,10 @@ describe('MediationRecipientService', () => {
           }),
         ],
       })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
 
       const messagesReceivedMessage = await mediationRecipientService.processDelivery(messageContext)
 
@@ -300,21 +325,26 @@ describe('MediationRecipientService', () => {
           }),
         ],
       })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
 
       await mediationRecipientService.processDelivery(messageContext)
 
       expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, {
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { first: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, {
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: { second: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
     })
@@ -345,7 +375,7 @@ describe('MediationRecipientService', () => {
     test('adds mediation routing id mediator id is passed', async () => {
       mockFunction(mediationRepository.getById).mockResolvedValue(mediationRecord)
 
-      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+      const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
         mediatorId: 'mediator-id',
       })
 
@@ -353,14 +383,14 @@ describe('MediationRecipientService', () => {
         endpoints: ['https://a-mediator-endpoint.com'],
         routingKeys: [routingKey],
       })
-      expect(mediationRepository.getById).toHaveBeenCalledWith('mediator-id')
+      expect(mediationRepository.getById).toHaveBeenCalledWith(agentContext, 'mediator-id')
     })
 
     test('adds mediation routing if useDefaultMediator is true and default mediation is found', async () => {
       mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
 
       jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
-      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+      const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
         useDefaultMediator: true,
       })
 
@@ -368,14 +398,14 @@ describe('MediationRecipientService', () => {
         endpoints: ['https://a-mediator-endpoint.com'],
         routingKeys: [routingKey],
       })
-      expect(mediationRepository.findSingleByQuery).toHaveBeenCalledWith({ default: true })
+      expect(mediationRepository.findSingleByQuery).toHaveBeenCalledWith(agentContext, { default: true })
     })
 
     test('does not add mediation routing if no mediation is found', async () => {
       mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
 
       jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
-      const extendedRouting = await mediationRecipientService.addMediationRouting(routing, {
+      const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
         useDefaultMediator: false,
       })
 

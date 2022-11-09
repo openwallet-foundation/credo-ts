@@ -9,18 +9,18 @@ import { WalletInvalidKeyError } from '../src/wallet/error'
 import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
 import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
-import { getBaseConfig } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const aliceConfig = getBaseConfig('wallet-tests-Alice')
-const bobConfig = getBaseConfig('wallet-tests-Bob')
+const aliceAgentOptions = getAgentOptions('wallet-tests-Alice')
+const bobAgentOptions = getAgentOptions('wallet-tests-Bob')
 
 describe('wallet', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
   beforeEach(async () => {
-    aliceAgent = new Agent(aliceConfig.config, aliceConfig.agentDependencies)
-    bobAgent = new Agent(bobConfig.config, bobConfig.agentDependencies)
+    aliceAgent = new Agent(aliceAgentOptions)
+    bobAgent = new Agent(bobAgentOptions)
   })
 
   afterEach(async () => {
@@ -124,7 +124,7 @@ describe('wallet', () => {
     })
 
     // Save in wallet
-    await bobBasicMessageRepository.save(basicMessageRecord)
+    await bobBasicMessageRepository.save(bobAgent.context, basicMessageRecord)
 
     if (!bobAgent.config.walletConfig) {
       throw new Error('No wallet config on bobAgent')
@@ -141,8 +141,8 @@ describe('wallet', () => {
     // Initialize the wallet again and assert record does not exist
     // This should create a new wallet
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await bobAgent.wallet.initialize(bobConfig.config.walletConfig!)
-    expect(await bobBasicMessageRepository.findById(basicMessageRecord.id)).toBeNull()
+    await bobAgent.wallet.initialize(bobAgentOptions.config.walletConfig!)
+    expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 
     // Import backup with different wallet id and initialize
@@ -150,7 +150,9 @@ describe('wallet', () => {
     await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
 
     // Expect same basic message record to exist in new wallet
-    expect(await bobBasicMessageRepository.getById(basicMessageRecord.id)).toMatchObject(basicMessageRecord)
+    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject(
+      basicMessageRecord
+    )
   })
 
   test('changing wallet key', async () => {

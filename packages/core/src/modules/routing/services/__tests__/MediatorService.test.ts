@@ -1,7 +1,8 @@
-import { getAgentConfig, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { Subject } from 'rxjs'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { ConnectionService, DidExchangeState } from '../../../connections'
 import { isDidKey } from '../../../dids/helpers'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
@@ -20,13 +21,9 @@ const MediatorRoutingRepositoryMock = MediatorRoutingRepository as jest.Mock<Med
 jest.mock('../../../connections/services/ConnectionService')
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
-jest.mock('../../../../wallet/IndyWallet')
-const WalletMock = IndyWallet as jest.Mock<IndyWallet>
-
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
 const connectionService = new ConnectionServiceMock()
-const wallet = new WalletMock()
 
 const mockConnection = getMockConnection({
   state: DidExchangeState.Completed,
@@ -35,12 +32,15 @@ const mockConnection = getMockConnection({
 describe('MediatorService - default config', () => {
   const agentConfig = getAgentConfig('MediatorService')
 
+  const agentContext = getAgentContext({
+    agentConfig,
+  })
+
   const mediatorService = new MediatorService(
     mediationRepository,
     mediatorRoutingRepository,
-    agentConfig,
-    wallet,
-    new EventEmitter(agentConfig),
+    new EventEmitter(agentConfig.agentDependencies, new Subject()),
+    agentConfig.logger,
     connectionService
   )
 
@@ -61,9 +61,7 @@ describe('MediatorService - default config', () => {
         })
       )
 
-      await mediatorService.initialize()
-
-      const { message } = await mediatorService.createGrantMediationMessage(mediationRecord)
+      const { message } = await mediatorService.createGrantMediationMessage(agentContext, mediationRecord)
 
       expect(message.routingKeys.length).toBe(1)
       expect(isDidKey(message.routingKeys[0])).toBeFalsy()
@@ -95,7 +93,7 @@ describe('MediatorService - default config', () => {
         ],
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection })
+      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
@@ -138,7 +136,7 @@ describe('MediatorService - default config', () => {
       ],
     })
 
-    const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection })
+    const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
     const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
     expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
@@ -160,12 +158,15 @@ describe('MediatorService - default config', () => {
 describe('MediatorService - useDidKeyInProtocols set to true', () => {
   const agentConfig = getAgentConfig('MediatorService', { useDidKeyInProtocols: true })
 
+  const agentContext = getAgentContext({
+    agentConfig,
+  })
+
   const mediatorService = new MediatorService(
     mediationRepository,
     mediatorRoutingRepository,
-    agentConfig,
-    wallet,
-    new EventEmitter(agentConfig),
+    new EventEmitter(agentConfig.agentDependencies, new Subject()),
+    agentConfig.logger,
     connectionService
   )
 
@@ -186,9 +187,7 @@ describe('MediatorService - useDidKeyInProtocols set to true', () => {
 
       mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(routingRecord)
 
-      await mediatorService.initialize()
-
-      const { message } = await mediatorService.createGrantMediationMessage(mediationRecord)
+      const { message } = await mediatorService.createGrantMediationMessage(agentContext, mediationRecord)
 
       expect(message.routingKeys.length).toBe(1)
       expect(isDidKey(message.routingKeys[0])).toBeTruthy()
