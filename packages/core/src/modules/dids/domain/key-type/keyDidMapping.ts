@@ -24,11 +24,6 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
 }
 
-export const proofTypeKeyTypeMapping: Record<string, string> = {
-  Ed25519Signature2018: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
-  BbsBlsSignature2020: VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
-}
-
 /**
  * Dynamically creates a mapping from verification method key type to the key Did interface
  * for all key types.
