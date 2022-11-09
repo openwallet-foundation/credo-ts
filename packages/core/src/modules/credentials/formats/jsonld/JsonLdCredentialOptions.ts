@@ -11,7 +11,6 @@ export interface JsonLdCredentialDetailOptions {
 
 /**
  * Class providing validation for the V2 json ld credential as per RFC0593 (used to sign credentials)
- *
  */
 export class JsonLdCredentialDetail {
   public constructor(options: JsonLdCredentialDetailOptions) {
