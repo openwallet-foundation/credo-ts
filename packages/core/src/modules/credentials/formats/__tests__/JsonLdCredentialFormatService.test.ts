@@ -294,6 +294,7 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('Derive Verification Method', async () => {
       mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument as any))
+      mockFunction(w3cCredentialService.getVerificationMethodTypesByProofType).mockReturnValue(['Ed25519VerificationKey2018'])
 
       const service = jsonldFormatService as JsonLdCredentialFormatService
       const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()

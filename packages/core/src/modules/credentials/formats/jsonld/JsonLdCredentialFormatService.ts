@@ -295,7 +295,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // actually gets the key type(s)
     const keyType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
 
-    if (keyType.length === 0) {
+    if (!keyType || keyType.length === 0) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
     }
 
