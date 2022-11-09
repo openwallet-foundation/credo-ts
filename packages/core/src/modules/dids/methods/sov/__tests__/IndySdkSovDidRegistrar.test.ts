@@ -4,7 +4,6 @@ import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
-import { ConsoleLogger } from '../../../../../logger'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { IndyPoolService } from '../../../../ledger/services/IndyPoolService'
@@ -18,7 +17,6 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 jest.mock('../../../../ledger/services/IndyPoolService')
 const IndyPoolServiceMock = IndyPoolService as jest.Mock<IndyPoolService>
 const indyPoolServiceMock = new IndyPoolServiceMock()
-mockProperty(indyPoolServiceMock, 'ledgerWritePool', { config: { id: 'pool1', indyNamespace: 'pool1' } } as IndyPool)
 mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
   config: { id: 'pool1', indyNamespace: 'pool1' },
 } as IndyPool)
@@ -29,9 +27,6 @@ const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERq
 
 const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
 mockProperty(wallet, 'handle', 10)
-
-jest.mock('../../../../../logger/Logger')
-const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
 
 const agentContext = getAgentContext({
   wallet,
@@ -45,7 +40,7 @@ const indySdkSovDidRegistrar = new IndySdkSovDidRegistrar(
     ...agentConfig.agentDependencies,
     indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
   },
-  new LoggerMock()
+  agentConfig.logger
 )
 
 describe('DidRegistrar', () => {

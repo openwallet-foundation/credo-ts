@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { IndyEndpointAttrib } from '../../../ledger'
+import type { IndyEndpointAttrib, IndyPool } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import type * as Indy from 'indy-sdk'
@@ -38,7 +38,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
   }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
-    const { alias, role, submitterDid } = options.options
+    const { alias, role, submitterDid, indyNamespace } = options.options
     const seed = options.secret?.seed
 
     if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
@@ -79,14 +79,15 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
 
       // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
       // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
-      await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, role)
+      const pool = this.indyPoolService.getPoolForNamespace(indyNamespace)
+      await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, pool, role)
 
       // Create did document
       const didDocumentBuilder = sovDidDocumentFromDid(qualifiedSovDid, verkey)
 
       // Add services if endpoints object was passed.
       if (options.options.endpoints) {
-        await this.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints)
+        await this.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints, pool)
         addServicesFromEndpointsAttrib(
           didDocumentBuilder,
           qualifiedSovDid,
@@ -98,7 +99,6 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const pool = this.indyPoolService.getPoolForNamespace(options.indyNamespace)
       const didIndyNamespace = pool.config.indyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
@@ -174,10 +174,9 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     targetDid: string,
     verkey: string,
     alias: string,
+    pool: IndyPool,
     role?: Indy.NymRole
   ) {
-    const pool = this.indyPoolService.ledgerWritePool
-
     try {
       this.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
 
@@ -208,10 +207,9 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
   public async setEndpointsForDid(
     agentContext: AgentContext,
     did: string,
-    endpoints: IndyEndpointAttrib
+    endpoints: IndyEndpointAttrib,
+    pool: IndyPool
   ): Promise<void> {
-    const pool = this.indyPoolService.ledgerWritePool
-
     try {
       this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
 
@@ -240,11 +238,11 @@ export interface SovDidCreateOptions extends DidCreateOptions {
   // As did:sov is so limited, we require everything needed to construct the did document to be passed
   // through the options object. Once we support did:indy we can allow the didDocument property.
   didDocument?: never
-  indyNamespace?: string
   options: {
     alias: string
     role?: Indy.NymRole
     endpoints?: IndyEndpointAttrib
+    indyNamespace?: string
     submitterDid: string
   }
   secret?: {

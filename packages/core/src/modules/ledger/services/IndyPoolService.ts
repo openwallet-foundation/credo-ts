@@ -74,6 +74,7 @@ export class IndyPoolService {
   }
 
   /**
+   * @deprecated use instead getPoolForNamespace
    * Get the pool used for writing to the ledger. For now we always use the first pool
    *  as the pool that writes to the ledger
    */

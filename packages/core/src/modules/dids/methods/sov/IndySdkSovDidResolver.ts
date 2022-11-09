@@ -60,14 +60,14 @@ export class IndySdkSovDidResolver implements DidResolver {
     }
   }
 
-  public async getPublicDid(agentContext: AgentContext, did: string) {
+  private async getPublicDid(agentContext: AgentContext, did: string) {
     // Getting the pool for a did also retrieves the DID. We can just use that
     const { did: didResponse } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     return didResponse
   }
 
-  public async getEndpointsForDid(agentContext: AgentContext, did: string) {
+  private async getEndpointsForDid(agentContext: AgentContext, did: string) {
     const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
     try {

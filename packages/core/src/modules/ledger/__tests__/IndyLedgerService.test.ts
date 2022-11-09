@@ -64,7 +64,7 @@ describe('IndyLedgerService', () => {
     jest.spyOn(pool, 'connect').mockResolvedValue(0)
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    poolService.ledgerWritePool = pool
+    poolService.getPoolForNamespace() = pool
 
     ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
   })
@@ -125,8 +125,8 @@ describe('IndyLedgerService', () => {
     })
 
     it('should throw an error if no config is present', async () => {
-      poolService.ledgerWritePool.authorAgreement = undefined
-      poolService.ledgerWritePool.config.transactionAuthorAgreement = undefined
+      poolService.getPoolForNamespace().authorAgreement = undefined
+      poolService.getPoolForNamespace().config.transactionAuthorAgreement = undefined
 
       ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
