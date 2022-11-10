@@ -59,21 +59,25 @@ describe('IndyLedgerService', () => {
     indyIssuerService = new IndyIssuerServiceMock()
     poolService = new IndyPoolServiceMock()
     const pool = new IndyPool(pools[0], config.agentDependencies, config.logger, new Subject(), new NodeFileSystem())
-    jest.spyOn(pool, 'submitWriteRequest').mockResolvedValue({} as LedgerWriteReplyResponse)
-    jest.spyOn(pool, 'submitReadRequest').mockResolvedValue({} as LedgerReadReplyResponse)
     jest.spyOn(pool, 'connect').mockResolvedValue(0)
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    poolService.getPoolForNamespace() = pool
+    jest.spyOn(poolService, 'getPoolForNamespace').mockReturnValue(pool)
 
     ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
   })
 
   describe('LedgerServiceWrite', () => {
     it('should throw an error if the config version does not match', async () => {
+      jest
+        .spyOn(poolService, 'submitWriteRequest')
+        .mockRejectedValue(
+          new Error(
+            'Unable to satisfy matching TAA with mechanism "accept" and version "1.0" in pool.\n Found ["accept"] and version 2.0 in pool.'
+          )
+        )
+
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
         version: '2.0',
         text: 'jhsdhbv',
@@ -98,9 +102,17 @@ describe('IndyLedgerService', () => {
     })
 
     it('should throw an error if the config acceptance mechanism does not match', async () => {
+      jest
+        .spyOn(poolService, 'submitWriteRequest')
+        .mockRejectedValue(
+          new Error(
+            'Unable to satisfy matching TAA with mechanism "accept" and version "1.0" in pool.\n Found ["decline"] and version 1.0 in pool.'
+          )
+        )
+
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
         version: '1.0',
         text: 'jhsdhbv',
@@ -125,13 +137,16 @@ describe('IndyLedgerService', () => {
     })
 
     it('should throw an error if no config is present', async () => {
-      poolService.getPoolForNamespace().authorAgreement = undefined
-      poolService.getPoolForNamespace().config.transactionAuthorAgreement = undefined
+      jest
+        .spyOn(poolService, 'submitWriteRequest')
+        .mockRejectedValue(
+          new Error('Please, specify a transaction author agreement with version and acceptance mechanism')
+        )
 
       ledgerService = new IndyLedgerService(config.agentDependencies, config.logger, indyIssuerService, poolService)
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      jest.spyOn(ledgerService, 'getTransactionAuthorAgreement').mockResolvedValue({
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
         digest: 'abcde',
         version: '1.0',
         text: 'jhsdhbv',

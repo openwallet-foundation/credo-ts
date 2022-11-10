@@ -54,11 +54,13 @@ describe('DidResolver', () => {
         hub: 'https://hub.com',
       }
 
-      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver as any, 'getPublicDid')
-      getPublicDidSpy.mockResolvedValue(nymResponse)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(indySdkSovDidResolver, 'getPublicDid').mockResolvedValue(nymResponse)
 
-      const getEndpointsForDidSpy = jest.spyOn(indySdkSovDidResolver as any, 'getEndpointsForDid')
-      getEndpointsForDidSpy.mockResolvedValue(endpoints)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(indySdkSovDidResolver, 'getEndpointsForDid').mockResolvedValue(endpoints)
 
       const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 
@@ -86,11 +88,13 @@ describe('DidResolver', () => {
         routingKeys: ['routingKey1', 'routingKey2'],
       }
 
-      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver as any, 'getPublicDid')
-      getPublicDidSpy.mockResolvedValue(nymResponse)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(indySdkSovDidResolver, 'getPublicDid').mockResolvedValue(nymResponse)
 
-      const getEndpointsForDidSpy = jest.spyOn(indySdkSovDidResolver as any, 'getEndpointsForDid')
-      getEndpointsForDidSpy.mockResolvedValue(endpoints)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(indySdkSovDidResolver, 'getEndpointsForDid').mockResolvedValue(endpoints)
 
       const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 
@@ -106,9 +110,9 @@ describe('DidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
-      const getPublicDidSpy = jest.spyOn(indySdkSovDidResolver as any, 'getPublicDid')
-
-      getPublicDidSpy.mockRejectedValue(new Error('Error retrieving did'))
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(indySdkSovDidResolver, 'getPublicDid').mockRejectedValue(new Error('Error retrieving did'))
 
       const result = await indySdkSovDidResolver.resolve(agentContext, did, parseDid(did))
 

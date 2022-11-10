@@ -146,6 +146,8 @@ describe('DidRegistrar', () => {
         'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         // Alias
         'Hello',
+        // Pool
+        { config: { id: 'pool1', indyNamespace: 'pool1' } },
         // Role
         'STEWARD'
       )
@@ -227,6 +229,8 @@ describe('DidRegistrar', () => {
         'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         // Alias
         'Hello',
+        // Pool
+        { config: { id: 'pool1', indyNamespace: 'pool1' } },
         // Role
         'STEWARD'
       )
