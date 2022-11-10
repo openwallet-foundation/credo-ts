@@ -28,14 +28,13 @@ import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
 import { deepEqual } from '../../../../utils/objEqual'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
-import { proofTypeKeyTypeMapping } from '../../../dids/domain/key-type/keyDidMapping'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialFormatService } from '../CredentialFormatService'
 
-import { JsonLdCredential } from './JsonLdCredentialOptions'
+import { JsonLdCredentialDetail } from './JsonLdCredentialOptions'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@1.0'
@@ -74,7 +73,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
 
-    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
     MessageValidator.validateSync(jsonLdCredential)
 
     // jsonLdFormat is now of type SignCredentialOptionsRFC0593
@@ -93,7 +92,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
     }
 
-    const messageToValidate = new JsonLdCredential(credProposalJson)
+    const messageToValidate = new JsonLdCredentialDetail(credProposalJson)
     MessageValidator.validateSync(messageToValidate)
   }
 
@@ -110,12 +109,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const jsonLdFormat = credentialFormats?.jsonld
     if (jsonLdFormat) {
       // if there is an offer, validate
-      const jsonLdCredentialOffer = new JsonLdCredential(jsonLdFormat)
+      const jsonLdCredentialOffer = new JsonLdCredentialDetail(jsonLdFormat)
       MessageValidator.validateSync(jsonLdCredentialOffer)
     }
 
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const jsonLdCredentialProposal = new JsonLdCredential(credentialProposal)
+    const jsonLdCredentialProposal = new JsonLdCredentialDetail(credentialProposal)
     MessageValidator.validateSync(jsonLdCredentialProposal)
 
     const offerData = jsonLdFormat ?? credentialProposal
@@ -147,7 +146,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createOffer')
     }
 
-    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
 
     MessageValidator.validateSync(jsonLdCredential)
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -162,7 +161,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential offer data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredential(credentialOfferJson)
+    const jsonLdCredential = new JsonLdCredentialDetail(credentialOfferJson)
     MessageValidator.validateSync(jsonLdCredential)
   }
 
@@ -175,7 +174,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const requestData = jsonLdFormat ?? credentialOffer
 
-    const jsonLdCredential = new JsonLdCredential(requestData)
+    const jsonLdCredential = new JsonLdCredentialDetail(requestData)
     MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
@@ -208,7 +207,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createRequest')
     }
 
-    const jsonLdCredential = new JsonLdCredential(jsonLdFormat)
+    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
     MessageValidator.validateSync(jsonLdCredential)
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -223,7 +222,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential request data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredential(requestJson)
+    const jsonLdCredential = new JsonLdCredentialDetail(requestJson)
     MessageValidator.validateSync(jsonLdCredential)
   }
 
@@ -238,7 +237,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
     const credentialData = jsonLdFormat ?? credentialRequest
-    const jsonLdCredential = new JsonLdCredential(credentialData)
+    const jsonLdCredential = new JsonLdCredentialDetail(credentialData)
     MessageValidator.validateSync(jsonLdCredential)
 
     const verificationMethod =
@@ -253,11 +252,20 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC,
     })
 
+    const options = credentialData.options
+
+    if (options.challenge || options.domain || options.credentialStatus) {
+      throw new AriesFrameworkError(
+        'The fields challenge, domain and credentialStatus not currently supported in credential options '
+      )
+    }
+
     const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
       credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
       proofType: credentialData.options.proofType,
       verificationMethod: verificationMethod,
     })
+
     const attachment = this.getFormatData(verifiableCredential, format.attachId)
     return { format, attachment }
   }
@@ -284,16 +292,14 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // find first key which matches proof type
     const proofType = credentialRequest.options.proofType
 
-    const keyType: string | undefined = proofTypeKeyTypeMapping[proofType]
+    // actually gets the key type(s)
+    const keyType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
 
-    // const keyType = this.w3cCredentialService.getKeyTypesByProofType(proofType)
-    if (!keyType) {
+    if (!keyType || keyType.length === 0) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
     }
 
-    // const verificationMethodType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
-    const verificationMethod = await findVerificationMethodByKeyType(keyType, issuerDidDocument)
-    // const verificationMethod = await findVerificationMethodByVerificationMethodType(verificationMethodType)
+    const verificationMethod = await findVerificationMethodByKeyType(keyType[0], issuerDidDocument)
     if (!verificationMethod) {
       throw new AriesFrameworkError(`Missing verification method for key type ${keyType}`)
     }
@@ -316,7 +322,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // compare stuff in the proof object of the credential and request...based on aca-py
 
     const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
+    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
 
     if (Array.isArray(credential.proof)) {
       // question: what do we compare here, each element of the proof array with the request???
@@ -417,7 +423,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       // do checks here
       try {
         const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredential)
+        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
         this.compareCredentialSubject(credential, request.credential)
         this.compareProofs(credential.proof, request.options)
         return true
