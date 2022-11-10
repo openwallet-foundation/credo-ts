@@ -8,7 +8,7 @@ import {
   DidResolverService,
   DidKey,
   Key,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   W3cVerifiableCredential,
   W3cCredentialService,
   W3cCredential,
@@ -55,7 +55,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+const signingProviderRegistry = new KeyProviderRegistry([new Bls12381g2SigningProvider()])
 
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 

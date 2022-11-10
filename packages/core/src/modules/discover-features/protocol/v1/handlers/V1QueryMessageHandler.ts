@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { V1DiscoverFeaturesService } from '../V1DiscoverFeaturesService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { V1QueryMessage } from '../messages'
 
 export class V1QueryMessageHandler implements Handler {
@@ -18,7 +18,7 @@ export class V1QueryMessageHandler implements Handler {
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)
 
     if (discloseMessage) {
-      return createOutboundMessage(connection, discloseMessage.message)
+      return createOutboundDIDCommV1Message(connection, discloseMessage.message)
     }
   }
 }

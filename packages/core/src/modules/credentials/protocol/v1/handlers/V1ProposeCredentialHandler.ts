@@ -3,7 +3,7 @@ import type { Logger } from '../../../../../logger'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { V1ProposeCredentialMessage } from '../messages'
 
 export class V1ProposeCredentialHandler implements Handler {
@@ -47,6 +47,6 @@ export class V1ProposeCredentialHandler implements Handler {
       credentialRecord,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundDIDCommV1Message(messageContext.connection, message)
   }
 }

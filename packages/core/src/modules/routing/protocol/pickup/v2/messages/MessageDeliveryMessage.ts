@@ -3,7 +3,7 @@ import type { Attachment } from '../../../../../../decorators/attachment/Attachm
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
@@ -14,7 +14,7 @@ export interface MessageDeliveryMessageOptions {
   attachments: Attachment[]
 }
 
-export class MessageDeliveryMessage extends AgentMessage {
+export class MessageDeliveryMessage extends DIDCommV1Message {
   public constructor(options: MessageDeliveryMessageOptions) {
     super()
 

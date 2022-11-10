@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -90,6 +90,6 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
 
     const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, options)
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundDIDCommV1Message(messageContext.connection, message)
   }
 }

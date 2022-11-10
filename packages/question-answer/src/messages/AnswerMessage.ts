@@ -1,8 +1,8 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DIDCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-export class AnswerMessage extends AgentMessage {
+export class AnswerMessage extends DIDCommV1Message {
   /**
    * Create new AnswerMessage instance.
    * @param options

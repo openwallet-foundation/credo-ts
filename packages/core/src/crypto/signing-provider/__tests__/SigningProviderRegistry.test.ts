@@ -1,10 +1,10 @@
 import type { Buffer } from '../../../utils/buffer'
-import type { SigningProvider, KeyPair } from '../SigningProvider'
+import type { KeyProvider, KeyPair } from '../KeyProvider'
 
 import { KeyType } from '../../KeyType'
-import { SigningProviderRegistry } from '../SigningProviderRegistry'
+import { KeyProviderRegistry } from '../KeyProviderRegistry'
 
-class SigningProviderMock implements SigningProvider {
+class SigningProviderMock implements KeyProvider {
   public readonly keyType = KeyType.Bls12381g2
 
   public async createKeyPair(): Promise<KeyPair> {
@@ -19,7 +19,7 @@ class SigningProviderMock implements SigningProvider {
 }
 
 const signingProvider = new SigningProviderMock()
-const signingProviderRegistry = new SigningProviderRegistry([signingProvider])
+const signingProviderRegistry = new KeyProviderRegistry([signingProvider])
 
 describe('SigningProviderRegistry', () => {
   describe('hasProviderForKeyType', () => {
@@ -39,7 +39,7 @@ describe('SigningProviderRegistry', () => {
 
     test('throws error if the key type is not registered', () => {
       expect(() => signingProviderRegistry.getProviderForKeyType(KeyType.Ed25519)).toThrowError(
-        'No signing key provider for key type: ed25519'
+        'No key provider for key type: ed25519'
       )
     })
   })

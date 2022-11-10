@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { Query } from '../../storage/StorageService'
 import type { DeleteCredentialOptions } from './CredentialServiceOptions'
 import type {
@@ -26,7 +26,7 @@ import type { CredentialService } from './services/CredentialService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -68,7 +68,7 @@ export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends Cred
 
   // out of band
   createOffer(options: CreateOfferOptions<CFs, CSs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     credentialRecord: CredentialExchangeRecord
   }>
 
@@ -180,7 +180,7 @@ export class CredentialsApi<
     this.logger.debug('We have a message (sending outbound): ', message)
 
     // send the message here
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundDIDCommV1Message(connection, message)
 
     this.logger.debug('In proposeCredential: Send Proposal to Issuer')
     await this.messageSender.sendMessage(this.agentContext, outbound)
@@ -217,7 +217,7 @@ export class CredentialsApi<
 
     // send the message
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return credentialRecord
@@ -251,7 +251,7 @@ export class CredentialsApi<
     })
 
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -278,7 +278,7 @@ export class CredentialsApi<
     })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -310,7 +310,7 @@ export class CredentialsApi<
         autoAcceptCredential: options.autoAcceptCredential,
       })
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundDIDCommV1Message(connection, message)
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return credentialRecord
@@ -387,7 +387,7 @@ export class CredentialsApi<
     }
 
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -400,7 +400,7 @@ export class CredentialsApi<
    * @returns The credential record and credential offer message
    */
   public async createOffer(options: CreateOfferOptions<CFs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     credentialRecord: CredentialExchangeRecord
   }> {
     const service = this.getService(options.protocolVersion)
@@ -446,7 +446,7 @@ export class CredentialsApi<
     // Use connection if present
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundDIDCommV1Message(connection, message)
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return credentialRecord
@@ -505,7 +505,7 @@ export class CredentialsApi<
 
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundDIDCommV1Message(connection, message)
 
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
@@ -551,7 +551,7 @@ export class CredentialsApi<
     problemReportMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, problemReportMessage)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord

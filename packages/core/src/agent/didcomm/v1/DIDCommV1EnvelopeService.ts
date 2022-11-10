@@ -1,37 +1,50 @@
+import type { Logger } from '../../../logger'
 import type { EncryptedMessage, PlaintextMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { AgentContext } from './context'
+import type { AgentContext } from './../../context'
+import type { DIDCommV1Message } from './DIDCommV1Message'
 
-import { InjectionSymbols } from '../constants'
-import { Key, KeyType } from '../crypto'
-import { Logger } from '../logger'
-import { ForwardMessage } from '../modules/routing/messages'
-import { inject, injectable } from '../plugins'
+import { InjectionSymbols } from '../../../constants'
+import { Key, KeyType } from '../../../crypto'
+import { ForwardMessage } from '../../../modules/routing/messages'
+import { injectable, inject } from '../../../plugins'
+import { Wallet } from '../../../wallet/Wallet'
+import { AgentConfig } from '../../AgentConfig'
 
-export interface EnvelopeKeys {
+export interface PackMessageParams {
   recipientKeys: Key[]
   routingKeys: Key[]
   senderKey: Key | null
 }
 
-@injectable()
-export class EnvelopeService {
-  private logger: Logger
+export interface DecryptedMessageContext {
+  plaintextMessage: PlaintextMessage
+  senderKey?: Key
+  recipientKey?: Key
+}
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
-    this.logger = logger
+@injectable()
+class DIDCommV1EnvelopeService {
+  private wallet: Wallet
+  private logger: Logger
+  private config: AgentConfig
+
+  public constructor(@inject(InjectionSymbols.Wallet) wallet: Wallet, agentConfig: AgentConfig) {
+    this.wallet = wallet
+    this.logger = agentConfig.logger
+    this.config = agentConfig
   }
 
-  public async packMessage(
+  public async packMessageEncrypted(
     agentContext: AgentContext,
-    payload: AgentMessage,
-    keys: EnvelopeKeys
+    payload: DIDCommV1Message,
+    keys: PackMessageParams
   ): Promise<EncryptedMessage> {
     const { recipientKeys, routingKeys, senderKey } = keys
     let recipientKeysBase58 = recipientKeys.map((key) => key.publicKeyBase58)
     const routingKeysBase58 = routingKeys.map((key) => key.publicKeyBase58)
     const senderKeyBase58 = senderKey && senderKey.publicKeyBase58
 
+    // pass whether we want to use legacy did sov prefix
     // pass whether we want to use legacy did sov prefix
     const message = payload.toJSON({ useLegacyDidSovPrefix: agentContext.config.useLegacyDidSovPrefix })
 
@@ -72,8 +85,4 @@ export class EnvelopeService {
   }
 }
 
-export interface DecryptedMessageContext {
-  plaintextMessage: PlaintextMessage
-  senderKey?: Key
-  recipientKey?: Key
-}
+export { DIDCommV1EnvelopeService }

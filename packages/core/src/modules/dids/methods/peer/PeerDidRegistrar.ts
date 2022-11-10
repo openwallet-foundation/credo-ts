@@ -10,7 +10,7 @@ import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRepository, DidRecord } from '../../repository'
 
 import { PeerDidNumAlgo } from './didPeer'
-import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
+import { didToNumAlgo0DidDocument, keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 
@@ -25,7 +25,11 @@ export class PeerDidRegistrar implements DidRegistrar {
 
   public async create(
     agentContext: AgentContext,
-    options: PeerDidNumAlgo0CreateOptions | PeerDidNumAlgo1CreateOptions | PeerDidNumAlgo2CreateOptions
+    options:
+      | PeerDidNumAlgo0CreateOptions
+      | PeerDidNumAlgo1CreateOptions
+      | PeerDidNumAlgo2CreateOptions
+      | GenericPeerDidCreateOptions
   ): Promise<DidCreateResult> {
     let didDocument: DidDocument
 
@@ -72,6 +76,14 @@ export class PeerDidRegistrar implements DidRegistrar {
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
         const did = didDocumentToNumAlgo2Did(options.didDocument)
+
+        didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
+      } else if (isPeerDidGenericCreateOptions(options)) {
+        const didDocumentJson = options.didDocument.toJSON()
+        const did =
+          options.didDocument.service && options.didDocument.service?.length > 0
+            ? didDocumentToNumAlgo2Did(options.didDocument)
+            : didToNumAlgo0DidDocument(options.didDocument.id)
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else {
@@ -151,21 +163,26 @@ export class PeerDidRegistrar implements DidRegistrar {
 }
 
 function isPeerDidNumAlgo1CreateOptions(options: PeerDidCreateOptions): options is PeerDidNumAlgo1CreateOptions {
-  return options.options.numAlgo === PeerDidNumAlgo.GenesisDoc
+  return options.options?.numAlgo === PeerDidNumAlgo.GenesisDoc
 }
 
 function isPeerDidNumAlgo0CreateOptions(options: PeerDidCreateOptions): options is PeerDidNumAlgo0CreateOptions {
-  return options.options.numAlgo === PeerDidNumAlgo.InceptionKeyWithoutDoc
+  return options.options?.numAlgo === PeerDidNumAlgo.InceptionKeyWithoutDoc
 }
 
 function isPeerDidNumAlgo2CreateOptions(options: PeerDidCreateOptions): options is PeerDidNumAlgo2CreateOptions {
-  return options.options.numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+  return options.options?.numAlgo === PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+}
+
+function isPeerDidGenericCreateOptions(options: PeerDidCreateOptions): options is GenericPeerDidCreateOptions {
+  return options.options === undefined
 }
 
 export type PeerDidCreateOptions =
   | PeerDidNumAlgo0CreateOptions
   | PeerDidNumAlgo1CreateOptions
   | PeerDidNumAlgo2CreateOptions
+  | GenericPeerDidCreateOptions
 
 export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   method: 'peer'
@@ -197,6 +214,13 @@ export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
   }
+  secret?: undefined
+}
+
+export interface GenericPeerDidCreateOptions extends DidCreateOptions {
+  method: 'peer'
+  did?: never
+  didDocument: DidDocument
   secret?: undefined
 }
 

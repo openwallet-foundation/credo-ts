@@ -1,11 +1,11 @@
-import type { PlaintextMessage } from '../../../types'
+import type { PlaintextMessage } from '../../../agent/didcomm/types'
 import type { HandshakeProtocol } from '../../connections'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
@@ -27,7 +27,7 @@ export interface OutOfBandInvitationOptions {
   appendedAttachments?: Attachment[]
 }
 
-export class OutOfBandInvitation extends AgentMessage {
+export class OutOfBandInvitation extends DIDCommV1Message {
   public constructor(options: OutOfBandInvitationOptions) {
     super()
 
@@ -44,7 +44,7 @@ export class OutOfBandInvitation extends AgentMessage {
     }
   }
 
-  public addRequest(message: AgentMessage) {
+  public addRequest(message: DIDCommV1Message) {
     if (!this.requests) this.requests = []
     const requestAttachment = new Attachment({
       id: this.generateId(),

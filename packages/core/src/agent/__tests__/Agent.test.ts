@@ -31,10 +31,10 @@ import { IndyStorageService } from '../../storage/IndyStorageService'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
-import { EnvelopeService } from '../EnvelopeService'
 import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
+import { EnvelopeService } from '../didcomm/EnvelopeService'
 
 const agentOptions = getAgentOptions('Agent Class Test')
 

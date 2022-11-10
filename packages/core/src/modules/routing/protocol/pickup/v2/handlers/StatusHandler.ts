@@ -2,7 +2,7 @@ import type { Handler } from '../../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../../agent/models/InboundMessageContext'
 import type { MediationRecipientService } from '../../../../services'
 
-import { createOutboundMessage } from '../../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../../agent/helpers'
 import { StatusMessage } from '../messages'
 
 export class StatusHandler implements Handler {
@@ -18,7 +18,7 @@ export class StatusHandler implements Handler {
     const deliveryRequestMessage = await this.mediatorRecipientService.processStatus(messageContext)
 
     if (deliveryRequestMessage) {
-      return createOutboundMessage(connection, deliveryRequestMessage)
+      return createOutboundDIDCommV1Message(connection, deliveryRequestMessage)
     }
   }
 }

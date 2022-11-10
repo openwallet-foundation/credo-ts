@@ -1,6 +1,6 @@
 import type { ActionMenuOptionOptions } from '../models'
 
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DIDCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString } from 'class-validator'
 
@@ -15,7 +15,7 @@ export interface MenuMessageOptions {
   threadId?: string
 }
 
-export class MenuMessage extends AgentMessage {
+export class MenuMessage extends DIDCommV1Message {
   public constructor(options: MenuMessageOptions) {
     super()
 

@@ -1,6 +1,8 @@
 import type { AgentContext } from './AgentContext'
 
 export interface AgentContextProvider {
+  getDefaultAgentContext(): Promise<AgentContext>
+
   /**
    * Get the agent context for an inbound message. It's possible to provide a contextCorrelationId to make it
    * easier for the context provider implementation to correlate inbound messages to the correct context. This can be useful if

@@ -3,7 +3,7 @@ import type { AgentContext } from '../../../agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
@@ -40,7 +40,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const signingProviderRegistry = new SigningProviderRegistry([])
+const signingProviderRegistry = new KeyProviderRegistry([])
 
 jest.mock('../../ledger/services/IndyLedgerService')
 

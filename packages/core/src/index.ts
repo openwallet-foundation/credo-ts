@@ -12,19 +12,18 @@ export { Handler, HandlerInboundMessage } from './agent/Handler'
 export * from './agent/models'
 export * from './agent/helpers'
 export { AgentConfig } from './agent/AgentConfig'
-export { AgentMessage } from './agent/AgentMessage'
+export {
+  DIDCommMessage,
+  DIDCommV1Message,
+  DIDCommV2Message,
+  EncryptedMessage,
+  SignedMessage,
+  PlaintextMessage,
+} from './agent/didcomm'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type {
-  InitConfig,
-  OutboundPackage,
-  EncryptedMessage,
-  WalletConfig,
-  JsonArray,
-  JsonObject,
-  JsonValue,
-} from './types'
+export type { InitConfig, OutboundPackage, WalletConfig, JsonArray, JsonObject, JsonValue } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export * from './storage/BaseRecord'

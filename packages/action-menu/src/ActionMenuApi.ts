@@ -12,7 +12,7 @@ import {
   ConnectionService,
   Dispatcher,
   MessageSender,
-  createOutboundMessage,
+  createOutboundDIDCommV1Message,
   injectable,
 } from '@aries-framework/core'
 
@@ -59,7 +59,7 @@ export class ActionMenuApi {
       connection,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return record
@@ -80,7 +80,7 @@ export class ActionMenuApi {
       menu: options.menu,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return record
@@ -109,7 +109,7 @@ export class ActionMenuApi {
       performedAction: options.performedAction,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return record

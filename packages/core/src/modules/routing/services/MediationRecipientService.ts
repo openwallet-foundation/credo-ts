@@ -1,9 +1,9 @@
 import type { AgentContext } from '../../../agent'
-import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
+import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query } from '../../../storage/StorageService'
-import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
@@ -17,7 +17,7 @@ import { filter, first, timeout } from 'rxjs/operators'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -209,7 +209,7 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(agentContext, outboundMessage)
 
     const keylistUpdate = await firstValueFrom(subject)
@@ -298,7 +298,7 @@ export class MediationRecipientService {
 
       await this.messageSender.sendMessage(
         messageContext.agentContext,
-        createOutboundMessage(connectionRecord, message),
+        createOutboundDIDCommV1Message(connectionRecord, message),
         {
           transportPriority: {
             schemes: websocketSchemes,
@@ -464,7 +464,7 @@ export class MediationRecipientService {
   }
 }
 
-export interface MediationProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface MediationProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   mediationRecord: MediationRecord
 }

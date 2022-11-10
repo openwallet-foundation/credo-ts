@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query } from '../../../storage/StorageService'
 import type { AckMessage } from '../../common'
@@ -442,8 +442,8 @@ export class ConnectionService {
       previousSentMessage,
       previousReceivedMessage,
     }: {
-      previousSentMessage?: AgentMessage
-      previousReceivedMessage?: AgentMessage
+      previousSentMessage?: DIDCommV1Message
+      previousReceivedMessage?: DIDCommV1Message
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -497,7 +497,7 @@ export class ConnectionService {
       }
 
       // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.service && !recipientKey) {
+      if (!message.serviceDecorator() && !recipientKey) {
         throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
@@ -783,7 +783,7 @@ export interface Routing {
   mediatorId?: string
 }
 
-export interface ConnectionProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
   connectionRecord: ConnectionRecord
 }

@@ -55,6 +55,10 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     return agentContext
   }
 
+  public async getDefaultAgentContext() {
+    return this.rootAgentContext
+  }
+
   public async getContextForInboundMessage(inboundMessage: unknown, options?: { contextCorrelationId?: string }) {
     this.logger.debug('Getting context for inbound message in tenant agent context provider', {
       contextCorrelationId: options?.contextCorrelationId,

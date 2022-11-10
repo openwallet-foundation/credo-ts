@@ -1,11 +1,6 @@
-import type { KeyPair } from '../crypto/signing-provider/SigningProvider'
-import type {
-  EncryptedMessage,
-  KeyDerivationMethod,
-  WalletConfig,
-  WalletConfigRekey,
-  WalletExportImportConfig,
-} from '../types'
+import type { EncryptedMessage } from '../agent/didcomm/types'
+import type { KeyPair } from '../crypto/signing-provider/KeyProvider'
+import type { KeyDerivationMethod, WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type {
   WalletCreateKeyOptions,
@@ -24,7 +19,7 @@ import { AgentDependencies } from '../agent/AgentDependencies'
 import { InjectionSymbols } from '../constants'
 import { KeyType } from '../crypto'
 import { Key } from '../crypto/Key'
-import { SigningProviderRegistry } from '../crypto/signing-provider/SigningProviderRegistry'
+import { KeyProviderRegistry } from '../crypto/signing-provider/KeyProviderRegistry'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
 import { Logger } from '../logger'
 import { TypedArrayEncoder } from '../utils'
@@ -41,17 +36,17 @@ export class IndyWallet implements Wallet {
   private walletHandle?: number
 
   private logger: Logger
-  private signingKeyProviderRegistry: SigningProviderRegistry
+  private keyProviderRegistry: KeyProviderRegistry
   private publicDidInfo: DidInfo | undefined
   private indy: typeof Indy
 
   public constructor(
     @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    signingKeyProviderRegistry: SigningProviderRegistry
+    keyProviderRegistry: KeyProviderRegistry
   ) {
     this.logger = logger
-    this.signingKeyProviderRegistry = signingKeyProviderRegistry
+    this.keyProviderRegistry = keyProviderRegistry
     this.indy = agentDependencies.indy
   }
 
@@ -481,8 +476,8 @@ export class IndyWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
+      if (this.keyProviderRegistry.hasProviderForKeyType(keyType)) {
+        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(keyType)
 
         const keyPair = await signingKeyProvider.createKeyPair({ seed })
         await this.storeKeyPair(keyPair)
@@ -520,11 +515,10 @@ export class IndyWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
-
+      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const keyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
         const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
-        const signed = await signingKeyProvider.sign({
+        const signed = await keyProvider.sign({
           data,
           privateKeyBase58: keyPair.privateKeyBase58,
           publicKeyBase58: key.publicKeyBase58,
@@ -567,10 +561,9 @@ export class IndyWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
-
-        const signed = await signingKeyProvider.verify({
+      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const keyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
+        const signed = await keyProvider.verify({
           data,
           signature,
           publicKeyBase58: key.publicKeyBase58,
@@ -634,17 +627,19 @@ export class IndyWallet implements Wallet {
     }
   }
 
-  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
+  // FIXME: Think how to avoid making function it public?
+  public async retrieveKeyPair(kid: string): Promise<KeyPair> {
     try {
-      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${publicKeyBase58}`, {})
+      const key = Key.fromPublicKeyId(kid)?.publicKeyBase58
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${key}`, {})
       if (value) {
         return JsonEncoder.fromString(value) as KeyPair
       } else {
-        throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
+        throw new WalletError(`No content found for record with public key: ${kid}`)
       }
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
-        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${publicKeyBase58}.`, {
+        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${kid}.`, {
           recordType: 'KeyPairRecord',
           cause: error,
         })

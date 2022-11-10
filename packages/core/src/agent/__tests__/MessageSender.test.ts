@@ -3,7 +3,8 @@ import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, EncryptedMessage } from '../../types'
+import type { OutboundDIDCommV1Message } from '../../types'
+import type { EncryptedMessage } from '../didcomm/types'
 
 import { TestMessage } from '../../../tests/TestMessage'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../tests/helpers'
@@ -16,15 +17,15 @@ import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Ser
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
 import { OutOfBandRepository } from '../../modules/oob'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
-import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
-import { createOutboundMessage } from '../helpers'
+import { EnvelopeService as EnvelopeServiceImpl } from '../didcomm/EnvelopeService'
+import { createOutboundDIDCommV1Message } from '../helpers'
 
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
-jest.mock('../EnvelopeService')
+jest.mock('../didcomm/EnvelopeService')
 jest.mock('../../modules/dids/services/DidResolverService')
 jest.mock('../../modules/didcomm/services/DidCommDocumentService')
 jest.mock('../../modules/oob/repository/OutOfBandRepository')
@@ -76,10 +77,11 @@ describe('MessageSender', () => {
     iv: 'base64url',
     ciphertext: 'base64url',
     tag: 'base64url',
+    recipients: [],
   }
 
   const enveloperService = new EnvelopeService()
-  const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
+  const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessageEncrypted)
 
   const didResolverService = new DidResolverServiceMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
@@ -125,7 +127,7 @@ describe('MessageSender', () => {
   let outboundTransport: OutboundTransport
   let messageRepository: MessageRepository
   let connection: ConnectionRecord
-  let outboundMessage: OutboundMessage
+  let outboundMessage: OutboundDIDCommV1Message
   const agentConfig = getAgentConfig('MessageSender')
   const agentContext = getAgentContext()
 
@@ -151,7 +153,7 @@ describe('MessageSender', () => {
         theirDid: 'did:peer:1theirdid',
         theirLabel: 'Test 123',
       })
-      outboundMessage = createOutboundMessage(connection, new TestMessage())
+      outboundMessage = createOutboundDIDCommV1Message(connection, new TestMessage())
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceHasInboundEndpoint.mockReturnValue(true)

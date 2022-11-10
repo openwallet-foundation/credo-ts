@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error'
 import { DidCommMessageRole } from '../../../../../storage'
@@ -96,7 +96,7 @@ export class V1RequestPresentationHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundDIDCommV1Message(messageContext.connection, message)
     } else if (requestMessage.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({

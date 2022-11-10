@@ -19,6 +19,7 @@ enum PromptOptions {
   OfferCredential = 'Offer credential',
   RequestProof = 'Request proof',
   SendMessage = 'Send message',
+  CreateDID = 'Create new DID',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -44,7 +45,12 @@ export class FaberInquirer extends BaseInquirer {
   private async getPromptChoice() {
     if (this.faber.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [
+      PromptOptions.CreateConnection,
+      PromptOptions.Exit,
+      PromptOptions.Restart,
+      PromptOptions.CreateDID,
+    ]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
@@ -62,6 +68,9 @@ export class FaberInquirer extends BaseInquirer {
       case PromptOptions.RequestProof:
         await this.proof()
         return
+      case PromptOptions.CreateDID:
+        await this.createNewDID()
+        break
       case PromptOptions.SendMessage:
         await this.message()
         break
@@ -105,6 +114,10 @@ export class FaberInquirer extends BaseInquirer {
     if (!message) return
 
     await this.faber.sendMessage(message)
+  }
+
+  public async createNewDID() {
+    await this.faber.createNewDID()
   }
 
   public async exit() {

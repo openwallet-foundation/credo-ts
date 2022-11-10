@@ -1,9 +1,9 @@
+import type { EncryptedMessage } from '../../../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../../../types'
 import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
@@ -51,7 +51,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundMessage(connection, statusMessage)
+    return createOutboundDIDCommV1Message(connection, statusMessage)
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {
@@ -93,7 +93,7 @@ export class V2MessagePickupService {
             messageCount: 0,
           })
 
-    return createOutboundMessage(connection, outboundMessage)
+    return createOutboundDIDCommV1Message(connection, outboundMessage)
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<MessagesReceivedMessage>) {
@@ -113,7 +113,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundMessage(connection, statusMessage)
+    return createOutboundDIDCommV1Message(connection, statusMessage)
   }
 
   protected registerHandlers() {

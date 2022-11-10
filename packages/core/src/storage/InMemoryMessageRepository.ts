@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../types'
+import type { EncryptedMessage } from '../agent/didcomm/types'
 import type { MessageRepository } from './MessageRepository'
 
 import { InjectionSymbols } from '../constants'

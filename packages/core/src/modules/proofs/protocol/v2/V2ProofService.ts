@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
+import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
@@ -127,7 +127,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createProposalAsResponse(
     agentContext: AgentContext,
     options: CreateProposalAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     options.proofRecord.assertState(ProofState.RequestReceived)
 
     const formats = []
@@ -228,7 +228,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     // create attachment formats
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
@@ -278,7 +278,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createRequestAsResponse(
     agentContext: AgentContext,
     options: CreateRequestAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     options.proofRecord.assertState(ProofState.ProposalReceived)
 
     const proposal = await this.didCommMessageRepository.getAgentMessage(agentContext, {
@@ -411,7 +411,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createPresentation(
     agentContext: AgentContext,
     options: CreatePresentationOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     // assert state
     options.proofRecord.assertState(ProofState.RequestReceived)
 
@@ -527,7 +527,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createAck(
     agentContext: AgentContext,
     options: CreateAckOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     // assert we've received the final presentation
     const presentation = await this.didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
@@ -589,7 +589,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const msg = new V2PresentationProblemReportMessage({
       description: {
         code: PresentationProblemReportReason.Abandoned,

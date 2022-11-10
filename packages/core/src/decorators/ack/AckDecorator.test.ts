@@ -1,4 +1,4 @@
-import { BaseMessage } from '../../agent/BaseMessage'
+import { DIDCommV1BaseMessage } from '../../agent/didcomm/v1/DIDCommV1BaseMessage'
 import { ClassValidationError } from '../../error/ClassValidationError'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { MessageValidator } from '../../utils/MessageValidator'
@@ -8,7 +8,7 @@ import { AckValues } from './AckDecorator'
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {
-  class TestMessage extends Compose(BaseMessage, [AckDecorated]) {
+  class TestMessage extends Compose(DIDCommV1BaseMessage, [AckDecorated]) {
     public toJSON(): Record<string, unknown> {
       return JsonTransformer.toJSON(this)
     }

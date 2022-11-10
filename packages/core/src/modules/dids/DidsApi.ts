@@ -1,3 +1,4 @@
+import type { CreateDIDParams } from './services/DidService'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -14,6 +15,7 @@ import { injectable } from '../../plugins'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
+import { DidService } from './services/DidService'
 
 @injectable()
 export class DidsApi {
@@ -21,18 +23,21 @@ export class DidsApi {
 
   private didResolverService: DidResolverService
   private didRegistrarService: DidRegistrarService
+  private didService: DidService
   private didRepository: DidRepository
   private agentContext: AgentContext
 
   public constructor(
     didResolverService: DidResolverService,
     didRegistrarService: DidRegistrarService,
+    didService: DidService,
     didRepository: DidRepository,
     agentContext: AgentContext,
     config: DidsModuleConfig
   ) {
     this.didResolverService = didResolverService
     this.didRegistrarService = didRegistrarService
+    this.didService = didService
     this.didRepository = didRepository
     this.agentContext = agentContext
     this.config = config
@@ -98,5 +103,9 @@ export class DidsApi {
    */
   public getCreatedDids({ method }: { method?: string } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method })
+  }
+
+  public createV2DID(options: CreateDIDParams): Promise<DidCreateResult> {
+    return this.didService.createDID(this.agentContext, options)
   }
 }

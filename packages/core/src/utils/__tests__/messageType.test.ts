@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../agent/didcomm'
 import {
   canHandleMessageType,
   parseMessageType,
@@ -9,7 +9,7 @@ import {
   supportsIncomingMessageType,
 } from '../messageType'
 
-export class TestMessage extends AgentMessage {
+export class TestMessage extends DIDCommV1Message {
   public constructor() {
     super()
 

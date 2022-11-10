@@ -1,9 +1,8 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { DIDCommV1Message, PlaintextMessage } from '../../agent/didcomm'
 import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
-import type { PlaintextMessage } from '../../types'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
@@ -14,7 +13,8 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { getPlaintextMessageType } from '../../agent/didcomm'
+import { createOutboundDIDCommV1Message } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -51,7 +51,7 @@ export interface CreateOutOfBandInvitationConfig {
   goal?: string
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
-  messages?: AgentMessage[]
+  messages?: DIDCommV1Message[]
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
@@ -242,7 +242,7 @@ export class OutOfBandApi {
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
-  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+  public async createLegacyConnectionlessInvitation<Message extends DIDCommV1Message>(config: {
     recordId: string
     message: Message
     domain: string
@@ -643,7 +643,7 @@ export class OutOfBandApi {
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
-      const parsedMessageType = parseMessageType(message['@type'])
+      const parsedMessageType = parseMessageType(getPlaintextMessageType(message) || '')
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
     })
 
@@ -670,7 +670,7 @@ export class OutOfBandApi {
 
     const supportedMessageTypes = this.dispatcher.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
-      const parsedMessageType = parseMessageType(message['@type'])
+      const parsedMessageType = parseMessageType(getPlaintextMessageType(message) || '')
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
     })
 
@@ -748,7 +748,7 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
+    const outbound = createOutboundDIDCommV1Message(connectionRecord, reuseMessage)
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return reuseAcceptedEventPromise

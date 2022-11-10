@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
@@ -117,7 +117,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
   public async createProposal(
     agentContext: AgentContext,
     { connection, credentialFormats, comment, autoAcceptCredential }: CreateProposalOptions<[IndyCredentialFormat]>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>> {
     this.assertOnlyIndyFormat(credentialFormats)
 
     if (!credentialFormats.indy) {
@@ -622,7 +622,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       autoAcceptCredential,
       comment,
     }: NegotiateOfferOptions<[IndyCredentialFormat]>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferReceived)

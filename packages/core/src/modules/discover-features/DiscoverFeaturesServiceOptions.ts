@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { FeatureQueryOptions } from '../../agent/models'
 
 export interface CreateQueryOptions {
@@ -11,6 +11,6 @@ export interface CreateDisclosureOptions {
   threadId?: string
 }
 
-export interface DiscoverFeaturesProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface DiscoverFeaturesProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
   message: MessageType
 }

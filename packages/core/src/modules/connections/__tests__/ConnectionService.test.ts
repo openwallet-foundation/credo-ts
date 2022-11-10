@@ -12,11 +12,11 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../tests/helpers'
-import { AgentMessage } from '../../../agent/AgentMessage'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { Key, KeyType } from '../../../crypto'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../crypto/signing-provider'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { uuid } from '../../../utils/uuid'
@@ -80,7 +80,7 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext({ wallet, agentConfig })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
@@ -753,7 +753,7 @@ describe('ConnectionService', () => {
     it('should not throw an error when a connection record with state complete is present in the messageContext', () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundMessageContext(new DIDCommV1Message(), {
         agentContext,
         connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
@@ -764,7 +764,7 @@ describe('ConnectionService', () => {
     it('should throw an error when a connection record is present and state not complete in the messageContext', () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundMessageContext(new DIDCommV1Message(), {
         agentContext,
         connection: getMockConnection({ state: DidExchangeState.InvitationReceived }),
       })
@@ -777,7 +777,7 @@ describe('ConnectionService', () => {
     it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', () => {
       expect.assertions(1)
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
@@ -794,21 +794,21 @@ describe('ConnectionService', () => {
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
       const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: [recipientKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: [senderKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
@@ -827,14 +827,14 @@ describe('ConnectionService', () => {
     it('should throw an error when previousSentMessage is present, but recipientVerkey is not ', () => {
       expect.assertions(1)
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, { agentContext })
 
       expect(() =>
@@ -849,14 +849,14 @@ describe('ConnectionService', () => {
 
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
 
-      const previousSentMessage = new AgentMessage()
+      const previousSentMessage = new DIDCommV1Message()
       previousSentMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, { agentContext, recipientKey })
 
       expect(() =>
@@ -871,14 +871,14 @@ describe('ConnectionService', () => {
     it('should throw an error when previousReceivedMessage is present, but senderVerkey is not ', () => {
       expect.assertions(1)
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, { agentContext })
 
       expect(() =>
@@ -893,14 +893,14 @@ describe('ConnectionService', () => {
 
       const senderKey = 'senderKey'
 
-      const previousReceivedMessage = new AgentMessage()
+      const previousReceivedMessage = new DIDCommV1Message()
       previousReceivedMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DIDCommV1Message()
       const messageContext = new InboundMessageContext(message, {
         agentContext,
         senderKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),

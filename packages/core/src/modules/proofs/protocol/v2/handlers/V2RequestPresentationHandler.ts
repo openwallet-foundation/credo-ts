@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
@@ -78,7 +78,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundDIDCommV1Message(messageContext.connection, message)
     } else if (requestMessage.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({

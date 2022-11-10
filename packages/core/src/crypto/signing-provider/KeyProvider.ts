@@ -23,7 +23,7 @@ export interface CreateKeyPairOptions {
   seed?: string
 }
 
-export interface SigningProvider {
+export interface KeyProvider {
   readonly keyType: KeyType
 
   createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair>

@@ -1,4 +1,4 @@
-import type { PlaintextMessage } from '../types'
+import type { PlaintextMessage } from '../agent/didcomm/types'
 import type { VersionString } from './version'
 import type { ValidationOptions, ValidationArguments } from 'class-validator'
 

@@ -17,6 +17,8 @@ export enum Title {
   OptionsTitle = '\nOptions:',
   InvitationTitle = '\n\nPaste the invitation url here:',
   MessageTitle = '\n\nWrite your message here:\n(Press enter to send or press q to exit)\n',
+  MyDIDTitle = '\n\nWrite your DID to use for ping here:\n(Press enter to send or press q to exit)\n',
+  TheirDIDTitle = '\n\nWrite DID of party to ping here:\n(Press enter to send or press q to exit)\n',
   ConfirmTitle = '\n\nAre you sure?',
   CredentialOfferTitle = '\n\nCredential offer received, do you want to accept it?',
   ProofRequestTitle = '\n\nProof request received, do you want to accept it?',

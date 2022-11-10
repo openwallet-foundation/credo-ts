@@ -26,6 +26,7 @@
   "dependencies": {
     "@aries-framework/core": "0.2.5",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
+    "@sicpa-dlab/didcomm-react-native": "0.0.19",
     "events": "^3.3.0"
   },
   "devDependencies": {

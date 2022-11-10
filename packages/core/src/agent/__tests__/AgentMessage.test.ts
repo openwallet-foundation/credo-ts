@@ -2,9 +2,9 @@ import { TestMessage } from '../../../tests/TestMessage'
 import { ClassValidationError } from '../../error/ClassValidationError'
 import { JsonTransformer } from '../../utils'
 import { IsValidMessageType, parseMessageType } from '../../utils/messageType'
-import { AgentMessage } from '../AgentMessage'
+import { DIDCommV1Message } from '../didcomm/v1/DIDCommV1Message'
 
-class CustomProtocolMessage extends AgentMessage {
+class CustomProtocolMessage extends DIDCommV1Message {
   @IsValidMessageType(CustomProtocolMessage.type)
   public readonly type = CustomProtocolMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')

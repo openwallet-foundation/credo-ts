@@ -187,7 +187,7 @@ describe('dids', () => {
         alias: 'Alias',
         endpoints: {
           endpoint: 'https://example.com/endpoint',
-          types: ['DIDComm', 'did-communication', 'endpoint'],
+          types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
           routingKeys: ['a-routing-key'],
         },
       },
@@ -249,7 +249,7 @@ describe('dids', () => {
               id: `did:sov:${indyDid}#didcomm-1`,
               routingKeys: ['a-routing-key'],
               serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
+              type: 'DIDCommMessaging',
             },
           ],
           authentication: [`did:sov:${indyDid}#key-1`],

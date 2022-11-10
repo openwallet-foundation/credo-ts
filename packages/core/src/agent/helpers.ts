@@ -2,14 +2,16 @@ import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { OutOfBandRecord } from '../modules/oob/repository'
-import type { OutboundMessage, OutboundServiceMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
+import type { OutboundDIDCommV1Message, OutboundDIDCommV1ServiceMessage, OutboundDIDCommV2Message } from '../types'
+import type { DIDCommV1Message, DIDCommV2Message } from './didcomm'
 
-export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
+import { DIDCommMessageVersion } from './didcomm/types'
+
+export function createOutboundDIDCommV1Message<T extends DIDCommV1Message = DIDCommV1Message>(
   connection: ConnectionRecord,
   payload: T,
   outOfBand?: OutOfBandRecord
-): OutboundMessage<T> {
+): OutboundDIDCommV1Message<T> {
   return {
     connection,
     outOfBand,
@@ -17,18 +19,38 @@ export function createOutboundMessage<T extends AgentMessage = AgentMessage>(
   }
 }
 
-export function createOutboundServiceMessage<T extends AgentMessage = AgentMessage>(options: {
+export function createOutboundServiceMessage<T extends DIDCommV1Message = DIDCommV1Message>(options: {
   payload: T
   service: ResolvedDidCommService
   senderKey: Key
-}): OutboundServiceMessage<T> {
+}): OutboundDIDCommV1ServiceMessage<T> {
   return options
 }
 
+export function createOutboundDIDCommV2Message<T extends DIDCommV2Message = DIDCommV2Message>(
+  payload: T
+): OutboundDIDCommV2Message<T> {
+  return {
+    payload,
+  }
+}
+
 export function isOutboundServiceMessage(
-  message: OutboundMessage | OutboundServiceMessage
-): message is OutboundServiceMessage {
-  const service = (message as OutboundServiceMessage).service
+  message: OutboundDIDCommV1Message | OutboundDIDCommV1ServiceMessage | OutboundDIDCommV2Message
+): message is OutboundDIDCommV1ServiceMessage {
+  const service = (message as OutboundDIDCommV1ServiceMessage).service
 
   return service !== undefined
+}
+
+export function isOutboundDIDCommV1Message(
+  message: OutboundDIDCommV1Message | OutboundDIDCommV1ServiceMessage | OutboundDIDCommV2Message
+): message is OutboundDIDCommV1Message {
+  return message.payload.version === DIDCommMessageVersion.V1
+}
+
+export function isOutboundDIDCommV2Message(
+  message: OutboundDIDCommV1Message | OutboundDIDCommV1ServiceMessage | OutboundDIDCommV2Message
+): message is OutboundDIDCommV2Message {
+  return message.payload.version === DIDCommMessageVersion.V2
 }

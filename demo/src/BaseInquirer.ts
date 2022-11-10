@@ -52,4 +52,18 @@ export class BaseInquirer {
 
     return message.input[0] === 'q' ? null : message.input
   }
+
+  public async inquireFromDID() {
+    this.inputInquirer.message = Title.MyDIDTitle
+    const message = await inquirer.prompt([this.inputInquirer])
+
+    return message.input[0] === 'q' ? null : message.input
+  }
+
+  public async inquireToDID() {
+    this.inputInquirer.message = Title.TheirDIDTitle
+    const message = await inquirer.prompt([this.inputInquirer])
+
+    return message.input[0] === 'q' ? null : message.input
+  }
 }

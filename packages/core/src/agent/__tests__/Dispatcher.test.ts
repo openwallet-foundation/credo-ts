@@ -4,32 +4,32 @@ import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { parseMessageType } from '../../utils/messageType'
-import { AgentMessage } from '../AgentMessage'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
+import { DIDCommV1Message } from '../didcomm'
 import { InboundMessageContext } from '../models/InboundMessageContext'
 
-class ConnectionInvitationTestMessage extends AgentMessage {
+class ConnectionInvitationTestMessage extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 }
-class ConnectionRequestTestMessage extends AgentMessage {
+class ConnectionRequestTestMessage extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/request')
 }
 
-class ConnectionResponseTestMessage extends AgentMessage {
+class ConnectionResponseTestMessage extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/response')
 }
 
-class NotificationAckTestMessage extends AgentMessage {
+class NotificationAckTestMessage extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/ack')
 }
-class CredentialProposalTestMessage extends AgentMessage {
+class CredentialProposalTestMessage extends DIDCommV1Message {
   public readonly type = CredentialProposalTestMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-proposal')
 }
 
-class CustomProtocolMessage extends AgentMessage {
+class CustomProtocolMessage extends DIDCommV1Message {
   public readonly type = CustomProtocolMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }

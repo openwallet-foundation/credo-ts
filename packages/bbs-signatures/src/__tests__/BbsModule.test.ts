@@ -2,7 +2,7 @@ import type { DependencyManager } from '@aries-framework/core'
 
 import {
   KeyType,
-  SigningProviderToken,
+  KeyProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
   SignatureSuiteToken,
 } from '@aries-framework/core'
@@ -22,7 +22,7 @@ describe('BbsModule', () => {
     bbsModule.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SigningProviderToken, Bls12381g2SigningProvider)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(KeyProviderToken, Bls12381g2SigningProvider)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(2)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(SignatureSuiteToken, {

@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../types'
+import type { EncryptedMessage } from '../agent/didcomm/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isValidJweStructure(message: any): message is EncryptedMessage {

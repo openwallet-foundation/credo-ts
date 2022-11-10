@@ -6,7 +6,7 @@ import type { RoutingService } from '../../../../routing/services/RoutingService
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
@@ -55,7 +55,7 @@ export class V2OfferCredentialHandler implements Handler {
       const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundDIDCommV1Message(messageContext.connection, message)
     } else if (offerMessage?.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({

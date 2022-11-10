@@ -19,6 +19,8 @@ export const runAlice = async () => {
 enum PromptOptions {
   ReceiveConnectionUrl = 'Receive connection invitation',
   SendMessage = 'Send message',
+  CreateNewDID = 'Create new DID',
+  Ping = 'Ping other party',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -44,7 +46,13 @@ export class AliceInquirer extends BaseInquirer {
   private async getPromptChoice() {
     if (this.alice.connectionRecordFaberId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.ReceiveConnectionUrl, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [
+      PromptOptions.ReceiveConnectionUrl,
+      PromptOptions.CreateNewDID,
+      PromptOptions.Ping,
+      PromptOptions.Exit,
+      PromptOptions.Restart,
+    ]
     return inquirer.prompt([this.inquireOptions(reducedOption)])
   }
 
@@ -58,6 +66,12 @@ export class AliceInquirer extends BaseInquirer {
         break
       case PromptOptions.SendMessage:
         await this.message()
+        break
+      case PromptOptions.CreateNewDID:
+        await this.createNewDID()
+        break
+      case PromptOptions.Ping:
+        await this.ping()
         break
       case PromptOptions.Exit:
         await this.exit()
@@ -102,6 +116,20 @@ export class AliceInquirer extends BaseInquirer {
     if (!message) return
 
     await this.alice.sendMessage(message)
+  }
+
+  public async createNewDID() {
+    await this.alice.createNewDID()
+  }
+
+  public async ping() {
+    const fromDid = await this.inquireFromDID()
+    if (!fromDid) return
+
+    const toDid = await this.inquireToDID()
+    if (!toDid) return
+
+    await this.alice.sendPingDIDCommV2(fromDid, toDid)
   }
 
   public async exit() {

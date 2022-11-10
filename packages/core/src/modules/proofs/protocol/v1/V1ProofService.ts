@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
+import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
@@ -118,7 +118,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const { connectionRecord, proofFormats } = options
 
     // Assert
@@ -165,7 +165,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createProposalAsResponse(
     agentContext: AgentContext,
     options: CreateProposalAsResponseOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const { proofRecord, proofFormats, comment } = options
 
     // Assert
@@ -267,7 +267,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createRequestAsResponse(
     agentContext: AgentContext,
     options: CreateRequestAsResponseOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const { proofRecord, comment, proofFormats } = options
     if (!proofFormats.indy) {
       throw new AriesFrameworkError('Only indy proof format is supported for present proof protocol v1')
@@ -305,7 +305,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     this.logger.debug(`Creating proof request`)
 
     // Assert
@@ -446,7 +446,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createPresentation(
     agentContext: AgentContext,
     options: CreatePresentationOptions<[IndyProofFormat]>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const { proofRecord, proofFormats } = options
 
     this.logger.debug(`Creating presentation for proof record with id ${proofRecord.id}`)
@@ -614,7 +614,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const msg = new V1PresentationProblemReportMessage({
       description: {
         code: PresentationProblemReportReason.Abandoned,
@@ -1094,7 +1094,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async createAck(
     gentContext: AgentContext,
     options: CreateAckOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }> {
     const { proofRecord } = options
     this.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
 

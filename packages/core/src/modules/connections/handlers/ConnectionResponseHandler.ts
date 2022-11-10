@@ -4,7 +4,7 @@ import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
@@ -83,7 +83,7 @@ export class ConnectionResponseHandler implements Handler {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      return createOutboundMessage(connection, message)
+      return createOutboundDIDCommV1Message(connection, message)
     }
   }
 }

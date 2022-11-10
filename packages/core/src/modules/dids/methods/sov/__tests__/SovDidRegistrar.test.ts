@@ -3,7 +3,7 @@ import type { IndyPool } from '../../../../ledger'
 import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../../../tests/helpers'
-import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { IndyLedgerService } from '../../../../ledger/services/IndyLedgerService'
@@ -27,7 +27,7 @@ const agentConfig = getAgentConfig('SovDidRegistrar')
 
 const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'])
 
-const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
 mockProperty(wallet, 'handle', 10)
 
 const agentContext = getAgentContext({
@@ -196,7 +196,7 @@ describe('DidRegistrar', () => {
           endpoints: {
             endpoint: 'https://example.com/endpoint',
             routingKeys: ['key-1'],
-            types: ['DIDComm', 'did-communication', 'endpoint'],
+            types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
           },
         },
         secret: {
@@ -267,7 +267,7 @@ describe('DidRegistrar', () => {
               {
                 id: 'did:sov:R1xKJw17sUoXhejEpugMYJ#didcomm-1',
                 serviceEndpoint: 'https://example.com/endpoint',
-                type: 'DIDComm',
+                type: 'DIDCommMessaging',
                 routingKeys: ['key-1'],
                 accept: ['didcomm/v2'],
               },
@@ -294,7 +294,7 @@ describe('DidRegistrar', () => {
           endpoints: {
             endpoint: 'https://example.com/endpoint',
             routingKeys: ['key-1'],
-            types: ['DIDComm', 'did-communication', 'endpoint'],
+            types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
           },
         },
         secret: {

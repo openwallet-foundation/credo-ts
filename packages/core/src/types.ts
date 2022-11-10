@@ -1,4 +1,5 @@
-import type { AgentMessage } from './agent/AgentMessage'
+import type { DIDCommV1Message, DIDCommV2Message, EncryptedMessage, SignedMessage } from './agent/didcomm'
+import type { PlaintextMessage } from './agent/didcomm/types'
 import type { Key } from './crypto'
 import type { Logger } from './logger'
 import type { ConnectionRecord } from './modules/connections'
@@ -43,13 +44,6 @@ export interface WalletExportImportConfig {
   path: string
 }
 
-export type EncryptedMessage = {
-  protected: string
-  iv: unknown
-  ciphertext: unknown
-  tag: unknown
-}
-
 export enum DidCommMimeType {
   V0 = 'application/ssi-agent-wire',
   V1 = 'application/didcomm-envelope-enc',
@@ -88,13 +82,8 @@ export interface InitConfig {
 }
 
 export type ProtocolVersion = `${number}.${number}`
-export interface PlaintextMessage {
-  '@type': string
-  '@id': string
-  [key: string]: unknown
-}
 
-export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundDIDCommV1Message<T extends DIDCommV1Message = DIDCommV1Message> {
   payload: T
   connection: ConnectionRecord
   sessionId?: string
@@ -102,14 +91,20 @@ export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
   associatedRecord?: BaseRecord
 }
 
-export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
+export interface OutboundDIDCommV1ServiceMessage<T extends DIDCommV1Message = DIDCommV1Message> {
   payload: T
   service: ResolvedDidCommService
   senderKey: Key
 }
 
+export interface OutboundDIDCommV2Message<T extends DIDCommV2Message = DIDCommV2Message> {
+  payload: T
+}
+
+export type OutboundPackagePayload = EncryptedMessage | SignedMessage | PlaintextMessage
+
 export interface OutboundPackage {
-  payload: EncryptedMessage
+  payload: OutboundPackagePayload
   responseRequested?: boolean
   endpoint?: string
   connectionId?: string

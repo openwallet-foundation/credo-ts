@@ -19,6 +19,10 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
     this.agentContext = agentContext
   }
 
+  public async getDefaultAgentContext(): Promise<AgentContext> {
+    return this.agentContext
+  }
+
   public async getAgentContextForContextCorrelationId(contextCorrelationId: string): Promise<AgentContext> {
     if (contextCorrelationId !== this.agentContext.contextCorrelationId) {
       throw new AriesFrameworkError(

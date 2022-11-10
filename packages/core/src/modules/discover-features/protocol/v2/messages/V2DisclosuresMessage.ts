@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer'
 import { IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../../../agent/didcomm'
 import { Feature } from '../../../../../agent/models'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
@@ -11,7 +11,7 @@ export interface V2DisclosuresMessageOptions {
   features?: Feature[]
 }
 
-export class V2DisclosuresMessage extends AgentMessage {
+export class V2DisclosuresMessage extends DIDCommV1Message {
   public constructor(options: V2DisclosuresMessageOptions) {
     super()
 

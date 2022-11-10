@@ -1,10 +1,10 @@
+import type { EncryptedMessage } from '../../../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../../../types'
 import type { BatchPickupMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { InjectionSymbols } from '../../../../../constants'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
@@ -50,7 +50,7 @@ export class MessagePickupService {
       messages: batchMessages,
     })
 
-    return createOutboundMessage(connection, batchMessage)
+    return createOutboundDIDCommV1Message(connection, batchMessage)
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {

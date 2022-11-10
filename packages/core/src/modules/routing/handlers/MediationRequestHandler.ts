@@ -2,7 +2,7 @@ import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MediatorModuleConfig } from '../MediatorModuleConfig'
 import type { MediatorService } from '../services/MediatorService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
 export class MediationRequestHandler implements Handler {
@@ -25,7 +25,7 @@ export class MediationRequestHandler implements Handler {
         messageContext.agentContext,
         mediationRecord
       )
-      return createOutboundMessage(connection, message)
+      return createOutboundDIDCommV1Message(connection, message)
     }
   }
 }

@@ -1,14 +1,19 @@
 import type { Key } from '../crypto'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
-import type { DidDocument } from '../modules/dids'
+import type { DidCommV2Service, DidDocument, DidDocumentService } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
+import type {
+  OutboundDIDCommV1Message,
+  OutboundDIDCommV2Message,
+  OutboundPackage,
+  OutboundPackagePayload,
+} from '../types'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { DIDCommMessage, DIDCommV2Message, EncryptedMessage } from './didcomm'
+import type { PackMessageParams } from './didcomm/EnvelopeService'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
@@ -24,8 +29,9 @@ import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
 
-import { EnvelopeService } from './EnvelopeService'
 import { TransportService } from './TransportService'
+import { EnvelopeService } from './didcomm/EnvelopeService'
+import { DIDCommMessageVersion, MessageType } from './didcomm/types'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -42,6 +48,7 @@ export class MessageSender {
   private didCommDocumentService: DidCommDocumentService
   private outOfBandRepository: OutOfBandRepository
   public readonly outboundTransports: OutboundTransport[] = []
+  public readonly outboundTransportsSchemas: string[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -60,10 +67,12 @@ export class MessageSender {
     this.didCommDocumentService = didCommDocumentService
     this.outOfBandRepository = outOfBandRepository
     this.outboundTransports = []
+    this.outboundTransportsSchemas = []
   }
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
     this.outboundTransports.push(outboundTransport)
+    this.outboundTransportsSchemas.push(...outboundTransport.supportedSchemes)
   }
 
   public async packMessage(
@@ -73,12 +82,12 @@ export class MessageSender {
       message,
       endpoint,
     }: {
-      keys: EnvelopeKeys
-      message: AgentMessage
+      keys: PackMessageParams
+      message: DIDCommMessage
       endpoint: string
     }
   ): Promise<OutboundPackage> {
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+    const encryptedMessage = await this.envelopeService.packMessageEncrypted(agentContext, message, keys)
 
     return {
       payload: encryptedMessage,
@@ -87,12 +96,12 @@ export class MessageSender {
     }
   }
 
-  private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
+  private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: DIDCommMessage) {
     this.logger.debug(`Existing ${session.type} transport session has been found.`)
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+    const encryptedMessage = await this.envelopeService.packMessageEncrypted(agentContext, message, session.keys)
     await session.send(encryptedMessage)
   }
 
@@ -179,8 +188,25 @@ export class MessageSender {
 
   public async sendMessage(
     agentContext: AgentContext,
-    outboundMessage: OutboundMessage,
+    outboundMessage: OutboundDIDCommV1Message | OutboundDIDCommV2Message,
     options?: {
+      transportPriority?: TransportPriorityOptions
+    }
+  ) {
+    if (outboundMessage.payload.version === DIDCommMessageVersion.V1) {
+      return this.sendDIDCommV1Message(agentContext, outboundMessage as OutboundDIDCommV1Message, options)
+    }
+    if (outboundMessage.payload.version === DIDCommMessageVersion.V2) {
+      return this.sendDIDCommV2Message(agentContext, outboundMessage as OutboundDIDCommV2Message, options)
+    }
+    throw new AriesFrameworkError(`Unexpected case`)
+  }
+
+  public async sendDIDCommV1Message(
+    agentContext: AgentContext,
+    outboundMessage: OutboundDIDCommV1Message,
+    options?: {
+      sendingMessageType?: MessageType
       transportPriority?: TransportPriorityOptions
     }
   ) {
@@ -281,7 +307,7 @@ export class MessageSender {
         senderKey: firstOurAuthenticationKey,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(agentContext, payload, keys)
+      const encryptedMessage = await this.envelopeService.packMessageEncrypted(agentContext, payload, keys)
       await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
@@ -307,7 +333,7 @@ export class MessageSender {
       returnRoute,
       connectionId,
     }: {
-      message: AgentMessage
+      message: DIDCommMessage
       service: ResolvedDidCommService
       senderKey: Key
       returnRoute?: boolean
@@ -426,6 +452,202 @@ export class MessageSender {
       { hasQueueService: queueService !== undefined }
     )
     return { services, queueService }
+  }
+
+  public async sendDIDCommV2Message(
+    agentContext: AgentContext,
+    outboundMessage: OutboundDIDCommV2Message,
+    options?: {
+      sendingMessageType?: MessageType
+      transportPriority?: TransportPriorityOptions
+    }
+  ) {
+    const { payload: message } = outboundMessage
+    const sendingMessageType = options?.sendingMessageType || MessageType.Encrypted
+
+    // recipient is not specified -> send to defaultTransport
+    const recipient = message.recipient()
+    if (!recipient) {
+      throw new AriesFrameworkError(`Unable to send message. Message doesn't contain recipient DID.`)
+    }
+
+    // find service transport supported for both sender and receiver
+    const senderToRecipientService = await this.findCommonSupportedServices(
+      agentContext,
+      recipient,
+      message.sender,
+      options?.transportPriority
+    )
+    if (!senderToRecipientService) {
+      this.logger.error(
+        `Unable to send message ${message.id} because there is no any commonly supported service between sender and recipient`
+      )
+      return
+    }
+
+    if (sendingMessageType === MessageType.Plain) {
+      // send message plaintext
+      return await this.sendDIDCommV2PlaintextMessage(agentContext, message, senderToRecipientService)
+    }
+
+    if (sendingMessageType === MessageType.Signed) {
+      // send message signed
+      return await this.sendDIDCommV2SignedMessage(agentContext, message, senderToRecipientService)
+    }
+
+    if (sendingMessageType === MessageType.Encrypted) {
+      // send message encrypted
+      return await this.sendDIDCommV2EncryptedMessage(agentContext, message, senderToRecipientService)
+    }
+  }
+
+  public async findCommonSupportedServices(
+    agentContext: AgentContext,
+    recipient: string,
+    sender?: string,
+    transportPriority?: TransportPriorityOptions
+  ): Promise<DidCommV2Service[] | undefined> {
+    if (!sender) return undefined
+
+    const { didDocument: senderDidDocument } = await this.didResolverService.resolve(agentContext, sender)
+
+    const { didDocument: recipientDidDocument } = await this.didResolverService.resolve(agentContext, recipient)
+    if (!recipientDidDocument) {
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${recipient}'`)
+    }
+
+    const senderServices = senderDidDocument?.service || []
+    const recipientServices = recipientDidDocument?.service || []
+
+    const senderTransports = senderServices.length
+      ? senderServices.map((service) => service.protocolScheme)
+      : this.outboundTransportsSchemas
+
+    const supportedTransports = transportPriority
+      ? [...transportPriority.schemes, ...senderTransports]
+      : senderTransports
+
+    // Sort services according to supported transports
+    const priority = supportedTransports.map((transport) => transport.toString())
+
+    const services = recipientServices.sort(function (a, b) {
+      return priority.indexOf(a.protocolScheme) - priority.indexOf(b.protocolScheme)
+    })
+
+    const commonServices = services.filter((service) => {
+      if (priority.includes(service.protocolScheme)) return service
+    })
+
+    return commonServices
+  }
+
+  private async sendDIDCommV2PlaintextMessage(
+    agentContext: AgentContext,
+    message: DIDCommV2Message,
+    services: DidDocumentService[]
+  ) {
+    this.logger.debug(`Sending plaintext message ${message.id}`)
+    const recipientDid = message.recipient()
+    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid)
+  }
+
+  private async sendDIDCommV2SignedMessage(
+    agentContext: AgentContext,
+    message: DIDCommV2Message,
+    services: DidDocumentService[]
+  ) {
+    this.logger.debug(`Sending JWS message ${message.id}`)
+
+    const recipientDid = message.recipient()
+
+    const pack = async (message: DIDCommV2Message, service: DidDocumentService) => {
+      if (!message.from) {
+        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
+      }
+      const params = { signByDID: message.from, serviceId: service?.id }
+      return this.envelopeService.packMessageSigned(agentContext, message, params)
+    }
+
+    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid, pack)
+  }
+
+  private async sendDIDCommV2EncryptedMessage(
+    agentContext: AgentContext,
+    message: DIDCommV2Message,
+    services: DidDocumentService[]
+  ) {
+    const recipientDid = message.recipient()
+    if (!recipientDid) {
+      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
+    }
+    this.logger.debug(`Sending JWE message ${message.id}`)
+
+    const pack = async (message: DIDCommV2Message, service: DidDocumentService) => {
+      return await this.encryptDIDCommV2Message(agentContext, message, service)
+    }
+
+    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid, pack)
+  }
+
+  private async encryptDIDCommV2Message(
+    agentContext: AgentContext,
+    message: DIDCommV2Message,
+    service: DidDocumentService,
+    forward?: boolean
+  ) {
+    const recipientDid = message.recipient()
+    if (!recipientDid) {
+      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
+    }
+
+    const params = {
+      toDID: recipientDid,
+      fromDID: message.from,
+      signByDID: undefined,
+      serviceId: service?.id,
+      forward,
+    }
+    return this.envelopeService.packMessageEncrypted(agentContext, message, params)
+  }
+
+  public async sendOutboundDIDCommV2Message(
+    agentContext: AgentContext,
+    message: DIDCommV2Message,
+    services: DidDocumentService[],
+    recipientDid?: string,
+    packMessage?: (message: DIDCommV2Message, service: DidDocumentService) => Promise<OutboundPackagePayload>
+  ) {
+    for (const service of services) {
+      try {
+        this.logger.info(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+
+        const payload = packMessage ? await packMessage(message, service) : { ...message }
+        const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
+
+        this.logger.trace(`Sending outbound message to transport:`, {
+          transport: service.protocolScheme,
+          outboundPackage,
+        })
+
+        for (const outboundTransport of this.outboundTransports) {
+          if (outboundTransport.supportedSchemes.includes(service.protocolScheme)) {
+            await outboundTransport.sendMessage(outboundPackage)
+            break
+          }
+        }
+
+        this.logger.info(
+          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
+        return
+      } catch (error) {
+        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
+          errors: error,
+        })
+        // ignore and try another transport
+      }
+    }
+    this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
   }
 }
 

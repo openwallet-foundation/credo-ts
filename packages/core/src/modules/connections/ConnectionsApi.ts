@@ -7,7 +7,7 @@ import type { Routing } from './services'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV1Message, createOutboundDIDCommV2Message } from '../../agent/helpers'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
@@ -27,6 +27,8 @@ import {
   DidExchangeResponseHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
+  TrustPingResponseV2MessageHandler,
+  TrustPingV2MessageHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
@@ -114,7 +116,7 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
+    const outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message, outOfBandRecord)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
@@ -147,14 +149,14 @@ export class ConnectionsApi {
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
     }
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
@@ -190,7 +192,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -198,7 +200,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
     }
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
@@ -259,6 +261,13 @@ export class ConnectionsApi {
 
     await this.connectionService.update(this.agentContext, record)
   }
+
+  public async pingDIDCommV2(fromDid: string, toDid: string) {
+    const message = await this.trustPingService.pingV2(this.agentContext, fromDid, toDid)
+    const outboundMessage = createOutboundDIDCommV2Message(message)
+    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+  }
+
   /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
@@ -351,6 +360,8 @@ export class ConnectionsApi {
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
     dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
     dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerHandler(new TrustPingV2MessageHandler(this.trustPingService))
+    dispatcher.registerHandler(new TrustPingResponseV2MessageHandler(this.trustPingService))
 
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(

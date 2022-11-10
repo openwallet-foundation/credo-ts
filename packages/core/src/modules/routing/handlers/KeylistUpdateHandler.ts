@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MediatorService } from '../services/MediatorService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { KeylistUpdateMessage } from '../messages'
 
 export class KeylistUpdateHandler implements Handler {
@@ -16,6 +16,6 @@ export class KeylistUpdateHandler implements Handler {
     const connection = messageContext.assertReadyConnection()
 
     const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
-    return createOutboundMessage(connection, response)
+    return createOutboundDIDCommV1Message(connection, response)
   }
 }

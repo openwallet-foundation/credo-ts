@@ -13,7 +13,7 @@ import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { inject, injectable } from '../../plugins'
@@ -103,7 +103,7 @@ export class DiscoverFeaturesApi<
       comment: options.comment,
     })
 
-    const outbound = createOutboundMessage(connection, queryMessage)
+    const outbound = createOutboundDIDCommV1Message(connection, queryMessage)
 
     const replaySubject = new ReplaySubject<Feature[]>(1)
     if (options.awaitDisclosures) {
@@ -151,7 +151,7 @@ export class DiscoverFeaturesApi<
       threadId: options.threadId,
     })
 
-    const outbound = createOutboundMessage(connection, disclosuresMessage)
+    const outbound = createOutboundDIDCommV1Message(connection, disclosuresMessage)
     await this.messageSender.sendMessage(this.agentContext, outbound)
   }
 }

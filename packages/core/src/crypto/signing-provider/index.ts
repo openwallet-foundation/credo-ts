@@ -1,3 +1,3 @@
-export * from './SigningProvider'
-export * from './SigningProviderRegistry'
-export * from './SigningProviderError'
+export * from './KeyProvider'
+export * from './KeyProviderRegistry'
+export * from './KeyProviderError'

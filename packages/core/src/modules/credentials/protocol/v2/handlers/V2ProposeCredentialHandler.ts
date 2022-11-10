@@ -4,7 +4,7 @@ import type { Logger } from '../../../../../logger'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements Handler {
@@ -44,6 +44,6 @@ export class V2ProposeCredentialHandler implements Handler {
 
     const { message } = await this.credentialService.acceptProposal(messageContext.agentContext, { credentialRecord })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundDIDCommV1Message(messageContext.connection, message)
   }
 }

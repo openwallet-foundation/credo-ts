@@ -8,7 +8,7 @@ import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { CacheRecord } from '../../../cache'
 import { CacheRepository } from '../../../cache/CacheRepository'
-import { SigningProviderRegistry } from '../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { LedgerError } from '../error/LedgerError'
@@ -69,7 +69,7 @@ describe('IndyPoolService', () => {
   let cacheRepository: CacheRepository
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    wallet = new IndyWallet(config.agentDependencies, config.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)

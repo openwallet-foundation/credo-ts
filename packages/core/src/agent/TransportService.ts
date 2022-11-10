@@ -1,8 +1,7 @@
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { DidDocument } from '../modules/dids'
-import type { EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
+import type { DIDCommMessage, EncryptedMessage } from './didcomm'
+import type { PackMessageParams } from './didcomm/EnvelopeService'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { injectable } from '../plugins'
@@ -39,8 +38,8 @@ interface TransportSessionTable {
 export interface TransportSession {
   id: string
   type: string
-  keys?: EnvelopeKeys
-  inboundMessage?: AgentMessage
+  keys?: PackMessageParams
+  inboundMessage?: DIDCommMessage
   connection?: ConnectionRecord
   send(encryptedMessage: EncryptedMessage): Promise<void>
   close(): Promise<void>

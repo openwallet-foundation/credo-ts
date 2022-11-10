@@ -2,7 +2,7 @@ import type { DependencyManager, Module } from '@aries-framework/core'
 
 import {
   KeyType,
-  SigningProviderToken,
+  KeyProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
   SignatureSuiteToken,
 } from '@aries-framework/core'
@@ -16,7 +16,7 @@ export class BbsModule implements Module {
    */
   public register(dependencyManager: DependencyManager) {
     // Signing providers.
-    dependencyManager.registerSingleton(SigningProviderToken, Bls12381g2SigningProvider)
+    dependencyManager.registerSingleton(KeyProviderToken, Bls12381g2SigningProvider)
 
     // Signature suites.
     dependencyManager.registerInstance(SignatureSuiteToken, {

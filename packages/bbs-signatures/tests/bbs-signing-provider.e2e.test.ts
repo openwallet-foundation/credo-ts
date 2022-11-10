@@ -5,7 +5,7 @@ import {
   KeyType,
   WalletError,
   TypedArrayEncoder,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   IndyWallet,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
@@ -33,7 +33,7 @@ describeSkipNode17And18('BBS Signing Provider', () => {
     indyWallet = new IndyWallet(
       agentDependencies,
       testLogger,
-      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+      new KeyProviderRegistry([new Bls12381g2SigningProvider()])
     )
     await indyWallet.createAndOpen(walletConfig)
   })

@@ -61,9 +61,9 @@ describe('DidRegistrar', () => {
       })
 
       it('should return an error state if no key type is provided', async () => {
+        // @ts-ignore
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
-          // @ts-expect-error - key type is required in interface
           options: {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },

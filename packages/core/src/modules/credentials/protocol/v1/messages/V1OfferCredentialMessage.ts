@@ -3,7 +3,7 @@ import type { CredOffer } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../../../agent/didcomm'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
@@ -24,7 +24,7 @@ export interface V1OfferCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
-export class V1OfferCredentialMessage extends AgentMessage {
+export class V1OfferCredentialMessage extends DIDCommV1Message {
   public constructor(options: V1OfferCredentialMessageOptions) {
     super()
 

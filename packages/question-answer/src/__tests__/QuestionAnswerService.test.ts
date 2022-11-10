@@ -4,7 +4,7 @@ import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-fram
 import {
   EventEmitter,
   IndyWallet,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   InboundMessageContext,
   DidExchangeState,
 } from '@aries-framework/core'
@@ -65,7 +65,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

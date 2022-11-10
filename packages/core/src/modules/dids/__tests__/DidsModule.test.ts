@@ -16,7 +16,7 @@ import {
   WebDidResolver,
 } from '../methods'
 import { DidRepository } from '../repository'
-import { DidRegistrarService, DidResolverService } from '../services'
+import { DidRegistrarService, DidResolverService, DidService } from '../services'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -34,9 +34,10 @@ describe('DidsModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidsModuleConfig, didsModule.config)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(10)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(11)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRepository)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, SovDidResolver)

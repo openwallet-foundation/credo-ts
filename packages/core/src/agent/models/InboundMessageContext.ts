@@ -1,7 +1,7 @@
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
-import type { AgentMessage } from '../AgentMessage'
 import type { AgentContext } from '../context'
+import type { DIDCommMessage } from '../didcomm'
 
 import { AriesFrameworkError } from '../../error'
 
@@ -13,7 +13,7 @@ export interface MessageContextParams {
   agentContext: AgentContext
 }
 
-export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
+export class InboundMessageContext<T extends DIDCommMessage = DIDCommMessage> {
   public message: T
   public connection?: ConnectionRecord
   public sessionId?: string

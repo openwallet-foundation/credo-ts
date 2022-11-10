@@ -5,7 +5,7 @@ import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519
 import { agentDependencies } from '../../tests/helpers'
 import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
-import { SigningProviderRegistry } from '../crypto/signing-provider'
+import { KeyProviderRegistry } from '../crypto/signing-provider'
 import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 
@@ -35,7 +35,7 @@ describe('IndyWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
+    indyWallet = new IndyWallet(agentDependencies, testLogger, new KeyProviderRegistry([]))
     await indyWallet.createAndOpen(walletConfig)
   })
 
@@ -119,7 +119,7 @@ describe('IndyWallet with custom Master Secret Id', () => {
   let indyWallet: IndyWallet
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
+    indyWallet = new IndyWallet(agentDependencies, testLogger, new KeyProviderRegistry([]))
     await indyWallet.createAndOpen(walletConfigWithMasterSecretId)
   })
 

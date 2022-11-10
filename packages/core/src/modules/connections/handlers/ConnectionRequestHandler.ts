@@ -5,7 +5,7 @@ import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
@@ -69,7 +69,7 @@ export class ConnectionRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundMessage(connectionRecord, message, outOfBandRecord)
+      return createOutboundDIDCommV1Message(connectionRecord, message, outOfBandRecord)
     }
   }
 }

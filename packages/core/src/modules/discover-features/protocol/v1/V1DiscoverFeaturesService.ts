@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
@@ -70,7 +70,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async processQuery(
     messageContext: InboundMessageContext<V1QueryMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DIDCommV1Message> | void> {
     const { query, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

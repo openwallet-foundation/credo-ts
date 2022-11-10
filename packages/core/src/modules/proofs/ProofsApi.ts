@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
@@ -37,7 +37,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
-import { createOutboundMessage } from '../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../agent/helpers'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -68,7 +68,7 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
 
   // out of band
   createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     proofRecord: ProofExchangeRecord
   }>
 
@@ -185,7 +185,7 @@ export class ProofsApi<
 
     const { message, proofRecord } = await service.createProposal(this.agentContext, proposalOptions)
 
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return proofRecord
@@ -234,7 +234,7 @@ export class ProofsApi<
 
     const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
@@ -264,7 +264,7 @@ export class ProofsApi<
     }
     const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
@@ -301,7 +301,7 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundDIDCommV1Message(connection, message)
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return proofRecord
@@ -352,7 +352,7 @@ export class ProofsApi<
    * @returns the message itself and the proof record associated with the sent request message
    */
   public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
-    message: AgentMessage
+    message: DIDCommV1Message
     proofRecord: ProofExchangeRecord
   }> {
     const service = this.getService(options.protocolVersion)
@@ -405,7 +405,7 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundDIDCommV1Message(connection, message)
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     }
     // Use ~service decorator otherwise
@@ -497,7 +497,7 @@ export class ProofsApi<
       description: message,
     })
 
-    const outboundMessage = createOutboundMessage(connection, problemReport)
+    const outboundMessage = createOutboundDIDCommV1Message(connection, problemReport)
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return record

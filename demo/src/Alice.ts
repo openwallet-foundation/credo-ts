@@ -71,6 +71,18 @@ export class Alice extends BaseAgent {
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
+  public async createNewDID() {
+    const { didState } = await this.agent.dids.createV2DID({
+      method: 'peer',
+      routing: { endpoint: this.agent.config.endpoints[0] },
+    })
+    console.log(greenText(`\nNew DID Created!\n DID: ${didState.did}`))
+  }
+
+  public async sendPingDIDCommV2(fromDid: string, toDid: string) {
+    await this.agent.connections.pingDIDCommV2(fromDid, toDid)
+  }
+
   public async exit() {
     console.log(Output.Exit)
     await this.agent.shutdown()

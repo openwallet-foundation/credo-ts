@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { HandlerInboundMessage } from '../../../../agent/Handler'
+import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
@@ -128,7 +128,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
   public async createProposal(
     agentContext: AgentContext,
     { connection, credentialFormats, comment, autoAcceptCredential }: CreateProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>> {
     this.logger.debug('Get the Format Service and Create Proposal Message')
 
     const formatServices = this.getFormatServices(credentialFormats)

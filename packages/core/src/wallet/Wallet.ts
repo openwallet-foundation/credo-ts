@@ -1,12 +1,7 @@
-import type { Key, KeyType } from '../crypto'
+import type { EncryptedMessage, PlaintextMessage } from '../agent/didcomm/types'
+import type { Key, KeyType, KeyPair } from '../crypto'
 import type { Disposable } from '../plugins'
-import type {
-  EncryptedMessage,
-  PlaintextMessage,
-  WalletConfig,
-  WalletConfigRekey,
-  WalletExportImportConfig,
-} from '../types'
+import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 
 export interface Wallet extends Disposable {
@@ -29,10 +24,11 @@ export interface Wallet extends Disposable {
 
   initPublicDid(didConfig: DidConfig): Promise<void>
   createDid(didConfig?: DidConfig): Promise<DidInfo>
-  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
+  pack(payload: unknown, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
+  retrieveKeyPair(kid: string): Promise<KeyPair>
 }
 
 export interface DidInfo {

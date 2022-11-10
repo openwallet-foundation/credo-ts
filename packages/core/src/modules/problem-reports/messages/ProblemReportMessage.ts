@@ -2,7 +2,7 @@
 import { Expose } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export enum WhoRetriesStatus {
@@ -56,7 +56,7 @@ export interface ProblemReportMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
-export class ProblemReportMessage extends AgentMessage {
+export class ProblemReportMessage extends DIDCommV1Message {
   /**
    * Create new ReportProblem instance.
    * @param options

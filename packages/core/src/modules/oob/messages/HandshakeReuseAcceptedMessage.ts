@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../../agent/AgentMessage'
+import { DIDCommV1Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface HandshakeReuseAcceptedMessageOptions {
@@ -7,7 +7,7 @@ export interface HandshakeReuseAcceptedMessageOptions {
   parentThreadId: string
 }
 
-export class HandshakeReuseAcceptedMessage extends AgentMessage {
+export class HandshakeReuseAcceptedMessage extends DIDCommV1Message {
   public constructor(options: HandshakeReuseAcceptedMessageOptions) {
     super()
 

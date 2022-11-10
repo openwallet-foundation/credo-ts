@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../types'
+import type { EncryptedMessage } from '../agent/didcomm/types'
 
 export interface MessageRepository {
   getAvailableMessageCount(connectionId: string): number | Promise<number>

@@ -1,5 +1,5 @@
+import type { EncryptedMessage } from '../../../../agent/didcomm/types'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
-import type { EncryptedMessage } from '../../../../types'
 
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { Dispatcher } from '../../../../agent/Dispatcher'
@@ -33,6 +33,7 @@ const InMessageRepositoryMock = InMemoryMessageRepository as jest.Mock<InMemoryM
 const agentContext = getAgentContext()
 
 const encryptedMessage: EncryptedMessage = {
+  recipients: [],
   protected: 'base64url',
   iv: 'base64url',
   ciphertext: 'base64url',

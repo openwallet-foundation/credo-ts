@@ -2,7 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CreateOfferOptions } from '../src/modules/credentials'
 import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
+import type { AgentMessageReceivedEvent, DIDCommV1Message } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -131,7 +131,7 @@ describe('out of band', () => {
       await expect(
         faberAgent.oob.createInvitation({
           label: 'test-connection',
-          messages: [{} as AgentMessage],
+          messages: [{} as DIDCommV1Message],
           multiUseInvitation: true,
         })
       ).rejects.toEqual(

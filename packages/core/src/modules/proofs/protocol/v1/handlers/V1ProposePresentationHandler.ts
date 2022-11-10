@@ -8,7 +8,7 @@ import type { ProofRequestFromProposalOptions } from '../../../models/ProofServi
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
 import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
@@ -99,6 +99,6 @@ export class V1ProposePresentationHandler implements Handler {
       willConfirm: true,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundDIDCommV1Message(messageContext.connection, message)
   }
 }

@@ -5,7 +5,7 @@ import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
@@ -115,7 +115,7 @@ export class DidExchangeResponseHandler implements Handler {
       if (!outOfBandRecord.reusable) {
         await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
       }
-      return createOutboundMessage(connection, message)
+      return createOutboundDIDCommV1Message(connection, message)
     }
   }
 }
