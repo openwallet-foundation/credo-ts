@@ -19,7 +19,7 @@ describe('Auto accept present proof', () => {
 
   // query is based on matching the schema uri in the credential with that of the input descriptor g
 
-  const inputDescriptor = {
+  const inputDescriptorCitizenship = {
     constraints: {
       fields: [
         {
@@ -89,7 +89,7 @@ describe('Auto accept present proof', () => {
       },
     ],
     name: 'Banking Information',
-    group: ['B'],
+    group: ['A'],
     id: 'citizenship_input_2',
   }
   const inputDescriptor3 = {
@@ -125,7 +125,7 @@ describe('Auto accept present proof', () => {
       },
     ],
     name: 'EU Tax Record',
-    group: ['C'],
+    group: ['A'],
     id: 'citizenship_input_3',
   }
   const inputDescriptor4 = {
@@ -164,6 +164,36 @@ describe('Auto accept present proof', () => {
     group: ['A'],
     id: 'citizenship_input_4',
   }
+
+  const inputDescriptor_vaccine = {
+    constraints: {
+      fields: [
+        {
+          path: ['$.credentialSubject.familyName'],
+          purpose: 'The claim must be from one of the specified issuers',
+          id: '1f44d35f-3333-4918-a659-f8026867f126',
+        },
+        {
+          path: ['$.credentialSubject.givenName'],
+          purpose: 'The claim must be from one of the specified issuers',
+        },
+      ],
+    },
+    schema: [
+      {
+        uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+      },
+      {
+        uri: 'https://w3id.org/vaccination#VaccineRecipient",',
+      },
+      {
+        uri: 'hhttps://w3id.org/vaccination/v1',
+      },
+    ],
+    name: 'EU Vaccine Passport',
+    group: ['B'],
+    id: 'vaccine_input_1',
+  }
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
@@ -179,7 +209,7 @@ describe('Auto accept present proof', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
+    xtest('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
@@ -199,7 +229,7 @@ describe('Auto accept present proof', () => {
           presentationExchange: {
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptor],
+              input_descriptors: [inputDescriptorCitizenship],
             },
           },
         },
@@ -213,7 +243,7 @@ describe('Auto accept present proof', () => {
       await aliceProofRecordPromise
     })
 
-    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
+    xtest('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const faberProofRecord = await faberAgent.proofs.requestProof({
@@ -227,7 +257,7 @@ describe('Auto accept present proof', () => {
             },
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptor],
+              input_descriptors: [inputDescriptorCitizenship],
             },
           },
         },
@@ -246,7 +276,7 @@ describe('Auto accept present proof', () => {
       })
     })
 
-    xtest('Submission Requirements', async () => {
+    test('Submission Requirements', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       const submissionRequirements: SubmissionRequirement[] = [
@@ -261,7 +291,7 @@ describe('Auto accept present proof', () => {
           purpose:
             'We are only verifying one current employment relationship, not any other information about employment.',
           rule: 'all',
-          from: 'B',
+          from: 'A',
         },
         // {
         //   name: 'Citizenship Information',
@@ -303,7 +333,7 @@ describe('Auto accept present proof', () => {
             // this is of type PresentationDefinitionV1 (see pex library)
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptor, inputDescriptor2, inputDescriptor3, inputDescriptor4],
+              input_descriptors: [inputDescriptorCitizenship, inputDescriptor2, inputDescriptor3, inputDescriptor4],
               submission_requirements: submissionRequirements,
             },
           },
@@ -319,7 +349,7 @@ describe('Auto accept present proof', () => {
     })
   })
 
-  describe('Auto accept on `contentApproved`', () => {
+  xdescribe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
@@ -356,7 +386,7 @@ describe('Auto accept present proof', () => {
           presentationExchange: {
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptor],
+              input_descriptors: [inputDescriptorCitizenship],
             },
           },
         },
@@ -392,7 +422,7 @@ describe('Auto accept present proof', () => {
             },
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptor],
+              input_descriptors: [inputDescriptorCitizenship],
             },
           },
         },
