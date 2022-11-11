@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.2.11",
+  "version": "0.2.13",
   "files": [
     "build",
     "bin"
@@ -21,14 +21,14 @@
     "is-indy-installed": "bin/is-indy-installed.js"
   },
   "scripts": {
-    "build": "yarn run clean && yarn run compile",
+    "build": "npx rimraf -rf build && yarn run compile",
     "clean": "npx rimraf -rf build node_modules",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "yarn run build",
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core@0.2.11",
+    "@aries-framework/core": "npm:@sicpa-dlab/aries-framework-core@0.2.13",
     "didcomm-node": "0.3.4",
     "express": "^4.17.1",
     "ffi-napi": "^4.0.3",

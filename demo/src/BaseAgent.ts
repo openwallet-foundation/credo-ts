@@ -2,6 +2,7 @@ import type {
   DidProps,
   InboundTransport,
   InitConfig,
+  InternetChecker,
   Logger,
   OutboundTransport,
   ValueTransferConfig,
@@ -11,6 +12,7 @@ import {
   Agent,
   AutoAcceptCredential,
   AutoAcceptProof,
+  ConsoleLogger,
   HttpOutboundTransport,
   LogLevel,
   MediatorDeliveryStrategy,
@@ -30,6 +32,9 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 export const logger: Logger = {
+  createContextLogger(context: string): Logger {
+    return new ConsoleLogger(this.logLevel, context)
+  },
   logLevel: LogLevel.info,
   test: (message: string) => {
     console.log(message)
@@ -54,9 +59,21 @@ export const logger: Logger = {
   },
 }
 
+export const internetChecker: InternetChecker = {
+  hasInternetAccess(): Promise<boolean> {
+    return Promise.resolve(true)
+  },
+}
+
+export const doesNotHasInternetChecker: InternetChecker = {
+  hasInternetAccess(): Promise<boolean> {
+    return Promise.resolve(false)
+  },
+}
+
 export class BaseAgent {
   public static defaultMediatorConnectionInvite =
-    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6ImIwMWNiNTI2LTNkNjAtNDY3OC1hMDRhLWY4NDVjMzZkYjRlNCIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
+    'http://localhost:3000/api/v1?oob=eyJ0eXAiOiJhcHBsaWNhdGlvbi9kaWRjb21tLXBsYWluK2pzb24iLCJpZCI6IjEzNjk0YzJmLTM4ZTktNGUzNC1hNDlhLTI5OWY5NDViY2Y3OSIsImZyb20iOiJkaWQ6cGVlcjoyLkV6NkxTbkhTOWYzaHJNdUxyTjl6NlpobzdUY0JSdlN5SzdIUGpRdHdLbXUzb3NXd0YuVno2TWtyYWhBb1ZMUVM5UzVHRjVzVUt0dWRYTWVkVVNaZGRlSmhqSHRBRmFWNGhvVi5TVzNzaWN5STZJbWgwZEhBNkx5OXNiMk5oYkdodmMzUTZNekF3TUM5aGNHa3ZkakVpTENKMElqb2laRzBpTENKeUlqcGJYWDBzZXlKeklqb2lkM002THk5c2IyTmhiR2h2YzNRNk16QXdNQzloY0drdmRqRWlMQ0owSWpvaVpHMGlMQ0p5SWpwYlhYMWQiLCJib2R5Ijp7ImdvYWxfY29kZSI6Im1lZGlhdG9yLXByb3Zpc2lvbiJ9LCJ0eXBlIjoiaHR0cHM6Ly9kaWRjb21tLm9yZy9vdXQtb2YtYmFuZC8yLjAvaW52aXRhdGlvbiIsImFsZyI6IkhTMjU2In0='
 
   public static witnessTable = [
     {
@@ -93,6 +110,7 @@ export class BaseAgent {
     mediatorConnectionsInvite?: string
     endpoints?: string[]
     emulateOfflineCase?: boolean
+    internetChecker?: InternetChecker
   }) {
     this.name = props.name
     this.port = props.port
@@ -117,14 +135,14 @@ export class BaseAgent {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      mediatorPickupStrategy: MediatorPickupStrategy.Implicit,
-      mediatorPollingInterval: 500000,
+      mediatorPickupStrategy: MediatorPickupStrategy.Combined,
+      mediatorPollingInterval: 5000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,
       mediatorConnectionsInvite: props.mediatorConnectionsInvite,
       mediatorDeliveryStrategy: MediatorDeliveryStrategy.WebSocket,
-      emulateOfflineCase: props.emulateOfflineCase,
-      logger,
+      internetChecker: props.internetChecker ? props.internetChecker : internetChecker,
+      // logger,
     }
 
     this.config = config

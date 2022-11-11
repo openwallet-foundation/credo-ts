@@ -1,5 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
-import type { DidExchangeState } from './models'
+import type { DidExchangeState, ShareContactRequest, ShareContactState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum ConnectionEventTypes {
@@ -8,6 +8,10 @@ export enum ConnectionEventTypes {
 
 export enum TrustPingEventTypes {
   TrustPingResponseReceived = 'TrustPingResponseReceived',
+}
+
+export enum ShareContactEventTypes {
+  ShareContactStateChanged = 'ShareContactStateChanged',
 }
 
 export interface ConnectionStateChangedEvent extends BaseEvent {
@@ -22,5 +26,13 @@ export interface TrustPingReceivedEvent extends BaseEvent {
   type: typeof TrustPingEventTypes.TrustPingResponseReceived
   payload: {
     thid: string
+  }
+}
+
+export interface ShareContactStateChangedEvent extends BaseEvent {
+  type: typeof ShareContactEventTypes.ShareContactStateChanged
+  payload: {
+    request: ShareContactRequest
+    previousState: ShareContactState | null
   }
 }

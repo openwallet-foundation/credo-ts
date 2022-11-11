@@ -187,13 +187,13 @@ export class ValueTransferService {
     }
 
     if (record.transaction.role === TransactionRole.Witness) {
-      await this.witness.abortTransaction(record.id, code, reason, send)
+      await this.witness.abortTransaction(record.transaction.id, code, reason, send)
     }
     if (record.transaction.role === TransactionRole.Getter) {
-      await this.getter.abortTransaction(record.id, code, reason, send)
+      await this.getter.abortTransaction(record.transaction.id, code, reason, send)
     }
     if (record.transaction.role === TransactionRole.Giver) {
-      await this.giver.abortTransaction(record.id, code, reason, send)
+      await this.giver.abortTransaction(record.transaction.id, code, reason, send)
     }
 
     const updatedRecord = await this.emitStateChangedEvent(record.transaction.id)

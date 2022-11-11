@@ -20,7 +20,7 @@ import {
   timer,
   merge,
 } from 'rxjs'
-import { catchError, map, filter, first, takeUntil, timeout, retry } from 'rxjs/operators'
+import { catchError, map, filter, first, takeUntil, timeout } from 'rxjs/operators'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -183,6 +183,13 @@ export class RecipientModule {
         this.logger.warn(
           `Websocket connection to mediator with mediation DID '${mediator.did}' is closed, attempting to reconnect...`
         )
+
+        const hasInternetAccess = await this.agentConfig.internetChecker.hasInternetAccess()
+        if (!hasInternetAccess) {
+          this.logger.warn(`Internet connection is not available, Websocket reconnection cancelled`)
+          return
+        }
+
         // Try to reconnect to WebSocket and reset retry interval if successful
         await this.openMediationWebSocket(mediator)
           .then(() => (interval = startReconnectIntervalMs))
@@ -199,6 +206,11 @@ export class RecipientModule {
       .pipe(takeUntil(this.agentConfig.stop$))
       .subscribe(async () => {
         try {
+          const hasInternetAccess = await this.agentConfig.internetChecker.hasInternetAccess()
+          if (!hasInternetAccess) {
+            this.logger.debug('Internet connection is not available, explicit messages pickup skipped')
+            return
+          }
           await this.pickupMessages(mediator)
         } catch (e) {
           this.agentConfig.logger.error(`Unable to send pickup message to mediator. Error: ${e}`)
