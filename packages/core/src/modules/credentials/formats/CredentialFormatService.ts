@@ -15,6 +15,7 @@ import type {
   FormatAutoRespondOfferOptions,
   FormatAutoRespondProposalOptions,
   FormatAutoRespondRequestOptions,
+  FormatProcessCredentialOptions,
 } from './CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
@@ -58,7 +59,7 @@ export abstract class CredentialFormatService<CF extends CredentialFormat = Cred
   ): Promise<CredentialFormatCreateReturn>
 
   // credential methods
-  abstract processCredential(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  abstract processCredential(agentContext: AgentContext, options: FormatProcessCredentialOptions): Promise<void>
 
   // auto accept methods
   abstract shouldAutoRespondToProposal(agentContext: AgentContext, options: FormatAutoRespondProposalOptions): boolean

@@ -503,18 +503,26 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormat[]> {
     {
       credentialRecord,
       message,
+      requestMessage,
       formatServices,
     }: {
       credentialRecord: CredentialExchangeRecord
       message: V2IssueCredentialMessage
+      requestMessage: V2RequestCredentialMessage
       formatServices: CredentialFormatService[]
     }
   ) {
     for (const formatService of formatServices) {
       const attachment = this.getAttachmentForService(formatService, message.formats, message.credentialAttachments)
+      const requestAttachment = this.getAttachmentForService(
+        formatService,
+        requestMessage.formats,
+        requestMessage.requestAttachments
+      )
 
       await formatService.processCredential(agentContext, {
         attachment,
+        requestAttachment,
         credentialRecord,
       })
     }
