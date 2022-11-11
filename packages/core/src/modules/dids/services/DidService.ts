@@ -307,6 +307,10 @@ export class DidService {
     return this.didRepository.findById(recordId)
   }
 
+  public async deleteById(recordId: string) {
+    return this.didRepository.deleteById(recordId)
+  }
+
   public async findStaticDid(marker?: DidMarker) {
     const did = await this.didRepository.findByQuery({
       isStatic: true,
