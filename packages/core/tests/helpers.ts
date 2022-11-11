@@ -667,6 +667,7 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
 
+  // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
   }
