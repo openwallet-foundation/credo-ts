@@ -11,7 +11,7 @@ import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
   CreateProofAttachmentOptions,
-  CreateProposalOptions,
+  FormatCreateProofProposalOptions,
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
   FormatCreatePresentationOptions,
@@ -133,7 +133,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async createProposal(options: CreateProposalOptions): Promise<ProofAttachmentFormat> {
+  public async createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw Error('Missing indy format to create proposal attachment format')
     }

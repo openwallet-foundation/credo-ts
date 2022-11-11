@@ -76,6 +76,6 @@ export class V2RequestCredentialHandler implements Handler {
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically issue credential`)
   }
 }

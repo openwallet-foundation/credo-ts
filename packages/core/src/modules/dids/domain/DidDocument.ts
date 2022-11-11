@@ -11,7 +11,7 @@ import { getKeyDidMappingByVerificationMethod } from './key-type'
 import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
-type DidPurpose =
+export type DidPurpose =
   | 'authentication'
   | 'keyAgreement'
   | 'assertionMethod'
@@ -234,7 +234,6 @@ export async function findVerificationMethodByKeyType(
     'capabilityInvocation',
     'capabilityDelegation',
   ]
-
   for await (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (key instanceof Array) {

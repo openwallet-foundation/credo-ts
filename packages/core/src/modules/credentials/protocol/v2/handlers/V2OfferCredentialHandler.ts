@@ -38,7 +38,6 @@ export class V2OfferCredentialHandler implements Handler {
       credentialRecord,
       offerMessage: messageContext.message,
     })
-
     if (shouldAutoRespond) {
       return await this.acceptOffer(credentialRecord, messageContext)
     }
