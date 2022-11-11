@@ -90,6 +90,18 @@ export class ValueTransferModule {
     return this.valueTransferGetterService.createRequest(params)
   }
 
+  public async verifyRequestCanBeAccepted(record: ValueTransferRecord): Promise<{
+    record?: ValueTransferRecord
+  }> {
+    return this.valueTransferGiverService.verifyRequestCanBeAccepted(record)
+  }
+
+  public async verifyOfferCanBeAccepted(record: ValueTransferRecord): Promise<{
+    record?: ValueTransferRecord
+  }> {
+    return this.valueTransferGetterService.verifyOfferCanBeAccepted(record)
+  }
+
   /**
    * Accept received Payment Request as Giver.
    *

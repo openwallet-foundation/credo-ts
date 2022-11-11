@@ -5,7 +5,14 @@ import type { CashAcceptedWitnessedMessage, RequestMessage, GiverReceiptMessage 
 import type { ValueTransferRecord } from '../repository'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { CashAcceptanceWitnessed, Giver, GiverReceipt, Request } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ErrorCodes } from '@sicpa-dlab/value-transfer-common-ts'
+import {
+  TransactionState,
+  CashAcceptanceWitnessed,
+  Giver,
+  GiverReceipt,
+  Request,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -132,6 +139,37 @@ export class ValueTransferGiverService {
     return { record, message: offerMessage }
   }
 
+  public async verifyRequestCanBeAccepted(record: ValueTransferRecord): Promise<{
+    record?: ValueTransferRecord
+  }> {
+    this.logger.info(`> Giver: verify request message for VTP transaction ${record.transaction.id}`)
+
+    // Call VTP library to accept request
+    const { error, transaction } = await this.giver.verifyRequestCanBeAccepted(
+      record.transaction.id,
+      record.recipientDid
+    )
+    if (error) {
+      this.logger.error(` Giver: verify request message for VTP transaction ${record.transaction.id} failed.`, {
+        error,
+      })
+      transaction.error = {
+        code: error.code || ErrorCodes.InternalError,
+        comment: error.message || 'Verify request message error',
+      }
+      transaction.state = TransactionState.Failed
+      record.transaction = transaction
+      await this.valueTransferRepository.update(record)
+    }
+
+    // Raise event
+    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+
+    this.logger.info(`< Giver: verify request message for VTP transaction ${record.transaction.id} completed!`)
+
+    return { record: updatedRecord }
+  }
+
   /**
    * Process a received {@link RequestMessage}.
    *    Value transfer record with the information from the request message will be created.
@@ -159,6 +197,10 @@ export class ValueTransferGiverService {
 
     // Save second party Did
     record.secondPartyDid = requestMessage.from
+
+    if (requestMessage.to?.length) {
+      record.recipientDid = requestMessage.to[0]
+    }
     await this.valueTransferRepository.update(record)
 
     // Raise event
