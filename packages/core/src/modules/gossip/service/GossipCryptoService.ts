@@ -1,5 +1,5 @@
 import type { Buffer } from '../../../utils'
-import type { GossipCryptoInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipCryptoInterface } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { injectable } from '../../../plugins'
 import { DidService } from '../../dids/services/DidService'

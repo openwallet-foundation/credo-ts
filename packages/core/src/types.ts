@@ -13,7 +13,7 @@ import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorDeliveryStrategy, MediatorPickupStrategy } from './modules/routing'
 import type { Transports } from './modules/routing/types'
 import type { AutoAcceptValueTransfer } from './modules/value-transfer/ValueTransferAutoAcceptType'
-import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { GossipMetricsInterface, WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -114,6 +114,11 @@ export interface InitConfig {
   defaultMediatorId?: string
   clearDefaultMediator?: boolean
   mediatorPollingInterval?: number
+  mediatorWebSocketConfig?: Partial<{
+    startReconnectIntervalMs: number
+    maxReconnectIntervalMs: number
+    intervalStepMs: number
+  }>
   mediatorPickupStrategy?: MediatorPickupStrategy
   mediatorDeliveryStrategy?: MediatorDeliveryStrategy
   mediatorPushToken?: string
@@ -128,11 +133,10 @@ export interface InitConfig {
   useLegacyDidSovPrefix?: boolean
   connectionImageUrl?: string
   valueTransferConfig?: ValueTransferConfig
-  emulateOfflineCase?: boolean
-
-  defaultPingAddress?: string
 
   autoUpdateStorageOnStartup?: boolean
+
+  internetChecker?: InternetChecker
 }
 
 export type PlaintextMessage = PlaintextMessageV1 | PlaintextMessageV2
@@ -200,4 +204,8 @@ export interface TransportPriorityOptions {
 
 export type SendMessageOptions = {
   transportPriority?: TransportPriorityOptions
+}
+
+export interface InternetChecker {
+  hasInternetAccess(): Promise<boolean>
 }

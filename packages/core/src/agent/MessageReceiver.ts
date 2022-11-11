@@ -3,16 +3,20 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { EncryptedMessage } from '../types'
 import type { TransportSession } from './TransportService'
-import type { DIDCommMessage, SignedMessage } from './didcomm'
+import type { DIDCommMessage, SignedMessage, DIDCommV2Message } from './didcomm'
 import type { DecryptedMessageContext, PackedMessage, PlaintextMessage } from './didcomm/types'
 
 import { AriesFrameworkError } from '../error'
 import { ConnectionsModule } from '../modules/connections/ConnectionsModule'
 import { ConnectionRepository } from '../modules/connections/repository/ConnectionRepository'
 import { DidDocument } from '../modules/dids/domain/DidDocument'
-import { DidRepository } from '../modules/dids/repository/DidRepository'
 import { KeyRepository } from '../modules/keys/repository'
-import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
+import {
+  ProblemReportError,
+  ProblemReportMessage,
+  ProblemReportReason,
+  ProblemReportV2Message,
+} from '../modules/problem-reports'
 import { injectable } from '../plugins'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
@@ -37,7 +41,6 @@ export class MessageReceiver {
   private dispatcher: Dispatcher
   private logger: Logger
   private keyRepository: KeyRepository
-  private didRepository: DidRepository
   private connectionsModule: ConnectionsModule
   public readonly inboundTransports: InboundTransport[] = []
 
@@ -49,7 +52,6 @@ export class MessageReceiver {
     connectionRepository: ConnectionRepository,
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
-    didRepository: DidRepository,
     connectionsModule: ConnectionsModule
   ) {
     this.config = config
@@ -59,7 +61,6 @@ export class MessageReceiver {
     this.connectionsModule = connectionsModule
     this.dispatcher = dispatcher
     this.keyRepository = keyRepository
-    this.didRepository = didRepository
     this.logger = this.config.logger
   }
 
@@ -221,13 +222,14 @@ export class MessageReceiver {
       return
     }
 
-    const service = await this.messageSender.findCommonSupportedService(undefined, did)
-    if (!service) {
+    const services = await this.messageSender.findCommonSupportedServices(undefined, did)
+    if (!services?.length) {
       // if service not found - log error and return
       this.logger.warn('Message cannot handled as relay because there is not supported transport to deliver it.')
       return
     }
-    await this.messageSender.sendMessage(message.message, service, did)
+
+    await this.messageSender.sendPackedMessage(message.message, services, did)
 
     this.logger.info('> Handle message as relay completed!')
     return
@@ -259,8 +261,10 @@ export class MessageReceiver {
     try {
       message = await this.transformMessage(plaintextMessage)
     } catch (error) {
-      if (plaintextMessage['@id']) {
-        if (connection) await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
+      if (plaintextMessage['@id'] && connection) {
+        await this.sendProblemReportMessage(error.message, connection, plaintextMessage)
+      } else if (plaintextMessage.id) {
+        await this.sendProblemReportMessageV2(error.message, plaintextMessage)
       }
       throw error
     }
@@ -335,5 +339,25 @@ export class MessageReceiver {
     if (outboundMessage) {
       await this.messageSender.sendDIDCommV1Message(outboundMessage)
     }
+  }
+
+  private async sendProblemReportMessageV2(message: string, plaintextMessage: PlaintextMessage) {
+    const plainTextMessageV2 = plaintextMessage as unknown as DIDCommV2Message
+
+    // Cannot send problem report for message with unknown sender or recipient
+    if (!plainTextMessageV2.from || !plainTextMessageV2.to?.length) return
+
+    const problemReportMessage = new ProblemReportV2Message({
+      pthid: plainTextMessageV2.id,
+      // FIXME Consider adding validation for 'plainTextMessageV2.to' value
+      from: plainTextMessageV2.to[0],
+      to: plainTextMessageV2.from,
+      body: {
+        code: ProblemReportReason.MessageParseFailure,
+        comment: message,
+      },
+    })
+
+    await this.messageSender.sendDIDCommV2Message(problemReportMessage)
   }
 }

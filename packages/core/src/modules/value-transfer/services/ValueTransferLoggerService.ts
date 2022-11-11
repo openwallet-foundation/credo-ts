@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Logger } from '../../../logger'
-import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-common-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { injectable } from '../../../plugins'
@@ -11,7 +11,7 @@ export class ValueTransferLoggerService implements ValueTransferLogger {
   private logger: Logger
 
   public constructor(config: AgentConfig) {
-    this.logger = config.logger
+    this.logger = config.logger.createContextLogger('VTP-LogService')
     this.logLevel = config.logger.logLevel
   }
 

@@ -4,7 +4,7 @@ import type { ValueTransferRecord } from '@aries-framework/core'
 import { DidMarker, Transports } from '@aries-framework/core'
 import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, doesNotHasInternetChecker } from './BaseAgent'
 import { greenText, Output, redText } from './OutputClass'
 
 export class Bob extends BaseAgent {
@@ -26,7 +26,7 @@ export class Bob extends BaseAgent {
       valueTransferConfig: {
         party: {},
       },
-      emulateOfflineCase: true,
+      internetChecker: doesNotHasInternetChecker,
     })
   }
 
