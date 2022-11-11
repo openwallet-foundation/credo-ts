@@ -165,10 +165,9 @@ export class ValueTransferWitnessService {
     // Call VTP library to handle cash removal and create receipt
     const cashRemoval = new CashRemoval(cashRemovedMessage)
 
-    const operation = async () => {
-      return this.witness.createReceipt(cashRemoval)
-    }
-    const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
+    // FIXME: We need to have a lock on Witness state here
+    const { error, transaction } = await this.witness.createReceipt(cashRemoval)
+
     if (error || !transaction) {
       this.logger.error(` Giver: process cash removal message for VTP transaction ${cashRemovedMessage.thid} failed.`, {
         error,
@@ -203,10 +202,10 @@ export class ValueTransferWitnessService {
 
     // Call VTP library to handle cash mint
     const mint = new Mint(mintMessage)
-    const operation = async () => {
-      return await this.witness.processCashMint(mint)
-    }
-    const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
+
+    // FIXME: We need to have a lock on Witness state here
+    const { error, message } = await this.witness.processCashMint(mint)
+
     if (error || !message) {
       this.logger.error(`Issuer: processCashMint failed`, { error })
       return {}

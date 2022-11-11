@@ -30,7 +30,6 @@ import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQueryMessage'
-import { WitnessStateRepository } from '../../gossip/repository/WitnessStateRepository'
 import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
@@ -51,7 +50,6 @@ export class ValueTransferService {
   protected valueTransferCryptoService: ValueTransferCryptoService
   protected valueTransferStateService: ValueTransferPartyStateService
   protected valueTransferWitnessStateService: ValueTransferWitnessStateService
-  protected witnessStateRepository: WitnessStateRepository
   protected didService: DidService
   protected didResolverService: DidResolverService
   protected eventEmitter: EventEmitter
@@ -69,7 +67,6 @@ export class ValueTransferService {
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
     gossipService: GossipService,
-    witnessStateRepository: WitnessStateRepository,
     didService: DidService,
     didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
@@ -82,7 +79,6 @@ export class ValueTransferService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.valueTransferWitnessStateService = valueTransferWitnessStateService
-    this.witnessStateRepository = witnessStateRepository
     this.didService = didService
     this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter

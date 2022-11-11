@@ -18,6 +18,11 @@ export class ValueTransferCryptoService implements VtpCryptoInterface {
     this.keysService = keysService
   }
 
+  public async doesDidExist(did: string): Promise<boolean> {
+    const didRecord = await this.didService.findById(did)
+    return !!didRecord
+  }
+
   public async signByDid(payload: Buffer, did: string): Promise<Buffer> {
     const didDoc = await this.didService.getDIDDoc(did)
     const kid = didDoc.verificationKeyId || didDoc.authenticationKeyId

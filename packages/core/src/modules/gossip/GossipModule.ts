@@ -3,9 +3,7 @@ import type { DependencyManager } from '../../plugins'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { module, injectable } from '../../plugins'
 
-import { WitnessTableHandler, WitnessTableQueryHandler } from './handlers'
-import { WitnessGossipHandler } from './handlers/WitnessGossipHandler'
-import { WitnessStateRepository } from './repository'
+import { WitnessGossipMessageHandler } from './handlers'
 import { GossipService } from './service'
 
 @module()
@@ -19,9 +17,9 @@ export class GossipModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new WitnessGossipHandler(this.gossipService))
-    dispatcher.registerHandler(new WitnessTableQueryHandler(this.gossipService))
-    dispatcher.registerHandler(new WitnessTableHandler(this.gossipService))
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    dispatcher.registerHandler(new WitnessGossipMessageHandler(this.gossipService))
   }
 
   /**
@@ -33,8 +31,5 @@ export class GossipModule {
 
     // Services
     dependencyManager.registerSingleton(GossipService)
-
-    // Repositories
-    dependencyManager.registerSingleton(WitnessStateRepository)
   }
 }
