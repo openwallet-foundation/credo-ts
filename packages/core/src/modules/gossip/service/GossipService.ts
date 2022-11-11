@@ -17,8 +17,8 @@ import {
   WitnessTable,
   selectTopWitnessToSendAsk,
   pickAllWitnessForTransactionUpdates,
+  GossipMessageDispatcher,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
-import { GossipMessageDispatcher } from '@sicpa-dlab/witness-gossip-protocol-ts/build/gossip-message-dispatcher'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'

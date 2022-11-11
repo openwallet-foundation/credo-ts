@@ -1,11 +1,12 @@
 import type { TransactionUpdate } from '@sicpa-dlab/witness-gossip-protocol-ts'
 
 import { ErrorCodes, ValueTransferError } from '@sicpa-dlab/value-transfer-common-ts'
-import { WitnessGossipInfo, WitnessMessageType } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import {
+  WitnessGossipInfo,
   GossipAttachment,
   WitnessGossipInfoBody,
-} from '@sicpa-dlab/witness-gossip-protocol-ts/src/types/messages/witness-gossip-info'
+  WitnessMessageType,
+} from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
