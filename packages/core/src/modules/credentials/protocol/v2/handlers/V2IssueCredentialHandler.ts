@@ -53,7 +53,6 @@ export class V2IssueCredentialHandler implements Handler {
     const { message } = await this.credentialService.acceptCredential(messageContext.agentContext, {
       credentialRecord,
     })
-
     if (messageContext.connection) {
       return createOutboundMessage(messageContext.connection, message)
     } else if (requestMessage?.service && messageContext.message.service) {

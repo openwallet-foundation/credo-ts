@@ -12,11 +12,6 @@ export interface SignCredentialOptions {
   verificationMethod: string
   proofPurpose?: ProofPurpose
   created?: string
-  domain?: string
-  challenge?: string
-  credentialStatus?: {
-    type: string
-  }
 }
 
 export interface VerifyCredentialOptions {

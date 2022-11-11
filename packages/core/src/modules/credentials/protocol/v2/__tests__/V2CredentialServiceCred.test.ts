@@ -26,6 +26,7 @@ import { credReq } from '../../../__tests__/fixtures'
 import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
 import { IndyCredentialFormatService } from '../../../formats'
 import { IndyCredentialUtils } from '../../../formats/indy/IndyCredentialUtils'
+import { JsonLdCredentialFormatService } from '../../../formats/jsonld/JsonLdCredentialFormatService'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { CredentialMetadataKeys } from '../../../repository/CredentialMetadataTypes'
@@ -41,6 +42,7 @@ import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessa
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
+jest.mock('../../../formats/jsonld/JsonLdCredentialFormatService')
 jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
@@ -50,6 +52,7 @@ jest.mock('../../../../../agent/Dispatcher')
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
+const JsonLdCredentialFormatServiceMock = JsonLdCredentialFormatService as jest.Mock<JsonLdCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
@@ -59,12 +62,17 @@ const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const routingService = new RoutingServiceMock()
 const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
+const jsonLdCredentialFormatService = new JsonLdCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 indyCredentialFormatService.formatKey = 'indy'
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+jsonLdCredentialFormatService.formatKey = 'jsonld'
 
 const agentConfig = getAgentConfig('V2CredentialServiceCredTest')
 const agentContext = getAgentContext()
@@ -261,6 +269,7 @@ describe('CredentialService', () => {
       eventEmitter,
       credentialRepository,
       indyCredentialFormatService,
+      jsonLdCredentialFormatService,
       agentConfig.logger,
       new CredentialsModuleConfig()
     )
