@@ -101,7 +101,9 @@ export class RecipientApi {
     // Poll for messages from mediator
     const defaultMediator = await this.findDefaultMediator()
     if (defaultMediator) {
-      await this.initiateMessagePickup(defaultMediator)
+      this.initiateMessagePickup(defaultMediator).catch((error) => {
+        this.logger.warn(`Error initiating message pickup with mediator ${defaultMediator.id}`, { error })
+      })
     }
   }
 
