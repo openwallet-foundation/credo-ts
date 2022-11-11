@@ -300,4 +300,161 @@ describe('IndyPoolService', () => {
       })
     })
   })
+
+  describe('getPoolForNamespace', () => {
+    it('should throw a LedgerNotConfiguredError error if no pools are configured on the pool service', async () => {
+      poolService.setPools([])
+
+      expect(() => poolService.getPoolForNamespace()).toThrow(LedgerNotConfiguredError)
+    })
+
+    it('should return the first pool if indyNamespace is not provided', async () => {
+      const expectedPool = pools[0]
+
+      expect(poolService.getPoolForNamespace().id).toEqual(expectedPool.id)
+    })
+
+    it('should throw a LedgerNotFoundError error if any of the pools did not have the provided indyNamespace', async () => {
+      const indyNameSpace = 'test'
+      const responses = pools.map((pool) => pool.indyNamespace)
+
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'didIndyNamespace', 'get')
+        spy.mockReturnValueOnce(responses[index])
+      })
+
+      expect(() => poolService.getPoolForNamespace(indyNameSpace)).toThrow(LedgerNotFoundError)
+    })
+
+    it('should return the first pool that indyNamespace matches', async () => {
+      const expectedPool = pools[3]
+      const indyNameSpace = 'indicio'
+      const responses = pools.map((pool) => pool.indyNamespace)
+
+      poolService.pools.forEach((pool, index) => {
+        const spy = jest.spyOn(pool, 'didIndyNamespace', 'get')
+        spy.mockReturnValueOnce(responses[index])
+      })
+
+      const pool = poolService.getPoolForNamespace(indyNameSpace)
+
+      expect(pool.id).toEqual(expectedPool.id)
+    })
+  })
+
+  describe('submitWriteRequest', () => {
+    it('should throw an error if the config version does not match', async () => {
+      const pool = poolService.getPoolForNamespace()
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
+        digest: 'abcde',
+        version: '2.0',
+        text: 'jhsdhbv',
+        ratification_ts: 12345678,
+        acceptanceMechanisms: {
+          aml: { accept: 'accept' },
+          amlContext: 'accept',
+          version: '3',
+        },
+      } as never)
+      await expect(
+        poolService.submitWriteRequest(
+          agentContext,
+          pool,
+          {
+            reqId: 1668174449192969000,
+            identifier: 'BBPoJqRKatdcfLEAFL7exC',
+            operation: {
+              type: '1',
+              dest: 'N8NQHLtCKfPmWMgCSdfa7h',
+              verkey: 'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',
+              alias: 'Heinz57',
+            },
+            protocolVersion: 2,
+          },
+          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+        )
+      ).rejects.toThrowError(
+        'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["accept"] and version 2.0 in pool.'
+      )
+    })
+
+    it('should throw an error if the config acceptance mechanism does not match', async () => {
+      const pool = poolService.getPoolForNamespace()
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
+        digest: 'abcde',
+        version: '1.0',
+        text: 'jhsdhbv',
+        ratification_ts: 12345678,
+        acceptanceMechanisms: {
+          aml: { decline: 'accept' },
+          amlContext: 'accept',
+          version: '1',
+        },
+      } as never)
+      await expect(
+        poolService.submitWriteRequest(
+          agentContext,
+          pool,
+          {
+            reqId: 1668174449192969000,
+            identifier: 'BBPoJqRKatdcfLEAFL7exC',
+            operation: {
+              type: '1',
+              dest: 'N8NQHLtCKfPmWMgCSdfa7h',
+              verkey: 'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',
+              alias: 'Heinz57',
+            },
+            protocolVersion: 2,
+          },
+          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+        )
+      ).rejects.toThrowError(
+        'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["decline"] and version 1.0 in pool.'
+      )
+    })
+
+    it('should throw an error if no config is present', async () => {
+      const pool = poolService.getPoolForNamespace()
+      pool.authorAgreement = undefined
+      pool.config.transactionAuthorAgreement = undefined
+
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      jest.spyOn(poolService, 'getTransactionAuthorAgreement').mockResolvedValue({
+        digest: 'abcde',
+        version: '1.0',
+        text: 'jhsdhbv',
+        ratification_ts: 12345678,
+        acceptanceMechanisms: {
+          aml: { accept: 'accept' },
+          amlContext: 'accept',
+          version: '3',
+        },
+      } as never)
+      await expect(
+        poolService.submitWriteRequest(
+          agentContext,
+          pool,
+          {
+            reqId: 1668174449192969000,
+            identifier: 'BBPoJqRKatdcfLEAFL7exC',
+            operation: {
+              type: '1',
+              dest: 'N8NQHLtCKfPmWMgCSdfa7h',
+              verkey: 'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf',
+              alias: 'Heinz57',
+            },
+            protocolVersion: 2,
+          },
+          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+        )
+      ).rejects.toThrowError(/Please, specify a transaction author agreement with version and acceptance mechanism/)
+    })
+  })
 })
