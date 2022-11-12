@@ -50,7 +50,7 @@ export class MessagePickupService {
       messages: batchMessages,
     })
 
-    return createOutboundMessage(connection, batchMessage)
+    return createOutboundMessage({ connection, payload: batchMessage })
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {

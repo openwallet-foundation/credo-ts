@@ -114,7 +114,11 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
+    const outboundMessage = createOutboundMessage({
+      connection: connectionRecord,
+      payload: message,
+      outOfBand: outOfBandRecord,
+    })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return connectionRecord
   }
@@ -147,14 +151,14 @@ export class ConnectionsApi {
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundMessage({ connection: connectionRecord, payload: message })
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundMessage({ connection: connectionRecord, payload: message })
     }
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
@@ -190,7 +194,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundMessage({ connection: connectionRecord, payload: message })
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -198,7 +202,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessage = createOutboundMessage({ connection: connectionRecord, payload: message })
     }
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)

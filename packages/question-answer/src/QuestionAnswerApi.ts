@@ -63,7 +63,12 @@ export class QuestionAnswerApi {
         detail: config?.detail,
       }
     )
-    const outboundMessage = createOutboundMessage(connection, questionMessage)
+    const outboundMessage = createOutboundMessage({
+      connection,
+      payload: questionMessage,
+      associatedRecord: questionAnswerRecord,
+    })
+
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return questionAnswerRecord
@@ -87,7 +92,12 @@ export class QuestionAnswerApi {
 
     const connection = await this.connectionService.getById(this.agentContext, questionRecord.connectionId)
 
-    const outboundMessage = createOutboundMessage(connection, answerMessage)
+    const outboundMessage = createOutboundMessage({
+      connection,
+      payload: answerMessage,
+      associatedRecord: questionAnswerRecord,
+    })
+
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return questionAnswerRecord

@@ -85,7 +85,7 @@ export class DidExchangeRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundMessage(connectionRecord, message, outOfBandRecord)
+      return createOutboundMessage({ connection: connectionRecord, payload: message, outOfBand: outOfBandRecord })
     }
   }
 }

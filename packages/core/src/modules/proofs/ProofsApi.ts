@@ -185,7 +185,7 @@ export class ProofsApi<
 
     const { message, proofRecord } = await service.createProposal(this.agentContext, proposalOptions)
 
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundMessage({ connection, payload: message, associatedRecord: proofRecord })
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return proofRecord
@@ -234,7 +234,7 @@ export class ProofsApi<
 
     const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: proofRecord })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
@@ -264,7 +264,7 @@ export class ProofsApi<
     }
     const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: proofRecord })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return proofRecord
@@ -301,7 +301,7 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: proofRecord })
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return proofRecord
@@ -405,7 +405,7 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: proofRecord })
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     }
     // Use ~service decorator otherwise
@@ -497,7 +497,7 @@ export class ProofsApi<
       description: message,
     })
 
-    const outboundMessage = createOutboundMessage(connection, problemReport)
+    const outboundMessage = createOutboundMessage({ connection, payload: problemReport, associatedRecord: record })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return record

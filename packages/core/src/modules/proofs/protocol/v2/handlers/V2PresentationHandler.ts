@@ -55,7 +55,11 @@ export class V2PresentationHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundMessage({
+        connection: messageContext.connection,
+        payload: message,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage?.service

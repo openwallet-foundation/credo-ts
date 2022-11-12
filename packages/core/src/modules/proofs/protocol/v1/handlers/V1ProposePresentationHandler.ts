@@ -99,6 +99,10 @@ export class V1ProposePresentationHandler implements Handler {
       willConfirm: true,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundMessage({
+      connection: messageContext.connection,
+      payload: message,
+      associatedRecord: proofRecord,
+    })
   }
 }

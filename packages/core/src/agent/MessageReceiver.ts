@@ -277,7 +277,7 @@ export class MessageReceiver {
     problemReportMessage.setThread({
       threadId: plaintextMessage['@id'],
     })
-    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    const outboundMessage = createOutboundMessage({ connection, payload: problemReportMessage })
     if (outboundMessage) {
       await this.messageSender.sendMessage(agentContext, outboundMessage)
     }

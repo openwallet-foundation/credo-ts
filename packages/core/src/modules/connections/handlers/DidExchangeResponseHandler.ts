@@ -115,7 +115,7 @@ export class DidExchangeResponseHandler implements Handler {
       if (!outOfBandRecord.reusable) {
         await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
       }
-      return createOutboundMessage(connection, message)
+      return createOutboundMessage({ connection, payload: message })
     }
   }
 }

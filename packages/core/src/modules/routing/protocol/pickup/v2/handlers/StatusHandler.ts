@@ -18,7 +18,7 @@ export class StatusHandler implements Handler {
     const deliveryRequestMessage = await this.mediatorRecipientService.processStatus(messageContext)
 
     if (deliveryRequestMessage) {
-      return createOutboundMessage(connection, deliveryRequestMessage)
+      return createOutboundMessage({ connection, payload: deliveryRequestMessage })
     }
   }
 }

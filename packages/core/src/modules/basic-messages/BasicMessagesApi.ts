@@ -49,8 +49,11 @@ export class BasicMessagesApi {
       message,
       connection
     )
-    const outboundMessage = createOutboundMessage(connection, basicMessage)
-    outboundMessage.associatedRecord = basicMessageRecord
+    const outboundMessage = createOutboundMessage({
+      connection,
+      payload: basicMessage,
+      associatedRecord: basicMessageRecord,
+    })
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
     return basicMessageRecord

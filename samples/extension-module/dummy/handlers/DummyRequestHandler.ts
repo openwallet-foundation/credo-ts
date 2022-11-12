@@ -18,7 +18,7 @@ export class DummyRequestHandler implements Handler {
     const responseMessage = await this.dummyService.processRequest(inboundMessage)
 
     if (responseMessage) {
-      return createOutboundMessage(connection, responseMessage)
+      return createOutboundMessage({ connection, payload: responseMessage })
     }
   }
 }

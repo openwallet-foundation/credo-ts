@@ -18,7 +18,7 @@ export class MessageDeliveryHandler implements Handler {
     const deliveryReceivedMessage = await this.mediationRecipientService.processDelivery(messageContext)
 
     if (deliveryReceivedMessage) {
-      return createOutboundMessage(connection, deliveryReceivedMessage)
+      return createOutboundMessage({ connection, payload: deliveryReceivedMessage })
     }
   }
 }

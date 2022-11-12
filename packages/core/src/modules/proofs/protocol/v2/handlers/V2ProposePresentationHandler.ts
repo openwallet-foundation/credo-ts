@@ -90,6 +90,10 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
 
     const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, options)
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundMessage({
+      connection: messageContext.connection,
+      payload: message,
+      associatedRecord: proofRecord,
+    })
   }
 }

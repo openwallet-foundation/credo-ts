@@ -14,7 +14,7 @@ export class TrustPingService {
         threadId: message.id,
       })
 
-      return createOutboundMessage(connection, response)
+      return createOutboundMessage({ connection, payload: response })
     }
   }
 

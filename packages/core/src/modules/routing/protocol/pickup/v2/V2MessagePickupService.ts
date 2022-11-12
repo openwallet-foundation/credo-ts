@@ -51,7 +51,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundMessage(connection, statusMessage)
+    return createOutboundMessage({ connection, payload: statusMessage })
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {
@@ -93,7 +93,7 @@ export class V2MessagePickupService {
             messageCount: 0,
           })
 
-    return createOutboundMessage(connection, outboundMessage)
+    return createOutboundMessage({ connection, payload: outboundMessage })
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<MessagesReceivedMessage>) {
@@ -113,7 +113,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundMessage(connection, statusMessage)
+    return createOutboundMessage({ connection, payload: statusMessage })
   }
 
   protected registerHandlers() {

@@ -209,7 +209,7 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message })
     await this.messageSender.sendMessage(agentContext, outboundMessage)
 
     const keylistUpdate = await firstValueFrom(subject)
@@ -298,7 +298,7 @@ export class MediationRecipientService {
 
       await this.messageSender.sendMessage(
         messageContext.agentContext,
-        createOutboundMessage(connectionRecord, message),
+        createOutboundMessage({ connection: connectionRecord, payload: message }),
         {
           transportPriority: {
             schemes: websocketSchemes,

@@ -78,7 +78,11 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundMessage({
+        connection: messageContext.connection,
+        payload: message,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({

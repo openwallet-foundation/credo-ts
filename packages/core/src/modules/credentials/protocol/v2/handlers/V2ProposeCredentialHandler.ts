@@ -44,6 +44,10 @@ export class V2ProposeCredentialHandler implements Handler {
 
     const { message } = await this.credentialService.acceptProposal(messageContext.agentContext, { credentialRecord })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundMessage({
+      connection: messageContext.connection,
+      payload: message,
+      associatedRecord: credentialRecord,
+    })
   }
 }

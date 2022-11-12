@@ -84,7 +84,10 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV11()))
+    await bobMessageSender.sendMessage(
+      bobAgent.context,
+      createOutboundMessage({ connection: bobConnection, payload: new TestMessageV11() })
+    )
 
     // Wait for the agent message processed event to be called
     await agentMessageV11ProcessedPromise
@@ -99,7 +102,10 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV15()))
+    await bobMessageSender.sendMessage(
+      bobAgent.context,
+      createOutboundMessage({ connection: bobConnection, payload: new TestMessageV15() })
+    )
     await agentMessageV15ProcessedPromise
 
     expect(mockHandle).toHaveBeenCalledTimes(2)

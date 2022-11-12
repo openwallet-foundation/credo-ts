@@ -103,7 +103,7 @@ export class DiscoverFeaturesApi<
       comment: options.comment,
     })
 
-    const outbound = createOutboundMessage(connection, queryMessage)
+    const outbound = createOutboundMessage({ connection, payload: queryMessage })
 
     const replaySubject = new ReplaySubject<Feature[]>(1)
     if (options.awaitDisclosures) {
@@ -151,7 +151,7 @@ export class DiscoverFeaturesApi<
       threadId: options.threadId,
     })
 
-    const outbound = createOutboundMessage(connection, disclosuresMessage)
+    const outbound = createOutboundMessage({ connection, payload: disclosuresMessage })
     await this.messageSender.sendMessage(this.agentContext, outbound)
   }
 }

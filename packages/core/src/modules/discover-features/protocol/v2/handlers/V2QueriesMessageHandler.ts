@@ -18,7 +18,7 @@ export class V2QueriesMessageHandler implements Handler {
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)
 
     if (discloseMessage) {
-      return createOutboundMessage(connection, discloseMessage.message)
+      return createOutboundMessage({ connection, payload: discloseMessage.message })
     }
   }
 }

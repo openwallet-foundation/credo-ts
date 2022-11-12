@@ -17,6 +17,6 @@ export class HandshakeReuseHandler implements Handler {
     const connectionRecord = messageContext.assertReadyConnection()
     const handshakeReuseAcceptedMessage = await this.outOfBandService.processHandshakeReuse(messageContext)
 
-    return createOutboundMessage(connectionRecord, handshakeReuseAcceptedMessage)
+    return createOutboundMessage({ connection: connectionRecord, payload: handshakeReuseAcceptedMessage })
   }
 }

@@ -14,9 +14,9 @@ import { DidCommDocumentService } from '../../modules/didcomm'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
-import { OutOfBandRepository } from '../../modules/oob'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
+import { EventEmitter } from '../EventEmitter'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
 import { createOutboundMessage } from '../helpers'
@@ -34,7 +34,7 @@ const logger = testLogger
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
-const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
+const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 
 class DummyHttpOutboundTransport implements OutboundTransport {
   public start(): Promise<void> {
@@ -83,7 +83,7 @@ describe('MessageSender', () => {
 
   const didResolverService = new DidResolverServiceMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
-  const outOfBandRepository = new OutOfBandRepositoryMock()
+  const eventEmitter = new EventEmitterMock()
   const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
@@ -143,7 +143,7 @@ describe('MessageSender', () => {
         logger,
         didResolverService,
         didCommDocumentService,
-        outOfBandRepository
+        eventEmitter
       )
       connection = getMockConnection({
         id: 'test-123',
@@ -151,7 +151,7 @@ describe('MessageSender', () => {
         theirDid: 'did:peer:1theirdid',
         theirLabel: 'Test 123',
       })
-      outboundMessage = createOutboundMessage(connection, new TestMessage())
+      outboundMessage = createOutboundMessage({ connection, payload: new TestMessage() })
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceHasInboundEndpoint.mockReturnValue(true)
@@ -350,7 +350,7 @@ describe('MessageSender', () => {
         logger,
         didResolverService,
         didCommDocumentService,
-        outOfBandRepository
+        eventEmitter
       )
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
@@ -432,7 +432,7 @@ describe('MessageSender', () => {
         logger,
         didResolverService,
         didCommDocumentService,
-        outOfBandRepository
+        eventEmitter
       )
       connection = getMockConnection()
 

@@ -139,17 +139,21 @@ export class RecipientApi {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
     }
 
-    await this.messageSender.sendMessage(this.agentContext, createOutboundMessage(connectionRecord, message), {
-      transportPriority: {
-        schemes: websocketSchemes,
-        restrictive: true,
-        // TODO: add keepAlive: true to enforce through the public api
-        // we need to keep the socket alive. It already works this way, but would
-        // be good to make more explicit from the public facing API.
-        // This would also make it easier to change the internal API later on.
-        // keepAlive: true,
-      },
-    })
+    await this.messageSender.sendMessage(
+      this.agentContext,
+      createOutboundMessage({ connection: connectionRecord, payload: message }),
+      {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      }
+    )
   }
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
@@ -288,7 +292,7 @@ export class RecipientApi {
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
     return this.messageSender.sendMessage(
       this.agentContext,
-      createOutboundMessage(mediatorConnection, statusRequestMessage)
+      createOutboundMessage({ connection: mediatorConnection, payload: statusRequestMessage })
     )
   }
 
@@ -341,7 +345,7 @@ export class RecipientApi {
       pickupStrategy === MediatorPickupStrategy.PickUpV2
         ? new StatusRequestMessage({})
         : new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, pickupMessage)
+    const outboundMessage = createOutboundMessage({ connection: mediatorConnection, payload: pickupMessage })
     await this.sendMessage(outboundMessage, pickupStrategy)
   }
 
@@ -354,7 +358,7 @@ export class RecipientApi {
       this.agentContext,
       connection
     )
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection: connection, payload: message })
 
     await this.sendMessage(outboundMessage)
     return mediationRecord
@@ -362,7 +366,7 @@ export class RecipientApi {
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message })
     await this.sendMessage(outboundMessage)
   }
 
@@ -415,7 +419,11 @@ export class RecipientApi {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({
+      connection: connection,
+      payload: message,
+      associatedRecord: mediationRecord,
+    })
     await this.sendMessage(outboundMessage)
 
     const event = await firstValueFrom(subject)

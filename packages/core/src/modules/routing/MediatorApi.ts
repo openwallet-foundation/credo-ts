@@ -70,7 +70,11 @@ export class MediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessage = createOutboundMessage(connectionRecord, message)
+    const outboundMessage = createOutboundMessage({
+      connection: connectionRecord,
+      payload: message,
+      associatedRecord: mediationRecord,
+    })
 
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 

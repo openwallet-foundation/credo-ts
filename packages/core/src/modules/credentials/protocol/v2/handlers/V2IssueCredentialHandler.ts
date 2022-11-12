@@ -54,7 +54,11 @@ export class V2IssueCredentialHandler implements Handler {
       credentialRecord,
     })
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundMessage({
+        connection: messageContext.connection,
+        payload: message,
+        associatedRecord: credentialRecord,
+      })
     } else if (requestMessage?.service && messageContext.message.service) {
       const recipientService = messageContext.message.service
       const ourService = requestMessage.service

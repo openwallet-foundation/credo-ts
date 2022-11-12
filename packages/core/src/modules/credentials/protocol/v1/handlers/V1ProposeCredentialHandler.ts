@@ -47,6 +47,10 @@ export class V1ProposeCredentialHandler implements Handler {
       credentialRecord,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return createOutboundMessage({
+      connection: messageContext.connection,
+      payload: message,
+      associatedRecord: credentialRecord,
+    })
   }
 }

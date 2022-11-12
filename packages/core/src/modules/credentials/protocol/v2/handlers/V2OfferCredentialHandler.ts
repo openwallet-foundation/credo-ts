@@ -54,7 +54,11 @@ export class V2OfferCredentialHandler implements Handler {
       const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
-      return createOutboundMessage(messageContext.connection, message)
+      return createOutboundMessage({
+        connection: messageContext.connection,
+        payload: message,
+        associatedRecord: credentialRecord,
+      })
     } else if (offerMessage?.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({

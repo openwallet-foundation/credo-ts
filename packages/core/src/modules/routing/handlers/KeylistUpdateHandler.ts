@@ -16,6 +16,6 @@ export class KeylistUpdateHandler implements Handler {
     const connection = messageContext.assertReadyConnection()
 
     const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
-    return createOutboundMessage(connection, response)
+    return createOutboundMessage({ connection, payload: response })
   }
 }

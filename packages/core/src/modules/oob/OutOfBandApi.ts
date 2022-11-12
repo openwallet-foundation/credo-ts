@@ -748,7 +748,7 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
+    const outbound = createOutboundMessage({ connection: connectionRecord, payload: reuseMessage })
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return reuseAcceptedEventPromise

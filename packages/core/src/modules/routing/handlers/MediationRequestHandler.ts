@@ -25,7 +25,7 @@ export class MediationRequestHandler implements Handler {
         messageContext.agentContext,
         mediationRecord
       )
-      return createOutboundMessage(connection, message)
+      return createOutboundMessage({ connection, payload: message, associatedRecord: mediationRecord })
     }
   }
 }

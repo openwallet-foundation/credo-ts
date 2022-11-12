@@ -83,7 +83,7 @@ export class ConnectionResponseHandler implements Handler {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      return createOutboundMessage(connection, message)
+      return createOutboundMessage({ connection, payload: message })
     }
   }
 }

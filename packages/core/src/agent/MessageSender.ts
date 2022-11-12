@@ -7,6 +7,7 @@ import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
+import type { AgentMessageSentEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 
@@ -18,13 +19,14 @@ import { DidCommDocumentService } from '../modules/didcomm'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
-import { OutOfBandRepository } from '../modules/oob/repository'
 import { inject, injectable } from '../plugins'
 import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
 
 import { EnvelopeService } from './EnvelopeService'
+import { EventEmitter } from './EventEmitter'
+import { AgentEventTypes } from './Events'
 import { TransportService } from './TransportService'
 
 export interface TransportPriorityOptions {
@@ -40,7 +42,7 @@ export class MessageSender {
   private logger: Logger
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
-  private outOfBandRepository: OutOfBandRepository
+  private eventEmitter: EventEmitter
   public readonly outboundTransports: OutboundTransport[] = []
 
   public constructor(
@@ -50,7 +52,7 @@ export class MessageSender {
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService,
     didCommDocumentService: DidCommDocumentService,
-    outOfBandRepository: OutOfBandRepository
+    eventEmitter: EventEmitter
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
@@ -58,7 +60,7 @@ export class MessageSender {
     this.logger = logger
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
-    this.outOfBandRepository = outOfBandRepository
+    this.eventEmitter = eventEmitter
     this.outboundTransports = []
   }
 
@@ -206,6 +208,7 @@ export class MessageSender {
       this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
       try {
         await this.sendMessageToSession(agentContext, session, payload)
+        this.emitMessageSentEvent(agentContext, outboundMessage)
         return
       } catch (error) {
         errors.push(error)
@@ -257,6 +260,7 @@ export class MessageSender {
           returnRoute: shouldAddReturnRoute,
           connectionId: connection.id,
         })
+        this.emitMessageSentEvent(agentContext, outboundMessage)
         return
       } catch (error) {
         errors.push(error)
@@ -426,6 +430,15 @@ export class MessageSender {
       { hasQueueService: queueService !== undefined }
     )
     return { services, queueService }
+  }
+
+  private emitMessageSentEvent(agentContext: AgentContext, outboundMessage: OutboundMessage) {
+    this.eventEmitter.emit<AgentMessageSentEvent>(agentContext, {
+      type: AgentEventTypes.AgentMessageSent,
+      payload: {
+        message: outboundMessage,
+      },
+    })
   }
 }
 

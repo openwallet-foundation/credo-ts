@@ -181,7 +181,7 @@ export class CredentialsApi<
     this.logger.debug('We have a message (sending outbound): ', message)
 
     // send the message here
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundMessage({ connection, payload: message, associatedRecord: credentialRecord })
 
     this.logger.debug('In proposeCredential: Send Proposal to Issuer')
     await this.messageSender.sendMessage(this.agentContext, outbound)
@@ -218,7 +218,7 @@ export class CredentialsApi<
 
     // send the message
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outbound = createOutboundMessage(connection, message)
+    const outbound = createOutboundMessage({ connection, payload: message, associatedRecord: credentialRecord })
     await this.messageSender.sendMessage(this.agentContext, outbound)
 
     return credentialRecord
@@ -252,7 +252,7 @@ export class CredentialsApi<
     })
 
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: credentialRecord })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -279,7 +279,7 @@ export class CredentialsApi<
     })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: credentialRecord })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -311,7 +311,11 @@ export class CredentialsApi<
         autoAcceptCredential: options.autoAcceptCredential,
       })
 
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundMessage({
+        connection,
+        payload: message,
+        associatedRecord: credentialRecord,
+      })
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return credentialRecord
@@ -388,7 +392,7 @@ export class CredentialsApi<
     }
 
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = createOutboundMessage({ connection, payload: message, associatedRecord: credentialRecord })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
@@ -447,7 +451,11 @@ export class CredentialsApi<
     // Use connection if present
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundMessage({
+        connection,
+        payload: message,
+        associatedRecord: credentialRecord,
+      })
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
       return credentialRecord
@@ -506,7 +514,11 @@ export class CredentialsApi<
 
     if (credentialRecord.connectionId) {
       const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-      const outboundMessage = createOutboundMessage(connection, message)
+      const outboundMessage = createOutboundMessage({
+        connection,
+        payload: message,
+        associatedRecord: credentialRecord,
+      })
 
       await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
@@ -552,7 +564,11 @@ export class CredentialsApi<
     problemReportMessage.setThread({
       threadId: credentialRecord.threadId,
     })
-    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
+    const outboundMessage = createOutboundMessage({
+      connection,
+      payload: problemReportMessage,
+      associatedRecord: credentialRecord,
+    })
     await this.messageSender.sendMessage(this.agentContext, outboundMessage)
 
     return credentialRecord
