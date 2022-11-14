@@ -55,6 +55,9 @@ export class LedgerApi {
     await this.ledgerService.connectToPools()
   }
 
+  /**
+   * @deprecated use agent.dids.create instead
+   */
   public async registerPublicDid(did: string, verkey: string, alias: string, role?: NymRole) {
     const myPublicDid = this.agentContext.wallet.publicDid?.did
 
@@ -65,6 +68,9 @@ export class LedgerApi {
     return this.ledgerService.registerPublicDid(this.agentContext, myPublicDid, did, verkey, alias, role)
   }
 
+  /**
+   * @deprecated use agent.dids.resolve instead
+   */
   public async getPublicDid(did: string) {
     return this.ledgerService.getPublicDid(this.agentContext, did)
   }

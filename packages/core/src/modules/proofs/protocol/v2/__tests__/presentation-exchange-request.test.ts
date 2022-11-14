@@ -5,6 +5,7 @@ import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecor
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
+import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../../../__tests__/fixtures'
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
@@ -12,7 +13,6 @@ import {
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
-import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../../../__tests__/fixtures'
 
 describe('Present Proof', () => {
   let faberAgent: Agent

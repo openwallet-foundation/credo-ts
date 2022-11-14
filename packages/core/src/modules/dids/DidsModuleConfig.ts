@@ -3,11 +3,11 @@ import type { DidRegistrar, DidResolver } from './domain'
 
 import {
   KeyDidRegistrar,
-  SovDidRegistrar,
+  IndySdkSovDidRegistrar,
   PeerDidRegistrar,
   KeyDidResolver,
   PeerDidResolver,
-  SovDidResolver,
+  IndySdkSovDidResolver,
   WebDidResolver,
 } from './methods'
 
@@ -25,7 +25,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [KeyDidRegistrar, SovDidRegistrar, PeerDidRegistrar]
+   * @default [KeyDidRegistrar, IndySdkSovDidRegistrar, PeerDidRegistrar]
    */
   registrars?: Constructor<DidRegistrar>[]
 
@@ -38,7 +38,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [SovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver]
+   * @default [IndySdkSovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver]
    */
   resolvers?: Constructor<DidResolver>[]
 }
@@ -52,7 +52,7 @@ export class DidsModuleConfig {
 
   /** See {@link DidsModuleConfigOptions.registrars} */
   public get registrars() {
-    const registrars = this.options.registrars ?? [KeyDidRegistrar, SovDidRegistrar, PeerDidRegistrar]
+    const registrars = this.options.registrars ?? [KeyDidRegistrar, IndySdkSovDidRegistrar, PeerDidRegistrar]
 
     // If the peer did registrar is not included yet, add it
     return registrars.includes(PeerDidRegistrar) ? registrars : [...registrars, PeerDidRegistrar]
@@ -60,7 +60,7 @@ export class DidsModuleConfig {
 
   /** See {@link DidsModuleConfigOptions.resolvers} */
   public get resolvers() {
-    const resolvers = this.options.resolvers ?? [SovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver]
+    const resolvers = this.options.resolvers ?? [IndySdkSovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver]
 
     // If the peer did resolver is not included yet, add it
     return resolvers.includes(PeerDidResolver) ? resolvers : [...resolvers, PeerDidResolver]
