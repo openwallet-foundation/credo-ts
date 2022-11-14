@@ -11,8 +11,8 @@ import {
   KeyDidResolver,
   PeerDidRegistrar,
   PeerDidResolver,
-  SovDidRegistrar,
-  SovDidResolver,
+  IndySdkSovDidRegistrar,
+  IndySdkSovDidResolver,
   WebDidResolver,
 } from '../methods'
 import { DidRepository } from '../repository'
@@ -39,13 +39,13 @@ describe('DidsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRepository)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, SovDidResolver)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, IndySdkSovDidResolver)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, WebDidResolver)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, KeyDidResolver)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidResolverToken, PeerDidResolver)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarToken, KeyDidRegistrar)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarToken, SovDidRegistrar)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarToken, IndySdkSovDidRegistrar)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidRegistrarToken, PeerDidRegistrar)
   })
 

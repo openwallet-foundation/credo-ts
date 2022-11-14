@@ -1,41 +1,44 @@
 import type { AgentContext } from '../../../../agent'
-import type { IndyEndpointAttrib } from '../../../ledger'
+import type { IndyEndpointAttrib, IndyPool } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import type * as Indy from 'indy-sdk'
 
 import { AgentDependencies } from '../../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../../constants'
+import { IndySdkError } from '../../../../error'
+import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
+import { isIndyError } from '../../../../utils/indyError'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
-import { IndyLedgerService, IndyPoolService } from '../../../ledger'
+import { IndyPoolService } from '../../../ledger'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 
 @injectable()
-export class SovDidRegistrar implements DidRegistrar {
+export class IndySdkSovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
   private didRepository: DidRepository
   private indy: typeof Indy
-  private indyLedgerService: IndyLedgerService
   private indyPoolService: IndyPoolService
+  private logger: Logger
 
   public constructor(
     didRepository: DidRepository,
-    indyLedgerService: IndyLedgerService,
     indyPoolService: IndyPoolService,
-    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies
+    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.didRepository = didRepository
     this.indy = agentDependencies.indy
-    this.indyLedgerService = indyLedgerService
     this.indyPoolService = indyPoolService
+    this.logger = logger
   }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
-    const { alias, role, submitterDid } = options.options
+    const { alias, role, submitterDid, indyNamespace } = options.options
     const seed = options.secret?.seed
 
     if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
@@ -76,21 +79,15 @@ export class SovDidRegistrar implements DidRegistrar {
 
       // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
       // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
-      await this.indyLedgerService.registerPublicDid(
-        agentContext,
-        unqualifiedSubmitterDid,
-        unqualifiedIndyDid,
-        verkey,
-        alias,
-        role
-      )
+      const pool = this.indyPoolService.getPoolForNamespace(indyNamespace)
+      await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, pool, role)
 
       // Create did document
       const didDocumentBuilder = sovDidDocumentFromDid(qualifiedSovDid, verkey)
 
       // Add services if endpoints object was passed.
       if (options.options.endpoints) {
-        await this.indyLedgerService.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints)
+        await this.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints, pool)
         addServicesFromEndpointsAttrib(
           didDocumentBuilder,
           qualifiedSovDid,
@@ -102,7 +99,7 @@ export class SovDidRegistrar implements DidRegistrar {
       // Build did document.
       const didDocument = didDocumentBuilder.build()
 
-      const didIndyNamespace = this.indyPoolService.ledgerWritePool.config.indyNamespace
+      const didIndyNamespace = pool.config.indyNamespace
       const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
@@ -170,6 +167,69 @@ export class SovDidRegistrar implements DidRegistrar {
       },
     }
   }
+
+  public async registerPublicDid(
+    agentContext: AgentContext,
+    submitterDid: string,
+    targetDid: string,
+    verkey: string,
+    alias: string,
+    pool: IndyPool,
+    role?: Indy.NymRole
+  ) {
+    try {
+      this.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
+
+      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, submitterDid)
+
+      this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
+        response,
+      })
+
+      return targetDid
+    } catch (error) {
+      this.logger.error(`Error registering public did '${targetDid}' on ledger '${pool.id}'`, {
+        error,
+        submitterDid,
+        targetDid,
+        verkey,
+        alias,
+        role,
+        pool: pool.id,
+      })
+
+      throw error
+    }
+  }
+
+  public async setEndpointsForDid(
+    agentContext: AgentContext,
+    did: string,
+    endpoints: IndyEndpointAttrib,
+    pool: IndyPool
+  ): Promise<void> {
+    try {
+      this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
+
+      const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
+
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
+      this.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
+        response,
+        endpoints,
+      })
+    } catch (error) {
+      this.logger.error(`Error setting endpoints for did '${did}' on ledger '${pool.id}'`, {
+        error,
+        did,
+        endpoints,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
+  }
 }
 
 export interface SovDidCreateOptions extends DidCreateOptions {
@@ -182,6 +242,7 @@ export interface SovDidCreateOptions extends DidCreateOptions {
     alias: string
     role?: Indy.NymRole
     endpoints?: IndyEndpointAttrib
+    indyNamespace?: string
     submitterDid: string
   }
   secret?: {

@@ -1,14 +1,6 @@
 import type { AgentContext } from '../../../agent'
-import type { AcceptanceMechanisms, AuthorAgreement, IndyPool, IndyPoolConfig } from '../IndyPool'
-import type {
-  CredDef,
-  default as Indy,
-  LedgerReadReplyResponse,
-  LedgerRequest,
-  LedgerWriteReplyResponse,
-  NymRole,
-  Schema,
-} from 'indy-sdk'
+import type { IndyPoolConfig } from '../IndyPool'
+import type { CredDef, default as Indy, NymRole, Schema } from 'indy-sdk'
 
 import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../constants'
@@ -21,9 +13,7 @@ import {
   didFromSchemaId,
 } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
-import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
 import { IndyIssuerService } from '../../indy/services/IndyIssuerService'
-import { LedgerError } from '../error/LedgerError'
 
 import { IndyPoolService } from './IndyPoolService'
 
@@ -51,6 +41,9 @@ export class IndyLedgerService {
     return this.indyPoolService.setPools(poolConfigs)
   }
 
+  /**
+   * @deprecated
+   */
   public getDidIndyWriteNamespace(): string {
     return this.indyPoolService.ledgerWritePool.config.indyNamespace
   }
@@ -59,6 +52,9 @@ export class IndyLedgerService {
     return this.indyPoolService.connectToPools()
   }
 
+  /**
+   * @deprecated
+   */
   public async registerPublicDid(
     agentContext: AgentContext,
     submitterDid: string,
@@ -67,14 +63,14 @@ export class IndyLedgerService {
     alias: string,
     role?: NymRole
   ) {
-    const pool = this.indyPoolService.ledgerWritePool
+    const pool = this.indyPoolService.getPoolForNamespace()
 
     try {
       this.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
 
       const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
 
-      const response = await this.submitWriteRequest(agentContext, pool, request, submitterDid)
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, submitterDid)
 
       this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
         response,
@@ -96,6 +92,9 @@ export class IndyLedgerService {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public async getPublicDid(agentContext: AgentContext, did: string) {
     // Getting the pool for a did also retrieves the DID. We can just use that
     const { did: didResponse } = await this.indyPoolService.getPoolForDid(agentContext, did)
@@ -103,19 +102,22 @@ export class IndyLedgerService {
     return didResponse
   }
 
+  /**
+   * @deprecated
+   */
   public async setEndpointsForDid(
     agentContext: AgentContext,
     did: string,
     endpoints: IndyEndpointAttrib
   ): Promise<void> {
-    const pool = this.indyPoolService.ledgerWritePool
+    const pool = this.indyPoolService.getPoolForNamespace()
 
     try {
       this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
 
       const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
 
-      const response = await this.submitWriteRequest(agentContext, pool, request, did)
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
       this.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
         response,
         endpoints,
@@ -131,6 +133,9 @@ export class IndyLedgerService {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public async getEndpointsForDid(agentContext: AgentContext, did: string) {
     const { pool } = await this.indyPoolService.getPoolForDid(agentContext, did)
 
@@ -140,7 +145,7 @@ export class IndyLedgerService {
       const request = await this.indy.buildGetAttribRequest(null, did, 'endpoint', null, null)
 
       this.logger.debug(`Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.id}'`)
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
 
       if (!response.result.data) return {}
 
@@ -165,7 +170,7 @@ export class IndyLedgerService {
     did: string,
     schemaTemplate: SchemaTemplate
   ): Promise<Schema> {
-    const pool = this.indyPoolService.ledgerWritePool
+    const pool = this.indyPoolService.getPoolForNamespace()
 
     try {
       this.logger.debug(`Register schema on ledger '${pool.id}' with did '${did}'`, schemaTemplate)
@@ -174,7 +179,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildSchemaRequest(did, schema)
 
-      const response = await this.submitWriteRequest(agentContext, pool, request, did)
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
       this.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.id}'`, {
         response,
         schema,
@@ -204,7 +209,7 @@ export class IndyLedgerService {
       const request = await this.indy.buildGetSchemaRequest(null, schemaId)
 
       this.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger '${pool.id}'`)
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
 
       this.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.id}'`, {
         response,
@@ -231,7 +236,7 @@ export class IndyLedgerService {
     did: string,
     credentialDefinitionTemplate: CredentialDefinitionTemplate
   ): Promise<CredDef> {
-    const pool = this.indyPoolService.ledgerWritePool
+    const pool = this.indyPoolService.getPoolForNamespace()
 
     try {
       this.logger.debug(
@@ -250,7 +255,7 @@ export class IndyLedgerService {
 
       const request = await this.indy.buildCredDefRequest(did, credentialDefinition)
 
-      const response = await this.submitWriteRequest(agentContext, pool, request, did)
+      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
 
       this.logger.debug(`Registered credential definition '${credentialDefinition.id}' on ledger '${pool.id}'`, {
         response,
@@ -285,7 +290,7 @@ export class IndyLedgerService {
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger '${pool.id}'`
       )
 
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
       this.logger.trace(`Got un-parsed credential definition '${credentialDefinitionId}' from ledger '${pool.id}'`, {
         response,
       })
@@ -328,7 +333,7 @@ export class IndyLedgerService {
       this.logger.trace(
         `Submitting get revocation registry definition request for revocation registry definition '${revocationRegistryDefinitionId}' to ledger`
       )
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
       this.logger.trace(
         `Got un-parsed revocation registry definition '${revocationRegistryDefinitionId}' from ledger '${pool.id}'`,
         {
@@ -382,7 +387,7 @@ export class IndyLedgerService {
         `Submitting get revocation registry delta request for revocation registry '${revocationRegistryDefinitionId}' to ledger`
       )
 
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
       this.logger.trace(
         `Got revocation registry delta unparsed-response '${revocationRegistryDefinitionId}' from ledger`,
         {
@@ -436,7 +441,7 @@ export class IndyLedgerService {
       this.logger.trace(
         `Submitting get revocation registry request for revocation registry '${revocationRegistryDefinitionId}' to ledger`
       )
-      const response = await this.submitReadRequest(pool, request)
+      const response = await this.indyPoolService.submitReadRequest(pool, request)
       this.logger.trace(
         `Got un-parsed revocation registry '${revocationRegistryDefinitionId}' from ledger '${pool.id}'`,
         {
@@ -458,124 +463,6 @@ export class IndyLedgerService {
         pool: pool.id,
       })
       throw error
-    }
-  }
-
-  private async submitWriteRequest(
-    agentContext: AgentContext,
-    pool: IndyPool,
-    request: LedgerRequest,
-    signDid: string
-  ): Promise<LedgerWriteReplyResponse> {
-    try {
-      const requestWithTaa = await this.appendTaa(pool, request)
-      const signedRequestWithTaa = await this.signRequest(agentContext, signDid, requestWithTaa)
-
-      const response = await pool.submitWriteRequest(signedRequestWithTaa)
-
-      return response
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
-    }
-  }
-
-  private async submitReadRequest(pool: IndyPool, request: LedgerRequest): Promise<LedgerReadReplyResponse> {
-    try {
-      const response = await pool.submitReadRequest(request)
-
-      return response
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
-    }
-  }
-
-  private async signRequest(agentContext: AgentContext, did: string, request: LedgerRequest): Promise<LedgerRequest> {
-    assertIndyWallet(agentContext.wallet)
-
-    try {
-      return this.indy.signRequest(agentContext.wallet.handle, did, request)
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
-    }
-  }
-
-  private async appendTaa(pool: IndyPool, request: Indy.LedgerRequest) {
-    try {
-      const authorAgreement = await this.getTransactionAuthorAgreement(pool)
-      const taa = pool.config.transactionAuthorAgreement
-
-      // If ledger does not have TAA, we can just send request
-      if (authorAgreement == null) {
-        return request
-      }
-      // Ledger has taa but user has not specified which one to use
-      if (!taa) {
-        throw new LedgerError(
-          `Please, specify a transaction author agreement with version and acceptance mechanism. ${JSON.stringify(
-            authorAgreement
-          )}`
-        )
-      }
-
-      // Throw an error if the pool doesn't have the specified version and acceptance mechanism
-      if (
-        authorAgreement.version !== taa.version ||
-        !(taa.acceptanceMechanism in authorAgreement.acceptanceMechanisms.aml)
-      ) {
-        // Throw an error with a helpful message
-        const errMessage = `Unable to satisfy matching TAA with mechanism ${JSON.stringify(
-          taa.acceptanceMechanism
-        )} and version ${JSON.stringify(taa.version)} in pool.\n Found ${JSON.stringify(
-          Object.keys(authorAgreement.acceptanceMechanisms.aml)
-        )} and version ${authorAgreement.version} in pool.`
-        throw new LedgerError(errMessage)
-      }
-
-      const requestWithTaa = await this.indy.appendTxnAuthorAgreementAcceptanceToRequest(
-        request,
-        authorAgreement.text,
-        taa.version,
-        authorAgreement.digest,
-        taa.acceptanceMechanism,
-        // Current time since epoch
-        // We can't use ratification_ts, as it must be greater than 1499906902
-        Math.floor(new Date().getTime() / 1000)
-      )
-
-      return requestWithTaa
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
-    }
-  }
-
-  private async getTransactionAuthorAgreement(pool: IndyPool): Promise<AuthorAgreement | null> {
-    try {
-      // TODO Replace this condition with memoization
-      if (pool.authorAgreement !== undefined) {
-        return pool.authorAgreement
-      }
-
-      const taaRequest = await this.indy.buildGetTxnAuthorAgreementRequest(null)
-      const taaResponse = await this.submitReadRequest(pool, taaRequest)
-      const acceptanceMechanismRequest = await this.indy.buildGetAcceptanceMechanismsRequest(null)
-      const acceptanceMechanismResponse = await this.submitReadRequest(pool, acceptanceMechanismRequest)
-
-      // TAA can be null
-      if (taaResponse.result.data == null) {
-        pool.authorAgreement = null
-        return null
-      }
-
-      // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
-      const authorAgreement = taaResponse.result.data as AuthorAgreement
-      const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
-      pool.authorAgreement = {
-        ...authorAgreement,
-        acceptanceMechanisms,
-      }
-      return pool.authorAgreement
-    } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
 }

@@ -17,6 +17,8 @@ import { JsonTransformer } from '../../core/src/utils/JsonTransformer'
 import { setupCredentialTests, waitForCredentialRecord } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 
+import { describeSkipNode17And18 } from './util'
+
 let faberAgent: Agent
 let aliceAgent: Agent
 let aliceConnection: ConnectionRecord
@@ -49,7 +51,7 @@ const TEST_LD_DOCUMENT = {
   },
 }
 
-describe('credentials, BBS+ signature', () => {
+describeSkipNode17And18('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
