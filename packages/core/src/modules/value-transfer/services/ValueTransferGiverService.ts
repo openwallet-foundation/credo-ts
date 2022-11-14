@@ -147,7 +147,7 @@ export class ValueTransferGiverService {
     // Call VTP library to accept request
     const { error, transaction } = await this.giver.verifyRequestCanBeAccepted(
       record.transaction.id,
-      record.recipientDid
+      record.expectedRecipientDid
     )
     if (error) {
       this.logger.error(` Giver: verify request message for VTP transaction ${record.transaction.id} failed.`, {
@@ -199,7 +199,7 @@ export class ValueTransferGiverService {
     record.secondPartyDid = requestMessage.from
 
     if (requestMessage.to?.length) {
-      record.recipientDid = requestMessage.to[0]
+      record.expectedRecipientDid = requestMessage.to[0]
     }
     await this.valueTransferRepository.update(record)
 

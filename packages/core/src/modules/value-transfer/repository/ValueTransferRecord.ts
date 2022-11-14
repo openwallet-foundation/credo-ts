@@ -33,7 +33,7 @@ export class ValueTransferRecord extends BaseRecord<DefaultValueTransferTags, Cu
 
   @IsString()
   @IsOptional()
-  public recipientDid?: string
+  public expectedRecipientDid?: string
 
   public static readonly type = 'ValueTransferRecord'
   public readonly type = ValueTransferRecord.type
