@@ -65,7 +65,7 @@ export { parseMessageType, IsValidMessageType } from './utils/messageType'
 export { allSettled, onlyFulfilled, onlyRejected } from './utils/promises'
 
 export { isError } from './utils/error'
-export { Buffer, TypedArrayEncoder, JsonTransformer } from './utils'
+export { Buffer, TypedArrayEncoder, JsonTransformer, JsonEncoder } from './utils'
 export * from './utils/type'
 export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
