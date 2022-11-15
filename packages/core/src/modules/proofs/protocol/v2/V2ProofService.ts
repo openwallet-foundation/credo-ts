@@ -42,7 +42,7 @@ import { PresentationProblemReportReason } from '../../errors/PresentationProble
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofState } from '../../models/ProofState'
-import { PresentationRecordType, ProofExchangeRecord, ProofRepository } from '../../repository'
+import { ProofExchangeRecord, ProofRepository } from '../../repository'
 
 import { V2PresentationProblemReportError } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -55,6 +55,7 @@ import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
+import { ProofFormatServiceMap } from '../../formats'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends ProofService<PFs> {
@@ -71,10 +72,14 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.wallet = wallet
-    this.formatServiceMap = {
-      [PresentationRecordType.Indy]: indyProofFormatService,
-      // other format services to be added to the map
-    }
+    // Dynamically build format service map. This will be extracted once services are registered dynamically
+    this.formatServiceMap = [indyProofFormatService].reduce(
+      (formatServiceMap, formatService) => ({
+        ...formatServiceMap,
+        [formatService.formatKey]: formatService,
+      }),
+      {}
+    ) as ProofFormatServiceMap<PFs>
   }
 
   /**
