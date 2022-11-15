@@ -1,0 +1,37 @@
+{
+  "name": "@aries-framework/indy-sdk",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.2.5",
+  "private": true,
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/indy-sdk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/indy-sdk"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "0.2.5",
+    "@types/indy-sdk": "^1.16.21"
+  },
+  "devDependencies": {
+    "typescript": "~4.3.0"
+  },
+  "peerDependencies": {
+    "rxjs": "^7.2.0"
+  }
+}
