@@ -26,12 +26,11 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.2.5",
-    "@types/indy-sdk": "^1.16.21"
+    "@types/indy-sdk": "^1.16.21",
+    "rxjs": "^7.2.0",
+    "tsyringe": "^4.7.0"
   },
   "devDependencies": {
     "typescript": "~4.3.0"
-  },
-  "peerDependencies": {
-    "rxjs": "^7.2.0"
   }
 }
