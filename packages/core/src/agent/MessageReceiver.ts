@@ -18,6 +18,8 @@ import {
   ProblemReportV2Message,
 } from '../modules/problem-reports'
 import { injectable } from '../plugins'
+import { TagsBase, TagValue } from '../storage/BaseRecord'
+import { MessageIdRecord, MessageIdsRepository } from '../storage/MessageIdsRepository'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
@@ -42,6 +44,7 @@ export class MessageReceiver {
   private logger: Logger
   private keyRepository: KeyRepository
   private connectionsModule: ConnectionsModule
+  private messageIdsRepository: MessageIdsRepository
   public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -52,7 +55,8 @@ export class MessageReceiver {
     connectionRepository: ConnectionRepository,
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
-    connectionsModule: ConnectionsModule
+    connectionsModule: ConnectionsModule,
+    messageIdsRepository: MessageIdsRepository
   ) {
     this.config = config
     this.envelopeService = envelopeService
@@ -62,6 +66,7 @@ export class MessageReceiver {
     this.dispatcher = dispatcher
     this.keyRepository = keyRepository
     this.logger = this.config.logger
+    this.messageIdsRepository = messageIdsRepository
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
@@ -111,8 +116,15 @@ export class MessageReceiver {
     }
   }
 
+  private async isDuplicateMessage(message: DIDCommMessage) {
+    if (await this.messageIdsRepository.findById(message.id)) return true
+    await this.messageIdsRepository.save(new MessageIdRecord({ id: message.id }))
+    return false
+  }
+
   private async receivePlaintextMessage(plaintextMessage: PackedMessage) {
     const message = await this.transformAndValidate(plaintextMessage.message)
+    if (await this.isDuplicateMessage(message)) return
     const messageContext = new InboundMessageContext(message, {})
     await this.dispatcher.dispatch(messageContext)
   }
@@ -141,7 +153,7 @@ export class MessageReceiver {
     )
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
-
+    if (await this.isDuplicateMessage(message)) return
     const messageContext = new InboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from

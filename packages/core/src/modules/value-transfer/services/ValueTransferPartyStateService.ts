@@ -1,4 +1,5 @@
 import type { PartyState, Transaction, VtpPartyStorageInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
+import AsyncLock from 'async-lock'
 
 import { injectable } from '../../../plugins'
 import { ValueTransferRecord, ValueTransferRepository } from '../repository'
@@ -8,6 +9,7 @@ import { ValueTransferStateRepository } from '../repository/ValueTransferStateRe
 export class ValueTransferPartyStateService implements VtpPartyStorageInterface {
   private valueTransferRepository: ValueTransferRepository
   private valueTransferStateRepository: ValueTransferStateRepository
+  private partyStateLock: AsyncLock
 
   public constructor(
     valueTransferRepository: ValueTransferRepository,
@@ -15,6 +17,20 @@ export class ValueTransferPartyStateService implements VtpPartyStorageInterface 
   ) {
     this.valueTransferRepository = valueTransferRepository
     this.valueTransferStateRepository = valueTransferStateRepository
+    this.partyStateLock = new AsyncLock()
+  }
+
+  public async useReadonlyPartyState<TResult>(fn: (state: PartyState) => Promise<TResult>) {
+    const state = await this.getPartyState()
+    return await fn(state)
+  }
+
+  public async usePartyState(fn: (state: PartyState) => Promise<void>) {
+    await this.partyStateLock.acquire('key', async () => {
+      const state = await this.getPartyState()
+      await fn(state)
+      await this.storePartyState(state)
+    })
   }
 
   public async getPartyState(): Promise<PartyState> {
