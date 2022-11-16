@@ -27,37 +27,43 @@ jobs:
         with:
           node-version: 16
 
+      - name: Login into SICPA NPM resitry
+        run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_PUBLISH_TOKEN }}
+
       - name: Login into SICPA GH resitry
         run: npm config set //npm.pkg.github.com/:_authToken ${{ secrets.SICPA_GITHUB_TOKEN }}
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --no-lockfile
 
-      # On push to main, release unstable version
-      - name: Release Unstable
-        run: |
-          export NEXT_VERSION_BUMP=$(./node_modules/.bin/ts-node ./scripts/get-next-bump.ts)
-          yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish peer-did-ts package
+        run: npm publish --access=public --workspace=packages/peer-did-ts
 
-      - name: Get version number
-        id: get-version
-        run: |
-          LAST_RELEASED_VERSION=$(npm view @aries-framework/core@alpha version)
-
-          echo "::set-output name=version::$LAST_RELEASED_VERSION"
-
-      - name: Setup git user
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Set git tag
-        run: |
-          git tag v${{ steps.get-version.outputs.version }}
-          git push origin v${{ steps.get-version.outputs.version }} --no-verify
+#      # On push to main, release unstable version
+#      - name: Release Unstable
+#        run: |
+#          export NEXT_VERSION_BUMP=$(./node_modules/.bin/ts-node ./scripts/get-next-bump.ts)
+#          yarn lerna publish --loglevel=verbose --canary $NEXT_VERSION_BUMP --exact --force-publish --yes --no-verify-access --dist-tag alpha
+#        env:
+#          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#
+#      - name: Get version number
+#        id: get-version
+#        run: |
+#          LAST_RELEASED_VERSION=$(npm view @aries-framework/core@alpha version)
+#
+#          echo "::set-output name=version::$LAST_RELEASED_VERSION"
+#
+#      - name: Setup git user
+#        run: |
+#          git config --global user.name "github-actions[bot]"
+#          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+#
+#      - name: Set git tag
+#        run: |
+#          git tag v${{ steps.get-version.outputs.version }}
+#          git push origin v${{ steps.get-version.outputs.version }} --no-verify
 
 #  release-stable:
 #    runs-on: ubuntu-20.04
