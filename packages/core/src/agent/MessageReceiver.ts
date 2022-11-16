@@ -19,7 +19,7 @@ import {
 } from '../modules/problem-reports'
 import { injectable } from '../plugins'
 import { TagsBase, TagValue } from '../storage/BaseRecord'
-import { MessageIdRecord, MessageIdsRepository } from '../storage/MessageIdsRepository'
+import { ReceivedMessageIdRecord, ReceivedMessageIdsRepository } from '../storage/ReceivedMessageIdsRepository'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
@@ -44,7 +44,7 @@ export class MessageReceiver {
   private logger: Logger
   private keyRepository: KeyRepository
   private connectionsModule: ConnectionsModule
-  private messageIdsRepository: MessageIdsRepository
+  private receivedMessageIdsRepository: ReceivedMessageIdsRepository
   public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -56,7 +56,7 @@ export class MessageReceiver {
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
     connectionsModule: ConnectionsModule,
-    messageIdsRepository: MessageIdsRepository
+    receivedMessageIdsRepository: ReceivedMessageIdsRepository
   ) {
     this.config = config
     this.envelopeService = envelopeService
@@ -66,7 +66,7 @@ export class MessageReceiver {
     this.dispatcher = dispatcher
     this.keyRepository = keyRepository
     this.logger = this.config.logger
-    this.messageIdsRepository = messageIdsRepository
+    this.receivedMessageIdsRepository = receivedMessageIdsRepository
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
@@ -117,8 +117,8 @@ export class MessageReceiver {
   }
 
   private async isDuplicateMessage(message: DIDCommMessage) {
-    if (await this.messageIdsRepository.findById(message.id)) return true
-    await this.messageIdsRepository.save(new MessageIdRecord({ id: message.id }))
+    if (await this.receivedMessageIdsRepository.findById(message.id)) return true
+    await this.receivedMessageIdsRepository.save(new ReceivedMessageIdRecord({ id: message.id }))
     return false
   }
 

@@ -16,7 +16,7 @@ export type MessageIdRecordProps = {
   id: string
 }
 
-export class MessageIdRecord extends BaseRecord<DefaultMessageIdTags, CustomMessageIdTags> {
+export class ReceivedMessageIdRecord extends BaseRecord<DefaultMessageIdTags, CustomMessageIdTags> {
   public constructor(props: MessageIdRecordProps) {
     super()
 
@@ -33,11 +33,11 @@ export class MessageIdRecord extends BaseRecord<DefaultMessageIdTags, CustomMess
 }
 
 @injectable()
-export class MessageIdsRepository extends Repository<MessageIdRecord> {
+export class ReceivedMessageIdsRepository extends Repository<ReceivedMessageIdRecord> {
   public constructor(
-    @inject(InjectionSymbols.StorageService) storageService: StorageService<MessageIdRecord>,
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<ReceivedMessageIdRecord>,
     eventEmitter: EventEmitter
   ) {
-    super(MessageIdRecord, storageService, eventEmitter)
+    super(ReceivedMessageIdRecord, storageService, eventEmitter)
   }
 }
