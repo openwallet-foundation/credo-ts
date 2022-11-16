@@ -6,6 +6,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { ProofFormatServiceMap } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
@@ -55,7 +56,6 @@ import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposalPresentationMessage } from './messages/V2ProposalPresentationMessage'
 import { V2RequestPresentationMessage } from './messages/V2RequestPresentationMessage'
-import { ProofFormatServiceMap } from '../../formats'
 
 @scoped(Lifecycle.ContainerScoped)
 export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends ProofService<PFs> {
