@@ -1,7 +1,6 @@
-import type { DependencyManager } from '../../plugins'
+import type { DependencyManager } from '@aries-framework/core'
 
-import { Dispatcher } from '../../agent/Dispatcher'
-import { module, injectable } from '../../plugins'
+import { Dispatcher, module, injectable, InjectionSymbols } from '@aries-framework/core'
 
 import { WitnessGossipMessageHandler } from './handlers'
 import { GossipService } from './service'
@@ -9,7 +8,7 @@ import { GossipService } from './service'
 @module()
 @injectable()
 export class GossipModule {
-  private gossipService: GossipService
+  private readonly gossipService: GossipService
 
   public constructor(dispatcher: Dispatcher, gossipService: GossipService) {
     this.gossipService = gossipService
@@ -30,6 +29,6 @@ export class GossipModule {
     dependencyManager.registerContextScoped(GossipModule)
 
     // Services
-    dependencyManager.registerSingleton(GossipService)
+    dependencyManager.registerSingleton(InjectionSymbols.GossipService, GossipService)
   }
 }

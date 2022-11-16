@@ -1,7 +1,7 @@
 import type { GossipService } from '../service'
 import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
-import { WitnessGossipInfoMessage, WitnessTableMessage, WitnessTableQueryMessage } from '../messages'
+import { WitnessGossipInfoMessage, WitnessTableMessage, WitnessTableQueryMessage } from '@aries-framework/core'
 
 export class WitnessGossipMessageHandler implements Handler {
   private gossipService: GossipService

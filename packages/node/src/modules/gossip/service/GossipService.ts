@@ -1,41 +1,28 @@
-import type { ValueTransferWitnessConfig } from '../../../types'
-import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '../../value-transfer'
-import type {
-  GossipInterface,
-  TransactionRecord,
-  GossipStorageOrmRepository,
-  BaseGossipMessage,
-} from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { ResumeValueTransferTransactionEvent, WitnessTableReceivedEvent } from '@aries-framework/core'
+import type { GossipInterface, TransactionRecord, BaseGossipMessage } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import {
-  makeOrmGossipStorage,
-  WitnessGossipInfo,
+  AriesFrameworkError,
+  DidMarker,
+  ValueTransferEventTypes,
+  AgentConfig,
+  EventEmitter,
+  DidService,
+  GossipCryptoService,
+  GossipLoggerService,
+  GossipTransportService,
+  injectable,
+} from '@aries-framework/core'
+import {
   Gossip,
-  initGossipSqlite,
-  WitnessDetails,
-  MappingTable,
-  WitnessTable,
-  selectTopWitnessToSendAsk,
   pickAllWitnessForTransactionUpdates,
-  GossipMessageDispatcher,
+  selectTopWitnessToSendAsk,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
-
-import { AgentConfig } from '../../../agent/AgentConfig'
-import { EventEmitter } from '../../../agent/EventEmitter'
-import { AriesFrameworkError } from '../../../error'
-import { injectable } from '../../../plugins'
-import { DidMarker } from '../../dids/domain'
-import { DidService } from '../../dids/services/DidService'
-import { ValueTransferEventTypes } from '../../value-transfer/ValueTransferEvents'
-
-import { GossipCryptoService } from './GossipCryptoService'
-import { GossipLoggerService } from './GossipLoggerService'
-import { GossipTransportService } from './GossipTransportService'
+import { MappingTable, WitnessDetails, WitnessGossipInfo, WitnessTable } from '@sicpa-dlab/witness-gossip-types-ts'
 
 @injectable()
 export class GossipService implements GossipInterface {
-  private gossip!: Gossip
-  private messageDispatcher!: GossipMessageDispatcher
+  private gossip: GossipInterface
   private gossipingStarted = false
 
   public constructor(
@@ -45,7 +32,29 @@ export class GossipService implements GossipInterface {
     private readonly gossipLoggerService: GossipLoggerService,
     private readonly didService: DidService,
     private readonly eventEmitter: EventEmitter
-  ) {}
+  ) {
+    this.gossip = new Gossip(
+      {
+        logger: this.gossipLoggerService,
+        crypto: this.gossipCryptoService,
+        outboundTransport: this.gossipTransportService,
+        metrics: this.config.witnessGossipMetrics,
+      },
+      {
+        label: this.config.label,
+        tockTimeMs: this.config.valueTransferConfig?.witness?.tockTime,
+        cleanupTime: this.config.valueTransferConfig?.witness?.cleanupTime,
+        redeliverTime: this.config.valueTransferConfig?.witness?.redeliverTime,
+        historyThreshold: this.config.valueTransferConfig?.witness?.historyThreshold,
+        redeliveryThreshold: this.config.valueTransferConfig?.witness?.redeliveryThreshold,
+      },
+      {
+        selectWitnessToSendAskAlgorithm: selectTopWitnessToSendAsk,
+        pickWitnessForGossipingTransactionUpdates: pickAllWitnessForTransactionUpdates,
+      },
+      this.config.gossipStorageConfig
+    )
+  }
 
   public getWitnessDetails(): Promise<WitnessDetails> {
     return this.gossip.getWitnessDetails()
@@ -59,60 +68,24 @@ export class GossipService implements GossipInterface {
     return this.gossip.commitSingleParticipantTransition(start, end)
   }
 
-  public async init(dbConnectionString: string): Promise<void> {
-    const orm = await initGossipSqlite(dbConnectionString, { debug: true })
-
-    const generator = orm.getSchemaGenerator()
-    await generator.refreshDatabase()
-
-    const storage = makeOrmGossipStorage(orm).gossipStorage
-
-    this.gossip = new Gossip(
-      {
-        logger: this.gossipLoggerService,
-        crypto: this.gossipCryptoService,
-        storage,
-        outboundTransport: this.gossipTransportService,
-        metrics: this.config.witnessGossipMetrics,
-      },
-      {
-        label: this.config.label,
-        tockTime: this.config.valueTransferConfig?.witness?.tockTime,
-        cleanupTime: this.config.valueTransferConfig?.witness?.cleanupTime,
-        redeliverTime: this.config.valueTransferConfig?.witness?.redeliverTime,
-        historyThreshold: this.config.valueTransferConfig?.witness?.historyThreshold,
-        redeliveryThreshold: this.config.valueTransferConfig?.witness?.redeliveryThreshold,
-      },
-      {
-        selectWitnessToSendAskAlgorithm: selectTopWitnessToSendAsk,
-        pickWitnessForGossipingTransactionUpdates: pickAllWitnessForTransactionUpdates,
-      }
-    )
-
-    this.messageDispatcher = new GossipMessageDispatcher(this.gossip)
-
-    await this.initState(storage)
-    await this.startGossiping()
+  public isInitialized(): Promise<WitnessDetails | null> {
+    return this.gossip.isInitialized()
   }
 
-  private async initState(gossipRepository: GossipStorageOrmRepository): Promise<void> {
+  public async start(): Promise<void> {
+    if (!this.gossipingStarted) await this.gossip.start()
+    this.gossipingStarted = true
+  }
+
+  public stop(): void {
+    return this.gossip.stop()
+  }
+
+  public async initState(): Promise<void> {
+    this.config.logger.info('> initGossipState')
+
     const config = this.config.valueWitnessConfig
     if (!config) throw new Error('Value transfer config is not available')
-
-    await this.initGossipOrmState(config, gossipRepository)
-  }
-
-  private async initGossipOrmState(
-    config: ValueTransferWitnessConfig,
-    gossipRepository: GossipStorageOrmRepository
-  ): Promise<void> {
-    this.config.logger.info('> initGossipOrmState')
-    const existingOrmState = await gossipRepository.isInitialized()
-
-    if (existingOrmState) {
-      this.config.logger.info('> initGossipOrmState already exists, returning')
-      return
-    }
 
     const did = await this.didService.findStaticDid(DidMarker.Public)
     if (!did) {
@@ -128,15 +101,13 @@ export class GossipService implements GossipInterface {
     const info = new WitnessDetails({ wid: config.wid, did: did.did })
     const mappingTable = new MappingTable(config.knownWitnesses)
 
-    await gossipRepository.setMyInfo(info)
-    await gossipRepository.setMappingTable(mappingTable)
+    await this.gossip.initState(info, mappingTable)
 
     this.config.logger.info('< initGossipOrmState completed!')
   }
 
-  private async startGossiping() {
-    if (!this.gossipingStarted) await this.gossip.start()
-    this.gossipingStarted = true
+  public clearState(): Promise<void> {
+    return this.gossip.clearState()
   }
 
   public async checkPartyStateHash(hash: Uint8Array): Promise<Uint8Array | undefined> {
@@ -148,7 +119,7 @@ export class GossipService implements GossipInterface {
   }
 
   public async receiveAndHandleMessage(message: BaseGossipMessage): Promise<void> {
-    await this.messageDispatcher.dispatchMessage(message)
+    await this.gossip.receiveAndHandleMessage(message)
     this.emitMessageEventIfNeeded(message)
   }
 

@@ -1,1 +1,3 @@
-export * from './GossipService'
+export * from './GossipCryptoService'
+export * from './GossipTransportService'
+export * from './GossipLoggerService'

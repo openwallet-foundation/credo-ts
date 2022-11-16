@@ -1,7 +1,7 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
-import type { WitnessMessageType } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { WitnessMessageType } from '@sicpa-dlab/witness-gossip-types-ts'
 
-import { WitnessTable, WitnessTableBody } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import { WitnessTable, WitnessTableBody } from '@sicpa-dlab/witness-gossip-types-ts'
 import { Type } from 'class-transformer'
 import { IsString, ValidateNested } from 'class-validator'
 

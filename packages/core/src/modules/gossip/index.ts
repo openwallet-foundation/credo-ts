@@ -1,2 +1,2 @@
 export * from './messages'
-export * from './GossipModule'
+export * from './service'

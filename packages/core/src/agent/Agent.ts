@@ -24,8 +24,6 @@ import { DidMarker, DidService } from '../modules/dids'
 import { DidsModule } from '../modules/dids/DidsModule'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records/GenericRecordsModule'
-import { GossipModule } from '../modules/gossip/GossipModule'
-import { GossipService } from '../modules/gossip/service'
 import { IndyModule } from '../modules/indy/module'
 import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
@@ -67,7 +65,6 @@ export class Agent {
   private walletService: Wallet
   private didService: DidService
   private valueTransferService: ValueTransferService
-  private gossipService: GossipService
 
   public readonly connections: ConnectionsModule
   public readonly proofs: ProofsModule
@@ -84,7 +81,6 @@ export class Agent {
   public readonly dids: DidsModule
   public readonly wallet: WalletModule
   public readonly valueTransfer: ValueTransferModule
-  public readonly gossip: GossipModule
   public readonly outOfBand: OutOfBandModule
   public readonly oob!: OutOfBandModuleV2
 
@@ -124,7 +120,6 @@ export class Agent {
     this.messageReceiver = this.dependencyManager.resolve(MessageReceiver)
     this.walletService = this.dependencyManager.resolve(InjectionSymbols.Wallet)
     this.valueTransferService = this.dependencyManager.resolve(ValueTransferService)
-    this.gossipService = this.dependencyManager.resolve(GossipService)
     this.didService = this.dependencyManager.resolve(DidService)
 
     // We set the modules in the constructor because that allows to set them as read-only
@@ -144,7 +139,6 @@ export class Agent {
     this.wallet = this.dependencyManager.resolve(WalletModule)
     this.outOfBand = this.dependencyManager.resolve(OutOfBandModule)
     this.oob = this.dependencyManager.resolve(OutOfBandModuleV2)
-    this.gossip = this.dependencyManager.resolve(GossipModule)
     this.valueTransfer = this.dependencyManager.resolve(ValueTransferModule)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
@@ -307,12 +301,8 @@ export class Agent {
     }
 
     // VTP state initialization
-    if (valueTransferConfig) {
-      if (valueTransferConfig.witness) {
-        await this.gossipService.init(this.agentConfig.gossipStorageConfig)
-      } else {
-        await this.valueTransferService.initPartyState()
-      }
+    if (valueTransferConfig && !valueTransferConfig.witness) {
+      await this.valueTransferService.initPartyState()
     }
 
     this._isInitialized = true
@@ -356,6 +346,10 @@ export class Agent {
   }
 
   private registerDependencies(dependencyManager: DependencyManager) {
+    // FIXME: Find a better approach
+    // Needed to dynamically resolve dependencies by injection symbols (not by class)
+    dependencyManager.registerInstance(DependencyManager, dependencyManager)
+
     dependencyManager.registerInstance(AgentConfig, this.agentConfig)
 
     // Register internal dependencies
@@ -405,7 +399,6 @@ export class Agent {
       OutOfBandModuleV2,
       OutOfBandModule,
       IndyModule,
-      GossipModule,
       ValueTransferModule,
       KeysModule
     )

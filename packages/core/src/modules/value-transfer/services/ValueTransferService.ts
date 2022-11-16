@@ -17,20 +17,22 @@ import {
   Wallet,
   Witness,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { GossipInterface } from '@sicpa-dlab/witness-gossip-types-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
+import { container, delay, inject } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { injectable } from '../../../plugins'
+import { DependencyManager, injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQueryMessage'
-import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
@@ -56,17 +58,17 @@ export class ValueTransferService {
   protected messageSender: MessageSender
   protected getter: Getter
   protected giver: Giver
-  protected witness: Witness
+  protected witness?: Witness
 
   public constructor(
     config: AgentConfig,
+    dependencyManager: DependencyManager,
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    gossipService: GossipService,
     didService: DidService,
     didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
@@ -113,7 +115,7 @@ export class ValueTransferService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: this.logger.createContextLogger('Witness'),
-        gossip: gossipService,
+        gossipProvider: () => dependencyManager.resolve(InjectionSymbols.GossipService),
       },
       {
         label: config.label,
@@ -159,7 +161,7 @@ export class ValueTransferService {
     }
 
     if (record.transaction.role === TransactionRole.Witness) {
-      await this.witness.processProblemReport(new ProblemReport(problemReportMessage))
+      await this.witness?.processProblemReport(new ProblemReport(problemReportMessage))
     }
     if (record.transaction.role === TransactionRole.Getter) {
       await this.getter.processProblemReport(new ProblemReport(problemReportMessage))
@@ -187,7 +189,7 @@ export class ValueTransferService {
     }
 
     if (record.transaction.role === TransactionRole.Witness) {
-      await this.witness.abortTransaction(record.transaction.id, code, reason, send)
+      await this.witness?.abortTransaction(record.transaction.id, code, reason, send)
     }
     if (record.transaction.role === TransactionRole.Getter) {
       await this.getter.abortTransaction(record.transaction.id, code, reason, send)

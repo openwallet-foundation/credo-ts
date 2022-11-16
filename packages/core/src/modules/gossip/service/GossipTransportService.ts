@@ -1,4 +1,4 @@
-import type { OutboundGossipTransportInterface, BaseGossipMessage } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { OutboundGossipTransportInterface, BaseGossipMessage } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { MessageSender } from '../../../agent/MessageSender'
