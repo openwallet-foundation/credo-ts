@@ -17,7 +17,7 @@ export interface DidReceivedEvent extends BaseEvent {
 export interface DidRemovedEvent extends BaseEvent {
   type: typeof DidEventTypes.DidRemoved
   payload: {
-    record: DidRecord | null
+    record: DidRecord
   }
 }
 

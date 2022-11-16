@@ -309,8 +309,8 @@ export class DidService {
 
   public async deleteById(recordId: string) {
     const record = await this.findById(recordId)
-    await this.didRepository.deleteById(recordId)
     if (!record) return
+    await this.didRepository.deleteById(recordId)
     this.eventEmitter.emit<DidRemovedEvent>({
       type: DidEventTypes.DidRemoved,
       payload: { record: record },
