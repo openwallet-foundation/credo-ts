@@ -21,7 +21,9 @@ export class ValueTransferPartyStateService implements VtpPartyStorageInterface 
     this.partyStateLock = new AsyncLock()
   }
 
-  public async usePartyState<T>(fn: (state: PartyState) => Promise<{ state: PartyState; data?: T }>): Promise<T | undefined> {
+  public async usePartyState<T>(
+    fn: (state: PartyState) => Promise<{ state: PartyState; data?: T }>
+  ): Promise<T | void> {
     return await this.partyStateLock.acquire('key', async () => {
       const state = await this.getPartyState()
       const newState = await fn(state)
