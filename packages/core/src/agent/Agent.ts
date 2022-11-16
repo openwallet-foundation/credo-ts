@@ -6,6 +6,7 @@ import type { AgentModulesInput, ModulesMap } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
 
+import { IndyWallet } from '@aries-framework/indy-sdk'
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
@@ -18,7 +19,6 @@ import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 import { IndyStorageService } from '../storage/IndyStorageService'
-import { IndyWallet } from '../wallet/IndyWallet'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
