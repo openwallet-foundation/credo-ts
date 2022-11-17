@@ -18,7 +18,6 @@ import {
   ProblemReportV2Message,
 } from '../modules/problem-reports'
 import { injectable } from '../plugins'
-import { TagsBase, TagValue } from '../storage/BaseRecord'
 import { ReceivedMessageIdRecord, ReceivedMessageIdsRepository } from '../storage/ReceivedMessageIdsRepository'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'

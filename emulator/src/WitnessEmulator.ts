@@ -3,7 +3,7 @@ import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport, initWitnessGossip } from '@aries-framework/node'
-import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts/build/implementations/metrics'
+import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { GossipStorageType } from '@sicpa-dlab/witness-gossip-types-ts'
 import { randomUUID } from 'crypto'
 
