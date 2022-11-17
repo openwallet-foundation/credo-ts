@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.3.0-alpha.4",
+  "version": "0.3.0-alpha.5",
   "files": [
     "build"
   ],
