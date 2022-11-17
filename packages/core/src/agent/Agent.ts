@@ -52,6 +52,7 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { EnvelopeService } from './didcomm/EnvelopeService'
+import { ProblemReportModule } from '../modules/problem-reports/ProblemReportModule'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -400,7 +401,8 @@ export class Agent {
       OutOfBandModule,
       IndyModule,
       ValueTransferModule,
-      KeysModule
+      KeysModule,
+      ProblemReportModule
     )
   }
 }
