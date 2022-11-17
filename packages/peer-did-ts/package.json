@@ -1,5 +1,5 @@
 {
-  "name": "@sicpa-dlab/peer-did-ts",
+  "name": "@sicpa_open_source/peer-did-ts",
   "main": "build/index",
   "types": "build/index",
   "version": "0.1.4",
@@ -7,9 +7,7 @@
     "build"
   ],
   "license": "Apache-2.0",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
+  "homepage": "https://github.com/sicpa-dlab/aries-framework-javascript/tree/main/packages/peer-did-ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/sicpa-dlab/aries-framework-javascript/",
