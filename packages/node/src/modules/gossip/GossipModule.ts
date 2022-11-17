@@ -1,6 +1,6 @@
 import type { DependencyManager } from '@aries-framework/core'
 
-import { Dispatcher, module, injectable, InjectionSymbols } from '@aries-framework/core'
+import { Dispatcher, module, injectable, InjectionSymbols, inject } from '@aries-framework/core'
 
 import { WitnessGossipMessageHandler } from './handlers'
 import { GossipService } from './service'
@@ -10,14 +10,12 @@ import { GossipService } from './service'
 export class GossipModule {
   private readonly gossipService: GossipService
 
-  public constructor(dispatcher: Dispatcher, gossipService: GossipService) {
+  public constructor(dispatcher: Dispatcher, @inject(InjectionSymbols.GossipService) gossipService: GossipService) {
     this.gossipService = gossipService
     this.registerHandlers(dispatcher)
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     dispatcher.registerHandler(new WitnessGossipMessageHandler(this.gossipService))
   }
 
@@ -26,9 +24,12 @@ export class GossipModule {
    */
   public static register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(GossipModule)
+    dependencyManager.registerSingleton(GossipModule)
 
     // Services
     dependencyManager.registerSingleton(InjectionSymbols.GossipService, GossipService)
+
+    // Resolve to create module instance
+    dependencyManager.resolve(GossipModule)
   }
 }

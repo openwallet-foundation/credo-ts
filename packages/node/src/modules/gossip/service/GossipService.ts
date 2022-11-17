@@ -22,7 +22,7 @@ import { MappingTable, WitnessDetails, WitnessGossipInfo, WitnessTable } from '@
 
 @injectable()
 export class GossipService implements GossipInterface {
-  private gossip: GossipInterface
+  private readonly gossip: GossipInterface
   private gossipingStarted = false
 
   public constructor(

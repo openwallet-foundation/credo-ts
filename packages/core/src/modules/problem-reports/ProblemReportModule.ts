@@ -19,6 +19,9 @@ export class ProblemReportModule {
   }
 
   public static register(dependencyManager: DependencyManager) {
-    dependencyManager.registerContextScoped(ProblemReportModule)
+    dependencyManager.registerSingleton(ProblemReportModule)
+
+    // Resolve to create module instance
+    dependencyManager.resolve(ProblemReportModule)
   }
 }

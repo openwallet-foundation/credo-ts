@@ -22,7 +22,7 @@ import { ReceivedMessageIdRecord, ReceivedMessageIdsRepository } from '../storag
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
@@ -333,10 +333,6 @@ export class MessageReceiver {
     connection: ConnectionRecord,
     plaintextMessage: PlaintextMessage
   ) {
-    const messageType = parseMessageType(plaintextMessage['@type'] || '')
-    if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
-    }
     const problemReportMessage = new ProblemReportMessage({
       description: {
         en: message,
