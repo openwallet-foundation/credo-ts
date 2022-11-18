@@ -1,8 +1,9 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { WitnessTableMessage } from '../../gossip'
 import type { Transports } from '../../routing/types'
-import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
 import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
@@ -17,10 +18,8 @@ import {
   Wallet,
   Witness,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
-import { GossipInterface } from '@sicpa-dlab/witness-gossip-types-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-import { container, delay, inject } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -238,6 +237,22 @@ export class ValueTransferService {
       body: {},
     })
     await this.sendMessage(message)
+  }
+
+  public processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): void {
+    const { message: witnessTable } = messageContext
+
+    if (!witnessTable.from) {
+      this.config.logger.info('Unknown Witness Table sender')
+      return
+    }
+
+    this.eventEmitter.emit<WitnessTableReceivedEvent>({
+      type: ValueTransferEventTypes.WitnessTableReceived,
+      payload: {
+        witnesses: witnessTable.body.witnesses,
+      },
+    })
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {

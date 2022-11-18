@@ -8,21 +8,25 @@ import {
   AgentConfig,
   EventEmitter,
   DidService,
-  GossipCryptoService,
-  GossipLoggerService,
-  GossipTransportService,
   injectable,
 } from '@aries-framework/core'
 import {
+  GossipMessageDispatcher,
   Gossip,
   pickAllWitnessForTransactionUpdates,
   selectTopWitnessToSendAsk,
 } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { MappingTable, WitnessDetails, WitnessGossipInfo, WitnessTable } from '@sicpa-dlab/witness-gossip-types-ts'
 
+import { GossipCryptoService } from './GossipCryptoService'
+import { GossipLoggerService } from './GossipLoggerService'
+import { GossipTransportService } from './GossipTransportService'
+
 @injectable()
 export class GossipService implements GossipInterface {
-  private readonly gossip: GossipInterface
+  private readonly gossip: Gossip
+  private readonly messageDispatcher: GossipMessageDispatcher
+
   private gossipingStarted = false
 
   public constructor(
@@ -54,6 +58,7 @@ export class GossipService implements GossipInterface {
       },
       this.config.gossipStorageConfig
     )
+    this.messageDispatcher = new GossipMessageDispatcher(this.gossip)
   }
 
   public getWitnessDetails(): Promise<WitnessDetails> {
@@ -119,7 +124,7 @@ export class GossipService implements GossipInterface {
   }
 
   public async receiveAndHandleMessage(message: BaseGossipMessage): Promise<void> {
-    await this.gossip.receiveAndHandleMessage(message)
+    await this.messageDispatcher.dispatchMessage(message)
     this.emitMessageEventIfNeeded(message)
   }
 

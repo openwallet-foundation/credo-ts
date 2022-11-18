@@ -3,7 +3,7 @@ import type { DependencyManager } from '@aries-framework/core'
 import { Dispatcher, module, injectable, InjectionSymbols, inject } from '@aries-framework/core'
 
 import { WitnessGossipMessageHandler } from './handlers'
-import { GossipService } from './service'
+import { GossipService } from './services'
 
 @module()
 @injectable()

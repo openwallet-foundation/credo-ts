@@ -1,4 +1,4 @@
-import type { GossipService } from './service'
+import type { GossipService } from './services'
 import type { Agent } from '@aries-framework/core'
 
 import { AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'

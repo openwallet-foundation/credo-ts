@@ -21,6 +21,7 @@ import {
   RequestHandler,
   MintHandler,
   MintResponseHandler,
+  WitnessTableHandler,
 } from './handlers'
 import { ValueTransferService } from './services'
 import { ValueTransferGetterService } from './services/ValueTransferGetterService'
@@ -314,6 +315,7 @@ export class ValueTransferModule {
     dispatcher.registerHandler(new ProblemReportHandler(this.valueTransferService))
     dispatcher.registerHandler(new MintHandler(this.valueTransferWitnessService))
     dispatcher.registerHandler(new MintResponseHandler(this.valueTransferIssuerService))
+    dispatcher.registerHandler(new WitnessTableHandler(this.valueTransferService))
   }
 
   /**
