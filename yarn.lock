@@ -169,11 +169,11 @@
     ws "^7.5.3"
 
 "@aries-framework/node@file:packages/node":
-  version "0.3.0-alpha.9"
+  version "0.3.0-alpha.10"
   dependencies:
     "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.8"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.1-alpha.9"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.1-alpha.11"
     "@sicpa-dlab/witness-gossip-types-ts" "0.3.1-alpha.8"
     buffer "^6.0.3"
     class-transformer "0.5.1"
@@ -2393,10 +2393,10 @@
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@0.3.1-alpha.9":
-  version "0.3.1-alpha.9"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.1-alpha.9/03404984305413531e1c873632c59bdb33479001#03404984305413531e1c873632c59bdb33479001"
-  integrity sha512-5YI2R0nAeCTvTh9RatpNlqcT3EdSKGt3pw5YUKUQg7zZ/0Y+F7vf/0byrawnjbVuHdRn6Njiqor0rJaO6NcBAw==
+"@sicpa-dlab/witness-gossip-protocol-ts@0.3.1-alpha.11":
+  version "0.3.1-alpha.11"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.1-alpha.11/928db34a3c43b77b60794b374bd2346ab3d31504#928db34a3c43b77b60794b374bd2346ab3d31504"
+  integrity sha512-W/Quv1N0x0ayVT9lrFM8ZbVOC1Hhk383nkhMph0hHy/KSE6CNmS4LDHPL6tjgZlYjtKXcFH7CAu3uixOu49AZQ==
   dependencies:
     "@mikro-orm/core" "^5.5.2"
     "@mikro-orm/postgresql" "^5.5.2"
