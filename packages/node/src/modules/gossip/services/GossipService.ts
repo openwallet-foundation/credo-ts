@@ -87,7 +87,7 @@ export class GossipService implements GossipInterface {
   }
 
   public async initState(): Promise<void> {
-    this.config.logger.info('> initGossipState')
+    this.config.logger.info('> initState')
 
     const config = this.config.valueWitnessConfig
     if (!config) throw new Error('Value transfer config is not available')
@@ -108,7 +108,7 @@ export class GossipService implements GossipInterface {
 
     await this.gossip.initState(info, mappingTable)
 
-    this.config.logger.info('< initGossipOrmState completed!')
+    this.config.logger.info('< initState completed!')
   }
 
   public clearState(): Promise<void> {

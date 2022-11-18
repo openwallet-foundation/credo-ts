@@ -57,7 +57,7 @@ export class ValueTransferService {
   protected messageSender: MessageSender
   protected getter: Getter
   protected giver: Giver
-  protected witness?: Witness
+  protected witness: Witness
 
   public constructor(
     config: AgentConfig,
@@ -160,7 +160,7 @@ export class ValueTransferService {
     }
 
     if (record.transaction.role === TransactionRole.Witness) {
-      await this.witness?.processProblemReport(new ProblemReport(problemReportMessage))
+      await this.witness.processProblemReport(new ProblemReport(problemReportMessage))
     }
     if (record.transaction.role === TransactionRole.Getter) {
       await this.getter.processProblemReport(new ProblemReport(problemReportMessage))
@@ -188,7 +188,7 @@ export class ValueTransferService {
     }
 
     if (record.transaction.role === TransactionRole.Witness) {
-      await this.witness?.abortTransaction(record.transaction.id, code, reason, send)
+      await this.witness.abortTransaction(record.transaction.id, code, reason, send)
     }
     if (record.transaction.role === TransactionRole.Getter) {
       await this.getter.abortTransaction(record.transaction.id, code, reason, send)
