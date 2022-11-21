@@ -18,10 +18,10 @@
     "@influxdata/influxdb-client": "^1.29.0",
     "@mikro-orm/core": "^5.4.2",
     "@mikro-orm/sqlite": "^5.4.2",
-    "@sicpa-dlab/value-transfer-metrics-ts": "0.2.1-alpha.7",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.1-alpha.10",
-    "@sicpa-dlab/witness-gossip-protocol-ts": "0.3.1-alpha.9",
-    "@sicpa-dlab/witness-gossip-types-ts": "0.3.1-alpha.8",
+    "@sicpa-dlab/value-transfer-metrics-ts": "0.3.1",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.1",
+    "@sicpa-dlab/witness-gossip-protocol-ts": "0.3.1",
+    "@sicpa-dlab/witness-gossip-types-ts": "0.3.1",
     "@stablelib/ed25519": "^1.0.3"
   },
   "devDependencies": {
