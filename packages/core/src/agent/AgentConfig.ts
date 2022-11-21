@@ -191,8 +191,13 @@ export class AgentConfig {
   public toJSON() {
     return {
       ...this.initConfig,
-      logger: this.logger !== undefined,
-      agentDependencies: this.agentDependencies != undefined,
+      walletConfig: {
+        ...this.walletConfig,
+        key: undefined,
+        storage: { ...this.walletConfig?.storage, credentials: undefined },
+      },
+      logger: Boolean(this.logger), // Maybe show the loglevel here instead of true / false?
+      agentDependencies: Boolean(this.agentDependencies),
       label: this.label,
     }
   }
