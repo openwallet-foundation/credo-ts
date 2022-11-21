@@ -1,12 +1,11 @@
-/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
-import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { agentDependencies, HttpInboundTransport, initWitnessGossip } from '@aries-framework/node'
+import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import { GossipStorageType } from '@sicpa-dlab/witness-gossip-types-ts'
 import { randomUUID } from 'crypto'
-
-import { MetricsService } from './metrics'
 
 export interface EmulatorWitnessConfig {
   host?: string
@@ -32,7 +31,7 @@ export class Witness {
     const config: InitConfig = {
       label: name,
       walletConfig: { id: name, key: name },
-      logger: new ConsoleLogger(LogLevel.error),
+      logger: new ConsoleLogger(LogLevel.debug),
       staticDids: [
         {
           seed: witnessConfig.publicDidSeed,
@@ -48,10 +47,11 @@ export class Witness {
           knownWitnesses: witnessConfig.knownWitnesses || [],
           issuerDids: witnessConfig.issuerDids,
           tockTime: witnessConfig.tockTime,
-          gossipMetricsService: new MetricsService(),
+          gossipMetricsService: new DummyGossipMetrics(),
         },
       },
       transports: [Transports.HTTP],
+      gossipStorageConfig: { type: GossipStorageType.SQLite, connectionConfig: { dbName: `gossip-db-${name}` } },
     }
 
     this.agent = new Agent(config, agentDependencies)
@@ -63,6 +63,7 @@ export class Witness {
 
   public async run() {
     await this.agent.initialize()
+    await initWitnessGossip(this.agent)
     console.log(`Witness ${this.agent.config.label} started!`)
     const publicDid = await this.agent.getStaticDid(DidMarker.Public)
     console.log(`Witness ${this.agent.config.label} Public DID: ${publicDid?.did}`)

@@ -1,13 +1,14 @@
-/* eslint-disable no-console */
 import { randomString } from '@aries-framework/core'
 
 import { UserEmulator } from './UserEmulator'
 import { WitnessEmulator } from './WitnessEmulator'
-import { config } from './config'
+import { createConfig } from './config'
 import { createUsersList, createWitnessTable } from './utils'
 
 const run = async () => {
   console.log('Emulator: Starting...')
+
+  const config = await createConfig()
   let startPort = config.port
 
   let users = config.users.map((user) => ({

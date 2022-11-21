@@ -1,67 +1,28 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
+import type { WitnessMessageType } from '@sicpa-dlab/witness-gossip-types-ts'
 
-import { WitnessTable } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import { WitnessTable, WitnessTableBody } from '@sicpa-dlab/witness-gossip-types-ts'
 import { Type } from 'class-transformer'
-import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
-export type WitnessDataParams = {
-  did: string
-  type?: string
-  label?: string
-}
-
-export class WitnessData {
-  @IsString()
-  public did!: string
-
-  @IsString()
-  @IsOptional()
-  public type?: string
-
-  @IsString()
-  @IsOptional()
-  public label?: string
-
-  public constructor(options?: WitnessDataParams) {
-    if (options) {
-      this.did = options.did
-      this.type = options.type
-      this.label = options.label
-    }
-  }
-}
-
-export type WitnessTableMessageBodyParams = {
-  witnesses: Array<WitnessData>
-}
-
 export type WitnessTableMessageParams = {
-  body: WitnessTableMessageBody
+  body: WitnessTableBody
 } & DIDCommV2MessageParams
 
-export class WitnessTableMessageBody {
-  @Type(() => WitnessData)
-  public witnesses!: Array<WitnessData>
-
-  public constructor(options?: WitnessTableMessageBodyParams) {
-    if (options) {
-      this.witnesses = options.witnesses
-    }
-  }
-}
-
-export class WitnessTableMessage extends DIDCommV2Message {
+export class WitnessTableMessage extends DIDCommV2Message implements WitnessTable {
   @IsValidMessageType(WitnessTableMessage.type)
-  public readonly type: string = WitnessTableMessage.type.messageTypeUri
+  public readonly type = WitnessTableMessage.type.messageTypeUri as WitnessMessageType
   public static readonly type = parseMessageType(WitnessTable.type)
 
-  @Type(() => WitnessTableMessageBody)
+  @IsString()
+  public from!: string
+
+  @Type(() => WitnessTableBody)
   @ValidateNested()
-  @IsInstance(WitnessTableMessageBody)
-  public body!: WitnessTableMessageBody
+  public body!: WitnessTableBody
 
   public constructor(options?: WitnessTableMessageParams) {
     super(options)

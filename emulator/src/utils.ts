@@ -1,6 +1,6 @@
 import type { EmulatorUserConfig } from './UserEmulator'
 import type { EmulatorWitnessConfig } from './WitnessEmulator'
-import type { WitnessDetails } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import {
   Key,

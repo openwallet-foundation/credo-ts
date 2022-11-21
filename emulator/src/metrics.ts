@@ -1,8 +1,5 @@
-/* eslint-disable no-console */
-import type { WriteOptions } from '@influxdata/influxdb-client'
-import type { GossipMetricsInterface } from '@sicpa-dlab/value-transfer-protocol-ts'
-
-import { InfluxDB, Point } from '@influxdata/influxdb-client'
+import { ConsoleLogger, LogLevel } from '@aries-framework/core'
+import { InfluxDbGossipMetrics } from '@sicpa-dlab/value-transfer-metrics-ts'
 import os from 'os'
 
 const influxDbConfig = {
@@ -10,85 +7,22 @@ const influxDbConfig = {
   token: 'PsxPtqHVTPON1ln95oCLfxNBKwqcjFltLLM2KOWJ_pa0QH-rHkYFhmZReK0oNpWzIMbPk7xjnBS1MxUNYDIFHA==',
   org: 'dsr',
   bucket: 'dsr-test',
+  url: 'http://localhost:8086',
 }
 
+const gossipVersion = '1.0'
 const machineName = os.hostname()
 
-export class MetricsService implements GossipMetricsInterface {
-  private client: InfluxDB = new InfluxDB({ url: 'http://localhost:8086', token: influxDbConfig.token })
-
-  // Gossip protocol started to share transaction update
-  public async reportGossipStart(witnessId: string, transactionUpdateId: string): Promise<void> {
-    const point = new Point('gossip-start')
-      .stringField('wid', witnessId)
-      .tag('trId', transactionUpdateId)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  // Gossip protocol completed processing transaction update on specific Witness
-  // This event should be emitted by every Witness in network after transaction update processing
-  public async reportGossipCompleted(witnessId: string, transactionUpdateId: string): Promise<void> {
-    const point = new Point('gossip-end')
-      .stringField('wid', witnessId)
-      .tag('trId', transactionUpdateId)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  public async reportTockTransactionsCount(witnessId: string, count: number): Promise<void> {
-    const point = new Point('tock-transactions-count')
-      .stringField('wid', witnessId)
-      .intField('trCount', count)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  public async reportGossipMessageSize(witnessId: string, sizeInBytes: number): Promise<void> {
-    const point = new Point('gossip-message-size')
-      .stringField('wid', witnessId)
-      .floatField('size', sizeInBytes)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  public async reportTransactionUpdateTime(witnessId: string, timeInMs: number): Promise<void> {
-    const point = new Point('tu-processing-time')
-      .stringField('wid', witnessId)
-      .floatField('processTime', timeInMs)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  public async reportWitnessStateSize(witnessId: string, sizeInBytes: number): Promise<void> {
-    const point = new Point('witness-state-size')
-      .stringField('wid', witnessId)
-      .floatField('size', sizeInBytes)
-      .timestamp(new Date())
-    await this.writeAndFlushPoint(point)
-  }
-
-  private async writeAndFlushPoint(point: Point): Promise<void> {
-    const gossipVersion = Math.random() < 0.5 ? '1.0' : '2.0'
-
-    const writeOptions: Partial<WriteOptions> = {
-      defaultTags: { machineName, gossipVersion },
-      maxRetries: 0,
-      // eslint-disable-next-line
-      writeFailed: (error: any, lines: Array<string>): Promise<void> | void => {
-        console.log('Write to influxdb failed', { error, lines })
-      },
-    }
-
-    const { org, bucket } = influxDbConfig
-    const writeApi = this.client.getWriteApi(org, bucket, undefined, writeOptions)
-    console.debug('Writing point', { point })
-    writeApi.writePoint(point)
-
-    try {
-      await writeApi.close()
-    } catch (e) {
-      console.error('Error sending point', e)
-    }
-  }
-}
+export const gossipMetricsInstance = new InfluxDbGossipMetrics(
+  {
+    url: influxDbConfig.url,
+    org: influxDbConfig.org,
+    bucket: influxDbConfig.bucket,
+    token: influxDbConfig.token,
+    defaultTags: {
+      gossipVersion,
+      machineName,
+    },
+  },
+  new ConsoleLogger(LogLevel.error)
+)

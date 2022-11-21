@@ -6,11 +6,13 @@ import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
 
 import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { GossipInterface } from '@sicpa-dlab/witness-gossip-types-ts'
+import { container, delay } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { injectable } from '../../../plugins'
-import { GossipService } from '../../gossip/service/GossipService'
+import { InjectionSymbols } from '../../../constants'
+import { injectable, inject, DependencyManager } from '../../../plugins'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 
@@ -26,22 +28,20 @@ export class ValueTransferWitnessService {
   private valueTransferService: ValueTransferService
   private eventEmitter: EventEmitter
   private witness: Witness
-  private gossipService: GossipService
 
   public constructor(
     config: AgentConfig,
+    dependencyManager: DependencyManager,
     valueTransferService: ValueTransferService,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    gossipService: GossipService,
     eventEmitter: EventEmitter
   ) {
     this.logger = config.logger.createContextLogger('VTP-WitnessService')
     this.label = config.label
     this.valueTransferService = valueTransferService
     this.eventEmitter = eventEmitter
-    this.gossipService = gossipService
 
     this.eventEmitter.on(
       ValueTransferEventTypes.ResumeTransaction,
@@ -56,7 +56,7 @@ export class ValueTransferWitnessService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: this.logger.createContextLogger('Witness'),
-        gossip: gossipService,
+        gossipProvider: () => dependencyManager.resolve(InjectionSymbols.GossipService),
       },
       {
         label: config.label,
@@ -164,10 +164,9 @@ export class ValueTransferWitnessService {
     // Call VTP library to handle cash removal and create receipt
     const cashRemoval = new CashRemoval(cashRemovedMessage)
 
-    const operation = async () => {
-      return this.witness.createReceipt(cashRemoval)
-    }
-    const { error, transaction } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
+    // FIXME: We need to have a lock on Witness state here
+    const { error, transaction } = await this.witness.createReceipt(cashRemoval)
+
     if (!transaction) {
       this.logger.error(` Witness: process cash removal message ${cashRemovedMessage.id} failed.`, { error })
       return {}
@@ -200,10 +199,10 @@ export class ValueTransferWitnessService {
 
     // Call VTP library to handle cash mint
     const mint = new Mint(mintMessage)
-    const operation = async () => {
-      return await this.witness.processCashMint(mint)
-    }
-    const { error, message } = await this.gossipService.doSafeOperationWithWitnessSate(operation)
+
+    // FIXME: We need to have a lock on Witness state here
+    const { error, message } = await this.witness.processCashMint(mint)
+
     if (error || !message) {
       this.logger.error(`Issuer: processCashMint failed`, { error })
       return {}

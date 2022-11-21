@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import type { InitConfig } from '@aries-framework/core'
 
 import { Agent, DidMarker, HttpOutboundTransport, Transports, ConsoleLogger, LogLevel } from '@aries-framework/core'
