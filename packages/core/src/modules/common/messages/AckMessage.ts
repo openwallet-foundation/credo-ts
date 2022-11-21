@@ -8,7 +8,6 @@ import { IsValidMessageType, parseMessageType } from '../../../utils/messageType
  */
 export enum AckStatus {
   OK = 'OK',
-  FAIL = 'FAIL',
   PENDING = 'PENDING',
 }
 
