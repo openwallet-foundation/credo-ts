@@ -41,7 +41,7 @@
     web-did-resolver "^2.0.8"
 
 "@aries-framework/core@file:packages/core":
-  version "0.3.0-alpha.8"
+  version "0.3.0-alpha.9"
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
@@ -116,10 +116,10 @@
     varint "^6.0.0"
     web-did-resolver "2.0.8"
 
-"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.8":
-  version "0.3.0-alpha.8"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.3.0-alpha.8/31b9295558c9ac6be535f18f7a59e7f3a1a2dca7#31b9295558c9ac6be535f18f7a59e7f3a1a2dca7"
-  integrity sha512-yBcx+s+rUM0oQ+MJkAxOvkJF+1lPWjxOT5gw5lRfFAz65bZSQw7feIlnfyi888Pk7VAUFGGSVuukCXY5nEoTEg==
+"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.9":
+  version "0.3.0-alpha.9"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.3.0-alpha.9/e0937a20a56dcffc46f55f3157cd176f67dc5829#e0937a20a56dcffc46f55f3157cd176f67dc5829"
+  integrity sha512-XSj4idcsyelPftOyKNHFjYpwcPY1gNbymyxblNUTfYIgXHn9cO+h2fzzrL57iNk5jr6s5FoXelmfe9vvVcX3CA==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
@@ -169,9 +169,9 @@
     ws "^7.5.3"
 
 "@aries-framework/node@file:packages/node":
-  version "0.3.0-alpha.10"
+  version "0.3.0-alpha.12"
   dependencies:
-    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.8"
+    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.9"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
     "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.1-alpha.11"
     "@sicpa-dlab/witness-gossip-types-ts" "0.3.1-alpha.8"
