@@ -196,7 +196,7 @@ export class AgentConfig {
         key: undefined,
         storage: { ...this.walletConfig?.storage, credentials: undefined },
       },
-      logger: this.logger.logLevel, // Maybe show the loglevel here instead of true / false?
+      logger: this.logger.logLevel,
       agentDependencies: Boolean(this.agentDependencies),
       label: this.label,
     }
