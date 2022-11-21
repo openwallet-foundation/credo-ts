@@ -62,6 +62,10 @@ export class DidsModule {
     return this.didService.getDidInfo(did)
   }
 
+  public async deleteDid(did: string) {
+    return this.didService.deleteById(did)
+  }
+
   public resolveDidDocument(didUrl: string) {
     return this.resolverService.resolveDidDocument(didUrl)
   }

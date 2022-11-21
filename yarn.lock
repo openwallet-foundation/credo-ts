@@ -41,12 +41,12 @@
     web-did-resolver "^2.0.8"
 
 "@aries-framework/core@file:packages/core":
-  version "0.3.0-alpha.0"
+  version "0.3.0-alpha.9"
   dependencies:
     "@multiformats/base-x" "^4.0.1"
-    "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.1"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.1-alpha.2"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.1-alpha.2"
+    "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.1-alpha.10"
+    "@sicpa-dlab/witness-gossip-types-ts" "0.3.1-alpha.8"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
@@ -116,6 +116,45 @@
     varint "^6.0.0"
     web-did-resolver "2.0.8"
 
+"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.9":
+  version "0.3.0-alpha.9"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.3.0-alpha.9/e0937a20a56dcffc46f55f3157cd176f67dc5829#e0937a20a56dcffc46f55f3157cd176f67dc5829"
+  integrity sha512-XSj4idcsyelPftOyKNHFjYpwcPY1gNbymyxblNUTfYIgXHn9cO+h2fzzrL57iNk5jr6s5FoXelmfe9vvVcX3CA==
+  dependencies:
+    "@multiformats/base-x" "^4.0.1"
+    "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.1-alpha.10"
+    "@sicpa-dlab/witness-gossip-types-ts" "0.3.1-alpha.8"
+    "@stablelib/ed25519" "^1.0.2"
+    "@stablelib/sha256" "^1.0.1"
+    "@stablelib/uuid" "^1.0.1"
+    "@types/async-lock" "^1.1.5"
+    "@types/indy-sdk" "^1.16.16"
+    "@types/node-fetch" "^2.5.10"
+    "@types/ws" "^7.4.6"
+    abort-controller "^3.0.0"
+    async-lock "^1.3.2"
+    bloom-filters "^3.0.0"
+    bn.js "^5.2.0"
+    borc "^3.0.0"
+    buffer "^6.0.3"
+    class-transformer "0.5.1"
+    class-validator "0.13.1"
+    did-resolver "3.1.3"
+    didcomm "0.3.4"
+    fast-json-patch "^3.1.1"
+    lru_map "^0.4.1"
+    luxon "^1.27.0"
+    make-error "^1.3.6"
+    object-inspect "^1.10.3"
+    query-string "^7.0.1"
+    reflect-metadata "^0.1.13"
+    rxjs "^7.2.0"
+    tsyringe "^4.5.0"
+    uuid "^8.3.2"
+    varint "^6.0.0"
+    web-did-resolver "2.0.8"
+
 "@aries-framework/node@*":
   version "0.2.5"
   resolved "https://registry.yarnpkg.com/@aries-framework/node/-/node-0.2.5.tgz#f23a08813355eec066c9c0942743039d72f87bc5"
@@ -130,9 +169,15 @@
     ws "^7.5.3"
 
 "@aries-framework/node@file:packages/node":
-  version "0.2.13"
+  version "0.3.0-alpha.12"
   dependencies:
-    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.2.13"
+    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.0-alpha.9"
+    "@sicpa-dlab/value-transfer-common-ts" "0.3.1-alpha.4"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.1-alpha.11"
+    "@sicpa-dlab/witness-gossip-types-ts" "0.3.1-alpha.8"
+    buffer "^6.0.3"
+    class-transformer "0.5.1"
+    class-validator "0.13.1"
     didcomm-node "0.3.4"
     express "^4.17.1"
     ffi-napi "^4.0.3"
@@ -2278,10 +2323,10 @@
     class-transformer "^0.5.1"
     reflect-metadata "^0.1.13"
 
-"@sicpa-dlab/value-transfer-common-ts@0.3.1-alpha.1", "@sicpa-dlab/value-transfer-common-ts@^0.3.1-alpha.1":
-  version "0.3.1-alpha.1"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.3.1-alpha.1/976462c30588bb787cb0c0ff63ad1641245077be#976462c30588bb787cb0c0ff63ad1641245077be"
-  integrity sha512-JtWxVwzCVV3WKRO957LhF1iCIwozdE6c1tJlGcjrt0DXsGW2xOEfkRg2dBl3bwWIYxPq7PEbwPaTruUjI0FHeg==
+"@sicpa-dlab/value-transfer-common-ts@0.3.1-alpha.4", "@sicpa-dlab/value-transfer-common-ts@^0.3.1-alpha.4":
+  version "0.3.1-alpha.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-common-ts/0.3.1-alpha.4/656d99cc3ca78c65479a360b10747145a87fd9e9#656d99cc3ca78c65479a360b10747145a87fd9e9"
+  integrity sha512-XRGBmpkeb0F90jj72/OcCaWiRBc1CtwrzGROck+lxyd8GhNiMRxVj8d2ZmqpdvEMzJnMfbRbH1Av9hgihGv5CA==
   dependencies:
     "@stablelib/sha256" "^1.0.1"
     buffer "^6.0.3"
@@ -2316,15 +2361,16 @@
     reflect-metadata "^0.1.13"
     ulid "^2.3.0"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.3.1-alpha.2":
-  version "0.3.1-alpha.2"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.1-alpha.2/487942682c57dedef93b61011806778c43a5e80d#487942682c57dedef93b61011806778c43a5e80d"
-  integrity sha512-duU37s14rMI7D23g1J4UZtuGxZw3pJFh96RBQAg1vqW5F/8/DP8DxLgbqjXNxmn0xE/nN/4ALHORXq1gDY6vsg==
+"@sicpa-dlab/value-transfer-protocol-ts@0.3.1-alpha.10":
+  version "0.3.1-alpha.10"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.1-alpha.10/cb9753ee10e54f87bcc00ba5e13dc0dec43e973d#cb9753ee10e54f87bcc00ba5e13dc0dec43e973d"
+  integrity sha512-S+ARu6CEkK2+JgUh1Qev4aHH3aInAFzv/e+ALyY57jhvAANSzV/VcYPLKF/k7gZd83n+Xx1Xu37WSoVWURsm5g==
   dependencies:
-    "@sicpa-dlab/value-transfer-common-ts" "^0.3.1-alpha.1"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "^0.3.1-alpha.2"
+    "@sicpa-dlab/value-transfer-common-ts" "^0.3.1-alpha.4"
+    "@sicpa-dlab/witness-gossip-types-ts" "^0.3.1-alpha.8"
     "@stablelib/sha256" "^1.0.1"
     "@stablelib/uuid" "^1.0.1"
+    async-lock "^1.4.0"
     class-transformer "^0.5.1"
     class-validator "^0.13.2"
     currency-codes "^2.1.0"
@@ -2333,6 +2379,7 @@
     query-string "^7.1.1"
     reflect-metadata "^0.1.13"
     ulid "^2.3.0"
+    url "^0.11.0"
 
 "@sicpa-dlab/witness-gossip-protocol-ts@0.2.5":
   version "0.2.5"
@@ -2346,18 +2393,20 @@
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@0.3.1-alpha.2", "@sicpa-dlab/witness-gossip-protocol-ts@^0.3.1-alpha.2":
-  version "0.3.1-alpha.2"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.1-alpha.2/be8f1660097a849ae9df95a7ce791aca9a94ca14#be8f1660097a849ae9df95a7ce791aca9a94ca14"
-  integrity sha512-1q/whX81Cl8xXgMBaTWUnLiV6SY1tcOHUTe8sJSXwq+wftdS8JldsR7WIbxKErUwK3EFPwSPhweigDxghJf1UQ==
+"@sicpa-dlab/witness-gossip-protocol-ts@0.3.1-alpha.11":
+  version "0.3.1-alpha.11"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.1-alpha.11/928db34a3c43b77b60794b374bd2346ab3d31504#928db34a3c43b77b60794b374bd2346ab3d31504"
+  integrity sha512-W/Quv1N0x0ayVT9lrFM8ZbVOC1Hhk383nkhMph0hHy/KSE6CNmS4LDHPL6tjgZlYjtKXcFH7CAu3uixOu49AZQ==
   dependencies:
     "@mikro-orm/core" "^5.5.2"
     "@mikro-orm/postgresql" "^5.5.2"
     "@mikro-orm/sqlite" "^5.5.2"
-    "@sicpa-dlab/value-transfer-common-ts" "^0.3.1-alpha.1"
+    "@sicpa-dlab/value-transfer-common-ts" "^0.3.1-alpha.4"
+    "@sicpa-dlab/witness-gossip-types-ts" "^0.3.1-alpha.8"
     "@stablelib/uuid" "^1.0.1"
     class-transformer "^0.5.1"
     class-validator "^0.13.2"
+    readwrite-lock "^1.0.5"
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
 
@@ -2372,6 +2421,18 @@
     class-validator "^0.13.2"
     reflect-metadata "^0.1.13"
     rxjs "^7.5.6"
+
+"@sicpa-dlab/witness-gossip-types-ts@0.3.1-alpha.8", "@sicpa-dlab/witness-gossip-types-ts@^0.3.1-alpha.8":
+  version "0.3.1-alpha.8"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-types-ts/0.3.1-alpha.8/6b9746d2fa358b19072fd87be5dcaaed03b45180#6b9746d2fa358b19072fd87be5dcaaed03b45180"
+  integrity sha512-RoK8SO9PFhQGPlgeKMPNuWdqyZfCV2m4iqzZFmLb1kyEabEYTX498fvywdrunZlsOfi2GM21FbaupjRxdXZqqQ==
+  dependencies:
+    "@sicpa-dlab/value-transfer-common-ts" "^0.3.1-alpha.4"
+    "@stablelib/uuid" "^1.0.1"
+    buffer "^6.0.3"
+    class-transformer "^0.5.1"
+    class-validator "^0.13.2"
+    reflect-metadata "^0.1.13"
 
 "@sideway/address@^4.1.3":
   version "4.1.4"
@@ -3038,9 +3099,9 @@ ajv@^6.10.0, ajv@^6.12.4:
     uri-js "^4.2.2"
 
 ajv@^8.0.1:
-  version "8.11.0"
-  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.11.0.tgz#977e91dd96ca669f54a11e23e378e33b884a565f"
-  integrity sha512-wGgprdCvMalC0BztXvitD2hC04YffAvtsUn93JbGXYLAtCUO4xd17mCCZQxUOItiBwZvJScWo8NIvQMQ71rdpg==
+  version "8.11.2"
+  resolved "https://registry.yarnpkg.com/ajv/-/ajv-8.11.2.tgz#aecb20b50607acf2569b6382167b65a96008bb78"
+  integrity sha512-E4bfmKAhGiSTvMfL1Myyycaub+cUEU2/IvpylXkUu7CHBkBj1f/ikdzbD7YQ6FKUbixDxeYvB/xY4fvyroDlQg==
   dependencies:
     fast-deep-equal "^3.1.1"
     json-schema-traverse "^1.0.0"
@@ -3303,7 +3364,7 @@ async-limiter@~1.0.0:
   resolved "https://registry.yarnpkg.com/async-limiter/-/async-limiter-1.0.1.tgz#dd379e94f0db8310b08291f9d64c3209766617fd"
   integrity sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==
 
-async-lock@^1.3.2:
+async-lock@^1.3.2, async-lock@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/async-lock/-/async-lock-1.4.0.tgz#c8b6630eff68fbbdd8a5b6eb763dac3bfbb8bf02"
   integrity sha512-coglx5yIWuetakm3/1dsX9hxCNox22h7+V80RQOu2XUUMidtArxKoZoOtHUPuR84SycKTXzgGzAUR5hJxujyJQ==
@@ -3860,9 +3921,9 @@ ci-info@^2.0.0:
   integrity sha512-5tK7EtrZ0N+OLFMthtqOj4fI2Jeb88C4CAZPu25LDVUgXJ0A3Js4PMGqrn0JU1W0Mh1/Z8wZzYPxqUrXeBboCQ==
 
 ci-info@^3.2.0:
-  version "3.5.0"
-  resolved "https://registry.yarnpkg.com/ci-info/-/ci-info-3.5.0.tgz#bfac2a29263de4c829d806b1ab478e35091e171f"
-  integrity sha512-yH4RezKOGlOhxkmhbeNuC4eYZKAUsEaGtBuBzDDP1eFUKiccDWzBABxBfOx31IDwDIXMTxWuwAxUGModvkbuVw==
+  version "3.6.1"
+  resolved "https://registry.yarnpkg.com/ci-info/-/ci-info-3.6.1.tgz#7594f1c95cb7fdfddee7af95a13af7dbc67afdcf"
+  integrity sha512-up5ggbaDqOqJ4UqLKZ2naVkyqSJQgJi5lwD6b6mM748ysrghDBX0bx/qJTUHzw7zu6Mq4gycviSF5hJnwceD8w==
 
 cjs-module-lexer@^1.0.0:
   version "1.2.2"
@@ -4281,9 +4342,9 @@ copy-descriptor@^0.1.0:
   integrity sha512-XgZ0pFcakEUlbwQEVNg3+QAis1FyTL3Qel9FYy8pSkQqoG3PNoT0bOCQtOXcOkur21r2Eq2kI+IE+gsmAEVlYw==
 
 core-js-compat@^3.25.1:
-  version "3.26.0"
-  resolved "https://registry.yarnpkg.com/core-js-compat/-/core-js-compat-3.26.0.tgz#94e2cf8ba3e63800c4956ea298a6473bc9d62b44"
-  integrity sha512-piOX9Go+Z4f9ZiBFLnZ5VrOpBl0h7IGCkiFUN11QTe6LjAvOT3ifL/5TdoizMh99hcGy5SoLyWbapIY/PIb/3A==
+  version "3.26.1"
+  resolved "https://registry.yarnpkg.com/core-js-compat/-/core-js-compat-3.26.1.tgz#0e710b09ebf689d719545ac36e49041850f943df"
+  integrity sha512-622/KzTudvXCDLRw70iHW4KKs1aGpcRcowGWyYJr2DEBfRrd6hNJybxSWJFuZYD4ma86xhrwDDHxmDaIq4EA8A==
   dependencies:
     browserslist "^4.21.4"
 
@@ -4311,9 +4372,9 @@ cosmiconfig@^5.0.5, cosmiconfig@^5.1.0:
     parse-json "^4.0.0"
 
 cosmiconfig@^7.0.0:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/cosmiconfig/-/cosmiconfig-7.0.1.tgz#714d756522cace867867ccb4474c5d01bbae5d6d"
-  integrity sha512-a1YWNUV2HwGimB7dU2s1wUMurNKjpx60HxBB6xUM8Re+2s1g1IIfJvFR0/iCF+XHdE0GMTKTuLR32UQff4TEyQ==
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/cosmiconfig/-/cosmiconfig-7.1.0.tgz#1443b9afa596b670082ea46cbd8f6a62b84635f6"
+  integrity sha512-AdmX6xUzdNASswsFtmwSt7Vj8po9IuqXm0UXz7QKPuEUmPB4XyjGfaAr2PSuELMwkRMVH1EpIkX5bTZGRB3eCA==
   dependencies:
     "@types/parse-json" "^4.0.0"
     import-fresh "^3.2.1"
@@ -5377,9 +5438,9 @@ flatted@^3.1.0:
   integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
 flow-parser@0.*:
-  version "0.192.0"
-  resolved "https://registry.yarnpkg.com/flow-parser/-/flow-parser-0.192.0.tgz#e2aa03e0c6a844c4d6ccdb4af2bc83cc589d9c8c"
-  integrity sha512-FLyei0ikf4ab9xlg+05WNmdpOODiH9XVBuw7iI9OZyjIo+cX2L2OUPTovjbWLYLlI41oGTcprbKdB/f9XwBnKw==
+  version "0.193.0"
+  resolved "https://registry.yarnpkg.com/flow-parser/-/flow-parser-0.193.0.tgz#8d705fc2d6b378a24bae189014f6f0320d040c4f"
+  integrity sha512-x7ZoArE1UO3Nk2rkq/KK/Tkp714QDMVzEsxIyK2+p7Alx+88LY7KgqmeQZuiAG8TCHucmYuHefbk3KsVFVjouA==
 
 flow-parser@^0.121.0:
   version "0.121.0"
@@ -5705,9 +5766,9 @@ globals@^11.1.0:
   integrity sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==
 
 globals@^13.6.0, globals@^13.9.0:
-  version "13.17.0"
-  resolved "https://registry.yarnpkg.com/globals/-/globals-13.17.0.tgz#902eb1e680a41da93945adbdcb5a9f361ba69bd4"
-  integrity sha512-1C+6nQRb1GwGMKm2dH/E7enFAMxGTmGI7/dEdhy/DNelv85w9B72t3uc5frtMNXIbzrarJJ/lTCjcaZwbLJmyw==
+  version "13.18.0"
+  resolved "https://registry.yarnpkg.com/globals/-/globals-13.18.0.tgz#fb224daeeb2bb7d254cd2c640f003528b8d0c1dc"
+  integrity sha512-/mR4KI8Ps2spmoc0Ulu9L7agOF0du1CZNQ3dke8yItYlyKNmGrkONemBbd6V8UTc1Wgcqn21t3WYB7dbRmh6/A==
   dependencies:
     type-fest "^0.20.2"
 
@@ -6740,9 +6801,9 @@ jest-mock@^27.5.1:
     "@types/node" "*"
 
 jest-pnp-resolver@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/jest-pnp-resolver/-/jest-pnp-resolver-1.2.2.tgz#b704ac0ae028a89108a4d040b3f919dfddc8e33c"
-  integrity sha512-olV41bKSMm8BdnuMsewT4jqlZ8+3TCARAXjZGT9jcoSnrfUnRCqnMoF9XEeoWjbzObpqF9dRhHQj0Xb9QdF6/w==
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/jest-pnp-resolver/-/jest-pnp-resolver-1.2.3.tgz#930b1546164d4ad5937d5540e711d4d38d4cad2e"
+  integrity sha512-+3NpwQEnRoIBtx4fyhblQDPgJI0H1IEIkX7ShLUjPGA7TtUTvI1oiKi3SR4oBR0hQhQR80l4WAe5RrXBwWMA8w==
 
 jest-regex-util@^26.0.0:
   version "26.0.0"
@@ -9065,6 +9126,11 @@ pump@^3.0.0:
     end-of-stream "^1.1.0"
     once "^1.3.1"
 
+punycode@1.3.2:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.3.2.tgz#9653a036fb7c1ee42342f2325cceefea3926c48d"
+  integrity sha512-RofWgt/7fL5wP1Y7fxE7/EmTLzQVnB0ycyibJ0OOHIlJqTNzglYFxVwETOcIoJqJmpDXJ9xImDv+Fq34F/d4Dw==
+
 punycode@^2.1.0, punycode@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
@@ -9101,6 +9167,11 @@ query-string@^7.0.1, query-string@^7.1.1:
     filter-obj "^1.1.0"
     split-on-first "^1.0.0"
     strict-uri-encode "^2.0.0"
+
+querystring@0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/querystring/-/querystring-0.2.0.tgz#b209849203bb25df820da756e747005878521620"
+  integrity sha512-X/xY82scca2tau62i9mDyU9K+I+djTMUsvwf7xnUX5GLvVzgJybOJf4Y6o9Zx3oJK/LSXg5tTZBjwzqVPaPO2g==
 
 querystringify@^2.1.1:
   version "2.2.0"
@@ -9352,6 +9423,11 @@ readdir-scoped-modules@^1.0.0:
     graceful-fs "^4.1.2"
     once "^1.3.0"
 
+readwrite-lock@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/readwrite-lock/-/readwrite-lock-1.0.5.tgz#090cf97f983d7439572e53b79d16a42f24880c93"
+  integrity sha512-UcTjXtBvCuq3fFFfQBvJpTvqCLTIBuSQzy7haTj6pMBkiUBoHOWlYGQcQnpUck3BoJB7BvcWGbDjAR4HRWWXvg==
+
 recast@^0.20.3:
   version "0.20.5"
   resolved "https://registry.yarnpkg.com/recast/-/recast-0.20.5.tgz#8e2c6c96827a1b339c634dd232957d230553ceae"
@@ -9419,14 +9495,14 @@ regenerate@^1.4.2:
   integrity sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A==
 
 regenerator-runtime@^0.13.10, regenerator-runtime@^0.13.2:
-  version "0.13.10"
-  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.10.tgz#ed07b19616bcbec5da6274ebc75ae95634bfc2ee"
-  integrity sha512-KepLsg4dU12hryUO7bp/axHAKvwGOCV0sGloQtpagJ12ai+ojVDqkeGSiRX1zlq+kjIMZ1t7gpze+26QqtdGqw==
+  version "0.13.11"
+  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.11.tgz#f6dca3e7ceec20590d07ada785636a90cdca17f9"
+  integrity sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==
 
 regenerator-transform@^0.15.0:
-  version "0.15.0"
-  resolved "https://registry.yarnpkg.com/regenerator-transform/-/regenerator-transform-0.15.0.tgz#cbd9ead5d77fae1a48d957cf889ad0586adb6537"
-  integrity sha512-LsrGtPmbYg19bcPHwdtmXwbW+TqNvtY4riE3P83foeHRroMbH6/2ddFBfab3t7kbzc7v7p4wbkIecHImqt0QNg==
+  version "0.15.1"
+  resolved "https://registry.yarnpkg.com/regenerator-transform/-/regenerator-transform-0.15.1.tgz#f6c4e99fc1b4591f780db2586328e4d9a9d8dc56"
+  integrity sha512-knzmNAcuyxV+gQCufkYcvOqX/qIIfHLv0u5x79kRxuGojfYVky1f15TzZEu2Avte8QGepvUNTnLskf8E6X6Vyg==
   dependencies:
     "@babel/runtime" "^7.8.4"
 
@@ -9453,16 +9529,16 @@ regexpp@^3.1.0:
   integrity sha512-pq2bWo9mVD43nbts2wGv17XLiNLya+GklZ8kaDLV2Z08gDCsGpnKn9BFMepvWuHCbyVvY7J5o5+BVvoQbmlJLg==
 
 regexpu-core@^5.1.0:
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/regexpu-core/-/regexpu-core-5.2.1.tgz#a69c26f324c1e962e9ffd0b88b055caba8089139"
-  integrity sha512-HrnlNtpvqP1Xkb28tMhBUO2EbyUHdQlsnlAhzWcwHy8WJR53UWr7/MAvqrsQKMbV4qdpv03oTMG8iIhfsPFktQ==
+  version "5.2.2"
+  resolved "https://registry.yarnpkg.com/regexpu-core/-/regexpu-core-5.2.2.tgz#3e4e5d12103b64748711c3aad69934d7718e75fc"
+  integrity sha512-T0+1Zp2wjF/juXMrMxHxidqGYn8U4R+zleSJhX9tQ1PUsS8a9UtYfbsF9LdiVgNX3kiX8RNaKM42nfSgvFJjmw==
   dependencies:
     regenerate "^1.4.2"
     regenerate-unicode-properties "^10.1.0"
     regjsgen "^0.7.1"
     regjsparser "^0.9.1"
     unicode-match-property-ecmascript "^2.0.0"
-    unicode-match-property-value-ecmascript "^2.0.0"
+    unicode-match-property-value-ecmascript "^2.1.0"
 
 regjsgen@^0.7.1:
   version "0.7.1"
@@ -10735,10 +10811,10 @@ unicode-match-property-ecmascript@^2.0.0:
     unicode-canonical-property-names-ecmascript "^2.0.0"
     unicode-property-aliases-ecmascript "^2.0.0"
 
-unicode-match-property-value-ecmascript@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/unicode-match-property-value-ecmascript/-/unicode-match-property-value-ecmascript-2.0.0.tgz#1a01aa57247c14c568b89775a54938788189a714"
-  integrity sha512-7Yhkc0Ye+t4PNYzOGKedDhXbYIBe1XEQYQxOPyhcXNMJ0WCABqqj6ckydd6pWRZTHV4GuCPKdBAUiMc60tsKVw==
+unicode-match-property-value-ecmascript@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/unicode-match-property-value-ecmascript/-/unicode-match-property-value-ecmascript-2.1.0.tgz#cb5fffdcd16a05124f5a4b0bf7c3770208acbbe0"
+  integrity sha512-qxkjQt6qjg/mYscYMC0XKRn3Rh0wFPlfxB0xkt9CfyTvpX1Ra0+rAmdX2QyAobptSEvuy4RtpPRui6XkV+8wjA==
 
 unicode-property-aliases-ecmascript@^2.0.0:
   version "2.1.0"
@@ -10848,6 +10924,14 @@ url-parse@^1.5.3:
   dependencies:
     querystringify "^2.1.1"
     requires-port "^1.0.0"
+
+url@^0.11.0:
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/url/-/url-0.11.0.tgz#3838e97cfc60521eb73c525a8e55bfdd9e2e28f1"
+  integrity sha512-kbailJa29QrtXnxgq+DdCEGlbTeYM2eJUxsz6vjZavrCYPMIFHMKQmSKYAIuUK2i7hgPm28a8piX5NTUtM/LKQ==
+  dependencies:
+    punycode "1.3.2"
+    querystring "0.2.0"
 
 use-subscription@^1.0.0:
   version "1.8.0"

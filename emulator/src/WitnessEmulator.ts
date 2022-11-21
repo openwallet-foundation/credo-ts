@@ -1,9 +1,10 @@
 import type { InitConfig } from '@aries-framework/core'
-import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
-import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { agentDependencies, HttpInboundTransport, initWitnessGossip } from '@aries-framework/node'
 import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import { GossipStorageType } from '@sicpa-dlab/witness-gossip-types-ts'
 import { randomUUID } from 'crypto'
 
 export interface EmulatorWitnessConfig {
@@ -50,7 +51,7 @@ export class Witness {
         },
       },
       transports: [Transports.HTTP],
-      gossipConnectionString: `gossip-emulator-${witnessConfig.label}`,
+      gossipStorageConfig: { type: GossipStorageType.SQLite, connectionConfig: { dbName: `gossip-db-${name}` } },
     }
 
     this.agent = new Agent(config, agentDependencies)
@@ -62,6 +63,7 @@ export class Witness {
 
   public async run() {
     await this.agent.initialize()
+    await initWitnessGossip(this.agent)
     console.log(`Witness ${this.agent.config.label} started!`)
     const publicDid = await this.agent.getStaticDid(DidMarker.Public)
     console.log(`Witness ${this.agent.config.label} Public DID: ${publicDid?.did}`)

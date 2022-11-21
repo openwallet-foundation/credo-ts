@@ -37,7 +37,7 @@ export class ValueTransferPartyStateService implements VtpPartyStorageInterface 
     return state.partyState
   }
 
-  private async storePartyState(partyState: PartyState): Promise<void> {
+  public async storePartyState(partyState: PartyState): Promise<void> {
     const record = await this.valueTransferStateRepository.getSingleByQuery({})
     record.partyState = partyState
     await this.valueTransferStateRepository.update(record)

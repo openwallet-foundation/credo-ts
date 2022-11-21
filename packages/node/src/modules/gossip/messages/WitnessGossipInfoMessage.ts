@@ -1,17 +1,15 @@
-import type { TransactionUpdate } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { TransactionUpdate } from '@sicpa-dlab/witness-gossip-types-ts'
 
+import { DIDCommV2Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { ErrorCodes, ValueTransferError } from '@sicpa-dlab/value-transfer-common-ts'
 import {
-  WitnessGossipInfo,
   GossipAttachment,
+  WitnessGossipInfo,
   WitnessGossipInfoBody,
   WitnessMessageType,
-} from '@sicpa-dlab/witness-gossip-protocol-ts'
+} from '@sicpa-dlab/witness-gossip-types-ts'
 import { Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { DIDCommV2Message } from '../../../agent/didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export class WitnessGossipInfoMessage extends DIDCommV2Message implements WitnessGossipInfo {
   @IsValidMessageType(WitnessGossipInfoMessage.type)

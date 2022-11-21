@@ -1,8 +1,9 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { WitnessTableMessage } from '../../gossip'
 import type { Transports } from '../../routing/types'
-import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
 import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
@@ -24,13 +25,13 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { injectable } from '../../../plugins'
+import { DependencyManager, injectable } from '../../../plugins'
 import { JsonEncoder } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQueryMessage'
-import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
@@ -60,13 +61,13 @@ export class ValueTransferService {
 
   public constructor(
     config: AgentConfig,
+    dependencyManager: DependencyManager,
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    gossipService: GossipService,
     didService: DidService,
     didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
@@ -113,7 +114,7 @@ export class ValueTransferService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: this.logger.createContextLogger('Witness'),
-        gossip: gossipService,
+        gossipProvider: () => dependencyManager.resolve(InjectionSymbols.GossipService),
       },
       {
         label: config.label,
@@ -236,6 +237,22 @@ export class ValueTransferService {
       body: {},
     })
     await this.sendMessage(message)
+  }
+
+  public processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): void {
+    const { message: witnessTable } = messageContext
+
+    if (!witnessTable.from) {
+      this.config.logger.info('Unknown Witness Table sender')
+      return
+    }
+
+    this.eventEmitter.emit<WitnessTableReceivedEvent>({
+      type: ValueTransferEventTypes.WitnessTableReceived,
+      payload: {
+        witnesses: witnessTable.body.witnesses,
+      },
+    })
   }
 
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {

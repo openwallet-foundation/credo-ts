@@ -46,7 +46,7 @@ export class OutOfBandModule {
   }
 
   /**
-   * Registers the dependencies of the gossip module on the dependency manager.
+   * Registers the dependencies of the Out-of-Band module on the dependency manager.
    */
   public static register(dependencyManager: DependencyManager) {
     // Api
