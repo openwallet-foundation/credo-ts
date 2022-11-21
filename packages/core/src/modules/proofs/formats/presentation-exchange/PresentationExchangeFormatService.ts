@@ -428,8 +428,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
     const pexCredentials = credentials.map((c) => JsonTransformer.toJSON(c) as IVerifiableCredential)
 
-    // console.log("QUACK 888 pexCredentials = ",pexCredentials)
-
     const pex: PEXv1 = new PEXv1()
     const selectResults = pex.selectFrom(presentationDefinition, pexCredentials)
 
@@ -437,7 +435,6 @@ export class PresentationExchangeFormatService extends ProofFormatService {
       throw new AriesFrameworkError('No matching credentials found.')
     }
 
-    // console.log("QUACK 999 selectResults = ",selectResults)
     return {
       proofFormats: {
         presentationExchange: {
@@ -465,17 +462,14 @@ export class PresentationExchangeFormatService extends ProofFormatService {
     // check if this is INFO / (maybe WARNING. check when this is warning?)
     presentationExchange.formats.areRequiredCredentialsPresent
 
+    // TODO SubmissionRequests...
+
     // 100 credentials in the credential list
     // 4 groups in total that satisfy the proof request
     //  for each group I need to know which credentials it needs
 
-    // console.log('WOOOOOOOOOOOOOOO QUACK options = ', options.proofFormats.presentationExchange?.formats.matches)
-
     // How to auto select the credentials:
-    // let i = 0
-    // for (const credential of presentationExchange.formats.verifiableCredential) {
-    //   console.log(i++, ' QUACK CREDENTIAL = ', credential)
-    // }
+
     //  1. loop over all matches and find the first match for each submission requirement
     //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
     // We probably also need to return the selected matches we used so we can use those to create the presentation submission
