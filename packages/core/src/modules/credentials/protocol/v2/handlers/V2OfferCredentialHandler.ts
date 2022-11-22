@@ -6,7 +6,7 @@ import type { RoutingService } from '../../../../routing/services/RoutingService
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext, OutboundServiceMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
@@ -54,9 +54,9 @@ export class V2OfferCredentialHandler implements Handler {
       const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
-      return createOutboundMessage({
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
         connection: messageContext.connection,
-        payload: message,
         associatedRecord: credentialRecord,
       })
     } else if (offerMessage?.service) {
@@ -81,8 +81,8 @@ export class V2OfferCredentialHandler implements Handler {
         associatedRecordId: credentialRecord.id,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
+      return new OutboundServiceMessageContext(message, {
+        agentContext: messageContext.agentContext,
         service: recipientService.resolvedDidCommService,
         senderKey: ourService.resolvedDidCommService.recipientKeys[0],
       })

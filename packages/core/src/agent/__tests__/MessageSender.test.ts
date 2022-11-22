@@ -3,7 +3,7 @@ import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
-import type { OutboundMessage, EncryptedMessage } from '../../types'
+import type { EncryptedMessage } from '../../types'
 import type { AgentMessageSentEvent } from '../Events'
 
 import { Subject } from 'rxjs'
@@ -29,7 +29,7 @@ import { EventEmitter } from '../EventEmitter'
 import { AgentEventTypes } from '../Events'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
-import { createOutboundMessage } from '../helpers'
+import { OutboundMessageContext } from '../models'
 
 import { DummyTransportSession } from './stubs'
 
@@ -133,7 +133,7 @@ describe('MessageSender', () => {
   let outboundTransport: OutboundTransport
   let messageRepository: MessageRepository
   let connection: ConnectionRecord
-  let outboundMessage: OutboundMessage
+  let outboundMessageContext: OutboundMessageContext
   const agentConfig = getAgentConfig('MessageSender')
   const agentContext = getAgentContext()
   const eventListenerMock = jest.fn()
@@ -162,7 +162,7 @@ describe('MessageSender', () => {
         theirDid: 'did:peer:1theirdid',
         theirLabel: 'Test 123',
       })
-      outboundMessage = createOutboundMessage({ connection, payload: new TestMessage() })
+      outboundMessageContext = new OutboundMessageContext(new TestMessage(), { agentContext, connection })
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceHasInboundEndpoint.mockReturnValue(true)
@@ -184,7 +184,7 @@ describe('MessageSender', () => {
     })
 
     test('throw error when there is no outbound transport', async () => {
-      await expect(messageSender.sendMessage(agentContext, outboundMessage)).rejects.toThrow(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         /Message is undeliverable to connection/
       )
       expect(eventListenerMock).not.toHaveBeenCalled()
@@ -196,7 +196,7 @@ describe('MessageSender', () => {
       didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
-      await expect(messageSender.sendMessage(agentContext, outboundMessage)).rejects.toThrow(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         `Message is undeliverable to connection test-123 (Test 123)`
       )
       expect(eventListenerMock).not.toHaveBeenCalled()
@@ -210,7 +210,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessage(agentContext, outboundMessage)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -218,7 +218,7 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: outboundMessage,
+          message: outboundMessageContext,
         },
       })
 
@@ -236,7 +236,7 @@ describe('MessageSender', () => {
 
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessage(agentContext, outboundMessage)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -244,7 +244,7 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: outboundMessage,
+          message: outboundMessageContext,
         },
       })
 
@@ -265,7 +265,7 @@ describe('MessageSender', () => {
         new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
       )
 
-      await expect(messageSender.sendMessage(agentContext, outboundMessage)).rejects.toThrowError(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrowError(
         `Unable to resolve did document for did '${connection.theirDid}': notFound`
       )
 
@@ -279,7 +279,7 @@ describe('MessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      await messageSender.sendMessage(agentContext, outboundMessage)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -287,7 +287,7 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: outboundMessage,
+          message: outboundMessageContext,
         },
       })
 
@@ -306,7 +306,13 @@ describe('MessageSender', () => {
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
-      await messageSender.sendMessage(agentContext, { ...outboundMessage, sessionId: 'session-123' })
+      const contextWithSessionId = new OutboundMessageContext(outboundMessageContext.message, {
+        agentContext,
+        connection,
+        sessionId: 'session-123',
+      })
+
+      await messageSender.sendMessage(contextWithSessionId)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -314,7 +320,7 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: { ...outboundMessage, sessionId: 'session-123' },
+          message: contextWithSessionId,
         },
       })
 
@@ -330,7 +336,7 @@ describe('MessageSender', () => {
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
-      await messageSender.sendMessage(agentContext, outboundMessage)
+      await messageSender.sendMessage(outboundMessageContext)
 
       const [[, sendMessage]] = sendMessageToServiceSpy.mock.calls
 
@@ -340,13 +346,13 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: outboundMessage,
+          message: outboundMessageContext,
         },
       })
 
       expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
-        message: outboundMessage.payload,
+        message: outboundMessageContext.message,
         returnRoute: false,
         service: {
           serviceEndpoint: firstDidCommService.serviceEndpoint,
@@ -370,7 +376,7 @@ describe('MessageSender', () => {
       // Simulate the case when the first call fails
       sendMessageSpy.mockRejectedValueOnce(new Error())
 
-      await messageSender.sendMessage(agentContext, outboundMessage)
+      await messageSender.sendMessage(outboundMessageContext)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: AgentEventTypes.AgentMessageSent,
@@ -378,14 +384,14 @@ describe('MessageSender', () => {
           contextCorrelationId: 'mock',
         },
         payload: {
-          message: outboundMessage,
+          message: outboundMessageContext,
         },
       })
 
       const [, [, sendMessage]] = sendMessageToServiceSpy.mock.calls
       expect(sendMessage).toMatchObject({
         connectionId: 'test-123',
-        message: outboundMessage.payload,
+        message: outboundMessageContext.message,
         returnRoute: false,
         service: {
           serviceEndpoint: secondDidCommService.serviceEndpoint,
@@ -403,7 +409,7 @@ describe('MessageSender', () => {
 
     test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
       messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
-      await expect(messageSender.sendMessage(agentContext, outboundMessage)).rejects.toThrow(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         /Message is undeliverable to connection/
       )
 

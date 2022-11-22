@@ -5,7 +5,7 @@ import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
@@ -69,7 +69,11 @@ export class ConnectionRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundMessage({ connection: connectionRecord, payload: message, outOfBand: outOfBandRecord })
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: connectionRecord,
+        outOfBand: outOfBandRecord,
+      })
     }
   }
 }

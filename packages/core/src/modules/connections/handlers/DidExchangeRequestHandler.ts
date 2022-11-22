@@ -5,7 +5,7 @@ import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
@@ -85,7 +85,11 @@ export class DidExchangeRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundMessage({ connection: connectionRecord, payload: message, outOfBand: outOfBandRecord })
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: connectionRecord,
+        outOfBand: outOfBandRecord,
+      })
     }
   }
 }

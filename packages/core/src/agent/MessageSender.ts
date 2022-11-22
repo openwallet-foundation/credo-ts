@@ -4,12 +4,13 @@ import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundMessage, OutboundPackage, EncryptedMessage } from '../types'
+import type { OutboundPackage, EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
 import type { AgentMessageSentEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { OutboundMessageContext } from './models'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
@@ -180,17 +181,16 @@ export class MessageSender {
   }
 
   public async sendMessage(
-    agentContext: AgentContext,
-    outboundMessage: OutboundMessage,
+    outboundMessageContext: OutboundMessageContext,
     options?: {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { connection, outOfBand, sessionId, payload } = outboundMessage
+    const { agentContext, connection, outOfBand, sessionId, message } = outboundMessageContext
     const errors: Error[] = []
 
     this.logger.debug('Send outbound message', {
-      message: payload,
+      message,
       connectionId: connection.id,
     })
 
@@ -204,11 +204,11 @@ export class MessageSender {
       session = this.transportService.findSessionByConnectionId(connection.id)
     }
 
-    if (session?.inboundMessage?.hasReturnRouting(payload.threadId)) {
-      this.logger.debug(`Found session with return routing for message '${payload.id}' (connection '${connection.id}'`)
+    if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
+      this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
       try {
-        await this.sendMessageToSession(agentContext, session, payload)
-        this.emitMessageSentEvent(agentContext, outboundMessage)
+        await this.sendMessageToSession(agentContext, session, message)
+        this.emitMessageSentEvent(outboundMessageContext)
         return
       } catch (error) {
         errors.push(error)
@@ -228,7 +228,7 @@ export class MessageSender {
       this.logger.error(`Unable to send message using connection '${connection.id}' that doesn't have a did`)
       throw new MessageSendingError(
         `Unable to send message using connection '${connection.id}' that doesn't have a did`,
-        { outboundMessage }
+        { outboundMessageContext }
       )
     }
 
@@ -247,20 +247,20 @@ export class MessageSender {
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
     const shouldAddReturnRoute =
-      payload.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
+      message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
       try {
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendMessageToService(agentContext, {
-          message: payload,
+          message,
           service,
           senderKey: firstOurAuthenticationKey,
           returnRoute: shouldAddReturnRoute,
           connectionId: connection.id,
         })
-        this.emitMessageSentEvent(agentContext, outboundMessage)
+        this.emitMessageSentEvent(outboundMessageContext)
         return
       } catch (error) {
         errors.push(error)
@@ -285,20 +285,20 @@ export class MessageSender {
         senderKey: firstOurAuthenticationKey,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(agentContext, payload, keys)
+      const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
       await this.messageRepository.add(connection.id, encryptedMessage)
       return
     }
 
     // Message is undeliverable
     this.logger.error(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`, {
-      message: payload,
+      message,
       errors,
       connection,
     })
     throw new MessageSendingError(
       `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
-      { outboundMessage }
+      { outboundMessageContext }
     )
   }
 
@@ -432,11 +432,12 @@ export class MessageSender {
     return { services, queueService }
   }
 
-  private emitMessageSentEvent(agentContext: AgentContext, outboundMessage: OutboundMessage) {
+  private emitMessageSentEvent(outboundMessageContext: OutboundMessageContext) {
+    const { agentContext } = outboundMessageContext
     this.eventEmitter.emit<AgentMessageSentEvent>(agentContext, {
       type: AgentEventTypes.AgentMessageSent,
       payload: {
-        message: outboundMessage,
+        message: outboundMessageContext,
       },
     })
   }

@@ -14,7 +14,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -748,8 +748,11 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage({ connection: connectionRecord, payload: reuseMessage })
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(reuseMessage, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return reuseAcceptedEventPromise
   }

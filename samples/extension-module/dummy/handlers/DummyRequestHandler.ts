@@ -1,7 +1,7 @@
 import type { DummyService } from '../services'
 import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
-import { createOutboundMessage } from '@aries-framework/core'
+import { OutboundMessageContext } from '@aries-framework/core'
 
 import { DummyRequestMessage } from '../messages'
 
@@ -18,7 +18,7 @@ export class DummyRequestHandler implements Handler {
     const responseMessage = await this.dummyService.processRequest(inboundMessage)
 
     if (responseMessage) {
-      return createOutboundMessage({ connection, payload: responseMessage })
+      return new OutboundMessageContext(responseMessage, { agentContext: inboundMessage.agentContext, connection })
     }
   }
 }

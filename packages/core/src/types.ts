@@ -94,20 +94,6 @@ export interface PlaintextMessage {
   [key: string]: unknown
 }
 
-export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
-  payload: T
-  connection: ConnectionRecord
-  sessionId?: string
-  outOfBand?: OutOfBandRecord
-  associatedRecord?: BaseRecord
-}
-
-export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
-  payload: T
-  service: ResolvedDidCommService
-  senderKey: Key
-}
-
 export interface OutboundPackage {
   payload: EncryptedMessage
   responseRequested?: boolean

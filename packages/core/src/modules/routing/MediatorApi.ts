@@ -5,7 +5,7 @@ import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
@@ -70,13 +70,13 @@ export class MediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessage = createOutboundMessage({
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
       connection: connectionRecord,
-      payload: message,
       associatedRecord: mediationRecord,
     })
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return mediationRecord
   }

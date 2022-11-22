@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext, OutboundServiceMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
@@ -78,9 +78,9 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage({
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
         connection: messageContext.connection,
-        payload: message,
         associatedRecord: proofRecord,
       })
     } else if (requestMessage.service) {
@@ -98,8 +98,8 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         role: DidCommMessageRole.Sender,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
+      return new OutboundServiceMessageContext(message, {
+        agentContext: messageContext.agentContext,
         service: recipientService.resolvedDidCommService,
         senderKey: message.service.resolvedDidCommService.recipientKeys[0],
       })

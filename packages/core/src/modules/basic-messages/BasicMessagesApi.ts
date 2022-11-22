@@ -4,7 +4,7 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections'
 
@@ -49,13 +49,13 @@ export class BasicMessagesApi {
       message,
       connection
     )
-    const outboundMessage = createOutboundMessage({
+    const outboundMessageContext = new OutboundMessageContext(basicMessage, {
+      agentContext: this.agentContext,
       connection,
-      payload: basicMessage,
       associatedRecord: basicMessageRecord,
     })
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return basicMessageRecord
   }
 

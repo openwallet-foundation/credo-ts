@@ -1,5 +1,4 @@
 import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
-import type { OutboundMessage } from '../../types'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
@@ -13,7 +12,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -107,14 +106,14 @@ export class RecipientApi {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage, pickupStrategy?: MediatorPickupStrategy) {
+  private async sendMessage(outboundMessageContext: OutboundMessageContext, pickupStrategy?: MediatorPickupStrategy) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
         ? { schemes: ['wss', 'ws'], restrictive: true }
         : undefined
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage, {
+    await this.messageSender.sendMessage(outboundMessageContext, {
       transportPriority,
       // TODO: add keepAlive: true to enforce through the public api
       // we need to keep the socket alive. It already works this way, but would
@@ -140,8 +139,7 @@ export class RecipientApi {
     }
 
     await this.messageSender.sendMessage(
-      this.agentContext,
-      createOutboundMessage({ connection: connectionRecord, payload: message }),
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
       {
         transportPriority: {
           schemes: websocketSchemes,
@@ -291,8 +289,10 @@ export class RecipientApi {
 
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
     return this.messageSender.sendMessage(
-      this.agentContext,
-      createOutboundMessage({ connection: mediatorConnection, payload: statusRequestMessage })
+      new OutboundMessageContext(statusRequestMessage, {
+        agentContext: this.agentContext,
+        connection: mediatorConnection,
+      })
     )
   }
 
@@ -345,8 +345,11 @@ export class RecipientApi {
       pickupStrategy === MediatorPickupStrategy.PickUpV2
         ? new StatusRequestMessage({})
         : new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage({ connection: mediatorConnection, payload: pickupMessage })
-    await this.sendMessage(outboundMessage, pickupStrategy)
+    const outboundMessageContext = new OutboundMessageContext(pickupMessage, {
+      agentContext: this.agentContext,
+      connection: mediatorConnection,
+    })
+    await this.sendMessage(outboundMessageContext, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -358,7 +361,10 @@ export class RecipientApi {
       this.agentContext,
       connection
     )
-    const outboundMessage = createOutboundMessage({ connection: connection, payload: message })
+    const outboundMessage = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connection,
+    })
 
     await this.sendMessage(outboundMessage)
     return mediationRecord
@@ -366,8 +372,11 @@ export class RecipientApi {
 
   public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
     const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
-    const outboundMessage = createOutboundMessage({ connection, payload: message })
-    await this.sendMessage(outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+    await this.sendMessage(outboundMessageContext)
   }
 
   public async findByConnectionId(connectionId: string) {
@@ -419,12 +428,12 @@ export class RecipientApi {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessage = createOutboundMessage({
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
       connection: connection,
-      payload: message,
       associatedRecord: mediationRecord,
     })
-    await this.sendMessage(outboundMessage)
+    await this.sendMessage(outboundMessageContext)
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
