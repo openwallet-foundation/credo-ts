@@ -19,9 +19,9 @@
     "@mikro-orm/core": "^5.4.2",
     "@mikro-orm/sqlite": "^5.4.2",
     "@sicpa-dlab/value-transfer-metrics-ts": "0.3.1",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.1",
-    "@sicpa-dlab/witness-gossip-protocol-ts": "0.3.1",
-    "@sicpa-dlab/witness-gossip-types-ts": "0.3.1",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.3.2-alpha.2",
+    "@sicpa-dlab/witness-gossip-protocol-ts": "0.3.2-alpha.2",
+    "@sicpa-dlab/witness-gossip-types-ts": "0.3.2-alpha.2",
     "@stablelib/ed25519": "^1.0.3"
   },
   "devDependencies": {
