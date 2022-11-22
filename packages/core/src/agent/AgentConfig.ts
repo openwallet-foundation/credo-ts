@@ -193,10 +193,10 @@ export class AgentConfig {
       ...this.initConfig,
       walletConfig: {
         ...this.walletConfig,
-        key: this.walletConfig?.key ? '[omitted...]' : undefined,
+        key: this.walletConfig?.key ? '[*****]' : undefined,
         storage: {
           ...this.walletConfig?.storage,
-          credentials: this.walletConfig?.storage?.credentials ? '[omitted...]' : undefined,
+          credentials: this.walletConfig?.storage?.credentials ? '[*****]' : undefined,
         },
       },
       logger: this.logger.logLevel,

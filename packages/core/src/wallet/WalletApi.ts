@@ -45,10 +45,10 @@ export class WalletApi {
   public async initialize(walletConfig: WalletConfig): Promise<void> {
     this.logger.info(`Initializing wallet '${walletConfig.id}'`, {
       ...walletConfig,
-      key: walletConfig?.key ? '[omitted...]' : undefined,
+      key: walletConfig?.key ? '[*****]' : undefined,
       storage: {
         ...walletConfig?.storage,
-        credentials: walletConfig?.storage?.credentials ? '[omitted...]' : undefined,
+        credentials: walletConfig?.storage?.credentials ? '[*****]' : undefined,
       },
     })
 
