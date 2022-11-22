@@ -249,24 +249,21 @@ describe('Agent', () => {
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
 
-    expect(protocols).toEqual(
-      expect.arrayContaining([
-        'https://didcomm.org/basicmessage/1.0',
-        'https://didcomm.org/connections/1.0',
-        'https://didcomm.org/coordinate-mediation/1.0',
-        'https://didcomm.org/didexchange/1.0',
-        'https://didcomm.org/discover-features/1.0',
-        'https://didcomm.org/discover-features/2.0',
-        'https://didcomm.org/issue-credential/1.0',
-        'https://didcomm.org/issue-credential/2.0',
-        'https://didcomm.org/messagepickup/1.0',
-        'https://didcomm.org/messagepickup/2.0',
-        'https://didcomm.org/out-of-band/1.1',
-        'https://didcomm.org/present-proof/1.0',
-        'https://didcomm.org/revocation_notification/1.0',
-        'https://didcomm.org/revocation_notification/2.0',
-      ])
-    )
-    expect(protocols.length).toEqual(14)
+    expect(protocols).toEqual([
+      'https://didcomm.org/connections/1.0',
+      'https://didcomm.org/didexchange/1.0',
+      'https://didcomm.org/issue-credential/1.0',
+      'https://didcomm.org/issue-credential/2.0',
+      'https://didcomm.org/revocation_notification/1.0',
+      'https://didcomm.org/revocation_notification/2.0',
+      'https://didcomm.org/coordinate-mediation/1.0',
+      'https://didcomm.org/messagepickup/1.0',
+      'https://didcomm.org/messagepickup/2.0',
+      'https://didcomm.org/basicmessage/1.0',
+      'https://didcomm.org/discover-features/1.0',
+      'https://didcomm.org/discover-features/2.0',
+      'https://didcomm.org/out-of-band/1.1',
+    ])
+    expect(protocols.length).toEqual(13)
   })
 })
