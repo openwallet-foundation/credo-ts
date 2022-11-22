@@ -19,6 +19,7 @@ import { HandshakeProtocol } from '../src/modules/connections/models/HandshakePr
 import { AutoAcceptCredential, CredentialEventTypes, CredentialState } from '../src/modules/credentials'
 import { DidKey } from '../src/modules/dids'
 import { ProofEventTypes, ProofState, AutoAcceptProof } from '../src/modules/proofs'
+import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../src/modules/proofs/__tests__/fixtures'
 import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
 import { W3cCredential } from '../src/modules/vc/models'
 import { JsonTransformer } from '../src/utils/JsonTransformer'
@@ -53,44 +54,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const presentationDefinition: PresentationDefinitionV1 = {
-      input_descriptors: [
-        {
-          constraints: {
-            fields: [
-              {
-                path: ['$.credentialSubject.familyName'],
-                purpose: 'The claim must be from one of the specified issuers',
-                id: '1f44d55f-f161-4938-a659-f8026467f126',
-              },
-              {
-                path: ['$.credentialSubject.givenName'],
-                purpose: 'The claim must be from one of the specified issuers',
-              },
-            ],
-            // limit_disclosure: 'required',
-            // is_holder: [
-            //   {
-            //     directive: 'required',
-            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
-            //   },
-            // ],
-          },
-          schema: [
-            {
-              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
-            },
-            {
-              uri: 'https://w3id.org/citizenship#PermanentResident',
-            },
-            {
-              uri: 'https://w3id.org/citizenship/v1',
-            },
-          ],
-          name: "EU Driver's License",
-          group: ['A'],
-          id: 'citizenship_input_1',
-        },
-      ],
+      input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
       id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 
@@ -175,44 +139,7 @@ describe('Present Proof', () => {
     agents = [aliceAgent, faberAgent]
 
     const presentationDefinition: PresentationDefinitionV1 = {
-      input_descriptors: [
-        {
-          constraints: {
-            fields: [
-              {
-                path: ['$.credentialSubject.familyName'],
-                purpose: 'The claim must be from one of the specified issuers',
-                id: '1f44d55f-f161-4938-a659-f8026467f126',
-              },
-              {
-                path: ['$.credentialSubject.givenName'],
-                purpose: 'The claim must be from one of the specified issuers',
-              },
-            ],
-            // limit_disclosure: 'required',
-            // is_holder: [
-            //   {
-            //     directive: 'required',
-            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
-            //   },
-            // ],
-          },
-          schema: [
-            {
-              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
-            },
-            {
-              uri: 'https://w3id.org/citizenship#PermanentResident',
-            },
-            {
-              uri: 'https://w3id.org/citizenship/v1',
-            },
-          ],
-          name: "EU Driver's License",
-          group: ['A'],
-          id: 'citizenship_input_1',
-        },
-      ],
+      input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
       id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 
@@ -414,44 +341,7 @@ describe('Present Proof', () => {
     aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
 
     const presentationDefinition: PresentationDefinitionV1 = {
-      input_descriptors: [
-        {
-          constraints: {
-            fields: [
-              {
-                path: ['$.credentialSubject.familyName'],
-                purpose: 'The claim must be from one of the specified issuers',
-                id: '1f44d55f-f161-4938-a659-f8026467f126',
-              },
-              {
-                path: ['$.credentialSubject.givenName'],
-                purpose: 'The claim must be from one of the specified issuers',
-              },
-            ],
-            // limit_disclosure: 'required',
-            // is_holder: [
-            //   {
-            //     directive: 'required',
-            //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
-            //   },
-            // ],
-          },
-          schema: [
-            {
-              uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
-            },
-            {
-              uri: 'https://w3id.org/citizenship#PermanentResident',
-            },
-            {
-              uri: 'https://w3id.org/citizenship/v1',
-            },
-          ],
-          name: "EU Driver's License",
-          group: ['A'],
-          id: 'citizenship_input_1',
-        },
-      ],
+      input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
       id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 

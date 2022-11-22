@@ -12,8 +12,7 @@ describe('Auto accept present proof', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
 
-  // MJR:
-  //  input_descriptors define the fields to be requested in a presentation definition for a given credential
+  // Input_descriptors define the fields to be requested in a presentation definition for a given credential
   // submission_requirements specify combinations of input descriptors to allow multiple credentials
   // to be retrieved
 
@@ -165,6 +164,7 @@ describe('Auto accept present proof', () => {
     id: 'citizenship_input_4',
   }
 
+  // To use in Submission Request tests
   const inputDescriptor_vaccine = {
     constraints: {
       fields: [
@@ -209,7 +209,7 @@ describe('Auto accept present proof', () => {
       await aliceAgent.wallet.delete()
     })
 
-    xtest('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
+    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
@@ -243,7 +243,7 @@ describe('Auto accept present proof', () => {
       await aliceProofRecordPromise
     })
 
-    xtest('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
+    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const faberProofRecord = await faberAgent.proofs.requestProof({
