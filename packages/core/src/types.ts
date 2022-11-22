@@ -62,8 +62,8 @@ export interface ValueTransferPartyConfig {
 export interface ValueTransferWitnessConfig {
   wid: string
   knownWitnesses: WitnessDetails[]
-  gossipConfig: GossipConfig
-  gossipPlugins: Partial<GossipPlugins>
+  gossipConfig?: GossipConfig
+  gossipPlugins?: Partial<GossipPlugins>
   issuerDids?: string[]
 }
 

@@ -3,7 +3,6 @@ import type { WitnessDetails } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Agent, ConsoleLogger, DidMarker, HttpOutboundTransport, LogLevel, Transports } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport, initWitnessGossip } from '@aries-framework/node'
-import { DummyGossipMetrics } from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { GossipStorageType } from '@sicpa-dlab/witness-gossip-types-ts'
 import { randomUUID } from 'crypto'
 
@@ -46,8 +45,7 @@ export class Witness {
           wid,
           knownWitnesses: witnessConfig.knownWitnesses || [],
           issuerDids: witnessConfig.issuerDids,
-          tockTime: witnessConfig.tockTime,
-          gossipMetricsService: new DummyGossipMetrics(),
+          gossipConfig: { tockTimeMs: witnessConfig.tockTime },
         },
       },
       transports: [Transports.HTTP],

@@ -242,10 +242,8 @@ export class AgentConfig {
     return new DefaultInternetChecker(pingUrl, this.agentDependencies)
   }
 
-  public get gossipConfig(): GossipConfig {
-    const gossipConfig = this.valueTransferWitnessConfig?.gossipConfig
-    if (!gossipConfig) throw new Error('Gossip config is not provided')
-    return gossipConfig
+  public get gossipConfig(): GossipConfig | undefined {
+    return this.valueTransferWitnessConfig?.gossipConfig
   }
 
   public get gossipPlugins(): Partial<GossipPlugins> | undefined {
