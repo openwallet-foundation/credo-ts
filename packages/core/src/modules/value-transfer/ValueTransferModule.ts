@@ -2,7 +2,7 @@ import type { DependencyManager } from '../../plugins'
 import type { Transports } from '../routing/types'
 import type { RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Timeouts, TransactionState, TransactionStatus } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { module, injectable } from '../../plugins'
@@ -28,6 +28,7 @@ import { ValueTransferGetterService } from './services/ValueTransferGetterServic
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
+import { ValueTransferLockService } from './services/ValueTransferLockService'
 
 @module()
 @injectable()
@@ -38,6 +39,7 @@ export class ValueTransferModule {
   private valueTransferWitnessService: ValueTransferWitnessService
   private valueTransferIssuerService: ValueTransferIssuerService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
+  private valueTransferLockService: ValueTransferLockService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -46,7 +48,8 @@ export class ValueTransferModule {
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferIssuerService: ValueTransferIssuerService,
-    valueTransferResponseCoordinator: ValueTransferResponseCoordinator
+    valueTransferResponseCoordinator: ValueTransferResponseCoordinator,
+    valueTransferLockService: ValueTransferLockService
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
@@ -54,6 +57,7 @@ export class ValueTransferModule {
     this.valueTransferWitnessService = valueTransferWitnessService
     this.valueTransferIssuerService = valueTransferIssuerService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
+    this.valueTransferLockService = valueTransferLockService
     this.registerHandlers(dispatcher)
   }
 
@@ -122,8 +126,13 @@ export class ValueTransferModule {
   public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
+    await this.valueTransferLockService.acquireWalletLock(async () => {
+      await this.returnWhenIsCompleted(params.recordId)
+    })
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
+
+    if(record.state != TransactionState.RequestReceived) return {}
 
     // Accept Payment Request
     return this.valueTransferGiverService.acceptRequest(record, params.timeouts)
@@ -183,9 +192,13 @@ export class ValueTransferModule {
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
+    await this.valueTransferLockService.acquireWalletLock(async () => {
+      await this.returnWhenIsCompleted(params.recordId)
+    })
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
 
+    if(record.state != TransactionState.OfferReceived) return {}
     // Accept Payment Request
     return this.valueTransferGetterService.acceptOffer(record, params.witness, params.timeouts)
   }
