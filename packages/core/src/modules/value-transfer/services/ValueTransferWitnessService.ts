@@ -6,11 +6,13 @@ import type { MintMessage } from '../messages/MintMessage'
 import type { ValueTransferRecord } from '../repository'
 
 import { Witness, RequestAcceptance, CashRemoval, CashAcceptance, Mint } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { GossipInterface } from '@sicpa-dlab/witness-gossip-types-ts'
+import { container, delay } from 'tsyringe'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { injectable, DependencyManager } from '../../../plugins'
+import { injectable, inject, DependencyManager } from '../../../plugins'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { MintResponseMessage } from '../messages/MintResponseMessage'
 

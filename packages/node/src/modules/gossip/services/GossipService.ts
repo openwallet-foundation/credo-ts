@@ -10,7 +10,12 @@ import {
   DidService,
   injectable,
 } from '@aries-framework/core'
-import { GossipMessageDispatcher, Gossip } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import {
+  GossipMessageDispatcher,
+  Gossip,
+  pickAllWitnessForTransactionUpdates,
+  selectTopWitnessToSendAsk,
+} from '@sicpa-dlab/witness-gossip-protocol-ts'
 import { MappingTable, WitnessDetails, WitnessGossipInfo, WitnessTable } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { GossipCryptoService } from './GossipCryptoService'
@@ -34,15 +39,24 @@ export class GossipService implements GossipInterface {
   ) {
     this.gossip = new Gossip(
       {
-        logger: this.config.gossipPlugins?.logger ?? this.gossipLoggerService,
-        crypto: this.config.gossipPlugins?.crypto ?? this.gossipCryptoService,
-        outboundTransport: this.config.gossipPlugins?.outboundTransport ?? this.gossipTransportService,
-        metrics: this.config.gossipPlugins?.metrics,
+        logger: this.gossipLoggerService,
+        crypto: this.gossipCryptoService,
+        outboundTransport: this.gossipTransportService,
+        metrics: this.config.witnessGossipMetrics,
       },
       {
         label: this.config.label,
-        ...this.config.gossipConfig,
-      }
+        tockTimeMs: this.config.valueTransferConfig?.witness?.tockTime,
+        cleanupTime: this.config.valueTransferConfig?.witness?.cleanupTime,
+        redeliverTime: this.config.valueTransferConfig?.witness?.redeliverTime,
+        historyThreshold: this.config.valueTransferConfig?.witness?.historyThreshold,
+        redeliveryThreshold: this.config.valueTransferConfig?.witness?.redeliveryThreshold,
+      },
+      {
+        selectWitnessToSendAskAlgorithm: selectTopWitnessToSendAsk,
+        pickWitnessForGossipingTransactionUpdates: pickAllWitnessForTransactionUpdates,
+      },
+      this.config.gossipStorageConfig
     )
     this.messageDispatcher = new GossipMessageDispatcher(this.gossip)
   }
@@ -75,7 +89,7 @@ export class GossipService implements GossipInterface {
   public async initState(): Promise<void> {
     this.config.logger.info('> initState')
 
-    const config = this.config.valueTransferWitnessConfig
+    const config = this.config.valueWitnessConfig
     if (!config) throw new Error('Value transfer config is not available')
 
     const did = await this.didService.findStaticDid(DidMarker.Public)

@@ -1,4 +1,5 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
+import type { OutOfBandInvitationMessage } from '../modules/out-of-band/messages'
 import type { Response } from 'node-fetch'
 
 import { AbortController } from 'abort-controller'

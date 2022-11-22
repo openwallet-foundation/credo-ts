@@ -1,3 +1,4 @@
+import type { Logger } from '../logger'
 import type { TagsBase } from './BaseRecord'
 
 import { inject, injectable } from 'tsyringe'
