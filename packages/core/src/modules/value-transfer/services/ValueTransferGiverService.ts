@@ -228,6 +228,12 @@ export class ValueTransferGiverService {
   }> {
     this.logger.info(`> Giver: accept payment request message for VTP transaction ${record.transaction.id}`)
 
+    if (record.state != TransactionState.RequestReceived) {
+      this.logger.warn(
+        ` Giver: accept payment request message for VTP transaction ${record.transaction.id} had unexpected state ${record.state}`
+      )
+      return {}
+    }
     // Call VTP library to accept request
     const { error, transaction } = await this.giver.acceptRequest(record.transaction.id, timeouts)
     if (!transaction) {

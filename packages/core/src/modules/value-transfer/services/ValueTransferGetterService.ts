@@ -229,6 +229,12 @@ export class ValueTransferGetterService {
   }> {
     this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id}`)
 
+    if (record.state != TransactionState.OfferReceived) {
+      this.logger.warn(
+        ` Getter: accept offer message for VTP transaction ${record.transaction.id} had unexpected state ${record.state}`
+      )
+      return {}
+    }
     // Call VTP library to accept offer
     const { error, transaction } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
     if (!transaction) {

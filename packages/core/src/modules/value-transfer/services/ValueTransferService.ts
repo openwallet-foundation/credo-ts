@@ -41,6 +41,7 @@ import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
+import { ValueTransferLockService } from './ValueTransferLockService'
 
 @injectable()
 export class ValueTransferService {
@@ -51,6 +52,7 @@ export class ValueTransferService {
   protected valueTransferCryptoService: ValueTransferCryptoService
   protected valueTransferStateService: ValueTransferPartyStateService
   protected valueTransferWitnessStateService: ValueTransferWitnessStateService
+  protected valueTransferLockService: ValueTransferLockService
   protected didService: DidService
   protected didResolverService: DidResolverService
   protected eventEmitter: EventEmitter
@@ -68,6 +70,7 @@ export class ValueTransferService {
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
+    valueTransferLockService: ValueTransferLockService,
     didService: DidService,
     didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
@@ -80,6 +83,7 @@ export class ValueTransferService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.valueTransferWitnessStateService = valueTransferWitnessStateService
+    this.valueTransferLockService = valueTransferLockService
     this.didService = didService
     this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
@@ -252,6 +256,15 @@ export class ValueTransferService {
       payload: {
         witnesses: witnessTable.body.witnesses,
       },
+    })
+  }
+
+  public async acquireWalletLock(transactioniId: string) {
+    this.logger.info(`Lock: queueing transaction ${transactioniId}`)
+    return await this.valueTransferLockService.acquireWalletLock(async () => {
+      this.logger.info(`Lock: locking transaction ${transactioniId}`)
+      await this.returnWhenIsCompleted(transactioniId)
+      this.logger.info(`Lock: releasing transaction ${transactioniId}`)
     })
   }
 

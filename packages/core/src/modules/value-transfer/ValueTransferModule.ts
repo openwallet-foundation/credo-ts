@@ -108,9 +108,7 @@ export class ValueTransferModule {
   }
 
   public async acquireWalletLock(transactioniId: string) {
-    return await this.valueTransferLockService.acquireWalletLock(async () => {
-      await this.returnWhenIsCompleted(transactioniId)
-    })
+    return await this.valueTransferService.acquireWalletLock(transactioniId)
   }
 
   /**
@@ -132,12 +130,10 @@ export class ValueTransferModule {
   public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    await this.acquireWalletLock(params.recordId)
+    await this.valueTransferService.acquireWalletLock(params.recordId)
 
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
-
-    if (record.state != TransactionState.RequestReceived) return {}
 
     // Accept Payment Request
     return this.valueTransferGiverService.acceptRequest(record, params.timeouts)
@@ -197,12 +193,11 @@ export class ValueTransferModule {
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    await this.acquireWalletLock(params.recordId)
+    await this.valueTransferService.acquireWalletLock(params.recordId)
 
     // Get Value Transfer record
     const record = await this.valueTransferService.getById(params.recordId)
 
-    if (record.state != TransactionState.OfferReceived) return {}
     // Accept Payment Request
     return this.valueTransferGetterService.acceptOffer(record, params.witness, params.timeouts)
   }
