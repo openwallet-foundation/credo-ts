@@ -1,20 +1,27 @@
+import AsyncLock from 'async-lock'
+
 import { injectable } from '../../../plugins'
 
 @injectable()
 export class ValueTransferLockService {
-  private walletLock: Promise<void>
+  private waitPromise: Promise<void>
+  private walletLock: AsyncLock
   private release: (value: void) => void
 
   public constructor() {
-    this.walletLock = Promise.resolve()
+    this.waitPromise = Promise.resolve()
+    this.walletLock = new AsyncLock()
     this.release = () => {
       return
     }
   }
 
   public async acquireWalletLock(until: () => Promise<void>) {
-    await this.walletLock
-    this.walletLock = new Promise((resolve) => (this.release = resolve))
+    await this.walletLock.acquire('wallet', async () => {
+      await this.waitPromise
+    })
+    this.waitPromise = new Promise((resolve) => (this.release = resolve))
+
     until()
       .then(() => {
         this.release()
