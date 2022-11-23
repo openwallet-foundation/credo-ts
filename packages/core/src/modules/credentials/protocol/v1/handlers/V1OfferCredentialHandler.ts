@@ -5,7 +5,7 @@ import type { RoutingService } from '../../../../routing/services/RoutingService
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
-import { OutboundMessageContext, OutboundServiceMessageContext } from '../../../../../agent/models'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V1OfferCredentialMessage } from '../messages'
@@ -81,10 +81,12 @@ export class V1OfferCredentialHandler implements Handler {
         associatedRecordId: credentialRecord.id,
       })
 
-      return new OutboundServiceMessageContext(message, {
+      return new OutboundMessageContext(message, {
         agentContext: messageContext.agentContext,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

@@ -343,12 +343,16 @@ export class ProofsApi<
         role: DidCommMessageRole.Sender,
       })
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: message.service.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
 
       return proofRecord
     }
@@ -433,12 +437,16 @@ export class ProofsApi<
       const recipientService = presentationMessage?.service
       const ourService = requestMessage.service
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
     }
     // Cannot send message without credentialId or ~service decorator
     else {

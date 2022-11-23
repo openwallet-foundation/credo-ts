@@ -1,5 +1,6 @@
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
+import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { OutOfBandRecord } from '../../modules/oob'
 import type { BaseRecord } from '../../storage/BaseRecord'
 import type { AgentMessage } from '../AgentMessage'
@@ -7,17 +8,25 @@ import type { AgentContext } from '../context'
 
 import { AriesFrameworkError } from '../../error'
 
+export interface ServiceMessageParams {
+  senderKey: Key
+  service: ResolvedDidCommService
+  returnRoute?: boolean
+}
+
 export interface OutboundMessageContextParams {
   agentContext: AgentContext
   associatedRecord?: BaseRecord<any, any, any>
-  connection: ConnectionRecord
+  connection?: ConnectionRecord
+  serviceParams?: ServiceMessageParams
   outOfBand?: OutOfBandRecord
   sessionId?: string
 }
 
 export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public message: T
-  public connection: ConnectionRecord
+  public connection?: ConnectionRecord
+  public serviceParams?: ServiceMessageParams
   public outOfBand?: OutOfBandRecord
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
@@ -28,6 +37,7 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.connection = context.connection
     this.sessionId = context.sessionId
     this.outOfBand = context.outOfBand
+    this.serviceParams = context.serviceParams
     this.associatedRecord = context.associatedRecord
     this.agentContext = context.agentContext
   }
@@ -48,13 +58,19 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     return this.connection
   }
 
+  public isOutboundServiceMessage(): boolean {
+    return this.serviceParams?.service !== undefined
+  }
+
   public toJSON() {
     return {
       message: this.message,
       outOfBand: this.outOfBand,
       associatedRecord: this.associatedRecord,
       sessionId: this.sessionId,
+      serviceParams: this.serviceParams,
       agentContext: this.agentContext.toJSON(),
+      connection: this.connection,
     }
   }
 }

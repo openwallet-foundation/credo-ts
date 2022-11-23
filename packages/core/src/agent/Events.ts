@@ -1,6 +1,6 @@
 import type { ConnectionRecord } from '../modules/connections'
 import type { AgentMessage } from './AgentMessage'
-import type { OutboundMessageContext } from './models'
+import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { Observable } from 'rxjs'
 
 import { filter } from 'rxjs'
@@ -48,5 +48,6 @@ export interface AgentMessageSentEvent extends BaseEvent {
   type: typeof AgentEventTypes.AgentMessageSent
   payload: {
     message: OutboundMessageContext
+    status: OutboundMessageSendStatus
   }
 }

@@ -362,12 +362,16 @@ export class CredentialsApi<
         associatedRecordId: credentialRecord.id,
       })
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
 
       return credentialRecord
     }
@@ -492,12 +496,16 @@ export class CredentialsApi<
         associatedRecordId: credentialRecord.id,
       })
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
 
       return credentialRecord
     }
@@ -549,12 +557,16 @@ export class CredentialsApi<
       const recipientService = credentialMessage.service
       const ourService = requestMessage.service
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
 
       return credentialRecord
     }

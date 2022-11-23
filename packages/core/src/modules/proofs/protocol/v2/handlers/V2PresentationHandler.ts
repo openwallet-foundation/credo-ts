@@ -5,7 +5,7 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofService } from '../V2ProofService'
 
-import { OutboundMessageContext, OutboundServiceMessageContext } from '../../../../../agent/models'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
 export class V2PresentationHandler implements Handler {
@@ -64,10 +64,12 @@ export class V2PresentationHandler implements Handler {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage?.service
 
-      return new OutboundServiceMessageContext(message, {
+      return new OutboundMessageContext(message, {
         agentContext: messageContext.agentContext,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

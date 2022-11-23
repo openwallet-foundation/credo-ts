@@ -5,7 +5,7 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { OutboundMessageContext, OutboundServiceMessageContext } from '../../../../../agent/models'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -73,10 +73,12 @@ export class V2RequestCredentialHandler implements Handler {
         role: DidCommMessageRole.Sender,
       })
 
-      return new OutboundServiceMessageContext(message, {
+      return new OutboundMessageContext(message, {
         agentContext: messageContext.agentContext,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

@@ -1,7 +1,6 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
-import type { OutboundServiceMessageContext } from './models'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -14,7 +13,6 @@ import { ProblemReportMessage } from './../modules/problem-reports/messages/Prob
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
-import { isOutboundServiceMessage } from './helpers'
 import { OutboundMessageContext } from './models'
 
 @injectable()
@@ -46,7 +44,7 @@ class Dispatcher {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
-    let outboundMessage: OutboundMessageContext<AgentMessage> | OutboundServiceMessageContext<AgentMessage> | void
+    let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
       outboundMessage = await handler.handle(messageContext)
@@ -74,18 +72,14 @@ class Dispatcher {
       }
     }
 
-    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
-      await this.messageSender.sendMessageToService(messageContext.agentContext, {
-        message: outboundMessage.message,
-        service: outboundMessage.service,
-        senderKey: outboundMessage.senderKey,
-        returnRoute: true,
-      })
-    } else if (outboundMessage) {
-      outboundMessage.sessionId = messageContext.sessionId
-      await this.messageSender.sendMessage(outboundMessage)
+    if (outboundMessage) {
+      if (outboundMessage.isOutboundServiceMessage()) {
+        await this.messageSender.sendMessageToService(outboundMessage)
+      } else {
+        outboundMessage.sessionId = messageContext.sessionId
+        await this.messageSender.sendMessage(outboundMessage)
+      }
     }
-
     // Emit event that allows to hook into received messages
     this.eventEmitter.emit<AgentMessageProcessedEvent>(agentContext, {
       type: AgentEventTypes.AgentMessageProcessed,

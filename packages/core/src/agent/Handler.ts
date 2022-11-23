@@ -1,10 +1,10 @@
 import type { ConstructableAgentMessage } from './AgentMessage'
-import type { InboundMessageContext, OutboundMessageContext, OutboundServiceMessageContext } from './models'
+import type { InboundMessageContext, OutboundMessageContext } from './models'
 
 export interface Handler {
   readonly supportedMessages: readonly ConstructableAgentMessage[]
 
-  handle(messageContext: InboundMessageContext): Promise<OutboundMessageContext | OutboundServiceMessageContext | void>
+  handle(messageContext: InboundMessageContext): Promise<OutboundMessageContext | void>
 }
 
 /**
