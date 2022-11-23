@@ -22,12 +22,8 @@ export class ValueTransferLockService {
     })
     this.waitPromise = new Promise((resolve) => (this.release = resolve))
 
-    until()
-      .then(() => {
-        this.release()
-      })
-      .catch(() => {
-        this.release()
-      })
+    until().finally(() => {
+      this.release()
+    })
   }
 }
