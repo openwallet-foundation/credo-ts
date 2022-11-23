@@ -41,11 +41,11 @@
     web-did-resolver "^2.0.8"
 
 "@aries-framework/core@file:packages/core":
-  version "0.3.2"
+  version "0.3.3"
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.3"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.3"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.4"
     "@sicpa-dlab/witness-gossip-types-ts" "0.3.3"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -116,14 +116,14 @@
     varint "^6.0.0"
     web-did-resolver "2.0.8"
 
-"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core@0.3.2":
-  version "0.3.2"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.3.2/8b7768de69bf0959c50b7c1df325f8bf13534095#8b7768de69bf0959c50b7c1df325f8bf13534095"
-  integrity sha512-fA83U6e8IEFj8PxeK5H4h2r1v0EyT58qeSCHEIobSknw1ROzEdvIwGW151u1bhRfJLbBlgWLrcdDhozxeaeTDg==
+"@aries-framework/core@npm:@sicpa-dlab/aries-framework-core@0.3.3":
+  version "0.3.3"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/aries-framework-core/0.3.3/bba6434e9dcb59e13c8dd7d210889cad1e9d096e#bba6434e9dcb59e13c8dd7d210889cad1e9d096e"
+  integrity sha512-KsulKq2JUfDcwQP0wOfF4d/m5akSHS1IDacB0UM4ZpwSLSB1GHGGI9Sx/BS2I0H2AC+/APa9XbJFMwfO/2vRZQ==
   dependencies:
     "@multiformats/base-x" "^4.0.1"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.3"
-    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.3"
+    "@sicpa-dlab/value-transfer-protocol-ts" "0.3.4"
     "@sicpa-dlab/witness-gossip-types-ts" "0.3.3"
     "@stablelib/ed25519" "^1.0.2"
     "@stablelib/sha256" "^1.0.1"
@@ -169,11 +169,11 @@
     ws "^7.5.3"
 
 "@aries-framework/node@file:packages/node":
-  version "0.3.2"
+  version "0.3.3"
   dependencies:
-    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.2"
+    "@aries-framework/core" "npm:@sicpa-dlab/aries-framework-core@0.3.3"
     "@sicpa-dlab/value-transfer-common-ts" "0.3.3"
-    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.3"
+    "@sicpa-dlab/witness-gossip-protocol-ts" "0.3.4"
     "@sicpa-dlab/witness-gossip-types-ts" "0.3.3"
     buffer "^6.0.3"
     class-transformer "0.5.1"
@@ -2352,10 +2352,10 @@
     ulid "^2.3.0"
     url "^0.11.0"
 
-"@sicpa-dlab/value-transfer-protocol-ts@0.3.3":
-  version "0.3.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.3/470a19716f0678208dda0a6eee3e68a431a1b66a#470a19716f0678208dda0a6eee3e68a431a1b66a"
-  integrity sha512-OpPIZMdHpxQLd0yXhmNkLWvsVX5idg9JtCHxXWFtltGDtoARq6hCsYrB+4ZmLyFnLSYh1xHcokzT03SkEH/1bw==
+"@sicpa-dlab/value-transfer-protocol-ts@0.3.4":
+  version "0.3.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/value-transfer-protocol-ts/0.3.4/9999b5ea9005d8b0b307207c50cb324b226bf935#9999b5ea9005d8b0b307207c50cb324b226bf935"
+  integrity sha512-Bx1DR5TRJBHivIM1Ib6Pvq176yXySfVjwxBb++bxq+jz3ocaWFqKn7/hlRFr/JacTHhC55Al0g3JK2MjtLOolw==
   dependencies:
     "@sicpa-dlab/value-transfer-common-ts" "^0.3.3"
     "@sicpa-dlab/witness-gossip-types-ts" "^0.3.3"
@@ -2371,10 +2371,10 @@
     ulid "^2.3.0"
     url "^0.11.0"
 
-"@sicpa-dlab/witness-gossip-protocol-ts@0.3.3":
-  version "0.3.3"
-  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.3/0c915501ac7bb954fb4062bf717181c9e7536a36#0c915501ac7bb954fb4062bf717181c9e7536a36"
-  integrity sha512-UtC+5Xzr9MMS9P4CbSMT7rpKfU1RrcS7J3EKICuxWbcz5/yJFEPBE/v7FflBt+izMukrdcoVsDiUCkC1m4vQAQ==
+"@sicpa-dlab/witness-gossip-protocol-ts@0.3.4":
+  version "0.3.4"
+  resolved "https://npm.pkg.github.com/download/@sicpa-dlab/witness-gossip-protocol-ts/0.3.4/7b7bbd8ba3fac45e2e3cd1f8f89a2eb19631fbb0#7b7bbd8ba3fac45e2e3cd1f8f89a2eb19631fbb0"
+  integrity sha512-bV0b0N5a/r3CL7iawlEtHmMGl+tIj1bQmqHuS9e4P/foSRNVNWxMktse0YXEQKpbyYqxN84qU6QjtXs/bIvEJg==
   dependencies:
     "@mikro-orm/core" "^5.5.2"
     "@mikro-orm/postgresql" "^5.5.2"
