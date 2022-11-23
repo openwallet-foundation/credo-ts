@@ -44,7 +44,7 @@ export class V1RequestPresentationHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
+    if (await this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }
