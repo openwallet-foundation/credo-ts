@@ -191,8 +191,16 @@ export class AgentConfig {
   public toJSON() {
     return {
       ...this.initConfig,
-      logger: this.logger !== undefined,
-      agentDependencies: this.agentDependencies != undefined,
+      walletConfig: {
+        ...this.walletConfig,
+        key: this.walletConfig?.key ? '[*****]' : undefined,
+        storage: {
+          ...this.walletConfig?.storage,
+          credentials: this.walletConfig?.storage?.credentials ? '[*****]' : undefined,
+        },
+      },
+      logger: this.logger.logLevel,
+      agentDependencies: Boolean(this.agentDependencies),
       label: this.label,
     }
   }
