@@ -92,7 +92,9 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
-    return this.valueTransferGetterService.createRequest(params)
+    const createRequestResults = await this.valueTransferGetterService.createRequest(params)
+    await this.valueTransferService.acquireWalletLock(createRequestResults.record.id)
+    return createRequestResults;
   }
 
   public async verifyRequestCanBeAccepted(record: ValueTransferRecord): Promise<{
@@ -171,7 +173,9 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
-    return this.valueTransferGiverService.offerPayment(params)
+    const offerPaymentResults = await this.valueTransferGiverService.offerPayment(params)
+    await this.valueTransferService.acquireWalletLock(offerPaymentResults.record.id)
+    return offerPaymentResults
   }
 
   /**

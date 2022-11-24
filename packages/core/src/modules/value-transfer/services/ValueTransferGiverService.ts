@@ -25,6 +25,7 @@ import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
+import AsyncLock from 'async-lock'
 
 @injectable()
 export class ValueTransferGiverService {
@@ -35,6 +36,7 @@ export class ValueTransferGiverService {
   private valueTransferStateService: ValueTransferPartyStateService
   private eventEmitter: EventEmitter
   private giver: Giver
+  private giverLock: AsyncLock
 
   public constructor(
     config: AgentConfig,
@@ -64,6 +66,8 @@ export class ValueTransferGiverService {
         label: config.label,
       }
     )
+
+    this.giverLock = new AsyncLock()
   }
 
   /**
@@ -187,7 +191,9 @@ export class ValueTransferGiverService {
     this.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
 
     // Call VTP library to handle request
-    const { error, transaction } = await this.giver.processRequest(new Request(requestMessage))
+    const { error, transaction } = await this.giverLock.acquire('processPaymentRequest', async () => {
+      return this.giver.processRequest(new Request(requestMessage))
+    })
     if (!transaction) {
       this.logger.error(` Giver: process request message for VTP transaction ${requestMessage.id} failed.`, { error })
       return {}
