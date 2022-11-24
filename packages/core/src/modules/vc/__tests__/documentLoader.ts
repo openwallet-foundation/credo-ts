@@ -81,7 +81,7 @@ export const DOCUMENTS = {
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
 }
 
-export const customDocumentLoader = async (url: string): Promise<DocumentLoaderResult> => {
+async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {
   let result = DOCUMENTS[url]
 
   if (!result) {
@@ -94,11 +94,16 @@ export const customDocumentLoader = async (url: string): Promise<DocumentLoaderR
   }
 
   if (url.startsWith('did:')) {
-    result = await jsonld.frame(result, {
-      '@context': result['@context'],
-      '@embed': '@never',
-      id: url,
-    })
+    result = await jsonld.frame(
+      result,
+      {
+        '@context': result['@context'],
+        '@embed': '@never',
+        id: url,
+      },
+      // @ts-ignore
+      { documentLoader: this }
+    )
   }
 
   return {
@@ -107,3 +112,5 @@ export const customDocumentLoader = async (url: string): Promise<DocumentLoaderR
     document: result as JsonObject,
   }
 }
+
+export const customDocumentLoader = _customDocumentLoader.bind(_customDocumentLoader)
