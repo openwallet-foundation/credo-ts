@@ -20,30 +20,30 @@ export class ProofType {
   public proofType!: string[]
 }
 
-// export class LdpVc {
-//   public constructor(ldpVc: ProofType) {
-//     if (ldpVc) {
-//       this.ldpVc = ldpVc
-//     }
-//   }
+export class LdpVc {
+  public constructor(ldpVc: ProofType) {
+    if (ldpVc) {
+      this.ldpVc = ldpVc
+    }
+  }
 
-//   @Expose({ name: 'ldp_vc' })
-//   public ldpVc!: ProofType
-// }
-// export class LdpVp {
-//   public constructor(ldpVp: ProofType) {
-//     if (ldpVp) {
-//       this.ldpVp = ldpVp
-//     }
-//   }
+  @Expose({ name: 'ldp_vc' })
+  public ldpVc!: ProofType
+}
+export class LdpVp {
+  public constructor(ldpVp: ProofType) {
+    if (ldpVp) {
+      this.ldpVp = ldpVp
+    }
+  }
 
-//   @Expose({ name: 'ldp_vp' })
-//   public ldpVp!: ProofType
+  @Expose({ name: 'ldp_vp' })
+  public ldpVp!: ProofType
 
-//   public toJSON() {
-//     return JsonTransformer.toJSON(this)
-//   }
-// }
+  public toJSON() {
+    return JsonTransformer.toJSON(this)
+  }
+}
 
 export interface ClaimFormatSchemaOptions {
   ldpVp?: ProofType
