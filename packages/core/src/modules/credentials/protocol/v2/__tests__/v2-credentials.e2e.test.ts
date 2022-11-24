@@ -215,7 +215,7 @@ describe('v2 credentials', () => {
     })
   })
 
-  test('Faber issues credential which is then deleted from Alice`s wallet', async () => {
+  xtest('Faber issues credential which is then deleted from Alice`s wallet', async () => {
     const { holderCredential } = await issueCredential({
       issuerAgent: faberAgent,
       issuerConnectionId: faberConnection.id,
@@ -247,7 +247,7 @@ describe('v2 credentials', () => {
     )
   })
 
-  test('Alice starts with proposal, faber sends a counter offer, alice sends second proposal, faber sends second offer', async () => {
+  xtest('Alice starts with proposal, faber sends a counter offer, alice sends second proposal, faber sends second offer', async () => {
     // proposeCredential -> negotiateProposal -> negotiateOffer -> negotiateProposal -> acceptOffer -> acceptRequest -> DONE (credential issued)
 
     let faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
@@ -383,7 +383,7 @@ describe('v2 credentials', () => {
     })
   })
 
-  test('Faber starts with offer, alice sends counter proposal, faber sends second offer, alice sends second proposal', async () => {
+  xtest('Faber starts with offer, alice sends counter proposal, faber sends second offer, alice sends second proposal', async () => {
     let aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
       state: CredentialState.OfferReceived,
     })
@@ -626,7 +626,7 @@ describe('v2 credentials', () => {
     })
   })
 
-  test('Faber starts with V2 offer, alice declines the offer', async () => {
+  xtest('Faber starts with V2 offer, alice declines the offer', async () => {
     testLogger.test('Faber sends credential offer to Alice')
     const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
       comment: 'some comment about credential',

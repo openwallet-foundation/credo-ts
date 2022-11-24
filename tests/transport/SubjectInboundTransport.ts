@@ -16,6 +16,8 @@ export class SubjectInboundTransport implements InboundTransport {
   private subscription?: Subscription
 
   public constructor(ourSubject = new Subject<SubjectMessage>()) {
+
+    console.trace()
     this.ourSubject = ourSubject
   }
 
