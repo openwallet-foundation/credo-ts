@@ -2,7 +2,7 @@ import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 
-import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
+import { setupJsonLdProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../../../__tests__/fixtures'
@@ -25,7 +25,7 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection } = await setupProofsTest('Faber agent', 'Alice agent'))
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTest('Faber agent', 'Alice agent'))
   })
 
   afterAll(async () => {

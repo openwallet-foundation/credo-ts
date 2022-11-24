@@ -28,7 +28,7 @@ import { uuid } from '../src/utils/uuid'
 import {
   getAgentOptions,
   makeConnection,
-  setupProofsTest,
+  setupJsonLdProofsTest,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from './helpers'
@@ -45,7 +45,7 @@ describe('Present Proof', () => {
   })
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupProofsTest(
+    const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
       AutoAcceptProof.Never
@@ -130,7 +130,7 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupProofsTest(
+    const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
       'Faber connection-less Proofs - Auto Accept',
       'Alice connection-less Proofs - Auto Accept',
       AutoAcceptProof.Always

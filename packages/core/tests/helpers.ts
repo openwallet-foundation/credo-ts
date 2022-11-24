@@ -829,7 +829,7 @@ export async function setupIndyProofsTest(faberName: string, aliceName: string, 
   }
 }
 
-export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
+export async function setupJsonLdProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
   const unique = uuid().substring(0, 4)
 
   const autoAcceptCredentials = AutoAcceptCredential.Always

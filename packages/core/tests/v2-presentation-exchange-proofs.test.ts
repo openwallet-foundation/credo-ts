@@ -14,7 +14,7 @@ import {
 } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
+import { setupJsonLdProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -28,7 +28,7 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
+    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
       'Faber agent',
       'Alice agent'
     ))

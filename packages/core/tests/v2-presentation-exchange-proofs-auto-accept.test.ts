@@ -3,7 +3,7 @@ import type { SubmissionRequirement } from '@sphereon/pex-models'
 
 import { AutoAcceptProof, ProofState } from '../src'
 
-import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
+import { setupJsonLdProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Auto accept present proof', () => {
@@ -196,7 +196,7 @@ describe('Auto accept present proof', () => {
   }
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
-      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
+      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
         AutoAcceptProof.Always
@@ -349,10 +349,10 @@ describe('Auto accept present proof', () => {
     })
   })
 
-  xdescribe('Auto accept on `contentApproved`', () => {
+  describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
-      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupProofsTest(
+      ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Content Approved Proofs',
         'Alice Auto Accept Content Approved Proofs',
         AutoAcceptProof.ContentApproved
