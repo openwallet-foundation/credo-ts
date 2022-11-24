@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocumentService } from '../../modules/dids'
@@ -365,10 +366,12 @@ describe('MessageSender', () => {
     test('call send message on session when there is a session for a given connection', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      //@ts-ignore
       const sendToServiceSpy = jest.spyOn(messageSender, 'sendToService')
 
       await messageSender.sendMessage(outboundMessageContext)
 
+      //@ts-ignore
       const [[sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -394,9 +397,12 @@ describe('MessageSender', () => {
         },
       })
 
+      //@ts-ignore
       expect(sendMessage.serviceParams.senderKey.publicKeyBase58).toEqual(
         'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'
       )
+
+      //@ts-ignore
       expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
         'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
       ])
@@ -427,6 +433,7 @@ describe('MessageSender', () => {
         },
       })
 
+      //@ts-ignore
       const [, [sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(sendMessage).toMatchObject({
@@ -443,9 +450,11 @@ describe('MessageSender', () => {
         },
       })
 
+      //@ts-ignore
       expect(sendMessage.serviceParams.senderKey.publicKeyBase58).toEqual(
         'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'
       )
+      //@ts-ignore
       expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
         'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
       ])

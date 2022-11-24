@@ -70,7 +70,7 @@ describe('V2MessagePickupService', () => {
           messageCount: 0,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
     })
 
     test('multiple messages in queue', async () => {
@@ -89,7 +89,7 @@ describe('V2MessagePickupService', () => {
           messageCount: 5,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
     })
 
     test('status request specifying recipient key', async () => {
@@ -125,7 +125,7 @@ describe('V2MessagePickupService', () => {
           messageCount: 0,
         })
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 10, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 10, true)
     })
 
     test('less messages in queue than limit', async () => {
@@ -152,7 +152,7 @@ describe('V2MessagePickupService', () => {
           )
         )
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 10, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 10, true)
     })
 
     test('more messages in queue than limit', async () => {
@@ -179,7 +179,7 @@ describe('V2MessagePickupService', () => {
           )
         )
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2, true)
     })
 
     test('delivery request specifying recipient key', async () => {
@@ -219,8 +219,8 @@ describe('V2MessagePickupService', () => {
           messageCount: 4,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2)
     })
 
     test('all messages have been received', async () => {
@@ -244,8 +244,8 @@ describe('V2MessagePickupService', () => {
         })
       )
 
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2)
     })
   })
 })
