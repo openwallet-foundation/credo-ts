@@ -14,7 +14,7 @@ describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let aliceConnection: ConnectionRecord
-  let faberProofRecord: ProofExchangeRecord
+  let faberProofExchangeRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
@@ -52,12 +52,12 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberPresentationRecordPromise
+    faberProofExchangeRecord = await faberPresentationRecordPromise
 
     didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofRecord.id,
+      associatedRecordId: faberProofExchangeRecord.id,
       messageClass: V2ProposalPresentationMessage,
     })
 
@@ -83,9 +83,9 @@ describe('Present Proof', () => {
       id: expect.any(String),
       comment: 'V2 Presentation Exchange propose proof test',
     })
-    expect(faberProofRecord.id).not.toBeNull()
-    expect(faberProofRecord).toMatchObject({
-      threadId: faberProofRecord.threadId,
+    expect(faberProofExchangeRecord.id).not.toBeNull()
+    expect(faberProofExchangeRecord).toMatchObject({
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.ProposalReceived,
       protocolVersion: 'v2',
     })

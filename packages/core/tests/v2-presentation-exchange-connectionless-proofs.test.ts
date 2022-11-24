@@ -71,60 +71,62 @@ describe('Present Proof', () => {
       },
     }
 
-    let aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+    let aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.RequestReceived,
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest(
+      outOfBandRequestOptions
+    )
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofRecord = await aliceProofRecordPromise
+    let aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       config: {
         filterByPresentationPreview: true,
       },
     })
 
     const acceptPresentationOptions = {
-      proofRecordId: aliceProofRecord.id,
+      proofRecordId: aliceProofExchangeRecord.id,
       proofFormats: { presentationExchange: requestedCredentials.proofFormats.presentationExchange },
     }
 
-    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      threadId: aliceProofRecord.threadId,
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofRecord = await faberProofRecordPromise
+    faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
     // assert presentation is valid
-    expect(faberProofRecord.isVerified).toBe(true)
+    expect(faberProofExchangeRecord.isVerified).toBe(true)
 
-    aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      threadId: aliceProofRecord.threadId,
+    aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
 
     // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation(faberProofRecord.id)
+    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
 
     // Alice waits till it receives presentation ack
-    aliceProofRecord = await aliceProofRecordPromise
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
@@ -157,29 +159,31 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
-    const aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest(
+      outOfBandRequestOptions
+    )
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofRecordPromise
+    await aliceProofExchangeRecordPromise
 
-    await faberProofRecordPromise
+    await faberProofExchangeRecordPromise
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
@@ -359,21 +363,23 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     }
 
-    const aliceProofRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    const faberProofRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofRecord } = await faberAgent.proofs.createRequest(outOfBandRequestOptions)
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest(
+      outOfBandRequestOptions
+    )
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofRecord.id,
+      recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
@@ -391,8 +397,8 @@ describe('Present Proof', () => {
       },
     })
 
-    await aliceProofRecordPromise
+    await aliceProofExchangeRecordPromise
 
-    await faberProofRecordPromise
+    await faberProofExchangeRecordPromise
   })
 })

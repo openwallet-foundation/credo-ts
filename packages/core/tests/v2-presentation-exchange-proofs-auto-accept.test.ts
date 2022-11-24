@@ -212,12 +212,12 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
-      const faberProofRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
@@ -237,16 +237,16 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber waits for presentation from Alice')
-      await faberProofRecordPromise
+      await faberProofExchangeRecordPromise
 
       testLogger.test('Alice waits till it receives presentation ack')
-      await aliceProofRecordPromise
+      await aliceProofExchangeRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      const faberProofRecord = await faberAgent.proofs.requestProof({
+      const faberProofExchangeRecord = await faberAgent.proofs.requestProof({
         protocolVersion: 'v2',
         connectionId: faberConnection.id,
         proofFormats: {
@@ -264,13 +264,13 @@ describe('Auto accept present proof', () => {
       })
       testLogger.test('Faber waits for presentation from Alice')
       await waitForProofExchangeRecord(faberAgent, {
-        threadId: faberProofRecord.threadId,
+        threadId: faberProofExchangeRecord.threadId,
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
       // Alice waits till it receives presentation ack
       await waitForProofExchangeRecord(aliceAgent, {
-        threadId: faberProofRecord.threadId,
+        threadId: faberProofExchangeRecord.threadId,
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
@@ -315,12 +315,12 @@ describe('Auto accept present proof', () => {
         // },
       ]
 
-      const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
-      const faberProofRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
@@ -342,10 +342,10 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber waits for presentation from Alice')
-      await faberProofRecordPromise
+      await faberProofExchangeRecordPromise
 
       testLogger.test('Alice waits till it receives presentation ack')
-      await aliceProofRecordPromise
+      await aliceProofExchangeRecordPromise
     })
   })
 
@@ -369,12 +369,12 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const faberProofRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
-      const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
@@ -393,20 +393,20 @@ describe('Auto accept present proof', () => {
         comment: 'V2 Presentation Exchange propose proof test',
       })
 
-      await faberProofRecordPromise
+      await faberProofExchangeRecordPromise
       // Alice waits till it receives presentation ack
-      await aliceProofRecordPromise
+      await aliceProofExchangeRecordPromise
     })
 
     test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      const faberProofRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
-      const aliceProofRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
         timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
@@ -429,10 +429,10 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber waits for presentation from Alice')
-      await faberProofRecordPromise
+      await faberProofExchangeRecordPromise
 
       // Alice waits till it receives presentation ack
-      await aliceProofRecordPromise
+      await aliceProofExchangeRecordPromise
     })
   })
 })
