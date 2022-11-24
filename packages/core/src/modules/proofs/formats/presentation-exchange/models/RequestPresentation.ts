@@ -20,6 +20,7 @@ export class ProofType {
   public proofType!: string[]
 }
 
+// TODO do we need this class?
 export class LdpVc {
   public constructor(ldpVc: ProofType) {
     if (ldpVc) {
