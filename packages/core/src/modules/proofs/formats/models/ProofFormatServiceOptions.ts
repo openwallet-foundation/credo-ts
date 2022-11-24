@@ -35,12 +35,6 @@ export interface ProcessRequestOptions {
   record?: ProofExchangeRecord
 }
 
-export interface CreatePresentationOptions<PF extends ProofFormat> {
-  id?: string
-  attachment: Attachment
-  proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
-}
-
 export interface ProcessPresentationOptions {
   record: ProofExchangeRecord
   formatAttachments: {

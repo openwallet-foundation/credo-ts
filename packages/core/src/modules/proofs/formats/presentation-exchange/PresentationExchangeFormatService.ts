@@ -13,7 +13,7 @@ import type { GetRequestedCredentialsFormat } from '../IndyProofFormatsServiceOp
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
-  CreatePresentationOptions,
+  FormatCreatePresentationOptions,
   CreateRequestOptions,
   FormatCreateProofProposalOptions,
   ProcessPresentationOptions,
@@ -252,7 +252,7 @@ export class PresentationExchangeFormatService extends ProofFormatService {
 
   public async createPresentation(
     agentContext: AgentContext,
-    options: CreatePresentationOptions<PresentationExchangeProofFormat>
+    options: FormatCreatePresentationOptions<PresentationExchangeProofFormat>
   ): Promise<ProofAttachmentFormat> {
     if (!options.proofFormats.presentationExchange) {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')

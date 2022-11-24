@@ -14,7 +14,7 @@ import type {
   FormatCreateProofProposalOptions,
   CreateRequestAttachmentOptions,
   CreateRequestOptions,
-  CreatePresentationOptions,
+  FormatCreatePresentationOptions,
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
@@ -221,7 +221,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async createPresentation(
     agentContext: AgentContext,
-    options: CreatePresentationOptions<IndyProofFormat>
+    options: FormatCreatePresentationOptions<IndyProofFormat>
   ): Promise<ProofAttachmentFormat> {
     // Extract proof request from attachment
     const proofRequestJson = options.attachment.getDataAsJson<ProofRequest>() ?? null

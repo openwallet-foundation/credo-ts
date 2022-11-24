@@ -14,7 +14,7 @@ import type {
   CreatePresentationFormatsOptions,
   FormatCreateProofProposalOptions,
   CreateRequestOptions,
-  CreatePresentationOptions,
+  FormatCreatePresentationOptions,
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
@@ -49,7 +49,7 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
 
   abstract createPresentation(
     agentContext: AgentContext,
-    options: CreatePresentationOptions<PF>
+    options: FormatCreatePresentationOptions<PF>
   ): Promise<ProofAttachmentFormat>
 
   abstract processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean>
