@@ -2,7 +2,7 @@ import type { Logger } from '../logger'
 import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig, InternetChecker } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-import type { GossipStorageConfig } from '@sicpa-dlab/witness-gossip-types-ts'
+import type { GossipConfig, GossipPlugins } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Subject } from 'rxjs'
 
@@ -94,10 +94,6 @@ export class AgentConfig {
 
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
-  }
-
-  public get witnessGossipMetrics() {
-    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
   }
 
   public get valueTransferWitnessDid() {
@@ -219,7 +215,7 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig
   }
 
-  public get valueWitnessConfig() {
+  public get valueTransferWitnessConfig() {
     return this.initConfig.valueTransferConfig?.witness
   }
 
@@ -246,9 +242,11 @@ export class AgentConfig {
     return new DefaultInternetChecker(pingUrl, this.agentDependencies)
   }
 
-  public get gossipStorageConfig(): GossipStorageConfig {
-    const { gossipStorageConfig } = this.initConfig
-    if (!gossipStorageConfig) throw new Error('Gossip storage config is not provided')
-    return gossipStorageConfig
+  public get gossipConfig(): GossipConfig | undefined {
+    return this.valueTransferWitnessConfig?.gossipConfig
+  }
+
+  public get gossipPlugins(): Partial<GossipPlugins> | undefined {
+    return this.valueTransferWitnessConfig?.gossipPlugins
   }
 }
