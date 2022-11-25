@@ -93,7 +93,7 @@ module.exports = {
       },
     },
     {
-      files: ['demo/**', 'emulator/**'],
+      files: ['demo/**'],
       rules: {
         'no-console': 'off',
       },
