@@ -7,7 +7,7 @@ import type { Routing } from './services'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
@@ -114,8 +114,12 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      outOfBand: outOfBandRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -140,24 +144,30 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -171,7 +181,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
@@ -190,7 +200,10 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -198,10 +211,13 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
