@@ -1,6 +1,6 @@
 import type { Logger } from '@aries-framework/core'
 import {IndyPool} from '@aries-framework/core'
-import { PoolCreate } from "indy-vdr-test-shared"
+import { PoolCreate } from 'indy-vdr-test-shared'
 
 interface TransactionAuthorAgreement {
   version: `${number}.${number}` | `${number}`
@@ -15,7 +15,7 @@ interface IndyVdrPoolConfig {
 }
 
 export class IndyVdrPool {
-  private pool: IndyPool // Not sure this is the correct type for the pool
+  // private pool: IndyPool // Not sure this is the correct type for the pool
   private logger: Logger
   private poolConfig: IndyVdrPoolConfig
   private poolConnected?: Promise<number>
@@ -34,8 +34,6 @@ export class IndyVdrPool {
   }
 
   public async connect() {
-    this.pool = new PoolCreate({parameters: {}}) 
-
-  
+    // this.pool = new PoolCreate({parameters: {}}) 
   }
 }
