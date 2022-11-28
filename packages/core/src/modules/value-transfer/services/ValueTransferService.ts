@@ -38,10 +38,10 @@ import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
+import { ValueTransferLockService } from './ValueTransferLockService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
-import { ValueTransferLockService } from './ValueTransferLockService'
 
 @injectable()
 export class ValueTransferService {
@@ -268,6 +268,7 @@ export class ValueTransferService {
     })
   }
 
+  //TODO: fix timeout, take it from record
   public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
