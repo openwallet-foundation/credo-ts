@@ -233,11 +233,13 @@ export class ValueTransferGiverService {
   @lockDecorator
   public async acceptRequest(
     recordId: string,
+    initialState: TransactionState,
     timeouts?: Timeouts,
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    await this.valueTransferService.acquireWalletLock(recordId)
+    if(initialState === TransactionState.RequestReceived)
+      await this.valueTransferService.acquireWalletLock(recordId)
     const record = await this.valueTransferService.getById(recordId)
 
     if(!record) {

@@ -34,7 +34,7 @@ export class RequestHandler implements Handler {
       (record.state === TransactionState.RequestForOfferReceived &&
         this.valueTransferResponseCoordinator.shouldAutoRespondToOfferedRequest())
     ) {
-      await this.valueTransferGiverService.acceptRequest(record.id)
+      await this.valueTransferGiverService.acceptRequest(record.id, record.state)
     }
   }
 }

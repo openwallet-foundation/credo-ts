@@ -128,7 +128,7 @@ export class ValueTransferModule {
     record?: ValueTransferRecord
   }> {
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(params.recordId, params.timeouts)
+    return this.valueTransferGiverService.acceptRequest(params.recordId, TransactionState.RequestReceived, params.timeouts)
   }
 
   /**
