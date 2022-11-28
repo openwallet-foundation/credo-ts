@@ -259,12 +259,12 @@ export class ValueTransferService {
     })
   }
 
-  public async acquireWalletLock(transactioniId: string) {
-    this.logger.info(`Lock: queueing transaction ${transactioniId}`)
+  public async acquireWalletLock(transactionId: string) {
+    this.logger.info(`Lock: queueing transaction ${transactionId}`)
     return await this.valueTransferLockService.acquireWalletLock(async () => {
-      this.logger.info(`Lock: locking transaction ${transactioniId}`)
-      await this.returnWhenIsCompleted(transactioniId)
-      this.logger.info(`Lock: releasing transaction ${transactioniId}`)
+      this.logger.info(`Lock: locking transaction ${transactionId}`)
+      await this.returnWhenIsCompleted(transactionId)
+      this.logger.info(`Lock: releasing transaction ${transactionId}`)
     })
   }
 
