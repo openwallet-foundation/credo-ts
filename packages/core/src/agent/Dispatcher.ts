@@ -1,4 +1,3 @@
-import type { OutboundMessage, OutboundServiceMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { Handler } from './Handler'
@@ -14,7 +13,7 @@ import { ProblemReportMessage } from './../modules/problem-reports/messages/Prob
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { MessageSender } from './MessageSender'
-import { isOutboundServiceMessage } from './helpers'
+import { OutboundMessageContext } from './models'
 
 @injectable()
 class Dispatcher {
@@ -38,14 +37,14 @@ class Dispatcher {
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
-    const message = messageContext.message
+    const { agentContext, connection, senderKey, recipientKey, message } = messageContext
     const handler = this.getHandlerForType(message.type)
 
     if (!handler) {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
-    let outboundMessage: OutboundMessage<AgentMessage> | OutboundServiceMessage<AgentMessage> | void
+    let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
       outboundMessage = await handler.handle(messageContext)
@@ -54,43 +53,39 @@ class Dispatcher {
 
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
         problemReportMessage.setThread({
-          threadId: messageContext.message.threadId,
+          threadId: message.threadId,
         })
-        outboundMessage = {
-          payload: problemReportMessage,
+        outboundMessage = new OutboundMessageContext(problemReportMessage, {
+          agentContext,
           connection: messageContext.connection,
-        }
+        })
       } else {
         this.logger.error(`Error handling message with type ${message.type}`, {
           message: message.toJSON(),
           error,
-          senderKey: messageContext.senderKey?.fingerprint,
-          recipientKey: messageContext.recipientKey?.fingerprint,
-          connectionId: messageContext.connection?.id,
+          senderKey: senderKey?.fingerprint,
+          recipientKey: recipientKey?.fingerprint,
+          connectionId: connection?.id,
         })
 
         throw error
       }
     }
 
-    if (outboundMessage && isOutboundServiceMessage(outboundMessage)) {
-      await this.messageSender.sendMessageToService(messageContext.agentContext, {
-        message: outboundMessage.payload,
-        service: outboundMessage.service,
-        senderKey: outboundMessage.senderKey,
-        returnRoute: true,
-      })
-    } else if (outboundMessage) {
-      outboundMessage.sessionId = messageContext.sessionId
-      await this.messageSender.sendMessage(messageContext.agentContext, outboundMessage)
+    if (outboundMessage) {
+      if (outboundMessage.isOutboundServiceMessage()) {
+        await this.messageSender.sendMessageToService(outboundMessage)
+      } else {
+        outboundMessage.sessionId = messageContext.sessionId
+        await this.messageSender.sendMessage(outboundMessage)
+      }
     }
-
     // Emit event that allows to hook into received messages
-    this.eventEmitter.emit<AgentMessageProcessedEvent>(messageContext.agentContext, {
+    this.eventEmitter.emit<AgentMessageProcessedEvent>(agentContext, {
       type: AgentEventTypes.AgentMessageProcessed,
       payload: {
-        message: messageContext.message,
-        connection: messageContext.connection,
+        message,
+        connection,
       },
     })
   }

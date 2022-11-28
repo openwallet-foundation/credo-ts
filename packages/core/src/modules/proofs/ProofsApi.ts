@@ -37,7 +37,7 @@ import { AgentConfig } from '../../agent/AgentConfig'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -185,8 +185,12 @@ export class ProofsApi<
 
     const { message, proofRecord } = await service.createProposal(this.agentContext, proposalOptions)
 
-    const outbound = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: proofRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return proofRecord
   }
@@ -234,8 +238,12 @@ export class ProofsApi<
 
     const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: proofRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return proofRecord
   }
@@ -264,8 +272,12 @@ export class ProofsApi<
     }
     const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: proofRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return proofRecord
   }
@@ -301,8 +313,12 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+      const outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection,
+        associatedRecord: proofRecord,
+      })
+      await this.messageSender.sendMessage(outboundMessageContext)
 
       return proofRecord
     }
@@ -327,12 +343,16 @@ export class ProofsApi<
         role: DidCommMessageRole.Sender,
       })
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: message.service.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
 
       return proofRecord
     }
@@ -405,20 +425,28 @@ export class ProofsApi<
       // Assert
       connection.assertReady()
 
-      const outboundMessage = createOutboundMessage(connection, message)
-      await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+      const outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection,
+        associatedRecord: proofRecord,
+      })
+      await this.messageSender.sendMessage(outboundMessageContext)
     }
     // Use ~service decorator otherwise
     else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage.service
 
-      await this.messageSender.sendMessageToService(this.agentContext, {
-        message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        returnRoute: true,
-      })
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
     }
     // Cannot send message without credentialId or ~service decorator
     else {
@@ -497,8 +525,12 @@ export class ProofsApi<
       description: message,
     })
 
-    const outboundMessage = createOutboundMessage(connection, problemReport)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(problemReport, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: record,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return record
   }
