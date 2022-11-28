@@ -322,15 +322,12 @@ describe('JsonLd CredentialFormatService', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const acceptRequestOptions: JsonLdAcceptRequestOptions = {
-        ...signCredentialOptions,
-        verificationMethod,
-      }
-
       const { format, attachment } = await jsonldFormatService.acceptRequest(agentContext, {
         credentialRecord,
         credentialFormats: {
-          jsonld: acceptRequestOptions,
+          jsonld: {
+            verificationMethod,
+          },
         },
         requestAttachment,
         offerAttachment,

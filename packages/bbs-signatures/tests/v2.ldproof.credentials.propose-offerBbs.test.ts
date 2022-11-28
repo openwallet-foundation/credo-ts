@@ -198,7 +198,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
-        jsonld: signCredentialOptions,
+        jsonld: {},
       },
     })
 

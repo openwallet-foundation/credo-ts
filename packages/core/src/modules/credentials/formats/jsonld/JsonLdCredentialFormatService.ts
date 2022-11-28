@@ -220,19 +220,15 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const jsonLdFormat = credentialFormats?.jsonld
-
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-    const credentialData = jsonLdFormat ?? credentialRequest
-    const jsonLdCredential = new JsonLdCredentialDetail(credentialData)
-    MessageValidator.validateSync(jsonLdCredential)
+    // const credentialData = jsonLdFormat ?? credentialRequest
 
     const verificationMethod =
       credentialFormats?.jsonld?.verificationMethod ??
-      (await this.deriveVerificationMethod(agentContext, credentialData.credential, credentialRequest))
+      (await this.deriveVerificationMethod(agentContext, credentialRequest.credential, credentialRequest))
 
     if (!verificationMethod) {
       throw new AriesFrameworkError('Missing verification method in credential data')
@@ -242,7 +238,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC,
     })
 
-    const options = credentialData.options
+    const options = credentialRequest.options
 
     if (options.challenge || options.domain || options.credentialStatus) {
       throw new AriesFrameworkError(
@@ -251,8 +247,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
-      credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
-      proofType: credentialData.options.proofType,
+      credential: JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential),
+      proofType: credentialRequest.options.proofType,
       verificationMethod: verificationMethod,
     })
 
