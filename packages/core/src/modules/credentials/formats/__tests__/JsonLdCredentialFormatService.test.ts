@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../../formats'
 import type {
-  JsonLdAcceptRequestOptions,
   JsonLdCredentialFormat,
   SignCredentialOptionsRFC0593,
 } from '../../formats/jsonld/JsonLdCredentialFormat'
