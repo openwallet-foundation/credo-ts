@@ -36,7 +36,6 @@ export class IndyVdrPool {
   public async connect() {
     this.pool = new PoolCreate({parameters: {}}) 
 
-    
-
+  
   }
 }
