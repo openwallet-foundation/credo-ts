@@ -160,14 +160,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialFormats, attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
+    { attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const jsonLdFormat = credentialFormats?.jsonld
-
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const requestData = jsonLdFormat ?? credentialOffer
 
-    const jsonLdCredential = new JsonLdCredentialDetail(requestData)
+    const jsonLdCredential = new JsonLdCredentialDetail(credentialOffer)
     MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
@@ -175,7 +172,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC_DETAIL,
     })
 
-    const attachment = this.getFormatData(requestData, format.attachId)
+    const attachment = this.getFormatData(credentialOffer, format.attachId)
     return { format, attachment }
   }
 

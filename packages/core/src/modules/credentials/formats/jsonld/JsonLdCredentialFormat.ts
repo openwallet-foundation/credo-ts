@@ -20,7 +20,7 @@ export interface JsonLdCredentialFormat extends CredentialFormat {
     createProposal: SignCredentialOptionsRFC0593
     acceptProposal: EmptyObject
     createOffer: SignCredentialOptionsRFC0593
-    acceptOffer: SignCredentialOptionsRFC0593
+    acceptOffer: EmptyObject
     createRequest: SignCredentialOptionsRFC0593
     acceptRequest: JsonLdAcceptRequestOptions
   }
