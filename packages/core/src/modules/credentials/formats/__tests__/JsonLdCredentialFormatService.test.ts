@@ -1,9 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../../formats'
-import type {
-  JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593,
-} from '../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdCredentialFormat, SignCredentialOptionsRFC0593 } from '../../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
