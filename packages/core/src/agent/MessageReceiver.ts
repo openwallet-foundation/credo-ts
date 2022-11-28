@@ -21,8 +21,7 @@ import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContextProvider } from './context'
-import { createOutboundMessage } from './helpers'
-import { InboundMessageContext } from './models/InboundMessageContext'
+import { InboundMessageContext, OutboundMessageContext } from './models'
 
 @injectable()
 export class MessageReceiver {
@@ -277,9 +276,9 @@ export class MessageReceiver {
     problemReportMessage.setThread({
       threadId: plaintextMessage['@id'],
     })
-    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
-    if (outboundMessage) {
-      await this.messageSender.sendMessage(agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
+    if (outboundMessageContext) {
+      await this.messageSender.sendMessage(outboundMessageContext)
     }
   }
 }
