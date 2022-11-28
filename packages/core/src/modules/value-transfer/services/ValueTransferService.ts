@@ -351,4 +351,24 @@ export class ValueTransferService {
     })
     return record
   }
+
+  public async initActiveTransactionLock() {
+    const record = await this.getCurrentlyActiveTransaction()
+    if (record) {
+      return await this.acquireWalletLock(record.id)
+    }
+    return Promise.resolve()
+  }
+
+  public async getCurrentlyActiveTransaction() {
+    const { record } = await this.getActiveTransaction()
+    if (record) {
+      return record
+    }
+    const { records } = await this.getPendingTransactions()
+    const pendingRecord = records?.find(
+      (r) => r.transaction.state == TransactionState.RequestSent || r.transaction.state == TransactionState.OfferSent
+    )
+    return pendingRecord
+  }
 }

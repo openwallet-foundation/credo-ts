@@ -39,7 +39,6 @@ export class ValueTransferModule {
   private valueTransferWitnessService: ValueTransferWitnessService
   private valueTransferIssuerService: ValueTransferIssuerService
   private valueTransferResponseCoordinator: ValueTransferResponseCoordinator
-  private valueTransferLockService: ValueTransferLockService
 
   public constructor(
     dispatcher: Dispatcher,
@@ -49,7 +48,6 @@ export class ValueTransferModule {
     valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferIssuerService: ValueTransferIssuerService,
     valueTransferResponseCoordinator: ValueTransferResponseCoordinator,
-    valueTransferLockService: ValueTransferLockService
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
@@ -57,7 +55,6 @@ export class ValueTransferModule {
     this.valueTransferWitnessService = valueTransferWitnessService
     this.valueTransferIssuerService = valueTransferIssuerService
     this.valueTransferResponseCoordinator = valueTransferResponseCoordinator
-    this.valueTransferLockService = valueTransferLockService
     this.registerHandlers(dispatcher)
   }
 
@@ -90,11 +87,10 @@ export class ValueTransferModule {
     timeouts?: Timeouts
     transport?: Transports
     attachment?: Record<string, unknown>
+    usedPaymentOption?: string
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
-    const createRequestResults = await this.valueTransferGetterService.createRequest(params)
-    await this.valueTransferService.acquireWalletLock(createRequestResults.record.id)
-    return createRequestResults;
+    return await this.valueTransferGetterService.createRequest(params)
   }
 
   public async verifyRequestCanBeAccepted(record: ValueTransferRecord): Promise<{
@@ -132,13 +128,8 @@ export class ValueTransferModule {
   public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    await this.valueTransferService.acquireWalletLock(params.recordId)
-
-    // Get Value Transfer record
-    const record = await this.valueTransferService.getById(params.recordId)
-
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(record, params.timeouts)
+    return this.valueTransferGiverService.acceptRequest(undefined, params.timeouts, params.recordId)
   }
 
   /**
@@ -171,11 +162,10 @@ export class ValueTransferModule {
     timeouts?: Timeouts
     transport?: Transports
     attachment?: Record<string, unknown>
+    usedPaymentOption?: string
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
-    const offerPaymentResults = await this.valueTransferGiverService.offerPayment(params)
-    await this.valueTransferService.acquireWalletLock(offerPaymentResults.record.id)
-    return offerPaymentResults
+    return await this.valueTransferGiverService.offerPayment(params)
   }
 
   /**
@@ -197,13 +187,8 @@ export class ValueTransferModule {
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    await this.valueTransferService.acquireWalletLock(params.recordId)
-
-    // Get Value Transfer record
-    const record = await this.valueTransferService.getById(params.recordId)
-
     // Accept Payment Request
-    return this.valueTransferGetterService.acceptOffer(record, params.witness, params.timeouts)
+    return this.valueTransferGetterService.acceptOffer(undefined, params.witness, params.timeouts, params.recordId)
   }
 
   /**
@@ -287,6 +272,10 @@ export class ValueTransferModule {
     return this.valueTransferService.getActiveTransaction()
   }
 
+  public async getCurrentlyActiveTransaction(): Promise<ValueTransferRecord | undefined> {
+    return this.valueTransferService.getCurrentlyActiveTransaction()
+  }
+
   /**
    * Request the list of available witnesses
    */
@@ -307,6 +296,7 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
+    this.valueTransferService.initActiveTransactionLock()
     dispatcher.registerHandler(
       new RequestHandler(
         this.valueTransferService,
