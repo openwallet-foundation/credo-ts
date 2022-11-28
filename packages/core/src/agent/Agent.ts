@@ -29,6 +29,7 @@ import { KeysModule } from '../modules/keys'
 import { LedgerModule } from '../modules/ledger/LedgerModule'
 import { OutOfBandModuleV2 } from '../modules/oob/OutOfBandModuleV2'
 import { OutOfBandModule } from '../modules/out-of-band'
+import { ProblemReportModule } from '../modules/problem-reports/ProblemReportModule'
 import { ProofsModule } from '../modules/proofs/ProofsModule'
 import { QuestionAnswerModule } from '../modules/question-answer/QuestionAnswerModule'
 import { MediatorModule } from '../modules/routing/MediatorModule'
@@ -52,7 +53,6 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { EnvelopeService } from './didcomm/EnvelopeService'
-import { ProblemReportModule } from '../modules/problem-reports/ProblemReportModule'
 
 export class Agent {
   protected agentConfig: AgentConfig
@@ -242,6 +242,8 @@ export class Agent {
         this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
       })
     }
+
+    //TODO: move VTP lock initialization here
 
     for (const transport of this.inboundTransports) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
