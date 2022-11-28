@@ -243,7 +243,7 @@ export class Agent {
       })
     }
 
-    //TODO: move VTP lock initialization here
+    await this.valueTransferService.initActiveTransactionLock()
 
     for (const transport of this.inboundTransports) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises

@@ -94,7 +94,6 @@ export class ValueTransferGetterService {
     timeouts?: Timeouts
     attachment?: Record<string, unknown>
     transport?: Transports
-    usedPaymentOption?: string
   }): Promise<{
     record: ValueTransferRecord
     message: RequestMessage
@@ -134,7 +133,7 @@ export class ValueTransferGetterService {
 
     // Save second party Did
     record.secondPartyDid = requestMessage.to?.length ? requestMessage.to[0] : undefined
-    record.usedPaymentOption = params.usedPaymentOption
+
     await this.valueTransferRepository.update(record)
 
     // Raise event
@@ -231,21 +230,15 @@ export class ValueTransferGetterService {
    */
   @lockDecorator
   public async acceptOffer(
-    record?: ValueTransferRecord,
+    recordId: string,
     witnessDid?: string,
     timeouts?: Timeouts,
-    recordId?: string
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    if(!record && recordId) {
-      await this.valueTransferService.acquireWalletLock(recordId)
-      record = await this.valueTransferService.getById(recordId)
-    }
-    else if(record) {
-      await this.valueTransferService.acquireWalletLock(record.id)
-    }
-
+    await this.valueTransferService.acquireWalletLock(recordId)
+    const record = await this.valueTransferService.getById(recordId)
+   
     if(!record) {
       this.logger.warn(
         ` Getter: accept offer record is missing`

@@ -37,7 +37,6 @@ export class ValueTransferGiverService {
   private valueTransferStateService: ValueTransferPartyStateService
   private eventEmitter: EventEmitter
   private giver: Giver
-  private giverLock: AsyncLock
 
   public constructor(
     config: AgentConfig,
@@ -67,8 +66,6 @@ export class ValueTransferGiverService {
         label: config.label,
       }
     )
-
-    this.giverLock = new AsyncLock()
   }
 
   /**
@@ -99,7 +96,6 @@ export class ValueTransferGiverService {
     timeouts?: Timeouts
     attachment?: Record<string, unknown>
     transport?: Transports
-    usedPaymentOption?: string
   }): Promise<{
     record: ValueTransferRecord
     message: OfferMessage
@@ -139,7 +135,7 @@ export class ValueTransferGiverService {
 
     // Save second party Did
     record.secondPartyDid = offerMessage.to?.length ? offerMessage.to[0] : undefined
-    record.usedPaymentOption = params.usedPaymentOption
+
     await this.valueTransferRepository.update(record)
 
     // Raise event
@@ -200,9 +196,8 @@ export class ValueTransferGiverService {
     this.logger.info(`> Giver: process payment request message for VTP transaction ${requestMessage.id}`)
 
     // Call VTP library to handle request
-    const { error, transaction } = await this.giverLock.acquire('processPaymentRequest', async () => {
-      return this.giver.processRequest(new Request(requestMessage))
-    })
+    const { transaction, error } = await this.giver.processRequest(new Request(requestMessage))
+
     if (!transaction) {
       this.logger.error(` Giver: process request message for VTP transaction ${requestMessage.id} failed.`, { error })
       return {}
@@ -237,20 +232,13 @@ export class ValueTransferGiverService {
    */
   @lockDecorator
   public async acceptRequest(
-    record?: ValueTransferRecord,
+    recordId: string,
     timeouts?: Timeouts,
-    recordId?: string,
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-
-    if(!record && recordId) {
-      await this.valueTransferService.acquireWalletLock(recordId)
-      record = await this.valueTransferService.getById(recordId)
-    }
-    else if(record && record.state != TransactionState.RequestForOfferReceived) {
-      await this.valueTransferService.acquireWalletLock(record.id)
-    }
+    await this.valueTransferService.acquireWalletLock(recordId)
+    const record = await this.valueTransferService.getById(recordId)
 
     if(!record) {
       this.logger.warn(

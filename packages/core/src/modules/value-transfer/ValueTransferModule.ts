@@ -87,7 +87,6 @@ export class ValueTransferModule {
     timeouts?: Timeouts
     transport?: Transports
     attachment?: Record<string, unknown>
-    usedPaymentOption?: string
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
     return await this.valueTransferGetterService.createRequest(params)
@@ -129,7 +128,7 @@ export class ValueTransferModule {
     record?: ValueTransferRecord
   }> {
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(undefined, params.timeouts, params.recordId)
+    return this.valueTransferGiverService.acceptRequest(params.recordId, params.timeouts)
   }
 
   /**
@@ -162,7 +161,6 @@ export class ValueTransferModule {
     timeouts?: Timeouts
     transport?: Transports
     attachment?: Record<string, unknown>
-    usedPaymentOption?: string
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
     return await this.valueTransferGiverService.offerPayment(params)
@@ -188,7 +186,7 @@ export class ValueTransferModule {
     record?: ValueTransferRecord
   }> {
     // Accept Payment Request
-    return this.valueTransferGetterService.acceptOffer(undefined, params.witness, params.timeouts, params.recordId)
+    return this.valueTransferGetterService.acceptOffer(params.recordId, params.witness, params.timeouts)
   }
 
   /**
@@ -199,8 +197,8 @@ export class ValueTransferModule {
    * @param options
    * @returns Value Transfer record
    */
-  public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
-    return this.valueTransferService.returnWhenIsCompleted(recordId, options?.timeoutMs)
+  public async returnWhenIsCompleted(recordId: string): Promise<ValueTransferRecord> {
+    return this.valueTransferService.returnWhenIsCompleted(recordId)
   }
 
   /**
@@ -296,7 +294,6 @@ export class ValueTransferModule {
   }
 
   private registerHandlers(dispatcher: Dispatcher) {
-    this.valueTransferService.initActiveTransactionLock()
     dispatcher.registerHandler(
       new RequestHandler(
         this.valueTransferService,

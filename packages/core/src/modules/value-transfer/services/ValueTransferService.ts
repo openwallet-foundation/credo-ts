@@ -28,7 +28,7 @@ import { SendingMessageType } from '../../../agent/didcomm/types'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { DependencyManager, injectable } from '../../../plugins'
-import { JsonEncoder } from '../../../utils'
+import { JsonEncoder, timeoutWhen } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQueryMessage'
@@ -269,7 +269,7 @@ export class ValueTransferService {
   }
 
   //TODO: fix timeout, take it from record
-  public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
+  public async returnWhenIsCompleted(recordId: string): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
         record.id === recordId &&
@@ -283,15 +283,21 @@ export class ValueTransferService {
     )
     const subject = new ReplaySubject<ValueTransferRecord>(1)
 
+    const valueTransfer = await this.getById(recordId)
+    const timeoutInSeconds = (valueTransfer.receipt.getter.timeout_elapsed ? 
+    (valueTransfer.receipt.giver.timeout_elapsed ? Math.min(
+      valueTransfer.receipt.giver.timeout_elapsed, valueTransfer.receipt.getter.timeout_elapsed
+    ) : valueTransfer.receipt.getter.timeout_elapsed) : 
+    valueTransfer.receipt.giver.timeout_elapsed) ?? 0
+
     observable
       .pipe(
         map((e) => e.payload.record),
         first(isCompleted),
-        timeout(timeoutMs)
+        timeoutWhen(!!timeoutInSeconds, timeoutInSeconds * 1000)
       )
       .subscribe(subject)
-
-    const valueTransfer = await this.getById(recordId)
+    
     if (isCompleted(valueTransfer)) {
       subject.next(valueTransfer)
     }
@@ -358,9 +364,10 @@ export class ValueTransferService {
     if (record) {
       return await this.acquireWalletLock(record.id)
     }
-    return Promise.resolve()
   }
 
+  // Returns either transaction with InProgress state or transaction with Request/Offer sent status. 
+  // Lock should be acquired on pending transaction, if current party is the initiator. 
   public async getCurrentlyActiveTransaction() {
     const { record } = await this.getActiveTransaction()
     if (record) {
