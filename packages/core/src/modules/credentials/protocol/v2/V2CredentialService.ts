@@ -259,7 +259,6 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
         associatedRecordId: credentialRecord.id,
         messageClass: V2ProposeCredentialMessage,
       })
-
       formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
     }
 

@@ -180,9 +180,6 @@ describe('credentials', () => {
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 JsonLd Offer',
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
       })
 
       testLogger.test('Alice waits for credential from Faber')

@@ -53,7 +53,6 @@ export interface FormatAcceptProposalOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptProposal'>
   attachId?: string
-
   proposalAttachment: Attachment
 }
 

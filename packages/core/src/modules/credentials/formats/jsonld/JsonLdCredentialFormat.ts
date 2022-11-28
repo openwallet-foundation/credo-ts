@@ -11,12 +11,14 @@ export interface SignCredentialOptionsRFC0593 {
   options: JsonLdOptionsRFC0593
 }
 
+type EmptyObject = Record<any, never>
+
 export interface JsonLdCredentialFormat extends CredentialFormat {
   formatKey: 'jsonld'
   credentialRecordType: 'w3c'
   credentialFormats: {
     createProposal: SignCredentialOptionsRFC0593
-    acceptProposal: SignCredentialOptionsRFC0593
+    acceptProposal: EmptyObject
     createOffer: SignCredentialOptionsRFC0593
     acceptOffer: SignCredentialOptionsRFC0593
     createRequest: SignCredentialOptionsRFC0593

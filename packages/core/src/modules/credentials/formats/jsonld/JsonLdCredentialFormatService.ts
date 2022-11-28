@@ -98,7 +98,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { attachId, credentialFormats, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
+    { attachId, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
   ): Promise<FormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
@@ -106,18 +106,11 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC_DETAIL,
     })
 
-    const jsonLdFormat = credentialFormats?.jsonld
-    if (jsonLdFormat) {
-      // if there is an offer, validate
-      const jsonLdCredentialOffer = new JsonLdCredentialDetail(jsonLdFormat)
-      MessageValidator.validateSync(jsonLdCredentialOffer)
-    }
-
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
     const jsonLdCredentialProposal = new JsonLdCredentialDetail(credentialProposal)
     MessageValidator.validateSync(jsonLdCredentialProposal)
 
-    const offerData = jsonLdFormat ?? credentialProposal
+    const offerData = credentialProposal
 
     const attachment = this.getFormatData(offerData, format.attachId)
 

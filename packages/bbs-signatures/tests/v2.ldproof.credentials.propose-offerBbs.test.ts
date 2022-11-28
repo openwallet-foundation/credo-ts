@@ -118,9 +118,6 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
     await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
-      credentialFormats: {
-        jsonld: signCredentialOptions,
-      },
     })
 
     testLogger.test('Alice waits for credential offer from Faber')

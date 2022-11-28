@@ -113,7 +113,7 @@ describe('credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
       credentialFormats: {
-        jsonld: signCredentialOptions,
+        jsonld: undefined,
       },
     })
 
@@ -308,7 +308,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
           attributes: credentialPreview.attributes,
         },
-        jsonld: signCredentialOptions,
+        jsonld: {}, // this is to ensure both services are formatted
       },
     })
 
