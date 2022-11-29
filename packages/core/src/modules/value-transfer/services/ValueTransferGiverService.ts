@@ -152,7 +152,6 @@ export class ValueTransferGiverService {
   }> {
     this.logger.info(`> Giver: verify request message for VTP transaction ${record.transaction.id}`)
 
-    // Call VTP library to accept request
     const { error, transaction } = await this.giver.verifyRequestCanBeAccepted(
       record.transaction.id,
       record.expectedRecipientDid
@@ -168,14 +167,14 @@ export class ValueTransferGiverService {
       transaction.state = TransactionState.Failed
       record.transaction = transaction
       await this.valueTransferRepository.update(record)
+
+      const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+      this.logger.info(`< Giver: verify request message for VTP transaction ${record.transaction.id} failed!`)
+      return { record: updatedRecord }
     }
 
-    // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
-
     this.logger.info(`< Giver: verify request message for VTP transaction ${record.transaction.id} completed!`)
-
-    return { record: updatedRecord }
+    return { record }
   }
 
   /**
@@ -234,18 +233,15 @@ export class ValueTransferGiverService {
   public async acceptRequest(
     recordId: string,
     initialState: TransactionState,
-    timeouts?: Timeouts,
+    timeouts?: Timeouts
   ): Promise<{
     record?: ValueTransferRecord
   }> {
-    if(initialState === TransactionState.RequestReceived)
-      await this.valueTransferService.acquireWalletLock(recordId)
+    if (initialState === TransactionState.RequestReceived) await this.valueTransferService.acquireWalletLock(recordId)
     const record = await this.valueTransferService.getById(recordId)
 
-    if(!record) {
-      this.logger.warn(
-        ` Giver: accept payment request record is missing`
-      )
+    if (!record) {
+      this.logger.warn(` Giver: accept payment request record is missing`)
       return {}
     }
 

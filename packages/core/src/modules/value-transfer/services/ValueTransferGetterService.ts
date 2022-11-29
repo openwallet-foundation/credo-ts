@@ -150,7 +150,6 @@ export class ValueTransferGetterService {
   }> {
     this.logger.info(`> Getter: verify offer message for VTP transaction ${record.transaction.id}`)
 
-    // Call VTP library to accept request
     const { error, transaction } = await this.getter.verifyOfferCanBeAccepted(
       record.transaction.id,
       record.expectedRecipientDid
@@ -166,14 +165,14 @@ export class ValueTransferGetterService {
       transaction.state = TransactionState.Failed
       record.transaction = transaction
       await this.valueTransferRepository.update(record)
+
+      const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+      this.logger.info(`< Getter: verify offer message for VTP transaction ${record.transaction.id} failed!`)
+      return { record: updatedRecord }
     }
 
-    // Raise event
-    const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
-
     this.logger.info(`< Getter: verify offer message for VTP transaction ${record.transaction.id} completed!`)
-
-    return { record: updatedRecord }
+    return { record }
   }
 
   /**
@@ -232,20 +231,17 @@ export class ValueTransferGetterService {
   public async acceptOffer(
     recordId: string,
     witnessDid?: string,
-    timeouts?: Timeouts,
+    timeouts?: Timeouts
   ): Promise<{
     record?: ValueTransferRecord
   }> {
     await this.valueTransferService.acquireWalletLock(recordId)
     const record = await this.valueTransferService.getById(recordId)
-   
-    if(!record) {
-      this.logger.warn(
-        ` Getter: accept offer record is missing`
-      )
+
+    if (!record) {
+      this.logger.warn(` Getter: accept offer record is missing`)
       return {}
     }
-
 
     this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id}`)
 
