@@ -268,7 +268,14 @@ export class ValueTransferService {
     })
   }
 
-  //TODO: fix timeout, take it from record
+  private getTransactionTimeout(valueTransfer: ValueTransferRecord) {
+    let timeoutInSeconds = valueTransfer.receipt.getter.timeout_elapsed
+    if (!timeoutInSeconds) timeoutInSeconds = valueTransfer.receipt.giver.timeout_elapsed
+    else if (valueTransfer.receipt.giver.timeout_elapsed)
+      timeoutInSeconds = Math.min(valueTransfer.receipt.giver.timeout_elapsed, timeoutInSeconds)
+    return timeoutInSeconds ?? 0
+  }
+
   public async returnWhenIsCompleted(recordId: string): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
@@ -284,12 +291,7 @@ export class ValueTransferService {
     const subject = new ReplaySubject<ValueTransferRecord>(1)
 
     const valueTransfer = await this.getById(recordId)
-    const timeoutInSeconds = (valueTransfer.receipt.getter.timeout_elapsed ? 
-    (valueTransfer.receipt.giver.timeout_elapsed ? Math.min(
-      valueTransfer.receipt.giver.timeout_elapsed, valueTransfer.receipt.getter.timeout_elapsed
-    ) : valueTransfer.receipt.getter.timeout_elapsed) : 
-    valueTransfer.receipt.giver.timeout_elapsed) ?? 0
-
+    const timeoutInSeconds = this.getTransactionTimeout(valueTransfer)
     observable
       .pipe(
         map((e) => e.payload.record),
@@ -297,7 +299,7 @@ export class ValueTransferService {
         timeoutWhen(!!timeoutInSeconds, timeoutInSeconds * 1000)
       )
       .subscribe(subject)
-    
+
     if (isCompleted(valueTransfer)) {
       subject.next(valueTransfer)
     }
@@ -366,8 +368,8 @@ export class ValueTransferService {
     }
   }
 
-  // Returns either transaction with InProgress state or transaction with Request/Offer sent status. 
-  // Lock should be acquired on pending transaction, if current party is the initiator. 
+  // Returns either transaction with InProgress state or transaction with Request/Offer sent status.
+  // Lock should be acquired on pending transaction, if current party is the initiator.
   public async getCurrentlyActiveTransaction() {
     const { record } = await this.getActiveTransaction()
     if (record) {
