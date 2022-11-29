@@ -2,7 +2,7 @@ import type { DependencyManager } from '../../plugins'
 import type { Transports } from '../routing/types'
 import type { RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { Timeouts, TransactionState, TransactionStatus } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { module, injectable } from '../../plugins'
@@ -28,6 +28,7 @@ import { ValueTransferGetterService } from './services/ValueTransferGetterServic
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
+import { ValueTransferLockService } from './services/ValueTransferLockService'
 
 @module()
 @injectable()
@@ -46,7 +47,7 @@ export class ValueTransferModule {
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferIssuerService: ValueTransferIssuerService,
-    valueTransferResponseCoordinator: ValueTransferResponseCoordinator
+    valueTransferResponseCoordinator: ValueTransferResponseCoordinator,
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
@@ -88,7 +89,7 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: RequestMessage }> {
     // Create Payment Request and Value Transfer record
-    return this.valueTransferGetterService.createRequest(params)
+    return await this.valueTransferGetterService.createRequest(params)
   }
 
   public async verifyRequestCanBeAccepted(record: ValueTransferRecord): Promise<{
@@ -101,6 +102,10 @@ export class ValueTransferModule {
     record?: ValueTransferRecord
   }> {
     return this.valueTransferGetterService.verifyOfferCanBeAccepted(record)
+  }
+
+  public async acquireWalletLock(transactioniId: string) {
+    return await this.valueTransferService.acquireWalletLock(transactioniId)
   }
 
   /**
@@ -122,11 +127,8 @@ export class ValueTransferModule {
   public async acceptPaymentRequest(params: { recordId: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Get Value Transfer record
-    const record = await this.valueTransferService.getById(params.recordId)
-
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(record, params.timeouts)
+    return this.valueTransferGiverService.acceptRequest(params.recordId, TransactionState.RequestReceived, params.timeouts)
   }
 
   /**
@@ -161,7 +163,7 @@ export class ValueTransferModule {
     attachment?: Record<string, unknown>
   }): Promise<{ record: ValueTransferRecord; message: OfferMessage }> {
     // Create Payment Request and Value Transfer record
-    return this.valueTransferGiverService.offerPayment(params)
+    return await this.valueTransferGiverService.offerPayment(params)
   }
 
   /**
@@ -183,11 +185,8 @@ export class ValueTransferModule {
   public async acceptPaymentOffer(params: { recordId: string; witness?: string; timeouts?: Timeouts }): Promise<{
     record?: ValueTransferRecord
   }> {
-    // Get Value Transfer record
-    const record = await this.valueTransferService.getById(params.recordId)
-
     // Accept Payment Request
-    return this.valueTransferGetterService.acceptOffer(record, params.witness, params.timeouts)
+    return this.valueTransferGetterService.acceptOffer(params.recordId, params.witness, params.timeouts)
   }
 
   /**
@@ -198,8 +197,8 @@ export class ValueTransferModule {
    * @param options
    * @returns Value Transfer record
    */
-  public async returnWhenIsCompleted(recordId: string, options?: { timeoutMs: number }): Promise<ValueTransferRecord> {
-    return this.valueTransferService.returnWhenIsCompleted(recordId, options?.timeoutMs)
+  public async returnWhenIsCompleted(recordId: string): Promise<ValueTransferRecord> {
+    return this.valueTransferService.returnWhenIsCompleted(recordId)
   }
 
   /**
@@ -269,6 +268,10 @@ export class ValueTransferModule {
     record?: ValueTransferRecord | null
   }> {
     return this.valueTransferService.getActiveTransaction()
+  }
+
+  public async getCurrentlyActiveTransaction(): Promise<ValueTransferRecord | undefined> {
+    return this.valueTransferService.getCurrentlyActiveTransaction()
   }
 
   /**
