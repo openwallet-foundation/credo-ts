@@ -2,7 +2,9 @@ import type { DependencyManager } from '../../plugins'
 import type { Transports } from '../routing/types'
 import type { RequestMessage, OfferMessage } from './messages'
 import type { ValueTransferRecord, ValueTransferTags } from './repository'
-import { Timeouts, TransactionState, TransactionStatus } from '@sicpa-dlab/value-transfer-protocol-ts'
+import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
+
+import { TransactionState } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { Dispatcher } from '../../agent/Dispatcher'
 import { module, injectable } from '../../plugins'
@@ -28,7 +30,6 @@ import { ValueTransferGetterService } from './services/ValueTransferGetterServic
 import { ValueTransferGiverService } from './services/ValueTransferGiverService'
 import { ValueTransferIssuerService } from './services/ValueTransferIssuerService'
 import { ValueTransferWitnessService } from './services/ValueTransferWitnessService'
-import { ValueTransferLockService } from './services/ValueTransferLockService'
 
 @module()
 @injectable()
@@ -47,7 +48,7 @@ export class ValueTransferModule {
     valueTransferGiverService: ValueTransferGiverService,
     valueTransferWitnessService: ValueTransferWitnessService,
     valueTransferIssuerService: ValueTransferIssuerService,
-    valueTransferResponseCoordinator: ValueTransferResponseCoordinator,
+    valueTransferResponseCoordinator: ValueTransferResponseCoordinator
   ) {
     this.valueTransferService = valueTransferService
     this.valueTransferGetterService = valueTransferGetterService
@@ -128,7 +129,11 @@ export class ValueTransferModule {
     record?: ValueTransferRecord
   }> {
     // Accept Payment Request
-    return this.valueTransferGiverService.acceptRequest(params.recordId, TransactionState.RequestReceived, params.timeouts)
+    return this.valueTransferGiverService.acceptRequest(
+      params.recordId,
+      TransactionState.RequestReceived,
+      params.timeouts
+    )
   }
 
   /**

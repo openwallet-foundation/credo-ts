@@ -23,7 +23,6 @@ export class WitnessTableQueryMessage extends DIDCommV2Message implements Witnes
   @ValidateNested()
   @IsInstance(WitnessTableQueryBody)
   public body!: WitnessTableQueryBody
-
   public constructor(options?: WitnessTableQueryMessageParams) {
     super(options)
   }
