@@ -1,63 +1,64 @@
 import type { EncryptedMessage } from '../../../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { BatchPickupMessageV2 } from './messages'
+import type { BatchPickupMessage } from './messages'
 
+import { Dispatcher } from '../../../../../agent/Dispatcher'
+import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { createOutboundMessage } from '../../../../../agent/helpers'
 import { InjectionSymbols } from '../../../../../constants'
-import { injectable, inject } from '../../../../../plugins'
+import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
-import { uuid } from '../../../../../utils/uuid'
 
-import { BatchAckMessageV2, BatchMessageItemV2, BatchMessageV2 } from './messages'
+import { BatchHandler, BatchPickupHandler } from './handlers'
+import { BatchMessage, BatchMessageMessage } from './messages'
 
 @injectable()
 export class MessagePickupService {
   private messageRepository: MessageRepository
+  private dispatcher: Dispatcher
+  private eventEmitter: EventEmitter
 
-  public constructor(@inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository) {
+  public constructor(
+    @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
+    dispatcher: Dispatcher,
+    eventEmitter: EventEmitter
+  ) {
     this.messageRepository = messageRepository
+    this.dispatcher = dispatcher
+    this.eventEmitter = eventEmitter
+
+    this.registerHandlers()
   }
 
-  public async batch(messageContext: InboundMessageContext<BatchPickupMessageV2>) {
+  public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
     // Assert ready connection
+    const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    if (!message.from) return
-    const messages = await this.messageRepository.takeFromQueue(message.from, message.body.batchSize)
+    const messages = await this.messageRepository.takeFromQueue(connection.id, message.batchSize)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
     const batchMessages = messages.map(
       (msg) =>
-        new BatchMessageItemV2({
-          message: BatchMessageV2.createJSONAttachment(uuid(), msg),
+        new BatchMessageMessage({
+          message: msg,
         })
     )
 
-    const batchMessage = new BatchMessageV2({
-      from: message.from,
-      body: {
-        messages: batchMessages,
-      },
+    const batchMessage = new BatchMessage({
+      messages: batchMessages,
     })
 
-    return batchMessage
+    return createOutboundMessage(connection, batchMessage)
   }
 
-  public async generateAckResponse(messageContext: InboundMessageContext<BatchMessageV2>) {
-    const { message } = messageContext
-    if (!message.from || !message.to) return
-
-    const recievedIds = message.body.messages.flatMap((a) => (a.id ? [a.id] : []))
-    const ackMessage = new BatchAckMessageV2({
-      from: message.to[0],
-      to: message.from,
-      ack: recievedIds,
-    })
-
-    return ackMessage
+  public async queueMessage(connectionId: string, message: EncryptedMessage) {
+    await this.messageRepository.add(connectionId, message)
   }
 
-  public queueMessage(connectionId: string, message: EncryptedMessage) {
-    void this.messageRepository.add(connectionId, message)
+  protected registerHandlers() {
+    this.dispatcher.registerHandler(new BatchPickupHandler(this))
+    this.dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
   }
 }

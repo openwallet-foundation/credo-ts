@@ -54,7 +54,7 @@ export class DidListUpdateResponseMessage extends DIDCommV2Message {
 
   @IsValidMessageType(DidListUpdateResponseMessage.type)
   public readonly type = DidListUpdateResponseMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-update-response')
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update-response')
 
   @Type(() => DidListUpdateResponseMessageBody)
   @ValidateNested()

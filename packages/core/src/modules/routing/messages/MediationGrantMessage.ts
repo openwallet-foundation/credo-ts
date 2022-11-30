@@ -50,12 +50,8 @@ export class MediationGrantMessage extends DIDCommV1Message {
 export class MediationGrantMessageV2Body {
   @IsNotEmpty()
   @IsArray()
-  @Expose({ name: 'routing_keys' })
-  public routingKeys!: string[]
-
-  @IsNotEmpty()
-  @IsString()
-  public endpoint!: string
+  @Expose({ name: 'routing_did' })
+  public routingDid!: string[]
 }
 
 export type MediationGrantV2MessageOptions = {

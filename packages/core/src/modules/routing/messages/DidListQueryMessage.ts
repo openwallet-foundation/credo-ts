@@ -38,5 +38,5 @@ export class DidListQueryMessage extends DIDCommV2Message {
 
   @IsValidMessageType(DidListQueryMessage.type)
   public readonly type = DidListQueryMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-query')
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-query')
 }

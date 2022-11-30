@@ -135,7 +135,7 @@ export class BaseAgent {
       autoAcceptConnections: true,
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      mediatorPickupStrategy: MediatorPickupStrategy.Combined,
+      mediatorPickupStrategy: MediatorPickupStrategy.Explicit,
       mediatorPollingInterval: 5000,
       valueTransferConfig: props.valueTransferConfig,
       transports: props.transports,

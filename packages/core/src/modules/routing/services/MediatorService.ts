@@ -146,8 +146,7 @@ export class MediatorService {
     const message = new MediationGrantMessageV2({
       from: mediationRecord.did,
       body: {
-        endpoint: this.agentConfig.endpoints[0],
-        routingKeys: await this.getRoutingKeys(),
+        routingDid: await this.getRoutingKeys(),
       },
     })
 

@@ -1,39 +1,31 @@
 import type { DIDCommV2MessageParams } from '../../../agent/didcomm'
 
 import { Expose, Type } from 'class-transformer'
-import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsEnum, IsString, ValidateNested } from 'class-validator'
 
 import { DIDCommV2Message } from '../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 import { ListUpdateAction } from './ListUpdateAction'
 
-export class DidListUpdate {
-  public constructor(options: { recipientDid: string; action: ListUpdateAction }) {
-    if (options) {
-      this.recipientDid = options.recipientDid
-      this.action = options.action
-    }
-  }
+class DidListUpdateBody {
+  @Type(() => DidListUpdate)
+  @IsArray()
+  @ValidateNested({ each: true })
+  public updates!: DidListUpdate[]
+}
 
+export class DidListUpdate {
   @IsString()
   @Expose({ name: 'recipient_did' })
   public recipientDid!: string
 
-  @IsEnum(ListUpdateAction)
+  @IsEnum(() => ListUpdateAction)
   public action!: ListUpdateAction
 }
 
-export class DidListUpdateMessageBody {
-  @Type(() => DidListUpdate)
-  @IsArray()
-  @ValidateNested()
-  @IsInstance(DidListUpdate, { each: true })
-  public updates!: DidListUpdate[]
-}
-
 export type DidListUpdateMessageOptions = {
-  body: DidListUpdateMessageBody
+  body: DidListUpdateBody
 } & DIDCommV2MessageParams
 
 /**
@@ -50,9 +42,9 @@ export class DidListUpdateMessage extends DIDCommV2Message {
 
   @IsValidMessageType(DidListUpdateMessage.type)
   public readonly type = DidListUpdateMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-update')
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update')
 
-  @Type(() => DidListUpdateMessageBody)
+  @Type(() => DidListUpdateBody)
   @ValidateNested()
-  public body!: DidListUpdateMessageBody
+  public body!: DidListUpdateBody
 }
