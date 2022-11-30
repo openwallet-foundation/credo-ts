@@ -18,10 +18,11 @@ import {
   ProblemReportV2Message,
 } from '../modules/problem-reports'
 import { injectable } from '../plugins'
+import { ReceivedMessageIdRecord, ReceivedMessageIdsRepository } from '../storage/ReceivedMessageIdsRepository'
 import { isValidJweStructure } from '../utils/JWE'
 import { isValidJwsStructure } from '../utils/JWS'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+import { replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { AgentConfig } from './AgentConfig'
 import { Dispatcher } from './Dispatcher'
@@ -42,6 +43,7 @@ export class MessageReceiver {
   private logger: Logger
   private keyRepository: KeyRepository
   private connectionsModule: ConnectionsModule
+  private receivedMessageIdsRepository: ReceivedMessageIdsRepository
   public readonly inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -52,7 +54,8 @@ export class MessageReceiver {
     connectionRepository: ConnectionRepository,
     dispatcher: Dispatcher,
     keyRepository: KeyRepository,
-    connectionsModule: ConnectionsModule
+    connectionsModule: ConnectionsModule,
+    receivedMessageIdsRepository: ReceivedMessageIdsRepository
   ) {
     this.config = config
     this.envelopeService = envelopeService
@@ -62,6 +65,7 @@ export class MessageReceiver {
     this.dispatcher = dispatcher
     this.keyRepository = keyRepository
     this.logger = this.config.logger
+    this.receivedMessageIdsRepository = receivedMessageIdsRepository
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
@@ -111,8 +115,15 @@ export class MessageReceiver {
     }
   }
 
+  private async isDuplicateMessage(message: DIDCommMessage) {
+    if (await this.receivedMessageIdsRepository.findById(message.id)) return true
+    await this.receivedMessageIdsRepository.save(new ReceivedMessageIdRecord({ id: message.id }))
+    return false
+  }
+
   private async receivePlaintextMessage(plaintextMessage: PackedMessage) {
     const message = await this.transformAndValidate(plaintextMessage.message)
+    if (await this.isDuplicateMessage(message)) return
     const messageContext = new InboundMessageContext(message, {})
     await this.dispatcher.dispatch(messageContext)
   }
@@ -141,7 +152,7 @@ export class MessageReceiver {
     )
 
     const message = await this.transformAndValidate(plaintextMessage, connection)
-
+    if (await this.isDuplicateMessage(message)) return
     const messageContext = new InboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
@@ -322,10 +333,6 @@ export class MessageReceiver {
     connection: ConnectionRecord,
     plaintextMessage: PlaintextMessage
   ) {
-    const messageType = parseMessageType(plaintextMessage['@type'] || '')
-    if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
-    }
     const problemReportMessage = new ProblemReportMessage({
       description: {
         en: message,

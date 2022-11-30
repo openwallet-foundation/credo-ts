@@ -2,6 +2,7 @@ import type { Logger } from '../logger'
 import type { FileSystem } from '../storage/FileSystem'
 import type { InitConfig, InternetChecker } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
+import type { GossipConfig, GossipPlugins } from '@sicpa-dlab/witness-gossip-types-ts'
 
 import { Subject } from 'rxjs'
 
@@ -17,7 +18,7 @@ import { DidCommMimeType } from '../types'
 import { DefaultInternetChecker } from './defaultInternetChecker'
 
 export class AgentConfig {
-  private initConfig: InitConfig
+  private readonly initConfig: InitConfig
   public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
@@ -93,10 +94,6 @@ export class AgentConfig {
 
   public get witnessIssuerDids() {
     return this.initConfig.valueTransferConfig?.witness?.issuerDids
-  }
-
-  public get witnessGossipMetrics() {
-    return this.initConfig.valueTransferConfig?.witness?.gossipMetricsService
   }
 
   public get valueTransferWitnessDid() {
@@ -218,7 +215,7 @@ export class AgentConfig {
     return this.initConfig.valueTransferConfig
   }
 
-  public get valueWitnessConfig() {
+  public get valueTransferWitnessConfig() {
     return this.initConfig.valueTransferConfig?.witness
   }
 
@@ -243,5 +240,13 @@ export class AgentConfig {
 
     const pingUrl = this.initConfig.mediatorConnectionsInvite || 'https://www.google.com'
     return new DefaultInternetChecker(pingUrl, this.agentDependencies)
+  }
+
+  public get gossipConfig(): GossipConfig | undefined {
+    return this.valueTransferWitnessConfig?.gossipConfig
+  }
+
+  public get gossipPlugins(): Partial<GossipPlugins> | undefined {
+    return this.valueTransferWitnessConfig?.gossipPlugins
   }
 }

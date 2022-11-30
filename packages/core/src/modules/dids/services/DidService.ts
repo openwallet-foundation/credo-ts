@@ -1,7 +1,7 @@
 import type { Logger } from '../../../logger'
 import type { DIDInformation, DidDocument, DidProps } from '../../dids/domain'
 import type { MediationRecord } from '../../routing/repository'
-import type { DidMetadataChangedEvent, DidReceivedEvent } from '../DidEvents'
+import type { DidMetadataChangedEvent, DidReceivedEvent, DidRemovedEvent } from '../DidEvents'
 import type { DidTags } from '../repository'
 import type { DIDMetadata } from '../types'
 
@@ -305,6 +305,16 @@ export class DidService {
 
   public findById(recordId: string): Promise<DidRecord | null> {
     return this.didRepository.findById(recordId)
+  }
+
+  public async deleteById(recordId: string) {
+    const record = await this.findById(recordId)
+    if (!record) return
+    await this.didRepository.deleteById(recordId)
+    this.eventEmitter.emit<DidRemovedEvent>({
+      type: DidEventTypes.DidRemoved,
+      payload: { record: record },
+    })
   }
 
   public async findStaticDid(marker?: DidMarker) {

@@ -27,7 +27,7 @@ export class OfferHandler implements Handler {
     if (!record) return
 
     if (this.valueTransferResponseCoordinator.shouldAutoRespondToOffer()) {
-      await this.valueTransferGetterService.acceptOffer(record)
+      await this.valueTransferGetterService.acceptOffer(record.id)
     }
   }
 }

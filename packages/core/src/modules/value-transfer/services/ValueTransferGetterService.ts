@@ -5,7 +5,14 @@ import type { OfferMessage, RequestAcceptedWitnessedMessage, GetterReceiptMessag
 import type { ValueTransferRecord } from '../repository'
 import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
-import { Getter, GetterReceipt, Offer, RequestAcceptanceWitnessed } from '@sicpa-dlab/value-transfer-protocol-ts'
+import { ErrorCodes } from '@sicpa-dlab/value-transfer-common-ts'
+import {
+  TransactionState,
+  Getter,
+  GetterReceipt,
+  Offer,
+  RequestAcceptanceWitnessed,
+} from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -19,6 +26,7 @@ import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
+import { lockDecorator } from '../../../utils/lockDecorator'
 
 @injectable()
 export class ValueTransferGetterService {
@@ -76,6 +84,7 @@ export class ValueTransferGetterService {
    *    * Value Transfer record
    *    * Payment Request Message
    */
+  @lockDecorator
   public async createRequest(params: {
     amount: number
     unitOfAmount?: string
@@ -110,6 +119,9 @@ export class ValueTransferGetterService {
       throw new AriesFrameworkError(`Failed to create Payment Request: ${error?.message}`)
     }
 
+    //getting lock after transaction creation
+    await this.valueTransferService.acquireWalletLock(transaction.id)
+
     const requestMessage = new RequestMessage(message)
 
     // Send message if transport specified
@@ -121,6 +133,7 @@ export class ValueTransferGetterService {
 
     // Save second party Did
     record.secondPartyDid = requestMessage.to?.length ? requestMessage.to[0] : undefined
+
     await this.valueTransferRepository.update(record)
 
     // Raise event
@@ -129,6 +142,37 @@ export class ValueTransferGetterService {
     this.logger.info(`< Getter: request payment VTP transaction completed`)
 
     return { record, message: requestMessage }
+  }
+
+  @lockDecorator
+  public async verifyOfferCanBeAccepted(record: ValueTransferRecord): Promise<{
+    record?: ValueTransferRecord
+  }> {
+    this.logger.info(`> Getter: verify offer message for VTP transaction ${record.transaction.id}`)
+
+    const { error, transaction } = await this.getter.verifyOfferCanBeAccepted(
+      record.transaction.id,
+      record.expectedRecipientDid
+    )
+    if (error) {
+      this.logger.error(` Getter: verify offer message for VTP transaction ${record.transaction.id} failed.`, {
+        error,
+      })
+      transaction.error = {
+        code: error.code || ErrorCodes.InternalError,
+        comment: error.message || 'Verify offer message error',
+      }
+      transaction.state = TransactionState.Failed
+      record.transaction = transaction
+      await this.valueTransferRepository.update(record)
+
+      const updatedRecord = await this.valueTransferService.emitStateChangedEvent(transaction.id)
+      this.logger.info(`< Getter: verify offer message for VTP transaction ${record.transaction.id} failed!`)
+      return { record: updatedRecord }
+    }
+
+    this.logger.info(`< Getter: verify offer message for VTP transaction ${record.transaction.id} completed!`)
+    return { record }
   }
 
   /**
@@ -140,6 +184,7 @@ export class ValueTransferGetterService {
    * @returns
    *    * Value Transfer record
    */
+  @lockDecorator
   public async processOffer(messageContext: InboundMessageContext<OfferMessage>): Promise<{
     record?: ValueTransferRecord
   }> {
@@ -159,6 +204,10 @@ export class ValueTransferGetterService {
 
     // Save second party Did
     record.secondPartyDid = offerMessage.from
+
+    if (offerMessage.to?.length) {
+      record.expectedRecipientDid = offerMessage.to[0]
+    }
     await this.valueTransferRepository.update(record)
 
     // Raise event
@@ -178,15 +227,30 @@ export class ValueTransferGetterService {
    * @returns
    *    * Value Transfer record
    */
+  @lockDecorator
   public async acceptOffer(
-    record: ValueTransferRecord,
+    recordId: string,
     witnessDid?: string,
     timeouts?: Timeouts
   ): Promise<{
     record?: ValueTransferRecord
   }> {
+    await this.valueTransferService.acquireWalletLock(recordId)
+    const record = await this.valueTransferService.getById(recordId)
+
+    if (!record) {
+      this.logger.warn(` Getter: accept offer record is missing`)
+      return {}
+    }
+
     this.logger.info(`> Getter: accept offer message for VTP transaction ${record.transaction.id}`)
 
+    if (record.state != TransactionState.OfferReceived) {
+      this.logger.warn(
+        ` Getter: accept offer message for VTP transaction ${record.transaction.id} had unexpected state ${record.state}`
+      )
+      return {}
+    }
     // Call VTP library to accept offer
     const { error, transaction } = await this.getter.acceptOffer(record.transaction.id, witnessDid, timeouts)
     if (!transaction) {
@@ -209,6 +273,7 @@ export class ValueTransferGetterService {
    * @returns
    *    * Value Transfer record
    */
+  @lockDecorator
   public async processRequestAcceptanceWitnessed(
     messageContext: InboundMessageContext<RequestAcceptedWitnessedMessage>
   ): Promise<{
@@ -247,6 +312,7 @@ export class ValueTransferGetterService {
    * @returns
    *    * Value Transfer record
    */
+  @lockDecorator
   public async processReceipt(messageContext: InboundMessageContext<GetterReceiptMessage>): Promise<{
     record?: ValueTransferRecord
   }> {

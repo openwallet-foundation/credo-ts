@@ -1,9 +1,7 @@
-import type { Buffer } from '../../../utils'
-import type { GossipCryptoInterface } from '@sicpa-dlab/witness-gossip-protocol-ts'
+import type { GossipCryptoInterface } from '@sicpa-dlab/witness-gossip-types-ts'
+import type { Buffer } from 'buffer/'
 
-import { injectable } from '../../../plugins'
-import { DidService } from '../../dids/services/DidService'
-import { KeyService } from '../../keys'
+import { injectable, DidService, KeyService } from '@aries-framework/core'
 
 @injectable()
 export class GossipCryptoService implements GossipCryptoInterface {

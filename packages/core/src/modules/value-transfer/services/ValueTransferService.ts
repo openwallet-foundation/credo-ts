@@ -1,8 +1,9 @@
 import type { DIDCommV2Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
+import type { WitnessTableMessage } from '../../gossip'
 import type { Transports } from '../../routing/types'
-import type { ValueTransferStateChangedEvent } from '../ValueTransferEvents'
+import type { ValueTransferStateChangedEvent, WitnessTableReceivedEvent } from '../ValueTransferEvents'
 import type { ProblemReportMessage } from '../messages'
 import type { ValueTransferRecord, ValueTransferTags } from '../repository'
 
@@ -24,20 +25,20 @@ import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { MessageSender } from '../../../agent/MessageSender'
 import { SendingMessageType } from '../../../agent/didcomm/types'
+import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
-import { injectable } from '../../../plugins'
-import { JsonEncoder } from '../../../utils'
+import { DependencyManager, injectable } from '../../../plugins'
+import { JsonEncoder, timeoutWhen } from '../../../utils'
 import { DidMarker, DidResolverService } from '../../dids'
 import { DidService } from '../../dids/services/DidService'
 import { WitnessTableQueryMessage } from '../../gossip/messages/WitnessTableQueryMessage'
-import { WitnessStateRepository } from '../../gossip/repository/WitnessStateRepository'
-import { GossipService } from '../../gossip/service'
 import { ValueTransferEventTypes } from '../ValueTransferEvents'
 import { ValueTransferRepository } from '../repository'
 import { ValueTransferStateRecord } from '../repository/ValueTransferStateRecord'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
+import { ValueTransferLockService } from './ValueTransferLockService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
 import { ValueTransferWitnessStateService } from './ValueTransferWitnessStateService'
@@ -51,7 +52,7 @@ export class ValueTransferService {
   protected valueTransferCryptoService: ValueTransferCryptoService
   protected valueTransferStateService: ValueTransferPartyStateService
   protected valueTransferWitnessStateService: ValueTransferWitnessStateService
-  protected witnessStateRepository: WitnessStateRepository
+  protected valueTransferLockService: ValueTransferLockService
   protected didService: DidService
   protected didResolverService: DidResolverService
   protected eventEmitter: EventEmitter
@@ -62,14 +63,14 @@ export class ValueTransferService {
 
   public constructor(
     config: AgentConfig,
+    dependencyManager: DependencyManager,
     valueTransferRepository: ValueTransferRepository,
     valueTransferStateRepository: ValueTransferStateRepository,
     valueTransferCryptoService: ValueTransferCryptoService,
     valueTransferStateService: ValueTransferPartyStateService,
     valueTransferWitnessStateService: ValueTransferWitnessStateService,
     valueTransferTransportService: ValueTransferTransportService,
-    gossipService: GossipService,
-    witnessStateRepository: WitnessStateRepository,
+    valueTransferLockService: ValueTransferLockService,
     didService: DidService,
     didResolverService: DidResolverService,
     eventEmitter: EventEmitter,
@@ -82,7 +83,7 @@ export class ValueTransferService {
     this.valueTransferCryptoService = valueTransferCryptoService
     this.valueTransferStateService = valueTransferStateService
     this.valueTransferWitnessStateService = valueTransferWitnessStateService
-    this.witnessStateRepository = witnessStateRepository
+    this.valueTransferLockService = valueTransferLockService
     this.didService = didService
     this.didResolverService = didResolverService
     this.eventEmitter = eventEmitter
@@ -117,7 +118,7 @@ export class ValueTransferService {
         storage: valueTransferWitnessStateService,
         transport: valueTransferTransportService,
         logger: this.logger.createContextLogger('Witness'),
-        gossip: gossipService,
+        gossipProvider: () => dependencyManager.resolve(InjectionSymbols.GossipService),
       },
       {
         label: config.label,
@@ -242,7 +243,40 @@ export class ValueTransferService {
     await this.sendMessage(message)
   }
 
-  public async returnWhenIsCompleted(recordId: string, timeoutMs = 120000): Promise<ValueTransferRecord> {
+  public processWitnessTable(messageContext: InboundMessageContext<WitnessTableMessage>): void {
+    const { message: witnessTable } = messageContext
+
+    if (!witnessTable.from) {
+      this.config.logger.info('Unknown Witness Table sender')
+      return
+    }
+
+    this.eventEmitter.emit<WitnessTableReceivedEvent>({
+      type: ValueTransferEventTypes.WitnessTableReceived,
+      payload: {
+        witnesses: witnessTable.body.witnesses,
+      },
+    })
+  }
+
+  public async acquireWalletLock(transactionId: string) {
+    this.logger.info(`Lock: queueing transaction ${transactionId}`)
+    return await this.valueTransferLockService.acquireWalletLock(async () => {
+      this.logger.info(`Lock: locking transaction ${transactionId}`)
+      await this.returnWhenIsCompleted(transactionId)
+      this.logger.info(`Lock: releasing transaction ${transactionId}`)
+    })
+  }
+
+  private getTransactionTimeout(valueTransfer: ValueTransferRecord) {
+    let timeoutInSeconds = valueTransfer.receipt.getter.timeout_elapsed
+    if (!timeoutInSeconds) timeoutInSeconds = valueTransfer.receipt.giver.timeout_elapsed
+    else if (valueTransfer.receipt.giver.timeout_elapsed)
+      timeoutInSeconds = Math.min(valueTransfer.receipt.giver.timeout_elapsed, timeoutInSeconds)
+    return timeoutInSeconds ?? 0
+  }
+
+  public async returnWhenIsCompleted(recordId: string): Promise<ValueTransferRecord> {
     const isCompleted = (record: ValueTransferRecord) => {
       return (
         record.id === recordId &&
@@ -256,15 +290,16 @@ export class ValueTransferService {
     )
     const subject = new ReplaySubject<ValueTransferRecord>(1)
 
+    const valueTransfer = await this.getById(recordId)
+    const timeoutInSeconds = this.getTransactionTimeout(valueTransfer)
     observable
       .pipe(
         map((e) => e.payload.record),
         first(isCompleted),
-        timeout(timeoutMs)
+        timeoutWhen(!!timeoutInSeconds, timeoutInSeconds * 1000)
       )
       .subscribe(subject)
 
-    const valueTransfer = await this.getById(recordId)
     if (isCompleted(valueTransfer)) {
       subject.next(valueTransfer)
     }
@@ -324,5 +359,26 @@ export class ValueTransferService {
       payload: { record },
     })
     return record
+  }
+
+  public async initActiveTransactionLock() {
+    const record = await this.getCurrentlyActiveTransaction()
+    if (record) {
+      return await this.acquireWalletLock(record.id)
+    }
+  }
+
+  // Returns either transaction with InProgress state or transaction with Request/Offer sent status.
+  // Lock should be acquired on pending transaction, if current party is the initiator.
+  public async getCurrentlyActiveTransaction() {
+    const { record } = await this.getActiveTransaction()
+    if (record) {
+      return record
+    }
+    const { records } = await this.getPendingTransactions()
+    const pendingRecord = records?.find(
+      (r) => r.transaction.state == TransactionState.RequestSent || r.transaction.state == TransactionState.OfferSent
+    )
+    return pendingRecord
   }
 }
