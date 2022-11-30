@@ -1,11 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { MediationRecipientService } from '../services'
 
-import { DidListUpdateResponseMessage } from '../messages'
+import { V2KeyListUpdateResponseMessage } from '../messages'
 
 export class DidListUpdateResponseHandler implements Handler {
   public mediationRecipientService: MediationRecipientService
-  public supportedMessages = [DidListUpdateResponseMessage]
+  public supportedMessages = [V2KeyListUpdateResponseMessage]
 
   public constructor(mediationRecipientService: MediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService

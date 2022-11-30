@@ -33,7 +33,7 @@ export type DidListMessageOptions = {
   body: DidListMessageBody
 } & DIDCommV2MessageParams
 
-export class DidListResponseMessage extends DIDCommV2Message {
+export class V2KeyListResponseMessage extends DIDCommV2Message {
   public constructor(options: DidListMessageOptions) {
     super()
 
@@ -42,8 +42,8 @@ export class DidListResponseMessage extends DIDCommV2Message {
     }
   }
 
-  @IsValidMessageType(DidListResponseMessage.type)
-  public readonly type = DidListResponseMessage.type.messageTypeUri
+  @IsValidMessageType(V2KeyListResponseMessage.type)
+  public readonly type = V2KeyListResponseMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist')
 
   @Type(() => DidListMessageBody)

@@ -31,7 +31,7 @@ export type DidListUpdateMessageOptions = {
 /**
  * Used to notify the mediator of dids in use by the recipient.
  */
-export class DidListUpdateMessage extends DIDCommV2Message {
+export class V2KeyListUpdateMessage extends DIDCommV2Message {
   public constructor(options: DidListUpdateMessageOptions) {
     super(options)
 
@@ -40,8 +40,8 @@ export class DidListUpdateMessage extends DIDCommV2Message {
     }
   }
 
-  @IsValidMessageType(DidListUpdateMessage.type)
-  public readonly type = DidListUpdateMessage.type.messageTypeUri
+  @IsValidMessageType(V2KeyListUpdateMessage.type)
+  public readonly type = V2KeyListUpdateMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update')
 
   @Type(() => DidListUpdateBody)

@@ -6,7 +6,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { GetRoutingOptions } from '../../routing'
 import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
-import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
+import type { MediationDenyMessageV2, MediationGrantMessageV2, V2KeyListUpdateResponseMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -28,7 +28,7 @@ import { DidResolverService } from '../../dids/services/DidResolverService'
 import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
-import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2 } from '../messages'
+import { ListUpdateAction, V2KeyListUpdateMessage, MediationRequestMessageV2 } from '../messages'
 import { MediationRole, MediationState } from '../models'
 import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
@@ -129,7 +129,7 @@ export class MediationRecipientService {
     return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
-  public async processDidListUpdateResults(messageContext: InboundMessageContext<DidListUpdateResponseMessage>) {
+  public async processDidListUpdateResults(messageContext: InboundMessageContext<V2KeyListUpdateResponseMessage>) {
     // Mediation record must already exist to be updated
     const mediationRecord = await this.getMediationRecord(messageContext)
 
@@ -190,8 +190,8 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(mediationRecord: MediationRecord, did: string): DidListUpdateMessage {
-    const keylistUpdateMessage = new DidListUpdateMessage({
+  public createKeylistUpdateMessage(mediationRecord: MediationRecord, did: string): V2KeyListUpdateMessage {
+    const keylistUpdateMessage = new V2KeyListUpdateMessage({
       from: mediationRecord.did,
       to: mediationRecord.mediatorDid,
       body: {

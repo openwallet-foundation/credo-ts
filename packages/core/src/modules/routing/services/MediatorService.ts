@@ -2,7 +2,7 @@ import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../connections'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
-import type { ForwardMessageV2, DidListUpdateMessage, MediationRequestMessageV2 } from '../messages'
+import type { ForwardMessageV2, V2KeyListUpdateMessage, MediationRequestMessageV2 } from '../messages'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
@@ -15,7 +15,7 @@ import { ConnectionService } from '../../connections/services/ConnectionService'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   DidListUpdated,
-  DidListUpdateResponseMessage,
+  V2KeyListUpdateResponseMessage,
   ListUpdateAction,
   ListUpdateResult,
   MediationGrantMessageV2,
@@ -100,7 +100,7 @@ export class MediatorService {
     }
   }
 
-  public async processDidListUpdateRequest(messageContext: InboundMessageContext<DidListUpdateMessage>) {
+  public async processDidListUpdateRequest(messageContext: InboundMessageContext<V2KeyListUpdateMessage>) {
     const { message } = messageContext
     const didList: DidListUpdated[] = []
 
@@ -130,7 +130,7 @@ export class MediatorService {
 
     await this.mediationRepository.update(mediationRecord)
 
-    return new DidListUpdateResponseMessage({
+    return new V2KeyListUpdateResponseMessage({
       from: mediationRecord.did,
       body: { updated: didList },
     })

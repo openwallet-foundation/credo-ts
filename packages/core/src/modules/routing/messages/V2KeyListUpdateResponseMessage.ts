@@ -43,7 +43,7 @@ export type DidListUpdateResponseMessageOptions = {
 /**
  * Used to notify an edge agent with the result of updating the routing keys in the mediator.
  */
-export class DidListUpdateResponseMessage extends DIDCommV2Message {
+export class V2KeyListUpdateResponseMessage extends DIDCommV2Message {
   public constructor(options: DidListUpdateResponseMessageOptions) {
     super(options)
 
@@ -52,8 +52,8 @@ export class DidListUpdateResponseMessage extends DIDCommV2Message {
     }
   }
 
-  @IsValidMessageType(DidListUpdateResponseMessage.type)
-  public readonly type = DidListUpdateResponseMessage.type.messageTypeUri
+  @IsValidMessageType(V2KeyListUpdateResponseMessage.type)
+  public readonly type = V2KeyListUpdateResponseMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-update-response')
 
   @Type(() => DidListUpdateResponseMessageBody)
