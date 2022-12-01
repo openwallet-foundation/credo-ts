@@ -53,7 +53,7 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
   )
 }
 
-//This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
+// This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
 export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
   if (response) {
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
@@ -90,7 +90,7 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
  *
  * @param invitationUrl URL containing encoded invitation
  *
- * @param dependencies Agent dependicies containing fetch
+ * @param dependencies Agent dependencies containing fetch
  *
  * @returns OutOfBandInvitation
  */
