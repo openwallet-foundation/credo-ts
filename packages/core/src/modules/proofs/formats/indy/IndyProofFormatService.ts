@@ -120,7 +120,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     const request = new ProofRequest(options.proofProposalOptions)
-    await MessageValidator.validateSync(request)
+    MessageValidator.validateSync(request)
 
     const attachment = new Attachment({
       id: options.id,
@@ -156,7 +156,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
 
-    await MessageValidator.validateSync(proposalMessage)
+    MessageValidator.validateSync(proposalMessage)
   }
 
   public async createRequestAsResponse(
@@ -212,7 +212,7 @@ export class IndyProofFormatService extends ProofFormatService {
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
       )
     }
-    await MessageValidator.validateSync(proofRequest)
+    MessageValidator.validateSync(proofRequest)
 
     // Assert attribute and predicate (group) names do not match
     checkProofRequestForDuplicates(proofRequest)
@@ -605,7 +605,7 @@ export class IndyProofFormatService extends ProofFormatService {
     if (!proofRequest) {
       throw new AriesFrameworkError(`Missing required base64 or json encoded attachment data for presentation request.`)
     }
-    await MessageValidator.validateSync(proofRequest)
+    MessageValidator.validateSync(proofRequest)
 
     // Assert attribute and predicate (group) names do not match
     checkProofRequestForDuplicates(proofRequest)
