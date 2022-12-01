@@ -736,9 +736,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
     }
 
-    const foo = equalityResults.every((x) => x === true)
-
-    return foo
+    return equalityResults.every((x) => x === true)
   }
 
   public async shouldAutoRespondToPresentation(
