@@ -61,11 +61,11 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
       const parsedMessageType = parseMessageType(invitationJson['@type'])
       if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
         const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
-        await MessageValidator.validateSync(invitation)
+        MessageValidator.validateSync(invitation)
         return invitation
       } else if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
         const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-        await MessageValidator.validateSync(invitation)
+        MessageValidator.validateSync(invitation)
         return convertToNewInvitation(invitation)
       } else {
         throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)

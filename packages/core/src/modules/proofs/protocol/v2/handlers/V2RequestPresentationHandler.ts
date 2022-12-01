@@ -43,7 +43,13 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
 
   public async handle(messageContext: HandlerInboundMessage<V2RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }

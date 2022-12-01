@@ -764,10 +764,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       messageClass: V1ProposePresentationMessage,
     })
 
-    if (!proposal) {
-      return false
-    }
-    await MessageValidator.validateSync(proposal)
+    if (!proposal) return false
+    MessageValidator.validateSync(proposal)
 
     // check the proposal against a possible previous request
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
@@ -775,9 +773,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       messageClass: V1RequestPresentationMessage,
     })
 
-    if (!request) {
-      return false
-    }
+    if (!request) return false
 
     const proofRequest = request.indyProofRequest
 
