@@ -13,6 +13,8 @@ import {
 import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
+jest.setTimeout(120000)
+
 describe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
