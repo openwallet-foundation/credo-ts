@@ -257,6 +257,7 @@ export class MediationRecipientService {
 
     return {
       ...routing,
+      mediatorId: mediationRecord.id,
       endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
       routingKeys: mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519)),
     }

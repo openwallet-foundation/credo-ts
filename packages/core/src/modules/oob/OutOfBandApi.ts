@@ -416,7 +416,6 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       routing?: Routing
     }
   ) {
