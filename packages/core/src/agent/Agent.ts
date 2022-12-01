@@ -211,7 +211,7 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
   }
 
   protected async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandInvitation = this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
     const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
     const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 
