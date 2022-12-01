@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
@@ -43,7 +43,13 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
 
   public async handle(messageContext: HandlerInboundMessage<V2RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }
@@ -78,7 +84,11 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({
@@ -94,10 +104,12 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         role: DidCommMessageRole.Sender,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

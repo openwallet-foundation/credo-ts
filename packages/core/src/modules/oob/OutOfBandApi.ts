@@ -14,7 +14,7 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
@@ -23,7 +23,7 @@ import { inject, injectable } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
@@ -281,7 +281,7 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitationShortUrl(invitationUrl)
+    const message = await this.parseInvitation(invitationUrl)
 
     return this.receiveInvitation(message, config)
   }
@@ -289,24 +289,14 @@ export class OutOfBandApi {
   /**
    * Parses URL containing encoded invitation and returns invitation message.
    *
-   * @param invitationUrl URL containing encoded invitation
-   *
-   * @returns OutOfBandInvitation
-   */
-  public parseInvitation(invitationUrl: string): OutOfBandInvitation {
-    return parseInvitationUrl(invitationUrl)
-  }
-
-  /**
-   * Parses URL containing encoded invitation and returns invitation message. Compatible with
-   * parsing shortened URLs
+   * Will fetch the url if the url does not contain a base64 encoded invitation.
    *
    * @param invitationUrl URL containing encoded invitation
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitationShortUrl(invitation: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationShortUrl(invitation, this.agentContext.config.agentDependencies)
+  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
+    return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
   }
 
   /**
@@ -748,8 +738,11 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(reuseMessage, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return reuseAcceptedEventPromise
   }

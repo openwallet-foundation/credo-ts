@@ -17,7 +17,7 @@ import { filter, first, timeout } from 'rxjs/operators'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -210,8 +210,8 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, { agentContext, connection })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord
@@ -324,8 +324,10 @@ export class MediationRecipientService {
       const websocketSchemes = ['ws', 'wss']
 
       await this.messageSender.sendMessage(
-        messageContext.agentContext,
-        createOutboundMessage(connectionRecord, message),
+        new OutboundMessageContext(message, {
+          agentContext: messageContext.agentContext,
+          connection: connectionRecord,
+        }),
         {
           transportPriority: {
             schemes: websocketSchemes,

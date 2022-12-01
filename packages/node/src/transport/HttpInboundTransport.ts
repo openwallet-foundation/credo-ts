@@ -8,17 +8,19 @@ import express, { text } from 'express'
 export class HttpInboundTransport implements InboundTransport {
   public readonly app: Express
   private port: number
+  private path: string
   private _server?: Server
 
   public get server() {
     return this._server
   }
 
-  public constructor({ app, port }: { app?: Express; port: number }) {
+  public constructor({ app, path, port }: { app?: Express; path?: string; port: number }) {
     this.port = port
 
     // Create Express App
     this.app = app ?? express()
+    this.path = path ?? '/'
 
     this.app.use(
       text({
@@ -36,7 +38,7 @@ export class HttpInboundTransport implements InboundTransport {
       port: this.port,
     })
 
-    this.app.post('/', async (req, res) => {
+    this.app.post(this.path, async (req, res) => {
       const session = new HttpTransportSession(utils.uuid(), req, res)
       try {
         const message = req.body

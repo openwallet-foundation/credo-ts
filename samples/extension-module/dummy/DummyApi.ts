@@ -1,7 +1,14 @@
 import type { DummyRecord } from './repository/DummyRecord'
 import type { Query } from '@aries-framework/core'
 
-import { AgentContext, ConnectionService, Dispatcher, injectable, MessageSender } from '@aries-framework/core'
+import {
+  OutboundMessageContext,
+  AgentContext,
+  ConnectionService,
+  Dispatcher,
+  injectable,
+  MessageSender,
+} from '@aries-framework/core'
 
 import { DummyRequestHandler, DummyResponseHandler } from './handlers'
 import { DummyState } from './repository'
@@ -37,9 +44,11 @@ export class DummyApi {
    */
   public async request(connectionId: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
-    const { record, message: payload } = await this.dummyService.createRequest(this.agentContext, connection)
+    const { record, message } = await this.dummyService.createRequest(this.agentContext, connection)
 
-    await this.messageSender.sendMessage(this.agentContext, { connection, payload })
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+    )
 
     await this.dummyService.updateState(this.agentContext, record, DummyState.RequestSent)
 
@@ -56,9 +65,11 @@ export class DummyApi {
     const record = await this.dummyService.getById(this.agentContext, dummyId)
     const connection = await this.connectionService.getById(this.agentContext, record.connectionId)
 
-    const payload = await this.dummyService.createResponse(this.agentContext, record)
+    const message = await this.dummyService.createResponse(this.agentContext, record)
 
-    await this.messageSender.sendMessage(this.agentContext, { connection, payload })
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection, associatedRecord: record })
+    )
 
     await this.dummyService.updateState(this.agentContext, record, DummyState.ResponseSent)
 

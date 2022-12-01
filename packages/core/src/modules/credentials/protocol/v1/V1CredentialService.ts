@@ -963,7 +963,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       credentialRecord: CredentialExchangeRecord
       proposalMessage: V1ProposeCredentialMessage
     }
-  ): Promise<boolean> {
+  ) {
     const { credentialRecord, proposalMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,
