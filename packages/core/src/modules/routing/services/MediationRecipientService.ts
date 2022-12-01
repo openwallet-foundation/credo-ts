@@ -6,7 +6,7 @@ import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { GetRoutingOptions } from '../../routing'
 import type { DidListUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
-import type { MediationDenyMessageV2, MediationGrantMessageV2, DidListUpdateResponseMessage } from '../messages'
+import type { MediationDenyMessageV2, MediationGrantMessageV2, V2KeyListUpdateResponseMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
@@ -24,10 +24,11 @@ import { JsonTransformer } from '../../../utils'
 import { Wallet } from '../../../wallet'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
+import { DidResolverService } from '../../dids/services/DidResolverService'
 import { ProblemReportError } from '../../problem-reports'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
-import { ListUpdateAction, DidListUpdateMessage, MediationRequestMessageV2, DidListUpdate } from '../messages'
+import { ListUpdateAction, V2KeyListUpdateMessage, MediationRequestMessageV2 } from '../messages'
 import { MediationRole, MediationState } from '../models'
 import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
@@ -41,6 +42,7 @@ export class MediationRecipientService {
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private config: AgentConfig
+  private didResolverService: DidResolverService
 
   public constructor(
     @inject(InjectionSymbols.Wallet) wallet: Wallet,
@@ -48,7 +50,8 @@ export class MediationRecipientService {
     messageSender: MessageSender,
     config: AgentConfig,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    didResolverService: DidResolverService
   ) {
     this.wallet = wallet
     this.config = config
@@ -56,6 +59,7 @@ export class MediationRecipientService {
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
+    this.didResolverService = didResolverService
   }
 
   public async createStatusRequest(
@@ -116,12 +120,16 @@ export class MediationRecipientService {
     mediationRecord.assertRole(MediationRole.Recipient)
 
     // Update record
-    mediationRecord.endpoint = messageContext.message.body.endpoint
-    mediationRecord.routingKeys = messageContext.message.body.routingKeys
+    const didDocument = await this.didResolverService.resolve(messageContext.message.body.routingDid[0])
+    if (!didDocument.didDocument?.service?.length) {
+      return
+    }
+    mediationRecord.routingKeys = messageContext.message.body.routingDid
+    mediationRecord.endpoint = didDocument.didDocument?.service[0]?.serviceEndpoint
     return await this.updateState(mediationRecord, MediationState.Granted)
   }
 
-  public async processDidListUpdateResults(messageContext: InboundMessageContext<DidListUpdateResponseMessage>) {
+  public async processDidListUpdateResults(messageContext: InboundMessageContext<V2KeyListUpdateResponseMessage>) {
     // Mediation record must already exist to be updated
     const mediationRecord = await this.getMediationRecord(messageContext)
 
@@ -182,16 +190,16 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(mediationRecord: MediationRecord, did: string): DidListUpdateMessage {
-    const keylistUpdateMessage = new DidListUpdateMessage({
+  public createKeylistUpdateMessage(mediationRecord: MediationRecord, did: string): V2KeyListUpdateMessage {
+    const keylistUpdateMessage = new V2KeyListUpdateMessage({
       from: mediationRecord.did,
       to: mediationRecord.mediatorDid,
       body: {
         updates: [
-          new DidListUpdate({
+          {
             action: ListUpdateAction.add,
             recipientDid: did,
-          }),
+          },
         ],
       },
     })

@@ -44,7 +44,8 @@ import { DidListUpdateResponseHandler } from './handlers/DidListUpdateResponseHa
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationState } from './models/MediationState'
-import { BatchPickupMessageV2 } from './protocol/pickup/v1/messages'
+import { DeliveryMessage } from './protocol/pickup/v3'
+import { DeliveryRequestMessage } from './protocol/pickup/v3/messages'
 import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
@@ -279,7 +280,7 @@ export class RecipientModule {
   }
 
   private async isBatchPickupSupportedByMediator(mediator: MediationRecord) {
-    const { protocolUri } = BatchPickupMessageV2.type
+    const { protocolUri } = DeliveryMessage.type
 
     // Listen for response to our feature query
     const replaySubject = new ReplaySubject(1)
@@ -323,10 +324,10 @@ export class RecipientModule {
   }
 
   public async pickupMessages(mediator: MediationRecord) {
-    const batchPickupMessage = new BatchPickupMessageV2({
+    const batchPickupMessage = new DeliveryRequestMessage({
       from: mediator.did,
       to: mediator.mediatorDid,
-      body: { batchSize: 10 },
+      body: { limit: 10 },
     })
     await this.sendMessage(batchPickupMessage)
   }

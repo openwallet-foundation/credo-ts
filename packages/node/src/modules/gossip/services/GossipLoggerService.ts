@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Logger } from '@aries-framework/core'
 import type { Logger as ValueTransferLogger, LogLevel } from '@sicpa-dlab/value-transfer-common-ts'
 
-import { injectable, Logger, AgentConfig } from '@aries-framework/core'
+import { injectable, AgentConfig } from '@aries-framework/core'
 
 @injectable()
 export class GossipLoggerService implements ValueTransferLogger {

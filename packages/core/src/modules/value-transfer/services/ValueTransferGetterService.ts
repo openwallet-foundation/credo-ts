@@ -1,12 +1,10 @@
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../logger'
 import type { Transports } from '../../routing/types'
 import type { OfferMessage, RequestAcceptedWitnessedMessage, GetterReceiptMessage } from '../messages'
-import type { ValueTransferRecord } from '../repository'
-import type { Timeouts } from '@sicpa-dlab/value-transfer-protocol-ts'
 
 import { ErrorCodes } from '@sicpa-dlab/value-transfer-common-ts'
 import {
+  Timeouts,
   TransactionState,
   Getter,
   GetterReceipt,
@@ -16,17 +14,18 @@ import {
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
+import { lockDecorator } from '../../../utils/lockDecorator'
 import { RequestMessage } from '../messages'
-import { ValueTransferRepository } from '../repository'
+import { ValueTransferRecord, ValueTransferRepository } from '../repository'
 import { ValueTransferStateRepository } from '../repository/ValueTransferStateRepository'
 
 import { ValueTransferCryptoService } from './ValueTransferCryptoService'
 import { ValueTransferPartyStateService } from './ValueTransferPartyStateService'
 import { ValueTransferService } from './ValueTransferService'
 import { ValueTransferTransportService } from './ValueTransferTransportService'
-import { lockDecorator } from '../../../utils/lockDecorator'
 
 @injectable()
 export class ValueTransferGetterService {

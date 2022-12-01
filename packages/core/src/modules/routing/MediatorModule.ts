@@ -13,7 +13,7 @@ import { ConnectionService } from '../connections/services'
 
 import { DidListUpdateHandler, ForwardHandler } from './handlers'
 import { MediationRequestHandler } from './handlers/MediationRequestHandler'
-import { MessagePickupService, V2MessagePickupService } from './protocol'
+import { MessagePickupService, V2MessagePickupService, V3MessagePickupService } from './protocol'
 import { BatchHandler, BatchPickupHandler } from './protocol/pickup/v1/handlers'
 import { MediatorService } from './services/MediatorService'
 
@@ -65,8 +65,8 @@ export class MediatorModule {
   private registerHandlers(dispatcher: Dispatcher) {
     dispatcher.registerHandler(new DidListUpdateHandler(this.mediatorService, this.messageSender))
     dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService, this.messageSender))
-    dispatcher.registerHandler(new BatchHandler(this.eventEmitter, this.messagePickupService, this.messageSender))
+    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
     dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.agentConfig, this.messageSender))
   }
 
@@ -81,8 +81,10 @@ export class MediatorModule {
     dependencyManager.registerSingleton(MediatorService)
     dependencyManager.registerSingleton(MessagePickupService)
     dependencyManager.registerSingleton(V2MessagePickupService)
+    dependencyManager.registerSingleton(V3MessagePickupService)
 
     // FIXME: Inject in constructor
     dependencyManager.resolve(V2MessagePickupService)
+    dependencyManager.resolve(V3MessagePickupService)
   }
 }

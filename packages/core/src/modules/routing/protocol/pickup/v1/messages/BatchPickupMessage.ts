@@ -1,9 +1,7 @@
-import type { DIDCommV2MessageParams } from '../../../../../../agent/didcomm'
+import { Expose } from 'class-transformer'
+import { IsInt } from 'class-validator'
 
-import { Expose, Type } from 'class-transformer'
-import { IsInt, ValidateNested } from 'class-validator'
-
-import { DIDCommV1Message, DIDCommV2Message } from '../../../../../../agent/didcomm'
+import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface BatchPickupMessageOptions {
@@ -38,41 +36,4 @@ export class BatchPickupMessage extends DIDCommV1Message {
   @IsInt()
   @Expose({ name: 'batch_size' })
   public batchSize!: number
-}
-
-export class BatchPickupMessageV2Body {
-  @IsInt()
-  @Expose({ name: 'batch_size' })
-  public batchSize!: number
-}
-
-export type BatchPickupMessageV2Options = {
-  body: BatchPickupMessageV2Body
-} & DIDCommV2MessageParams
-
-/**
- * A message to request to have multiple waiting messages sent inside a `batch` message.
- * DIDComm V2 version of message defined here https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch-pickup
- */
-export class BatchPickupMessageV2 extends DIDCommV2Message {
-  /**
-   * Create new BatchPickupMessage instance.
-   *
-   * @param options
-   */
-  public constructor(options: BatchPickupMessageV2Options) {
-    super(options)
-
-    if (options) {
-      this.body = options.body
-    }
-  }
-
-  @IsValidMessageType(BatchPickupMessageV2.type)
-  public readonly type = BatchPickupMessageV2.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/2.0/batch-pickup')
-
-  @Type(() => BatchPickupMessageV2Body)
-  @ValidateNested()
-  public body!: BatchPickupMessageV2Body
 }

@@ -38,7 +38,6 @@ jobs:
 
       - name: Publish peer-did-ts package
         run: npm publish --access=public --workspace=packages/peer-did-ts
-
 #      # On push to main, release unstable version
 #      - name: Release Unstable
 #        run: |

@@ -19,7 +19,7 @@ import {
   Witness,
 } from '@sicpa-dlab/value-transfer-protocol-ts'
 import { firstValueFrom, ReplaySubject } from 'rxjs'
-import { first, map, timeout } from 'rxjs/operators'
+import { first, map } from 'rxjs/operators'
 
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { EventEmitter } from '../../../agent/EventEmitter'

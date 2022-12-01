@@ -18,7 +18,7 @@ export type DidListQueryMessageOptions = {
   body: DidListQuery
 } & DIDCommV2MessageParams
 
-export class DidListQueryMessage extends DIDCommV2Message {
+export class V2KeyListQueryMessage extends DIDCommV2Message {
   public constructor(options: DidListQueryMessageOptions) {
     super()
 
@@ -36,7 +36,7 @@ export class DidListQueryMessage extends DIDCommV2Message {
   @Type(() => DidListQuery)
   public body!: DidListQuery
 
-  @IsValidMessageType(DidListQueryMessage.type)
-  public readonly type = DidListQueryMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/didlist-query')
+  @IsValidMessageType(V2KeyListQueryMessage.type)
+  public readonly type = V2KeyListQueryMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/coordinate-mediation/2.0/keylist-query')
 }
