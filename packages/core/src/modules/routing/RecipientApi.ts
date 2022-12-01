@@ -1,6 +1,7 @@
 import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
+import type { KeylistUpdateAction } from './messages'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
 
@@ -34,7 +35,6 @@ import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/hand
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
-import { KeylistUpdateAction } from './messages'
 
 @injectable()
 export class RecipientApi {
