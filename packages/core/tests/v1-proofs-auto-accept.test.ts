@@ -13,8 +13,6 @@ import {
 import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
-jest.setTimeout(120000)
-
 describe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
@@ -42,14 +40,6 @@ describe('Auto accept present proof', () => {
     test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-        state: ProofState.Done,
-      })
-
-      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-        state: ProofState.Done,
-      })
-
       await aliceAgent.proofs.proposeProof({
         connectionId: aliceConnection.id,
         protocolVersion: 'v1',
@@ -65,10 +55,11 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber waits for presentation from Alice')
-      await faberProofExchangeRecordPromise
-
       testLogger.test('Alice waits till it receives presentation ack')
-      await aliceProofExchangeRecordPromise
+      await Promise.all([
+        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+      ])
     })
 
     test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
@@ -96,14 +87,6 @@ describe('Auto accept present proof', () => {
         }),
       }
 
-      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-        state: ProofState.Done,
-      })
-
-      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-        state: ProofState.Done,
-      })
-
       await faberAgent.proofs.requestProof({
         protocolVersion: 'v1',
         connectionId: faberConnection.id,
@@ -119,11 +102,10 @@ describe('Auto accept present proof', () => {
       })
 
       testLogger.test('Faber waits for presentation from Alice')
-
-      await faberProofExchangeRecordPromise
-
-      // Alice waits till it receives presentation ack
-      await aliceProofExchangeRecordPromise
+      await Promise.all([
+        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+      ])
     })
   })
 
@@ -171,15 +153,10 @@ describe('Auto accept present proof', () => {
       testLogger.test('Faber accepts presentation proposal from Alice')
       await faberAgent.proofs.acceptProposal({ proofRecordId: faberProofExchangeRecord.id })
 
-      await waitForProofExchangeRecord(aliceAgent, {
-        threadId: aliceProofExchangeRecord.threadId,
-        state: ProofState.Done,
-      })
-
-      await waitForProofExchangeRecord(faberAgent, {
-        threadId: faberProofExchangeRecord.threadId,
-        state: ProofState.Done,
-      })
+      await Promise.all([
+        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
+      ])
     })
 
     test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
@@ -229,14 +206,10 @@ describe('Auto accept present proof', () => {
       const { proofFormats } = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({ proofRecordId })
       await aliceAgent.proofs.acceptRequest({ proofRecordId, proofFormats })
 
-      // Alice waits till it receives presentation ack
-      await waitForProofExchangeRecord(aliceAgent, {
-        state: ProofState.Done,
-      })
-      // Faber waits till it receives presentation ack
-      await waitForProofExchangeRecord(faberAgent, {
-        state: ProofState.Done,
-      })
+      await Promise.all([
+        waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
+        waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
+      ])
     })
   })
 })

@@ -545,7 +545,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       )
     }
 
-    const msg = new V2PresentationAckMessage({
+    const message = new V2PresentationAckMessage({
       threadId: options.proofRecord.threadId,
       status: AckStatus.OK,
     })
@@ -553,7 +553,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     await this.updateState(agentContext, options.proofRecord, ProofState.Done)
 
     return {
-      message: msg,
+      message,
       proofRecord: options.proofRecord,
     }
   }
@@ -681,17 +681,16 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       messageClass: V2ProposalPresentationMessage,
     })
 
-    if (!proposal) {
-      return false
-    }
+    if (!proposal) return false
+
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
-    if (!request) {
-      return true
-    }
-    await MessageValidator.validateSync(proposal)
+
+    if (!request) return false
+
+    MessageValidator.validateSync(proposal)
 
     const proposalAttachments = proposal.getAttachmentFormats()
     const requestAttachments = request.getAttachmentFormats()
@@ -737,7 +736,9 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
     }
 
-    return equalityResults.every((x) => x === true)
+    const foo = equalityResults.every((x) => x === true)
+
+    return foo
   }
 
   public async shouldAutoRespondToPresentation(

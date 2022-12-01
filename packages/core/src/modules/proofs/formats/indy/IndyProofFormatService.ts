@@ -31,11 +31,10 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
-import { checkProofRequestForDuplicates } from '../../../../utils'
+import { checkProofRequestForDuplicates, deepEquality } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { objectEquals } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { IndyCredential, IndyCredentialInfo } from '../../../credentials'
@@ -356,8 +355,8 @@ export class IndyProofFormatService extends ProofFormatService {
     const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJson, ProofRequest)
 
     if (
-      objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
-      objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
+      deepEquality(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
+      deepEquality(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
     ) {
       return true
     }
