@@ -78,13 +78,7 @@ export interface RemoveRoutingOptions {
   recipientKey: Key
 
   /**
-   * Identifier of the mediator to use when setting up routing
+   * Identifier of the mediator used when routing has been set up
    */
-  mediatorId?: string
-
-  /**
-   * Whether to use the default mediator if available and `mediatorId` has not been provided
-   * @default true
-   */
-  useDefaultMediator?: boolean
+  mediatorId: string
 }

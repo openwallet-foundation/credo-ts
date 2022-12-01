@@ -265,22 +265,15 @@ export class MediationRecipientService {
 
   public async removeMediationRouting(
     agentContext: AgentContext,
-    { recipientKey, mediatorId, useDefaultMediator = true }: RemoveRoutingOptions
+    { recipientKey, mediatorId }: RemoveRoutingOptions
   ): Promise<void> {
-    let mediationRecord: MediationRecord | null = null
-
-    if (mediatorId) {
-      mediationRecord = await this.getById(agentContext, mediatorId)
-    } else if (useDefaultMediator) {
-      mediationRecord = await this.findDefaultMediator(agentContext)
-    }
+    const mediationRecord = await this.getById(agentContext, mediatorId)
 
     if (!mediationRecord) {
       throw new AriesFrameworkError('No mediation record to remove routing from has been found')
     }
 
-    // new did has been created and mediator needs to be updated with the public key.
-    mediationRecord = await this.keylistUpdateAndAwait(
+    await this.keylistUpdateAndAwait(
       agentContext,
       mediationRecord,
       recipientKey.publicKeyBase58,
