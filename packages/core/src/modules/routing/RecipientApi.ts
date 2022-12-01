@@ -35,6 +35,7 @@ import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/hand
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
+import { KeylistUpdateAction } from './messages'
 
 @injectable()
 export class RecipientApi {
@@ -360,8 +361,8 @@ export class RecipientApi {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string, action: KeylistUpdateAction) {
+    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey, action)
     const outboundMessage = createOutboundMessage(connection, message)
     await this.sendMessage(outboundMessage)
   }

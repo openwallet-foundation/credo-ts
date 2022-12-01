@@ -52,9 +52,31 @@ export class RoutingService {
 
     return routing
   }
+
+  public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
+    await this.mediationRecipientService.removeMediationRouting(agentContext, options)
+  }
 }
 
 export interface GetRoutingOptions {
+  /**
+   * Identifier of the mediator to use when setting up routing
+   */
+  mediatorId?: string
+
+  /**
+   * Whether to use the default mediator if available and `mediatorId` has not been provided
+   * @default true
+   */
+  useDefaultMediator?: boolean
+}
+
+export interface RemoveRoutingOptions {
+  /**
+   * Key to remove routing from
+   */
+  recipientKey: Key
+
   /**
    * Identifier of the mediator to use when setting up routing
    */

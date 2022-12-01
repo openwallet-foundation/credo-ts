@@ -9,7 +9,7 @@ import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
-import type { GetRoutingOptions } from './RoutingService'
+import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -175,6 +175,7 @@ export class MediationRecipientService {
     agentContext: AgentContext,
     mediationRecord: MediationRecord,
     verKey: string,
+    action: KeylistUpdateAction,
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
@@ -187,7 +188,7 @@ export class MediationRecipientService {
       useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
     }
 
-    const message = this.createKeylistUpdateMessage(useDidKey ? verkeyToDidKey(verKey) : verKey)
+    const message = this.createKeylistUpdateMessage(useDidKey ? verkeyToDidKey(verKey) : verKey, action)
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -216,11 +217,11 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(verkey: string): KeylistUpdateMessage {
+  public createKeylistUpdateMessage(verkey: string, action: KeylistUpdateAction): KeylistUpdateMessage {
     const keylistUpdateMessage = new KeylistUpdateMessage({
       updates: [
         new KeylistUpdate({
-          action: KeylistUpdateAction.add,
+          action,
           recipientKey: verkey,
         }),
       ],
@@ -250,7 +251,8 @@ export class MediationRecipientService {
     mediationRecord = await this.keylistUpdateAndAwait(
       agentContext,
       mediationRecord,
-      routing.recipientKey.publicKeyBase58
+      routing.recipientKey.publicKeyBase58,
+      KeylistUpdateAction.add
     )
 
     return {
@@ -258,6 +260,31 @@ export class MediationRecipientService {
       endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
       routingKeys: mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519)),
     }
+  }
+
+  public async removeMediationRouting(
+    agentContext: AgentContext,
+    { recipientKey, mediatorId, useDefaultMediator = true }: RemoveRoutingOptions
+  ): Promise<void> {
+    let mediationRecord: MediationRecord | null = null
+
+    if (mediatorId) {
+      mediationRecord = await this.getById(agentContext, mediatorId)
+    } else if (useDefaultMediator) {
+      mediationRecord = await this.findDefaultMediator(agentContext)
+    }
+
+    if (!mediationRecord) {
+      throw new AriesFrameworkError('No mediation record to remove routing from has been found')
+    }
+
+    // new did has been created and mediator needs to be updated with the public key.
+    mediationRecord = await this.keylistUpdateAndAwait(
+      agentContext,
+      mediationRecord,
+      recipientKey.publicKeyBase58,
+      KeylistUpdateAction.remove
+    )
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {

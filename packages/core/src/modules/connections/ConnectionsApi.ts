@@ -308,6 +308,21 @@ export class ConnectionsApi {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.mediatorId && connection.did) {
+      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (did.didDocument) {
+        for (const recipientKey of did.didDocument.recipientKeys) {
+          await this.routingService.removeRouting(this.agentContext, {
+            recipientKey,
+            mediatorId: connection.mediatorId,
+          })
+        }
+      }
+    }
+
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
