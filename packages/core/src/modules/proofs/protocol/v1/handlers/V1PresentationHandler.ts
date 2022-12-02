@@ -30,7 +30,12 @@ export class V1PresentationHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<V1PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(messageContext.agentContext, proofRecord)) {
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToPresentation(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createAck(proofRecord, messageContext)
     }
   }

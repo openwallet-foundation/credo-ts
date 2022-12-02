@@ -24,9 +24,9 @@ import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 import { injectable } from 'tsyringe'
 
 import { AriesFrameworkError } from '../../../../error'
+import { objectEquality } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { deepEqual } from '../../../../utils/objEqual'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc'
@@ -344,7 +344,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   private compareCredentialSubject(credential: W3cVerifiableCredential, request: W3cCredential): void {
-    if (!deepEqual(credential.credentialSubject, request.credentialSubject)) {
+    if (!objectEquality(credential.credentialSubject, request.credentialSubject)) {
       throw new AriesFrameworkError('Received credential subject does not match subject from credential request')
     }
   }
@@ -386,7 +386,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     const obj1 = message1.getDataAsJson()
     const obj2 = message2.getDataAsJson()
 
-    return deepEqual(obj1, obj2)
+    return objectEquality(obj1, obj2)
   }
 
   public shouldAutoRespondToProposal(
