@@ -2,7 +2,7 @@
   "name": "@sicpa-dlab/aries-framework-core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "files": [
     "build"
   ],
@@ -25,8 +25,8 @@
   "dependencies": {
     "@multiformats/base-x": "^4.0.1",
     "@sicpa-dlab/value-transfer-common-ts": "0.3.7",
-    "@sicpa-dlab/value-transfer-protocol-ts": "0.4.4",
-    "@sicpa-dlab/witness-gossip-types-ts": "0.3.8",
+    "@sicpa-dlab/value-transfer-protocol-ts": "0.4.5",
+    "@sicpa-dlab/witness-gossip-types-ts": "0.3.9",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/sha256": "^1.0.1",
     "@stablelib/uuid": "^1.0.1",
