@@ -191,6 +191,7 @@ export class Agent {
       mediatorConnectionsInvite,
       valueTransferConfig,
       publicDidType,
+      lockTransactions,
     } = this.agentConfig
 
     if (this._isInitialized) {
@@ -243,7 +244,7 @@ export class Agent {
       })
     }
 
-    await this.valueTransferService.initActiveTransactionLock()
+    if (lockTransactions) await this.valueTransferService.initActiveTransactionLock()
 
     for (const transport of this.inboundTransports) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
