@@ -47,6 +47,10 @@ export class GossipService implements GossipInterface {
     this.messageDispatcher = new GossipMessageDispatcher(this.gossip)
   }
 
+  public get gossipVersion(): string {
+    return this.gossip
+  }
+
   public getWitnessDetails(): Promise<WitnessDetails> {
     return this.gossip.getWitnessDetails()
   }
