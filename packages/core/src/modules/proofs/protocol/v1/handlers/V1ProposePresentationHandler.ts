@@ -33,7 +33,13 @@ export class V1ProposePresentationHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createRequest(proofRecord, messageContext)
     }
   }
