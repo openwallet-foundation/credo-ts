@@ -47,10 +47,6 @@ export class GossipService implements GossipInterface {
     this.messageDispatcher = new GossipMessageDispatcher(this.gossip)
   }
 
-  public get gossipVersion(): string {
-    return this.gossip
-  }
-
   public getWitnessDetails(): Promise<WitnessDetails> {
     return this.gossip.getWitnessDetails()
   }
@@ -72,7 +68,7 @@ export class GossipService implements GossipInterface {
     this.gossipingStarted = true
   }
 
-  public stop(): void {
+  public stop(): Promise<void> {
     return this.gossip.stop()
   }
 
