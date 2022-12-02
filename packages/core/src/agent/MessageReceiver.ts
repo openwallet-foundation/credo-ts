@@ -265,7 +265,7 @@ export class MessageReceiver {
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
     if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
+      throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${message}`)
     }
     const problemReportMessage = new ProblemReportMessage({
       description: {
