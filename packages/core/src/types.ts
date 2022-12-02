@@ -98,6 +98,7 @@ export interface InitConfig {
   logger?: Logger
   didCommMimeType?: DidCommMimeType
   catchErrors?: boolean
+  lockTransactions?: boolean
 
   indyLedgers?: IndyPoolConfig[]
   connectToIndyLedgersOnStartup?: boolean

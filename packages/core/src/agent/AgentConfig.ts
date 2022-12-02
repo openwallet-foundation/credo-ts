@@ -227,6 +227,10 @@ export class AgentConfig {
     return this.initConfig.catchErrors || false
   }
 
+  public get lockTransactions() {
+    return this.initConfig.lockTransactions || false
+  }
+
   public get onlineTransports() {
     return this.transports.filter((transport) => onlineTransports.includes(transport))
   }
