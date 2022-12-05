@@ -7,7 +7,8 @@ import { parseUrl } from 'query-string'
 import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { convertToNewInvitation } from '../modules/oob/helpers'
-import { OutOfBandInvitation } from '../modules/oob/messages'
+import { OutOfBandInvitation } from '../modules/oob/protocols/v1/messages'
+import { OutOfBandInvitation as V2OutOfBandInvitation } from '../modules/oob/protocols/v2/messages'
 
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
@@ -39,11 +40,14 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
  *
  * @returns OutOfBandInvitation
  */
-export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation => {
+export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation | V2OutOfBandInvitation => {
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
-    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
-    return outOfBandInvitation
+    try {
+      return OutOfBandInvitation.fromUrl(invitationUrl)
+    } catch (e) {
+      return V2OutOfBandInvitation.fromUrl(invitationUrl)
+    }
   } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
     const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     return convertToNewInvitation(invitation)
@@ -54,18 +58,21 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
 }
 
 //This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
-export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
+export const oobInvitationFromShortUrl = async (
+  response: Response
+): Promise<OutOfBandInvitation | V2OutOfBandInvitation> => {
+  // This currently does not follow the RFC because of issues with fetch, currently uses a janky work around
   if (response) {
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
       const invitationJson = await response.json()
       const parsedMessageType = parseMessageType(invitationJson['@type'])
       if (supportsIncomingMessageType(parsedMessageType, OutOfBandInvitation.type)) {
         const invitation = JsonTransformer.fromJSON(invitationJson, OutOfBandInvitation)
-        await MessageValidator.validateSync(invitation)
+        MessageValidator.validateSync(invitation)
         return invitation
       } else if (supportsIncomingMessageType(parsedMessageType, ConnectionInvitationMessage.type)) {
         const invitation = JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage)
-        await MessageValidator.validateSync(invitation)
+        MessageValidator.validateSync(invitation)
         return convertToNewInvitation(invitation)
       } else {
         throw new AriesFrameworkError(`Invitation with '@type' ${parsedMessageType.messageTypeUri} not supported.`)
@@ -90,18 +97,21 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
  *
  * @param invitationUrl URL containing encoded invitation
  *
- * @param dependencies Agent dependicies containing fetch
+ * @param dependencies Agent dependencies containing fetch
  *
  * @returns OutOfBandInvitation
  */
 export const parseInvitationShortUrl = async (
   invitationUrl: string,
   dependencies: AgentDependencies
-): Promise<OutOfBandInvitation> => {
+): Promise<OutOfBandInvitation | V2OutOfBandInvitation> => {
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
-    const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
-    return outOfBandInvitation
+    try {
+      return OutOfBandInvitation.fromUrl(invitationUrl)
+    } catch (e) {
+      return V2OutOfBandInvitation.fromUrl(invitationUrl)
+    }
   } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
     const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     return convertToNewInvitation(invitation)

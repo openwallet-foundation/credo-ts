@@ -7,13 +7,13 @@ import type { Routing } from './services'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV1Message, createOutboundDIDCommV2Message } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
-import { OutOfBandService } from '../oob/OutOfBandService'
+import { OutOfBandService } from '../oob/protocols/v1/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
@@ -25,14 +25,11 @@ import {
   DidExchangeCompleteHandler,
   DidExchangeRequestHandler,
   DidExchangeResponseHandler,
-  TrustPingMessageHandler,
-  TrustPingResponseMessageHandler,
-  TrustPingResponseV2MessageHandler,
-  TrustPingV2MessageHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import { TrustPingService } from './protocols/trust-ping/v1/TrustPingService'
+import { V2TrustPingService } from './protocols/trust-ping/v2/V2TrustPingService'
 import { ConnectionService } from './services/ConnectionService'
-import { TrustPingService } from './services/TrustPingService'
 
 @injectable()
 export class ConnectionsApi {
@@ -46,6 +43,7 @@ export class ConnectionsApi {
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
   private trustPingService: TrustPingService
+  private v2TrustPingService: V2TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
@@ -57,6 +55,7 @@ export class ConnectionsApi {
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
+    v2TrustPingService: V2TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
@@ -68,6 +67,7 @@ export class ConnectionsApi {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
+    this.v2TrustPingService = v2TrustPingService
     this.routingService = routingService
     this.didRepository = didRepository
     this.messageSender = messageSender
@@ -116,8 +116,12 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      outOfBand: outOfBandRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -142,24 +146,30 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -173,7 +183,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
@@ -192,7 +202,10 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -200,10 +213,13 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -262,10 +278,18 @@ export class ConnectionsApi {
     await this.connectionService.update(this.agentContext, record)
   }
 
-  public async pingDIDCommV2(fromDid: string, toDid: string) {
-    const message = await this.trustPingService.pingV2(this.agentContext, fromDid, toDid)
-    const outboundMessage = createOutboundDIDCommV2Message(message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+  /**
+   * Send Ping message to remote party
+   */
+  public async sendPing(connectionId: string) {
+    const connection = await this.getById(connectionId)
+    const message = connection.isDidCommV1Connection
+      ? await this.trustPingService.createPing()
+      : await this.v2TrustPingService.createPing(connection)
+
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+    )
   }
 
   /**
@@ -358,10 +382,6 @@ export class ConnectionsApi {
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
     dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
-    dispatcher.registerHandler(new TrustPingV2MessageHandler(this.trustPingService))
-    dispatcher.registerHandler(new TrustPingResponseV2MessageHandler(this.trustPingService))
 
     dispatcher.registerHandler(
       new DidExchangeRequestHandler(

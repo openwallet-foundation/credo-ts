@@ -45,7 +45,7 @@ describe('E2E Pick Up protocol', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const { outOfBandRecord: mediatorOutOfBandRecord } = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.DidExchange],
@@ -57,7 +57,7 @@ describe('E2E Pick Up protocol', () => {
     await recipientAgent.initialize()
 
     // Connect
-    const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
+    const mediatorInvitation = mediatorOutOfBandRecord!.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.oob.receiveInvitationFromUrl(
       mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
@@ -67,7 +67,9 @@ describe('E2E Pick Up protocol', () => {
       recipientMediatorConnection!.id
     )
 
-    let [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(mediatorOutOfBandRecord.id)
+    let [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
+      mediatorOutOfBandRecord!.id
+    )
 
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 
@@ -97,7 +99,7 @@ describe('E2E Pick Up protocol', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const { outOfBandRecord: mediatorOutOfBandRecord } = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.DidExchange],
@@ -109,7 +111,7 @@ describe('E2E Pick Up protocol', () => {
     await recipientAgent.initialize()
 
     // Connect
-    const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
+    const mediatorInvitation = mediatorOutOfBandRecord!.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.oob.receiveInvitationFromUrl(
       mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
@@ -119,7 +121,9 @@ describe('E2E Pick Up protocol', () => {
       recipientMediatorConnection!.id
     )
 
-    let [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(mediatorOutOfBandRecord.id)
+    let [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
+      mediatorOutOfBandRecord!.id
+    )
 
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 

@@ -1,13 +1,12 @@
-import { checkProofRequestForDuplicates } from '../indyProofRequest'
-
+import { AriesFrameworkError } from '../../error'
 import {
-  AriesFrameworkError,
   AttributeFilter,
   PredicateType,
   ProofAttributeInfo,
   ProofPredicateInfo,
   ProofRequest,
-} from '@aries-framework/core'
+} from '../../modules/proofs'
+import { checkProofRequestForDuplicates } from '../indyProofRequest'
 
 describe('Present Proof', () => {
   const credDefId = '9vPXgSpQJPkJEALbLXueBp:3:CL:57753:tag1'

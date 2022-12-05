@@ -1,11 +1,11 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsDate, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm'
+import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 import { DateParser } from '../../../utils/transformers'
 
-export class BasicMessage extends DIDCommV1Message {
+export class BasicMessage extends DidCommV1Message {
   /**
    * Create new BasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed

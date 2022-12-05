@@ -5,7 +5,7 @@ import { SIGNATURE_LENGTH as ED25519_SIGNATURE_LENGTH } from '@stablelib/ed25519
 import { agentDependencies } from '../../tests/helpers'
 import testLogger from '../../tests/logger'
 import { KeyType } from '../crypto'
-import { KeyProviderRegistry } from '../crypto/signing-provider'
+import { KeyProviderRegistry } from '../crypto/key-provider'
 import { KeyDerivationMethod } from '../types'
 import { TypedArrayEncoder } from '../utils'
 

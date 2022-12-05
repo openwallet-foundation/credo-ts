@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../agent'
-import type { Wallet } from '@aries-framework/core'
+import type { Wallet } from '../../wallet'
 
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
@@ -8,7 +8,7 @@ import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 import { Key } from '../Key'
 import { KeyType } from '../KeyType'
-import { KeyProviderRegistry } from '../signing-provider'
+import { KeyProviderRegistry } from '../key-provider'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'

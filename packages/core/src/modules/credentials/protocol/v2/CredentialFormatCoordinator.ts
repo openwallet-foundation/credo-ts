@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
 import type { DidCommMessageRepository } from '../../../../storage'
 import type { CredentialFormat, CredentialFormatPayload, CredentialFormatService } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
@@ -503,18 +503,26 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormat[]> {
     {
       credentialRecord,
       message,
+      requestMessage,
       formatServices,
     }: {
       credentialRecord: CredentialExchangeRecord
       message: V2IssueCredentialMessage
+      requestMessage: V2RequestCredentialMessage
       formatServices: CredentialFormatService[]
     }
   ) {
     for (const formatService of formatServices) {
       const attachment = this.getAttachmentForService(formatService, message.formats, message.credentialAttachments)
+      const requestAttachment = this.getAttachmentForService(
+        formatService,
+        requestMessage.formats,
+        requestMessage.requestAttachments
+      )
 
       await formatService.processCredential(agentContext, {
         attachment,
+        requestAttachment,
         credentialRecord,
       })
     }

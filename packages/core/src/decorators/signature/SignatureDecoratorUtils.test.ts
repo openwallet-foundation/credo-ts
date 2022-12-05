@@ -1,5 +1,5 @@
 import { getAgentConfig } from '../../../tests/helpers'
-import { KeyProviderRegistry } from '../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../crypto/key-provider'
 import { IndyWallet } from '../../wallet/IndyWallet'
 
 import { SignatureDecorator } from './SignatureDecorator'

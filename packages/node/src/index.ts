@@ -1,6 +1,5 @@
 import type { AgentDependencies } from '@aries-framework/core'
 
-import * as didcomm from 'didcomm-node'
 import { EventEmitter } from 'events'
 import * as indy from 'indy-sdk'
 import fetch from 'node-fetch'
@@ -17,7 +16,6 @@ const agentDependencies: AgentDependencies = {
   EventEmitterClass: EventEmitter,
   WebSocketClass: WebSocket,
   indy,
-  didcomm,
 }
 
 export {

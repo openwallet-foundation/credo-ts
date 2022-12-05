@@ -3,7 +3,7 @@ import type { TagsBase } from '../BaseRecord'
 import type * as Indy from 'indy-sdk'
 
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
-import { KeyProviderRegistry } from '../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../crypto/key-provider'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { IndyStorageService } from '../IndyStorageService'

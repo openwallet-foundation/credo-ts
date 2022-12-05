@@ -1,11 +1,11 @@
-import type { EncryptedMessage } from '../../agent/didcomm/types'
+import type { EncryptedMessage } from '../../didcomm/types'
 import type { MediationRecord } from './repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundDIDCommV1Message } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
@@ -70,9 +70,13 @@ export class MediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessage = createOutboundDIDCommV1Message(connectionRecord, message)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      associatedRecord: mediationRecord,
+    })
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return mediationRecord
   }

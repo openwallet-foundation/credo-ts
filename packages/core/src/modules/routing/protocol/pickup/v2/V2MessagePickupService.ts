@@ -1,11 +1,11 @@
-import type { EncryptedMessage } from '../../../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import type { EncryptedMessage } from '../../../../../didcomm/types'
 import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
-import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { InjectionSymbols } from '../../../../../constants'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
@@ -51,7 +51,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundDIDCommV1Message(connection, statusMessage)
+    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {
@@ -82,7 +82,7 @@ export class V2MessagePickupService {
         })
     )
 
-    const outboundMessage =
+    const outboundMessageContext =
       messages.length > 0
         ? new MessageDeliveryMessage({
             threadId: messageContext.message.threadId,
@@ -93,7 +93,7 @@ export class V2MessagePickupService {
             messageCount: 0,
           })
 
-    return createOutboundDIDCommV1Message(connection, outboundMessage)
+    return new OutboundMessageContext(outboundMessageContext, { agentContext: messageContext.agentContext, connection })
   }
 
   public async processMessagesReceived(messageContext: InboundMessageContext<MessagesReceivedMessage>) {
@@ -113,7 +113,7 @@ export class V2MessagePickupService {
       messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
     })
 
-    return createOutboundDIDCommV1Message(connection, statusMessage)
+    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
   protected registerHandlers() {

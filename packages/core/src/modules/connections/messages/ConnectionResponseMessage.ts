@@ -1,8 +1,8 @@
 import { Type, Expose } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
+import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface ConnectionResponseMessageOptions {
@@ -16,7 +16,7 @@ export interface ConnectionResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#2-connection-response
  */
-export class ConnectionResponseMessage extends DIDCommV1Message {
+export class ConnectionResponseMessage extends DidCommV1Message {
   /**
    * Create new ConnectionResponseMessage instance.
    * @param options

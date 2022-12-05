@@ -1,4 +1,4 @@
-import { DIDCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { IsOptional, IsString } from 'class-validator'
 
 export interface PerformMessageOptions {
@@ -8,7 +8,7 @@ export interface PerformMessageOptions {
   threadId: string
 }
 
-export class PerformMessage extends DIDCommV1Message {
+export class PerformMessage extends DidCommV1Message {
   public constructor(options: PerformMessageOptions) {
     super()
 

@@ -1,5 +1,5 @@
 import type { Agent } from '../agent/Agent'
-import type { OutboundPackage } from '../types'
+import type { OutboundPackage } from '../didcomm/types'
 
 export interface OutboundTransport {
   supportedSchemes: string[]

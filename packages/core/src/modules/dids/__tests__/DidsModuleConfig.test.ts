@@ -3,11 +3,11 @@ import type { DidRegistrar, DidResolver } from '../domain'
 
 import {
   KeyDidRegistrar,
-  SovDidRegistrar,
+  IndySdkSovDidRegistrar,
   PeerDidRegistrar,
   KeyDidResolver,
   PeerDidResolver,
-  SovDidResolver,
+  IndySdkSovDidResolver,
   WebDidResolver,
 } from '..'
 import { DidsModuleConfig } from '../DidsModuleConfig'
@@ -16,8 +16,8 @@ describe('DidsModuleConfig', () => {
   test('sets default values', () => {
     const config = new DidsModuleConfig()
 
-    expect(config.registrars).toEqual([KeyDidRegistrar, SovDidRegistrar, PeerDidRegistrar])
-    expect(config.resolvers).toEqual([SovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver])
+    expect(config.registrars).toEqual([KeyDidRegistrar, IndySdkSovDidRegistrar, PeerDidRegistrar])
+    expect(config.resolvers).toEqual([IndySdkSovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver])
   })
 
   test('sets values', () => {

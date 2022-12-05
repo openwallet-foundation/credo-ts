@@ -1,2 +1,2 @@
-export * from './SovDidRegistrar'
-export * from './SovDidResolver'
+export * from './IndySdkSovDidRegistrar'
+export * from './IndySdkSovDidResolver'

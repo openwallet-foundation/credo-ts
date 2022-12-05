@@ -3,8 +3,8 @@ import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachm
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
@@ -19,7 +19,7 @@ export interface V2ProposePresentationMessageOptions {
   attachmentInfo: ProofAttachmentFormat[]
 }
 
-export class V2ProposalPresentationMessage extends DIDCommV1Message {
+export class V2ProposalPresentationMessage extends DidCommV1Message {
   public constructor(options: V2ProposePresentationMessageOptions) {
     super()
 

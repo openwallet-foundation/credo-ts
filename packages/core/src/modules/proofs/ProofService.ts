@@ -2,8 +2,8 @@ import type { AgentConfig } from '../../agent/AgentConfig'
 import type { Dispatcher } from '../../agent/Dispatcher'
 import type { EventEmitter } from '../../agent/EventEmitter'
 import type { AgentContext } from '../../agent/context/AgentContext'
-import type { DIDCommV1Message } from '../../agent/didcomm'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../didcomm'
 import type { Logger } from '../../logger'
 import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import type { Wallet } from '../../wallet/Wallet'
@@ -107,7 +107,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   abstract createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
   /**
    * Create a proposal message in response to a received proof request message
@@ -122,7 +122,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   abstract createProposalAsResponse(
     agentContext: AgentContext,
     options: CreateProposalAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
   /**
    * Process a received proposal message (does not accept yet)
@@ -142,40 +142,40 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
    *    4. Loop through all format services to process proposal message
    *    5. Save & return record
    */
-  abstract processProposal(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<ProofExchangeRecord>
+  abstract processProposal(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
 
   abstract createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
   abstract createRequestAsResponse(
     agentContext: AgentContext,
     options: CreateRequestAsResponseOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
-  abstract processRequest(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<ProofExchangeRecord>
+  abstract processRequest(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
 
   abstract createPresentation(
     agentContext: AgentContext,
     options: CreatePresentationOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
-  abstract processPresentation(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<ProofExchangeRecord>
+  abstract processPresentation(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
 
   abstract createAck(
     agentContext: AgentContext,
     options: CreateAckOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
-  abstract processAck(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<ProofExchangeRecord>
+  abstract processAck(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
 
   abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProblemReportOptions
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DIDCommV1Message }>
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }>
 
-  abstract processProblemReport(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<ProofExchangeRecord>
+  abstract processProblemReport(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
 
   public abstract shouldAutoRespondToProposal(
     agentContext: AgentContext,
@@ -203,21 +203,21 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public abstract findProposalMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<DIDCommV1Message | null>
+  ): Promise<DidCommV1Message | null>
   public abstract findRequestMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<DIDCommV1Message | null>
+  ): Promise<DidCommV1Message | null>
   public abstract findPresentationMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<DIDCommV1Message | null>
+  ): Promise<DidCommV1Message | null>
 
   public async saveOrUpdatePresentationMessage(
     agentContext: AgentContext,
     options: {
       proofRecord: ProofExchangeRecord
-      message: DIDCommV1Message
+      message: DidCommV1Message
       role: DidCommMessageRole
     }
   ): Promise<void> {

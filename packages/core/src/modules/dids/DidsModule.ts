@@ -6,7 +6,6 @@ import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidResolverToken, DidRegistrarToken } from './domain'
 import { DidRepository } from './repository'
 import { DidResolverService, DidRegistrarService } from './services'
-import { DidService } from './services/DidService'
 
 export class DidsModule implements Module {
   public readonly config: DidsModuleConfig
@@ -30,7 +29,6 @@ export class DidsModule implements Module {
     // Services
     dependencyManager.registerSingleton(DidResolverService)
     dependencyManager.registerSingleton(DidRegistrarService)
-    dependencyManager.registerSingleton(DidService)
     dependencyManager.registerSingleton(DidRepository)
 
     // Register all did resolvers

@@ -1,12 +1,11 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
-import type { HandshakeProtocol } from '../models'
 import type { ConnectionType } from '../models/ConnectionType'
 import type { ConnectionMetadata } from './ConnectionMetadataTypes'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState } from '../models'
+import { HandshakeProtocol, rfc0160StateFromDidExchangeState, DidExchangeRole, DidExchangeState } from '../models'
 
 export interface ConnectionRecordProps {
   id?: string
@@ -141,5 +140,13 @@ export class ConnectionRecord
     if (this.role !== expectedRole) {
       throw new AriesFrameworkError(`Connection record has invalid role ${this.role}. Expected role ${expectedRole}.`)
     }
+  }
+
+  public get isDidCommV1Connection() {
+    return this.protocol === HandshakeProtocol.Connections || this.protocol === HandshakeProtocol.DidExchange
+  }
+
+  public get isDidCommV2Connection() {
+    return this.protocol === HandshakeProtocol.V2DidExchange
   }
 }

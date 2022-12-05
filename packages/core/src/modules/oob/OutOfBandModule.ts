@@ -4,7 +4,7 @@ import type { DependencyManager, Module } from '../../plugins'
 import { Protocol } from '../../agent/models'
 
 import { OutOfBandApi } from './OutOfBandApi'
-import { OutOfBandService } from './OutOfBandService'
+import { OutOfBandService } from './protocols/v1/OutOfBandService'
 import { OutOfBandRepository } from './repository'
 
 export class OutOfBandModule implements Module {

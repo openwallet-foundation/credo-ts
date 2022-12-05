@@ -1,10 +1,10 @@
-import type { OutOfBandInvitationOptions } from './messages'
+import type { OutOfBandInvitationOptions } from './protocols/v1/messages'
 
 import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { OutOfBandInvitation } from './messages'
+import { OutOfBandInvitation } from './protocols/v1/messages'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
   let service

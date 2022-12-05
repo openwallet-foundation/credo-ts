@@ -8,7 +8,7 @@ import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment/v1/Attachment'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'

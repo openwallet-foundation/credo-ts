@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../decorators/attachment/v1/Attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
@@ -38,6 +38,10 @@ export interface CredentialFormatCreateReturn {
 export interface FormatProcessOptions {
   attachment: Attachment
   credentialRecord: CredentialExchangeRecord
+}
+
+export interface FormatProcessCredentialOptions extends FormatProcessOptions {
+  requestAttachment: Attachment
 }
 
 export interface FormatCreateProposalOptions<CF extends CredentialFormat> {
@@ -89,6 +93,12 @@ export interface FormatAcceptRequestOptions<CF extends CredentialFormat> {
   offerAttachment?: Attachment
 }
 
+export interface FormatAcceptCredentialOptions {
+  credentialRecord: CredentialExchangeRecord
+  attachId?: string
+  requestAttachment: Attachment
+  offerAttachment?: Attachment
+}
 // Auto accept method interfaces
 export interface FormatAutoRespondProposalOptions {
   credentialRecord: CredentialExchangeRecord

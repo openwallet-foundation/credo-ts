@@ -7,7 +7,7 @@ import { Type } from 'class-transformer'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { OutOfBandInvitation } from '../messages'
+import { OutOfBandInvitation } from '../protocols/v1/messages'
 
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole

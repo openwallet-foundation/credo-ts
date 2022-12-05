@@ -1,8 +1,8 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { DidCommV1Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 import { DateParser } from '../../../../../../utils/transformers'
 
@@ -18,7 +18,7 @@ export interface StatusMessageOptions {
   liveDelivery?: boolean
 }
 
-export class StatusMessage extends DIDCommV1Message {
+export class StatusMessage extends DidCommV1Message {
   public constructor(options: StatusMessageOptions) {
     super()
     if (options) {

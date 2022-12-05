@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
-import type { EncryptedMessage } from '../../../agent/didcomm/types'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { EncryptedMessage } from '../../../didcomm/types'
+import type { DidCommV1Message } from '../../../didcomm/versions/v1'
 import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
@@ -17,7 +17,7 @@ import { filter, first, timeout } from 'rxjs/operators'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -209,8 +209,8 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundDIDCommV1Message(connection, message)
-    await this.messageSender.sendMessage(agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, { agentContext, connection })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord
@@ -297,8 +297,10 @@ export class MediationRecipientService {
       const websocketSchemes = ['ws', 'wss']
 
       await this.messageSender.sendMessage(
-        messageContext.agentContext,
-        createOutboundDIDCommV1Message(connectionRecord, message),
+        new OutboundMessageContext(message, {
+          agentContext: messageContext.agentContext,
+          connection: connectionRecord,
+        }),
         {
           transportPriority: {
             schemes: websocketSchemes,
@@ -464,7 +466,7 @@ export class MediationRecipientService {
   }
 }
 
-export interface MediationProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
+export interface MediationProtocolMsgReturnType<MessageType extends DidCommV1Message> {
   message: MessageType
   mediationRecord: MediationRecord
 }

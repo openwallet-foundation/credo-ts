@@ -2,7 +2,7 @@ import { JsonTransformer } from '../../../../utils'
 import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import { OutOfBandRole } from '../../domain/OutOfBandRole'
 import { OutOfBandState } from '../../domain/OutOfBandState'
-import { OutOfBandInvitation } from '../../messages'
+import { OutOfBandInvitation } from '../../protocols/v1/messages'
 import { OutOfBandRecord } from '../OutOfBandRecord'
 
 describe('OutOfBandRecord', () => {

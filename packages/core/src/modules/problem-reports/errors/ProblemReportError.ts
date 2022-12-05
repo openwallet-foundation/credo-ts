@@ -1,5 +1,5 @@
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
-import { ProblemReportMessage } from '../messages/ProblemReportMessage'
+import { ProblemReportMessage } from '../versions/v1/messages/ProblemReportMessage'
 
 export interface ProblemReportErrorOptions {
   problemCode: string

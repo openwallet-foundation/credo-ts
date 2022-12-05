@@ -1,11 +1,11 @@
-import { DIDCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export interface DummyResponseMessageOptions {
   id?: string
   threadId: string
 }
 
-export class DummyResponseMessage extends DIDCommV1Message {
+export class DummyResponseMessage extends DidCommV1Message {
   public constructor(options: DummyResponseMessageOptions) {
     super()
 

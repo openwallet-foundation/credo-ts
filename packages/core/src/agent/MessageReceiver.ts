@@ -1,29 +1,35 @@
+import type { EncryptedMessage, PlaintextMessage, SignedMessage } from '../didcomm'
+import type { DecryptedMessageContext } from '../didcomm/types'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
+import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
-import type { DIDCommMessage, DIDCommV2Message, PlaintextMessage } from './didcomm'
-import type { DecryptedMessageContext, ReceivedMessage, ReceivedPlainMessage } from './didcomm/types'
 
 import { InjectionSymbols } from '../constants'
+import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
+import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage, isSignedMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
-import { ProblemReportError, ProblemReportMessage, ProblemReportReason } from '../modules/problem-reports'
-import { ProblemReportV2Message } from '../modules/problem-reports/messages/ProblemReportV2Message'
+import {
+  buildProblemReportV1Message,
+  buildProblemReportV2Message,
+  ProblemReportMessage,
+  V2ProblemReportMessage,
+} from '../modules/problem-reports'
+import { ProblemReportError } from '../modules/problem-reports/errors'
+import { ProblemReportReason } from '../modules/problem-reports/models'
 import { inject, injectable } from '../plugins'
 import { JsonTransformer } from '../utils/JsonTransformer'
-import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
+import { parseMessageType, replaceLegacyDidSovPrefixOnMessage } from '../utils/messageType'
 
 import { Dispatcher } from './Dispatcher'
+import { EnvelopeService } from './EnvelopeService'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContextProvider } from './context'
-import { EnvelopeService } from './didcomm/EnvelopeService'
-import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage, isSignedMessage } from './didcomm/helpers'
-import { DIDCommMessageVersion, MessageType } from './didcomm/types'
-import { createOutboundDIDCommV1Message } from './helpers'
-import { InboundMessageContext } from './models/InboundMessageContext'
+import { InboundMessageContext, OutboundMessageContext } from './models'
 
 @injectable()
 export class MessageReceiver {
@@ -81,32 +87,11 @@ export class MessageReceiver {
 
     try {
       if (isEncryptedMessage(inboundMessage)) {
-        return await this.receiveEncryptedMessage(
-          agentContext,
-          {
-            type: MessageType.Encrypted,
-            message: inboundMessage,
-          },
-          session
-        )
+        return await this.receiveEncryptedMessage(agentContext, inboundMessage, session)
       } else if (isSignedMessage(inboundMessage)) {
-        return await this.receiveEncryptedMessage(
-          agentContext,
-          {
-            type: MessageType.Signed,
-            message: inboundMessage,
-          },
-          session
-        )
+        return await this.receiveSignedMessage(agentContext, inboundMessage, session)
       } else if (isPlaintextMessage(inboundMessage)) {
-        await this.receivePlaintextMessage(
-          agentContext,
-          {
-            type: MessageType.Plain,
-            message: inboundMessage,
-          },
-          connection
-        )
+        await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
       } else {
         throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
       }
@@ -118,32 +103,45 @@ export class MessageReceiver {
 
   private async receivePlaintextMessage(
     agentContext: AgentContext,
-    plaintextMessage: ReceivedPlainMessage,
+    plaintextMessage: PlaintextMessage,
     connection?: ConnectionRecord
   ) {
-    const message = await this.transformAndValidate(agentContext, plaintextMessage.message)
+    const message = await this.transformAndValidate(agentContext, plaintextMessage)
     const messageContext = new InboundMessageContext(message, { connection, agentContext })
     await this.dispatcher.dispatch(messageContext)
   }
 
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
-    packedMessage: ReceivedMessage,
+    packedMessage: EncryptedMessage,
     session?: TransportSession
   ) {
-    const decryptedMessage = await this.decryptMessage(agentContext, packedMessage)
-    const { plaintextMessage, senderKey, recipientKey, version } = decryptedMessage
+    const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
+    return this.processUnpackedMessage(agentContext, unpackedMessage, session)
+  }
+
+  private async receiveSignedMessage(
+    agentContext: AgentContext,
+    packedMessage: SignedMessage,
+    session?: TransportSession
+  ) {
+    const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
+    return this.processUnpackedMessage(agentContext, unpackedMessage, session)
+  }
+
+  private async processUnpackedMessage(
+    agentContext: AgentContext,
+    unpackedMessage: DecryptedMessageContext,
+    session?: TransportSession
+  ) {
+    const { plaintextMessage, senderKey, recipientKey } = unpackedMessage
 
     this.logger.info(
       `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
       plaintextMessage
     )
 
-    // DIDComm V2 messaging doesn't require connection
-    const connection =
-      version === DIDCommMessageVersion.V1
-        ? await this.findConnectionByMessageKeys(agentContext, decryptedMessage)
-        : undefined
+    const connection = await this.findConnection(agentContext, unpackedMessage)
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
 
@@ -183,55 +181,60 @@ export class MessageReceiver {
     await this.dispatcher.dispatch(messageContext)
   }
 
-  /**
-   * Decrypt a message using the envelope service.
-   *
-   * @param message the received inbound message to decrypt
-   */
-  private async decryptMessage(agentContext: AgentContext, message: ReceivedMessage): Promise<DecryptedMessageContext> {
-    try {
-      return await this.envelopeService.unpackMessage(agentContext, message)
-    } catch (error) {
-      this.logger.error('Error while decrypting message', {
-        error,
-        encryptedMessage: message,
-        errorMessage: error instanceof Error ? error.message : error,
-      })
-      throw error
-    }
-  }
-
   private async transformAndValidate(
     agentContext: AgentContext,
     plaintextMessage: PlaintextMessage,
     connection?: ConnectionRecord | null
-  ): Promise<DIDCommMessage> {
-    let message: DIDCommMessage
+  ): Promise<AgentMessage> {
+    let message: AgentMessage
     try {
       message = await this.transformMessage(plaintextMessage)
     } catch (error) {
-      if (plaintextMessage['@id'] && connection) {
-        await this.sendProblemReportMessage(agentContext, error.message, connection, plaintextMessage)
-      } else if (plaintextMessage.id) {
-        await this.sendProblemReportMessageV2(agentContext, error.message, plaintextMessage)
+      const messageType = parseMessageType(getPlaintextMessageType(plaintextMessage))
+      if (ProblemReportMessage.type === messageType || V2ProblemReportMessage.type === messageType) {
+        throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${error.message}`)
       }
+
+      const problemReportMessage: AgentMessage | undefined = isPlaintextMessageV1(plaintextMessage)
+        ? buildProblemReportV1Message(plaintextMessage, error.message)
+        : buildProblemReportV2Message(plaintextMessage, error.message)
+
+      if (problemReportMessage) {
+        const outboundMessageContext = new OutboundMessageContext(problemReportMessage, {
+          agentContext,
+          connection: connection || undefined,
+        })
+        await this.messageSender.sendMessage(outboundMessageContext)
+      }
+
       throw error
     }
     return message
   }
 
-  private async findConnectionByMessageKeys(
+  private async findConnection(
     agentContext: AgentContext,
-    { recipientKey, senderKey }: DecryptedMessageContext
+    decryptedMessageContext: DecryptedMessageContext
   ): Promise<ConnectionRecord | null> {
-    // We only fetch connections that are sent in AuthCrypt mode
-    if (!recipientKey || !senderKey) return null
+    if (isPlaintextMessageV1(decryptedMessageContext.plaintextMessage)) {
+      const { recipientKey, senderKey } = decryptedMessageContext
+      // We only fetch connections that are sent in AuthCrypt mode
+      if (!recipientKey || !senderKey) return null
 
-    // Try to find the did records that holds the sender and recipient keys
-    return this.connectionService.findByKeys(agentContext, {
-      senderKey,
-      recipientKey,
-    })
+      // Try to find the did records that holds the sender and recipient keys
+      return this.connectionService.findByKeys(agentContext, {
+        senderKey,
+        recipientKey,
+      })
+    }
+    if (isPlaintextMessageV2(decryptedMessageContext.plaintextMessage)) {
+      // Try to find the did records that holds the sender and recipient keys
+      const { from } = decryptedMessageContext.plaintextMessage
+      if (!from) return null
+      return this.connectionService.findByTheirDid(agentContext, from)
+    }
+
+    return null
   }
 
   /**
@@ -239,7 +242,7 @@ export class MessageReceiver {
    *
    * @param message the plaintext message for which to transform the message in to a class instance
    */
-  private async transformMessage(message: PlaintextMessage): Promise<DIDCommMessage> {
+  private async transformMessage(message: PlaintextMessage): Promise<AgentMessage> {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
     if (message['@type']) {
       // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for record type with https://didcomm.org
@@ -259,8 +262,8 @@ export class MessageReceiver {
       })
     }
 
-    // Cast the plain JSON object to specific instance of Message extended from DIDCommMessage
-    let messageTransformed: DIDCommMessage
+    // Cast the plain JSON object to specific instance of Message extended from AgentMessage
+    let messageTransformed: AgentMessage
     try {
       messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
     } catch (error) {
@@ -273,62 +276,5 @@ export class MessageReceiver {
       })
     }
     return messageTransformed
-  }
-
-  /**
-   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
-   * @param message error message to send
-   * @param connection connection to send the message to
-   * @param plaintextMessage received inbound message
-   */
-  private async sendProblemReportMessage(
-    agentContext: AgentContext,
-    message: string,
-    connection: ConnectionRecord,
-    plaintextMessage: PlaintextMessage
-  ) {
-    const type = getPlaintextMessageType(message)
-    if (!type) return
-
-    const messageType = parseMessageType(type)
-    if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
-    }
-    const problemReportMessage = new ProblemReportMessage({
-      description: {
-        en: message,
-        code: ProblemReportReason.MessageParseFailure,
-      },
-    })
-    problemReportMessage.setThread({
-      threadId: plaintextMessage['@id'] as string,
-    })
-    const outboundMessage = createOutboundDIDCommV1Message(connection, problemReportMessage)
-    if (outboundMessage) {
-      await this.messageSender.sendDIDCommV1Message(agentContext, outboundMessage)
-    }
-  }
-
-  private async sendProblemReportMessageV2(
-    agentContext: AgentContext,
-    message: string,
-    plaintextMessage: PlaintextMessage
-  ) {
-    const plainTextMessageV2 = plaintextMessage as unknown as DIDCommV2Message
-
-    // Cannot send problem report for message with unknown sender or recipient
-    if (!plainTextMessageV2.from || !plainTextMessageV2.to?.length) return
-
-    const problemReportMessage = new ProblemReportV2Message({
-      pthid: plainTextMessageV2.id,
-      from: plainTextMessageV2.recipient(),
-      to: plainTextMessageV2.from,
-      body: {
-        code: ProblemReportReason.MessageParseFailure,
-        comment: message,
-      },
-    })
-
-    await this.messageSender.sendDIDCommV2Message(agentContext, { payload: problemReportMessage })
   }
 }

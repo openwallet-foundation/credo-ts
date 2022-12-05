@@ -25,6 +25,7 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
   Agent,
@@ -44,14 +45,14 @@ import {
   ProofEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { Attachment, AttachmentData } from '../src/decorators/attachment/v1/Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service } from '../src/modules/dids'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/oob/messages'
+import { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { PredicateType } from '../src/modules/proofs/formats/indy/models'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
@@ -100,7 +101,6 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
-
   return { config, modules, dependencies: agentDependencies } as const
 }
 
@@ -223,7 +223,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 10000,
+    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -356,14 +356,14 @@ export function getMockOutOfBand({
 }
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const agentAOutOfBand = await agentA.oob.createInvitation({
+  const { outOfBandRecord: agentAOutOfBand } = await agentA.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand!.outOfBandInvitation)
 
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
-  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand!.id)
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
 
   return [agentAConnection, agentBConnection]
@@ -666,15 +666,28 @@ export async function setupCredentialTests(
     'rxjs:faber': faberMessages,
     'rxjs:alice': aliceMessages,
   }
-  const faberAgentOptions = getAgentOptions(faberName, {
-    endpoints: ['rxjs:faber'],
-    autoAcceptCredentials,
-  })
 
-  const aliceAgentOptions = getAgentOptions(aliceName, {
-    endpoints: ['rxjs:alice'],
-    autoAcceptCredentials,
-  })
+  // TODO remove the dependency on BbsModule
+  const modules = {
+    bbs: new BbsModule(),
+  }
+  const faberAgentOptions = getAgentOptions(
+    faberName,
+    {
+      endpoints: ['rxjs:faber'],
+      autoAcceptCredentials,
+    },
+    modules
+  )
+
+  const aliceAgentOptions = getAgentOptions(
+    aliceName,
+    {
+      endpoints: ['rxjs:alice'],
+      autoAcceptCredentials,
+    },
+    modules
+  )
   const faberAgent = new Agent(faberAgentOptions)
   faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
   faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))

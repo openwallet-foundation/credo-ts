@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Wallet } from '../../src'
-import type { KeyPair } from '../../src'
-import type { EncryptedMessage } from '../../src/agent/didcomm/types'
+import type { Wallet, KeyPair } from '../../src'
 import type { Key } from '../../src/crypto'
+import type { EncryptedMessage } from '../../src/didcomm/types'
 import type { WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../../src/types'
 import type { Buffer } from '../../src/utils/buffer'
 import type {
@@ -78,7 +77,7 @@ export class MockWallet implements Wallet {
     throw new Error('Method not implemented.')
   }
 
-  public retrieveKeyPair(kid: string): Promise<KeyPair> {
+  public retrieveKeyPair(keyId: string): Promise<KeyPair> {
     throw new Error('Method not implemented.')
   }
 

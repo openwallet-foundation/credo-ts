@@ -1,18 +1,17 @@
+import type { Wallet } from '../../../wallet'
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
-import type { SovDidCreateOptions } from '../methods/sov/SovDidRegistrar'
-import type { Wallet } from '@aries-framework/core'
+import type { SovDidCreateOptions } from '../methods/sov/IndySdkSovDidRegistrar'
 
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { genesisPath, getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
-import { TypedArrayEncoder } from '../../../utils'
+import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
-
-import { InjectionSymbols, JsonTransformer } from '@aries-framework/core'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar', {
   indyLedgers: [

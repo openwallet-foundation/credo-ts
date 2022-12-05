@@ -4,8 +4,8 @@ import type { IndyProofRequest } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
@@ -27,7 +27,7 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
-export class V1RequestPresentationMessage extends DIDCommV1Message {
+export class V1RequestPresentationMessage extends DidCommV1Message {
   public constructor(options: RequestPresentationOptions) {
     super()
 

@@ -1,5 +1,5 @@
-import type { EncryptedMessage } from '../agent/didcomm/types'
-import type { KeyPair } from '../crypto/signing-provider/KeyProvider'
+import type { KeyPair } from '../crypto/key-provider/KeyProvider'
+import type { EncryptedMessage } from '../didcomm/types'
 import type { KeyDerivationMethod, WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
 import type {
@@ -19,7 +19,7 @@ import { AgentDependencies } from '../agent/AgentDependencies'
 import { InjectionSymbols } from '../constants'
 import { KeyType } from '../crypto'
 import { Key } from '../crypto/Key'
-import { KeyProviderRegistry } from '../crypto/signing-provider/KeyProviderRegistry'
+import { KeyProviderRegistry } from '../crypto/key-provider/KeyProviderRegistry'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
 import { Logger } from '../logger'
 import { TypedArrayEncoder } from '../utils'
@@ -628,18 +628,18 @@ export class IndyWallet implements Wallet {
   }
 
   // FIXME: Think how to avoid making function it public?
-  public async retrieveKeyPair(kid: string): Promise<KeyPair> {
+  public async retrieveKeyPair(keyId: string): Promise<KeyPair> {
     try {
-      const key = Key.fromPublicKeyId(kid)?.publicKeyBase58
+      const key = Key.fromPublicKeyId(keyId).publicKeyBase58
       const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${key}`, {})
       if (value) {
         return JsonEncoder.fromString(value) as KeyPair
       } else {
-        throw new WalletError(`No content found for record with public key: ${kid}`)
+        throw new WalletError(`No content found for record with public key: ${keyId}`)
       }
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
-        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${kid}.`, {
+        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${keyId}.`, {
           recordType: 'KeyPairRecord',
           cause: error,
         })

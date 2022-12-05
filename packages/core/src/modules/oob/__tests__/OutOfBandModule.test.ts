@@ -2,7 +2,7 @@ import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { OutOfBandApi } from '../OutOfBandApi'
 import { OutOfBandModule } from '../OutOfBandModule'
-import { OutOfBandService } from '../OutOfBandService'
+import { OutOfBandService } from '../protocols/v1/OutOfBandService'
 import { OutOfBandRepository } from '../repository/OutOfBandRepository'
 
 jest.mock('../../../plugins/DependencyManager')

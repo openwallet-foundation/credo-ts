@@ -32,6 +32,7 @@
     "@aries-framework/core": "0.2.5"
   },
   "devDependencies": {
+    "@aries-framework/core": "0.2.5",
     "@aries-framework/node": "0.2.5",
     "reflect-metadata": "^0.1.13",
     "rimraf": "~3.0.2",

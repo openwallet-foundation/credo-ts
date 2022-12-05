@@ -1,17 +1,14 @@
-import type { OutboundDIDCommV1Message, OutboundDIDCommV1ServiceMessage, OutboundDIDCommV2Message } from '../types'
-import type { ConstructableDIDCommMessage } from './didcomm'
-import type { InboundMessageContext } from './models/InboundMessageContext'
+import type { ConstructableDidCommMessage } from '../didcomm'
+import type { InboundMessageContext, OutboundMessageContext } from './models'
 
 export interface Handler {
-  readonly supportedMessages: readonly ConstructableDIDCommMessage[]
+  readonly supportedMessages: readonly ConstructableDidCommMessage[]
 
-  handle(
-    messageContext: InboundMessageContext
-  ): Promise<OutboundDIDCommV1Message | OutboundDIDCommV1ServiceMessage | OutboundDIDCommV2Message | void>
+  handle(messageContext: InboundMessageContext): Promise<OutboundMessageContext | void>
 }
 
 /**
- * Provides exact typing for the DIDCommMessage in the message context in the `handle` function
+ * Provides exact typing for the AgentMessage in the message context in the `handle` function
  * of a handler. It takes all possible types from `supportedMessageTypes`
  *
  * @example

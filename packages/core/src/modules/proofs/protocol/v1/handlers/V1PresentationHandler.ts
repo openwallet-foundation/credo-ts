@@ -5,7 +5,7 @@ import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator
 import type { ProofExchangeRecord } from '../../../repository'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1PresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 export class V1PresentationHandler implements Handler {
@@ -30,7 +30,12 @@ export class V1PresentationHandler implements Handler {
   public async handle(messageContext: HandlerInboundMessage<V1PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(messageContext.agentContext, proofRecord)) {
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToPresentation(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createAck(proofRecord, messageContext)
     }
   }
@@ -55,15 +60,21 @@ export class V1PresentationHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundDIDCommV1Message(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage?.service
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

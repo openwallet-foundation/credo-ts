@@ -8,7 +8,7 @@ import type { ProofRequestFromProposalOptions } from '../../../models/ProofServi
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
@@ -33,7 +33,13 @@ export class V1ProposePresentationHandler implements Handler {
 
   public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createRequest(proofRecord, messageContext)
     }
   }
@@ -99,6 +105,10 @@ export class V1ProposePresentationHandler implements Handler {
       willConfirm: true,
     })
 
-    return createOutboundDIDCommV1Message(messageContext.connection, message)
+    return new OutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: proofRecord,
+    })
   }
 }

@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
+import { DidCommV1Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface StatusRequestMessageOptions {
@@ -9,7 +9,7 @@ export interface StatusRequestMessageOptions {
   recipientKey?: string
 }
 
-export class StatusRequestMessage extends DIDCommV1Message {
+export class StatusRequestMessage extends DidCommV1Message {
   public constructor(options: StatusRequestMessageOptions) {
     super()
 

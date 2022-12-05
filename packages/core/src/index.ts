@@ -10,20 +10,12 @@ export { EventEmitter } from './agent/EventEmitter'
 export { FeatureRegistry } from './agent/FeatureRegistry'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export * from './agent/models'
-export * from './agent/helpers'
 export { AgentConfig } from './agent/AgentConfig'
-export {
-  DIDCommMessage,
-  DIDCommV1Message,
-  DIDCommV2Message,
-  EncryptedMessage,
-  SignedMessage,
-  PlaintextMessage,
-} from './agent/didcomm'
+export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, OutboundPackage, WalletConfig, JsonArray, JsonObject, JsonValue } from './types'
+export type { InitConfig, WalletConfig, JsonArray, JsonObject, JsonValue } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export * from './storage/BaseRecord'
@@ -36,7 +28,7 @@ export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
-export { Attachment } from './decorators/attachment/Attachment'
+export { Attachment } from './decorators/attachment/v1/Attachment'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
 export * from './plugins'
@@ -61,6 +53,7 @@ export { parseMessageType, IsValidMessageType } from './utils/messageType'
 export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
+export * from './didcomm/'
 
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'

@@ -3,7 +3,7 @@ import type { AgentContext } from '../../../agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { Key } from '../../../crypto/Key'
-import { KeyProviderRegistry } from '../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
@@ -40,7 +40,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const signingProviderRegistry = new KeyProviderRegistry([])
+const keyProviderRegistry = new KeyProviderRegistry([])
 
 jest.mock('../../ledger/services/IndyLedgerService')
 
@@ -71,7 +71,7 @@ describe('W3cCredentialService', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, keyProviderRegistry)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
     agentContext = getAgentContext({

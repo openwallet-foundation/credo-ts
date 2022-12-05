@@ -1,4 +1,4 @@
-import { DIDCommV1Message } from '../../../agent/didcomm'
+import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DidExchangeCompleteMessageOptions {
@@ -10,7 +10,7 @@ export interface DidExchangeCompleteMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0023-did-exchange/README.md#3-exchange-complete
  */
-export class DidExchangeCompleteMessage extends DIDCommV1Message {
+export class DidExchangeCompleteMessage extends DidCommV1Message {
   public constructor(options: DidExchangeCompleteMessageOptions) {
     super()
 

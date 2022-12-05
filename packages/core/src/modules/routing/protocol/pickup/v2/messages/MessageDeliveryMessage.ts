@@ -1,10 +1,10 @@
-import type { Attachment } from '../../../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../../../decorators/attachment/v1/Attachment'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { DidCommV1Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface MessageDeliveryMessageOptions {
@@ -14,7 +14,7 @@ export interface MessageDeliveryMessageOptions {
   attachments: Attachment[]
 }
 
-export class MessageDeliveryMessage extends DIDCommV1Message {
+export class MessageDeliveryMessage extends DidCommV1Message {
   public constructor(options: MessageDeliveryMessageOptions) {
     super()
 

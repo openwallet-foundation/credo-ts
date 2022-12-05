@@ -13,7 +13,10 @@ import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { KeyProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
-import { X25519KeyProvider } from '../crypto/signing-provider/X25519KeyProvider'
+import { X25519KeyProvider } from '../crypto/key-provider/X25519KeyProvider'
+import { DidCommV1EnvelopeServiceToken } from '../didcomm/versions/v1'
+import { DidCommV1EnvelopeServiceImpl } from '../didcomm/versions/v1/indy/DidCommV1EnvelopeServiceImpl'
+import { DefaultDidCommV2EnvelopeService, DidCommV2EnvelopeServiceToken } from '../didcomm/versions/v2'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
@@ -25,6 +28,7 @@ import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
 import { BaseAgent } from './BaseAgent'
 import { Dispatcher } from './Dispatcher'
+import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { FeatureRegistry } from './FeatureRegistry'
@@ -32,7 +36,6 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContext, DefaultAgentContextProvider } from './context'
-import { EnvelopeService } from './didcomm/EnvelopeService'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {
   config: InitConfig
@@ -61,18 +64,22 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
-    // dependencyManager.registerInstance(KeyProviderToken, new Ed25519KeyProvider())
+    dependencyManager.registerSingleton(DidCommV1EnvelopeServiceToken, DidCommV1EnvelopeServiceImpl)
+    dependencyManager.registerInstance(DidCommV2EnvelopeServiceToken, DefaultDidCommV2EnvelopeService)
+
     dependencyManager.registerInstance(KeyProviderToken, new X25519KeyProvider())
 
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
     dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
     dependencyManager.registerInstance(InjectionSymbols.FileSystem, new agentConfig.agentDependencies.FileSystem())
+    dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
 
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
     }
+
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
       dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
     }
@@ -208,7 +215,7 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
   }
 
   protected async getMediationConnection(mediatorInvitationUrl: string) {
-    const outOfBandInvitation = this.oob.parseInvitation(mediatorInvitationUrl)
+    const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
     const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
     const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 

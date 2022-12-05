@@ -1,9 +1,9 @@
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/v1/Attachment'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
 import { DidCommV1Service } from '../../dids'
 import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
-import { OutOfBandInvitation } from '../messages'
+import { OutOfBandInvitation } from '../protocols/v1/messages'
 
 describe('convertToNewInvitation', () => {
   it('should convert a connection invitation with service to an out of band invitation', () => {

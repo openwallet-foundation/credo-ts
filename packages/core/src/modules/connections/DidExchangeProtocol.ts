@@ -10,7 +10,7 @@ import type { Routing } from './services/ConnectionService'
 import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
-import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
+import { Attachment, AttachmentData } from '../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
@@ -146,7 +146,7 @@ export class DidExchangeProtocol {
 
     const { message } = messageContext
 
-    // Check corresponding invitation ID is the request's ~thread.pthid
+    // Check corresponding invitation ID is the request's ~thread.parentThreadId
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
     if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {

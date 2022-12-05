@@ -1,6 +1,6 @@
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import inquirer from 'inquirer'
+import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Faber } from './Faber'
@@ -19,7 +19,6 @@ enum PromptOptions {
   OfferCredential = 'Offer credential',
   RequestProof = 'Request proof',
   SendMessage = 'Send message',
-  CreateDID = 'Create new DID',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -43,15 +42,10 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   private async getPromptChoice() {
-    if (this.faber.outOfBandId) return inquirer.prompt([this.inquireOptions(this.promptOptionsString)])
+    if (this.faber.outOfBandId) return prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [
-      PromptOptions.CreateConnection,
-      PromptOptions.Exit,
-      PromptOptions.Restart,
-      PromptOptions.CreateDID,
-    ]
-    return inquirer.prompt([this.inquireOptions(reducedOption)])
+    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    return prompt([this.inquireOptions(reducedOption)])
   }
 
   public async processAnswer() {
@@ -68,9 +62,6 @@ export class FaberInquirer extends BaseInquirer {
       case PromptOptions.RequestProof:
         await this.proof()
         return
-      case PromptOptions.CreateDID:
-        await this.createNewDID()
-        break
       case PromptOptions.SendMessage:
         await this.message()
         break
@@ -85,11 +76,13 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async connection() {
-    await this.faber.setupConnection()
+    const title = 'What DidComm messaging version use?'
+    const version = await prompt([this.inquireVersion(title)])
+    await this.faber.setupConnection(version.options)
   }
 
   public async exitUseCase(title: string) {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(title)])
+    const confirm = await prompt([this.inquireConfirmation(title)])
     if (confirm.options === ConfirmOptions.No) {
       return false
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -116,12 +109,8 @@ export class FaberInquirer extends BaseInquirer {
     await this.faber.sendMessage(message)
   }
 
-  public async createNewDID() {
-    await this.faber.createNewDID()
-  }
-
   public async exit() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       return
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -130,7 +119,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async restart() {
-    const confirm = await inquirer.prompt([this.inquireConfirmation(Title.ConfirmTitle)])
+    const confirm = await prompt([this.inquireConfirmation(Title.ConfirmTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.processAnswer()
       return

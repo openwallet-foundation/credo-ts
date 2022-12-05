@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { DidCommV1Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface DeliveryRequestMessageOptions {
@@ -11,7 +11,7 @@ export interface DeliveryRequestMessageOptions {
   limit: number
 }
 
-export class DeliveryRequestMessage extends DIDCommV1Message {
+export class DeliveryRequestMessage extends DidCommV1Message {
   public constructor(options: DeliveryRequestMessageOptions) {
     super()
 

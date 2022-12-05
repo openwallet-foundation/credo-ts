@@ -11,7 +11,7 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
@@ -37,7 +37,12 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
   public async handle(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return this.createRequest(proofRecord, messageContext)
     }
   }
@@ -90,6 +95,10 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
 
     const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, options)
 
-    return createOutboundDIDCommV1Message(messageContext.connection, message)
+    return new OutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: proofRecord,
+    })
   }
 }

@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsArray, IsOptional } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
 import { ReturnRouteTypes } from '../../../../../../decorators/transport/TransportDecorator'
+import { DidCommV1Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 
 export interface MessagesReceivedMessageOptions {
@@ -10,7 +10,7 @@ export interface MessagesReceivedMessageOptions {
   messageIdList: string[]
 }
 
-export class MessagesReceivedMessage extends DIDCommV1Message {
+export class MessagesReceivedMessage extends DidCommV1Message {
   public constructor(options: MessagesReceivedMessageOptions) {
     super()
 

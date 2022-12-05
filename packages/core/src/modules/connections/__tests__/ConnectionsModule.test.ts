@@ -4,8 +4,9 @@ import { ConnectionsApi } from '../ConnectionsApi'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
+import { TrustPingService } from '../protocols/trust-ping/v1/TrustPingService'
 import { ConnectionRepository } from '../repository'
-import { ConnectionService, TrustPingService } from '../services'
+import { ConnectionService } from '../services'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -28,7 +29,7 @@ describe('ConnectionsModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(ConnectionsModuleConfig, connectionsModule.config)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(4)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TrustPingService)

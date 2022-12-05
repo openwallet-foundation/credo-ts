@@ -4,8 +4,8 @@ import type { IndyProof } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormatConstants'
@@ -26,7 +26,7 @@ export interface PresentationOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation
  */
-export class V1PresentationMessage extends DIDCommV1Message {
+export class V1PresentationMessage extends DidCommV1Message {
   public constructor(options: PresentationOptions) {
     super()
 

@@ -1,8 +1,8 @@
 import { Type, Expose } from 'class-transformer'
 import { IsString, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm'
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 export interface DidExchangeResponseMessageOptions {
@@ -16,7 +16,7 @@ export interface DidExchangeResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0023-did-exchange/README.md#2-exchange-response
  */
-export class DidExchangeResponseMessage extends DIDCommV1Message {
+export class DidExchangeResponseMessage extends DidCommV1Message {
   /**
    * Create new DidExchangeResponseMessage instance.
    * @param options

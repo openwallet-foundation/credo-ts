@@ -50,16 +50,16 @@ describe('agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
+    const { outOfBandRecord: aliceBobOutOfBandRecord } = await aliceAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
-      aliceBobOutOfBandRecord.outOfBandInvitation
+      aliceBobOutOfBandRecord!.outOfBandInvitation
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 
-    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
+    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord!.id)
     aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)

@@ -1,9 +1,9 @@
 import type { ClassValidationError } from '../../../error/ClassValidationError'
 
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/v1/Attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
+import { OutOfBandInvitation } from '../protocols/v1/messages/OutOfBandInvitation'
 
 describe('toUrl', () => {
   test('encode the message into the URL containing the base64 encoded invitation as the oob query parameter', async () => {

@@ -1,6 +1,6 @@
 import { IsEnum } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../agent/didcomm'
+import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
 /**
@@ -8,7 +8,6 @@ import { IsValidMessageType, parseMessageType } from '../../../utils/messageType
  */
 export enum AckStatus {
   OK = 'OK',
-  FAIL = 'FAIL',
   PENDING = 'PENDING',
 }
 
@@ -21,7 +20,7 @@ export interface AckMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
-export class AckMessage extends DIDCommV1Message {
+export class AckMessage extends DidCommV1Message {
   /**
    * Create new AckMessage instance.
    * @param options

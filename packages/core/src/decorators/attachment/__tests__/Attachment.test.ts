@@ -2,7 +2,7 @@ import * as didJwsz6Mkf from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkf
 import * as didJwsz6Mkv from '../../../crypto/__tests__/__fixtures__/didJwsz6Mkv'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { Attachment, AttachmentData } from '../Attachment'
+import { Attachment, AttachmentData } from '../v1/Attachment'
 
 const mockJson = {
   '@id': 'ceffce22-6471-43e4-8945-b604091981c9',

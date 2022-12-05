@@ -129,7 +129,9 @@ describe('Tenants E2E', () => {
     })
 
     // Create and receive oob invitation in scope of tenants
-    const outOfBandRecord = await tenantAgent1.oob.createInvitation()
+    const { outOfBandRecord } = await tenantAgent1.oob.createInvitation()
+    if (!outOfBandRecord) throw new Error('Unable to create out of band invitation')
+
     const { connectionRecord: tenant2ConnectionRecord } = await tenantAgent2.oob.receiveInvitation(
       outOfBandRecord.outOfBandInvitation
     )
@@ -144,7 +146,7 @@ describe('Tenants E2E', () => {
     expect(tenantAgent1OutOfBandRecords.length).toBe(1)
     expect(tenantAgent2OutOfBandRecords.length).toBe(1)
 
-    if (!tenant2ConnectionRecord) throw new Error('Receive invitation did not return connection record')
+    if (!tenant2ConnectionRecord) throw new Error('Receive invitation did not return connection outOfBandRecord')
     await tenantAgent2.connections.returnWhenIsConnected(tenant2ConnectionRecord.id)
 
     // Find the connection record for the created oob invitation
@@ -180,7 +182,9 @@ describe('Tenants E2E', () => {
     })
 
     // Create and receive oob invitation in scope of tenants
-    const outOfBandRecord = await tenantAgent1.oob.createInvitation()
+    const { outOfBandRecord } = await tenantAgent1.oob.createInvitation()
+    if (!outOfBandRecord) throw new Error('Unable to create out of band invitation')
+
     const { connectionRecord: tenant2ConnectionRecord } = await tenantAgent2.oob.receiveInvitation(
       outOfBandRecord.outOfBandInvitation
     )
@@ -208,7 +212,7 @@ describe('Tenants E2E', () => {
     })
 
     await agent1.modules.tenants.withTenantAgent({ tenantId: tenantRecord.id }, async (tenantAgent) => {
-      const outOfBandRecord = await tenantAgent.oob.createInvitation()
+      const { outOfBandRecord } = await tenantAgent.oob.createInvitation()
 
       expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
       expect(tenantAgent.context.contextCorrelationId).toBe(tenantRecord.id)

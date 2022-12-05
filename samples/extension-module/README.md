@@ -51,7 +51,7 @@ agent.events.on(DummyEventTypes.StateChanged, async (event: DummyStateChangedEve
   }
 })
 
-const record = await agent.modules.dummy.request(connection)
+const { outOfBandRecord } = await agent.modules.dummy.request(connection)
 ```
 
 ## Run demo

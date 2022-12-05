@@ -7,7 +7,7 @@ import {
   SignatureSuiteToken,
 } from '@aries-framework/core'
 
-import { Bls12381g2SigningProvider } from './Bls12381g2SigningProvider'
+import { Bls12381g2KeyProvider } from './Bls12381g2KeyProvider'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from './signature-suites'
 
 export class BbsModule implements Module {
@@ -15,8 +15,8 @@ export class BbsModule implements Module {
    * Registers the dependencies of the bbs module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    // Signing providers.
-    dependencyManager.registerSingleton(KeyProviderToken, Bls12381g2SigningProvider)
+    // Key providers.
+    dependencyManager.registerSingleton(KeyProviderToken, Bls12381g2KeyProvider)
 
     // Signature suites.
     dependencyManager.registerInstance(SignatureSuiteToken, {

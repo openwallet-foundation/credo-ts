@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../../../agent/didcomm/types'
+import type { EncryptedMessage } from '../../../../didcomm/types'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
 
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
@@ -61,17 +61,17 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processStatusRequest(messageContext)
+      const { connection, message } = await pickupService.processStatusRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toEqual(
+      expect(message).toEqual(
         new StatusMessage({
-          id: payload.id,
+          id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 0,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
     })
 
     test('multiple messages in queue', async () => {
@@ -80,17 +80,17 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processStatusRequest(messageContext)
+      const { connection, message } = await pickupService.processStatusRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toEqual(
+      expect(message).toEqual(
         new StatusMessage({
-          id: payload.id,
+          id: message.id,
           threadId: statusRequest.threadId,
           messageCount: 5,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
     })
 
     test('status request specifying recipient key', async () => {
@@ -116,17 +116,17 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
+      const { connection, message } = await pickupService.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toEqual(
+      expect(message).toEqual(
         new StatusMessage({
-          id: payload.id,
+          id: message.id,
           threadId: deliveryRequest.threadId,
           messageCount: 0,
         })
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 10, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 10, true)
     })
 
     test('less messages in queue than limit', async () => {
@@ -136,13 +136,13 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
+      const { connection, message } = await pickupService.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toBeInstanceOf(MessageDeliveryMessage)
-      expect(payload.threadId).toEqual(deliveryRequest.threadId)
-      expect(payload.appendedAttachments?.length).toEqual(3)
-      expect(payload.appendedAttachments).toEqual(
+      expect(message).toBeInstanceOf(MessageDeliveryMessage)
+      expect(message.threadId).toEqual(deliveryRequest.threadId)
+      expect(message.appendedAttachments?.length).toEqual(3)
+      expect(message.appendedAttachments).toEqual(
         expect.arrayContaining(
           queuedMessages.map((msg) =>
             expect.objectContaining({
@@ -153,7 +153,7 @@ describe('V2MessagePickupService', () => {
           )
         )
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 10, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 10, true)
     })
 
     test('more messages in queue than limit', async () => {
@@ -163,13 +163,13 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processDeliveryRequest(messageContext)
+      const { connection, message } = await pickupService.processDeliveryRequest(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toBeInstanceOf(MessageDeliveryMessage)
-      expect(payload.threadId).toEqual(deliveryRequest.threadId)
-      expect(payload.appendedAttachments?.length).toEqual(2)
-      expect(payload.appendedAttachments).toEqual(
+      expect(message).toBeInstanceOf(MessageDeliveryMessage)
+      expect(message.threadId).toEqual(deliveryRequest.threadId)
+      expect(message.appendedAttachments?.length).toEqual(2)
+      expect(message.appendedAttachments).toEqual(
         expect.arrayContaining(
           queuedMessages.slice(0, 2).map((msg) =>
             expect.objectContaining({
@@ -180,7 +180,7 @@ describe('V2MessagePickupService', () => {
           )
         )
       )
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2, true)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2, true)
     })
 
     test('delivery request specifying recipient key', async () => {
@@ -210,18 +210,18 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processMessagesReceived(messageContext)
+      const { connection, message } = await pickupService.processMessagesReceived(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toEqual(
+      expect(message).toEqual(
         new StatusMessage({
-          id: payload.id,
+          id: message.id,
           threadId: messagesReceived.threadId,
           messageCount: 4,
         })
       )
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2)
     })
 
     test('all messages have been received', async () => {
@@ -234,19 +234,19 @@ describe('V2MessagePickupService', () => {
 
       const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
-      const { connection, payload } = await pickupService.processMessagesReceived(messageContext)
+      const { connection, message } = await pickupService.processMessagesReceived(messageContext)
 
       expect(connection).toEqual(mockConnection)
-      expect(payload).toEqual(
+      expect(message).toEqual(
         new StatusMessage({
-          id: payload.id,
+          id: message.id,
           threadId: messagesReceived.threadId,
           messageCount: 0,
         })
       )
 
-      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(connection.id)
-      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(connection.id, 2)
+      expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
+      expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2)
     })
   })
 })

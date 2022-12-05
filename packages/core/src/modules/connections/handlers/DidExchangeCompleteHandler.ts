@@ -1,5 +1,5 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { AriesFrameworkError } from '../../../error'

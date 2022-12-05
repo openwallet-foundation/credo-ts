@@ -1,7 +1,9 @@
 import type { InitConfig } from '@aries-framework/core'
 
 import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
+import { DidCommV2Module } from '@aries-framework/didcomm-v2'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import * as didcomm from 'didcomm-node'
 
 import { greenText } from './OutputClass'
 
@@ -43,7 +45,12 @@ export class BaseAgent {
 
     this.config = config
 
-    this.agent = new Agent({ config, dependencies: agentDependencies })
+    // Enable also didcomm-v2 module
+    const didCommV2Module = new DidCommV2Module({ didcomm })
+    const modules = { didCommV2: didCommV2Module }
+
+    this.agent = new Agent({ config, modules, dependencies: agentDependencies })
+
     this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
   }

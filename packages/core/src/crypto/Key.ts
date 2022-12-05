@@ -22,15 +22,11 @@ export class Key {
   }
 
   public static fromPublicKeyId(kid: string) {
-    try {
-      const key = kid.split('#')[1] ?? kid
-      if (key.startsWith('z')) {
-        return Key.fromFingerprint(key)
-      } else {
-        return Key.fromPublicKeyBase58(key, KeyType.Ed25519)
-      }
-    } catch (e) {
-      return undefined
+    const key = kid.split('#')[1] ?? kid
+    if (key.startsWith('z')) {
+      return Key.fromFingerprint(key)
+    } else {
+      return Key.fromPublicKeyBase58(key, KeyType.Ed25519)
     }
   }
 

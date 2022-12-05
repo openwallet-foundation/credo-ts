@@ -3,7 +3,7 @@ import type { AckDecorator } from '../../../../../decorators/ack/AckDecorator'
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface RevocationNotificationMessageV2Options {
@@ -14,7 +14,7 @@ export interface RevocationNotificationMessageV2Options {
   pleaseAck?: AckDecorator
 }
 
-export class V2RevocationNotificationMessage extends DIDCommV1Message {
+export class V2RevocationNotificationMessage extends DidCommV1Message {
   public constructor(options: RevocationNotificationMessageV2Options) {
     super()
     if (options) {

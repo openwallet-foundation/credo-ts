@@ -1,10 +1,10 @@
-import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../decorators/attachment/v1/Attachment'
 
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { DIDCommV1Message } from '../../../agent/didcomm'
+import { DidCommV1Message } from '../../../didcomm'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -32,7 +32,7 @@ export interface DIDInvitationOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#0-invitation-to-connect
  */
-export class ConnectionInvitationMessage extends DIDCommV1Message {
+export class ConnectionInvitationMessage extends DidCommV1Message {
   /**
    * Create new ConnectionInvitationMessage instance.
    * @param options

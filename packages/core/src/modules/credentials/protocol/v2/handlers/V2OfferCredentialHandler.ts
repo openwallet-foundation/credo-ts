@@ -6,7 +6,7 @@ import type { RoutingService } from '../../../../routing/services/RoutingService
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
@@ -38,7 +38,6 @@ export class V2OfferCredentialHandler implements Handler {
       credentialRecord,
       offerMessage: messageContext.message,
     })
-
     if (shouldAutoRespond) {
       return await this.acceptOffer(credentialRecord, messageContext)
     }
@@ -55,7 +54,11 @@ export class V2OfferCredentialHandler implements Handler {
       const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
-      return createOutboundDIDCommV1Message(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: credentialRecord,
+      })
     } else if (offerMessage?.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
@@ -78,10 +81,12 @@ export class V2OfferCredentialHandler implements Handler {
         associatedRecordId: credentialRecord.id,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

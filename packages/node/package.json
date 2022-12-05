@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.2.5",
-    "didcomm-node": "0.3.4",
     "express": "^4.17.1",
     "ffi-napi": "^4.0.3",
     "indy-sdk": "^1.16.0-dev-1636",

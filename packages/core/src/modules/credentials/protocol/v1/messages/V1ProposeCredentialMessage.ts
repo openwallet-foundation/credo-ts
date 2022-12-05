@@ -1,9 +1,9 @@
-import type { Attachment } from '../../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
@@ -27,7 +27,7 @@ export interface V1ProposeCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
-export class V1ProposeCredentialMessage extends DIDCommV1Message {
+export class V1ProposeCredentialMessage extends DidCommV1Message {
   public constructor(options: V1ProposeCredentialMessageOptions) {
     super()
 

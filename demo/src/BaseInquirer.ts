@@ -1,10 +1,15 @@
-import inquirer from 'inquirer'
+import { prompt } from 'inquirer'
 
 import { Title } from './OutputClass'
 
 export enum ConfirmOptions {
   Yes = 'yes',
   No = 'no',
+}
+
+export enum VersionOptions {
+  DidCommV1 = 'v1',
+  DidCommV2 = 'v2',
 }
 
 export class BaseInquirer {
@@ -46,23 +51,15 @@ export class BaseInquirer {
     return this.optionsInquirer
   }
 
+  public inquireVersion(title: string) {
+    this.optionsInquirer.message = title
+    this.optionsInquirer.choices = [VersionOptions.DidCommV1, VersionOptions.DidCommV2]
+    return this.optionsInquirer
+  }
+
   public async inquireMessage() {
     this.inputInquirer.message = Title.MessageTitle
-    const message = await inquirer.prompt([this.inputInquirer])
-
-    return message.input[0] === 'q' ? null : message.input
-  }
-
-  public async inquireFromDID() {
-    this.inputInquirer.message = Title.MyDIDTitle
-    const message = await inquirer.prompt([this.inputInquirer])
-
-    return message.input[0] === 'q' ? null : message.input
-  }
-
-  public async inquireToDID() {
-    this.inputInquirer.message = Title.TheirDIDTitle
-    const message = await inquirer.prompt([this.inputInquirer])
+    const message = await prompt([this.inputInquirer])
 
     return message.input[0] === 'q' ? null : message.input
   }

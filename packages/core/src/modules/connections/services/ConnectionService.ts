@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../didcomm'
 import type { Query } from '../../../storage/StorageService'
 import type { AckMessage } from '../../common'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
@@ -33,7 +33,7 @@ import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
-import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
+import { ConnectionRequestMessage, ConnectionResponseMessage } from '../messages'
 import {
   authenticationTypes,
   Connection,
@@ -44,6 +44,7 @@ import {
   HandshakeProtocol,
   ReferencedAuthentication,
 } from '../models'
+import { TrustPingMessage } from '../protocols/trust-ping/v1/messages/TrustPingMessage'
 import { ConnectionRecord } from '../repository/ConnectionRecord'
 import { ConnectionRepository } from '../repository/ConnectionRepository'
 
@@ -437,13 +438,13 @@ export class ConnectionService {
    * @param previousRespondence - previous sent and received message to determine if a valid service decorator is present
    */
   public assertConnectionOrServiceDecorator(
-    messageContext: InboundMessageContext,
+    messageContext: InboundMessageContext<DidCommV1Message>,
     {
       previousSentMessage,
       previousReceivedMessage,
     }: {
-      previousSentMessage?: DIDCommV1Message
-      previousReceivedMessage?: DIDCommV1Message
+      previousSentMessage?: DidCommV1Message
+      previousReceivedMessage?: DidCommV1Message
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -783,7 +784,7 @@ export interface Routing {
   mediatorId?: string
 }
 
-export interface ConnectionProtocolMsgReturnType<MessageType extends DIDCommV1Message> {
+export interface ConnectionProtocolMsgReturnType<MessageType extends DidCommV1Message> {
   message: MessageType
   connectionRecord: ConnectionRecord
 }

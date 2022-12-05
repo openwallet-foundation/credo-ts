@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 
-import { createOutboundDIDCommV1Message } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2QueriesMessage } from '../messages'
 
 export class V2QueriesMessageHandler implements Handler {
@@ -18,7 +18,10 @@ export class V2QueriesMessageHandler implements Handler {
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)
 
     if (discloseMessage) {
-      return createOutboundDIDCommV1Message(connection, discloseMessage.message)
+      return new OutboundMessageContext(discloseMessage.message, {
+        agentContext: inboundMessage.agentContext,
+        connection,
+      })
     }
   }
 }

@@ -6,7 +6,7 @@ import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
 
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'

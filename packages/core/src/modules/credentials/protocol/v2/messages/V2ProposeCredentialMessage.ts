@@ -1,8 +1,8 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../models'
 
@@ -17,7 +17,7 @@ export interface V2ProposeCredentialMessageProps {
   attachments?: Attachment[]
 }
 
-export class V2ProposeCredentialMessage extends DIDCommV1Message {
+export class V2ProposeCredentialMessage extends DidCommV1Message {
   public constructor(props: V2ProposeCredentialMessageProps) {
     super()
     if (props) {

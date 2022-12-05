@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { DIDCommV1Message } from '../../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../../didcomm'
 import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
   AcceptCredentialOptions,
@@ -21,7 +21,7 @@ import type { IndyCredentialFormat } from '../../formats/indy/IndyCredentialForm
 import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
@@ -117,7 +117,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
   public async createProposal(
     agentContext: AgentContext,
     { connection, credentialFormats, comment, autoAcceptCredential }: CreateProposalOptions<[IndyCredentialFormat]>
-  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>> {
+  ): Promise<CredentialProtocolMsgReturnType<DidCommV1Message>> {
     this.assertOnlyIndyFormat(credentialFormats)
 
     if (!credentialFormats.indy) {
@@ -622,7 +622,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       autoAcceptCredential,
       comment,
     }: NegotiateOfferOptions<[IndyCredentialFormat]>
-  ): Promise<CredentialProtocolMsgReturnType<DIDCommV1Message>> {
+  ): Promise<CredentialProtocolMsgReturnType<DidCommV1Message>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -963,7 +963,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
       credentialRecord: CredentialExchangeRecord
       proposalMessage: V1ProposeCredentialMessage
     }
-  ): Promise<boolean> {
+  ) {
     const { credentialRecord, proposalMessage } = options
     const autoAccept = composeAutoAccept(
       credentialRecord.autoAcceptCredential,

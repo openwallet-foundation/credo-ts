@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { V1CredentialPreview } from '../src'
 import { Agent } from '../src/agent/Agent'
-import { Attachment, AttachmentData } from '../src/decorators/attachment/Attachment'
+import { Attachment, AttachmentData } from '../src/decorators/attachment/v1/Attachment'
 import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
 import {
   PredicateType,
@@ -240,19 +240,19 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const faberMediationInvitationResult = await mediatorAgent.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
+    const aliceMediationInvitationResult = await mediatorAgent.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+      mediatorConnectionsInvite: faberMediationInvitationResult.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -261,7 +261,7 @@ describe('Present Proof', () => {
     const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+      mediatorConnectionsInvite: aliceMediationInvitationResult.outOfBandInvitation.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,

@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
 import type { ProposeProofFormats } from '../../models/SharedOptions'
 import type { ProofExchangeRecord } from '../../repository'
 import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
@@ -15,7 +15,7 @@ export interface CreateProofAttachmentOptions {
   proofProposalOptions: ProofRequestOptions
 }
 
-export interface CreateProposalOptions {
+export interface FormatCreateProofProposalOptions {
   id?: string
   formats: ProposeProofFormats
 }

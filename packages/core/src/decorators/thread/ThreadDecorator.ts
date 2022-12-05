@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, Matches } from 'class-validator'
 
-import { MessageIdRegExp } from '../../agent/didcomm/validation'
+import { MessageIdRegExp } from '../../didcomm/validation'
 
 /**
  * Represents `~thread` decorator
@@ -24,7 +24,7 @@ export class ThreadDecorator {
   public threadId?: string
 
   /**
-   * An optional parent `thid`. Used when branching or nesting a new interaction off of an existing one.
+   * An optional parent `threadId`. Used when branching or nesting a new interaction off of an existing one.
    */
   @Expose({ name: 'pthid' })
   @Matches(MessageIdRegExp)

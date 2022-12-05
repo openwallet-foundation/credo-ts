@@ -1,9 +1,9 @@
 import { Type, Expose } from 'class-transformer'
 import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../../agent/didcomm'
-import { EncryptedMessage } from '../../../../../../agent/didcomm/types'
-import { MessageIdRegExp } from '../../../../../../agent/didcomm/validation'
+import { DidCommV1Message } from '../../../../../../didcomm'
+import { EncryptedMessage } from '../../../../../../didcomm/types'
+import { MessageIdRegExp } from '../../../../../../didcomm/validation'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
 import { uuid } from '../../../../../../utils/uuid'
 
@@ -32,7 +32,7 @@ export interface BatchMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch
  */
-export class BatchMessage extends DIDCommV1Message {
+export class BatchMessage extends DidCommV1Message {
   public constructor(options: BatchMessageOptions) {
     super()
 

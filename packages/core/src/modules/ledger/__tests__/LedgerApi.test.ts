@@ -4,7 +4,7 @@ import type { CredentialDefinitionTemplate } from '../services/IndyLedgerService
 import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../tests/helpers'
-import { KeyProviderRegistry } from '../../../crypto/signing-provider'
+import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { getLegacySchemaId, getLegacyCredentialDefinitionId } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'

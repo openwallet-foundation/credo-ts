@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { Attachment } from '../decorators/attachment/Attachment'
+import { Attachment } from '../decorators/attachment/v1/Attachment'
 
 import { encodeAttachment } from './attachment'
 

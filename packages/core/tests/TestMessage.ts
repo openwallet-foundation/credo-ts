@@ -1,6 +1,6 @@
-import { DIDCommV1Message } from '../src/agent/didcomm'
+import { DidCommV1Message } from '../src/didcomm'
 
-export class TestMessage extends DIDCommV1Message {
+export class TestMessage extends DidCommV1Message {
   public constructor() {
     super()
 

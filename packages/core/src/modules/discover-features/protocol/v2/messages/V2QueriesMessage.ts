@@ -3,8 +3,8 @@ import type { FeatureQueryOptions } from '../../../../../agent/models'
 import { Type } from 'class-transformer'
 import { ArrayNotEmpty, IsInstance } from 'class-validator'
 
-import { DIDCommV1Message } from '../../../../../agent/didcomm'
 import { FeatureQuery } from '../../../../../agent/models'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface V2DiscoverFeaturesQueriesMessageOptions {
@@ -13,7 +13,7 @@ export interface V2DiscoverFeaturesQueriesMessageOptions {
   comment?: string
 }
 
-export class V2QueriesMessage extends DIDCommV1Message {
+export class V2QueriesMessage extends DidCommV1Message {
   public constructor(options: V2DiscoverFeaturesQueriesMessageOptions) {
     super()
 

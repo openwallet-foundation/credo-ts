@@ -26,7 +26,7 @@ import {
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
+import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2KeyProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
 import { describeSkipNode17And18 } from './util'
@@ -55,7 +55,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const signingProviderRegistry = new KeyProviderRegistry([new Bls12381g2SigningProvider()])
+const keyProviderRegistry = new KeyProviderRegistry([new Bls12381g2KeyProvider()])
 
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
@@ -67,7 +67,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
+    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, keyProviderRegistry)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
     agentContext = getAgentContext({

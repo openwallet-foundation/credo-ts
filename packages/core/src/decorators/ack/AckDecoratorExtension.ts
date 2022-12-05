@@ -1,11 +1,11 @@
-import type { DIDComV1BaseMessageConstructor } from '../../agent/didcomm/'
+import type { DidComV1BaseMessageConstructor } from '../../didcomm/'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
 
 import { AckDecorator, AckValues } from './AckDecorator'
 
-export function AckDecorated<T extends DIDComV1BaseMessageConstructor>(Base: T) {
+export function AckDecorated<T extends DidComV1BaseMessageConstructor>(Base: T) {
   class AckDecoratorExtension extends Base {
     @Expose({ name: '~please_ack' })
     @Type(() => AckDecorator)

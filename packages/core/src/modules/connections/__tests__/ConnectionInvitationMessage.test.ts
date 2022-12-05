@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { Attachment } from '../../../decorators/attachment/v1/Attachment'
 import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'

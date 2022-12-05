@@ -1,11 +1,11 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { createOutboundDIDCommV1Message } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
@@ -69,7 +69,11 @@ export class ConnectionRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundDIDCommV1Message(connectionRecord, message, outOfBandRecord)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: connectionRecord,
+        outOfBand: outOfBandRecord,
+      })
     }
   }
 }

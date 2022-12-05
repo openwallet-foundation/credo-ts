@@ -5,7 +5,7 @@ import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialService } from '../V2CredentialService'
 
-import { createOutboundDIDCommV1Message, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
@@ -56,7 +56,11 @@ export class V2RequestCredentialHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundDIDCommV1Message(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: credentialRecord,
+      })
     } else if (messageContext.message.service && offerMessage?.service) {
       const recipientService = messageContext.message.service
       const ourService = offerMessage.service
@@ -69,13 +73,15 @@ export class V2RequestCredentialHandler implements Handler {
         role: DidCommMessageRole.Sender,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    this.logger.error(`Could not automatically issue credential`)
   }
 }

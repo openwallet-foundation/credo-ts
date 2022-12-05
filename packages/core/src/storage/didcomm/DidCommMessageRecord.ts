@@ -1,4 +1,4 @@
-import type { ConstructableDIDCommMessage } from '../../agent/didcomm'
+import type { ConstructableDidCommMessage } from '../../didcomm'
 import type { JsonObject } from '../../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
@@ -87,7 +87,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
     }
   }
 
-  public getMessageInstance<MessageClass extends ConstructableDIDCommMessage = ConstructableDIDCommMessage>(
+  public getMessageInstance<MessageClass extends ConstructableDidCommMessage = ConstructableDidCommMessage>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
     const messageType = parseMessageType(this.message['@type'] as string)

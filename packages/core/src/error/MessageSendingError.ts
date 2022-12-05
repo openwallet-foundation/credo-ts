@@ -1,14 +1,14 @@
-import type { OutboundDIDCommV1Message } from '../types'
+import type { OutboundMessageContext } from '../agent/models'
 
 import { AriesFrameworkError } from './AriesFrameworkError'
 
 export class MessageSendingError extends AriesFrameworkError {
-  public outboundMessage: OutboundDIDCommV1Message
+  public outboundMessageContext: OutboundMessageContext
   public constructor(
     message: string,
-    { outboundMessage, cause }: { outboundMessage: OutboundDIDCommV1Message; cause?: Error }
+    { outboundMessageContext, cause }: { outboundMessageContext: OutboundMessageContext; cause?: Error }
   ) {
     super(message, { cause })
-    this.outboundMessage = outboundMessage
+    this.outboundMessageContext = outboundMessageContext
   }
 }

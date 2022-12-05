@@ -44,20 +44,23 @@ export class Faber extends BaseAgent {
     return connection
   }
 
-  private async printConnectionInvite() {
-    const outOfBand = await this.agent.oob.createInvitation()
-    this.outOfBandId = outOfBand.id
-
-    console.log(
-      Output.ConnectionLink,
-      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
-      '\n'
-    )
+  private async printConnectionInvite(version: 'v1' | 'v2') {
+    const { outOfBandRecord, outOfBandInvitation } = await this.agent.oob.createInvitation({ version })
+    if (outOfBandRecord) {
+      this.outOfBandId = outOfBandRecord.id
+      console.log(
+        Output.ConnectionLink,
+        outOfBandRecord.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+        '\n'
+      )
+    } else if (outOfBandInvitation) {
+      console.log(Output.ConnectionLink, outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
+    }
   }
 
   private async waitForConnection() {
     if (!this.outOfBandId) {
-      throw new Error(redText(Output.MissingConnectionRecord))
+      return
     }
 
     console.log('Waiting for Alice to finish connection...')
@@ -75,7 +78,7 @@ export class Faber extends BaseAgent {
           resolve(e.payload.connectionRecord)
         })
 
-        // Also retrieve the connection record by invitation if the event has already fired
+        // Also retrieve the connection outOfBandRecord by invitation if the event has already fired
         void this.agent.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
           if (connectionRecord) {
             clearTimeout(timeoutId)
@@ -95,8 +98,8 @@ export class Faber extends BaseAgent {
     console.log(greenText(Output.ConnectionEstablished))
   }
 
-  public async setupConnection() {
-    await this.printConnectionInvite()
+  public async setupConnection(version: 'v1' | 'v2') {
+    await this.printConnectionInvite(version)
     await this.waitForConnection()
   }
 
@@ -208,14 +211,6 @@ export class Faber extends BaseAgent {
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
-  }
-
-  public async createNewDID() {
-    const { didState } = await this.agent.dids.createV2DID({
-      method: 'peer',
-      routing: { endpoint: this.agent.config.endpoints[0] },
-    })
-    console.log(greenText(`\nNew DID Created!\n DID: ${didState.did}`))
   }
 
   public async exit() {

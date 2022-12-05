@@ -60,12 +60,12 @@ describe('connections', () => {
     acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await acmeAgent.initialize()
 
-    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+    const { outOfBandRecord: faberOutOfBandRecord } = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitation = faberOutOfBandRecord!.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
@@ -91,7 +91,7 @@ describe('connections', () => {
 
     expect(faberAliceConnection.id).not.toBe(faberAcmeConnection.id)
 
-    return expect(faberOutOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
+    return expect(faberOutOfBandRecord!.state).toBe(OutOfBandState.AwaitResponse)
   })
 
   xit('should be able to make multiple connections using a multi use invite', async () => {
@@ -116,12 +116,12 @@ describe('connections', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+    const { outOfBandRecord: faberOutOfBandRecord } = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitation = faberOutOfBandRecord!.outOfBandInvitation
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
@@ -147,6 +147,6 @@ describe('connections', () => {
 
     expect(faberAliceConnection1.id).not.toBe(faberAliceConnection2.id)
 
-    return expect(faberOutOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
+    return expect(faberOutOfBandRecord!.state).toBe(OutOfBandState.AwaitResponse)
   })
 })

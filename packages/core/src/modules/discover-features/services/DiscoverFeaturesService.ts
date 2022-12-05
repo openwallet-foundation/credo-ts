@@ -1,8 +1,8 @@
 import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import type { DIDCommV1Message } from '../../../agent/didcomm'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../didcomm'
 import type { Logger } from '../../../logger'
 import type { DiscoverFeaturesModuleConfig } from '../DiscoverFeaturesModuleConfig'
 import type {
@@ -34,13 +34,13 @@ export abstract class DiscoverFeaturesService {
 
   abstract readonly version: string
 
-  abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<DIDCommV1Message>>
+  abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message>>
   abstract processQuery(
-    messageContext: InboundMessageContext<DIDCommV1Message>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DIDCommV1Message> | void>
+    messageContext: InboundMessageContext<DidCommV1Message>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message> | void>
 
   abstract createDisclosure(
     options: CreateDisclosureOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DIDCommV1Message>>
-  abstract processDisclosure(messageContext: InboundMessageContext<DIDCommV1Message>): Promise<void>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message>>
+  abstract processDisclosure(messageContext: InboundMessageContext<DidCommV1Message>): Promise<void>
 }

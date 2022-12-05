@@ -61,9 +61,9 @@ describe('DidRegistrar', () => {
       })
 
       it('should return an error state if no key type is provided', async () => {
-        // @ts-ignore
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
+          // @ts-ignore
           options: {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },

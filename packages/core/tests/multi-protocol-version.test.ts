@@ -5,10 +5,11 @@ import { filter, firstValueFrom, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { parseMessageType, MessageSender, Dispatcher, IsValidMessageType, DIDCommV1Message } from '../src'
+import { DidCommV1Message } from '../build'
+import { parseMessageType, MessageSender, Dispatcher, AgentMessage, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
-import { createOutboundDIDCommV1Message } from '../src/agent/helpers'
+import { OutboundMessageContext } from '../src/agent/models'
 
 import { getAgentOptions } from './helpers'
 
@@ -56,7 +57,10 @@ describe('multi version protocols', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const { outOfBandInvitation, id } = await aliceAgent.oob.createInvitation()
+    const { outOfBandRecord } = await aliceAgent.oob.createInvitation()
+    if (!outOfBandRecord) throw new Error('Unable to create out of band invitation')
+
+    const { outOfBandInvitation, id } = outOfBandRecord
     let { connectionRecord: bobConnection } = await bobAgent.oob.receiveInvitation(outOfBandInvitation, {
       autoAcceptConnection: true,
       autoAcceptInvitation: true,
@@ -85,8 +89,7 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      bobAgent.context,
-      createOutboundDIDCommV1Message(bobConnection, new TestMessageV11())
+      new OutboundMessageContext(new TestMessageV11(), { agentContext: bobAgent.context, connection: bobConnection })
     )
 
     // Wait for the agent message processed event to be called
@@ -103,8 +106,7 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      bobAgent.context,
-      createOutboundDIDCommV1Message(bobConnection, new TestMessageV15())
+      new OutboundMessageContext(new TestMessageV15(), { agentContext: bobAgent.context, connection: bobConnection })
     )
     await agentMessageV15ProcessedPromise
 
@@ -112,7 +114,7 @@ describe('multi version protocols', () => {
   })
 })
 
-class TestMessageV11 extends DIDCommV1Message {
+class TestMessageV11 extends DidCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -123,7 +125,7 @@ class TestMessageV11 extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.1/test-message')
 }
 
-class TestMessageV13 extends DIDCommV1Message {
+class TestMessageV13 extends DidCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -134,7 +136,7 @@ class TestMessageV13 extends DIDCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.3/test-message')
 }
 
-class TestMessageV15 extends DIDCommV1Message {
+class TestMessageV15 extends DidCommV1Message {
   public constructor() {
     super()
     this.id = this.generateId()

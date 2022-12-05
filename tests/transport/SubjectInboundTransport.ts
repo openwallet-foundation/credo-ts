@@ -1,6 +1,6 @@
 import type { InboundTransport, Agent, EncryptedMessage } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
-import type { OutboundPackagePayload } from '@aries-framework/core/src/types'
+import type { OutboundPackagePayload } from '@aries-framework/core/src/didcomm'
 import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'

@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
+import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
 import type { IndyRevocationInterval } from '../../../credentials'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
 import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
