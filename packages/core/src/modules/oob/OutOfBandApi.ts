@@ -138,107 +138,109 @@ export class OutOfBandApi {
    * @param config configuration of how out-of-band invitation should be created
    * @returns out-of-band record
    */
-  public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<{
-    outOfBandInvitation: OutOfBandInvitation | V2OutOfBandInvitation
-    outOfBandRecord?: OutOfBandRecord
-  }> {
+  public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<OutOfBandRecord> {
+    let outOfBandRecord: OutOfBandRecord | null
     if (config.version === 'v2') {
       const outOfBandInvitation = await this.v2OutOfBandService.createInvitation(this.agentContext)
-      // TODO: create and store record?
-      return { outOfBandInvitation }
-    }
+      outOfBandRecord = new OutOfBandRecord({
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
+        alias: config.alias,
+        v2OutOfBandInvitation: outOfBandInvitation,
+      })
+    } else {
+      const multiUseInvitation = config.multiUseInvitation ?? false
+      const handshake = config.handshake ?? true
+      const customHandshakeProtocols = config.handshakeProtocols
+      const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
+      // We don't want to treat an empty array as messages being provided
+      const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
+      const label = config.label ?? this.agentContext.config.label
+      const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
+      const appendedAttachments =
+        config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
-    const multiUseInvitation = config.multiUseInvitation ?? false
-    const handshake = config.handshake ?? true
-    const customHandshakeProtocols = config.handshakeProtocols
-    const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
-    // We don't want to treat an empty array as messages being provided
-    const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
-    const label = config.label ?? this.agentContext.config.label
-    const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
-    const appendedAttachments =
-      config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
-
-    if (!handshake && !messages) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
-    }
-
-    if (!handshake && customHandshakeProtocols) {
-      throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
-    }
-
-    // For now we disallow creating multi-use invitation with attachments. This would mean we need multi-use
-    // credential and presentation exchanges.
-    if (messages && multiUseInvitation) {
-      throw new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
-    }
-
-    let handshakeProtocols
-    if (handshake) {
-      // Find supported handshake protocol preserving the order of handshake protocols defined
-      // by agent
-      if (customHandshakeProtocols) {
-        this.assertHandshakeProtocols(customHandshakeProtocols)
-        handshakeProtocols = customHandshakeProtocols
-      } else {
-        handshakeProtocols = this.getSupportedHandshakeProtocols()
+      if (!handshake && !messages) {
+        throw new AriesFrameworkError(
+          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
+        )
       }
-    }
 
-    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
+      if (!handshake && customHandshakeProtocols) {
+        throw new AriesFrameworkError(`Attribute 'handshake' can not be 'false' when 'handshakeProtocols' is defined.`)
+      }
 
-    const services = routing.endpoints.map((endpoint, index) => {
-      return new OutOfBandDidCommService({
-        id: `#inline-${index}`,
-        serviceEndpoint: endpoint,
-        recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
-        routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
-      })
-    })
+      // For now we disallow creating multi-use invitation with attachments. This would mean we need multi-use
+      // credential and presentation exchanges.
+      if (messages && multiUseInvitation) {
+        throw new AriesFrameworkError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined.")
+      }
 
-    const options = {
-      label,
-      goal: config.goal,
-      goalCode: config.goalCode,
-      imageUrl,
-      accept: didCommProfiles,
-      services,
-      handshakeProtocols,
-      appendedAttachments,
-    }
-    const outOfBandInvitation = new OutOfBandInvitation(options)
-
-    if (messages) {
-      messages.forEach((message) => {
-        if (message.service) {
-          // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
-          message.service = undefined
+      let handshakeProtocols
+      if (handshake) {
+        // Find supported handshake protocol preserving the order of handshake protocols defined
+        // by agent
+        if (customHandshakeProtocols) {
+          this.assertHandshakeProtocols(customHandshakeProtocols)
+          handshakeProtocols = customHandshakeProtocols
+        } else {
+          handshakeProtocols = this.getSupportedHandshakeProtocols()
         }
-        outOfBandInvitation.addRequest(message)
+      }
+
+      const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
+
+      const services = routing.endpoints.map((endpoint, index) => {
+        return new OutOfBandDidCommService({
+          id: `#inline-${index}`,
+          serviceEndpoint: endpoint,
+          recipientKeys: [routing.recipientKey].map((key) => new DidKey(key).did),
+          routingKeys: routing.routingKeys.map((key) => new DidKey(key).did),
+        })
+      })
+
+      const options = {
+        label,
+        goal: config.goal,
+        goalCode: config.goalCode,
+        imageUrl,
+        accept: didCommProfiles,
+        services,
+        handshakeProtocols,
+        appendedAttachments,
+      }
+      const outOfBandInvitation = new OutOfBandInvitation(options)
+
+      if (messages) {
+        messages.forEach((message) => {
+          if (message.service) {
+            // We can remove `~service` attribute from message. Newer OOB messages have `services` attribute instead.
+            message.service = undefined
+          }
+          outOfBandInvitation.addRequest(message)
+        })
+      }
+
+      outOfBandRecord = new OutOfBandRecord({
+        mediatorId: routing.mediatorId,
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
+        alias: config.alias,
+        outOfBandInvitation: outOfBandInvitation,
+        reusable: multiUseInvitation,
+        autoAcceptConnection,
+        tags: {
+          recipientKeyFingerprints: services
+            .reduce<string[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+            .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
+        },
       })
     }
-
-    const outOfBandRecord = new OutOfBandRecord({
-      mediatorId: routing.mediatorId,
-      role: OutOfBandRole.Sender,
-      state: OutOfBandState.AwaitResponse,
-      alias: config.alias,
-      outOfBandInvitation: outOfBandInvitation,
-      reusable: multiUseInvitation,
-      autoAcceptConnection,
-      tags: {
-        recipientKeyFingerprints: services
-          .reduce<string[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
-          .map((didKey) => DidKey.fromDid(didKey).key.fingerprint),
-      },
-    })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
 
-    return { outOfBandInvitation, outOfBandRecord: outOfBandRecord }
+    return outOfBandRecord
   }
 
   /**
@@ -252,14 +254,11 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection invitation
    */
   public async createLegacyInvitation(config: CreateLegacyInvitationConfig = {}) {
-    const { outOfBandRecord } = await this.createInvitation({
+    const outOfBandRecord = await this.createInvitation({
       ...config,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    if (!outOfBandRecord) {
-      throw new AriesFrameworkError('Unable to create Out-of-Band invitation.')
-    }
-    return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
+    return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.getOutOfBandInvitation()) }
   }
 
   public async createLegacyConnectionlessInvitation<Message extends DidCommV1Message>(config: {
@@ -357,60 +356,73 @@ export class OutOfBandApi {
     const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
     const { routing } = config
 
+    let outOfBandRecord: OutOfBandRecord | null
+
     // Currently, we accept DidComm V2 invitation automatically becasue do not create record in the wallet.
     // Change it in future
     if (invitation instanceof V2OutOfBandInvitation) {
-      return this.v2OutOfBandService.acceptInvitation(this.agentContext, invitation)
-    }
+      outOfBandRecord = new OutOfBandRecord({
+        role: OutOfBandRole.Receiver,
+        state: OutOfBandState.Initial,
+        v2OutOfBandInvitation: invitation,
+        autoAcceptConnection,
+      })
+    } else {
+      // Convert to out of band invitation if needed
+      const outOfBandInvitation =
+        invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
 
-    // Convert to out of band invitation if needed
-    const outOfBandInvitation =
-      invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
+      const { handshakeProtocols } = outOfBandInvitation
 
-    const { handshakeProtocols } = outOfBandInvitation
+      const messages = outOfBandInvitation.getRequests()
 
-    const messages = outOfBandInvitation.getRequests()
-
-    if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
-      throw new AriesFrameworkError(
-        'One or both of handshake_protocols and requests~attach MUST be included in the message.'
-      )
-    }
-
-    // Make sure we haven't processed this invitation before.
-    let outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
-    if (outOfBandRecord) {
-      throw new AriesFrameworkError(
-        `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
-      )
-    }
-
-    const recipientKeyFingerprints: string[] = []
-    for (const service of outOfBandInvitation.getServices()) {
-      // Resolve dids to DIDDocs to retrieve services
-      if (typeof service === 'string') {
-        this.logger.debug(`Resolving services for did ${service}.`)
-        const resolvedDidCommServices = await this.didCommDocumentService.resolveServicesFromDid(
-          this.agentContext,
-          service
+      if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
+        throw new AriesFrameworkError(
+          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
         )
-        recipientKeyFingerprints.push(
-          ...resolvedDidCommServices
-            .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
-            .map((key) => key.fingerprint)
-        )
-      } else {
-        recipientKeyFingerprints.push(...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint))
       }
+
+      // Make sure we haven't processed this invitation before.
+      outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
+      if (outOfBandRecord) {
+        throw new AriesFrameworkError(
+          `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+        )
+      }
+
+      const recipientKeyFingerprints: string[] = []
+      for (const service of outOfBandInvitation.getServices()) {
+        // Resolve dids to DIDDocs to retrieve services
+        if (typeof service === 'string') {
+          this.logger.debug(`Resolving services for did ${service}.`)
+          const resolvedDidCommServices = await this.didCommDocumentService.resolveServicesFromDid(
+            this.agentContext,
+            service
+          )
+          recipientKeyFingerprints.push(
+            ...resolvedDidCommServices
+              .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+              .map((key) => key.fingerprint)
+          )
+        } else {
+          recipientKeyFingerprints.push(
+            ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
+          )
+        }
+      }
+
+      outOfBandRecord = new OutOfBandRecord({
+        role: OutOfBandRole.Receiver,
+        state: OutOfBandState.Initial,
+        outOfBandInvitation: outOfBandInvitation,
+        autoAcceptConnection,
+        tags: { recipientKeyFingerprints },
+      })
     }
 
-    outOfBandRecord = new OutOfBandRecord({
-      role: OutOfBandRole.Receiver,
-      state: OutOfBandState.Initial,
-      outOfBandInvitation: outOfBandInvitation,
-      autoAcceptConnection,
-      tags: { recipientKeyFingerprints },
-    })
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError('Unable to receive Out-of-Band invitation.')
+    }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
@@ -457,92 +469,99 @@ export class OutOfBandApi {
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
-    const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config || {}
-    const { handshakeProtocols } = outOfBandInvitation
-    const services = outOfBandInvitation.getServices()
-    const messages = outOfBandInvitation.getRequests()
+    if (outOfBandRecord.v2OutOfBandInvitation) {
+      return this.v2OutOfBandService.acceptInvitation(this.agentContext, outOfBandRecord.v2OutOfBandInvitation)
+    }
 
-    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
+    if (outOfBandRecord.outOfBandInvitation) {
+      const { outOfBandInvitation } = outOfBandRecord
+      const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config || {}
+      const { handshakeProtocols } = outOfBandInvitation
+      const services = outOfBandInvitation.getServices()
+      const messages = outOfBandInvitation.getRequests()
 
-    await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
+      const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
-    if (handshakeProtocols) {
-      this.logger.debug('Out of band message contains handshake protocols.')
+      await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
-      let connectionRecord
-      if (existingConnection && reuseConnection) {
-        this.logger.debug(
-          `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
-        )
+      if (handshakeProtocols) {
+        this.logger.debug('Out of band message contains handshake protocols.')
 
-        if (!messages) {
-          this.logger.debug('Out of band message does not contain any request messages.')
-          const isHandshakeReuseSuccessful = await this.handleHandshakeReuse(outOfBandRecord, existingConnection)
+        let connectionRecord
+        if (existingConnection && reuseConnection) {
+          this.logger.debug(
+            `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
+          )
 
-          // Handshake reuse was successful
-          if (isHandshakeReuseSuccessful) {
-            this.logger.debug(`Handshake reuse successful. Reusing existing connection ${existingConnection.id}.`)
-            connectionRecord = existingConnection
+          if (!messages) {
+            this.logger.debug('Out of band message does not contain any request messages.')
+            const isHandshakeReuseSuccessful = await this.handleHandshakeReuse(outOfBandRecord, existingConnection)
+
+            // Handshake reuse was successful
+            if (isHandshakeReuseSuccessful) {
+              this.logger.debug(`Handshake reuse successful. Reusing existing connection ${existingConnection.id}.`)
+              connectionRecord = existingConnection
+            } else {
+              // Handshake reuse failed. Not setting connection record
+              this.logger.debug(`Handshake reuse failed. Not using existing connection ${existingConnection.id}.`)
+            }
           } else {
-            // Handshake reuse failed. Not setting connection record
-            this.logger.debug(`Handshake reuse failed. Not using existing connection ${existingConnection.id}.`)
+            // Handshake reuse because we found a connection and we can respond directly to the message
+            this.logger.debug(`Reusing existing connection ${existingConnection.id}.`)
+            connectionRecord = existingConnection
           }
-        } else {
-          // Handshake reuse because we found a connection and we can respond directly to the message
-          this.logger.debug(`Reusing existing connection ${existingConnection.id}.`)
-          connectionRecord = existingConnection
         }
-      }
 
-      // If no existing connection was found, reuseConnection is false, or we didn't receive a
-      // handshake-reuse-accepted message we create a new connection
-      if (!connectionRecord) {
-        this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
-        // Find first supported handshake protocol preserving the order of handshake protocols
-        // defined by `handshake_protocols` attribute in the invitation message
-        const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
-        connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
-          label,
-          alias,
-          imageUrl,
-          autoAcceptConnection,
-          protocol: handshakeProtocol,
-          routing,
-        })
-      }
-
-      if (messages) {
-        this.logger.debug('Out of band message contains request messages.')
-        if (connectionRecord.isReady) {
-          await this.emitWithConnection(connectionRecord, messages)
-        } else {
-          // Wait until the connection is ready and then pass the messages to the agent for further processing
-          this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id)
-            .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
-            .catch((error) => {
-              if (error instanceof EmptyError) {
-                this.logger.warn(
-                  `Agent unsubscribed before connection got into ${DidExchangeState.Completed} state`,
-                  error
-                )
-              } else {
-                this.logger.error('Promise waiting for the connection to be complete failed.', error)
-              }
-            })
+        // If no existing connection was found, reuseConnection is false, or we didn't receive a
+        // handshake-reuse-accepted message we create a new connection
+        if (!connectionRecord) {
+          this.logger.debug('Connection does not exist or reuse is disabled. Creating a new connection.')
+          // Find first supported handshake protocol preserving the order of handshake protocols
+          // defined by `handshake_protocols` attribute in the invitation message
+          const handshakeProtocol = this.getFirstSupportedProtocol(handshakeProtocols)
+          connectionRecord = await this.connectionsApi.acceptOutOfBandInvitation(outOfBandRecord, {
+            label,
+            alias,
+            imageUrl,
+            autoAcceptConnection,
+            protocol: handshakeProtocol,
+            routing,
+          })
         }
-      }
-      return { outOfBandRecord, connectionRecord }
-    } else if (messages) {
-      this.logger.debug('Out of band message contains only request messages.')
-      if (existingConnection) {
-        this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        await this.emitWithConnection(existingConnection, messages)
-      } else {
-        await this.emitWithServices(services, messages)
+
+        if (messages) {
+          this.logger.debug('Out of band message contains request messages.')
+          if (connectionRecord.isReady) {
+            await this.emitWithConnection(connectionRecord, messages)
+          } else {
+            // Wait until the connection is ready and then pass the messages to the agent for further processing
+            this.connectionsApi
+              .returnWhenIsConnected(connectionRecord.id)
+              .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
+              .catch((error) => {
+                if (error instanceof EmptyError) {
+                  this.logger.warn(
+                    `Agent unsubscribed before connection got into ${DidExchangeState.Completed} state`,
+                    error
+                  )
+                } else {
+                  this.logger.error('Promise waiting for the connection to be complete failed.', error)
+                }
+              })
+          }
+        }
+        return { outOfBandRecord, connectionRecord }
+      } else if (messages) {
+        this.logger.debug('Out of band message contains only request messages.')
+        if (existingConnection) {
+          this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
+          await this.emitWithConnection(existingConnection, messages)
+        } else {
+          await this.emitWithServices(services, messages)
+        }
       }
     }
+
     return { outOfBandRecord }
   }
 

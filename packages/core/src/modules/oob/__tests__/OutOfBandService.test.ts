@@ -137,7 +137,7 @@ describe('OutOfBandService', () => {
         state: OutOfBandState.AwaitResponse,
         role: OutOfBandRole.Sender,
       })
-      mockOob.outOfBandInvitation.addRequest(reuseMessage)
+      mockOob.getOutOfBandInvitation().addRequest(reuseMessage)
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
       await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(

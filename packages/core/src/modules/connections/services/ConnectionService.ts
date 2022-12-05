@@ -98,7 +98,7 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const { outOfBandInvitation } = outOfBandRecord
+    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
 
     const { mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
@@ -209,9 +209,11 @@ export class ConnectionService {
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
+    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
+
     const didDoc = routing
       ? this.createDidDoc(routing)
-      : this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
+      : this.createDidDocFromOutOfBandDidCommServices(outOfBandInvitation.getInlineServices())
 
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,

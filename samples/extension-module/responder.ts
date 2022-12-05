@@ -43,7 +43,7 @@ const run = async () => {
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (req, res) => {
     const { outOfBandInvitation } = await agent.oob.createInvitation()
-    res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
+    res.send(outOfBandInvitation?.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 
   // Now agent will handle messages and events from Dummy protocol

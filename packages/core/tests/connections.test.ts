@@ -60,12 +60,12 @@ describe('connections', () => {
     acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await acmeAgent.initialize()
 
-    const { outOfBandRecord: faberOutOfBandRecord } = await faberAgent.oob.createInvitation({
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord!.outOfBandInvitation
+    const invitation = faberOutOfBandRecord.outOfBandInvitation!
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
@@ -116,12 +116,12 @@ describe('connections', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { outOfBandRecord: faberOutOfBandRecord } = await faberAgent.oob.createInvitation({
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord!.outOfBandInvitation
+    const invitation = faberOutOfBandRecord.outOfBandInvitation!
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection

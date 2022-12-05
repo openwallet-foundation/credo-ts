@@ -81,6 +81,10 @@ export class DidExchangeProtocol {
     })
 
     const { outOfBandInvitation } = outOfBandRecord
+    if (!outOfBandInvitation) {
+      throw new AriesFrameworkError('Unable to create did exchange request!')
+    }
+
     const { alias, goal, goalCode, routing, autoAcceptConnection } = params
 
     // TODO: We should store only one did that we'll use to send the request message with success.
@@ -235,7 +239,7 @@ export class DidExchangeProtocol {
     if (routing) {
       services = this.routingToServices(routing)
     } else if (outOfBandRecord) {
-      const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
+      const inlineServices = outOfBandRecord.getOutOfBandInvitation().getInlineServices()
       services = inlineServices.map((service) => ({
         id: service.id,
         serviceEndpoint: service.serviceEndpoint,
@@ -356,7 +360,7 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.getOutOfBandInvitation().id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)

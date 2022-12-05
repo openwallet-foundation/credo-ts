@@ -463,7 +463,7 @@ export class MessageSender {
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.outOfBandInvitation.getServices()) {
+        for (const service of outOfBand.getOutOfBandInvitation().getServices()) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)

@@ -2,6 +2,7 @@ import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ConnectionRecord } from '../../../../modules/connections'
 import type { JsonObject } from '../../../../types'
 
+import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import {
   DidExchangeState,
   ConnectionState,
@@ -355,6 +356,10 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       agent.config.logger.debug(
         `Found existing out of band record for invitation @id ${oldInvitation.id} and did ${connectionRecord.did}, not creating a new out of band record.`
       )
+    }
+
+    if (!oobRecord.outOfBandInvitation) {
+      throw new AriesFrameworkError('Unable to migrate oob record')
     }
 
     // We need to update the oob record with the reusable data. We don't know initially if an oob record is reusable or not, as there can be 1..n connections for each invitation

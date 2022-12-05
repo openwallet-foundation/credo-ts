@@ -69,12 +69,12 @@ describe('postgres agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const { outOfBandRecord: aliceBobOutOfBandRecord } = await aliceAgent.oob.createInvitation({
+    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
-      aliceBobOutOfBandRecord!.outOfBandInvitation
+      aliceBobOutOfBandRecord.outOfBandInvitation!
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 

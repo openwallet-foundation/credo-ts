@@ -76,7 +76,7 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
   } else {
     const { outOfBandInvitation } = await agent.oob.createInvitation()
     const httpEndpoint = config.endpoints.find((e) => e.startsWith('http'))
-    res.send(outOfBandInvitation.toUrl({ domain: httpEndpoint + '/invitation' }))
+    res.send(outOfBandInvitation?.toUrl({ domain: httpEndpoint + '/invitation' }))
   }
 })
 
