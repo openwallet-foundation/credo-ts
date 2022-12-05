@@ -45,7 +45,7 @@ export class OutOfBandService {
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
     outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
 
-    const requestLength = outOfBandRecord.outOfBandInvitation.getRequests()?.length ?? 0
+    const requestLength = outOfBandRecord.getOutOfBandInvitation().getRequests()?.length ?? 0
     if (requestLength > 0) {
       throw new AriesFrameworkError('Handshake reuse should only be used when no requests are present')
     }
@@ -120,7 +120,7 @@ export class OutOfBandService {
     outOfBandRecord: OutOfBandRecord,
     connectionRecord: ConnectionRecord
   ) {
-    const reuseMessage = new HandshakeReuseMessage({ parentThreadId: outOfBandRecord.outOfBandInvitation.id })
+    const reuseMessage = new HandshakeReuseMessage({ parentThreadId: outOfBandRecord.getOutOfBandInvitation().id })
 
     // Store the reuse connection id
     outOfBandRecord.reuseConnectionId = connectionRecord.id

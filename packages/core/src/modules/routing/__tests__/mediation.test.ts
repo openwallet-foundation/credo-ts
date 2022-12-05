@@ -67,7 +67,7 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const { outOfBandRecord: mediatorOutOfBandRecord } = await mediatorAgent.oob.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -78,7 +78,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       config: {
         ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord!.outOfBandInvitation.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
           domain: 'https://example.com/ssi',
         }),
       },
@@ -110,12 +110,12 @@ describe('mediator establishment', () => {
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const { outOfBandRecord: recipientOutOfBandRecord } = await recipientAgent.oob.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord!.outOfBandInvitation
+    const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })
@@ -194,7 +194,7 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const { outOfBandRecord: mediatorOutOfBandRecord } = await mediatorAgent.oob.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -205,7 +205,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       config: {
         ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord!.outOfBandInvitation.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
           domain: 'https://example.com/ssi',
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -236,7 +236,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       config: {
         ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord!.outOfBandInvitation.toUrl({
+        mediatorConnectionsInvite: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
           domain: 'https://example.com/ssi',
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -252,12 +252,12 @@ describe('mediator establishment', () => {
     senderAgent.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const { outOfBandRecord: recipientOutOfBandRecord } = await recipientAgent.oob.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord!.outOfBandInvitation
+    const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })

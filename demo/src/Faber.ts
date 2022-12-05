@@ -45,15 +45,11 @@ export class Faber extends BaseAgent {
   }
 
   private async printConnectionInvite(version: 'v1' | 'v2') {
-    const { outOfBandRecord, outOfBandInvitation } = await this.agent.oob.createInvitation({ version })
-    if (outOfBandRecord) {
-      this.outOfBandId = outOfBandRecord.id
-      console.log(
-        Output.ConnectionLink,
-        outOfBandRecord.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
-        '\n'
-      )
-    } else if (outOfBandInvitation) {
+    const outOfBandRecord = await this.agent.oob.createInvitation({ version })
+    this.outOfBandId = outOfBandRecord.id
+
+    const outOfBandInvitation = outOfBandRecord.outOfBandInvitation || outOfBandRecord.v2OutOfBandInvitation
+    if (outOfBandInvitation) {
       console.log(Output.ConnectionLink, outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
     }
   }
@@ -100,7 +96,7 @@ export class Faber extends BaseAgent {
 
   public async setupConnection(version: 'v1' | 'v2') {
     await this.printConnectionInvite(version)
-    await this.waitForConnection()
+    if (version === 'v1') await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {

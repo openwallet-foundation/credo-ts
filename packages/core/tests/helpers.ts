@@ -356,11 +356,11 @@ export function getMockOutOfBand({
 }
 
 export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const { outOfBandRecord: agentAOutOfBand } = await agentA.oob.createInvitation({
+  const agentAOutOfBand = await agentA.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand!.outOfBandInvitation)
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation!)
 
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
   let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand!.id)

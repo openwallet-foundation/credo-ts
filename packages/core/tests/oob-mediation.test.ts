@@ -76,9 +76,8 @@ describe('out of band with mediation', () => {
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
     // ========== Make a connection between Alice and Mediator agents ==========
-    const { outOfBandRecord: mediationOutOfBandRecord } = await mediatorAgent.oob.createInvitation(makeConnectionConfig)
-    const { outOfBandInvitation: mediatorOutOfBandInvitation } = mediationOutOfBandRecord!
-    const mediatorUrlMessage = mediatorOutOfBandInvitation.toUrl({ domain: 'http://example.com' })
+    const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation(makeConnectionConfig)
+    const mediatorUrlMessage = mediationOutOfBandRecord.outOfBandInvitation!.toUrl({ domain: 'http://example.com' })
 
     let { connectionRecord: aliceMediatorConnection } = await aliceAgent.oob.receiveInvitationFromUrl(
       mediatorUrlMessage
@@ -109,9 +108,8 @@ describe('out of band with mediation', () => {
     expect(defaultMediator?.id).toBe(mediationRecord.id)
 
     // ========== Make a connection between Alice and Faber ==========
-    const { outOfBandRecord } = await faberAgent.oob.createInvitation(makeConnectionConfig)
-    const { outOfBandInvitation } = outOfBandRecord!
-    const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
+    const outOfBandRecord = await faberAgent.oob.createInvitation(makeConnectionConfig)
+    const urlMessage = outOfBandRecord.outOfBandInvitation!.toUrl({ domain: 'http://example.com' })
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 

@@ -89,16 +89,15 @@ describe('out of band with mediation set up with provision method', () => {
     expect(defaultMediator?.state).toBe(MediationState.Granted)
 
     // Make a connection between Alice and Faber
-    const { outOfBandRecord: outOfBandRecord } = await faberAgent.oob.createInvitation(makeConnectionConfig)
-    const { outOfBandInvitation } = outOfBandRecord!
-    const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
+    const { outOfBandInvitation, id } = await faberAgent.oob.createInvitation(makeConnectionConfig)
+    const urlMessage = outOfBandInvitation!.toUrl({ domain: 'http://example.com' })
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(urlMessage)
 
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
-    let [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
+    let [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(id)
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 

@@ -64,8 +64,8 @@ Currently, there is implemented straight forward option:
 
   ```
   // Inviter
-  const { outOfBandRecord, outOfBandInvitation } = await this.agent.oob.createInvitation({ version: 'v2' })
-  const invitationUrl = outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` })
+  const outOfBandRecord = await this.agent.oob.createInvitation({ version: 'v2' })
+  const invitationUrl = outOfBandRecord.v2OutOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` })
 
   // Receiver
   const { connectionRecord } = await this.agent.oob.receiveInvitationFromUrl(invitationUrl)

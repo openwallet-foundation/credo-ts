@@ -3,16 +3,18 @@ import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 
 import { Type } from 'class-transformer'
+import { IsOptional } from 'class-validator'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { OutOfBandInvitation } from '../protocols/v1/messages'
+import { OutOfBandInvitation as V2OutOfBandInvitation } from '../protocols/v2/messages'
 
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
-  invitationId: string
+  invitationId?: string
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -24,7 +26,8 @@ export interface OutOfBandRecordProps {
   createdAt?: Date
   updatedAt?: Date
   tags?: CustomOutOfBandRecordTags
-  outOfBandInvitation: OutOfBandInvitation
+  outOfBandInvitation?: OutOfBandInvitation
+  v2OutOfBandInvitation?: V2OutOfBandInvitation
   role: OutOfBandRole
   state: OutOfBandState
   alias?: string
@@ -35,8 +38,13 @@ export interface OutOfBandRecordProps {
 }
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
+  @IsOptional()
   @Type(() => OutOfBandInvitation)
-  public outOfBandInvitation!: OutOfBandInvitation
+  public outOfBandInvitation?: OutOfBandInvitation
+  @IsOptional()
+  @Type(() => V2OutOfBandInvitation)
+  public v2OutOfBandInvitation?: V2OutOfBandInvitation
+
   public role!: OutOfBandRole
   public state!: OutOfBandState
   public alias?: string
@@ -55,6 +63,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.outOfBandInvitation = props.outOfBandInvitation
+      this.v2OutOfBandInvitation = props.v2OutOfBandInvitation
       this.role = props.role
       this.state = props.state
       this.alias = props.alias
@@ -71,7 +80,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       ...this._tags,
       role: this.role,
       state: this.state,
-      invitationId: this.outOfBandInvitation.id,
+      invitationId: this.outOfBandInvitation?.id,
     }
   }
 
@@ -91,5 +100,13 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
         `Invalid out-of-band record state ${this.state}, valid states are: ${expectedStates.join(', ')}.`
       )
     }
+  }
+
+  public getOutOfBandInvitation(): OutOfBandInvitation {
+    const outOfBandInvitation = this.outOfBandInvitation
+    if (!outOfBandInvitation) {
+      throw new AriesFrameworkError(`Unable to get Out-of-Band invitation!`)
+    }
+    return outOfBandInvitation
   }
 }

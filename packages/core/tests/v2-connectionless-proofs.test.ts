@@ -240,19 +240,19 @@ describe('Present Proof', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationInvitationResult = await mediatorAgent.oob.createInvitation({
+    const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationInvitationResult = await mediatorAgent.oob.createInvitation({
+    const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
     const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationInvitationResult.outOfBandInvitation.toUrl({
+      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation?.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -261,7 +261,7 @@ describe('Present Proof', () => {
     const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
       // logger: new TestLogger(LogLevel.test),
-      mediatorConnectionsInvite: aliceMediationInvitationResult.outOfBandInvitation.toUrl({
+      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation?.toUrl({
         domain: 'https://example.com',
       }),
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,

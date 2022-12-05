@@ -5,11 +5,11 @@ import { filter, firstValueFrom, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { DidCommV1Message } from '../build'
-import { parseMessageType, MessageSender, Dispatcher, AgentMessage, IsValidMessageType } from '../src'
+import { parseMessageType, MessageSender, Dispatcher, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { OutboundMessageContext } from '../src/agent/models'
+import { DidCommV1Message } from '../src/didcomm/versions/v1'
 
 import { getAgentOptions } from './helpers'
 
@@ -57,10 +57,9 @@ describe('multi version protocols', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const { outOfBandRecord } = await aliceAgent.oob.createInvitation()
-    if (!outOfBandRecord) throw new Error('Unable to create out of band invitation')
+    const { outOfBandInvitation, id } = await aliceAgent.oob.createInvitation()
+    if (!outOfBandInvitation) throw new Error('Unable to create out of band invitation')
 
-    const { outOfBandInvitation, id } = outOfBandRecord
     let { connectionRecord: bobConnection } = await bobAgent.oob.receiveInvitation(outOfBandInvitation, {
       autoAcceptConnection: true,
       autoAcceptInvitation: true,
