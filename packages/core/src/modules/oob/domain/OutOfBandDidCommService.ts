@@ -2,7 +2,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
 
-import { DidDocumentService } from '../../dids'
+import { DidDocumentService } from '../../dids/domain/service/DidDocumentService'
 
 export class OutOfBandDidCommService extends DidDocumentService {
   public constructor(options: {

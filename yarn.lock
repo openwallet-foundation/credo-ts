@@ -10,6 +10,19 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
+"@aries-framework/node@0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@aries-framework/node/-/node-0.2.5.tgz#f23a08813355eec066c9c0942743039d72f87bc5"
+  integrity sha512-dz0a2RscytlGr5zPK6+ic0EpGE2qKbvCfvwm2MhqVC6qZQEOSo6lbsiIItDh1j+CyG/vIJiZFAUH5s+EzgNN4A==
+  dependencies:
+    "@aries-framework/core" "0.2.5"
+    express "^4.17.1"
+    ffi-napi "^4.0.3"
+    indy-sdk "^1.16.0-dev-1636"
+    node-fetch "^2.6.1"
+    ref-napi "^3.0.3"
+    ws "^7.5.3"
+
 "@azure/core-asynciterator-polyfill@^1.0.0":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@azure/core-asynciterator-polyfill/-/core-asynciterator-polyfill-1.0.2.tgz#0dd3849fb8d97f062a39db0e5cadc9ffaf861fec"
@@ -4496,6 +4509,16 @@ did-resolver@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-4.0.0.tgz#fc8f657b4cd7f44c2921051fb046599fbe7d4b31"
   integrity sha512-/roxrDr9EnAmLs+s9T+8+gcpilMo+IkeytcsGO7dcxvTmVJ+0Rt60HtV8o0UXHhGBo0Q+paMH/0ffXz1rqGFYg==
+
+didcomm-node@0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.3.4.tgz#2bab787256d03be39ee9fe9da49e6af44d265a06"
+  integrity sha512-XcQlpuxUU5TSwio7I6pA3w/K9m9NHCNOgENK4JPgP9DrYwtOci8yG1hmh0G9zZ6WY7Ylfmt2rBJEdDj+OPdweg==
+
+didcomm@0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.3.4.tgz#8c81ac39966cafd0483743db59affc95b2b20c00"
+  integrity sha512-jGZduR98a5tR5Mh5xuwHG8ZT1w9xHpBUzCOl2Beqylk46aJ6fBD385NbcMNcPxqgVEXZ5fuOC3TQFXvp385PzA==
 
 diff-sequences@^26.6.2:
   version "26.6.2"

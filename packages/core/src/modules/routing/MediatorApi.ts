@@ -2,19 +2,15 @@ import type { EncryptedMessage } from '../../didcomm/types'
 import type { MediationRecord } from './repository'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
-import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { MediatorModuleConfig } from './MediatorModuleConfig'
-import { ForwardHandler, KeylistUpdateHandler } from './handlers'
-import { MediationRequestHandler } from './handlers/MediationRequestHandler'
-import { MessagePickupService, V2MessagePickupService } from './protocol'
-import { BatchHandler, BatchPickupHandler } from './protocol/pickup/v1/handlers'
-import { MediatorService } from './services/MediatorService'
+import { MessagePickupService, V2MessagePickupService, V3MessagePickupService } from './protocol'
+import { MediatorService, V2MediatorService } from './protocol/coordinate-mediation'
+import { RoutingService, V2RoutingService } from './protocol/routing'
 
 @injectable()
 export class MediatorApi {
@@ -23,18 +19,19 @@ export class MediatorApi {
   private mediatorService: MediatorService
   private messagePickupService: MessagePickupService
   private messageSender: MessageSender
-  private eventEmitter: EventEmitter
   private agentContext: AgentContext
   private connectionService: ConnectionService
 
   public constructor(
-    dispatcher: Dispatcher,
     mediationService: MediatorService,
+    v2MediatorService: V2MediatorService,
     messagePickupService: MessagePickupService,
     // Only imported so it is injected and handlers are registered
     v2MessagePickupService: V2MessagePickupService,
+    v3MessagePickupService: V3MessagePickupService,
+    routingService: RoutingService,
+    v2RoutingService: V2RoutingService,
     messageSender: MessageSender,
-    eventEmitter: EventEmitter,
     agentContext: AgentContext,
     connectionService: ConnectionService,
     config: MediatorModuleConfig
@@ -42,11 +39,9 @@ export class MediatorApi {
     this.mediatorService = mediationService
     this.messagePickupService = messagePickupService
     this.messageSender = messageSender
-    this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.agentContext = agentContext
     this.config = config
-    this.registerHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -83,13 +78,5 @@ export class MediatorApi {
 
   public queueMessage(connectionId: string, message: EncryptedMessage) {
     return this.messagePickupService.queueMessage(connectionId, message)
-  }
-
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
-    dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
-    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.config))
   }
 }

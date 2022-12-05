@@ -3,14 +3,12 @@ import type { Wallet } from '../../../../wallet/Wallet'
 import type { Routing } from '../../../connections/services/ConnectionService'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
-import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Key } from '../../../../crypto'
 import { KeyProviderRegistry } from '../../../../crypto/key-provider'
-import { Attachment } from '../../../../decorators/attachment/v1/Attachment'
-import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
@@ -21,17 +19,17 @@ import { DidRepository } from '../../../dids/repository/DidRepository'
 import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
 import { RecipientModuleConfig } from '../../RecipientModuleConfig'
 import { RoutingEventTypes } from '../../RoutingEvents'
+import { MediationRole, MediationState } from '../../models'
+import { DeliveryRequestMessage, StatusMessage } from '../../protocol'
+import { MediationRecipientService } from '../../protocol/coordinate-mediation/v1/MediationRecipientService'
 import {
   KeylistUpdateAction,
   KeylistUpdateResponseMessage,
   KeylistUpdateResult,
   MediationGrantMessage,
-} from '../../messages'
-import { MediationRole, MediationState } from '../../models'
-import { DeliveryRequestMessage, MessageDeliveryMessage, MessagesReceivedMessage, StatusMessage } from '../../protocol'
+} from '../../protocol/coordinate-mediation/v1/messages'
 import { MediationRecord } from '../../repository/MediationRecord'
 import { MediationRepository } from '../../repository/MediationRepository'
-import { MediationRecipientService } from '../MediationRecipientService'
 
 jest.mock('../../repository/MediationRepository')
 const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
@@ -44,6 +42,9 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 jest.mock('../../../../agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+
+jest.mock('../../../../agent/Dispatcher')
+const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 
 jest.mock('../../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
@@ -68,6 +69,7 @@ describe('MediationRecipientService', () => {
   let didRepository: DidRepository
   let didRegistrarService: DidRegistrarService
   let eventEmitter: EventEmitter
+  let dispatcher: Dispatcher
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
   let messageSender: MessageSender
@@ -90,6 +92,7 @@ describe('MediationRecipientService', () => {
 
   beforeEach(async () => {
     eventEmitter = new EventEmitterMock()
+    dispatcher = new DispatcherMock()
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
     didRegistrarService = new DidRegistrarServiceMock()
@@ -117,6 +120,7 @@ describe('MediationRecipientService', () => {
       messageSender,
       mediationRepository,
       eventEmitter,
+      dispatcher,
       new RecipientModuleConfig()
     )
   })
@@ -259,94 +263,6 @@ describe('MediationRecipientService', () => {
       const deliveryRequestMessage = await mediationRecipientService.processStatus(messageContext)
       expect(deliveryRequestMessage)
       expect(deliveryRequestMessage).toEqual(new DeliveryRequestMessage({ id: deliveryRequestMessage?.id, limit: 1 }))
-    })
-  })
-
-  describe('processDelivery', () => {
-    it('if the delivery has no attachments expect an error', async () => {
-      const messageContext = new InboundMessageContext({} as MessageDeliveryMessage, {
-        connection: mockConnection,
-        agentContext,
-      })
-
-      await expect(mediationRecipientService.processDelivery(messageContext)).rejects.toThrowError(
-        new AriesFrameworkError('Error processing attachments')
-      )
-    })
-
-    it('should return a message received with an message id list in it', async () => {
-      const messageDeliveryMessage = new MessageDeliveryMessage({
-        threadId: uuid(),
-        attachments: [
-          new Attachment({
-            id: '1',
-            data: {
-              json: {
-                a: 'value',
-              },
-            },
-          }),
-        ],
-      })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
-        connection: mockConnection,
-        agentContext,
-      })
-
-      const messagesReceivedMessage = await mediationRecipientService.processDelivery(messageContext)
-
-      expect(messagesReceivedMessage).toEqual(
-        new MessagesReceivedMessage({
-          id: messagesReceivedMessage.id,
-          messageIdList: ['1'],
-        })
-      )
-    })
-
-    it('calls the event emitter for each message', async () => {
-      const messageDeliveryMessage = new MessageDeliveryMessage({
-        threadId: uuid(),
-        attachments: [
-          new Attachment({
-            id: '1',
-            data: {
-              json: {
-                first: 'value',
-              },
-            },
-          }),
-          new Attachment({
-            id: '2',
-            data: {
-              json: {
-                second: 'value',
-              },
-            },
-          }),
-        ],
-      })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
-        connection: mockConnection,
-        agentContext,
-      })
-
-      await mediationRecipientService.processDelivery(messageContext)
-
-      expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
-        payload: {
-          message: { first: 'value' },
-          contextCorrelationId: agentContext.contextCorrelationId,
-        },
-      })
-      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
-        payload: {
-          message: { second: 'value' },
-          contextCorrelationId: agentContext.contextCorrelationId,
-        },
-      })
     })
   })
 

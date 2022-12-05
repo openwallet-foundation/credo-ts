@@ -1,8 +1,9 @@
 import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
+import type { MediationRequestMessage, V2MediationRequestMessage } from './protocol'
 import type { MediationRecord } from './repository'
-import type { GetRoutingOptions } from './services/RoutingService'
+import type { GetRoutingOptions } from './services/MediationService'
 
 import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
@@ -25,21 +26,19 @@ import { DiscoverFeaturesApi } from '../discover-features'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RecipientModuleConfig } from './RecipientModuleConfig'
 import { RoutingEventTypes } from './RoutingEvents'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
-import { MediationDenyHandler } from './handlers/MediationDenyHandler'
-import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { MediationState } from './models/MediationState'
-import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
-import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
+import { BatchPickupMessage, StatusMessage, StatusRequestMessage } from './protocol'
+import { MediationRecipientService, V2MediationRecipientService } from './protocol/coordinate-mediation'
+import { DeliveryRequestMessage } from './protocol/pickup/v3'
 import { MediationRepository } from './repository'
-import { MediationRecipientService } from './services/MediationRecipientService'
-import { RoutingService } from './services/RoutingService'
+import { MediationService } from './services/MediationService'
 
 @injectable()
 export class RecipientApi {
   public config: RecipientModuleConfig
 
   private mediationRecipientService: MediationRecipientService
+  private v2MediationRecipientService: V2MediationRecipientService
   private connectionService: ConnectionService
   private dids: DidsApi
   private messageSender: MessageSender
@@ -47,7 +46,7 @@ export class RecipientApi {
   private logger: Logger
   private discoverFeaturesApi: DiscoverFeaturesApi
   private mediationRepository: MediationRepository
-  private routingService: RoutingService
+  private mediationService: MediationService
   private agentContext: AgentContext
   private stop$: Subject<boolean>
 
@@ -57,13 +56,14 @@ export class RecipientApi {
   public constructor(
     dispatcher: Dispatcher,
     mediationRecipientService: MediationRecipientService,
+    v2MediationRecipientService: V2MediationRecipientService,
     connectionService: ConnectionService,
     dids: DidsApi,
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
     discoverFeaturesApi: DiscoverFeaturesApi,
     mediationRepository: MediationRepository,
-    routingService: RoutingService,
+    routingService: MediationService,
     @inject(InjectionSymbols.Logger) logger: Logger,
     agentContext: AgentContext,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
@@ -72,16 +72,16 @@ export class RecipientApi {
     this.connectionService = connectionService
     this.dids = dids
     this.mediationRecipientService = mediationRecipientService
+    this.v2MediationRecipientService = v2MediationRecipientService
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
     this.logger = logger
     this.discoverFeaturesApi = discoverFeaturesApi
     this.mediationRepository = mediationRepository
-    this.routingService = routingService
+    this.mediationService = routingService
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = recipientModuleConfig
-    this.registerHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -131,7 +131,8 @@ export class RecipientApi {
 
     const websocketSchemes = ['ws', 'wss']
     const didDocument = connectionRecord.theirDid && (await this.dids.resolveDidDocument(connectionRecord.theirDid))
-    const services = didDocument && didDocument?.didCommServices
+    const services = didDocument && didDocument?.service
+
     const hasWebSocketTransport = services && services.some((s) => websocketSchemes.includes(s.protocolScheme))
 
     if (!hasWebSocketTransport) {
@@ -233,44 +234,89 @@ export class RecipientApi {
    * @returns
    */
   public async initiateMessagePickup(mediator?: MediationRecord, pickupStrategy?: MediatorPickupStrategy) {
-    const { mediatorPollingInterval } = this.config
     const mediatorRecord = mediator ?? (await this.findDefaultMediator())
     if (!mediatorRecord) {
       throw new AriesFrameworkError('There is no mediator to pickup messages from')
     }
 
     const mediatorPickupStrategy = pickupStrategy ?? (await this.getPickupStrategyForMediator(mediatorRecord))
+
+    if (mediatorPickupStrategy === MediatorPickupStrategy.PickUpV1) {
+      return this.initiateMessagePickupV1(mediatorRecord)
+    }
+
+    // pick up v2
+    else if (mediatorPickupStrategy === MediatorPickupStrategy.PickUpV2) {
+      return this.initiateMessagePickupV2(mediatorRecord, mediatorPickupStrategy)
+    }
+
+    // Explicit means polling every X seconds with batch message
+    else if (mediatorPickupStrategy === MediatorPickupStrategy.PickUpV3) {
+      return this.initiateMessagePickupV3(mediatorRecord)
+    }
+
+    // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
+    // such as WebSockets to work
+    else if (mediatorPickupStrategy === MediatorPickupStrategy.Implicit) {
+      return this.initiateImplicitMessagePickup(mediatorRecord, mediatorPickupStrategy)
+    }
+  }
+
+  public async initiateMessagePickupV1(mediatorRecord: MediationRecord) {
+    const { mediatorPollingInterval } = this.config
+    const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
+
+    // Explicit means polling every X seconds with batch message
+    this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`)
+
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
 
-    switch (mediatorPickupStrategy) {
-      case MediatorPickupStrategy.PickUpV2:
-        this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
-        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
-        await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
-        break
-      case MediatorPickupStrategy.PickUpV1: {
-        const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
-        // Explicit means polling every X seconds with batch message
-        this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`)
-        const subscription = interval(mediatorPollingInterval)
-          .pipe(takeUntil(stopConditions$))
-          .subscribe({
-            next: async () => {
-              await this.pickupMessages(mediatorConnection)
-            },
-            complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
-          })
-        return subscription
-      }
-      case MediatorPickupStrategy.Implicit:
-        // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
-        // such as WebSockets to work
-        this.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
-        await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
-        break
-      default:
-        this.logger.info(`Skipping pickup of messages from mediator '${mediatorRecord.id}' due to pickup strategy none`)
-    }
+    return interval(mediatorPollingInterval)
+      .pipe(takeUntil(stopConditions$))
+      .subscribe({
+        next: async () => {
+          await this.pickupMessages(mediatorConnection)
+        },
+        complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
+      })
+  }
+
+  public async initiateMessagePickupV2(
+    mediatorRecord: MediationRecord,
+    mediatorPickupStrategy: MediatorPickupStrategy
+  ) {
+    this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
+    await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
+    await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
+  }
+
+  public async initiateMessagePickupV3(mediatorRecord: MediationRecord) {
+    const { mediatorPollingInterval } = this.config
+    const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
+
+    // Explicit means polling every X seconds with batch message
+    this.logger.info(`Starting explicit (batch) pickup of messages from mediator '${mediatorRecord.id}'`)
+
+    const mediatorConnection = await this.connectionService.getById(this.agentContext, mediatorRecord.connectionId)
+
+    return interval(mediatorPollingInterval)
+      .pipe(takeUntil(stopConditions$))
+      .subscribe({
+        next: async () => {
+          await this.pickupMessagesV3(mediatorConnection)
+        },
+        complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
+      })
+  }
+
+  public async initiateImplicitMessagePickup(
+    mediatorRecord: MediationRecord,
+    mediatorPickupStrategy: MediatorPickupStrategy
+  ) {
+    // Implicit means sending ping once and keeping connection open. This requires a long-lived transport
+    // such as WebSockets to work
+    this.logger.info(`Starting implicit pickup of messages from mediator '${mediatorRecord.id}'`)
+    await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
   }
 
   /**
@@ -298,6 +344,10 @@ export class RecipientApi {
 
   private async getPickupStrategyForMediator(mediator: MediationRecord) {
     let mediatorPickupStrategy = mediator.pickupStrategy ?? this.config.mediatorPickupStrategy
+
+    const mediatorConnection = await this.connectionService.getById(this.agentContext, mediator.connectionId)
+
+    if (mediatorConnection.isDidCommV2Connection) return MediatorPickupStrategy.PickUpV3
 
     // If mediator pickup strategy is not configured we try to query if batch pickup
     // is supported through the discover features protocol
@@ -352,6 +402,21 @@ export class RecipientApi {
     await this.sendMessage(outboundMessageContext, pickupStrategy)
   }
 
+  public async pickupMessagesV3(mediatorConnection: ConnectionRecord) {
+    mediatorConnection.assertReady()
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      from: mediatorConnection.did,
+      to: mediatorConnection.theirDid,
+      body: { limit: 10 },
+    })
+    const outboundMessageContext = new OutboundMessageContext(deliveryRequestMessage, {
+      agentContext: this.agentContext,
+      connection: mediatorConnection,
+    })
+    await this.sendMessage(outboundMessageContext)
+  }
+
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
     return this.mediationRecipientService.setDefaultMediator(this.agentContext, mediatorRecord)
   }
@@ -402,10 +467,7 @@ export class RecipientApi {
   }
 
   public async requestAndAwaitGrant(connection: ConnectionRecord, timeoutMs = 10000): Promise<MediationRecord> {
-    const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
-      this.agentContext,
-      connection
-    )
+    const { mediationRecord, message } = await this.createRequest(connection)
 
     // Create observable for event
     const observable = this.eventEmitter.observable<MediationStateChangedEvent>(RoutingEventTypes.MediationStateChanged)
@@ -439,6 +501,25 @@ export class RecipientApi {
     return event.payload.mediationRecord
   }
 
+  public async createRequest(connection: ConnectionRecord): Promise<{
+    mediationRecord: MediationRecord
+    message: MediationRequestMessage | V2MediationRequestMessage
+  }> {
+    if (connection.isDidCommV1Connection) {
+      const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
+        this.agentContext,
+        connection
+      )
+      return { mediationRecord, message }
+    } else {
+      const { mediationRecord, message } = await this.v2MediationRecipientService.createRequest(
+        this.agentContext,
+        connection
+      )
+      return { mediationRecord, message }
+    }
+  }
+
   /**
    * Requests mediation for a given connection and sets that as default mediator.
    *
@@ -463,16 +544,6 @@ export class RecipientApi {
   }
 
   public async getRouting(options: GetRoutingOptions) {
-    return this.routingService.getRouting(this.agentContext, options)
-  }
-
-  // Register handlers for the several messages for the mediator.
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
-    //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+    return this.mediationService.getRouting(this.agentContext, options)
   }
 }

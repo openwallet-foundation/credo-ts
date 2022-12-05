@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { MediationRecipientService, RoutingService } from '../../../../routing'
+import type { MediationRecipientService, MediationService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
 import type {
@@ -23,7 +23,7 @@ export class V1RequestPresentationHandler implements Handler {
   private proofResponseCoordinator: ProofResponseCoordinator
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
-  private routingService: RoutingService
+  private routingService: MediationService
   public supportedMessages = [V1RequestPresentationMessage]
 
   public constructor(
@@ -32,7 +32,7 @@ export class V1RequestPresentationHandler implements Handler {
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    routingService: RoutingService
+    routingService: MediationService
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig

@@ -2,7 +2,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../../../logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { RoutingService } from '../../../../routing/services/RoutingService'
+import type { MediationService } from '../../../../routing/services/MediationService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -13,7 +13,7 @@ import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 export class V2OfferCredentialHandler implements Handler {
   private credentialService: V2CredentialService
-  private routingService: RoutingService
+  private routingService: MediationService
   private logger: Logger
 
   public supportedMessages = [V2OfferCredentialMessage]
@@ -21,7 +21,7 @@ export class V2OfferCredentialHandler implements Handler {
 
   public constructor(
     credentialService: V2CredentialService,
-    routingService: RoutingService,
+    routingService: MediationService,
     didCommMessageRepository: DidCommMessageRepository,
     logger: Logger
   ) {

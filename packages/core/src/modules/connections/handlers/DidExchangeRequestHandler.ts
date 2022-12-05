@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
-import type { RoutingService } from '../../routing/services/RoutingService'
+import type { MediationService } from '../../routing/services/MediationService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
@@ -13,7 +13,7 @@ import { DidExchangeRequestMessage } from '../messages'
 export class DidExchangeRequestHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
-  private routingService: RoutingService
+  private mediationService: MediationService
   private didRepository: DidRepository
   private connectionsModuleConfig: ConnectionsModuleConfig
   public supportedMessages = [DidExchangeRequestMessage]
@@ -21,13 +21,13 @@ export class DidExchangeRequestHandler implements Handler {
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
     outOfBandService: OutOfBandService,
-    routingService: RoutingService,
+    mediationService: MediationService,
     didRepository: DidRepository,
     connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
-    this.routingService = routingService
+    this.mediationService = mediationService
     this.didRepository = didRepository
     this.connectionsModuleConfig = connectionsModuleConfig
   }
@@ -76,7 +76,7 @@ export class DidExchangeRequestHandler implements Handler {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
       const routing = outOfBandRecord.reusable
-        ? await this.routingService.getRouting(messageContext.agentContext)
+        ? await this.mediationService.getRouting(messageContext.agentContext)
         : undefined
 
       const message = await this.didExchangeProtocol.createResponse(

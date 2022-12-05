@@ -7,13 +7,13 @@ export class Alice extends BaseAgent {
   public connected: boolean
   public connectionRecordFaberId?: string
 
-  public constructor(port: number, name: string) {
-    super(port, name)
+  public constructor(name: string, port: number) {
+    super(name, port)
     this.connected = false
   }
 
   public static async build(): Promise<Alice> {
-    const alice = new Alice(9000, 'alice')
+    const alice = new Alice('alice', 9000)
     await alice.initializeAgent()
     return alice
   }

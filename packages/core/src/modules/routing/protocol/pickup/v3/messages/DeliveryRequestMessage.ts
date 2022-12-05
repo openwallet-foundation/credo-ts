@@ -1,0 +1,48 @@
+import type { DidCommV2MessageParams } from '../../../../../../didcomm'
+
+import { Expose, Type } from 'class-transformer'
+import { IsNotEmpty, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
+
+import { DidCommV2Message } from '../../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+
+export type DeliveryRequestMessageV3Params = {
+  body: DeliveryRequestBody
+} & DidCommV2MessageParams
+
+class DeliveryRequestBody {
+  @IsNumber()
+  public limit!: number
+
+  @IsString()
+  @IsOptional()
+  @Expose({ name: 'recipient_key' })
+  public recipientKey?: string
+}
+
+/**
+ * A message that contains request from the recipient to the mediator to have pending messages delivered.
+ *
+ * @see https://github.com/decentralized-identity/didcomm.org/tree/main/site/content/protocols/pickup/3.0#delivery-request
+ */
+export class DeliveryRequestMessage extends DidCommV2Message {
+  @IsString()
+  @IsNotEmpty()
+  public from!: string
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => DeliveryRequestBody)
+  public body!: DeliveryRequestBody
+
+  @IsValidMessageType(DeliveryRequestMessage.type)
+  public readonly type = DeliveryRequestMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/messagepickup/3.0/delivery-request')
+
+  public constructor(params?: DeliveryRequestMessageV3Params) {
+    super(params)
+    if (params) {
+      this.body = params.body
+    }
+  }
+}

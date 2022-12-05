@@ -69,14 +69,17 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    const aliceFaberConnectionResult = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    let aliceFaberConnection = aliceFaberConnectionResult!.connectionRecord
+
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     // Receive invitation second time with acme agent
-    let { connectionRecord: acmeFaberConnection } = await acmeAgent.oob.receiveInvitationFromUrl(invitationUrl, {
+    const acmeFaberConnectionResult = await acmeAgent.oob.receiveInvitationFromUrl(invitationUrl, {
       reuseConnection: false,
     })
+    let acmeFaberConnection = acmeFaberConnectionResult!.connectionRecord
     acmeFaberConnection = await acmeAgent.connections.returnWhenIsConnected(acmeFaberConnection!.id)
     expect(acmeFaberConnection.state).toBe(DidExchangeState.Completed)
 
@@ -125,14 +128,16 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
-    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    const aliceFaberConnection1Result = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    let aliceFaberConnection1 = aliceFaberConnection1Result!.connectionRecord
     aliceFaberConnection1 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection1!.id)
     expect(aliceFaberConnection1.state).toBe(DidExchangeState.Completed)
 
     // Create second connection
-    let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
+    const aliceFaberConnection2Result = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, {
       reuseConnection: false,
     })
+    let aliceFaberConnection2 = aliceFaberConnection2Result!.connectionRecord
     aliceFaberConnection2 = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection2!.id)
     expect(aliceFaberConnection2.state).toBe(DidExchangeState.Completed)
 

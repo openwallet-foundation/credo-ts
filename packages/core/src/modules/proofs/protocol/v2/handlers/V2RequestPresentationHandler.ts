@@ -1,7 +1,7 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { MediationRecipientService, RoutingService } from '../../../../routing'
+import type { MediationRecipientService, MediationService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../../formats/ProofFormat'
 import type {
@@ -22,7 +22,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
   private proofResponseCoordinator: ProofResponseCoordinator
   private mediationRecipientService: MediationRecipientService
   private didCommMessageRepository: DidCommMessageRepository
-  private routingService: RoutingService
+  private routingService: MediationService
   public supportedMessages = [V2RequestPresentationMessage]
 
   public constructor(
@@ -31,7 +31,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     didCommMessageRepository: DidCommMessageRepository,
-    routingService: RoutingService
+    routingService: MediationService
   ) {
     this.proofService = proofService
     this.agentConfig = agentConfig

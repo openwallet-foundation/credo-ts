@@ -59,9 +59,10 @@ describe('E2E Pick Up protocol', () => {
     // Connect
     const mediatorInvitation = mediatorOutOfBandRecord.getOutOfBandInvitation()
 
-    let { connectionRecord: recipientMediatorConnection } = await recipientAgent.oob.receiveInvitationFromUrl(
+    const result = await recipientAgent.oob.receiveInvitationFromUrl(
       mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
     )
+    let recipientMediatorConnection = result!.connectionRecord
 
     recipientMediatorConnection = await recipientAgent.connections.returnWhenIsConnected(
       recipientMediatorConnection!.id
@@ -113,9 +114,10 @@ describe('E2E Pick Up protocol', () => {
     // Connect
     const mediatorInvitation = mediatorOutOfBandRecord.getOutOfBandInvitation()
 
-    let { connectionRecord: recipientMediatorConnection } = await recipientAgent.oob.receiveInvitationFromUrl(
+    const result = await recipientAgent.oob.receiveInvitationFromUrl(
       mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
     )
+    let recipientMediatorConnection = result!.connectionRecord
 
     recipientMediatorConnection = await recipientAgent.connections.returnWhenIsConnected(
       recipientMediatorConnection!.id

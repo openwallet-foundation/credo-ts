@@ -49,6 +49,7 @@ export class MessageSender {
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
   public readonly outboundTransports: OutboundTransport[] = []
+  public readonly outboundTransportsSchemas: string[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -67,10 +68,12 @@ export class MessageSender {
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
     this.outboundTransports = []
+    this.outboundTransportsSchemas = []
   }
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
     this.outboundTransports.push(outboundTransport)
+    this.outboundTransportsSchemas.push(...outboundTransport.supportedSchemes)
   }
 
   public async packMessage(
@@ -585,7 +588,10 @@ export class MessageSender {
     const senderServices = senderDidDocument?.service || []
     const recipientServices = recipientDidDocument?.service || []
 
-    const senderTransports = senderServices.map((service) => service.protocolScheme)
+    const senderTransports = senderServices.length
+      ? senderServices.map((service) => service.protocolScheme)
+      : this.outboundTransportsSchemas
+
     const supportedTransports = transportPriority
       ? [...transportPriority.schemes, ...senderTransports]
       : senderTransports
@@ -712,6 +718,31 @@ export class MessageSender {
       }
     }
     this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
+  }
+
+  public async sendEncryptedPackage(
+    agentContext: AgentContext,
+    message: EncryptedMessage,
+    sender: string,
+    recipient: string
+  ) {
+    const senderToRecipientService = await this.findCommonSupportedServices(agentContext, recipient, sender)
+    if (!senderToRecipientService) {
+      this.logger.error(
+        `Unable to send message because there is no any commonly supported service between sender and recipient`
+      )
+      return
+    }
+
+    for (const service of senderToRecipientService) {
+      const outboundPackage = { payload: message, recipientDid: recipient, endpoint: service.serviceEndpoint }
+      for (const outboundTransport of this.outboundTransports) {
+        if (outboundTransport.supportedSchemes.includes(service.protocolScheme)) {
+          await outboundTransport.sendMessage(outboundPackage)
+          break
+        }
+      }
+    }
   }
 }
 

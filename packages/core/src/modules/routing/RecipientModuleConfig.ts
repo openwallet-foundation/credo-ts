@@ -66,6 +66,16 @@ export interface RecipientModuleConfigOptions {
    * Supports both RFC 0434 Out Of Band v1 and RFC 0160 Connections v1 invitations.
    */
   mediatorInvitationUrl?: string
+
+  /**
+   * Push notifications token used for delivering message
+   */
+  mediatorPushToken?: string
+
+  /**
+   * A service web hook enjoining which must be reached for delivering messages
+   */
+  mediatorWebHookEndpoint?: string
 }
 
 export class RecipientModuleConfig {
@@ -103,5 +113,13 @@ export class RecipientModuleConfig {
   /** See {@link RecipientModuleConfigOptions.mediatorInvitationUrl} */
   public get mediatorInvitationUrl() {
     return this.options.mediatorInvitationUrl
+  }
+
+  public get mediatorPushToken() {
+    return this.options.mediatorPushToken
+  }
+
+  public get mediatorWebHookEndpoint() {
+    return this.options.mediatorWebHookEndpoint
   }
 }

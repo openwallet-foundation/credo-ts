@@ -1,11 +1,20 @@
 import type { EncryptedMessage } from '../../../../didcomm/types'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
 
-import { getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
 import { Dispatcher } from '../../../../agent/Dispatcher'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { AgentEventTypes } from '../../../../agent/Events'
+import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import { AriesFrameworkError } from '../../../../error'
 import { InMemoryMessageRepository } from '../../../../storage/InMemoryMessageRepository'
-import { DidExchangeState } from '../../../connections'
+import { uuid } from '../../../../utils/uuid'
+import { ConnectionRepository, ConnectionService, DidExchangeState } from '../../../connections'
+import { DidRepository } from '../../../dids/repository/DidRepository'
+import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
+import { RecipientModuleConfig } from '../../RecipientModuleConfig'
 import {
   DeliveryRequestMessage,
   MessageDeliveryMessage,
@@ -14,7 +23,6 @@ import {
   StatusRequestMessage,
   V2MessagePickupService,
 } from '../../protocol'
-import { MediationRecipientService } from '../MediationRecipientService'
 
 const mockConnection = getMockConnection({
   state: DidExchangeState.Completed,
@@ -24,11 +32,20 @@ const mockConnection = getMockConnection({
 jest.mock('../MediationRecipientService')
 jest.mock('../../../../storage/InMemoryMessageRepository')
 jest.mock('../../../../agent/Dispatcher')
+jest.mock('../../../../agent/EventEmitter')
+jest.mock('../../../connections/repository/ConnectionRepository')
+jest.mock('../../../dids/repository/DidRepository')
+jest.mock('../../../dids/services/DidRegistrarService')
+jest.mock('../../../../agent/MessageSender')
 
 // Mock typed object
-const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 const InMessageRepositoryMock = InMemoryMessageRepository as jest.Mock<InMemoryMessageRepository>
+const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
+const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
 const agentContext = getAgentContext()
 
@@ -41,16 +58,44 @@ const encryptedMessage: EncryptedMessage = {
 }
 const queuedMessages = [encryptedMessage, encryptedMessage, encryptedMessage]
 
+const connectionImageUrl = 'https://example.com/image.png'
+
 describe('V2MessagePickupService', () => {
   let pickupService: V2MessagePickupService
   let messageRepository: MessageRepository
+  let dispatcher: Dispatcher
+  let eventEmitter: EventEmitter
+
+  const config = getAgentConfig('V2MessagePickupService', {
+    endpoints: ['http://agent.com:8080'],
+    connectionImageUrl,
+  })
 
   beforeEach(async () => {
-    const dispatcher = new DispatcherMock()
-    const mediationRecipientService = new MediationRecipientServiceMock()
+    dispatcher = new DispatcherMock()
+    eventEmitter = new EventEmitterMock()
+    const messageSender = new MessageSenderMock()
+    const connectionRepository = new ConnectionRepositoryMock()
+    const didRepository = new DidRepositoryMock()
+    const didRegistrarService = new DidRegistrarServiceMock()
+
+    const connectionService = new ConnectionService(
+      config.logger,
+      connectionRepository,
+      didRepository,
+      didRegistrarService,
+      eventEmitter
+    )
 
     messageRepository = new InMessageRepositoryMock()
-    pickupService = new V2MessagePickupService(messageRepository, dispatcher, mediationRecipientService)
+    pickupService = new V2MessagePickupService(
+      messageRepository,
+      eventEmitter,
+      dispatcher,
+      connectionService,
+      messageSender,
+      new RecipientModuleConfig()
+    )
   })
 
   describe('processStatusRequest', () => {
@@ -247,6 +292,94 @@ describe('V2MessagePickupService', () => {
 
       expect(messageRepository.getAvailableMessageCount).toHaveBeenCalledWith(mockConnection.id)
       expect(messageRepository.takeFromQueue).toHaveBeenCalledWith(mockConnection.id, 2)
+    })
+  })
+
+  describe('processDelivery', () => {
+    it('if the delivery has no attachments expect an error', async () => {
+      const messageContext = new InboundMessageContext({} as MessageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
+
+      await expect(pickupService.processDelivery(messageContext)).rejects.toThrowError(
+        new AriesFrameworkError('Error processing attachments')
+      )
+    })
+
+    it('should return a message received with an message id list in it', async () => {
+      const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
+        attachments: [
+          new Attachment({
+            id: '1',
+            data: {
+              json: {
+                a: 'value',
+              },
+            },
+          }),
+        ],
+      })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
+
+      const messagesReceivedMessage = await pickupService.processDelivery(messageContext)
+
+      expect(messagesReceivedMessage).toEqual(
+        new MessagesReceivedMessage({
+          id: messagesReceivedMessage.id,
+          messageIdList: ['1'],
+        })
+      )
+    })
+
+    it('calls the event emitter for each message', async () => {
+      const messageDeliveryMessage = new MessageDeliveryMessage({
+        threadId: uuid(),
+        attachments: [
+          new Attachment({
+            id: '1',
+            data: {
+              json: {
+                first: 'value',
+              },
+            },
+          }),
+          new Attachment({
+            id: '2',
+            data: {
+              json: {
+                second: 'value',
+              },
+            },
+          }),
+        ],
+      })
+      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+        connection: mockConnection,
+        agentContext,
+      })
+
+      await pickupService.processDelivery(messageContext)
+
+      expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, agentContext, {
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: { first: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
+        },
+      })
+      expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: { second: 'value' },
+          contextCorrelationId: agentContext.contextCorrelationId,
+        },
+      })
     })
   })
 })

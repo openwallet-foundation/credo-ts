@@ -5,8 +5,8 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { Key } from '../../../../crypto'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { RoutingEventTypes } from '../../RoutingEvents'
-import { MediationRecipientService } from '../MediationRecipientService'
-import { RoutingService } from '../RoutingService'
+import { MediationRecipientService } from '../../protocol/coordinate-mediation/v1/MediationRecipientService'
+import { MediationService } from '../MediationService'
 
 jest.mock('../../../../wallet/IndyWallet')
 const IndyWalletMock = IndyWallet as jest.Mock<IndyWallet>
@@ -24,7 +24,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 const mediationRecipientService = new MediationRecipientServiceMock()
-const routingService = new RoutingService(mediationRecipientService, eventEmitter)
+const routingService = new MediationService(eventEmitter, mediationRecipientService)
 
 const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 

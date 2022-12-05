@@ -31,7 +31,7 @@ import { isLinkedAttachment } from '../../../../utils/attachment'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections/services'
-import { RoutingService } from '../../../routing/services/RoutingService'
+import { MediationService } from '../../../routing/services/MediationService'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
@@ -68,14 +68,14 @@ import { V1CredentialPreview } from './messages/V1CredentialPreview'
 export class V1CredentialService extends CredentialService<[IndyCredentialFormat]> {
   private connectionService: ConnectionService
   private formatService: IndyCredentialFormatService
-  private routingService: RoutingService
+  private routingService: MediationService
   private credentialsModuleConfig: CredentialsModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    routingService: RoutingService,
+    routingService: MediationService,
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,

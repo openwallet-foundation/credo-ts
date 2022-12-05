@@ -3,8 +3,10 @@ import type { DidDoc, PublicKey } from '../models'
 
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { IndyAgentService, DidCommV1Service, DidDocumentBuilder } from '../../dids'
+import { DidDocumentBuilder } from '../../dids/domain/DidDocumentBuilder'
 import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
+import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
+import { IndyAgentService } from '../../dids/domain/service/IndyAgentService'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { EmbeddedAuthentication } from '../models'
 

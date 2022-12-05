@@ -5,6 +5,9 @@ export enum MediatorPickupStrategy {
   // Supports pickup v2
   PickUpV2 = 'PickUpV2',
 
+  // Supports pickup v3
+  PickUpV3 = 'PickUpV3',
+
   // Implicit pickup strategy means picking up messages only using return route
   // decorator. This is what ACA-Py currently uses
   Implicit = 'Implicit',

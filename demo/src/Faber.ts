@@ -19,13 +19,13 @@ export class Faber extends BaseAgent {
   public credentialDefinition?: CredDef
   public ui: BottomBar
 
-  public constructor(port: number, name: string) {
-    super(port, name)
+  public constructor(name: string, port?: number) {
+    super(name, port)
     this.ui = new ui.BottomBar()
   }
 
   public static async build(): Promise<Faber> {
-    const faber = new Faber(9001, 'faber')
+    const faber = new Faber('faber', 9001)
     await faber.initializeAgent()
     return faber
   }

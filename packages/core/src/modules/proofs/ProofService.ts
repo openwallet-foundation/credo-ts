@@ -8,7 +8,7 @@ import type { Logger } from '../../logger'
 import type { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import type { Wallet } from '../../wallet/Wallet'
 import type { ConnectionService } from '../connections/services'
-import type { MediationRecipientService, RoutingService } from '../routing'
+import type { MediationRecipientService, MediationService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import type { ProofFormat } from './formats/ProofFormat'
@@ -197,7 +197,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
-    routingService: RoutingService
+    routingService: MediationService
   ): void
 
   public abstract findProposalMessage(

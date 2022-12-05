@@ -10,6 +10,7 @@ import { JsonEncoder, JsonTransformer } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export enum OutOfBandGoalCode {
+  MediatorProvision = 'mediator-provision',
   DidExchange = 'did-exchange',
 }
 

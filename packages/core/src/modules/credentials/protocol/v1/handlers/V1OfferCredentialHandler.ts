@@ -1,7 +1,7 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { Logger } from '../../../../../logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
-import type { RoutingService } from '../../../../routing/services/RoutingService'
+import type { MediationService } from '../../../../routing/services/MediationService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
 
@@ -12,14 +12,14 @@ import { V1OfferCredentialMessage } from '../messages'
 
 export class V1OfferCredentialHandler implements Handler {
   private credentialService: V1CredentialService
-  private routingService: RoutingService
+  private routingService: MediationService
   private didCommMessageRepository: DidCommMessageRepository
   private logger: Logger
   public supportedMessages = [V1OfferCredentialMessage]
 
   public constructor(
     credentialService: V1CredentialService,
-    routingService: RoutingService,
+    routingService: MediationService,
     didCommMessageRepository: DidCommMessageRepository,
     logger: Logger
   ) {

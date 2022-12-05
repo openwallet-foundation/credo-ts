@@ -3,8 +3,8 @@ import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
 import type { DidCommV1Message } from '../../../../didcomm'
-import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
-import type { RoutingService } from '../../../routing/services/RoutingService'
+import type { MediationRecipientService } from '../../../routing/protocol/coordinate-mediation/v1/MediationRecipientService'
+import type { MediationService } from '../../../routing/services/MediationService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
@@ -951,7 +951,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
-    routingService: RoutingService
+    mediationService: MediationService
   ): void {
     dispatcher.registerHandler(
       new V1ProposePresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
@@ -964,7 +964,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
         proofResponseCoordinator,
         mediationRecipientService,
         this.didCommMessageRepository,
-        routingService
+        mediationService
       )
     )
 

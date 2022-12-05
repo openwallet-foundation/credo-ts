@@ -1,39 +1,56 @@
+import type { AgentMessageReceivedEvent } from '../../../../../agent/Events'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../../../didcomm/types'
-import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from './messages'
+import type { StatusRequestMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
+import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { AgentEventTypes } from '../../../../../agent/Events'
+import { MessageSender } from '../../../../../agent/MessageSender'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
-import { MediationRecipientService } from '../../../services'
+import { TrustPingMessage } from '../../../../connections/protocols/trust-ping/v1'
+import { ConnectionService } from '../../../../connections/services/ConnectionService'
+import { ProblemReportError } from '../../../../problem-reports'
+import { RecipientModuleConfig } from '../../../RecipientModuleConfig'
+import { RoutingProblemReportReason } from '../../../error'
 
 import {
   DeliveryRequestHandler,
-  MessageDeliveryHandler,
+  DeliveryHandler,
   MessagesReceivedHandler,
   StatusHandler,
   StatusRequestHandler,
 } from './handlers'
-import { MessageDeliveryMessage, StatusMessage } from './messages'
+import { MessageDeliveryMessage, StatusMessage, MessagesReceivedMessage, DeliveryRequestMessage } from './messages'
 
 @injectable()
 export class V2MessagePickupService {
   private messageRepository: MessageRepository
+  private eventEmitter: EventEmitter
   private dispatcher: Dispatcher
-  private mediationRecipientService: MediationRecipientService
+  private connectionService: ConnectionService
+  private messageSender: MessageSender
+  private recipientModuleConfig: RecipientModuleConfig
 
   public constructor(
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
+    eventEmitter: EventEmitter,
     dispatcher: Dispatcher,
-    mediationRecipientService: MediationRecipientService
+    connectionService: ConnectionService,
+    messageSender: MessageSender,
+    recipientModuleConfig: RecipientModuleConfig
   ) {
     this.messageRepository = messageRepository
+    this.eventEmitter = eventEmitter
     this.dispatcher = dispatcher
-    this.mediationRecipientService = mediationRecipientService
+    this.connectionService = connectionService
+    this.messageSender = messageSender
+    this.recipientModuleConfig = recipientModuleConfig
 
     this.registerHandlers()
   }
@@ -54,8 +71,52 @@ export class V2MessagePickupService {
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
-  public async queueMessage(connectionId: string, message: EncryptedMessage) {
-    await this.messageRepository.add(connectionId, message)
+  public async processStatus(messageContext: InboundMessageContext<StatusMessage>) {
+    const connection = messageContext.assertReadyConnection()
+    const { message: statusMessage } = messageContext
+    const { messageCount, recipientKey } = statusMessage
+
+    //No messages to be sent
+    if (messageCount === 0) {
+      const { message, connectionRecord } = await this.connectionService.createTrustPing(
+        messageContext.agentContext,
+        connection,
+        {
+          responseRequested: false,
+        }
+      )
+      if (message instanceof TrustPingMessage) {
+        const websocketSchemes = ['ws', 'wss']
+
+        await this.messageSender.sendMessage(
+          new OutboundMessageContext(message, {
+            agentContext: messageContext.agentContext,
+            connection: connectionRecord,
+          }),
+          {
+            transportPriority: {
+              schemes: websocketSchemes,
+              restrictive: true,
+              // TODO: add keepAlive: true to enforce through the public api
+              // we need to keep the socket alive. It already works this way, but would
+              // be good to make more explicit from the public facing API.
+              // This would also make it easier to change the internal API later on.
+              // keepAlive: true,
+            },
+          }
+        )
+        return null
+      }
+    }
+    const { maximumMessagePickup } = this.recipientModuleConfig
+    const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
+
+    const deliveryRequestMessage = new DeliveryRequestMessage({
+      limit,
+      recipientKey,
+    })
+
+    return deliveryRequestMessage
   }
 
   public async processDeliveryRequest(messageContext: InboundMessageContext<DeliveryRequestMessage>) {
@@ -96,6 +157,34 @@ export class V2MessagePickupService {
     return new OutboundMessageContext(outboundMessageContext, { agentContext: messageContext.agentContext, connection })
   }
 
+  public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
+    messageContext.assertReadyConnection()
+
+    const { appendedAttachments } = messageContext.message
+
+    if (!appendedAttachments)
+      throw new ProblemReportError('Error processing attachments', {
+        problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
+      })
+
+    const ids: string[] = []
+    for (const attachment of appendedAttachments) {
+      ids.push(attachment.id)
+
+      this.eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
+        type: AgentEventTypes.AgentMessageReceived,
+        payload: {
+          message: attachment.getDataAsJson<EncryptedMessage>(),
+          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
+        },
+      })
+    }
+
+    return new MessagesReceivedMessage({
+      messageIdList: ids,
+    })
+  }
+
   public async processMessagesReceived(messageContext: InboundMessageContext<MessagesReceivedMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
@@ -116,11 +205,15 @@ export class V2MessagePickupService {
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
+  public async queueMessage(connectionId: string, message: EncryptedMessage) {
+    await this.messageRepository.add(connectionId, message)
+  }
+
   protected registerHandlers() {
     this.dispatcher.registerHandler(new StatusRequestHandler(this))
     this.dispatcher.registerHandler(new DeliveryRequestHandler(this))
     this.dispatcher.registerHandler(new MessagesReceivedHandler(this))
-    this.dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    this.dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+    this.dispatcher.registerHandler(new StatusHandler(this))
+    this.dispatcher.registerHandler(new DeliveryHandler(this))
   }
 }

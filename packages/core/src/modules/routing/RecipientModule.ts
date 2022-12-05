@@ -7,8 +7,19 @@ import { Protocol } from '../../agent/models'
 import { RecipientApi } from './RecipientApi'
 import { RecipientModuleConfig } from './RecipientModuleConfig'
 import { MediationRole } from './models'
+import {
+  MediationRecipientService,
+  MediatorService,
+  MessagePickupService,
+  RoutingService,
+  V2MediationRecipientService,
+  V2MediatorService,
+  V2MessagePickupService,
+  V2RoutingService,
+  V3MessagePickupService,
+} from './protocol'
 import { MediationRepository } from './repository'
-import { MediationRecipientService, RoutingService } from './services'
+import { MediationService } from './services'
 
 export class RecipientModule implements Module {
   public readonly config: RecipientModuleConfig
@@ -29,8 +40,22 @@ export class RecipientModule implements Module {
     dependencyManager.registerInstance(RecipientModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(MediationRecipientService)
+    dependencyManager.registerSingleton(MediationService)
+
+    // pickup
+    dependencyManager.registerSingleton(MessagePickupService)
+    dependencyManager.registerSingleton(V2MessagePickupService)
+    dependencyManager.registerSingleton(V3MessagePickupService)
+
+    // routing
     dependencyManager.registerSingleton(RoutingService)
+    dependencyManager.registerSingleton(V2RoutingService)
+
+    // coordinate-mediation
+    dependencyManager.registerSingleton(MediationRecipientService)
+    dependencyManager.registerSingleton(MediatorService)
+    dependencyManager.registerSingleton(V2MediationRecipientService)
+    dependencyManager.registerSingleton(V2MediatorService)
 
     // Repositories
     dependencyManager.registerSingleton(MediationRepository)

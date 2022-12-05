@@ -28,7 +28,7 @@ import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connecti
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
 import { didKeyToVerkey } from '../dids/helpers'
-import { RoutingService } from '../routing/services/RoutingService'
+import { MediationService } from '../routing/services/MediationService'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
@@ -84,7 +84,7 @@ export interface ReceiveOutOfBandInvitationConfig {
 export class OutOfBandApi {
   private outOfBandService: OutOfBandService
   private v2OutOfBandService: V2OutOfBandService
-  private routingService: RoutingService
+  private mediationService: MediationService
   private connectionsApi: ConnectionsApi
   private didCommMessageRepository: DidCommMessageRepository
   private dispatcher: Dispatcher
@@ -99,7 +99,7 @@ export class OutOfBandApi {
     didCommDocumentService: DidCommDocumentService,
     outOfBandService: OutOfBandService,
     v2OutOfBandService: V2OutOfBandService,
-    routingService: RoutingService,
+    mediationService: MediationService,
     connectionsApi: ConnectionsApi,
     didCommMessageRepository: DidCommMessageRepository,
     messageSender: MessageSender,
@@ -113,7 +113,7 @@ export class OutOfBandApi {
     this.logger = logger
     this.outOfBandService = outOfBandService
     this.v2OutOfBandService = v2OutOfBandService
-    this.routingService = routingService
+    this.mediationService = mediationService
     this.connectionsApi = connectionsApi
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
@@ -188,7 +188,7 @@ export class OutOfBandApi {
         }
       }
 
-      const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
+      const routing = config.routing ?? (await this.mediationService.getRouting(this.agentContext, {}))
 
       const services = routing.endpoints.map((endpoint, index) => {
         return new OutOfBandDidCommService({
@@ -267,7 +267,7 @@ export class OutOfBandApi {
     domain: string
   }): Promise<{ message: Message; invitationUrl: string }> {
     // Create keys (and optionally register them at the mediator)
-    const routing = await this.routingService.getRouting(this.agentContext)
+    const routing = await this.mediationService.getRouting(this.agentContext)
 
     // Set the service on the message
     config.message.service = new ServiceDecorator({

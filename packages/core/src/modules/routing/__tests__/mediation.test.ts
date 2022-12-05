@@ -117,9 +117,10 @@ describe('mediator establishment', () => {
     })
     const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
-    let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
+    const result = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })
     )
+    let senderRecipientConnection = result!.connectionRecord
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
 
@@ -259,9 +260,10 @@ describe('mediator establishment', () => {
     })
     const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
-    let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
+    const result = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })
     )
+    let senderRecipientConnection = result!.connectionRecord
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
     const [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(

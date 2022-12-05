@@ -44,8 +44,8 @@ import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { DidCommMessageRole } from '../../storage/didcomm/DidCommMessageRole'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
-import { RoutingService } from '../routing/services/RoutingService'
+import { MediationRecipientService } from '../routing/protocol/coordinate-mediation/v1/MediationRecipientService'
+import { MediationService } from '../routing/services/MediationService'
 
 import { ProofResponseCoordinator } from './ProofResponseCoordinator'
 import { ProofState } from './models/ProofState'
@@ -107,7 +107,7 @@ export class ProofsApi<
 {
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private routingService: RoutingService
+  private routingService: MediationService
   private proofRepository: ProofRepository
   private agentContext: AgentContext
   private agentConfig: AgentConfig
@@ -121,7 +121,7 @@ export class ProofsApi<
     connectionService: ConnectionService,
     agentContext: AgentContext,
     agentConfig: AgentConfig,
-    routingService: RoutingService,
+    routingService: MediationService,
     @inject(InjectionSymbols.Logger) logger: Logger,
     proofRepository: ProofRepository,
     v1Service: V1ProofService,

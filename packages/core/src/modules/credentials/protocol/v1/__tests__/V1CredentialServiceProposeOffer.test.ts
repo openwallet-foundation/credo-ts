@@ -14,7 +14,7 @@ import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { IndyLedgerService } from '../../../../ledger/services'
-import { RoutingService } from '../../../../routing/services/RoutingService'
+import { MediationService } from '../../../../routing/services/MediationService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { schema, credDef } from '../../../__tests__/fixtures'
@@ -41,7 +41,7 @@ const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRep
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
+const RoutingServiceMock = MediationService as jest.Mock<MediationService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 

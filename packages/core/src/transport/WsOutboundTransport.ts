@@ -46,9 +46,15 @@ export class WsOutboundTransport implements OutboundTransport {
     if (!endpoint) {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
+    const socketMediatorConnection = connectionId ? await this.agent.connections.findById(connectionId) : null
 
     const isNewSocket = this.hasOpenSocket(endpoint)
-    const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
+    const socket = await this.resolveSocket({
+      socketId: endpoint,
+      endpoint,
+      connectionId,
+      agentDid: socketMediatorConnection?.did,
+    })
 
     socket.send(Buffer.from(JSON.stringify(payload)))
 
@@ -67,10 +73,12 @@ export class WsOutboundTransport implements OutboundTransport {
     socketId,
     endpoint,
     connectionId,
+    agentDid,
   }: {
     socketId: string
     endpoint?: string
     connectionId?: string
+    agentDid?: string
   }) {
     // If we already have a socket connection use it
     let socket = this.transportTable.get(socketId)
@@ -83,6 +91,7 @@ export class WsOutboundTransport implements OutboundTransport {
         endpoint,
         socketId,
         connectionId,
+        agentDid,
       })
       this.transportTable.set(socketId, socket)
       this.listenOnWebSocketMessages(socket)
@@ -124,14 +133,16 @@ export class WsOutboundTransport implements OutboundTransport {
     socketId,
     endpoint,
     connectionId,
+    agentDid,
   }: {
     socketId: string
     endpoint: string
     connectionId?: string
+    agentDid?: string
   }): Promise<WebSocket> {
     return new Promise((resolve, reject) => {
       this.logger.debug(`Connecting to WebSocket ${endpoint}`)
-      const socket = new this.WebSocketClass(endpoint)
+      const socket = new this.WebSocketClass(endpoint, [], { headers: { 'agent-did': agentDid } })
 
       socket.onopen = () => {
         this.logger.debug(`Successfully connected to WebSocket ${endpoint}`)

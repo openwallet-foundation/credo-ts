@@ -3,8 +3,8 @@ import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
 import type { DidCommV1Message } from '../../../../didcomm'
-import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
-import type { RoutingService } from '../../../routing/services/RoutingService'
+import type { MediationRecipientService } from '../../../routing/protocol/coordinate-mediation/v1//MediationRecipientService'
+import type { MediationService } from '../../../routing/services/MediationService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type { ProofFormatServiceMap } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
@@ -916,7 +916,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
-    routingService: RoutingService
+    mediationService: MediationService
   ): void {
     dispatcher.registerHandler(
       new V2ProposePresentationHandler<PFs>(this, agentConfig, this.didCommMessageRepository, proofResponseCoordinator)
@@ -929,7 +929,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         proofResponseCoordinator,
         mediationRecipientService,
         this.didCommMessageRepository,
-        routingService
+        mediationService
       )
     )
 

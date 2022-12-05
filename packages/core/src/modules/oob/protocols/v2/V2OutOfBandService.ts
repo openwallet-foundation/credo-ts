@@ -6,6 +6,7 @@ import type { DidCreateResult } from '../../../dids/types'
 import type { MediationRecord } from '../../../routing/repository/MediationRecord'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
+import { DID_COMM_TRANSPORT_QUEUE } from '../../../../constants'
 import { KeyType } from '../../../../crypto'
 import { injectable } from '../../../../plugins'
 import { uuid } from '../../../../utils/uuid'
@@ -16,6 +17,7 @@ import { getX25519VerificationMethod } from '../../../dids/domain/key-type/x2551
 import { DidCommV2Service } from '../../../dids/domain/service'
 import { PeerDidNumAlgo } from '../../../dids/methods/peer'
 import { DidRegistrarService } from '../../../dids/services'
+import { V2MediationRecipientService } from '../../../routing/protocol/coordinate-mediation/v2/V2MediationRecipientService'
 
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './../../../connections/models'
 import { OutOfBandGoalCode, OutOfBandInvitation } from './messages'
@@ -39,39 +41,38 @@ interface BuildDidDocumentParams {
 @injectable()
 export class V2OutOfBandService {
   private didRegistrarService: DidRegistrarService
+  private mediationRecipientService: V2MediationRecipientService
   private connectionService: ConnectionService
   private eventEmitter: EventEmitter
 
   public constructor(
     didRegistrarService: DidRegistrarService,
+    mediationRecipientService: V2MediationRecipientService,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter
   ) {
     this.didRegistrarService = didRegistrarService
+    this.mediationRecipientService = mediationRecipientService
     this.connectionService = connectionService
     this.eventEmitter = eventEmitter
   }
 
   public async createInvitation(agentContext: AgentContext): Promise<OutOfBandInvitation> {
-    const didResult = await this.createDid(agentContext, {
-      routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
-    })
-    const invitation = new OutOfBandInvitation({
+    const didResult = await this.createDid(agentContext)
+    return new OutOfBandInvitation({
       from: didResult.didState.did,
       body: {
         goalCode: OutOfBandGoalCode.DidExchange,
       },
     })
-    return invitation
   }
 
   public async acceptInvitation(
     agentContext: AgentContext,
     invitation: OutOfBandInvitation
   ): Promise<{ connectionRecord: ConnectionRecord }> {
-    const didResult = await this.createDid(agentContext, {
-      routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
-    })
+    const didResult = await this.createDid(agentContext)
+
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
       protocol: HandshakeProtocol.V2DidExchange,
       role: DidExchangeRole.Responder,
@@ -86,12 +87,17 @@ export class V2OutOfBandService {
   }
 
   private async createDid(agentContext: AgentContext, params: CreateDidParams = {}): Promise<DidCreateResult> {
+    const mediationRecord = await this.mediationRecipientService.findDefaultMediator(agentContext)
+
     // Create keys
     const authentication = await agentContext.wallet.createKey({ seed: params.seed, keyType: KeyType.Ed25519 })
     const keyAgreement = await agentContext.wallet.createKey({ seed: params.seed, keyType: KeyType.X25519 })
 
     // Build services
-    const services = this.prepareServices(params.routing)
+    const services = this.prepareServices({
+      endpoint: agentContext.config.endpoints[0],
+      mediator: mediationRecord || undefined,
+    })
 
     // Build DID Document
     const didDocument = this.buildDidDocument({
@@ -100,19 +106,25 @@ export class V2OutOfBandService {
       services,
     })
 
-    return this.didRegistrarService.create(agentContext, {
+    const didResult = await this.didRegistrarService.create(agentContext, {
       method: 'peer',
       didDocument,
       options: {
         numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
       },
     })
+
+    if (mediationRecord && didResult.didState.did) {
+      await this.mediationRecipientService.didListUpdateAndAwait(agentContext, mediationRecord, didResult.didState.did)
+    }
+
+    return didResult
   }
 
   private prepareServices({ endpoint, mediator }: DidRoutingParams = {}): DidCommV2Service[] {
     const services: DidCommV2Service[] = []
 
-    if (endpoint) {
+    if (endpoint && endpoint !== DID_COMM_TRANSPORT_QUEUE) {
       services.push(
         new DidCommV2Service({
           id: `#${uuid()}`,

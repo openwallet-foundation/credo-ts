@@ -36,7 +36,7 @@ import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
-import { RoutingService } from '../../../routing/services/RoutingService'
+import { MediationService } from '../../../routing/services/MediationService'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { CredentialProblemReportReason } from '../../errors'
 import { IndyCredentialFormatService } from '../../formats/indy/IndyCredentialFormatService'
@@ -69,14 +69,14 @@ import {
 export class V2CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> extends CredentialService<CFs> {
   private connectionService: ConnectionService
   private credentialFormatCoordinator: CredentialFormatCoordinator<CFs>
-  private routingService: RoutingService
+  private routingService: MediationService
   private credentialsModuleConfig: CredentialsModuleConfig
   private formatServiceMap: { [key: string]: CredentialFormatService }
 
   public constructor(
     connectionService: ConnectionService,
     didCommMessageRepository: DidCommMessageRepository,
-    routingService: RoutingService,
+    routingService: MediationService,
     dispatcher: Dispatcher,
     eventEmitter: EventEmitter,
     credentialRepository: CredentialRepository,

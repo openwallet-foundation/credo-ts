@@ -36,7 +36,7 @@ import { inject, injectable } from '../../plugins'
 import { DidCommMessageRole } from '../../storage'
 import { DidCommMessageRepository } from '../../storage/didcomm/DidCommMessageRepository'
 import { ConnectionService } from '../connections/services'
-import { RoutingService } from '../routing/services/RoutingService'
+import { MediationService } from '../routing/services/MediationService'
 
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { CredentialState } from './models/CredentialState'
@@ -107,7 +107,7 @@ export class CredentialsApi<
   private credentialRepository: CredentialRepository
   private agentContext: AgentContext
   private didCommMessageRepository: DidCommMessageRepository
-  private routingService: RoutingService
+  private routingService: MediationService
   private logger: Logger
   private serviceMap: CredentialServiceMap<CFs, CSs>
 
@@ -117,7 +117,7 @@ export class CredentialsApi<
     agentContext: AgentContext,
     @inject(InjectionSymbols.Logger) logger: Logger,
     credentialRepository: CredentialRepository,
-    mediationRecipientService: RoutingService,
+    mediationRecipientService: MediationService,
     didCommMessageRepository: DidCommMessageRepository,
     v1Service: V1CredentialService,
     v2Service: V2CredentialService<CFs>,

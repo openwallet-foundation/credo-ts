@@ -1,4 +1,3 @@
-export * from './messages'
 export * from './services'
 export * from './protocol'
 export * from './repository'

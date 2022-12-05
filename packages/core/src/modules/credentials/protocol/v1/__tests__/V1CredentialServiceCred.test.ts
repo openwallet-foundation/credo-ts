@@ -22,7 +22,7 @@ import { uuid } from '../../../../../utils/uuid'
 import { AckStatus } from '../../../../common'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { RoutingService } from '../../../../routing/services/RoutingService'
+import { MediationService } from '../../../../routing/services/MediationService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { credDef, credReq } from '../../../__tests__/fixtures'
@@ -61,7 +61,7 @@ jest.mock('../../../../../agent/Dispatcher')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
+const RoutingServiceMock = MediationService as jest.Mock<MediationService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 

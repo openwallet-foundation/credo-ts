@@ -26,4 +26,8 @@ export class MediationRepository extends Repository<MediationRecord> {
   public async getByConnectionId(agentContext: AgentContext, connectionId: string): Promise<MediationRecord> {
     return this.getSingleByQuery(agentContext, { connectionId })
   }
+
+  public async getByMediationDid(agentContext: AgentContext, mediationDid: string): Promise<MediationRecord> {
+    return this.getSingleByQuery(agentContext, { mediationDid })
+  }
 }

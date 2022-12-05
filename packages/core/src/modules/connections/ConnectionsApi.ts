@@ -14,7 +14,7 @@ import { injectable } from '../../plugins'
 import { DidResolverService } from '../dids'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandService } from '../oob/protocols/v1/OutOfBandService'
-import { RoutingService } from '../routing/services/RoutingService'
+import { MediationService } from '../routing/services/MediationService'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -44,7 +44,7 @@ export class ConnectionsApi {
   private messageSender: MessageSender
   private trustPingService: TrustPingService
   private v2TrustPingService: V2TrustPingService
-  private routingService: RoutingService
+  private mediationService: MediationService
   private didRepository: DidRepository
   private didResolverService: DidResolverService
   private agentContext: AgentContext
@@ -56,7 +56,7 @@ export class ConnectionsApi {
     outOfBandService: OutOfBandService,
     trustPingService: TrustPingService,
     v2TrustPingService: V2TrustPingService,
-    routingService: RoutingService,
+    mediationService: MediationService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
     messageSender: MessageSender,
@@ -68,7 +68,7 @@ export class ConnectionsApi {
     this.outOfBandService = outOfBandService
     this.trustPingService = trustPingService
     this.v2TrustPingService = v2TrustPingService
-    this.routingService = routingService
+    this.mediationService = mediationService
     this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
@@ -93,7 +93,7 @@ export class ConnectionsApi {
 
     const routing =
       config.routing ||
-      (await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId }))
+      (await this.mediationService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId }))
 
     let result
     if (protocol === HandshakeProtocol.DidExchange) {
@@ -373,7 +373,7 @@ export class ConnectionsApi {
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
-        this.routingService,
+        this.mediationService,
         this.didRepository,
         this.config
       )
@@ -387,7 +387,7 @@ export class ConnectionsApi {
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
-        this.routingService,
+        this.mediationService,
         this.didRepository,
         this.config
       )
