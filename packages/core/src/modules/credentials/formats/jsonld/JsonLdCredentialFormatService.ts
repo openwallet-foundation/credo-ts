@@ -223,8 +223,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     // (attachment in the request message from holder to issuer)
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
 
-    // const credentialData = jsonLdFormat ?? credentialRequest
-
     const verificationMethod =
       credentialFormats?.jsonld?.verificationMethod ??
       (await this.deriveVerificationMethod(agentContext, credentialRequest.credentialAsJson, credentialRequest))

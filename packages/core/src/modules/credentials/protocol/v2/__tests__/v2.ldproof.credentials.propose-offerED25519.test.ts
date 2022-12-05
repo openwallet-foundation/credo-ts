@@ -165,7 +165,7 @@ describe('credentials', () => {
       const offerCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
-          jsonld: undefined,
+          jsonld: {},
         },
       })
 
