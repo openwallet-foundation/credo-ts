@@ -1,6 +1,5 @@
 import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
-import type { W3cCredential } from '../../../../../modules/vc/models'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type {
