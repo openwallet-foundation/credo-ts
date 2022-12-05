@@ -23,7 +23,6 @@ import type {
   SignCredentialOptionsRFC0593,
   SignCredentialOptionsRFC0593AsJson,
 } from './JsonLdCredentialFormat'
-import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
 import { injectable } from 'tsyringe'
 
@@ -424,7 +423,6 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       try {
         const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
 
-        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
         this.compareCredentialSubject(credential, requestAsJson)
         this.compareProofs(credential.proof, requestAsJson)
         return true
