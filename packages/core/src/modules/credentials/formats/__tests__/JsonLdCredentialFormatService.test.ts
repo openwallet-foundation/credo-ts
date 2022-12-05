@@ -1,9 +1,8 @@
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../../formats'
 import type {
-  JsonLdAcceptRequestOptions,
   JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593,
+  SignCredentialOptionsRFC0593AsJson,
 } from '../../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
@@ -18,7 +17,6 @@ import { W3cCredentialRecord, W3cCredentialService } from '../../../vc'
 import { Ed25519Signature2018Fixtures } from '../../../vc/__tests__/fixtures'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../vc/constants'
 import { W3cVerifiableCredential } from '../../../vc/models'
-import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import { JsonLdCredentialFormatService } from '../../formats/jsonld/JsonLdCredentialFormatService'
 import { CredentialState } from '../../models'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID } from '../../protocol/v1/messages'
@@ -89,7 +87,7 @@ const offerAttachment = new Attachment({
 const credentialAttachment = new Attachment({
   mimeType: 'application/json',
   data: new AttachmentData({
-    base64: JsonEncoder.toBase64(vc),
+    base64: JsonEncoder.toBase64(vcJson),
   }),
 })
 
@@ -137,7 +135,7 @@ const mockCredentialRecord = ({
 
   return credentialRecord
 }
-const inputDoc = {
+const inputDocAsJson: JSON = <JSON>(<unknown>{
   '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
   type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -149,12 +147,12 @@ const inputDoc = {
     },
     alumniOf: 'oops',
   },
-}
+})
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
-const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
+// const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
-const signCredentialOptions: SignCredentialOptionsRFC0593 = {
-  credential,
+const signCredentialOptions: SignCredentialOptionsRFC0593AsJson = {
+  credentialAsJson: inputDocAsJson,
   options: {
     proofPurpose: 'assertionMethod',
     proofType: 'Ed25519Signature2018',
@@ -200,7 +198,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy9leGFtcGxlcy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVW5pdmVyc2l0eURlZ3JlZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpc3N1YW5jZURhdGUiOiIyMDE3LTEwLTIyVDEyOjIzOjQ4WiIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImRlZ3JlZSI6eyJ0eXBlIjoiQmFjaGVsb3JEZWdyZWUiLCJuYW1lIjoiQmFjaGVsb3Igb2YgU2NpZW5jZSBhbmQgQXJ0cyJ9LCJhbHVtbmlPZiI6Im9vcHMifX0sIm9wdGlvbnMiOnsicHJvb2ZQdXJwb3NlIjoiYXNzZXJ0aW9uTWV0aG9kIiwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgifX0=',
+            'eyJjcmVkZW50aWFsQXNKc29uIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIiwiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvZXhhbXBsZXMvdjEiXSwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIlVuaXZlcnNpdHlEZWdyZWVDcmVkZW50aWFsIl0sImlzc3VlciI6ImRpZDprZXk6ejZNa2dnMzQyWWNwdWsyNjNSOWQ4QXE2TVVheFBuMUREZUh5R28zOEVlZlhtZ0RMIiwiaXNzdWFuY2VEYXRlIjoiMjAxNy0xMC0yMlQxMjoyMzo0OFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJkZWdyZWUiOnsidHlwZSI6IkJhY2hlbG9yRGVncmVlIiwibmFtZSI6IkJhY2hlbG9yIG9mIFNjaWVuY2UgYW5kIEFydHMifSwiYWx1bW5pT2YiOiJvb3BzIn19LCJvcHRpb25zIjp7InByb29mUHVycG9zZSI6ImFzc2VydGlvbk1ldGhvZCIsInByb29mVHlwZSI6IkVkMjU1MTlTaWduYXR1cmUyMDE4In19',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -233,7 +231,7 @@ describe('JsonLd CredentialFormatService', () => {
         byteCount: undefined,
         data: {
           base64:
-            'eyJjcmVkZW50aWFsIjp7ImNvbnRleHQiOlsiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvdjEiLCJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy9leGFtcGxlcy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVW5pdmVyc2l0eURlZ3JlZUNyZWRlbnRpYWwiXSwiaXNzdWVyIjoiZGlkOmtleTp6Nk1rZ2czNDJZY3B1azI2M1I5ZDhBcTZNVWF4UG4xRERlSHlHbzM4RWVmWG1nREwiLCJpc3N1YW5jZURhdGUiOiIyMDE3LTEwLTIyVDEyOjIzOjQ4WiIsImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImRlZ3JlZSI6eyJ0eXBlIjoiQmFjaGVsb3JEZWdyZWUiLCJuYW1lIjoiQmFjaGVsb3Igb2YgU2NpZW5jZSBhbmQgQXJ0cyJ9LCJhbHVtbmlPZiI6Im9vcHMifX0sIm9wdGlvbnMiOnsicHJvb2ZQdXJwb3NlIjoiYXNzZXJ0aW9uTWV0aG9kIiwicHJvb2ZUeXBlIjoiRWQyNTUxOVNpZ25hdHVyZTIwMTgifX0=',
+            'eyJjcmVkZW50aWFsQXNKc29uIjp7IkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIiwiaHR0cHM6Ly93d3cudzMub3JnLzIwMTgvY3JlZGVudGlhbHMvZXhhbXBsZXMvdjEiXSwidHlwZSI6WyJWZXJpZmlhYmxlQ3JlZGVudGlhbCIsIlVuaXZlcnNpdHlEZWdyZWVDcmVkZW50aWFsIl0sImlzc3VlciI6ImRpZDprZXk6ejZNa2dnMzQyWWNwdWsyNjNSOWQ4QXE2TVVheFBuMUREZUh5R28zOEVlZlhtZ0RMIiwiaXNzdWFuY2VEYXRlIjoiMjAxNy0xMC0yMlQxMjoyMzo0OFoiLCJjcmVkZW50aWFsU3ViamVjdCI6eyJkZWdyZWUiOnsidHlwZSI6IkJhY2hlbG9yRGVncmVlIiwibmFtZSI6IkJhY2hlbG9yIG9mIFNjaWVuY2UgYW5kIEFydHMifSwiYWx1bW5pT2YiOiJvb3BzIn19LCJvcHRpb25zIjp7InByb29mUHVycG9zZSI6ImFzc2VydGlvbk1ldGhvZCIsInByb29mVHlwZSI6IkVkMjU1MTlTaWduYXR1cmUyMDE4In19',
           json: undefined,
           links: undefined,
           jws: undefined,
@@ -299,12 +297,12 @@ describe('JsonLd CredentialFormatService', () => {
       ])
 
       const service = jsonldFormatService as JsonLdCredentialFormatService
-      const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+      const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
 
       // calls private method in the format service
       const verificationMethod = await service['deriveVerificationMethod'](
         agentContext,
-        signCredentialOptions.credential,
+        signCredentialOptions.credentialAsJson,
         credentialRequest
       )
       expect(verificationMethod).toBe(
@@ -322,15 +320,12 @@ describe('JsonLd CredentialFormatService', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const acceptRequestOptions: JsonLdAcceptRequestOptions = {
-        ...signCredentialOptions,
-        verificationMethod,
-      }
-
       const { format, attachment } = await jsonldFormatService.acceptRequest(agentContext, {
         credentialRecord,
         credentialFormats: {
-          jsonld: acceptRequestOptions,
+          jsonld: {
+            verificationMethod,
+          },
         },
         requestAttachment,
         offerAttachment,
@@ -365,7 +360,7 @@ describe('JsonLd CredentialFormatService', () => {
       state: CredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
-    let signCredentialOptionsWithProperty: SignCredentialOptionsRFC0593
+    let signCredentialOptionsWithProperty: SignCredentialOptionsRFC0593AsJson
     beforeEach(async () => {
       signCredentialOptionsWithProperty = signCredentialOptions
       signCredentialOptionsWithProperty.options = {
@@ -412,11 +407,10 @@ describe('JsonLd CredentialFormatService', () => {
         },
       }
 
-      const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
       const credentialAttachment = new Attachment({
         mimeType: 'application/json',
         data: new AttachmentData({
-          base64: JsonEncoder.toBase64(vc),
+          base64: JsonEncoder.toBase64(vcJson),
         }),
       })
 
@@ -525,7 +519,7 @@ describe('JsonLd CredentialFormatService', () => {
         id: 'cdb0669b-7cd6-46bc-b1c7-7034f86083ac',
         mimeType: 'application/json',
         data: new AttachmentData({
-          base64: JsonEncoder.toBase64(inputDoc),
+          base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
 
@@ -533,7 +527,7 @@ describe('JsonLd CredentialFormatService', () => {
         id: '9a8ff4fb-ac86-478f-b7f9-fbf3f9cc60e6',
         mimeType: 'application/json',
         data: new AttachmentData({
-          base64: JsonEncoder.toBase64(inputDoc),
+          base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
 

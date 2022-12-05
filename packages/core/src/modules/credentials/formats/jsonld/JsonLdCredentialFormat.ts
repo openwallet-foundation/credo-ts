@@ -11,15 +11,29 @@ export interface SignCredentialOptionsRFC0593 {
   options: JsonLdOptionsRFC0593
 }
 
+export interface SignCredentialOptionsRFC0593AsJson {
+  credentialAsJson: JSON
+  options: JsonLdOptionsRFC0593
+}
+
+// use empty object in the acceptXXX jsonld format interface so we indicate that
+// the jsonld format service needs to be invoked
+type EmptyObject = Record<string, never>
+
+// it is an option to provide the verification method in acceptRequest
+type RequestVerificationMethod = {
+  verificationMethod?: string
+}
+
 export interface JsonLdCredentialFormat extends CredentialFormat {
   formatKey: 'jsonld'
   credentialRecordType: 'w3c'
   credentialFormats: {
-    createProposal: SignCredentialOptionsRFC0593
-    acceptProposal: SignCredentialOptionsRFC0593
-    createOffer: SignCredentialOptionsRFC0593
-    acceptOffer: SignCredentialOptionsRFC0593
-    createRequest: SignCredentialOptionsRFC0593
-    acceptRequest: JsonLdAcceptRequestOptions
+    createProposal: SignCredentialOptionsRFC0593AsJson
+    acceptProposal: EmptyObject
+    createOffer: SignCredentialOptionsRFC0593AsJson
+    acceptOffer: EmptyObject
+    createRequest: SignCredentialOptionsRFC0593AsJson
+    acceptRequest: RequestVerificationMethod
   }
 }

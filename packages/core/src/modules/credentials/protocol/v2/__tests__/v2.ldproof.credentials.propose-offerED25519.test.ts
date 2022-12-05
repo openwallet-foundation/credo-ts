@@ -1,14 +1,16 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type {
+  SignCredentialOptionsRFC0593,
+  SignCredentialOptionsRFC0593AsJson,
+} from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
@@ -24,7 +26,7 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
 
-  const inputDoc = {
+  const inputDocAsJson: JSON = <JSON>(<unknown>{
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
       'https://w3id.org/citizenship/v1',
@@ -52,11 +54,9 @@ describe('credentials', () => {
       birthCountry: 'Bahamas',
       birthDate: '1958-07-17',
     },
-  }
+  })
 
-  const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
-
-  let signCredentialOptions: SignCredentialOptionsRFC0593
+  let signCredentialOptions: SignCredentialOptionsRFC0593AsJson
 
   let wallet
   const seed = 'testseed000000000000000000000001'
@@ -70,7 +70,7 @@ describe('credentials', () => {
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
     await wallet.createDid({ seed })
     signCredentialOptions = {
-      credential,
+      credentialAsJson: inputDocAsJson,
       options: {
         proofType: 'Ed25519Signature2018',
         proofPurpose: 'assertionMethod',
@@ -112,9 +112,6 @@ describe('credentials', () => {
     await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
-      credentialFormats: {
-        jsonld: signCredentialOptions,
-      },
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -308,7 +305,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
           attributes: credentialPreview.attributes,
         },
-        jsonld: signCredentialOptions,
+        jsonld: {}, // this is to ensure both services are formatted
       },
     })
 
@@ -325,11 +322,11 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593>()
+    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
 
     expect(credOfferJson).toMatchObject({
-      credential: {
-        context: [
+      credentialAsJson: {
+        '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'https://w3id.org/citizenship/v1',
           'https://w3id.org/security/bbs/v1',
@@ -344,7 +341,7 @@ describe('credentials', () => {
         expirationDate: '2029-12-03T12:19:52Z',
         credentialSubject: {
           id: 'did:example:b34ca6cd37bbf23',
-          // type: [Array],
+          type: expect.any(Array),
           givenName: 'JOHN',
           familyName: 'SMITH',
           gender: 'Male',
