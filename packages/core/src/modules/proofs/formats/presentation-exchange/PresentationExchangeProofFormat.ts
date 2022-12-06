@@ -10,11 +10,11 @@ export const V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-
 export const V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
 export const V2_PRESENTATION_EXCHANGE_PRESENTATION = 'dif/presentation-exchange/submission@v1.0'
 
-export interface PresentationExchangeProposalFormat {
+export interface PresentationExchangeCreateProposalFormat {
   presentationDefinition: PresentationDefinitionV1
 }
 
-export interface PresentationExchangeOutOfBandRequestFormat {
+export interface PresentationExchangeCreateOutOfBandRequestFormat {
   options: {
     challenge: string
     domain: string
@@ -22,7 +22,7 @@ export interface PresentationExchangeOutOfBandRequestFormat {
   presentationDefinition: PresentationDefinitionV1
 }
 
-export interface PresentationExchangeRequestAsResponseFormat {
+export interface PresentationExchangeCreateRequestAsResponseFormat {
   attachId?: string
   formats: RequestProofFormats
 }
@@ -46,15 +46,15 @@ export interface PresentationExchangeProofFormat extends ProofFormat {
   formatKey: 'presentationExchange'
   proofRecordType: 'presentationExchange'
   proofFormats: {
-    createProposal: PresentationExchangeProposalFormat
+    createProposal: PresentationExchangeCreateProposalFormat
     acceptProposal: unknown
     createRequest: unknown
     acceptRequest: PresentationExchangeAcceptRequestFormat
     createPresentation: PresentationExchangeCreatePresentationFormat
     acceptPresentation: unknown
-    createProposalAsResponse: PresentationExchangeProposalFormat
-    createOutOfBandRequest: PresentationExchangeOutOfBandRequestFormat
-    createRequestAsResponse: PresentationExchangeRequestAsResponseFormat
+    createProposalAsResponse: PresentationExchangeCreateProposalFormat
+    createOutOfBandRequest: PresentationExchangeCreateOutOfBandRequestFormat
+    createRequestAsResponse: PresentationExchangeCreateRequestAsResponseFormat
     createProofRequestFromProposal: unknown
     requestCredentials: PresentationExchangeCreatePresentationFormat
     retrieveCredentials: PresentationExchangeSelectResultsFormat
