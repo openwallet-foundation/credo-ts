@@ -29,13 +29,6 @@ export const TEST_INPUT_DESCRIPTORS_CITIZENSHIP = {
         purpose: 'The claim must be from one of the specified issuers',
       },
     ],
-    // limit_disclosure: 'required',
-    // is_holder: [
-    //   {
-    //     directive: 'required',
-    //     field_id: ['1f44d55f-f161-4938-a659-f8026467f126'],
-    //   },
-    // ],
   },
   schema: [
     {

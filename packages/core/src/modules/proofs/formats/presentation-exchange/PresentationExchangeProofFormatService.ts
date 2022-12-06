@@ -25,11 +25,16 @@ import type { InputDescriptorsSchema } from './models'
 import type { RequestPresentationExchangeOptions } from './models/RequestPresentation'
 import type { PresentationSignCallBackParams, PresentationSignOptions, Validated } from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
-import { ICredentialSubject, IPresentation, IProofPurpose, IVerifiablePresentation } from '@sphereon/ssi-types'
-import type { IVerifiableCredential } from '@sphereon/ssi-types/dist/types/vc'
+import type {
+  ICredentialSubject,
+  IPresentation,
+  IVerifiableCredential,
+  IVerifiablePresentation,
+} from '@sphereon/ssi-types'
 
 import { KeyEncoding, Status, PEXv1 } from '@sphereon/pex'
 // eslint-disable-next-line import/no-extraneous-dependencies
+import { IProofPurpose } from '@sphereon/ssi-types'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -44,11 +49,12 @@ import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import { ProofFormatService } from '../ProofFormatService'
+
 import {
   V2_PRESENTATION_EXCHANGE_PRESENTATION,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
   V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
-} from '../ProofFormats'
+} from './PresentationExchangeProofFormat'
 
 @scoped(Lifecycle.ContainerScoped)
 export class PresentationExchangeProofFormatService extends ProofFormatService {
@@ -473,13 +479,10 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     // note matches is array of SubmissionRequirementMatch
     // presentationExchange.formats.matches[0].count
-
-    const credential: IVerifiableCredential = presentationExchange.formats.verifiableCredential[0]
-
     return {
       proofFormats: {
         presentationExchange: {
-          formats: credential,
+          formats: presentationExchange.formats.verifiableCredential[0],
         },
       },
     }

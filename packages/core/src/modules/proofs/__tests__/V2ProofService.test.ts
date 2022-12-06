@@ -14,9 +14,8 @@ import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
-import { PresentationExchangeFormatService } from '../formats/presentation-exchange/PresentationExchangeFormatService'
+import { PresentationExchangeProofFormatService } from '../formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
 import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from '../protocol/v2/messages'
@@ -24,6 +23,7 @@ import { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 import { ProofRepository } from '../repository/ProofRepository'
 
 import { credDef } from './fixtures'
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats'
 
 // Mock classes
 jest.mock('../repository/ProofRepository')
@@ -41,7 +41,7 @@ const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const IndyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
 const PresentationExchangeFormatServiceMock =
-  PresentationExchangeFormatService as jest.Mock<PresentationExchangeFormatService>
+  PresentationExchangeProofFormatService as jest.Mock<PresentationExchangeProofFormatService>
 
 const connection = getMockConnection({
   id: '123',
@@ -107,7 +107,7 @@ describe('V2ProofService', () => {
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
-  let presentationExchangeFormatService: PresentationExchangeFormatService
+  let presentationExchangeFormatService: PresentationExchangeProofFormatService
   let agentContext: AgentContext
 
   beforeEach(() => {

@@ -43,13 +43,9 @@ import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '.
 import { IndyLedgerService } from '../../../ledger'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import { PartialProof, PresentationPreview } from '../../protocol/v1/models'
-import {
-  V2_INDY_PRESENTATION_REQUEST,
-  V2_INDY_PRESENTATION_PROPOSAL,
-  V2_INDY_PRESENTATION,
-} from '../ProofFormatConstants'
 import { ProofFormatService } from '../ProofFormatService'
 
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from './IndyProofFormat'
 import { InvalidEncodedValueError } from './errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from './errors/MissingIndyProofMessageError'
 import {

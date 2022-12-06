@@ -1,6 +1,5 @@
 export * from './indy'
 export * from './models'
 export * from './ProofFormat'
-export * from './ProofFormatConstants'
 export * from './ProofFormatService'
 export * from './ProofFormatServiceOptions'

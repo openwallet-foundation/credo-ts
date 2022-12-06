@@ -6,14 +6,15 @@ import { Protocol } from '../../agent/models/features/Protocol'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
+import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
+import { PresentationExchangeProofFormatService } from './formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { V1ProofService } from './protocol/v1'
 import { V2ProofService } from './protocol/v2'
 import { ProofRepository } from './repository'
-import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
-import { PresentationExchangeProofFormatService } from './formats/presentation-exchange/PresentationExchangeProofFormatService'
 
 export class ProofsModule implements Module {
   public readonly config: ProofsModuleConfig
+  public readonly api = ProofsApi
 
   public constructor(config?: ProofsModuleConfigOptions) {
     this.config = new ProofsModuleConfig(config)

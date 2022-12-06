@@ -41,7 +41,7 @@ import { ConnectionService } from '../../../connections'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
-import { PresentationExchangeFormatService } from '../../formats/presentation-exchange/PresentationExchangeFormatService'
+import { PresentationExchangeProofFormatService } from '../../formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { ProofState } from '../../models/ProofState'
 import { ProofExchangeRecord, ProofRepository } from '../../repository'
 
@@ -68,7 +68,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
-    presentationExchangeFormatService: PresentationExchangeFormatService,
+    presentationExchangeFormatService: PresentationExchangeProofFormatService,
 
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {

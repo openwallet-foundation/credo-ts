@@ -12,6 +12,10 @@ import type { SelectResults } from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type { IVerifiableCredential } from '@sphereon/ssi-types'
 
+export const V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
+export const V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
+export const V2_PRESENTATION_EXCHANGE_PRESENTATION = 'dif/presentation-exchange/submission@v1.0'
+
 export interface IndyProposeProofFormat {
   attributes?: PresentationPreviewAttribute[]
   predicates?: PresentationPreviewPredicate[]

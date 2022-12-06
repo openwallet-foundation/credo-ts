@@ -6,9 +6,9 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupIndyProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/ProofFormatConstants'
 import { ProofState } from '../../../models/ProofState'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
+import { V2_INDY_PRESENTATION_PROPOSAL } from '../../../formats/indy/IndyProofFormat'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
