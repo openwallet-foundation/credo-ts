@@ -66,8 +66,5 @@
   },
   "engines": {
     "node": ">= 14"
-  },
-  "dependencies": {
-    "@sphereon/pex": "^1.1.0"
   }
 }

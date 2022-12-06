@@ -9,6 +9,8 @@ import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { V1ProofService } from './protocol/v1'
 import { V2ProofService } from './protocol/v2'
 import { ProofRepository } from './repository'
+import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
+import { PresentationExchangeProofFormatService } from './formats/presentation-exchange/PresentationExchangeProofFormatService'
 
 export class ProofsModule implements Module {
   public readonly config: ProofsModuleConfig
@@ -47,5 +49,9 @@ export class ProofsModule implements Module {
         roles: ['verifier', 'prover'],
       })
     )
+
+    // Proof Formats
+    dependencyManager.registerSingleton(IndyProofFormatService)
+    dependencyManager.registerSingleton(PresentationExchangeProofFormatService)
   }
 }

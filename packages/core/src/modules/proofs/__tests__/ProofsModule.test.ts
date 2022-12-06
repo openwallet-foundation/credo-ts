@@ -21,7 +21,7 @@ describe('ProofsModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(ProofsApi)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1ProofService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2ProofService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ProofRepository)
