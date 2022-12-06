@@ -110,18 +110,18 @@ It will be good to extract sup-packages providing TypeScript implementations for
 
 ### Peer DID format
 
-**State:** Need to discuss
+**State:** Resolved. We found another issue with our new changes and rolled back peer DID changes. There is no other work that needs to be done here. Everything is good now.
 
-There is a contradiction between the two specifications:
+~~There is a contradiction between the two specifications:~~
 
-- According to the [Peer DID spec](https://identity.foundation/peer-did-method-spec/#multi-key-creation) key ids doesn't have `z` prefix in `did-url` (fragment after #).
-- According to the [DIDComm spec](https://identity.foundation/didcomm-messaging/spec/#:~:text=%22id%22%3A%20%22did%3Aexample%3A123%23zC9ByQ8aJs8vrNXyDhPHHNNMSHPcaSgNpjjsBYpMMjsTdS%22%2C) key ids must have `z` prefix in `did-url` (fragment after #).
+~~- According to the [Peer DID spec](https://identity.foundation/peer-did-method-spec/#multi-key-creation) key ids doesn't have `z` prefix in `did-url` (fragment after #).~~
+~~- According to the [DIDComm spec](https://identity.foundation/didcomm-messaging/spec/#:~:text=%22id%22%3A%20%22did%3Aexample%3A123%23zC9ByQ8aJs8vrNXyDhPHHNNMSHPcaSgNpjjsBYpMMjsTdS%22%2C) key ids must have `z` prefix in `did-url` (fragment after #).~~
 
-In our understanding, `z` prefix should always be used for multi-base key representation which is currently used there.\
+~~In our understanding, `z` prefix should always be used for multi-base key representation which is currently used there.\
 Sicpa `didcomm-rust` library requests keys from the Wallet by id containing additional `z` letter at the start of the did-url.
-If we consider this behaviour wrong, we will need to change `didcomm-rust` libraries.
+If we consider this behaviour wrong, we will need to change `didcomm-rust` libraries.~~
 
-> Should be postponed if possible and changed later in a separate PR if current behaviour is wrong
+~~> Should be postponed if possible and changed later in a separate PR if current behaviour is wrong~~
 
 ### Protocols adoptions
 
