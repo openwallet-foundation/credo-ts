@@ -1,6 +1,7 @@
+import type { KeyType } from './KeyType'
+
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
-import { KeyType } from './KeyType'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
 
 export class Key {
@@ -23,11 +24,8 @@ export class Key {
 
   public static fromPublicKeyId(kid: string) {
     const key = kid.split('#')[1] ?? kid
-    if (key.startsWith('z')) {
-      return Key.fromFingerprint(key)
-    } else {
-      return Key.fromPublicKeyBase58(key, KeyType.Ed25519)
-    }
+    const multibaseKey = key.startsWith('z') ? key : `z${key}`
+    return Key.fromFingerprint(multibaseKey)
   }
 
   public static fromFingerprint(fingerprint: string) {
