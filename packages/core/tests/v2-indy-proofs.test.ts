@@ -1,9 +1,12 @@
-import { Agent, ConnectionRecord, V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../src'
+import type { Agent, ConnectionRecord } from '../src'
 import type { AcceptProofProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import {
+  V2_INDY_PRESENTATION,
+  V2_INDY_PRESENTATION_PROPOSAL,
+  V2_INDY_PRESENTATION_REQUEST,
   ProofExchangeRecord,
   AttributeFilter,
   PredicateType,
@@ -12,7 +15,6 @@ import {
   ProofState,
 } from '../src'
 import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
-
 import {
   V2PresentationMessage,
   V2ProposalPresentationMessage,

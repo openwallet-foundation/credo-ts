@@ -2,7 +2,11 @@ import type { Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
 
 import { ProofState } from '../src'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../src/modules/proofs/__tests__/fixtures'
-
+import {
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION,
+} from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
 import {
   V2PresentationMessage,
   V2ProposalPresentationMessage,
@@ -12,7 +16,6 @@ import { DidCommMessageRepository } from '../src/storage/didcomm'
 
 import { setupJsonLdProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
-import { V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL, V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST, V2_PRESENTATION_EXCHANGE_PRESENTATION } from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
