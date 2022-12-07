@@ -73,9 +73,9 @@ export interface GetRoutingOptions {
 
 export interface RemoveRoutingOptions {
   /**
-   * Key to remove routing from
+   * Keys to remove routing from
    */
-  recipientKey: Key
+  recipientKeys: Key[]
 
   /**
    * Identifier of the mediator used when routing has been set up

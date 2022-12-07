@@ -572,12 +572,10 @@ export class OutOfBandApi {
     if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
       const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
 
-      for (const recipientKey of recipientKeys) {
-        await this.routingService.removeRouting(this.agentContext, {
-          recipientKey,
-          mediatorId: outOfBandRecord.mediatorId,
-        })
-      }
+      await this.routingService.removeRouting(this.agentContext, {
+        recipientKeys,
+        mediatorId: outOfBandRecord.mediatorId,
+      })
     }
 
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)

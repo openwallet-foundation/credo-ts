@@ -25,7 +25,8 @@ import { JsonTransformer } from '../../../utils'
 import { ConnectionType } from '../../connections/models/ConnectionType'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
+import { DidKey } from '../../dids'
+import { didKeyToVerkey, isDidKey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
 import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
@@ -174,8 +175,7 @@ export class MediationRecipientService {
   public async keylistUpdateAndAwait(
     agentContext: AgentContext,
     mediationRecord: MediationRecord,
-    verKey: string,
-    action: KeylistUpdateAction,
+    updates: { recipientKey: Key; action: KeylistUpdateAction }[],
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
@@ -188,7 +188,15 @@ export class MediationRecipientService {
       useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
     }
 
-    const message = this.createKeylistUpdateMessage(useDidKey ? verkeyToDidKey(verKey) : verKey, action)
+    const message = this.createKeylistUpdateMessage(
+      updates.map(
+        (item) =>
+          new KeylistUpdate({
+            action: item.action,
+            recipientKey: useDidKey ? new DidKey(item.recipientKey).did : item.recipientKey.publicKeyBase58,
+          })
+      )
+    )
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -217,14 +225,9 @@ export class MediationRecipientService {
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(verkey: string, action: KeylistUpdateAction): KeylistUpdateMessage {
+  public createKeylistUpdateMessage(updates: KeylistUpdate[]): KeylistUpdateMessage {
     const keylistUpdateMessage = new KeylistUpdateMessage({
-      updates: [
-        new KeylistUpdate({
-          action,
-          recipientKey: verkey,
-        }),
-      ],
+      updates,
     })
     return keylistUpdateMessage
   }
@@ -248,12 +251,12 @@ export class MediationRecipientService {
     if (!mediationRecord) return routing
 
     // new did has been created and mediator needs to be updated with the public key.
-    mediationRecord = await this.keylistUpdateAndAwait(
-      agentContext,
-      mediationRecord,
-      routing.recipientKey.publicKeyBase58,
-      KeylistUpdateAction.add
-    )
+    mediationRecord = await this.keylistUpdateAndAwait(agentContext, mediationRecord, [
+      {
+        recipientKey: routing.recipientKey,
+        action: KeylistUpdateAction.add,
+      },
+    ])
 
     return {
       ...routing,
@@ -265,7 +268,7 @@ export class MediationRecipientService {
 
   public async removeMediationRouting(
     agentContext: AgentContext,
-    { recipientKey, mediatorId }: RemoveRoutingOptions
+    { recipientKeys, mediatorId }: RemoveRoutingOptions
   ): Promise<void> {
     const mediationRecord = await this.getById(agentContext, mediatorId)
 
@@ -276,8 +279,12 @@ export class MediationRecipientService {
     await this.keylistUpdateAndAwait(
       agentContext,
       mediationRecord,
-      recipientKey.publicKeyBase58,
-      KeylistUpdateAction.remove
+      recipientKeys.map((item) => {
+        return {
+          recipientKey: item,
+          action: KeylistUpdateAction.remove,
+        }
+      })
     )
   }
 

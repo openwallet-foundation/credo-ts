@@ -1,7 +1,6 @@
 import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
 import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
-import type { KeylistUpdateAction } from './messages'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
 
@@ -19,8 +18,10 @@ import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
+import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
+import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -29,6 +30,7 @@ import { RoutingEventTypes } from './RoutingEvents'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
 import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
@@ -371,8 +373,22 @@ export class RecipientApi {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string, action: KeylistUpdateAction) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey, action)
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string, action?: KeylistUpdateAction) {
+    // Use our useDidKey configuration unless we know the key formatting other party is using
+    let useDidKey = this.agentContext.config.useDidKeyInProtocols
+
+    const useDidKeysConnectionMetadata = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)
+    if (useDidKeysConnectionMetadata) {
+      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+    }
+
+    const message = this.mediationRecipientService.createKeylistUpdateMessage([
+      new KeylistUpdate({
+        action: action ?? KeylistUpdateAction.add,
+        recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
+      }),
+    ])
+
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,

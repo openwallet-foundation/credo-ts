@@ -330,12 +330,10 @@ export class ConnectionsApi {
       const did = await this.didResolverService.resolve(this.agentContext, connection.did)
 
       if (did.didDocument) {
-        for (const recipientKey of did.didDocument.recipientKeys) {
-          await this.routingService.removeRouting(this.agentContext, {
-            recipientKey,
-            mediatorId: connection.mediatorId,
-          })
-        }
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: connection.mediatorId,
+        })
       }
     }
 
