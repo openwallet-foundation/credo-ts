@@ -1,6 +1,6 @@
 import type { DidCommV2MessageParams } from '../../../../../../didcomm/versions/v2'
 
-import { IsString } from 'class-validator'
+import { IsNotEmpty, IsString } from 'class-validator'
 
 import { DidCommV2Message } from '../../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
@@ -14,6 +14,10 @@ export class TrustPingResponseMessage extends DidCommV2Message {
       this.thid = options.thid
     }
   }
+
+  @IsString()
+  @IsNotEmpty()
+  public from!: string
 
   @IsValidMessageType(TrustPingResponseMessage.type)
   public readonly type = TrustPingResponseMessage.type.messageTypeUri

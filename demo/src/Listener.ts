@@ -7,6 +7,8 @@ import type {
   BasicMessageStateChangedEvent,
   CredentialExchangeRecord,
   CredentialStateChangedEvent,
+  PingReceivedEvent,
+  PingResponseReceivedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
@@ -15,6 +17,7 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import {
   BasicMessageEventTypes,
   BasicMessageRole,
+  ConnectionEventTypes,
   CredentialEventTypes,
   CredentialState,
   ProofEventTypes,
@@ -75,6 +78,15 @@ export class Listener {
       if (event.payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
         this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
       }
+    })
+  }
+
+  public pingListener(agent: Agent, name: string) {
+    agent.events.on(ConnectionEventTypes.PingReceived, async (event: PingReceivedEvent) => {
+      this.ui.updateBottomBar(purpleText(`\n${name} received ping message from ${event.payload.from}\n`))
+    })
+    agent.events.on(ConnectionEventTypes.PingResponseReceived, async (event: PingResponseReceivedEvent) => {
+      this.ui.updateBottomBar(purpleText(`\n${name} received ping response message from ${event.payload.from}\n`))
     })
   }
 

@@ -35,6 +35,7 @@ export class AliceInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.alice.agent, this.alice.name)
+    this.listener.pingListener(this.alice.agent, this.alice.name)
   }
 
   public static async build(): Promise<AliceInquirer> {

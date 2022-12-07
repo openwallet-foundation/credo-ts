@@ -34,6 +34,7 @@ export class FaberInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.faber.agent, this.faber.name)
+    this.listener.pingListener(this.faber.agent, this.faber.name)
   }
 
   public static async build(): Promise<FaberInquirer> {

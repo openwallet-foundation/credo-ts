@@ -1,10 +1,10 @@
-import type { Attachment } from '../../../decorators/attachment/v2/Attachment'
 import type { ParsedMessageType } from '../../../utils/messageType'
 import type { Constructor } from '../../../utils/mixins'
 
-import { Expose } from 'class-transformer'
-import { IsArray, IsNumber, IsOptional, IsString, Matches } from 'class-validator'
+import { Expose, Type } from 'class-transformer'
+import { IsArray, IsNumber, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
+import { Attachment } from '../../../decorators/attachment/v2/Attachment'
 import { uuid } from '../../../utils/uuid'
 import { MessageIdRegExp, MessageTypeRegExp } from '../../validation'
 
@@ -71,6 +71,11 @@ export class DidCommV2BaseMessage {
   public body!: unknown
 
   @IsOptional()
+  @Type(() => Attachment)
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
   public attachments?: Array<Attachment>
 
   public constructor(options?: DidCommV2MessageParams) {
