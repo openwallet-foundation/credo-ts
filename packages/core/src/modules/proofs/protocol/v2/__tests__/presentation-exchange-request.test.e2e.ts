@@ -60,12 +60,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await faberPresentationRecordPromise
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
-    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofExchangeRecord.id,
-      messageClass: V2ProposalPresentationMessage,
-    })
+    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
 
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
@@ -153,11 +148,6 @@ describe('Present Proof', () => {
                     },
                   },
                 ],
-                // format: {
-                //   ldpVc: {
-                //     proofType: ['Ed25519Signature2018'],
-                //   },
-                // },
               },
             },
           },

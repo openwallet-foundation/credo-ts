@@ -17,7 +17,7 @@ export interface V2RequestPresentationMessageOptions {
   presentMultiple?: boolean
   willConfirm?: boolean
   parentThreadId?: string
-  attachmentInfo?: ProofAttachmentFormat[]
+  attachmentInfo: ProofAttachmentFormat[]
 }
 
 export class V2RequestPresentationMessage extends AgentMessage {
@@ -39,10 +39,8 @@ export class V2RequestPresentationMessage extends AgentMessage {
         })
       }
 
-      if (options.attachmentInfo) {
-        for (const entry of options.attachmentInfo) {
-          this.addRequestPresentationsAttachment(entry)
-        }
+      for (const entry of options.attachmentInfo) {
+        this.addRequestPresentationsAttachment(entry)
       }
     }
   }

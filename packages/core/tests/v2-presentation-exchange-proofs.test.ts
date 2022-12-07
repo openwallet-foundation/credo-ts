@@ -165,11 +165,6 @@ describe('Present Proof', () => {
                     },
                   },
                 ],
-                // format: {
-                //   ldpVc: {
-                //     proofType: ['Ed25519Signature2018'],
-                //   },
-                // },
               },
             },
           },
@@ -340,11 +335,6 @@ describe('Present Proof', () => {
                     },
                   },
                 ],
-                // format: {
-                //   ldpVc: {
-                //     proofType: ['Ed25519Signature2018'],
-                //   },
-                // },
               },
             },
           },
