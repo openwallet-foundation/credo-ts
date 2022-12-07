@@ -428,10 +428,35 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       messageClass: V2RequestPresentationMessage,
     })
 
+    // const formats = []
+    // for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
+    //   const service = this.getFormatServiceForFormat(attachmentFormat.format)
+    //   if (service) {
+    //     try {
+    //       formats.push(
+    //         await service.createPresentation(agentContext, {
+    //           attachment: proofRequest.getAttachmentByFormatIdentifier(attachmentFormat.format.format),
+    //           proofFormats: options.proofFormats,
+    //         })
+    //       )
+    //     } catch (e) {
+    //       if (e instanceof AriesFrameworkError) {
+    //         throw new V2PresentationProblemReportError(e.message, {
+    //           problemCode: PresentationProblemReportReason.Abandoned,
+    //         })
+    //       }
+    //       throw e
+    //     }
+    //   }
+    // }
     const formats = []
-    for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
-      const service = this.getFormatServiceForFormat(attachmentFormat.format)
-      if (service) {
+    for (const key of Object.keys(options.proofFormats)) {
+      const service = this.formatServiceMap[key]
+
+      if (!service) {
+        throw new AriesFrameworkError(`service ${service} not supported`)
+      }
+      for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
         try {
           formats.push(
             await service.createPresentation(agentContext, {
