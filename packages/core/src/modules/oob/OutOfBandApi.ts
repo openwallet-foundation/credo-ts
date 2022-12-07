@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
@@ -16,6 +15,7 @@ import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
+import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -564,6 +564,22 @@ export class OutOfBandApi {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+
+    const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
+
+    // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
+      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+
+      for (const recipientKey of recipientKeys) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKey,
+          mediatorId: outOfBandRecord.mediatorId,
+        })
+      }
+    }
+
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
