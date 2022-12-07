@@ -166,7 +166,7 @@ describe('Auto accept present proof', () => {
     group: ['B'],
     id: 'vaccine_input_1',
   }
-  describe('Auto accept on `always`', () => {
+  xdescribe('Auto accept on `always`', () => {
     beforeAll(async () => {
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Always Proofs',
@@ -370,7 +370,7 @@ describe('Auto accept present proof', () => {
       await aliceProofExchangeRecordPromise
     })
 
-    test('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
+    xtest('Faber starts with proof requests to Alice, both with autoacceptproof on `contentApproved`', async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {

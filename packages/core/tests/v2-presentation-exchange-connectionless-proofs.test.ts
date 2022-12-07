@@ -145,20 +145,6 @@ describe('Present Proof', () => {
       id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
     }
 
-    const outOfBandRequestOptions: CreateProofRequestOptions<[PresentationExchangeProofFormat], [V2ProofService]> = {
-      protocolVersion: 'v2',
-      proofFormats: {
-        presentationExchange: {
-          options: {
-            challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-            domain: '',
-          },
-          presentationDefinition,
-        },
-      },
-      autoAcceptProof: AutoAcceptProof.ContentApproved,
-    }
-
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
@@ -170,9 +156,19 @@ describe('Present Proof', () => {
     })
 
     // eslint-disable-next-line prefer-const
-    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest(
-      outOfBandRequestOptions
-    )
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        presentationExchange: {
+          options: {
+            challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            domain: '',
+          },
+          presentationDefinition,
+        },
+      },
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
+    })
 
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,

@@ -727,12 +727,14 @@ export async function setupIndyProofsTest(faberName: string, aliceName: string, 
     age: '99',
   })
 
-  const faberAgentOptions = getAgentOptions(faberName, {
+  const unique = uuid().substring(0, 4)
+
+  const faberAgentOptions = getAgentOptions(`${faberName} - ${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
-  const aliceAgentOptions = getAgentOptions(aliceName, {
+  const aliceAgentOptions = getAgentOptions(`${aliceName} - ${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
