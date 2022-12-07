@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
