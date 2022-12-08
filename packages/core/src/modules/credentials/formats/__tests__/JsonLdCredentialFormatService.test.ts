@@ -1,6 +1,10 @@
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../../formats'
-import type { JsonLdCredentialFormat, JsonLdSignCredentialFormat } from '../../formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonCredential,
+  JsonLdCredentialFormat,
+  JsonLdSignCredentialFormat,
+} from '../../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
@@ -132,7 +136,7 @@ const mockCredentialRecord = ({
 
   return credentialRecord
 }
-const inputDocAsJson: JSON = <JSON>(<unknown>{
+const inputDocAsJson: JsonCredential = {
   '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
   type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -144,7 +148,7 @@ const inputDocAsJson: JSON = <JSON>(<unknown>{
     },
     alumniOf: 'oops',
   },
-})
+}
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
 
 const signCredentialOptions: JsonLdSignCredentialFormat = {

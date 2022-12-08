@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -23,7 +23,7 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
 
-  const inputDocAsJson: JSON = <JSON>(<unknown>{
+  const inputDocAsJson: JsonCredential = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
       'https://w3id.org/citizenship/v1',
@@ -32,9 +32,6 @@ describe('credentials', () => {
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-    identifier: '83627465',
-    name: 'Permanent Resident Card',
-    description: 'Government of Example Permanent Resident Card.',
     issuanceDate: '2019-12-03T12:19:52Z',
     expirationDate: '2029-12-03T12:19:52Z',
     credentialSubject: {
@@ -51,7 +48,7 @@ describe('credentials', () => {
       birthCountry: 'Bahamas',
       birthDate: '1958-07-17',
     },
-  })
+  }
 
   let signCredentialOptions: JsonLdSignCredentialFormat
 
@@ -331,9 +328,6 @@ describe('credentials', () => {
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
         issuanceDate: '2019-12-03T12:19:52Z',
         expirationDate: '2029-12-03T12:19:52Z',
         credentialSubject: {
@@ -469,9 +463,6 @@ describe('credentials', () => {
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
         issuanceDate: '2019-12-03T12:19:52Z',
         expirationDate: '2029-12-03T12:19:52Z',
         credentialSubject: {

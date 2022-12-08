@@ -18,11 +18,7 @@ import type {
   FormatProcessCredentialOptions,
   FormatProcessOptions,
 } from '../CredentialFormatServiceOptions'
-import type {
-  JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593,
-  JsonLdSignCredentialFormat,
-} from './JsonLdCredentialFormat'
+import type { JsonLdCredentialFormat, JsonLdSignCredentialFormat, JsonCredential } from './JsonLdCredentialFormat'
 
 import { injectable } from 'tsyringe'
 
@@ -262,7 +258,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    */
   private async deriveVerificationMethod(
     agentContext: AgentContext,
-    credentialAsJson: JSON,
+    credentialAsJson: JsonCredential,
     credentialRequest: JsonLdSignCredentialFormat
   ): Promise<string> {
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cCredential)

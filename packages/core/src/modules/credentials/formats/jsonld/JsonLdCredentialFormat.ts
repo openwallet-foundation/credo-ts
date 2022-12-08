@@ -1,18 +1,21 @@
+import type { JsonObject } from '../../../../types'
+import type { SingleOrArray } from '../../../../utils'
+import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
 import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
-export interface JsonLdAcceptRequestOptions extends SignCredentialOptionsRFC0593 {
-  verificationMethod?: string
+export interface JsonCredential {
+  '@context': Array<string> | JsonObject
+  id?: string
+  type: Array<string>
+  issuer: string | IssuerOptions
+  issuanceDate: string
+  expirationDate?: string
+  credentialSubject: SingleOrArray<JsonObject>
 }
-
-export interface SignCredentialOptionsRFC0593 {
-  credential: W3cCredential
-  options: JsonLdOptionsRFC0593
-}
-
 export interface JsonLdSignCredentialFormat {
-  credential: JSON
+  credential: JsonCredential
   options: JsonLdOptionsRFC0593
 }
 
@@ -37,9 +40,9 @@ export interface JsonLdCredentialFormat extends CredentialFormat {
     acceptRequest: JsonLdCreateRequestFormat
   }
   formatData: {
-    proposal: SignCredentialOptionsRFC0593
-    offer: SignCredentialOptionsRFC0593
-    request: SignCredentialOptionsRFC0593
+    proposal: JsonLdSignCredentialFormat
+    offer: JsonLdSignCredentialFormat
+    request: JsonLdSignCredentialFormat
     credential: W3cCredential
   }
 }

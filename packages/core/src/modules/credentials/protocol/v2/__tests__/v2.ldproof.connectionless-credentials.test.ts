@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../../../../../../tests/transport/Sub
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
-import type { JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -34,7 +34,7 @@ describe('credentials', () => {
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   const seed = 'testseed000000000000000000000001'
-  const TEST_LD_DOCUMENT: JSON = <JSON>(<unknown>{
+  const TEST_LD_DOCUMENT: JsonCredential = {
     '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -45,7 +45,7 @@ describe('credentials', () => {
         name: 'Bachelor of Science and Arts',
       },
     },
-  })
+  }
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()

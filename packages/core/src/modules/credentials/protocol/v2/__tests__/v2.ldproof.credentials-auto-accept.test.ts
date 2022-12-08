@@ -2,7 +2,11 @@ import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { JsonLdCredentialFormat, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonCredential,
+  JsonLdCredentialFormat,
+  JsonLdSignCredentialFormat,
+} from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
@@ -13,7 +17,7 @@ import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 
-const TEST_LD_DOCUMENT: JSON = <JSON>(<unknown>{
+const TEST_LD_DOCUMENT: JsonCredential = {
   '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
   type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -24,7 +28,7 @@ const TEST_LD_DOCUMENT: JSON = <JSON>(<unknown>{
       name: 'Bachelor of Science and Arts',
     },
   },
-})
+}
 
 describe('credentials', () => {
   let faberAgent: Agent
