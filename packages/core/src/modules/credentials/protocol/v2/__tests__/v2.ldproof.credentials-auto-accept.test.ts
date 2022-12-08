@@ -2,10 +2,7 @@ import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type {
-  JsonLdCredentialFormat,
-  JsonLdSignCredentialFormat,
-} from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdCredentialFormat, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2CredentialService } from '../V2CredentialService'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
