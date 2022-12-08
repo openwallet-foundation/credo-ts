@@ -642,6 +642,23 @@ export class ConnectionService {
     return connectionRecord
   }
 
+  public async addConnectionType(agentContext: AgentContext, record: ConnectionRecord, type: string) {
+    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    record.setTag('connectionType', [type, ...tags])
+    await this.update(agentContext, record)
+  }
+
+  public async removeConnectionType(agentContext: AgentContext, record: ConnectionRecord, type: string) {
+    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+
+    const newTags = tags.filter((value: string) => {
+      if (value != type) return value
+    })
+    record.setTag('connectionType', [...newTags])
+
+    await this.update(agentContext, record)
+  }
+
   private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
     // Convert the legacy did doc to a new did document
     const didDocument = convertToNewDidDocument(didDoc)
