@@ -254,6 +254,8 @@ export class ConnectionsApi {
     const record = await this.getById(connectionId)
 
     await this.connectionService.addConnectionType(this.agentContext, record, type)
+
+    return record
   }
 
   /**
@@ -266,6 +268,8 @@ export class ConnectionsApi {
     const record = await this.getById(connectionId)
 
     await this.connectionService.removeConnectionType(this.agentContext, record, type)
+
+    return record
   }
 
   /**
@@ -276,8 +280,8 @@ export class ConnectionsApi {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTag('connectionType') as string[]
-    return tags || null
+
+    return this.connectionService.getConnectionTypes(record)
   }
 
   /**

@@ -87,20 +87,23 @@ describe('out of band with mediation', () => {
     aliceMediatorConnection = await aliceAgent.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
 
+    // Tag the connection with an initial type
+    aliceMediatorConnection = await aliceAgent.connections.addConnectionType(aliceMediatorConnection.id, 'initial-type')
+
     let [mediatorAliceConnection] = await mediatorAgent.connections.findAllByOutOfBandId(mediationOutOfBandRecord.id)
     mediatorAliceConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorAliceConnection!.id)
     expect(mediatorAliceConnection.state).toBe(DidExchangeState.Completed)
 
     // ========== Set mediation between Alice and Mediator agents ==========
+    let connectionTypes = await aliceAgent.connections.getConnectionTypes(aliceMediatorConnection.id)
+    expect(connectionTypes).toMatchObject(['initial-type'])
+
     const mediationRecord = await aliceAgent.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
-    const connectonTypes = await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)
-    expect(connectonTypes).toContain(ConnectionType.Mediator)
-    await aliceAgent.connections.addConnectionType(mediationRecord.connectionId, 'test')
-    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toContain('test')
-    await aliceAgent.connections.removeConnectionType(mediationRecord.connectionId, 'test')
-    expect(await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)).toEqual([
-      ConnectionType.Mediator,
-    ])
+    connectionTypes = await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)
+    expect(connectionTypes.sort()).toMatchObject(['initial-type', ConnectionType.Mediator].sort())
+    await aliceAgent.connections.removeConnectionType(mediationRecord.connectionId, 'initial-type')
+    connectionTypes = await aliceAgent.connections.getConnectionTypes(mediationRecord.connectionId)
+    expect(connectionTypes).toMatchObject([ConnectionType.Mediator])
     expect(mediationRecord.state).toBe(MediationState.Granted)
 
     await aliceAgent.mediationRecipient.setDefaultMediator(mediationRecord)

@@ -642,21 +642,26 @@ export class ConnectionService {
     return connectionRecord
   }
 
-  public async addConnectionType(agentContext: AgentContext, record: ConnectionRecord, type: string) {
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
-    record.setTag('connectionType', [type, ...tags])
-    await this.update(agentContext, record)
+  public async addConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
+    const tags = (connectionRecord.getTag('connectionType') as string[]) || ([] as string[])
+    connectionRecord.setTag('connectionType', [type, ...tags])
+    await this.update(agentContext, connectionRecord)
   }
 
-  public async removeConnectionType(agentContext: AgentContext, record: ConnectionRecord, type: string) {
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+  public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
+    const tags = (connectionRecord.getTag('connectionType') as string[]) || ([] as string[])
 
     const newTags = tags.filter((value: string) => {
       if (value != type) return value
     })
-    record.setTag('connectionType', [...newTags])
+    connectionRecord.setTag('connectionType', [...newTags])
 
-    await this.update(agentContext, record)
+    await this.update(agentContext, connectionRecord)
+  }
+
+  public async getConnectionTypes(connectionRecord: ConnectionRecord) {
+    const tags = connectionRecord.getTag('connectionType') as string[]
+    return tags || []
   }
 
   private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
