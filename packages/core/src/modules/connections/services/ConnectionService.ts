@@ -601,8 +601,8 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findAllByConnectionType(agentContext: AgentContext, connectionType: [ConnectionType | string]) {
-    return this.connectionRepository.findByQuery(agentContext, { connectionType })
+  public async findAllByConnectionType(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionRepository.findByQuery(agentContext, { connectionType: connectionTypes })
   }
 
   public async findByInvitationDid(agentContext: AgentContext, invitationDid: string) {

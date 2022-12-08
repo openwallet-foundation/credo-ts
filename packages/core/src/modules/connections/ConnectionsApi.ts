@@ -289,7 +289,7 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
+  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
     return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
   }
 
