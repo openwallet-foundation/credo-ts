@@ -6,10 +6,12 @@ import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
 
+import { keyDidBuildKeyId } from './BuildKeyId'
+
 export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
 export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 = 'Ed25519VerificationKey2020'
 
-export function getEd25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
+export function getEd25519VerificationMethod({ id, key, controller }: { id: string; key: Key; controller: string }) {
   return {
     id,
     type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
@@ -23,8 +25,8 @@ export const keyDidEd25519: KeyDidMapping = {
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
   ],
-  getVerificationMethods: (did, key) => [
-    getEd25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did }),
+  getVerificationMethods: (did, key, buildKeyId = keyDidBuildKeyId) => [
+    getEd25519VerificationMethod({ id: buildKeyId(did, key), key, controller: did }),
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (

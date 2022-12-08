@@ -85,11 +85,11 @@ export class DidCommV2EnvelopeServiceImpl implements DidCommV2EnvelopeService {
       // We cannot simply create Key object as for DIDComm V1 from base58 representation
       // So we use helper parsing kid
       // TODO: Properly we should return either DecryptedV1MessageContext or DecryptedV2MessageContext depending on the unpacked message
-      senderKey = unpackMetadata.encrypted_from_kid ? Key.fromPublicKeyId(unpackMetadata.encrypted_from_kid) : undefined
+      senderKey = unpackMetadata.encrypted_from_kid ? Key.fromKeyId(unpackMetadata.encrypted_from_kid) : undefined
 
       recipientKey =
         unpackMetadata.encrypted_to_kids?.length && unpackMetadata.encrypted_to_kids[0]
-          ? Key.fromPublicKeyId(unpackMetadata.encrypted_to_kids[0])
+          ? Key.fromKeyId(unpackMetadata.encrypted_to_kids[0])
           : undefined
     } catch (e) {
       // nothing

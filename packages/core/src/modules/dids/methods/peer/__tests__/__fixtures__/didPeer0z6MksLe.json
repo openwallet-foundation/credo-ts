@@ -7,30 +7,30 @@
   ],
   "verificationMethod": [
     {
-      "id": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU",
+      "id": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU",
       "type": "Ed25519VerificationKey2018",
       "controller": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU",
       "publicKeyBase58": "DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6"
     }
   ],
   "authentication": [
-    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
+    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
   ],
   "assertionMethod": [
-    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
+    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
   ],
   "keyAgreement": [
     {
-      "id": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz",
+      "id": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz",
       "type": "X25519KeyAgreementKey2019",
       "controller": "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU",
       "publicKeyBase58": "7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE"
     }
   ],
   "capabilityInvocation": [
-    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
+    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
   ],
   "capabilityDelegation": [
-    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
+    "did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU#6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU"
   ]
 }

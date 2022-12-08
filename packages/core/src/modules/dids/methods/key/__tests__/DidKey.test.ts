@@ -9,12 +9,12 @@ import { DidKey } from '../DidKey'
 
 describe('DidKey', () => {
   it('creates a DidKey instance from a did', async () => {
-    const documentTypes = [didKeyX25519, didKeyEd25519, didKeyBls12381g1, didKeyBls12381g2, didKeyBls12381g1g2]
+    const didDocuments = [didKeyX25519, didKeyEd25519, didKeyBls12381g1, didKeyBls12381g2, didKeyBls12381g1g2]
 
-    for (const documentType of documentTypes) {
-      const didKey = DidKey.fromDid(documentType.id)
+    for (const didDocument of didDocuments) {
+      const didKey = DidKey.fromDid(didDocument.id)
 
-      expect(didKey.didDocument.toJSON()).toMatchObject(documentType)
+      expect(didKey.didDocument.toJSON()).toMatchObject(didDocument)
     }
   })
 

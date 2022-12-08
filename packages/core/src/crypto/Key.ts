@@ -22,8 +22,13 @@ export class Key {
     return Key.fromPublicKey(publicKeyBytes, keyType)
   }
 
-  public static fromPublicKeyId(kid: string) {
-    const key = kid.split('#')[1] ?? kid
+  /**
+   * Creates Key instance from key ID in did:key or did:peer method format.
+   *
+   * @param keyId
+   */
+  public static fromKeyId(keyId: string) {
+    const key = keyId.split('#')[1] ?? keyId
     const multibaseKey = key.startsWith('z') ? key : `z${key}`
     return Key.fromFingerprint(multibaseKey)
   }
@@ -38,6 +43,10 @@ export class Key {
     return new Key(publicKey, keyType)
   }
 
+  public static fromPrefixedPublicKeyBase58(prefixedPublicKeyBase58: string) {
+    return Key.fromFingerprint(`z${prefixedPublicKeyBase58}`)
+  }
+
   public get prefixedPublicKey() {
     const multiCodecPrefix = getMultiCodecPrefixByKeytype(this.keyType)
 
@@ -49,7 +58,11 @@ export class Key {
   }
 
   public get fingerprint() {
-    return `z${TypedArrayEncoder.toBase58(this.prefixedPublicKey)}`
+    return `z${this.prefixedPublicKeyBase58}`
+  }
+
+  public get prefixedPublicKeyBase58() {
+    return TypedArrayEncoder.toBase58(this.prefixedPublicKey)
   }
 
   public get publicKeyBase58() {

@@ -1,7 +1,7 @@
 import type { DidDocumentService } from './service'
+import type { VerificationMethod } from './verificationMethod'
 
 import { DidDocument } from './DidDocument'
-import { VerificationMethod } from './verificationMethod'
 
 export class DidDocumentBuilder {
   private didDocument: DidDocument
@@ -37,9 +37,7 @@ export class DidDocumentBuilder {
       this.didDocument.verificationMethod = []
     }
 
-    this.didDocument.verificationMethod.push(
-      verificationMethod instanceof VerificationMethod ? verificationMethod : new VerificationMethod(verificationMethod)
-    )
+    this.didDocument.verificationMethod.push(verificationMethod)
 
     return this
   }
@@ -49,12 +47,7 @@ export class DidDocumentBuilder {
       this.didDocument.authentication = []
     }
 
-    const verificationMethod =
-      authentication instanceof VerificationMethod || typeof authentication === 'string'
-        ? authentication
-        : new VerificationMethod(authentication)
-
-    this.didDocument.authentication.push(verificationMethod)
+    this.didDocument.authentication.push(authentication)
 
     return this
   }
@@ -64,12 +57,7 @@ export class DidDocumentBuilder {
       this.didDocument.assertionMethod = []
     }
 
-    const verificationMethod =
-      assertionMethod instanceof VerificationMethod || typeof assertionMethod === 'string'
-        ? assertionMethod
-        : new VerificationMethod(assertionMethod)
-
-    this.didDocument.assertionMethod.push(verificationMethod)
+    this.didDocument.assertionMethod.push(assertionMethod)
 
     return this
   }
@@ -79,12 +67,7 @@ export class DidDocumentBuilder {
       this.didDocument.capabilityDelegation = []
     }
 
-    const verificationMethod =
-      capabilityDelegation instanceof VerificationMethod || typeof capabilityDelegation === 'string'
-        ? capabilityDelegation
-        : new VerificationMethod(capabilityDelegation)
-
-    this.didDocument.capabilityDelegation.push(verificationMethod)
+    this.didDocument.capabilityDelegation.push(capabilityDelegation)
 
     return this
   }
@@ -93,12 +76,7 @@ export class DidDocumentBuilder {
       this.didDocument.capabilityInvocation = []
     }
 
-    const verificationMethod =
-      capabilityInvocation instanceof VerificationMethod || typeof capabilityInvocation === 'string'
-        ? capabilityInvocation
-        : new VerificationMethod(capabilityInvocation)
-
-    this.didDocument.capabilityInvocation.push(verificationMethod)
+    this.didDocument.capabilityInvocation.push(capabilityInvocation)
 
     return this
   }
@@ -108,12 +86,17 @@ export class DidDocumentBuilder {
       this.didDocument.keyAgreement = []
     }
 
-    const verificationMethod =
-      keyAgreement instanceof VerificationMethod || typeof keyAgreement === 'string'
-        ? keyAgreement
-        : new VerificationMethod(keyAgreement)
+    this.didDocument.keyAgreement.push(keyAgreement)
 
-    this.didDocument.keyAgreement.push(verificationMethod)
+    return this
+  }
+
+  public addSignatureMethodAndRelationships(verificationMethod: VerificationMethod) {
+    this.addVerificationMethod(verificationMethod)
+      .addAuthentication(verificationMethod.id)
+      .addAssertionMethod(verificationMethod.id)
+      .addCapabilityDelegation(verificationMethod.id)
+      .addCapabilityInvocation(verificationMethod.id)
 
     return this
   }

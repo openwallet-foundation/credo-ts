@@ -10,6 +10,8 @@ import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from 
 import { parseDid } from '../../domain/parse'
 import { DidKey } from '../key'
 
+import { peerDidBuildKeyId } from './didPeer'
+
 enum DidPeerPurpose {
   Assertion = 'A',
   Encryption = 'E',
@@ -82,14 +84,10 @@ export function didToNumAlgo2DidDocument(did: string) {
       // Decode the fingerprint, and extract the verification method(s)
       const key = Key.fromFingerprint(entryContent)
       const { getVerificationMethods } = getKeyDidMappingByKeyType(key.keyType)
-      const verificationMethods = getVerificationMethods(did, key)
+      const verificationMethods = getVerificationMethods(did, key, peerDidBuildKeyId)
 
       // Add all verification methods to the did document
       for (const verificationMethod of verificationMethods) {
-        // FIXME: the peer did uses key identifiers without the multi base prefix
-        // However method 0 (and thus did:key) do use the multi base prefix in the
-        // key identifier. Fixing it like this for now, before making something more complex
-        verificationMethod.id = verificationMethod.id.replace('#z', '#')
         addVerificationMethodToDidDocument(didDocument, verificationMethod, purpose)
       }
     }

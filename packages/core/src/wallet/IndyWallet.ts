@@ -628,17 +628,17 @@ export class IndyWallet implements Wallet {
   }
 
   // FIXME: Think how to avoid making function it public?
-  public async retrieveKeyPair(keyId: string): Promise<KeyPair> {
+  public async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
-      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${keyId}`, {})
+      const { value } = await this.indy.getWalletRecord(this.handle, 'KeyPairRecord', `key-${publicKeyBase58}`, {})
       if (value) {
         return JsonEncoder.fromString(value) as KeyPair
       } else {
-        throw new WalletError(`No content found for record with public key: ${keyId}`)
+        throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
       }
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
-        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${keyId}.`, {
+        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${publicKeyBase58}.`, {
           recordType: 'KeyPairRecord',
           cause: error,
         })

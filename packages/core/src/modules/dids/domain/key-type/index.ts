@@ -1,5 +1,6 @@
 export { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from './keyDidMapping'
 
+export * from './BuildKeyId'
 export * from './bls12381g2'
 export * from './bls12381g1'
 export * from './bls12381g1g2'

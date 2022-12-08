@@ -28,7 +28,7 @@ export interface Wallet extends Disposable {
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
-  retrieveKeyPair(keyId: string): Promise<KeyPair>
+  retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair>
 }
 
 export interface DidInfo {

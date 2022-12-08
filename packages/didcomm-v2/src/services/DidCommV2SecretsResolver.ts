@@ -13,9 +13,7 @@ export class DidCommV2SecretsResolver implements SecretsResolver {
   public async find_secrets(secret_ids: Array<string>): Promise<Array<string>> {
     const secrets = []
     for (const secret_id of secret_ids) {
-      // Workaround: AFJ core stores keys in the Wallet by their base58 representation, so we need to parse kid to get it
-      const keyId = Key.fromPublicKeyId(secret_id).publicKeyBase58
-      const secret = await this.wallet.retrieveKeyPair(keyId)
+      const secret = await this.wallet.retrieveKeyPair(Key.fromKeyId(secret_id).publicKeyBase58)
       if (secret) {
         secrets.push(secret_id)
       }
@@ -24,9 +22,7 @@ export class DidCommV2SecretsResolver implements SecretsResolver {
   }
 
   public async get_secret(secret_id: string): Promise<Secret | null> {
-    // Workaround: AFJ core stores keys in the Wallet by their base58 representation, so we need to parse kid to get it
-    const keyId = Key.fromPublicKeyId(secret_id).publicKeyBase58
-    const key = await this.wallet.retrieveKeyPair(keyId)
+    const key = await this.wallet.retrieveKeyPair(Key.fromKeyId(secret_id).publicKeyBase58)
     if (!key) return null
 
     const { supportedVerificationMethodTypes } = getKeyDidMappingByKeyType(key.keyType)
