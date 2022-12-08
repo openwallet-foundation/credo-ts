@@ -78,7 +78,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       },
     })
     signCredentialOptions = {
-      credentialAsJson: TEST_LD_DOCUMENT,
+      credential: TEST_LD_DOCUMENT,
       options: {
         proofType: 'BbsBlsSignature2020',
         proofPurpose: 'assertionMethod',
