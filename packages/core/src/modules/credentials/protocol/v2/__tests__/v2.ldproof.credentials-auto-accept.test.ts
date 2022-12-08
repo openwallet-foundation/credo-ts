@@ -4,7 +4,7 @@ import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type {
   JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593AsJson,
+  JsonLdSignCredentialFormat,
 } from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2CredentialService } from '../V2CredentialService'
 
@@ -35,7 +35,7 @@ describe('credentials', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  let signCredentialOptions: SignCredentialOptionsRFC0593AsJson
+  let signCredentialOptions: JsonLdSignCredentialFormat
   let wallet
   const seed = 'testseed000000000000000000000001'
 

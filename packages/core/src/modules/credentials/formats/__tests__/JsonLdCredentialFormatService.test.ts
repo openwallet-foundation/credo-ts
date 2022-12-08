@@ -1,9 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../../formats'
-import type {
-  JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593AsJson,
-} from '../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdCredentialFormat, JsonLdSignCredentialFormat } from '../../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
@@ -150,7 +147,7 @@ const inputDocAsJson: JSON = <JSON>(<unknown>{
 })
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
 
-const signCredentialOptions: SignCredentialOptionsRFC0593AsJson = {
+const signCredentialOptions: JsonLdSignCredentialFormat = {
   credential: inputDocAsJson,
   options: {
     proofPurpose: 'assertionMethod',
@@ -297,7 +294,7 @@ describe('JsonLd CredentialFormatService', () => {
       ])
 
       const service = jsonldFormatService as JsonLdCredentialFormatService
-      const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
+      const credentialRequest = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
 
       // calls private method in the format service
       const verificationMethod = await service['deriveVerificationMethod'](
@@ -360,7 +357,7 @@ describe('JsonLd CredentialFormatService', () => {
       state: CredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
-    let signCredentialOptionsWithProperty: SignCredentialOptionsRFC0593AsJson
+    let signCredentialOptionsWithProperty: JsonLdSignCredentialFormat
     beforeEach(async () => {
       signCredentialOptionsWithProperty = signCredentialOptions
       signCredentialOptionsWithProperty.options = {

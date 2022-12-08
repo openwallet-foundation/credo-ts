@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../../../../../../tests/transport/Sub
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
-import type { SignCredentialOptionsRFC0593AsJson } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -26,7 +26,7 @@ const aliceAgentOptions = getAgentOptions('Alice LD connection-less Credentials 
 })
 
 let wallet
-let signCredentialOptions: SignCredentialOptionsRFC0593AsJson
+let signCredentialOptions: JsonLdSignCredentialFormat
 
 describe('credentials', () => {
   let faberAgent: Agent

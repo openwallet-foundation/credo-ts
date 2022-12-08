@@ -21,7 +21,7 @@ import type {
 import type {
   JsonLdCredentialFormat,
   SignCredentialOptionsRFC0593,
-  SignCredentialOptionsRFC0593AsJson,
+  JsonLdSignCredentialFormat,
 } from './JsonLdCredentialFormat'
 
 import { injectable } from 'tsyringe'
@@ -164,7 +164,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   ): Promise<CredentialFormatCreateReturn> {
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-    const jsonLdCredential = new JsonLdCredentialDetail(credentialOffer)
+    const jsonLdCredential = JsonTransformer.toJSON<JsonLdCredentialDetail>(credentialOffer)
     MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
@@ -221,7 +221,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   ): Promise<CredentialFormatCreateReturn> {
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
+    const credentialRequest = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
 
     const verificationMethod =
       credentialFormats?.jsonld?.verificationMethod ??
@@ -264,7 +264,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   private async deriveVerificationMethod(
     agentContext: AgentContext,
     credentialAsJson: JSON,
-    credentialRequest: SignCredentialOptionsRFC0593AsJson
+    credentialRequest: JsonLdSignCredentialFormat
   ): Promise<string> {
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cCredential)
 
@@ -309,7 +309,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // compare stuff in the proof object of the credential and request...based on aca-py
 
-    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
+    const requestAsJson = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
 
     if (Array.isArray(credential.proof)) {
       throw new AriesFrameworkError('Credential arrays are not supported')
@@ -331,7 +331,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   private compareCredentialSubject(
     credential: W3cVerifiableCredential,
-    requestAsJson: SignCredentialOptionsRFC0593AsJson
+    requestAsJson: JsonLdSignCredentialFormat
   ): void {
     const request = JsonTransformer.fromJSON(requestAsJson.credential, W3cCredential)
     MessageValidator.validateSync(request)
@@ -341,7 +341,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
   }
 
-  private compareProofs(credentialProof: LinkedDataProof, requestAsJson: SignCredentialOptionsRFC0593AsJson): void {
+  private compareProofs(credentialProof: LinkedDataProof, requestAsJson: JsonLdSignCredentialFormat): void {
     const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
     MessageValidator.validateSync(request)
 
@@ -419,7 +419,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     } else {
       // do checks here
       try {
-        const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
+        const requestAsJson = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
 
         this.compareCredentialSubject(credential, requestAsJson)
         this.compareProofs(credential.proof, requestAsJson)

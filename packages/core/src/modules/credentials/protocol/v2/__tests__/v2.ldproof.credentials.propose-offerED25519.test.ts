@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { SignCredentialOptionsRFC0593AsJson } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -53,7 +53,7 @@ describe('credentials', () => {
     },
   })
 
-  let signCredentialOptions: SignCredentialOptionsRFC0593AsJson
+  let signCredentialOptions: JsonLdSignCredentialFormat
 
   let wallet
   const seed = 'testseed000000000000000000000001'
@@ -319,7 +319,7 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
+    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<JsonLdSignCredentialFormat>()
 
     expect(credOfferJson).toMatchObject({
       credential: {

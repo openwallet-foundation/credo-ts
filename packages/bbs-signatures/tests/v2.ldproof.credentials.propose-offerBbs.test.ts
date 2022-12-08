@@ -1,6 +1,6 @@
 import type { Agent } from '../../core/src/agent/Agent'
 import type { ConnectionRecord } from '../../core/src/modules/connections'
-import type { SignCredentialOptionsRFC0593AsJson } from '../../core/src/modules/credentials/formats/jsonld'
+import type { JsonLdSignCredentialFormat } from '../../core/src/modules/credentials/formats/jsonld'
 import type { Wallet } from '../../core/src/wallet'
 
 import { InjectionSymbols } from '../../core/src/constants'
@@ -28,7 +28,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
-  let signCredentialOptions: SignCredentialOptionsRFC0593AsJson
+  let signCredentialOptions: JsonLdSignCredentialFormat
   const seed = 'testseed000000000000000000000001'
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
