@@ -67,7 +67,7 @@ describe('credentials', () => {
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
     await wallet.createDid({ seed })
     signCredentialOptions = {
-      credentialAsJson: inputDocAsJson,
+      credential: inputDocAsJson,
       options: {
         proofType: 'Ed25519Signature2018',
         proofPurpose: 'assertionMethod',
@@ -322,7 +322,7 @@ describe('credentials', () => {
     const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593AsJson>()
 
     expect(credOfferJson).toMatchObject({
-      credentialAsJson: {
+      credential: {
         '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'https://w3id.org/citizenship/v1',

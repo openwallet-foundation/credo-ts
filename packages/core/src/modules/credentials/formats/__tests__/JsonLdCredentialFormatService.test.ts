@@ -149,10 +149,9 @@ const inputDocAsJson: JSON = <JSON>(<unknown>{
   },
 })
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
-// const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
 
 const signCredentialOptions: SignCredentialOptionsRFC0593AsJson = {
-  credentialAsJson: inputDocAsJson,
+  credential: inputDocAsJson,
   options: {
     proofPurpose: 'assertionMethod',
     proofType: 'Ed25519Signature2018',
@@ -291,6 +290,7 @@ describe('JsonLd CredentialFormatService', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
 
     test('Derive Verification Method', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument as any))
       mockFunction(w3cCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
         'Ed25519VerificationKey2018',
@@ -302,7 +302,7 @@ describe('JsonLd CredentialFormatService', () => {
       // calls private method in the format service
       const verificationMethod = await service['deriveVerificationMethod'](
         agentContext,
-        signCredentialOptions.credentialAsJson,
+        signCredentialOptions.credential,
         credentialRequest
       )
       expect(verificationMethod).toBe(
@@ -382,6 +382,7 @@ describe('JsonLd CredentialFormatService', () => {
     })
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when
@@ -415,6 +416,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when/then
@@ -436,6 +438,7 @@ describe('JsonLd CredentialFormatService', () => {
         }),
       })
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when/then
@@ -458,6 +461,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when/then
@@ -480,6 +484,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when/then
@@ -502,6 +507,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
 
       // when/then

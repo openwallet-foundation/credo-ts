@@ -12,7 +12,7 @@ export interface SignCredentialOptionsRFC0593 {
 }
 
 export interface SignCredentialOptionsRFC0593AsJson {
-  credentialAsJson: JSON
+  credential: JSON
   options: JsonLdOptionsRFC0593
 }
 

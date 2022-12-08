@@ -50,7 +50,7 @@ describe('credentials', () => {
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createDid({ seed })
       signCredentialOptions = {
-        credentialAsJson: TEST_LD_DOCUMENT,
+        credential: TEST_LD_DOCUMENT,
         options: {
           proofType: 'Ed25519Signature2018',
           proofPurpose: 'assertionMethod',
@@ -152,7 +152,7 @@ describe('credentials', () => {
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createDid({ seed })
       signCredentialOptions = {
-        credentialAsJson: TEST_LD_DOCUMENT,
+        credential: TEST_LD_DOCUMENT,
         options: {
           proofType: 'Ed25519Signature2018',
           proofPurpose: 'assertionMethod',

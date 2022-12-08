@@ -76,7 +76,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
 
-    MessageValidator.validateSync(jsonLdFormat.credentialAsJson)
+    MessageValidator.validateSync(jsonLdFormat.credential)
 
     // jsonLdFormat is now of type SignCredentialOptionsRFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -141,7 +141,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createOffer')
     }
 
-    MessageValidator.validateSync(jsonLdFormat.credentialAsJson)
+    MessageValidator.validateSync(jsonLdFormat.credential)
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
     return { format, attachment }
@@ -197,7 +197,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createRequest')
     }
 
-    MessageValidator.validateSync(jsonLdFormat.credentialAsJson)
+    MessageValidator.validateSync(jsonLdFormat.credential)
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
@@ -225,7 +225,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const verificationMethod =
       credentialFormats?.jsonld?.verificationMethod ??
-      (await this.deriveVerificationMethod(agentContext, credentialRequest.credentialAsJson, credentialRequest))
+      (await this.deriveVerificationMethod(agentContext, credentialRequest.credential, credentialRequest))
 
     if (!verificationMethod) {
       throw new AriesFrameworkError('Missing verification method in credential data')
@@ -243,7 +243,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       )
     }
 
-    const credential = JsonTransformer.fromJSON(credentialRequest.credentialAsJson, W3cCredential)
+    const credential = JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential)
     MessageValidator.validateSync(credential)
 
     const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
@@ -333,7 +333,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     credential: W3cVerifiableCredential,
     requestAsJson: SignCredentialOptionsRFC0593AsJson
   ): void {
-    const request = JsonTransformer.fromJSON(requestAsJson.credentialAsJson, W3cCredential)
+    const request = JsonTransformer.fromJSON(requestAsJson.credential, W3cCredential)
     MessageValidator.validateSync(request)
 
     if (!objectEquality(credential.credentialSubject, request.credentialSubject)) {
