@@ -36,4 +36,10 @@ export interface JsonLdCredentialFormat extends CredentialFormat {
     createRequest: JsonLdSignCredentialFormat
     acceptRequest: JsonLdCreateRequestFormat
   }
+  formatData: {
+    proposal: SignCredentialOptionsRFC0593
+    offer: SignCredentialOptionsRFC0593
+    request: SignCredentialOptionsRFC0593
+    credential: W3cCredential
+  }
 }

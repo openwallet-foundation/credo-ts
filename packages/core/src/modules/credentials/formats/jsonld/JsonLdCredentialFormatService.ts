@@ -94,7 +94,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
     }
 
-    const messageToValidate = new JsonLdCredentialDetail(credProposalJson)
+    const messageToValidate = JsonTransformer.fromJSON(credProposalJson, JsonLdCredentialDetail)
     MessageValidator.validateSync(messageToValidate)
   }
 
@@ -109,7 +109,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
 
     const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const jsonLdCredentialProposal = new JsonLdCredentialDetail(credentialProposal)
+    const jsonLdCredentialProposal = JsonTransformer.fromJSON(credentialProposal, JsonLdCredentialDetail)
+
     MessageValidator.validateSync(jsonLdCredentialProposal)
 
     const offerData = credentialProposal
@@ -154,7 +155,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential offer data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(credentialOfferJson)
+    const jsonLdCredential = JsonTransformer.fromJSON(credentialOfferJson, JsonLdCredentialDetail)
     MessageValidator.validateSync(jsonLdCredential)
   }
 
@@ -164,7 +165,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   ): Promise<CredentialFormatCreateReturn> {
     const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
 
-    const jsonLdCredential = JsonTransformer.toJSON<JsonLdCredentialDetail>(credentialOffer)
+    const jsonLdCredential = JsonTransformer.fromJSON(credentialOffer, JsonLdCredentialDetail)
     MessageValidator.validateSync(jsonLdCredential)
 
     const format = new CredentialFormatSpec({
@@ -211,8 +212,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld credential request data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(requestJson)
-    MessageValidator.validateSync(jsonLdCredential)
+    const jsonLdCredentialDetail = JsonTransformer.fromJSON(requestJson, JsonLdCredentialDetail)
+    MessageValidator.validateSync(jsonLdCredentialDetail)
   }
 
   public async acceptRequest(
