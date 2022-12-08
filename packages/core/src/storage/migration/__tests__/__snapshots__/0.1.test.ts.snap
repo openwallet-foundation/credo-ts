@@ -832,6 +832,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -896,6 +897,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "done",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -960,6 +962,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "done",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1024,6 +1027,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1088,6 +1092,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1147,6 +1152,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "await-response",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1211,6 +1217,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "await-response",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "7781341d-be29-441b-9b79-4a957d8c6d37": Object {
