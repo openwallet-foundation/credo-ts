@@ -12,7 +12,6 @@ import {
 } from '../../../formats/presentation-exchange/PresentationExchangeProofFormat'
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
-import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
 describe('Present Proof', () => {
   let faberAgent: Agent

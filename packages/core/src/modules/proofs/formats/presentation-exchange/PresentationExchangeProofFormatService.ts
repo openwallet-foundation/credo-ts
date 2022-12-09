@@ -33,7 +33,6 @@ import type {
 } from '@sphereon/ssi-types'
 
 import { KeyEncoding, Status, PEXv1 } from '@sphereon/pex'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { IProofPurpose } from '@sphereon/ssi-types'
 import { Lifecycle, scoped } from 'tsyringe'
 
@@ -73,11 +72,10 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     this.didResolver = didResolver
   }
   public readonly formatKey = 'presentationExchange' as const
-  public readonly proofRecordType = 'presentationExchange' as const
 
   public async createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat> {
     if (!options) {
-      throw Error('Presentation Exchange format missing while creating proof proposal.')
+      throw new AriesFrameworkError('Presentation Exchange format missing while creating proof proposal.')
     }
 
     const presentationExchangeFormat = options.formats.presentationExchange
@@ -133,7 +131,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
   }
 
   public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
-    const presentationDefinitionJson = options.presentationAttachment.getDataAsJson<PresentationDefinitionV1>() ?? null
+    const presentationDefinitionJson = options.presentationAttachment.getDataAsJson<PresentationDefinitionV1>()
 
     const pex: PEXv1 = new PEXv1()
     const result: Validated = pex.validateDefinition(presentationDefinitionJson)
@@ -365,12 +363,12 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION
     )
 
-    const proofAttachment = requestFormat?.attachment.getDataAsJson<Attachment>() ?? null
+    const proofAttachment = requestFormat?.attachment.getDataAsJson<Attachment>()
 
     const requestMessage: RequestPresentationExchangeOptions =
       proofAttachment as unknown as RequestPresentationExchangeOptions
 
-    const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>() ?? null
+    const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>()
 
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
 
