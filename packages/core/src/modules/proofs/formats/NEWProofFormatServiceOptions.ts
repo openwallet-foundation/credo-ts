@@ -1,9 +1,35 @@
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { ProposeProofFormats } from '../../models/SharedOptions'
-import type { ProofExchangeRecord } from '../../repository'
-import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
-import type { ProofRequestOptions } from '../indy/models/ProofRequest'
+import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
+import type { ProposeProofFormats } from '../models/SharedOptions'
+import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
+import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { ProofFormat, ProofFormatPayload } from './ProofFormat'
+import type { ProofFormatService } from './ProofFormatService'
+import type { ProofRequestOptions } from './indy'
+
+/**
+ * Get the service map for usage in the proofs module. Will return a type mapping of protocol version to service.
+ *
+ * @example
+ * ```
+ * type FormatServiceMap = ProofFormatServiceMap<[IndyProofFormat]>
+ *
+ * // equal to
+ * type FormatServiceMap = {
+ *   indy: ProofFormatServiceMap<IndyCredentialFormat>
+ * }
+ * ```
+ */
+export type ProofFormatServiceMap<PFs extends ProofFormat[]> = {
+  [PF in PFs[number] as PF['formatKey']]: ProofFormatService<PF>
+}
+
+export interface FormatGetRequestedCredentials {
+  attachment: Attachment
+  presentationProposal?: PresentationPreview
+  config?: GetRequestedCredentialsConfig
+}
 
 export interface CreateRequestAttachmentOptions {
   id?: string

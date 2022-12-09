@@ -6,13 +6,13 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofFormat } from '../../formats/ProofFormat'
-import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
-import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type {
   CreateProblemReportOptions,
   FormatCreatePresentationOptions,
-} from '../../formats/models/ProofFormatServiceOptions'
+} from '../../formats/NEWProofFormatServiceOptions'
+import type { ProofFormat } from '../../formats/ProofFormat'
+import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
+import type { ProofAttributeInfo } from '../../formats/indy/models'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,

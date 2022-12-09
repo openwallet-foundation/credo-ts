@@ -6,10 +6,9 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofFormatServiceMap } from '../../formats'
+import type { CreateProblemReportOptions, ProofFormatServiceMap } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,

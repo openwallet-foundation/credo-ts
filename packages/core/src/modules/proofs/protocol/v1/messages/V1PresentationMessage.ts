@@ -1,4 +1,4 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
+import type { ProofAttachmentFormat } from '../../../formats/ProofAttachmentFormat'
 import type { IndyProof } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'

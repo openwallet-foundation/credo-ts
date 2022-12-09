@@ -11,8 +11,8 @@ import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService, RoutingService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import type { CreateProblemReportOptions } from './formats/NEWProofFormatServiceOptions'
 import type { ProofFormat } from './formats/ProofFormat'
-import type { CreateProblemReportOptions } from './formats/models/ProofFormatServiceOptions'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,

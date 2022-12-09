@@ -1,5 +1,4 @@
 export * from './indy'
-export * from './models'
 export * from './ProofFormat'
 export * from './ProofFormatService'
-export * from './ProofFormatServiceOptions'
+export * from './NEWProofFormatServiceOptions'

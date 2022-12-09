@@ -9,9 +9,8 @@ import type {
   FormatRetrievedCredentialOptions,
 } from '../../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../../models/SharedOptions'
-import type { GetRequestedCredentialsFormat } from '../ProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
+  FormatGetRequestedCredentials,
   CreatePresentationFormatsOptions,
   FormatCreatePresentationOptions,
   CreateRequestOptions,
@@ -19,7 +18,8 @@ import type {
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
-} from '../models/ProofFormatServiceOptions'
+} from '../NEWProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { InputDescriptorsSchema } from './models'
 import type { RequestPresentationExchangeOptions } from './models/RequestPresentation'
@@ -166,7 +166,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     const presentationExchangeRequestMessage = options.proofFormats.presentationExchange
 
-    const attachId = options.proofFormats.presentationExchange.attachId ?? uuid()
+    const attachId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
       attachmentId: attachId,
@@ -395,11 +395,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
+    options: FormatGetRequestedCredentials
   ): Promise<FormatRetrievedCredentialOptions<[PresentationExchangeProofFormat]>> {
-    // public async getRequestedCredentialsForProofRequest(
-    //   options: GetRequestedCredentialsFormat
-    // ): Promise<AutoSelectCredentialOptions> {
     const requestMessageJson = options.attachment.getDataAsJson<RequestPresentationExchangeOptions>()
 
     const presentationDefinition = requestMessageJson.presentationDefinition

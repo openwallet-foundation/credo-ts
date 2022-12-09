@@ -7,18 +7,18 @@ import type {
   FormatRetrievedCredentialOptions,
 } from '../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../models/SharedOptions'
-import type { ProofFormat } from './ProofFormat'
-import type { GetRequestedCredentialsFormat } from './ProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
-  FormatCreateProofProposalOptions,
   CreateRequestOptions,
   FormatCreatePresentationOptions,
+  FormatCreateProofProposalOptions,
+  FormatGetRequestedCredentials,
   ProcessPresentationOptions,
   ProcessProposalOptions,
   ProcessRequestOptions,
-} from './models/ProofFormatServiceOptions'
+} from './NEWProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { ProofFormat } from './ProofFormat'
 
 /**
  * This abstract class is the base class for any proof format
@@ -58,7 +58,7 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
 
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
+    options: FormatGetRequestedCredentials
   ): Promise<FormatRetrievedCredentialOptions<[PF]>>
 
   public abstract autoSelectCredentialsForProofRequest(

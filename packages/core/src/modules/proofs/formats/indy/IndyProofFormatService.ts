@@ -7,8 +7,6 @@ import type {
 } from '../../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models'
-import type { GetRequestedCredentialsFormat } from '../ProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
   CreateProofAttachmentOptions,
@@ -20,7 +18,9 @@ import type {
   ProcessProposalOptions,
   ProcessRequestOptions,
   VerifyProofOptions,
-} from '../models/ProofFormatServiceOptions'
+  FormatGetRequestedCredentials,
+} from '../NEWProofFormatServiceOptions'
+import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
@@ -382,7 +382,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
+    options: FormatGetRequestedCredentials
   ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { attachment, presentationProposal } = options
