@@ -125,7 +125,7 @@ export class AgentConfig {
    * in a given protocol (i.e. it does not support Aries RFC 0360).
    */
   public get useDidKeyInProtocols() {
-    return this.initConfig.useDidKeyInProtocols ?? false
+    return this.initConfig.useDidKeyInProtocols ?? true
   }
 
   public get endpoints(): [string, ...string[]] {
