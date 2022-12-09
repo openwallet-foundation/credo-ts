@@ -8,7 +8,7 @@ import type {
 } from '../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../models/SharedOptions'
 import type { ProofFormat } from './ProofFormat'
-import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServiceOptions'
+import type { GetRequestedCredentialsFormat } from './ProofFormatServiceOptions'
 import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,

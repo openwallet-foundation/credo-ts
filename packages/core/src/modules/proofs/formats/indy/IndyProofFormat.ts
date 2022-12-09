@@ -1,6 +1,6 @@
 import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
 import type { ProofFormat } from '../ProofFormat'
-import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
+import type { IndyRequestProofFormat } from './IndyProofFormatsServiceOptions'
 import type { RequestedAttribute } from './models/RequestedAttribute'
 import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
 import type { RequestedPredicate } from './models/RequestedPredicate'

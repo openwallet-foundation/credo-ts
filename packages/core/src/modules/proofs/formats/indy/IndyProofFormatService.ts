@@ -7,6 +7,7 @@ import type {
 } from '../../models/ProofServiceOptions'
 import type { ProofRequestFormats } from '../../models/SharedOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models'
+import type { GetRequestedCredentialsFormat } from '../ProofFormatServiceOptions'
 import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
 import type {
   CreatePresentationFormatsOptions,
@@ -21,7 +22,6 @@ import type {
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
 import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'

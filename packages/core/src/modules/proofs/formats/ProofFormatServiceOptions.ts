@@ -1,5 +1,7 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { ProofFormatSpec } from '../models/ProofFormatSpec'
+import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofFormat } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
 
@@ -28,4 +30,10 @@ export type ProofFormatServiceMap<PFs extends ProofFormat[]> = {
 export interface ProofFormatCreateReturn {
   format: ProofFormatSpec
   attachment: Attachment
+}
+
+export interface GetRequestedCredentialsFormat {
+  attachment: Attachment
+  presentationProposal?: PresentationPreview
+  config?: GetRequestedCredentialsConfig
 }
