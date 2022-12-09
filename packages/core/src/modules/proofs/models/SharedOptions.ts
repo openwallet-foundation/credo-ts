@@ -52,11 +52,6 @@ export interface ProofRequestFormats {
   presentationExchange?: RequestPresentationExchangeOptions
 }
 
-export interface RequestedCredentialsFormats {
-  indy?: RequestedCredentials
-  presentationExchange?: IVerifiableCredential
-}
-
 interface IndyAcceptProposalOptions {
   request: ProofRequest
 }
