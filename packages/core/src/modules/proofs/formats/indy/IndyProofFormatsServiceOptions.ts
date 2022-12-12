@@ -6,7 +6,6 @@ import type { PresentationPreview } from '../../protocol/v1/models/V1Presentatio
 import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
 import type { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
 import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
-import type { ProofRequest } from './models/ProofRequest'
 
 export type IndyPresentationProofFormat = IndyRequestedCredentialsFormat
 
