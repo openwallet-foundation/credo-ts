@@ -150,7 +150,6 @@ describe('Present Proof', () => {
             json: {
               options: {
                 challenge: expect.any(String),
-                domain: expect.any(String),
               },
               presentationDefinition: {
                 id: expect.any(String),
