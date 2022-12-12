@@ -16,16 +16,7 @@ describe('connections', () => {
   let aliceAgent: Agent
   let acmeAgent: Agent
 
-  afterEach(async () => {
-    await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
-    await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
-    await acmeAgent.shutdown()
-    await acmeAgent.wallet.delete()
-  })
-
-  it('one should be able to make multiple connections using a multi use invite', async () => {
+  beforeEach(async () => {
     const faberAgentOptions = getAgentOptions('Faber Agent Connections', {
       endpoints: ['rxjs:faber'],
     })
@@ -59,7 +50,18 @@ describe('connections', () => {
     acmeAgent.registerInboundTransport(new SubjectInboundTransport(acmeMessages))
     acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await acmeAgent.initialize()
+  })
 
+  afterEach(async () => {
+    await faberAgent.shutdown()
+    await faberAgent.wallet.delete()
+    await aliceAgent.shutdown()
+    await aliceAgent.wallet.delete()
+    await acmeAgent.shutdown()
+    await acmeAgent.wallet.delete()
+  })
+
+  it('one should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,
@@ -94,28 +96,47 @@ describe('connections', () => {
     return expect(faberOutOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
   })
 
-  xit('should be able to make multiple connections using a multi use invite', async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-    }
-
-    const faberAgentOptions = getAgentOptions('Faber Agent Connections 2', {
-      endpoints: ['rxjs:faber'],
+  it('tag connections with multiple types and query them', async () => {
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+      multiUseInvitation: true,
     })
-    const aliceAgentOptions = getAgentOptions('Alice Agent Connections 2')
 
-    // Faber defines both inbound and outbound transports
-    faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
-    // Alice only has outbound transport
-    aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await aliceAgent.initialize()
+    // Receive invitation first time with alice agent
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
+    // Mark connection with three different types
+    aliceFaberConnection = await aliceAgent.connections.addConnectionType(aliceFaberConnection.id, 'alice-faber-1')
+    aliceFaberConnection = await aliceAgent.connections.addConnectionType(aliceFaberConnection.id, 'alice-faber-2')
+    aliceFaberConnection = await aliceAgent.connections.addConnectionType(aliceFaberConnection.id, 'alice-faber-3')
+
+    // Now search for them
+    let connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-4'])
+    expect(connectionsFound).toEqual([])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1'])
+    expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-2'])
+    expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-3'])
+    expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-3'])
+    expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType([
+      'alice-faber-1',
+      'alice-faber-2',
+      'alice-faber-3',
+    ])
+    expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-4'])
+    expect(connectionsFound).toEqual([])
+  })
+
+  xit('should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
       multiUseInvitation: true,

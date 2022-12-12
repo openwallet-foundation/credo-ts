@@ -38,7 +38,7 @@ export type DefaultConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
-  connectionType?: [ConnectionType | string]
+  connectionType?: Array<ConnectionType | string>
 }
 
 export class ConnectionRecord
@@ -91,7 +91,7 @@ export class ConnectionRecord
     }
   }
 
-  public getTags() {
+  public getTags(): DefaultConnectionTags & CustomConnectionTags {
     return {
       ...this._tags,
       state: this.state,
