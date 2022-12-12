@@ -38,7 +38,7 @@ import { Lifecycle, scoped } from 'tsyringe'
 import { AgentConfig } from '../../../../agent/AgentConfig'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
-import { JsonTransformer } from '../../../../utils'
+import { deepEquality, JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { DidResolverService, keyReferenceToKey, keyTypeToProofType } from '../../../dids'
 import { W3cCredentialService } from '../../../vc'
@@ -274,8 +274,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     // the signature suite to use for the presentation is dependant on the credentials we share.
 
-    // assertionMethod?: Array<string | VerificationMethod>
-
     // 1. Get the key for this given proof purpose in this DID document
     const keyId = didResolutionResult.didDocument[proofPurpose] as string[]
 
@@ -482,10 +480,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     const proposalAttachmentData = proposalAttachment.getDataAsJson<InputDescriptorsSchema>()
     const requestAttachmentData = requestAttachment.getDataAsJson<InputDescriptorsSchema>()
 
-    if (
-      proposalAttachmentData.inputDescriptors === requestAttachmentData.inputDescriptors &&
-      proposalAttachmentData.inputDescriptors === requestAttachmentData.inputDescriptors
-    ) {
+    if (deepEquality(proposalAttachmentData.inputDescriptors, requestAttachmentData.inputDescriptors)) {
       return true
     }
 
