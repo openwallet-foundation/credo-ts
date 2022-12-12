@@ -183,7 +183,12 @@ describe('out of band with mediation', () => {
 
     const keyRemoveMessage = await keyRemoveMessagePromise
     expect(keyRemoveMessage.updates.length).toEqual(1)
-    expect(keyRemoveMessage.updates[0]).toEqual({
+    expect(
+      keyRemoveMessage.updates.map((update) => ({
+        action: update.action,
+        recipientKey: didKeyToVerkey(update.recipientKey),
+      }))[0]
+    ).toEqual({
       action: KeylistUpdateAction.remove,
       recipientKey: didKeyToVerkey((outOfBandInvitation.getServices()[0] as OutOfBandDidCommService).recipientKeys[0]),
     })
