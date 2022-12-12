@@ -473,11 +473,13 @@ export class ProofsApi<
 
     const service = this.getService(proofRecord.protocolVersion)
 
-    const retrievedCredentials: RetrievedCredentialOptions<PFs> =
-      await service.getRequestedCredentialsForProofRequest(this.agentContext, {
+    const retrievedCredentials: RetrievedCredentialOptions<PFs> = await service.getRequestedCredentialsForProofRequest(
+      this.agentContext,
+      {
         proofRecord: proofRecord,
         config: options.config,
-      })
+      }
+    )
     return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
   }
 
