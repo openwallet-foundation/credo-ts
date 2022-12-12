@@ -89,6 +89,7 @@ export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
 
 export interface FormatPresentationAttachment {
   presentationAttachment: Attachment
+  presentationOptions?: PresentationOptions
 }
 
 export interface ProposeProofFormats {

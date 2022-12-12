@@ -142,8 +142,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     const presentationExchangeRequestMessage: FormatRequestPresentationExchangeOptions = {
       options: {
-        challenge: uuid(),
-        domain: '',
+        challenge: options.presentationOptions?.challenge ?? uuid(),
+        domain: options.presentationOptions?.domain,
       },
       presentationDefinition: presentationDefinitionJson,
     }
@@ -409,7 +409,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
     }
 
-    const query = []
+    const query: Array<Query<W3cCredentialRecord>> = []
     for (const inputDescriptor of presentationDefinition.input_descriptors) {
       for (const schema of inputDescriptor.schema) {
         const innerQuery: Query<W3cCredentialRecord> = {}
@@ -420,7 +420,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     // query the wallet ourselves first to avoid the need to query the pex library for all
     // credentials for every proof request
-
     const credentials = await this.w3cCredentialService.findCredentialRecordsByQuery(agentContext, {
       $or: [...query],
     })
