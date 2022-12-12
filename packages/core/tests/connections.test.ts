@@ -16,6 +16,7 @@ import {
   KeylistUpdateAction,
 } from '../src'
 import { Agent } from '../src/agent/Agent'
+import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
 import { getAgentOptions } from './helpers'
@@ -45,7 +46,7 @@ describe('connections', () => {
     const aliceMessages = new Subject<SubjectMessage>()
     const acmeMessages = new Subject<SubjectMessage>()
     const mediatorMessages = new Subject<SubjectMessage>()
-    
+
     const subjectMap = {
       'rxjs:faber': faberMessages,
       'rxjs:alice': aliceMessages,
@@ -67,11 +68,11 @@ describe('connections', () => {
     acmeAgent.registerInboundTransport(new SubjectInboundTransport(acmeMessages))
     acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await acmeAgent.initialize()
-    
+
     mediatorAgent = new Agent(mediatorAgentOptions)
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await mediatorAgent.initialize()    
+    await mediatorAgent.initialize()
   })
 
   afterEach(async () => {
@@ -214,7 +215,9 @@ describe('connections', () => {
 
     const keylistAddEvents: KeylistUpdate[] = []
     keyAddMessageObservable.subscribe((value) => {
-      value.updates.forEach((update) => keylistAddEvents.push(update))
+      value.updates.forEach((update) =>
+        keylistAddEvents.push({ action: update.action, recipientKey: didKeyToVerkey(update.recipientKey) })
+      )
     })
 
     // Now create invitations that will be mediated
@@ -287,7 +290,12 @@ describe('connections', () => {
       const keyRemoveMessage = await keyRemoveMessagePromise
       expect(keyRemoveMessage.updates.length).toEqual(1)
 
-      expect(keyRemoveMessage.updates[0]).toEqual({
+      expect(
+        keyRemoveMessage.updates.map((update) => ({
+          action: update.action,
+          recipientKey: didKeyToVerkey(update.recipientKey),
+        }))[0]
+      ).toEqual({
         action: KeylistUpdateAction.remove,
         recipientKey: (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKeyBase58,
       })
