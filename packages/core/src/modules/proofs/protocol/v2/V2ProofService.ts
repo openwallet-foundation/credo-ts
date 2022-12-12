@@ -15,8 +15,8 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   FormatDataMessagePayload,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
@@ -898,7 +898,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
+  ): Promise<RetrievedCredentialOptions<PFs>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -934,8 +934,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<PFs>
-  ): Promise<FormatRequestedCredentialReturn<PFs>> {
+    options: RetrievedCredentialOptions<PFs>
+  ): Promise<RequestedCredentialReturn<PFs>> {
     let returnValue = {
       proofFormats: {},
     }

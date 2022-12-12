@@ -3,7 +3,7 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { FormatRetrievedCredentialOptions, FormatRequestedCredentialReturn } from '../../../ProofServiceOptions'
+import type { RetrievedCredentialOptions, RequestedCredentialReturn } from '../../../ProofServiceOptions'
 import type { ProofFormat } from '../../../formats/ProofFormat'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
@@ -64,7 +64,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
       `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
 
-    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
+    const retrievedCredentials: RetrievedCredentialOptions<PFs> =
       await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
         proofRecord: record,
         config: {
@@ -72,7 +72,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         },
       })
 
-    const requestedCredentials: FormatRequestedCredentialReturn<PFs> =
+    const requestedCredentials: RequestedCredentialReturn<PFs> =
       await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 
     const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {

@@ -20,13 +20,13 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   DeleteProofOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
+  CreateProblemReportOptions,
 } from './ProofServiceOptions'
-import type { CreateProblemReportOptions } from './formats/NEWProofFormatServiceOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { ProofState } from './models/ProofState'
 import type { ProofExchangeRecord, ProofRepository } from './repository'
@@ -244,11 +244,11 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>>
+  ): Promise<RetrievedCredentialOptions<PFs>>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<PFs>
-  ): Promise<FormatRequestedCredentialReturn<PFs>>
+    options: RetrievedCredentialOptions<PFs>
+  ): Promise<RequestedCredentialReturn<PFs>>
 
   public abstract createProofRequestFromProposal(
     agentContext: AgentContext,

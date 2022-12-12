@@ -2,10 +2,11 @@ import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
   CreateRequestAsResponseOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
 } from '../../ProofServiceOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models'
+import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type {
   FormatPresentationAttachment,
   CreateProofAttachmentOptions,
@@ -19,8 +20,7 @@ import type {
   VerifyProofOptions,
   FormatGetRequestedCredentials,
   FormatProofRequestOptions,
-} from '../NEWProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
+} from '../ProofFormatServiceOptions'
 import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
@@ -386,7 +386,7 @@ export class IndyProofFormatService extends ProofFormatService {
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: FormatGetRequestedCredentials
-  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
+  ): Promise<RetrievedCredentialOptions<[IndyProofFormat]>> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
@@ -500,8 +500,8 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
-  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
+    options: RetrievedCredentialOptions<[IndyProofFormat]>
+  ): Promise<RequestedCredentialReturn<[IndyProofFormat]>> {
     const { proofFormats } = options
     const indy = proofFormats.indy
 

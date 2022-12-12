@@ -14,16 +14,13 @@ import type {
   CreateProposalOptions,
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-} from '../../ProofServiceOptions'
-import type {
   CreateProblemReportOptions,
-  FormatCreatePresentationOptions,
-} from '../../formats/NEWProofFormatServiceOptions'
+} from '../../ProofServiceOptions'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
 import type { ProofAttributeInfo } from '../../formats/indy/models'
@@ -472,13 +469,11 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       )
     }
 
-    const presentationOptions: FormatCreatePresentationOptions<IndyProofFormat> = {
+    const proof = await this.indyProofFormatService.createPresentation(agentContext, {
       id: INDY_PROOF_ATTACHMENT_ID,
       attachment: requestAttachment,
       proofFormats: proofFormats,
-    }
-
-    const proof = await this.indyProofFormatService.createPresentation(agentContext, presentationOptions)
+    })
 
     // Extract proof request from attachment
     const proofRequestJson = requestAttachment.getDataAsJson<ProofRequest>() ?? null
@@ -914,7 +909,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<ProofFormat[]>> {
+  ): Promise<RetrievedCredentialOptions<ProofFormat[]>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V1RequestPresentationMessage,
@@ -931,7 +926,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       throw new AriesFrameworkError('Could not find proof request')
     }
 
-    const requestedCredentials: FormatRetrievedCredentialOptions<[IndyProofFormat]> =
+    const requestedCredentials: RetrievedCredentialOptions<[IndyProofFormat]> =
       await this.indyProofFormatService.getRequestedCredentialsForProofRequest(agentContext, {
         attachment: indyProofRequest[0],
         presentationProposal: proposalMessage?.presentationProposal,
@@ -941,8 +936,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<ProofFormat[]>
-  ): Promise<FormatRequestedCredentialReturn<ProofFormat[]>> {
+    options: RetrievedCredentialOptions<ProofFormat[]>
+  ): Promise<RequestedCredentialReturn<ProofFormat[]>> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 

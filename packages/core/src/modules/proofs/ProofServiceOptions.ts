@@ -45,11 +45,11 @@ export interface CreateProofRequestFromProposalOptions extends BaseOptions {
   proofRecord: ProofExchangeRecord
 }
 
-export interface FormatRetrievedCredentialOptions<PFs extends ProofFormat[]> {
+export interface RetrievedCredentialOptions<PFs extends ProofFormat[]> {
   proofFormats: ProofFormatPayload<PFs, 'retrieveCredentials'>
 }
 
-export interface FormatRequestedCredentialReturn<PFs extends ProofFormat[]> {
+export interface RequestedCredentialReturn<PFs extends ProofFormat[]> {
   proofFormats: ProofFormatPayload<PFs, 'requestCredentials'>
 }
 
@@ -81,4 +81,9 @@ export type GetFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> = {
   proposal?: FormatDataMessagePayload<PFs, 'proposal'>
   request?: FormatDataMessagePayload<PFs, 'request'>
   presentation?: FormatDataMessagePayload<PFs, 'presentation'>
+}
+
+export interface CreateProblemReportOptions {
+  proofRecord: ProofExchangeRecord
+  description: string
 }

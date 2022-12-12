@@ -3,9 +3,11 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidCommMessageRepository } from '../../../storage'
 import type {
   CreateRequestAsResponseOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
 } from '../ProofServiceOptions'
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { ProofFormat } from './ProofFormat'
 import type {
   FormatPresentationAttachment,
   FormatCreateProofRequestOptions,
@@ -16,9 +18,7 @@ import type {
   FormatProcessProposalOptions,
   FormatProcessRequestOptions,
   FormatProofRequestOptions,
-} from './NEWProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
-import type { ProofFormat } from './ProofFormat'
+} from './ProofFormatServiceOptions'
 
 /**
  * This abstract class is the base class for any proof format
@@ -59,11 +59,11 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: FormatGetRequestedCredentials
-  ): Promise<FormatRetrievedCredentialOptions<[PF]>>
+  ): Promise<RetrievedCredentialOptions<[PF]>>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[PF]>
-  ): Promise<FormatRequestedCredentialReturn<[PF]>>
+    options: RetrievedCredentialOptions<[PF]>
+  ): Promise<RequestedCredentialReturn<[PF]>>
 
   abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],

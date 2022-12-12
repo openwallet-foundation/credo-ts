@@ -1,7 +1,7 @@
 import type { ProofExchangeRecord } from '../../repository'
-import type { RequestProofFormats } from '../NEWProofFormatServiceOptions'
 import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type { ProofFormat } from '../ProofFormat'
+import type { RequestProofFormats } from '../ProofFormatServiceOptions'
 import type { SelectResults } from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type { IVerifiableCredential } from '@sphereon/ssi-types'

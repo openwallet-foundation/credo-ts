@@ -2,8 +2,8 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
   DeleteProofOptions,
   GetFormatDataReturn,
   CreateProposalOptions,
@@ -74,12 +74,12 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   // Auto Select
   autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRequestedCredentialReturn<PFs>>
+  ): Promise<RequestedCredentialReturn<PFs>>
 
   // Get Requested Credentials
   getRequestedCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>>
+  ): Promise<RetrievedCredentialOptions<PFs>>
 
   sendProblemReport(proofRecordId: string, message: string): Promise<ProofExchangeRecord>
 
@@ -468,12 +468,12 @@ export class ProofsApi<
    */
   public async autoSelectCredentialsForProofRequest(
     options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRequestedCredentialReturn<PFs>> {
+  ): Promise<RequestedCredentialReturn<PFs>> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     const service = this.getService(proofRecord.protocolVersion)
 
-    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
+    const retrievedCredentials: RetrievedCredentialOptions<PFs> =
       await service.getRequestedCredentialsForProofRequest(this.agentContext, {
         proofRecord: proofRecord,
         config: options.config,
@@ -492,7 +492,7 @@ export class ProofsApi<
    */
   public async getRequestedCredentialsForProofRequest(
     options: GetRequestedCredentialsForProofRequest
-  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
+  ): Promise<RetrievedCredentialOptions<PFs>> {
     const record = await this.getById(options.proofRecordId)
     const service = this.getService(record.protocolVersion)
 

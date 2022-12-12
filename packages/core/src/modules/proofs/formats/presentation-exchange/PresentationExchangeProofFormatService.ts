@@ -3,6 +3,7 @@ import type { Key } from '../../../../crypto/Key'
 import type { Query } from '../../../../storage/StorageService'
 import type { W3cCredentialRecord, W3cPresentation } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
+import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type {
   FormatGetRequestedCredentials,
   FormatPresentationAttachment,
@@ -17,8 +18,7 @@ import type {
   FormatCreateRequestAsResponseOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
-} from '../NEWProofFormatServiceOptions'
-import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
+} from '../ProofFormatServiceOptions'
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { InputDescriptorsSchema } from './models'
 import type { PresentationSignCallBackParams, PresentationSignOptions, Validated } from '@sphereon/pex'
