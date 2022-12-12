@@ -94,8 +94,8 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
-    connection.setTag('connectionType', [ConnectionType.Mediator])
-    await this.connectionService.update(agentContext, connection)
+
+    await this.connectionService.addConnectionType(agentContext, connection, ConnectionType.Mediator)
 
     await this.mediationRepository.save(agentContext, mediationRecord)
     this.emitStateChangedEvent(agentContext, mediationRecord, null)

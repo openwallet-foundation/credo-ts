@@ -158,17 +158,17 @@ describe('mediator establishment', () => {
     })
   })
 
-  test('Mediation end-to-end flow (use did:key in both sides)', async () => {
+  test('Mediation end-to-end flow (not using did:key)', async () => {
     await e2eMediationTest(
       {
-        config: { ...mediatorAgentOptions.config, useDidKeyInProtocols: true },
+        config: { ...mediatorAgentOptions.config, useDidKeyInProtocols: false },
         dependencies: mediatorAgentOptions.dependencies,
       },
       {
         config: {
           ...recipientAgentOptions.config,
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-          useDidKeyInProtocols: true,
+          useDidKeyInProtocols: false,
         },
         dependencies: recipientAgentOptions.dependencies,
       }

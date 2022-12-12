@@ -36,7 +36,7 @@ export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
-export { Attachment } from './decorators/attachment/Attachment'
+export { Attachment, AttachmentData } from './decorators/attachment/Attachment'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
 export * from './plugins'
