@@ -1,11 +1,11 @@
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { IndyRevocationInterval } from '../../../credentials'
 import type { GetRequestedCredentialsConfig } from '../../models/GetRequestedCredentialsConfig'
-import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
-import type { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
-import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
-import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
 import type { IndyRequestedCredentialsFormat } from './IndyProofFormat'
+import type { IndyRevocationInterval } from '../../../credentials'
+import type { PresentationPreview } from '../../protocol/v1/models/V1PresentationPreview'
+import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
+import type { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
+import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
 import type { ProofRequest } from './models/ProofRequest'
 
 export type IndyPresentationProofFormat = IndyRequestedCredentialsFormat
@@ -18,7 +18,6 @@ export interface IndyRequestProofFormat {
   ver?: '1.0' | '2.0'
   requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
   requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
-  proofRequest?: ProofRequest
 }
 
 export interface IndyVerifyProofFormat {
