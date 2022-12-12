@@ -20,6 +20,9 @@ import type {
   FormatProofRequestOptions,
 } from './ProofFormatServiceOptions'
 
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
+
 /**
  * This abstract class is the base class for any proof format
  * specific service.
@@ -73,4 +76,23 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
   abstract supportsFormat(formatIdentifier: string): boolean
 
   abstract createRequestAsResponse(options: CreateRequestAsResponseOptions<[PF]>): Promise<ProofAttachmentFormat>
+
+  /**
+   * Returns an object of type {@link Attachment} for use in proof exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  protected getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: JsonTransformer.toJSON(data),
+      }),
+    })
+
+    return attachment
+  }
 }

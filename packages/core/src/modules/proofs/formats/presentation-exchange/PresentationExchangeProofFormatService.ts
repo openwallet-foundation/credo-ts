@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
+import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Query } from '../../../../storage/StorageService'
 import type { W3cCredentialRecord, W3cPresentation } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
@@ -35,7 +36,6 @@ import { IProofPurpose } from '@sphereon/ssi-types'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { JsonTransformer } from '../../../../utils'
@@ -97,14 +97,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       attachmentId: attachId,
       format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
     })
-
-    const attachment = new Attachment({
-      id: attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(presentationDefinition),
-      }),
-    })
+    const attachment = this.getFormatData(presentationDefinition, format.attachmentId)
 
     return { format, attachment }
   }
@@ -173,13 +166,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
     })
 
-    const attachment = new Attachment({
-      id: attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(presentationExchangeRequestMessage),
-      }),
-    })
+    const attachment = this.getFormatData(presentationExchangeRequestMessage, format.attachmentId)
 
     return { format, attachment }
   }
@@ -220,13 +207,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
     })
 
-    const attachment = new Attachment({
-      id: attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(presentationExchangeRequestMessage),
-      }),
-    })
+    const attachment = this.getFormatData(presentationExchangeRequestMessage, format.attachmentId)
 
     return { format, attachment }
   }
@@ -340,13 +321,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
     })
 
-    const attachment = new Attachment({
-      id: attachId,
-      mimeType: 'application/json',
-      data: new AttachmentData({
-        json: JsonTransformer.toJSON(verifiablePresentation),
-      }),
-    })
+    const attachment = this.getFormatData(verifiablePresentation, format.attachmentId)
 
     return { format, attachment }
   }
