@@ -569,6 +569,8 @@ export class OutOfBandApi {
     const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
 
     // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    // Note: if OOB Record is reusable, it is safe to delete it because every connection created from
+    // it will use its own recipient key
     if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
       const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
 
