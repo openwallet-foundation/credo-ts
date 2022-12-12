@@ -643,24 +643,22 @@ export class ConnectionService {
   }
 
   public async addConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const tags = (connectionRecord.getTag('connectionType') as string[]) || ([] as string[])
+    const tags = connectionRecord.getTags().connectionType || []
     connectionRecord.setTag('connectionType', [type, ...tags])
     await this.update(agentContext, connectionRecord)
   }
 
   public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const tags = (connectionRecord.getTag('connectionType') as string[]) || ([] as string[])
+    const tags = connectionRecord.getTags().connectionType || []
 
-    const newTags = tags.filter((value: string) => {
-      if (value != type) return value
-    })
+    const newTags = tags.filter((value: string) => value !== type)
     connectionRecord.setTag('connectionType', [...newTags])
 
     await this.update(agentContext, connectionRecord)
   }
 
   public async getConnectionTypes(connectionRecord: ConnectionRecord) {
-    const tags = connectionRecord.getTag('connectionType') as string[]
+    const tags = connectionRecord.getTags().connectionType
     return tags || []
   }
 
