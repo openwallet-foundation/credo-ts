@@ -1,8 +1,7 @@
-import type { ConnectionRecord } from '../../connections'
-import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
-import type { ProofExchangeRecord } from '../repository'
-import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
-import type { AutoAcceptProof } from './ProofAutoAcceptType'
+import type { ConnectionRecord } from '../connections'
+import type { ProofFormat, ProofFormatPayload } from './formats'
+import type { AutoAcceptProof, GetRequestedCredentialsConfig } from './models'
+import type { ProofExchangeRecord } from './repository'
 
 export type FormatDataMessagePayload<
   CFs extends ProofFormat[] = ProofFormat[],
@@ -11,7 +10,7 @@ export type FormatDataMessagePayload<
   [ProofFormat in CFs[number] as ProofFormat['formatKey']]?: ProofFormat['formatData'][M]
 }
 
-interface BaseOptions {
+export interface BaseOptions {
   willConfirm?: boolean
   goalCode?: string
   comment?: string
@@ -24,15 +23,15 @@ export interface CreateProposalOptions<PFs extends ProofFormat[]> extends BaseOp
   parentThreadId?: string
 }
 
-export interface CreateProposalAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
-  proofRecord: ProofExchangeRecord
-  proofFormats: ProofFormatPayload<PFs, 'createProposalAsResponse'>
-}
-
 export interface CreateRequestAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
   id?: string
   proofRecord: ProofExchangeRecord
   proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
+}
+
+export interface CreateProposalAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
+  proofRecord: ProofExchangeRecord
+  proofFormats: ProofFormatPayload<PFs, 'createProposalAsResponse'>
 }
 
 export interface CreateRequestOptions<PFs extends ProofFormat[]> extends BaseOptions {

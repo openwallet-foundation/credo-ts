@@ -3,11 +3,8 @@ import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handle
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { FormatRetrievedCredentialOptions, FormatRequestedCredentialReturn } from '../../../ProofServiceOptions'
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type {
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../../../models/ProofServiceOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 

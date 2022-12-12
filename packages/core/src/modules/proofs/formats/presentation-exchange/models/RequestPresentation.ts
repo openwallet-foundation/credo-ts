@@ -1,5 +1,4 @@
 import type { InputDescriptors } from './InputDescriptors'
-import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
@@ -91,18 +90,4 @@ export class PresentationDefinition {
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
-}
-
-export interface PresentationOptions {
-  challenge?: string
-  domain?: string
-}
-
-export interface RequestPresentationExchangeOptions {
-  options?: PresentationOptions
-  presentationDefinition: PresentationDefinitionV1
-}
-
-export interface ProposePresentationExchangeOptions {
-  presentationDefinition: PresentationDefinitionV1
 }

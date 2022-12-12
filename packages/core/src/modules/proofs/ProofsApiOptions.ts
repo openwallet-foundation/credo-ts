@@ -1,7 +1,6 @@
 import type { ProofService } from './ProofService'
 import type { ProofFormat, ProofFormatPayload } from './formats/ProofFormat'
-import type { AutoAcceptProof } from './models'
-import type { ProofConfig } from './models/ModuleOptions'
+import type { AutoAcceptProof, GetRequestedCredentialsConfig } from './models'
 
 /**
  * Get the supported protocol versions based on the provided proof services.
@@ -78,3 +77,15 @@ export interface CreateProofRequestOptions<
   autoAcceptProof?: AutoAcceptProof
   parentThreadId?: string
 }
+
+export interface ProofConfig {
+  name: string
+  version: string
+}
+
+export interface AutoSelectCredentialsForProofRequestOptions {
+  proofRecordId: string
+  config?: GetRequestedCredentialsConfig
+}
+
+export type GetRequestedCredentialsForProofRequest = AutoSelectCredentialsForProofRequestOptions

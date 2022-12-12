@@ -7,13 +7,6 @@ import type { MediationRecipientService } from '../../../routing/services/Mediat
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
 import type {
-  CreateProblemReportOptions,
-  FormatCreatePresentationOptions,
-} from '../../formats/NEWProofFormatServiceOptions'
-import type { ProofFormat } from '../../formats/ProofFormat'
-import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
-import type { ProofAttributeInfo } from '../../formats/indy/models'
-import type {
   CreateAckOptions,
   CreatePresentationOptions,
   CreateProofRequestFromProposalOptions,
@@ -26,7 +19,14 @@ import type {
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-} from '../../models/ProofServiceOptions'
+} from '../../ProofServiceOptions'
+import type {
+  CreateProblemReportOptions,
+  FormatCreatePresentationOptions,
+} from '../../formats/NEWProofFormatServiceOptions'
+import type { ProofFormat } from '../../formats/ProofFormat'
+import type { IndyProofFormat, IndyProposeProofFormat } from '../../formats/indy/IndyProofFormat'
+import type { ProofAttributeInfo } from '../../formats/indy/models'
 
 import { validateOrReject } from 'class-validator'
 import { inject, Lifecycle, scoped } from 'tsyringe'

@@ -6,10 +6,6 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { CreateProblemReportOptions, ProofFormatServiceMap } from '../../formats'
-import type { ProofFormat } from '../../formats/ProofFormat'
-import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -24,7 +20,11 @@ import type {
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-} from '../../models/ProofServiceOptions'
+} from '../../ProofServiceOptions'
+import type { CreateProblemReportOptions, ProofFormatServiceMap } from '../../formats'
+import type { ProofFormat } from '../../formats/ProofFormat'
+import type { ProofFormatService } from '../../formats/ProofFormatService'
+import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 

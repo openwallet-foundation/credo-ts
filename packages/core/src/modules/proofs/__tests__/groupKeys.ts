@@ -1,5 +1,5 @@
+import type { GetFormatDataReturn } from '../ProofServiceOptions'
 import type { IndyProofFormat } from '../formats/indy/IndyProofFormat'
-import type { GetFormatDataReturn } from '../models/ProofServiceOptions'
 
 import { AriesFrameworkError } from '../../../error'
 

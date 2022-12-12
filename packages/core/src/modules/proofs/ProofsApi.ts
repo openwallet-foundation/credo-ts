@@ -2,6 +2,17 @@ import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
+  FormatRequestedCredentialReturn,
+  FormatRetrievedCredentialOptions,
+  DeleteProofOptions,
+  GetFormatDataReturn,
+  CreateProposalOptions,
+  CreateProofRequestFromProposalOptions,
+  CreateRequestAsResponseOptions,
+  CreateRequestOptions,
+  CreatePresentationOptions,
+} from './ProofServiceOptions'
+import type {
   AcceptProofPresentationOptions,
   AcceptProofProposalOptions,
   CreateProofRequestOptions,
@@ -11,25 +22,12 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
   ProofServiceMap,
+  AutoSelectCredentialsForProofRequestOptions,
+  GetRequestedCredentialsForProofRequest,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
 import type { PresentationExchangeProofFormat } from './formats/presentation-exchange/PresentationExchangeProofFormat'
-import type {
-  AutoSelectCredentialsForProofRequestOptions,
-  GetRequestedCredentialsForProofRequest,
-} from './models/ModuleOptions'
-import type {
-  CreatePresentationOptions,
-  CreateProposalOptions,
-  CreateRequestOptions,
-  CreateRequestAsResponseOptions,
-  CreateProofRequestFromProposalOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-  DeleteProofOptions,
-  GetFormatDataReturn,
-} from './models/ProofServiceOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 
 import { inject, injectable } from 'tsyringe'

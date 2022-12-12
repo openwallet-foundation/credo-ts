@@ -5,17 +5,17 @@ import type {
   CreateRequestAsResponseOptions,
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
-} from '../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../models/SharedOptions'
+} from '../ProofServiceOptions'
 import type {
-  CreatePresentationFormatsOptions,
-  CreateRequestOptions,
+  FormatPresentationAttachment,
+  FormatCreateProofRequestOptions,
   FormatCreatePresentationOptions,
   FormatCreateProofProposalOptions,
   FormatGetRequestedCredentials,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
+  FormatProofRequestOptions,
 } from './NEWProofFormatServiceOptions'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 import type { ProofFormat } from './ProofFormat'
@@ -41,20 +41,20 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
 
   abstract createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat>
 
-  abstract processProposal(options: ProcessProposalOptions): Promise<void>
+  abstract processProposal(options: FormatProcessProposalOptions): Promise<void>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
+  abstract createRequest(options: FormatCreateProofRequestOptions): Promise<ProofAttachmentFormat>
 
-  abstract processRequest(options: ProcessRequestOptions): Promise<void>
+  abstract processRequest(options: FormatProcessRequestOptions): Promise<void>
 
   abstract createPresentation(
     agentContext: AgentContext,
     options: FormatCreatePresentationOptions<PF>
   ): Promise<ProofAttachmentFormat>
 
-  abstract processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean>
+  abstract processPresentation(agentContext: AgentContext, options: FormatProcessPresentationOptions): Promise<boolean>
 
-  abstract createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats>
+  abstract createProofRequestFromProposal(options: FormatPresentationAttachment): Promise<FormatProofRequestOptions>
 
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,

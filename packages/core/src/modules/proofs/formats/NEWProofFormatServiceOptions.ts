@@ -1,12 +1,14 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
+import type { BaseOptions } from '../ProofServiceOptions'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
-import type { ProposeProofFormats } from '../models/SharedOptions'
+import type { RequestPresentationOptions } from '../protocol'
 import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 import type { ProofFormat, ProofFormatPayload } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
-import type { ProofRequestOptions } from './indy'
+import type { IndyProposeProofFormat, IndyRequestProofFormat, ProofRequest, ProofRequestOptions } from './indy'
+import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 /**
  * Get the service map for usage in the proofs module. Will return a type mapping of protocol version to service.
@@ -46,22 +48,22 @@ export interface FormatCreateProofProposalOptions {
   formats: ProposeProofFormats
 }
 
-export interface ProcessProposalOptions {
+export interface FormatProcessProposalOptions {
   proposal: ProofAttachmentFormat
   record?: ProofExchangeRecord
 }
 
-export interface CreateRequestOptions {
+export interface FormatCreateProofRequestOptions {
   id?: string
   formats: ProposeProofFormats
 }
 
-export interface ProcessRequestOptions {
+export interface FormatProcessRequestOptions {
   requestAttachment: ProofAttachmentFormat
   record?: ProofExchangeRecord
 }
 
-export interface ProcessPresentationOptions {
+export interface FormatProcessPresentationOptions {
   record: ProofExchangeRecord
   formatAttachments: {
     request: ProofAttachmentFormat[]
@@ -85,6 +87,49 @@ export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
   proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
 }
 
-export interface CreatePresentationFormatsOptions {
+export interface FormatPresentationAttachment {
   presentationAttachment: Attachment
+}
+
+export interface ProposeProofFormats {
+  indy?: IndyProposeProofFormat
+  presentationExchange?: ProposePresentationExchangeOptions
+}
+
+export interface RequestProofFormats {
+  indy?: IndyRequestProofFormat
+  presentationExchange?: RequestPresentationOptions
+}
+
+export interface FormatProofRequestOptions {
+  indy?: ProofRequest
+  presentationExchange?: FormatRequestPresentationExchangeOptions
+}
+
+interface PresentationOptions {
+  challenge?: string
+  domain?: string
+}
+
+export interface FormatRequestPresentationExchangeOptions {
+  options?: PresentationOptions
+  presentationDefinition: PresentationDefinitionV1
+}
+
+export interface ProposePresentationExchangeOptions {
+  presentationDefinition: PresentationDefinitionV1
+}
+
+export interface FormatCreateRequestAsResponseOptions<PFs extends ProofFormat[]> extends BaseOptions {
+  id?: string
+  proofRecord: ProofExchangeRecord
+  proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
+}
+
+export interface FormatRequestedCredentialReturn<PFs extends ProofFormat[]> {
+  proofFormats: ProofFormatPayload<PFs, 'requestCredentials'>
+}
+
+export interface FormatRetrievedCredentialOptions<PFs extends ProofFormat[]> {
+  proofFormats: ProofFormatPayload<PFs, 'retrieveCredentials'>
 }

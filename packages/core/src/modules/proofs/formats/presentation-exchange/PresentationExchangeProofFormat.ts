@@ -1,5 +1,5 @@
-import type { RequestProofFormats } from '../../models/SharedOptions'
 import type { ProofExchangeRecord } from '../../repository'
+import type { RequestProofFormats } from '../NEWProofFormatServiceOptions'
 import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type { ProofFormat } from '../ProofFormat'
 import type { SelectResults } from '@sphereon/pex'

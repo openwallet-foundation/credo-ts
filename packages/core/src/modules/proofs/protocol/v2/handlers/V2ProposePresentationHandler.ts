@@ -2,12 +2,12 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofFormat } from '../../../formats/ProofFormat'
 import type {
   CreateProofRequestFromProposalOptions,
-  CreateRequestAsResponseOptions,
   ProofRequestFromProposalOptions,
-} from '../../../models/ProofServiceOptions'
+  CreateRequestAsResponseOptions,
+} from '../../../ProofServiceOptions'
+import type { ProofFormat } from '../../../formats/ProofFormat'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 

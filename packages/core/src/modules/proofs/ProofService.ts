@@ -11,8 +11,6 @@ import type { ConnectionService } from '../connections/services'
 import type { MediationRecipientService, RoutingService } from '../routing'
 import type { ProofStateChangedEvent } from './ProofEvents'
 import type { ProofResponseCoordinator } from './ProofResponseCoordinator'
-import type { CreateProblemReportOptions } from './formats/NEWProofFormatServiceOptions'
-import type { ProofFormat } from './formats/ProofFormat'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -27,7 +25,9 @@ import type {
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-} from './models/ProofServiceOptions'
+} from './ProofServiceOptions'
+import type { CreateProblemReportOptions } from './formats/NEWProofFormatServiceOptions'
+import type { ProofFormat } from './formats/ProofFormat'
 import type { ProofState } from './models/ProofState'
 import type { ProofExchangeRecord, ProofRepository } from './repository'
 
