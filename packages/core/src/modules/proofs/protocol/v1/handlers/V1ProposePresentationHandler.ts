@@ -96,7 +96,6 @@ export class V1ProposePresentationHandler implements Handler {
           requestedAttributes: indyProofRequest.indy?.requestedAttributes,
           requestedPredicates: indyProofRequest.indy?.requestedPredicates,
           ver: indyProofRequest.indy?.ver,
-          proofRequest: indyProofRequest.indy?.proofRequest,
           nonce: indyProofRequest.indy?.nonce,
         },
       },
