@@ -45,7 +45,7 @@ describe('MediatorService - default config', () => {
   )
 
   describe('createGrantMediationMessage', () => {
-    test('sends base58 encoded recipient keys by default', async () => {
+    test('sends did:key encoded recipient keys by default', async () => {
       const mediationRecord = new MediationRecord({
         connectionId: 'connectionId',
         role: MediationRole.Mediator,
@@ -64,7 +64,7 @@ describe('MediatorService - default config', () => {
       const { message } = await mediatorService.createGrantMediationMessage(agentContext, mediationRecord)
 
       expect(message.routingKeys.length).toBe(1)
-      expect(isDidKey(message.routingKeys[0])).toBeFalsy()
+      expect(isDidKey(message.routingKeys[0])).toBeTruthy()
     })
   })
 
@@ -155,8 +155,8 @@ describe('MediatorService - default config', () => {
   })
 })
 
-describe('MediatorService - useDidKeyInProtocols set to true', () => {
-  const agentConfig = getAgentConfig('MediatorService', { useDidKeyInProtocols: true })
+describe('MediatorService - useDidKeyInProtocols set to false', () => {
+  const agentConfig = getAgentConfig('MediatorService', { useDidKeyInProtocols: false })
 
   const agentContext = getAgentContext({
     agentConfig,
@@ -171,7 +171,7 @@ describe('MediatorService - useDidKeyInProtocols set to true', () => {
   )
 
   describe('createGrantMediationMessage', () => {
-    test('sends did:key encoded recipient keys when config is set', async () => {
+    test('sends base58 encoded recipient keys when config is set', async () => {
       const mediationRecord = new MediationRecord({
         connectionId: 'connectionId',
         role: MediationRole.Mediator,
@@ -190,7 +190,7 @@ describe('MediatorService - useDidKeyInProtocols set to true', () => {
       const { message } = await mediatorService.createGrantMediationMessage(agentContext, mediationRecord)
 
       expect(message.routingKeys.length).toBe(1)
-      expect(isDidKey(message.routingKeys[0])).toBeTruthy()
+      expect(isDidKey(message.routingKeys[0])).toBeFalsy()
     })
   })
 })
