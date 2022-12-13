@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
+import type { LinkedDataProof } from '../../../vc'
 import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
-import type { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
@@ -13,10 +13,15 @@ export interface JsonCredential {
   issuanceDate: string
   expirationDate?: string
   credentialSubject: SingleOrArray<JsonObject>
+  [key: string]: unknown
 }
 export interface JsonLdSignCredentialFormat {
   credential: JsonCredential
   options: JsonLdOptionsRFC0593
+}
+
+export interface JsonVerifiableCredential extends JsonLdSignCredentialFormat {
+  proof: LinkedDataProof
 }
 
 // use empty object in the acceptXXX jsonld format interface so we indicate that
@@ -43,6 +48,6 @@ export interface JsonLdCredentialFormat extends CredentialFormat {
     proposal: JsonLdSignCredentialFormat
     offer: JsonLdSignCredentialFormat
     request: JsonLdSignCredentialFormat
-    credential: W3cCredential
+    credential: JsonVerifiableCredential
   }
 }
