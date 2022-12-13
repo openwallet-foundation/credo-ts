@@ -1,6 +1,6 @@
 import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
-import type { LinkedDataProof, W3cCredential } from '../../../vc'
+import type { LinkedDataProof } from '../../../vc'
 import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
