@@ -321,7 +321,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     // verify signatures of the credential
     const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential })
-    if (!result.verified) {
+    if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
     }
     const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
