@@ -77,7 +77,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
 
-    MessageValidator.validateSync(jsonLdFormat.credential)
+    // this does the validation
+    JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
     // jsonLdFormat is now of type SignCredentialOptionsRFC0593
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
@@ -198,7 +199,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createRequest')
     }
 
-    MessageValidator.validateSync(jsonLdFormat.credential)
+    // this does the validation
+    JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
