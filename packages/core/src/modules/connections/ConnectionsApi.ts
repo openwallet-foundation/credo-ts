@@ -253,10 +253,11 @@ export class ConnectionsApi {
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
-    record.setTag('connectionType', [type, ...tags])
-    await this.connectionService.update(this.agentContext, record)
+    await this.connectionService.addConnectionType(this.agentContext, record, type)
+
+    return record
   }
+
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
@@ -266,15 +267,11 @@ export class ConnectionsApi {
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    await this.connectionService.removeConnectionType(this.agentContext, record, type)
 
-    const newTags = tags.filter((value: string) => {
-      if (value != type) return value
-    })
-    record.setTag('connectionType', [...newTags])
-
-    await this.connectionService.update(this.agentContext, record)
+    return record
   }
+
   /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
@@ -283,8 +280,8 @@ export class ConnectionsApi {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTag('connectionType') as string[]
-    return tags || null
+
+    return this.connectionService.getConnectionTypes(record)
   }
 
   /**
@@ -292,7 +289,7 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
+  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
     return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
   }
 
@@ -324,6 +321,19 @@ export class ConnectionsApi {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.mediatorId && connection.did) {
+      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (did.didDocument) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: connection.mediatorId,
+        })
+      }
+    }
+
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 

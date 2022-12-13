@@ -51,6 +51,7 @@ export const BBS_V1 = {
         '@protected': true,
         id: '@id',
         type: '@type',
+
         challenge: 'https://w3id.org/security#challenge',
         created: {
           '@id': 'http://purl.org/dc/terms/created',
@@ -86,7 +87,43 @@ export const BBS_V1 = {
         },
       },
     },
-    Bls12381G1Key2020: 'https://w3id.org/security#Bls12381G1Key2020',
-    Bls12381G2Key2020: 'https://w3id.org/security#Bls12381G2Key2020',
+    Bls12381G1Key2020: {
+      '@id': 'https://w3id.org/security#Bls12381G1Key2020',
+      '@context': {
+        '@protected': true,
+        id: '@id',
+        type: '@type',
+        controller: {
+          '@id': 'https://w3id.org/security#controller',
+          '@type': '@id',
+        },
+        revoked: {
+          '@id': 'https://w3id.org/security#revoked',
+          '@type': 'http://www.w3.org/2001/XMLSchema#dateTime',
+        },
+        publicKeyBase58: {
+          '@id': 'https://w3id.org/security#publicKeyBase58',
+        },
+      },
+    },
+    Bls12381G2Key2020: {
+      '@id': 'https://w3id.org/security#Bls12381G2Key2020',
+      '@context': {
+        '@protected': true,
+        id: '@id',
+        type: '@type',
+        controller: {
+          '@id': 'https://w3id.org/security#controller',
+          '@type': '@id',
+        },
+        revoked: {
+          '@id': 'https://w3id.org/security#revoked',
+          '@type': 'http://www.w3.org/2001/XMLSchema#dateTime',
+        },
+        publicKeyBase58: {
+          '@id': 'https://w3id.org/security#publicKeyBase58',
+        },
+      },
+    },
   },
 }
