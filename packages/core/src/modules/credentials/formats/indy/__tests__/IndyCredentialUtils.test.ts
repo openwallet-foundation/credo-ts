@@ -74,6 +74,14 @@ const testEncodings: { [key: string]: { raw: string | number | boolean | null; e
     raw: '0.1',
     encoded: '9382477430624249591204401974786823110077201914483282671737639310288175260432',
   },
+  'str 1.0': {
+    raw: '1.0',
+    encoded: '94532235908853478633102631881008651863941875830027892478278578250784387892726',
+  },
+  'str 1': {
+    raw: '1',
+    encoded: '1',
+  },
   'leading zero number string': {
     raw: '012345',
     encoded: '12345',
