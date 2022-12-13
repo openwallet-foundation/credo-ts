@@ -1,6 +1,6 @@
 import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
-import type { LinkedDataProof } from '../../../vc'
+import type { LinkedDataProof, W3cCredential } from '../../../vc'
 import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
 import type { CredentialFormat } from '../CredentialFormat'
 import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
@@ -15,7 +15,15 @@ export interface JsonCredential {
   credentialSubject: SingleOrArray<JsonObject>
   [key: string]: unknown
 }
+
+// this is the API interface (only)
 export interface JsonLdSignCredentialFormat {
+  credential: JsonCredential
+  options: JsonLdOptionsRFC0593
+}
+
+// use this interface internally as the above may diverge in future
+export interface SignCredentialOptionsRFC0593 {
   credential: JsonCredential
   options: JsonLdOptionsRFC0593
 }
