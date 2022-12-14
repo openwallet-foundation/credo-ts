@@ -28,6 +28,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  W3cVcModule,
   Agent,
   AgentConfig,
   AgentContext,
@@ -61,6 +62,7 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -670,6 +672,11 @@ export async function setupCredentialTests(
   // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
+
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
   }
   const faberAgentOptions = getAgentOptions(
     faberName,
