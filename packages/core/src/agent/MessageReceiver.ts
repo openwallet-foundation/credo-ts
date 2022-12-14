@@ -18,6 +18,7 @@ import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMess
 
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
+import { MessageHandlerRegistry } from './HandlerRegistry'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContextProvider } from './context'
@@ -31,6 +32,7 @@ export class MessageReceiver {
   private dispatcher: Dispatcher
   private logger: Logger
   private connectionService: ConnectionService
+  private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
   public readonly inboundTransports: InboundTransport[] = []
 
@@ -40,6 +42,7 @@ export class MessageReceiver {
     messageSender: MessageSender,
     connectionService: ConnectionService,
     dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
@@ -48,6 +51,7 @@ export class MessageReceiver {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.dispatcher = dispatcher
+    this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
   }
@@ -227,7 +231,7 @@ export class MessageReceiver {
     replaceLegacyDidSovPrefixOnMessage(message)
 
     const messageType = message['@type']
-    const MessageClass = this.dispatcher.getMessageClassForType(messageType)
+    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType)
 
     if (!MessageClass) {
       throw new ProblemReportError(`No message class found for message type "${messageType}"`, {

@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../../agent/Agent'
+import type { Awaited } from '../../../../../types'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
@@ -16,8 +16,8 @@ import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 describe('credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: Awaited<ReturnType<typeof setupCredentialTests>>['faberAgent']
+  let aliceAgent: Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
   let faberCredentialRecord: CredentialExchangeRecord

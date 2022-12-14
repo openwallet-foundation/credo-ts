@@ -1,40 +1,27 @@
 import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../../../logger'
-import type { DidCommMessageRepository } from '../../../../../storage'
-import type { RoutingService } from '../../../../routing/services/RoutingService'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialService } from '../V2CredentialService'
+import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { DidCommMessageRole } from '../../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
+import { RoutingService } from '../../../../routing/services/RoutingService'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 export class V2OfferCredentialHandler implements Handler {
-  private credentialService: V2CredentialService
-  private routingService: RoutingService
-  private logger: Logger
+  private credentialProtocol: V2CredentialProtocol
 
   public supportedMessages = [V2OfferCredentialMessage]
-  private didCommMessageRepository: DidCommMessageRepository
 
-  public constructor(
-    credentialService: V2CredentialService,
-    routingService: RoutingService,
-    didCommMessageRepository: DidCommMessageRepository,
-    logger: Logger
-  ) {
-    this.credentialService = credentialService
-    this.routingService = routingService
-    this.didCommMessageRepository = didCommMessageRepository
-    this.logger = logger
+  public constructor(credentialProtocol: V2CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
   public async handle(messageContext: InboundMessageContext<V2OfferCredentialMessage>) {
-    const credentialRecord = await this.credentialService.processOffer(messageContext)
+    const credentialRecord = await this.credentialProtocol.processOffer(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer(messageContext.agentContext, {
+    const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToOffer(messageContext.agentContext, {
       credentialRecord,
       offerMessage: messageContext.message,
     })
@@ -48,10 +35,10 @@ export class V2OfferCredentialHandler implements Handler {
     messageContext: HandlerInboundMessage<V2OfferCredentialHandler>,
     offerMessage?: V2OfferCredentialMessage
   ) {
-    this.logger.info(`Automatically sending request with autoAccept`)
+    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
 
     if (messageContext.connection) {
-      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
+      const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
       return new OutboundMessageContext(message, {
@@ -60,7 +47,8 @@ export class V2OfferCredentialHandler implements Handler {
         associatedRecord: credentialRecord,
       })
     } else if (offerMessage?.service) {
-      const routing = await this.routingService.getRouting(messageContext.agentContext)
+      const routingService = messageContext.agentContext.dependencyManager.resolve(RoutingService)
+      const routing = await routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -68,14 +56,15 @@ export class V2OfferCredentialHandler implements Handler {
       })
       const recipientService = offerMessage.service
 
-      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
+      const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
         credentialRecord,
       })
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
@@ -90,6 +79,6 @@ export class V2OfferCredentialHandler implements Handler {
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create credential request`)
   }
 }

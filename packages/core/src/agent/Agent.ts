@@ -2,7 +2,7 @@ import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput, ModulesMap } from './AgentModules'
+import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
 
@@ -28,6 +28,7 @@ import { EnvelopeService } from './EnvelopeService'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
 import { FeatureRegistry } from './FeatureRegistry'
+import { MessageHandlerRegistry } from './HandlerRegistry'
 import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
@@ -39,7 +40,9 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
   dependencies: AgentDependencies
 }
 
-export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends BaseAgent<AgentModules> {
+// Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
   public messageSubscription: Subscription
 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
@@ -47,6 +50,7 @@ export class Agent<AgentModules extends AgentModulesInput = ModulesMap> extends 
     const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
 
     // Register internal dependencies
+    dependencyManager.registerSingleton(MessageHandlerRegistry)
     dependencyManager.registerSingleton(EventEmitter)
     dependencyManager.registerSingleton(MessageSender)
     dependencyManager.registerSingleton(MessageReceiver)

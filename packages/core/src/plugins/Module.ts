@@ -7,10 +7,6 @@ export interface Module {
   register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
 }
 
-/**
- * Decorator that marks the class as a module. Will enforce the required interface for a module (with static methods)
- * on the class declaration.
- */
-export function module() {
-  return <U extends Module | Constructor<Module>>(constructor: U) => constructor
+export interface ApiModule extends Module {
+  api: Constructor<unknown>
 }
