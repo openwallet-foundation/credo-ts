@@ -174,6 +174,9 @@ export class W3cCredentialService {
     }
 
     const documentLoader = this.documentLoaderWithContext(agentContext)
+    if (!options.verificationMethod) {
+      throw new AriesFrameworkError('Missing verificationMethod')
+    }
     const verificationMethodObject = (await documentLoader(options.verificationMethod)).document as Record<
       string,
       unknown
@@ -313,8 +316,11 @@ export class W3cCredentialService {
 
   private async getPublicKeyFromVerificationMethod(
     agentContext: AgentContext,
-    verificationMethod: string
+    verificationMethod?: string
   ): Promise<Key> {
+    if (!verificationMethod) {
+      throw new AriesFrameworkError('Missing verificationMethod')
+    }
     const documentLoader = this.documentLoaderWithContext(agentContext)
     const verificationMethodObject = await documentLoader(verificationMethod)
     const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
