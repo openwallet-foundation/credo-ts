@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
@@ -14,8 +13,9 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
+import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -23,7 +23,7 @@ import { inject, injectable } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
@@ -75,6 +75,7 @@ export interface ReceiveOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
+  acceptInvitationTimeoutMs?: number
 }
 
 @injectable()
@@ -281,7 +282,7 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitationShortUrl(invitationUrl)
+    const message = await this.parseInvitation(invitationUrl)
 
     return this.receiveInvitation(message, config)
   }
@@ -289,24 +290,14 @@ export class OutOfBandApi {
   /**
    * Parses URL containing encoded invitation and returns invitation message.
    *
-   * @param invitationUrl URL containing encoded invitation
-   *
-   * @returns OutOfBandInvitation
-   */
-  public parseInvitation(invitationUrl: string): OutOfBandInvitation {
-    return parseInvitationUrl(invitationUrl)
-  }
-
-  /**
-   * Parses URL containing encoded invitation and returns invitation message. Compatible with
-   * parsing shortened URLs
+   * Will fetch the url if the url does not contain a base64 encoded invitation.
    *
    * @param invitationUrl URL containing encoded invitation
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitationShortUrl(invitation: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationShortUrl(invitation, this.agentContext.config.agentDependencies)
+  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
+    return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
   }
 
   /**
@@ -398,6 +389,7 @@ export class OutOfBandApi {
         autoAcceptConnection,
         reuseConnection,
         routing,
+        timeoutMs: config.acceptInvitationTimeoutMs,
       })
     }
 
@@ -426,8 +418,8 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       routing?: Routing
+      timeoutMs?: number
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
@@ -437,6 +429,7 @@ export class OutOfBandApi {
     const { handshakeProtocols } = outOfBandInvitation
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
+    const timeoutMs = config.timeoutMs ?? 20000
 
     const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
@@ -494,7 +487,7 @@ export class OutOfBandApi {
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id)
+            .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
             .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
@@ -575,6 +568,22 @@ export class OutOfBandApi {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+
+    const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
+
+    // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    // Note: if OOB Record is reusable, it is safe to delete it because every connection created from
+    // it will use its own recipient key
+    if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
+      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+
+      await this.routingService.removeRouting(this.agentContext, {
+        recipientKeys,
+        mediatorId: outOfBandRecord.mediatorId,
+      })
+    }
+
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
@@ -748,8 +757,11 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(reuseMessage, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return reuseAcceptedEventPromise
   }

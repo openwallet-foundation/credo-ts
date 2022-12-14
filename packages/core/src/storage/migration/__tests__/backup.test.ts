@@ -35,10 +35,12 @@ describe('UpdateAssistant | Backup', () => {
     backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
 
     // If tests fail it's possible the cleanup has been skipped. So remove before running tests
-    if (await fileSystem.exists(backupPath)) {
+    const doesFileSystemExist = await fileSystem.exists(backupPath)
+    if (doesFileSystemExist) {
       unlinkSync(backupPath)
     }
-    if (await fileSystem.exists(`${backupPath}-error`)) {
+    const doesbackupFileSystemExist = await fileSystem.exists(`${backupPath}-error`)
+    if (doesbackupFileSystemExist) {
       unlinkSync(`${backupPath}-error`)
     }
 

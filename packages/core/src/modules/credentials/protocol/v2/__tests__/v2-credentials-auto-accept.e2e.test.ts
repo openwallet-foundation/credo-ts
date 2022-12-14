@@ -168,9 +168,6 @@ describe('v2 credentials', () => {
       await aliceAgent.wallet.delete()
     })
 
-    // ==============================
-    // TESTS v2 BEGIN
-    // ==========================
     test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `contentApproved`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
       const schemaId = schema.id

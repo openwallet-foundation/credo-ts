@@ -7,7 +7,7 @@ import type { Routing } from './services'
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
@@ -114,8 +114,12 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      outOfBand: outOfBandRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -140,24 +144,30 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
         outOfBandRecord
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -171,7 +181,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
@@ -190,7 +200,10 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -198,10 +211,13 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -237,10 +253,11 @@ export class ConnectionsApi {
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
-    record.setTag('connectionType', [type, ...tags])
-    await this.connectionService.update(this.agentContext, record)
+    await this.connectionService.addConnectionType(this.agentContext, record, type)
+
+    return record
   }
+
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
@@ -250,15 +267,11 @@ export class ConnectionsApi {
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    await this.connectionService.removeConnectionType(this.agentContext, record, type)
 
-    const newTags = tags.filter((value: string) => {
-      if (value != type) return value
-    })
-    record.setTag('connectionType', [...newTags])
-
-    await this.connectionService.update(this.agentContext, record)
+    return record
   }
+
   /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
@@ -267,8 +280,8 @@ export class ConnectionsApi {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTag('connectionType') as string[]
-    return tags || null
+
+    return this.connectionService.getConnectionTypes(record)
   }
 
   /**
@@ -276,7 +289,7 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
+  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
     return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
   }
 
@@ -308,6 +321,19 @@ export class ConnectionsApi {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.mediatorId && connection.did) {
+      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (did.didDocument) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: connection.mediatorId,
+        })
+      }
+    }
+
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 

@@ -1,14 +1,8 @@
-import type { AgentMessage } from './agent/AgentMessage'
-import type { Key } from './crypto'
 import type { Logger } from './logger'
-import type { ConnectionRecord } from './modules/connections'
 import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
-import type { ResolvedDidCommService } from './modules/didcomm'
 import type { IndyPoolConfig } from './modules/ledger/IndyPool'
-import type { OutOfBandRecord } from './modules/oob/repository'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
-import type { BaseRecord } from './storage/BaseRecord'
 
 export enum KeyDerivationMethod {
   /** default value in indy-sdk. Will be used when no value is provided */
@@ -92,20 +86,6 @@ export interface PlaintextMessage {
   '@type': string
   '@id': string
   [key: string]: unknown
-}
-
-export interface OutboundMessage<T extends AgentMessage = AgentMessage> {
-  payload: T
-  connection: ConnectionRecord
-  sessionId?: string
-  outOfBand?: OutOfBandRecord
-  associatedRecord?: BaseRecord
-}
-
-export interface OutboundServiceMessage<T extends AgentMessage = AgentMessage> {
-  payload: T
-  service: ResolvedDidCommService
-  senderKey: Key
 }
 
 export interface OutboundPackage {

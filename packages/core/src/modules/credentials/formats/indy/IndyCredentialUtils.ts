@@ -156,7 +156,13 @@ export class IndyCredentialUtils {
     }
 
     // If value is an int32 number string return as number string
-    if (isString(value) && !isEmpty(value) && !isNaN(Number(value)) && this.isInt32(Number(value))) {
+    if (
+      isString(value) &&
+      !isEmpty(value) &&
+      !isNaN(Number(value)) &&
+      this.isNumeric(value) &&
+      this.isInt32(Number(value))
+    ) {
       return Number(value).toString()
     }
 
@@ -193,5 +199,9 @@ export class IndyCredentialUtils {
 
     // Check if number is integer and in range of int32
     return Number.isInteger(number) && number >= minI32 && number <= maxI32
+  }
+
+  private static isNumeric(value: string) {
+    return /^-?\d+$/.test(value)
   }
 }

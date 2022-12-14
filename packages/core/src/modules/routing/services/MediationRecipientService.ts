@@ -9,7 +9,7 @@ import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
-import type { GetRoutingOptions } from './RoutingService'
+import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
@@ -17,7 +17,7 @@ import { filter, first, timeout } from 'rxjs/operators'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { injectable } from '../../../plugins'
@@ -25,7 +25,8 @@ import { JsonTransformer } from '../../../utils'
 import { ConnectionType } from '../../connections/models/ConnectionType'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
-import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
+import { DidKey } from '../../dids'
+import { didKeyToVerkey, isDidKey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
 import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
@@ -93,8 +94,8 @@ export class MediationRecipientService {
       role: MediationRole.Recipient,
       connectionId: connection.id,
     })
-    connection.setTag('connectionType', [ConnectionType.Mediator])
-    await this.connectionService.update(agentContext, connection)
+
+    await this.connectionService.addConnectionType(agentContext, connection, ConnectionType.Mediator)
 
     await this.mediationRepository.save(agentContext, mediationRecord)
     this.emitStateChangedEvent(agentContext, mediationRecord, null)
@@ -174,7 +175,7 @@ export class MediationRecipientService {
   public async keylistUpdateAndAwait(
     agentContext: AgentContext,
     mediationRecord: MediationRecord,
-    verKey: string,
+    updates: { recipientKey: Key; action: KeylistUpdateAction }[],
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
@@ -187,7 +188,15 @@ export class MediationRecipientService {
       useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
     }
 
-    const message = this.createKeylistUpdateMessage(useDidKey ? verkeyToDidKey(verKey) : verKey)
+    const message = this.createKeylistUpdateMessage(
+      updates.map(
+        (item) =>
+          new KeylistUpdate({
+            action: item.action,
+            recipientKey: useDidKey ? new DidKey(item.recipientKey).did : item.recipientKey.publicKeyBase58,
+          })
+      )
+    )
 
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Recipient)
@@ -209,21 +218,16 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, { agentContext, connection })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(verkey: string): KeylistUpdateMessage {
+  public createKeylistUpdateMessage(updates: KeylistUpdate[]): KeylistUpdateMessage {
     const keylistUpdateMessage = new KeylistUpdateMessage({
-      updates: [
-        new KeylistUpdate({
-          action: KeylistUpdateAction.add,
-          recipientKey: verkey,
-        }),
-      ],
+      updates,
     })
     return keylistUpdateMessage
   }
@@ -247,17 +251,41 @@ export class MediationRecipientService {
     if (!mediationRecord) return routing
 
     // new did has been created and mediator needs to be updated with the public key.
-    mediationRecord = await this.keylistUpdateAndAwait(
-      agentContext,
-      mediationRecord,
-      routing.recipientKey.publicKeyBase58
-    )
+    mediationRecord = await this.keylistUpdateAndAwait(agentContext, mediationRecord, [
+      {
+        recipientKey: routing.recipientKey,
+        action: KeylistUpdateAction.add,
+      },
+    ])
 
     return {
       ...routing,
+      mediatorId: mediationRecord.id,
       endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
       routingKeys: mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519)),
     }
+  }
+
+  public async removeMediationRouting(
+    agentContext: AgentContext,
+    { recipientKeys, mediatorId }: RemoveRoutingOptions
+  ): Promise<void> {
+    const mediationRecord = await this.getById(agentContext, mediatorId)
+
+    if (!mediationRecord) {
+      throw new AriesFrameworkError('No mediation record to remove routing from has been found')
+    }
+
+    await this.keylistUpdateAndAwait(
+      agentContext,
+      mediationRecord,
+      recipientKeys.map((item) => {
+        return {
+          recipientKey: item,
+          action: KeylistUpdateAction.remove,
+        }
+      })
+    )
   }
 
   public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
@@ -297,8 +325,10 @@ export class MediationRecipientService {
       const websocketSchemes = ['ws', 'wss']
 
       await this.messageSender.sendMessage(
-        messageContext.agentContext,
-        createOutboundMessage(connectionRecord, message),
+        new OutboundMessageContext(message, {
+          agentContext: messageContext.agentContext,
+          connection: connectionRecord,
+        }),
         {
           transportPriority: {
             schemes: websocketSchemes,

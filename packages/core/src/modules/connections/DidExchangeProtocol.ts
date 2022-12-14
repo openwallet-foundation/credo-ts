@@ -135,7 +135,9 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeRequestMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeRequestMessage.type.messageTypeUri} start`, messageContext)
+    this.logger.debug(`Process message ${DidExchangeRequestMessage.type.messageTypeUri} start`, {
+      message: messageContext.message,
+    })
 
     outOfBandRecord.assertRole(OutOfBandRole.Sender)
     outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
@@ -275,7 +277,10 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeResponseMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} start`, messageContext)
+    this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} start`, {
+      message: messageContext.message,
+    })
+
     const { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {
@@ -377,7 +382,10 @@ export class DidExchangeProtocol {
     messageContext: InboundMessageContext<DidExchangeCompleteMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, messageContext)
+    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, {
+      message: messageContext.message,
+    })
+
     const { connection: connectionRecord, message } = messageContext
 
     if (!connectionRecord) {

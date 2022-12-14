@@ -6,6 +6,7 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
+import type { ProofFormatServiceMap } from '../../formats'
 import type { ProofFormat } from '../../formats/ProofFormat'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
 import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
@@ -42,7 +43,7 @@ import { PresentationProblemReportReason } from '../../errors/PresentationProble
 import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
 import { ProofState } from '../../models/ProofState'
-import { PresentationRecordType, ProofExchangeRecord, ProofRepository } from '../../repository'
+import { ProofExchangeRecord, ProofRepository } from '../../repository'
 
 import { V2PresentationProblemReportError } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
@@ -71,10 +72,14 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.wallet = wallet
-    this.formatServiceMap = {
-      [PresentationRecordType.Indy]: indyProofFormatService,
-      // other format services to be added to the map
-    }
+    // Dynamically build format service map. This will be extracted once services are registered dynamically
+    this.formatServiceMap = [indyProofFormatService].reduce(
+      (formatServiceMap, formatService) => ({
+        ...formatServiceMap,
+        [formatService.formatKey]: formatService,
+      }),
+      {}
+    ) as ProofFormatServiceMap<PFs>
   }
 
   /**
@@ -146,6 +151,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       goalCode: options.goalCode,
       willConfirm: options.willConfirm,
     })
+
+    proposalMessage.setThread({ threadId: options.proofRecord.threadId })
 
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: proposalMessage,
@@ -540,7 +547,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       )
     }
 
-    const msg = new V2PresentationAckMessage({
+    const message = new V2PresentationAckMessage({
       threadId: options.proofRecord.threadId,
       status: AckStatus.OK,
     })
@@ -548,7 +555,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     await this.updateState(agentContext, options.proofRecord, ProofState.Done)
 
     return {
-      message: msg,
+      message,
       proofRecord: options.proofRecord,
     }
   }
@@ -676,17 +683,16 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       messageClass: V2ProposalPresentationMessage,
     })
 
-    if (!proposal) {
-      return false
-    }
+    if (!proposal) return false
+
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
-    if (!request) {
-      return true
-    }
-    await MessageValidator.validateSync(proposal)
+
+    if (!request) return false
+
+    MessageValidator.validateSync(proposal)
 
     const proposalAttachments = proposal.getAttachmentFormats()
     const requestAttachments = request.getAttachmentFormats()
