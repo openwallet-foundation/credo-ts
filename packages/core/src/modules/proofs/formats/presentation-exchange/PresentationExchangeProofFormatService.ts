@@ -306,8 +306,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       },
       signatureOptions: {
         verificationMethod: verificationMethod.id,
-        keyEncoding: KeyEncoding.Base58,
-        privateKey: privateKey.publicKeyBase58,
       },
     }
 
@@ -336,7 +334,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     options: FormatProcessPresentationOptions
   ): Promise<boolean> {
     if (!options.formatAttachments) {
-      throw Error('Presentation  missing while processing presentation in presentation exchange service.')
+      throw Error('Presentation missing while processing presentation in presentation exchange service.')
     }
 
     const requestFormat = options.formatAttachments.request.find(
@@ -347,11 +345,11 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       (x) => x.format.format === V2_PRESENTATION_EXCHANGE_PRESENTATION
     )
 
-    const proofAttachment = requestFormat?.attachment.getDataAsJson<Attachment>()
+    const proofAttachment = requestFormat?.attachment.getDataAsJson<FormatRequestPresentationExchangeOptions>()
 
-    const requestMessage: FormatRequestPresentationExchangeOptions =
-      proofAttachment as unknown as FormatRequestPresentationExchangeOptions
-
+    if (!proofAttachment) {
+      throw new AriesFrameworkError('Could not derive proofAttachment from requestFormat')
+    }
     const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>()
 
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
@@ -362,7 +360,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     // validate contents of presentation
     const pex: PEXv1 = new PEXv1()
-    pex.evaluatePresentation(requestMessage.presentationDefinition, verifiablePresentation)
+    pex.evaluatePresentation(proofAttachment.presentationDefinition, verifiablePresentation)
 
     // check the results
 
@@ -370,7 +368,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       presentation: w3cVerifiablePresentation,
       proofType: proof.type,
       verificationMethod: proof.verificationMethod,
-      challenge: requestMessage.options?.challenge,
+      challenge: proofAttachment.options?.challenge,
     }
     const verifyResult = await this.w3cCredentialService.verifyPresentation(agentContext, verifyPresentationOptions)
 
