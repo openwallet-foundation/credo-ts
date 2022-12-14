@@ -39,8 +39,6 @@ export interface SignPresentationOptions {
 
 export interface VerifyPresentationOptions {
   presentation: W3cVerifiablePresentation
-  proofType: string
-  verificationMethod: string
   purpose?: ProofPurpose
   challenge?: string
 }

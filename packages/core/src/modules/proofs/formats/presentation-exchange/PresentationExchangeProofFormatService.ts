@@ -350,24 +350,23 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (!proofAttachment) {
       throw new AriesFrameworkError('Could not derive proofAttachment from requestFormat')
     }
-    const proofPresentationRequestJson = proofFormat?.attachment.getDataAsJson<Attachment>()
+    const proofPresentationRequestJson: string | undefined = proofFormat?.attachment.getDataAsJson()
 
+    if (!proofPresentationRequestJson) {
+      throw new AriesFrameworkError('Attachment not found in proof format')
+    }
     const w3cVerifiablePresentation = JsonTransformer.fromJSON(proofPresentationRequestJson, W3cVerifiablePresentation)
 
-    const proof = JsonTransformer.fromJSON(w3cVerifiablePresentation.proof, LinkedDataProof)
-
-    const verifiablePresentation = w3cVerifiablePresentation as unknown as IPresentation
+    // do we need to cast anything???
+    // const verifiablePresentation = proofPresentationRequestJson as unknown as IPresentation
 
     // validate contents of presentation
     const pex: PEXv1 = new PEXv1()
-    pex.evaluatePresentation(proofAttachment.presentationDefinition, verifiablePresentation)
+    pex.evaluatePresentation(proofAttachment.presentationDefinition, proofPresentationRequestJson)
 
-    // check the results
-
+    // check the result
     const verifyPresentationOptions: VerifyPresentationOptions = {
       presentation: w3cVerifiablePresentation,
-      proofType: proof.type,
-      verificationMethod: proof.verificationMethod,
       challenge: proofAttachment.options?.challenge,
     }
     const verifyResult = await this.w3cCredentialService.verifyPresentation(agentContext, verifyPresentationOptions)
