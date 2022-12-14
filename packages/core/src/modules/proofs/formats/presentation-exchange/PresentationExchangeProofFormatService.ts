@@ -40,7 +40,7 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
-import { DidResolverService, keyReferenceToKey, keyTypeToProofType } from '../../../dids'
+import { DidResolverService, keyReferenceToKey, keyTypeToProofType, VerificationMethod } from '../../../dids'
 import { W3cPresentation, W3cCredentialService } from '../../../vc'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
@@ -262,7 +262,10 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`No did document found for did ${subject.id}`)
     }
 
-    if (!didResolutionResult.didDocument?.authentication) {
+    if (
+      !didResolutionResult.didDocument.authentication ||
+      didResolutionResult.didDocument.authentication.length === 0
+    ) {
       throw new AriesFrameworkError(`No did authentication found for did ${subject.id} in did document`)
     }
 
@@ -274,16 +277,21 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     // the signature suite to use for the presentation is dependant on the credentials we share.
 
-    // 1. Get the key for this given proof purpose in this DID document
+    // 1. Get the verification method for this given proof purpose in this DID document
+    let [verificationMethod] = didResolutionResult.didDocument.authentication
+    if (typeof verificationMethod === 'string') {
+      verificationMethod = didResolutionResult.didDocument.dereferenceKey(verificationMethod, ['authentication'])
+    }
+
+    const proofType = this.w3cCredentialService.getProofTypeByVerificationMethodType(verificationMethod.type)
+
+    // 2. Get the key for this given proof purpose in this DID document
     const keyId = didResolutionResult.didDocument[proofPurpose] as string[]
 
     // get keys from the did document section containing the proof purpose
 
-    // 2. Map the Key Id to a key. Key contains publicKey and keyType attributes
+    // 3. Map the Key Id to a key. Key contains publicKey and keyType attributes
     const privateKey: Key = keyReferenceToKey(didResolutionResult.didDocument, keyId[0])
-
-    // 3. Use the retrieved key to determine proof type
-    const proofType = keyTypeToProofType(privateKey)
 
     if (!proofType) {
       throw new AriesFrameworkError(`Unsupported key type: ${privateKey.keyType}`)
@@ -297,7 +305,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
         challenge: requestPresentation.options?.challenge,
       },
       signatureOptions: {
-        verificationMethod: (didResolutionResult.didDocument?.authentication[0]).toString(),
+        verificationMethod: verificationMethod.id,
         keyEncoding: KeyEncoding.Base58,
         privateKey: privateKey.publicKeyBase58,
       },
@@ -504,10 +512,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing proof type in proof options for signing the presentation.')
     }
 
-    if (!signatureOptions?.verificationMethod) {
-      throw new AriesFrameworkError('Missing verification method in signature options for signing the presentation.')
-    }
-
     if (!proofOptions?.challenge) {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
@@ -516,18 +520,12 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     const signPresentationOptions: SignPresentationOptions = {
       presentation: w3Presentation,
       purpose: proof.proofPurpose,
-      signatureType: proofOptions?.type,
-      verificationMethod: signatureOptions?.verificationMethod,
+      signatureType: proofOptions.type,
+      verificationMethod: signatureOptions.verificationMethod,
       challenge: proofOptions.challenge,
     }
     return JsonTransformer.toJSON(
       this.w3cCredentialService.signPresentation(this.agentContext, signPresentationOptions)
     ) as IVerifiablePresentation
-  }
-
-  public createProcessRquestOptions(request: ProofAttachmentFormat): FormatProcessRequestOptions {
-    return {
-      requestAttachment: request,
-    }
   }
 }
