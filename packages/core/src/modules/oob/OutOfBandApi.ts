@@ -75,6 +75,7 @@ export interface ReceiveOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
+  acceptInvitationTimeoutMs?: number
 }
 
 @injectable()
@@ -388,6 +389,7 @@ export class OutOfBandApi {
         autoAcceptConnection,
         reuseConnection,
         routing,
+        timeoutMs: config.acceptInvitationTimeoutMs,
       })
     }
 
@@ -417,6 +419,7 @@ export class OutOfBandApi {
       alias?: string
       imageUrl?: string
       routing?: Routing
+      timeoutMs?: number
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
@@ -426,6 +429,7 @@ export class OutOfBandApi {
     const { handshakeProtocols } = outOfBandInvitation
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
+    const timeoutMs = config.timeoutMs ?? 20000
 
     const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
@@ -483,7 +487,7 @@ export class OutOfBandApi {
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id)
+            .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
             .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
