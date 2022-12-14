@@ -6,7 +6,7 @@ import { AutoAcceptProof, ProofState } from '../src'
 import { setupJsonLdProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
-describe('Auto accept present proof', () => {
+xdescribe('Auto accept present proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
   let faberConnection: ConnectionRecord

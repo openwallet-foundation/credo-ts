@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Query } from '../../../../storage/StorageService'
-import type { W3cCredentialRecord, W3cPresentation } from '../../../vc'
+import type { W3cCredentialRecord } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type {
@@ -41,7 +41,7 @@ import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMes
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
 import { DidResolverService, keyReferenceToKey, keyTypeToProofType } from '../../../dids'
-import { W3cCredentialService } from '../../../vc'
+import { W3cPresentation, W3cCredentialService } from '../../../vc'
 import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
@@ -512,7 +512,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
 
-    const w3Presentation = presentation as unknown as W3cPresentation
+    const w3Presentation = JsonTransformer.fromJSON(presentation, W3cPresentation)
     const signPresentationOptions: SignPresentationOptions = {
       presentation: w3Presentation,
       purpose: proof.proofPurpose,
@@ -520,10 +520,9 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       verificationMethod: signatureOptions?.verificationMethod,
       challenge: proofOptions.challenge,
     }
-    return this.w3cCredentialService.signPresentation(
-      this.agentContext,
-      signPresentationOptions
-    ) as unknown as IVerifiablePresentation
+    return JsonTransformer.toJSON(
+      this.w3cCredentialService.signPresentation(this.agentContext, signPresentationOptions)
+    ) as IVerifiablePresentation
   }
 
   public createProcessRquestOptions(request: ProofAttachmentFormat): FormatProcessRequestOptions {
