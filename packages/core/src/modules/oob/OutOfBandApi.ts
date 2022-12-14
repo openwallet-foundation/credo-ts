@@ -1,6 +1,5 @@
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
@@ -16,6 +15,7 @@ import { MessageHandlerRegistry } from '../../agent/HandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
+import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -75,6 +75,7 @@ export interface ReceiveOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
+  acceptInvitationTimeoutMs?: number
 }
 
 @injectable()
@@ -388,6 +389,7 @@ export class OutOfBandApi {
         autoAcceptConnection,
         reuseConnection,
         routing,
+        timeoutMs: config.acceptInvitationTimeoutMs,
       })
     }
 
@@ -416,8 +418,8 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       routing?: Routing
+      timeoutMs?: number
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
@@ -427,6 +429,7 @@ export class OutOfBandApi {
     const { handshakeProtocols } = outOfBandInvitation
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
+    const timeoutMs = config.timeoutMs ?? 20000
 
     const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
@@ -484,7 +487,7 @@ export class OutOfBandApi {
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id)
+            .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
             .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
@@ -565,6 +568,22 @@ export class OutOfBandApi {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+
+    const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
+
+    // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    // Note: if OOB Record is reusable, it is safe to delete it because every connection created from
+    // it will use its own recipient key
+    if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
+      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+
+      await this.routingService.removeRouting(this.agentContext, {
+        recipientKeys,
+        mediatorId: outOfBandRecord.mediatorId,
+      })
+    }
+
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
