@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@aries-framework/node": "0.2.5",
-    "indy-vdr-test-shared": "^0.1.2",
+    "indy-vdr-test-shared": "^0.1.13",
     "reflect-metadata": "^0.1.13",
     "rimraf": "~3.0.2",
     "typescript": "~4.3.0"
