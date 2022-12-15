@@ -152,6 +152,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       willConfirm: options.willConfirm,
     })
 
+    proposalMessage.setThread({ threadId: options.proofRecord.threadId })
+
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: proposalMessage,
       role: DidCommMessageRole.Sender,

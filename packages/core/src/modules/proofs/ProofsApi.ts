@@ -11,6 +11,8 @@ import type {
   ProposeProofOptions,
   RequestProofOptions,
   ProofServiceMap,
+  NegotiateRequestOptions,
+  NegotiateProposalOptions,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
@@ -28,6 +30,7 @@ import type {
   FormatRetrievedCredentialOptions,
   DeleteProofOptions,
   GetFormatDataReturn,
+  CreateProposalAsResponseOptions,
 } from './models/ProofServiceOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 
@@ -57,11 +60,13 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   // Proposal methods
   proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
   acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord>
+  negotiateProposal(options: NegotiateProposalOptions<PFs>): Promise<ProofExchangeRecord>
 
   // Request methods
   requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
   acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord>
   declineRequest(proofRecordId: string): Promise<ProofExchangeRecord>
+  negotiateRequest(options: NegotiateRequestOptions<PFs>): Promise<ProofExchangeRecord>
 
   // Present
   acceptPresentation(proofRecordId: string): Promise<ProofExchangeRecord>
@@ -204,13 +209,14 @@ export class ProofsApi<
    */
   public async acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord> {
     const { proofRecordId } = options
+
     const proofRecord = await this.getById(proofRecordId)
 
     const service = this.getService(proofRecord.protocolVersion)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connectionId found for credential record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
       )
     }
 
@@ -236,6 +242,50 @@ export class ProofsApi<
       comment: options.comment,
     }
 
+    const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: proofRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    return proofRecord
+  }
+
+  /**
+   * Answer with a new presentation request in response to received presentation proposal message
+   * to the connection associated with the proof record.
+   *
+   * @param options multiple properties like proof record id, proof formats to accept requested credentials object
+   * specifying which credentials to use for the proof
+   * @returns Proof record associated with the sent request message
+   */
+  public async negotiateProposal(options: NegotiateProposalOptions<PFs>): Promise<ProofExchangeRecord> {
+    const { proofRecordId } = options
+
+    const proofRecord = await this.getById(proofRecordId)
+
+    const service = this.getService(proofRecord.protocolVersion)
+
+    if (!proofRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support negotiation.`
+      )
+    }
+
+    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+
+    // Assert
+    connection.assertReady()
+
+    const requestOptions: CreateRequestAsResponseOptions<PFs> = {
+      proofRecord,
+      proofFormats: options.proofFormats,
+      autoAcceptProof: options.autoAcceptProof,
+      comment: options.comment,
+    }
     const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
 
     const outboundMessageContext = new OutboundMessageContext(message, {
@@ -394,6 +444,51 @@ export class ProofsApi<
     proofRecord.assertState(ProofState.RequestReceived)
 
     await service.updateState(this.agentContext, proofRecord, ProofState.Declined)
+
+    return proofRecord
+  }
+
+  /**
+   * Answer with a new presentation proposal in response to received presentation request message
+   * to the connection associated with the proof record.
+   *
+   * @param options multiple properties like proof record id, proof format (indy/ presentation exchange)
+   * to include in the message
+   * @returns Proof record associated with the sent proposal message
+   */
+  public async negotiateRequest(options: NegotiateRequestOptions<PFs>): Promise<ProofExchangeRecord> {
+    const { proofRecordId } = options
+    const proofRecord = await this.getById(proofRecordId)
+
+    const service = this.getService(proofRecord.protocolVersion)
+
+    if (!proofRecord.connectionId) {
+      throw new AriesFrameworkError(
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+      )
+    }
+
+    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+
+    // Assert
+    connection.assertReady()
+
+    const proposalOptions: CreateProposalAsResponseOptions<PFs> = {
+      proofRecord,
+      proofFormats: options.proofFormats,
+      autoAcceptProof: options.autoAcceptProof,
+      goalCode: options.goalCode,
+      comment: options.comment,
+    }
+
+    const { message } = await service.createProposalAsResponse(this.agentContext, proposalOptions)
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: proofRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return proofRecord
   }
