@@ -42,6 +42,15 @@ export interface ProposeProofOptions<
   autoAcceptProof?: AutoAcceptProof
   parentThreadId?: string
 }
+
+export interface NegotiateRequestOptions<PFs extends ProofFormat[] = ProofFormat[]> {
+  proofRecordId: string
+  proofFormats: ProofFormatPayload<PFs, 'createProposalAsResponse'>
+  comment?: string
+  goalCode?: string
+  autoAcceptProof?: AutoAcceptProof
+}
+
 export interface AcceptProofPresentationOptions<PFs extends ProofFormat[] = ProofFormat[]> {
   proofRecordId: string
   comment?: string
@@ -63,6 +72,14 @@ export interface RequestProofOptions<
   protocolVersion: ProofsProtocolVersionType<PSs>
   connectionId: string
   proofFormats: ProofFormatPayload<PFs, 'createRequest'>
+  comment?: string
+  autoAcceptProof?: AutoAcceptProof
+  parentThreadId?: string
+}
+
+export interface NegotiateProposalOptions<PFs extends ProofFormat[] = ProofFormat[]> {
+  proofRecordId: string
+  proofFormats: ProofFormatPayload<PFs, 'createRequestAsResponse'>
   comment?: string
   autoAcceptProof?: AutoAcceptProof
   parentThreadId?: string
