@@ -11,15 +11,12 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   CreatePresentationOptions,
-  CreateProposalAsResponseOptions
+  CreateProposalAsResponseOptions,
 } from './ProofServiceOptions'
 import type {
   AcceptProofPresentationOptions,
   AcceptProofProposalOptions,
   CreateProofRequestOptions,
-  FindProofPresentationMessageReturn,
-  FindProofProposalMessageReturn,
-  FindProofRequestMessageReturn,
   ProposeProofOptions,
   RequestProofOptions,
   ProofServiceMap,
