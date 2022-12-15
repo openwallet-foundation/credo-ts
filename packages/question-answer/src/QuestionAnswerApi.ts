@@ -32,7 +32,7 @@ export class QuestionAnswerApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -132,8 +132,8 @@ export class QuestionAnswerApi {
     return this.questionAnswerService.findById(this.agentContext, questionAnswerId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new QuestionMessageHandler(this.questionAnswerService))
-    dispatcher.registerHandler(new AnswerMessageHandler(this.questionAnswerService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new QuestionMessageHandler(this.questionAnswerService))
+    dispatcher.registerMessageHandler(new AnswerMessageHandler(this.questionAnswerService))
   }
 }

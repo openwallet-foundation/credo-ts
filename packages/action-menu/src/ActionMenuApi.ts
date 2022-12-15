@@ -43,7 +43,7 @@ export class ActionMenuApi {
     this.messageSender = messageSender
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -158,10 +158,10 @@ export class ActionMenuApi {
     return actionMenuRecord ? await this.actionMenuService.clearMenu(this.agentContext, { actionMenuRecord }) : null
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
-    dispatcher.registerHandler(new MenuMessageHandler(this.actionMenuService))
-    dispatcher.registerHandler(new MenuRequestMessageHandler(this.actionMenuService))
-    dispatcher.registerHandler(new PerformMessageHandler(this.actionMenuService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new MenuMessageHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new MenuRequestMessageHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new PerformMessageHandler(this.actionMenuService))
   }
 }

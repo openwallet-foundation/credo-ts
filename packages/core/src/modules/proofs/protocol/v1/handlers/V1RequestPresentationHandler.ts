@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
@@ -17,7 +17,7 @@ import { AriesFrameworkError } from '../../../../../error'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V1RequestPresentationMessage } from '../messages'
 
-export class V1RequestPresentationHandler implements Handler {
+export class V1RequestPresentationHandler implements MessageHandler {
   private proofService: V1ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -42,7 +42,7 @@ export class V1RequestPresentationHandler implements Handler {
     this.routingService = routingService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1RequestPresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
 
     const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
@@ -57,7 +57,7 @@ export class V1RequestPresentationHandler implements Handler {
 
   private async createPresentation(
     record: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V1RequestPresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
     const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: record.id,
