@@ -29,9 +29,9 @@ export async function migrateConnectionRecordToV0_3<Agent extends BaseAgent>(age
 
     if (mediatorConnectionIds.includes(connectionRecord.id)) {
       await migrateConnectionRecordMediatorTags(agent, connectionRecord)
-
-      await connectionRepository.update(agent.context, connectionRecord)
     }
+
+    await connectionRepository.update(agent.context, connectionRecord)
 
     agent.config.logger.debug(
       `Successfully migrated connection record with id ${connectionRecord.id} to storage version 0.3`
@@ -52,7 +52,8 @@ export async function migrateConnectionRecordMediatorTags<Agent extends BaseAgen
     `Migrating internal connection record ${connectionRecord.id} to storage version 0.3 with mediator tags`
   )
 
-  connectionRecord.setTag('connectionType', ConnectionType.Mediator)
+  const connectionTypeTags = (connectionRecord.getTag('connectionType') || []) as [string]
+  connectionRecord.setTag('connectionType', [...connectionTypeTags, ConnectionType.Mediator])
 
   agent.config.logger.debug(
     `Successfully migrated internal connection record ${connectionRecord.id} to storage version 0.3 with mediator tags`
