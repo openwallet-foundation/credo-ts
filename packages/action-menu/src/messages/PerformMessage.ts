@@ -1,6 +1,9 @@
 import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { IsOptional, IsString } from 'class-validator'
 
+/**
+ * @internal
+ */
 export interface PerformMessageOptions {
   id?: string
   name: string
@@ -8,6 +11,9 @@ export interface PerformMessageOptions {
   threadId: string
 }
 
+/**
+ * @internal
+ */
 export class PerformMessage extends AgentMessage {
   public constructor(options: PerformMessageOptions) {
     super()
