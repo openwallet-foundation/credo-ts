@@ -17,7 +17,7 @@ import type {
   NegotiateProposalOptions,
 } from '../../CredentialProtocolOptions'
 import type { GetFormatDataReturn } from '../../CredentialsApiOptions'
-import type { CredentialFormatService, IndyCredentialFormat } from '../../formats'
+import type { CredentialFormatService, ExtractCredentialFormats, IndyCredentialFormat } from '../../formats'
 
 import { Protocol } from '../../../../agent/models/features'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
@@ -86,7 +86,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Register message handlers for the Issue Credential V1 Protocol
-    dependencyManager.registerHandlers([
+    dependencyManager.registerMessageHandlers([
       new V1ProposeCredentialHandler(this),
       new V1OfferCredentialHandler(this),
       new V1RequestCredentialHandler(this),
@@ -1215,7 +1215,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
   public async getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<GetFormatDataReturn<CredentialFormatService[]>> {
+  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<[CredentialFormatService<IndyCredentialFormat>]>>> {
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, offerMessage, requestMessage, credentialMessage] = await Promise.all([
       this.findProposalMessage(agentContext, credentialExchangeId),

@@ -5,7 +5,6 @@ import type {
   CredentialFormat,
   CredentialFormatPayload,
   CredentialFormatService,
-  ExtractCredentialFormat,
   ExtractCredentialFormats,
 } from './formats'
 import type { CredentialPreviewAttributeOptions } from './models'
@@ -22,7 +21,7 @@ import type { CredentialExchangeRecord } from './repository/CredentialExchangeRe
  * @example
  * ```
  *
- * type OfferFormatData = FormatDataMessagePayload<[IndyCredentialFormatService, JsonLdCredentialFormatService], 'offer'>
+ * type OfferFormatData = FormatDataMessagePayload<[IndyCredentialFormat, JsonLdCredentialFormat], 'offer'>
  *
  * // equal to
  * type OfferFormatData = {
@@ -36,12 +35,10 @@ import type { CredentialExchangeRecord } from './repository/CredentialExchangeRe
  * ```
  */
 export type FormatDataMessagePayload<
-  CFs extends CredentialFormatService[] = CredentialFormatService[],
+  CFs extends CredentialFormat[] = CredentialFormat[],
   M extends keyof CredentialFormat['formatData'] = keyof CredentialFormat['formatData']
 > = {
-  [Service in CFs[number] as Service['formatKey']]?: ExtractCredentialFormat<CredentialFormatService> extends never
-    ? undefined
-    : ExtractCredentialFormat<Service>['formatData'][M]
+  [Service in CFs[number] as Service['formatKey']]?: Service['formatData'][M]
 }
 
 /**
@@ -66,7 +63,7 @@ export type ExtractCredentialFormatServices<Type> = Type extends CredentialProto
   : never
 
 /**
- * Infer an array of {@link CredentialFormatService} types based on an array of {@link CredentialProtocol} types.
+ * Infer an array of {@link CredentialFormat} types based on an array of {@link CredentialProtocol} types.
  *
  * This is based on {@link ExtractCredentialFormatServices}, but allows to handle arrays.
  */
@@ -96,7 +93,7 @@ type _CFsFromCPs<CPs extends CredentialProtocol[]> = FlatArray<{
  * }
  * ```
  */
-export type GetFormatDataReturn<CFs extends CredentialFormatService[] = CredentialFormatService[]> = {
+export type GetFormatDataReturn<CFs extends CredentialFormat[] = CredentialFormat[]> = {
   proposalAttributes?: CredentialPreviewAttributeOptions[]
   proposal?: FormatDataMessagePayload<CFs, 'proposal'>
   offer?: FormatDataMessagePayload<CFs, 'offer'>

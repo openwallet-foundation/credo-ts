@@ -18,7 +18,7 @@ import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMess
 
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
-import { MessageHandlerRegistry } from './HandlerRegistry'
+import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContextProvider } from './context'

@@ -2,7 +2,7 @@ import type { Handler } from '../Handler'
 
 import { parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
-import { MessageHandlerRegistry } from '../HandlerRegistry'
+import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
 
 class ConnectionInvitationTestMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')

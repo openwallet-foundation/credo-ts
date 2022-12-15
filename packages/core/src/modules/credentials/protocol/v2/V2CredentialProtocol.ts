@@ -86,7 +86,7 @@ export class V2CredentialProtocol<
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Register message handlers for the Issue Credential V2 Protocol
-    dependencyManager.registerHandlers([
+    dependencyManager.registerMessageHandlers([
       new V2ProposeCredentialHandler(this),
       new V2OfferCredentialHandler(this),
       new V2RequestCredentialHandler(this),
@@ -1147,7 +1147,10 @@ export class V2CredentialProtocol<
     })
   }
 
-  public async getFormatData(agentContext: AgentContext, credentialExchangeId: string): Promise<GetFormatDataReturn> {
+  public async getFormatData(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<CFs>>> {
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, offerMessage, requestMessage, credentialMessage] = await Promise.all([
       this.findProposalMessage(agentContext, credentialExchangeId),

@@ -11,7 +11,7 @@ import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
-import { MessageHandlerRegistry } from '../../agent/HandlerRegistry'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'

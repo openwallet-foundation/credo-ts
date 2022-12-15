@@ -21,7 +21,7 @@ import type {
   GetFormatDataReturn,
   CreateProblemReportOptions,
 } from '../CredentialProtocolOptions'
-import type { CredentialFormatService } from '../formats'
+import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialExchangeRecord } from '../repository'
 import type { CredentialProtocol } from './CredentialProtocol'
 
@@ -101,7 +101,10 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   abstract findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findRequestMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findCredentialMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract getFormatData(agentContext: AgentContext, credentialExchangeId: string): Promise<GetFormatDataReturn<CFs>>
+  abstract getFormatData(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
   abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
 

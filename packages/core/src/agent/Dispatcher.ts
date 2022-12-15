@@ -11,7 +11,7 @@ import { injectable, inject } from '../plugins'
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
-import { MessageHandlerRegistry } from './HandlerRegistry'
+import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageSender } from './MessageSender'
 import { OutboundMessageContext } from './models'
 

@@ -5,7 +5,7 @@ import { parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
 import { Dispatcher } from '../Dispatcher'
 import { EventEmitter } from '../EventEmitter'
-import { MessageHandlerRegistry } from '../HandlerRegistry'
+import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
 import { MessageSender } from '../MessageSender'
 import { InboundMessageContext } from '../models/InboundMessageContext'
 

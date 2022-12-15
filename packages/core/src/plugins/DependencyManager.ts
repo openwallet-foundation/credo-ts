@@ -6,7 +6,7 @@ import type { DependencyContainer } from 'tsyringe'
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
 import { FeatureRegistry } from '../agent/FeatureRegistry'
-import { MessageHandlerRegistry } from '../agent/HandlerRegistry'
+import { MessageHandlerRegistry } from '../agent/MessageHandlerRegistry'
 import { AriesFrameworkError } from '../error'
 
 export { InjectionToken }
@@ -38,7 +38,7 @@ export class DependencyManager {
     }
   }
 
-  public registerHandlers(handlers: Handler[]) {
+  public registerMessageHandlers(handlers: Handler[]) {
     const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
 
     for (const handler of handlers) {
