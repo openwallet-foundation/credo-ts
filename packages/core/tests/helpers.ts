@@ -77,6 +77,8 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
+const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
 export function getAgentOptions<AgentModules extends AgentModulesInput>(
@@ -99,7 +101,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
         isProduction: false,
         genesisPath,
         indyNamespace: `pool:localtest`,
-        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
       },
     ],
     // TODO: determine the log level based on an environment variable. This will make it
