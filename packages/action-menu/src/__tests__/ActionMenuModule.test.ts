@@ -2,13 +2,10 @@ import type { DependencyManager, FeatureRegistry } from '@aries-framework/core'
 
 import { Protocol } from '@aries-framework/core'
 
-import {
-  ActionMenuApi,
-  ActionMenuModule,
-  ActionMenuRepository,
-  ActionMenuRole,
-  ActionMenuService,
-} from '@aries-framework/action-menu'
+import { ActionMenuRepository } from '../repository'
+import { ActionMenuService } from '../services'
+
+import { ActionMenuApi, ActionMenuModule, ActionMenuRole } from '@aries-framework/action-menu'
 
 const dependencyManager = {
   registerInstance: jest.fn(),

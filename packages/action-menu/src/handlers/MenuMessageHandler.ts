@@ -3,6 +3,9 @@ import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
 import { MenuMessage } from '../messages'
 
+/**
+ * @internal
+ */
 export class MenuMessageHandler implements Handler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [MenuMessage]

@@ -5,6 +5,9 @@ import { IsBoolean, IsInstance, IsOptional, IsString } from 'class-validator'
 
 import { ActionMenuForm } from './ActionMenuOptionForm'
 
+/**
+ * @public
+ */
 export interface ActionMenuOptionOptions {
   name: string
   title: string
@@ -13,6 +16,9 @@ export interface ActionMenuOptionOptions {
   form?: ActionMenuFormOptions
 }
 
+/**
+ * @public
+ */
 export class ActionMenuOption {
   public constructor(options: ActionMenuOptionOptions) {
     if (options) {
