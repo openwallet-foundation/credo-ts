@@ -22,7 +22,7 @@ import {
 } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupIndyProofsTest, waitForProofExchangeRecord } from './helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
@@ -39,7 +39,7 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupIndyProofsTest('Faber agent indy proofs', 'Alice agent indy proofs'))
+      await setupProofsTest('Faber agent indy proofs', 'Alice agent indy proofs'))
   })
 
   afterAll(async () => {
