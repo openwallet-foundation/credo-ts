@@ -4,7 +4,7 @@ import type { AcceptProofProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 
-import { setupIndyProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats'
@@ -23,7 +23,7 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupIndyProofsTest(
+    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
       'Faber agent v2',
       'Alice agent v2'
     ))

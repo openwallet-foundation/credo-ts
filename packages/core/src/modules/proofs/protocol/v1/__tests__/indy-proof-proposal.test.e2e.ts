@@ -3,7 +3,7 @@ import type { ConnectionRecord } from '../../../../connections/repository/Connec
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { PresentationPreview } from '../models/V1PresentationPreview'
 
-import { setupIndyProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
+import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofState } from '../../../models/ProofState'
@@ -19,7 +19,7 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupIndyProofsTest(
+    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
       'Faber agent',
       'Alice agent'
     ))

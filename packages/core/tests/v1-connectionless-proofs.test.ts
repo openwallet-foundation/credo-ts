@@ -27,7 +27,7 @@ import {
   issueCredential,
   makeConnection,
   prepareForIssuance,
-  setupIndyProofsTest,
+  setupProofsTest,
   waitForProofExchangeRecordSubject,
 } from './helpers'
 import testLogger from './logger'
@@ -43,7 +43,7 @@ describe('Present Proof', () => {
   })
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupIndyProofsTest(
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
       AutoAcceptProof.Never
@@ -142,7 +142,7 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupIndyProofsTest(
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs - Auto Accept',
       'Alice connection-less Proofs - Auto Accept',
       AutoAcceptProof.Always
