@@ -3,6 +3,9 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framew
 
 import { MenuMessage } from '../messages'
 
+/**
+ * @internal
+ */
 export class MenuMessageHandler implements MessageHandler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [MenuMessage]

@@ -25,6 +25,9 @@ import {
 } from './handlers'
 import { ActionMenuService } from './services'
 
+/**
+ * @public
+ */
 @injectable()
 export class ActionMenuApi {
   private connectionService: ConnectionService
