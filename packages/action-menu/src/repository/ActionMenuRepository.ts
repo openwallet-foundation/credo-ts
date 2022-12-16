@@ -2,6 +2,9 @@ import { EventEmitter, InjectionSymbols, inject, injectable, Repository, Storage
 
 import { ActionMenuRecord } from './ActionMenuRecord'
 
+/**
+ * @internal
+ */
 @injectable()
 export class ActionMenuRepository extends Repository<ActionMenuRecord> {
   public constructor(
