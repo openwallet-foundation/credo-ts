@@ -1,9 +1,12 @@
 import type { ActionMenuService } from '../services'
-import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
 import { MenuMessage } from '../messages'
 
-export class MenuMessageHandler implements Handler {
+/**
+ * @internal
+ */
+export class MenuMessageHandler implements MessageHandler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [MenuMessage]
 
@@ -11,7 +14,7 @@ export class MenuMessageHandler implements Handler {
     this.actionMenuService = actionMenuService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<MenuMessageHandler>) {
+  public async handle(inboundMessage: MessageHandlerInboundMessage<MenuMessageHandler>) {
     inboundMessage.assertReadyConnection()
 
     await this.actionMenuService.processMenu(inboundMessage)

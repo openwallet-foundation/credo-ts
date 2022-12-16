@@ -1,10 +1,16 @@
 import { IsOptional, IsString } from 'class-validator'
 
+/**
+ * @public
+ */
 export interface ActionMenuSelectionOptions {
   name: string
   params?: Record<string, string>
 }
 
+/**
+ * @public
+ */
 export class ActionMenuSelection {
   public constructor(options: ActionMenuSelectionOptions) {
     if (options) {

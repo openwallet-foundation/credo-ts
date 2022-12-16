@@ -5,9 +5,16 @@ import { ProblemReportError } from '@aries-framework/core'
 
 import { ActionMenuProblemReportMessage } from '../messages'
 
+/**
+ * @internal
+ */
 interface ActionMenuProblemReportErrorOptions extends ProblemReportErrorOptions {
   problemCode: ActionMenuProblemReportReason
 }
+
+/**
+ * @internal
+ */
 export class ActionMenuProblemReportError extends ProblemReportError {
   public problemReport: ActionMenuProblemReportMessage
 

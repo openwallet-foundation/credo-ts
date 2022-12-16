@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V1ProofService } from '../V1ProofService'
 
 import { V1PresentationProblemReportMessage } from '../messages/V1PresentationProblemReportMessage'
 
-export class V1PresentationProblemReportHandler implements Handler {
+export class V1PresentationProblemReportHandler implements MessageHandler {
   private proofService: V1ProofService
   public supportedMessages = [V1PresentationProblemReportMessage]
 
@@ -11,7 +11,7 @@ export class V1PresentationProblemReportHandler implements Handler {
     this.proofService = proofService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1PresentationProblemReportHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationProblemReportHandler>) {
     await this.proofService.processProblemReport(messageContext)
   }
 }
