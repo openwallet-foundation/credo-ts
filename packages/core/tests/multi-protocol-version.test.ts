@@ -47,7 +47,7 @@ describe('multi version protocols', () => {
 
     // Register the test handler with the v1.3 version of the message
     const dispatcher = aliceAgent.dependencyManager.resolve(Dispatcher)
-    dispatcher.registerHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
+    dispatcher.registerMessageHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
 
     await aliceAgent.initialize()
 
