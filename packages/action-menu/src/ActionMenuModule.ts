@@ -7,6 +7,9 @@ import { ActionMenuRole } from './ActionMenuRole'
 import { ActionMenuRepository } from './repository'
 import { ActionMenuService } from './services'
 
+/**
+ * @public
+ */
 export class ActionMenuModule implements Module {
   public readonly api = ActionMenuApi
 

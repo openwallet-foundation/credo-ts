@@ -1,9 +1,15 @@
 import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
+/**
+ * @internal
+ */
 export interface MenuRequestMessageOptions {
   id?: string
 }
 
+/**
+ * @internal
+ */
 export class MenuRequestMessage extends AgentMessage {
   public constructor(options: MenuRequestMessageOptions) {
     super()
