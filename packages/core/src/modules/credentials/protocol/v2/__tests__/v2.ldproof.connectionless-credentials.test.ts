@@ -3,6 +3,7 @@ import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
 import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -12,6 +13,7 @@ import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } f
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
+import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialState } from '../../../models'
@@ -106,6 +108,30 @@ describe('credentials', () => {
 
     // eslint-disable-next-line prefer-const
     let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+
+    const offerMsg = message as V2OfferCredentialMessage
+    const attachment = offerMsg?.offerAttachments[0]
+
+    if (attachment.data.base64) {
+      expect(JsonEncoder.fromBase64(attachment.data.base64)).toMatchObject({
+        credential: {
+          '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+          type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+          issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          issuanceDate: '2017-10-22T12:23:48Z',
+          credentialSubject: {
+            degree: {
+              name: 'Bachelor of Science and Arts',
+              type: 'BachelorDegree',
+            },
+          },
+        },
+        options: {
+          proofType: 'Ed25519Signature2018',
+          proofPurpose: 'assertionMethod',
+        },
+      })
+    }
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
