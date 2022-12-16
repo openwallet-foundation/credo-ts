@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
@@ -16,7 +16,7 @@ import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecor
 import { DidCommMessageRole } from '../../../../../storage'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
 
-export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements Handler {
+export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements MessageHandler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -41,7 +41,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
     this.routingService = routingService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2RequestPresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V2RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
 
     const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
@@ -56,7 +56,7 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
 
   private async createPresentation(
     record: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V2RequestPresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V2RequestPresentationHandler>
   ) {
     const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: record.id,

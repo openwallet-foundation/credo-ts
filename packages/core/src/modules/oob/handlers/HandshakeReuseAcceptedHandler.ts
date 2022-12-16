@@ -1,10 +1,10 @@
-import type { Handler } from '../../../agent/Handler'
+import type { MessageHandler } from '../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { OutOfBandService } from '../OutOfBandService'
 
 import { HandshakeReuseAcceptedMessage } from '../messages/HandshakeReuseAcceptedMessage'
 
-export class HandshakeReuseAcceptedHandler implements Handler {
+export class HandshakeReuseAcceptedHandler implements MessageHandler {
   public supportedMessages = [HandshakeReuseAcceptedMessage]
   private outOfBandService: OutOfBandService
 

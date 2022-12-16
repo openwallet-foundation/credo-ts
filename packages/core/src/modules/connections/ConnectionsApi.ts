@@ -73,7 +73,7 @@ export class ConnectionsApi {
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
 
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async acceptOutOfBandInvitation(
@@ -361,8 +361,8 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
@@ -371,14 +371,14 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerMessageHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
+    dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -388,7 +388,7 @@ export class ConnectionsApi {
       )
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -397,6 +397,6 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+    dispatcher.registerMessageHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
   }
 }
