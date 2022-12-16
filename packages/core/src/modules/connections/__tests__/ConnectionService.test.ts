@@ -110,7 +110,7 @@ describe('ConnectionService', () => {
 
     mockFunction(didRepository.getById).mockResolvedValue(
       new DidRecord({
-        id: 'did:peer:123',
+        did: 'did:peer:123',
         role: DidDocumentRole.Created,
       })
     )

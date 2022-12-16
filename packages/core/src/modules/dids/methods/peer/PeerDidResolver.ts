@@ -39,7 +39,15 @@ export class PeerDidResolver implements DidResolver {
       }
       // For Method 1, retrieve from storage
       else if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
-        const didDocumentRecord = await this.didRepository.getById(agentContext, did)
+        // We can have multiple did document records stored for a single did (one created and one received). In this case it
+        // doesn't matter which one we use, and they should be identical. So we just take the first one.
+        const [didDocumentRecord] = await this.didRepository.findByQuery(agentContext, {
+          did,
+        })
+
+        if (!didDocumentRecord) {
+          throw new AriesFrameworkError(`No did record found for peer did ${did}.`)
+        }
 
         if (!didDocumentRecord.didDocument) {
           throw new AriesFrameworkError(`Found did record for method 1 peer did (${did}), but no did document.`)

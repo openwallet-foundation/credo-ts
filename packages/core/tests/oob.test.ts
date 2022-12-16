@@ -588,7 +588,7 @@ describe('out of band', () => {
       // Try to receive the invitation again
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation)).rejects.toThrow(
         new AriesFrameworkError(
-          `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       )
     })

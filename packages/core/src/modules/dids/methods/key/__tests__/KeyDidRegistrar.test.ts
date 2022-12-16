@@ -118,7 +118,7 @@ describe('DidRegistrar', () => {
       const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
       expect(didRecord).toMatchObject({
-        id: did,
+        did,
         role: DidDocumentRole.Created,
         didDocument: undefined,
       })

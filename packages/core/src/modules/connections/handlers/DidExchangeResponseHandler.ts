@@ -10,7 +10,7 @@ import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorat
 import { AriesFrameworkError } from '../../../error'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { DidExchangeRole, HandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements Handler {
   private didExchangeProtocol: DidExchangeProtocol
@@ -41,7 +41,11 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(agentContext, message.threadId)
+    const connectionRecord = await this.connectionService.getByRoleAndThreadId(
+      agentContext,
+      DidExchangeRole.Requester,
+      message.threadId
+    )
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }

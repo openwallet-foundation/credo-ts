@@ -35,7 +35,7 @@ export class DidExchangeCompleteHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain pthid attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+    const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
       message.thread?.parentThreadId
     )

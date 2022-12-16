@@ -42,7 +42,7 @@ export class DidExchangeRequestHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+    const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
       message.thread.parentThreadId
     )
@@ -57,9 +57,12 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
-    if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
+      messageContext.agentContext,
+      senderKey
+    )
+    if (receivedDidRecord) {
+      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?
