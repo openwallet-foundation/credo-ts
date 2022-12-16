@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 
 import { V2DisclosuresMessage } from '../messages'
 
-export class V2DisclosuresMessageHandler implements Handler {
+export class V2DisclosuresMessageHandler implements MessageHandler {
   private discoverFeaturesService: V2DiscoverFeaturesService
   public supportedMessages = [V2DisclosuresMessage]
 
@@ -11,7 +11,7 @@ export class V2DisclosuresMessageHandler implements Handler {
     this.discoverFeaturesService = discoverFeaturesService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<V2DisclosuresMessageHandler>) {
+  public async handle(inboundMessage: MessageHandlerInboundMessage<V2DisclosuresMessageHandler>) {
     await this.discoverFeaturesService.processDisclosure(inboundMessage)
   }
 }

@@ -1,4 +1,4 @@
-import type { Handler } from '../Handler'
+import type { MessageHandler } from '../MessageHandler'
 
 import { Subject } from 'rxjs'
 
@@ -34,7 +34,7 @@ class CustomProtocolMessage extends DidCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
-class TestHandler implements Handler {
+class TestHandler implements MessageHandler {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {
@@ -62,10 +62,10 @@ describe('Dispatcher', () => {
 
   const dispatcher = new Dispatcher(new MessageSenderMock(), eventEmitter, agentConfig.logger)
 
-  dispatcher.registerHandler(connectionHandler)
-  dispatcher.registerHandler(new TestHandler([NotificationAckTestMessage]))
-  dispatcher.registerHandler(new TestHandler([CredentialProposalTestMessage]))
-  dispatcher.registerHandler(fakeProtocolHandler)
+  dispatcher.registerMessageHandler(connectionHandler)
+  dispatcher.registerMessageHandler(new TestHandler([NotificationAckTestMessage]))
+  dispatcher.registerMessageHandler(new TestHandler([CredentialProposalTestMessage]))
+  dispatcher.registerMessageHandler(fakeProtocolHandler)
 
   describe('supportedMessageTypes', () => {
     test('return all supported message types URIs', async () => {
@@ -146,7 +146,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      dispatcher.registerHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
+      dispatcher.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -159,7 +159,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      dispatcher.registerHandler({ supportedMessages: [], handle: mockHandle })
+      dispatcher.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
 
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
         'No handler for message type "https://didcomm.org/fake-protocol/1.5/message" found'

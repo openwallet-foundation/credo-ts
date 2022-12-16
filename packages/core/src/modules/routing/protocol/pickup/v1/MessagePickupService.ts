@@ -27,7 +27,7 @@ export class MessagePickupService {
     this.dispatcher = dispatcher
     this.eventEmitter = eventEmitter
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
@@ -57,8 +57,8 @@ export class MessagePickupService {
     await this.messageRepository.add(connectionId, message)
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new BatchPickupHandler(this))
-    this.dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
+  protected registerMessageHandlers() {
+    this.dispatcher.registerMessageHandler(new BatchPickupHandler(this))
+    this.dispatcher.registerMessageHandler(new BatchHandler(this.eventEmitter))
   }
 }

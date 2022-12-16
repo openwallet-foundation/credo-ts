@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
@@ -9,7 +9,7 @@ import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { ConnectionRequestMessage } from '../messages'
 
-export class ConnectionRequestHandler implements Handler {
+export class ConnectionRequestHandler implements MessageHandler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
@@ -31,7 +31,7 @@ export class ConnectionRequestHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ConnectionRequestHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<ConnectionRequestHandler>) {
     const { connection, recipientKey, senderKey } = messageContext
 
     if (!recipientKey || !senderKey) {

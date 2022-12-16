@@ -1,5 +1,6 @@
+import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { JsonObject } from '../../../types'
-import type { DocumentLoaderResult } from '../jsonldUtil'
+import type { DocumentLoaderResult } from '../libraries/jsonld'
 
 import jsonld from '../libraries/jsonld'
 
@@ -67,6 +68,7 @@ export const DOCUMENTS = {
   DID_V1_CONTEXT_URL: DID_V1,
   CREDENTIALS_CONTEXT_V1_URL: CREDENTIALS_V1,
   SECURITY_CONTEXT_BBS_URL: BBS_V1,
+  'https://w3id.org/security/suites/bls12381-2020/v1': BBS_V1,
   'https://w3id.org/security/bbs/v1': BBS_V1,
   'https://w3id.org/security/v1': SECURITY_V1,
   'https://w3id.org/security/v2': SECURITY_V2,
@@ -75,13 +77,14 @@ export const DOCUMENTS = {
   'https://www.w3.org/2018/credentials/examples/v1': EXAMPLES_V1,
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
   'https://w3id.org/did/v1': DID_V1,
+  'https://www.w3.org/ns/did/v1': DID_V1,
   'https://w3id.org/citizenship/v1': CITIZENSHIP_V1,
   'https://www.w3.org/ns/odrl.jsonld': ODRL,
   'http://schema.org/': SCHEMA_ORG,
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
 }
 
-export const customDocumentLoader = async (url: string): Promise<DocumentLoaderResult> => {
+async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {
   let result = DOCUMENTS[url]
 
   if (!result) {
@@ -94,11 +97,17 @@ export const customDocumentLoader = async (url: string): Promise<DocumentLoaderR
   }
 
   if (url.startsWith('did:')) {
-    result = await jsonld.frame(result, {
-      '@context': result['@context'],
-      '@embed': '@never',
-      id: url,
-    })
+    result = await jsonld.frame(
+      result,
+      {
+        '@context': result['@context'],
+        '@embed': '@never',
+        id: url,
+      },
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      { documentLoader: this }
+    )
   }
 
   return {
@@ -107,3 +116,6 @@ export const customDocumentLoader = async (url: string): Promise<DocumentLoaderR
     document: result as JsonObject,
   }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const customDocumentLoader = (agentContext?: AgentContext) => _customDocumentLoader.bind(_customDocumentLoader)

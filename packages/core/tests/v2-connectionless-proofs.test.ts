@@ -285,6 +285,7 @@ describe('Present Proof', () => {
     expect(faberConnection.isReady).toBe(true)
     expect(aliceConnection.isReady).toBe(true)
 
+    // issue credential with two linked attachments
     await issueCredential({
       issuerAgent: faberAgent,
       issuerConnectionId: faberConnection.id,

@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
@@ -7,7 +7,7 @@ import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
-export class DidExchangeCompleteHandler implements Handler {
+export class DidExchangeCompleteHandler implements MessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   public supportedMessages = [DidExchangeCompleteMessage]
@@ -17,7 +17,7 @@ export class DidExchangeCompleteHandler implements Handler {
     this.outOfBandService = outOfBandService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<DidExchangeCompleteHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeCompleteHandler>) {
     const { connection: connectionRecord } = messageContext
 
     if (!connectionRecord) {

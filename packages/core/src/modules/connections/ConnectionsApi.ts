@@ -75,7 +75,7 @@ export class ConnectionsApi {
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
 
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async acceptOutOfBandInvitation(
@@ -255,10 +255,11 @@ export class ConnectionsApi {
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
-    record.setTag('connectionType', [type, ...tags])
-    await this.connectionService.update(this.agentContext, record)
+    await this.connectionService.addConnectionType(this.agentContext, record, type)
+
+    return record
   }
+
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
@@ -268,14 +269,9 @@ export class ConnectionsApi {
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    await this.connectionService.removeConnectionType(this.agentContext, record, type)
 
-    const newTags = tags.filter((value: string) => {
-      if (value != type) return value
-    })
-    record.setTag('connectionType', [...newTags])
-
-    await this.connectionService.update(this.agentContext, record)
+    return record
   }
 
   /**
@@ -300,8 +296,8 @@ export class ConnectionsApi {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTag('connectionType') as string[]
-    return tags || null
+
+    return this.connectionService.getConnectionTypes(record)
   }
 
   /**
@@ -309,7 +305,7 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
+  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
     return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
   }
 
@@ -341,6 +337,19 @@ export class ConnectionsApi {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.mediatorId && connection.did) {
+      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (did.didDocument) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: connection.mediatorId,
+        })
+      }
+    }
+
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
@@ -368,8 +377,8 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
@@ -378,12 +387,12 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerMessageHandler(new AckMessageHandler(this.connectionService))
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -393,7 +402,7 @@ export class ConnectionsApi {
       )
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -402,6 +411,6 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+    dispatcher.registerMessageHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
   }
 }

@@ -1,9 +1,15 @@
 import { DidCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
+/**
+ * @internal
+ */
 export interface MenuRequestMessageOptions {
   id?: string
 }
 
+/**
+ * @internal
+ */
 export class MenuRequestMessage extends DidCommV1Message {
   public constructor(options: MenuRequestMessageOptions) {
     super()

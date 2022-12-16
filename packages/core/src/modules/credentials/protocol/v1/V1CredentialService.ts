@@ -88,7 +88,7 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     this.routingService = routingService
     this.credentialsModuleConfig = credentialsModuleConfig
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   /**
@@ -1171,15 +1171,19 @@ export class V1CredentialService extends CredentialService<[IndyCredentialFormat
     }
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new V1ProposeCredentialHandler(this, this.logger))
-    this.dispatcher.registerHandler(
+  protected registerMessageHandlers() {
+    this.dispatcher.registerMessageHandler(new V1ProposeCredentialHandler(this, this.logger))
+    this.dispatcher.registerMessageHandler(
       new V1OfferCredentialHandler(this, this.routingService, this.didCommMessageRepository, this.logger)
     )
-    this.dispatcher.registerHandler(new V1RequestCredentialHandler(this, this.didCommMessageRepository, this.logger))
-    this.dispatcher.registerHandler(new V1IssueCredentialHandler(this, this.didCommMessageRepository, this.logger))
-    this.dispatcher.registerHandler(new V1CredentialAckHandler(this))
-    this.dispatcher.registerHandler(new V1CredentialProblemReportHandler(this))
+    this.dispatcher.registerMessageHandler(
+      new V1RequestCredentialHandler(this, this.didCommMessageRepository, this.logger)
+    )
+    this.dispatcher.registerMessageHandler(
+      new V1IssueCredentialHandler(this, this.didCommMessageRepository, this.logger)
+    )
+    this.dispatcher.registerMessageHandler(new V1CredentialAckHandler(this))
+    this.dispatcher.registerMessageHandler(new V1CredentialProblemReportHandler(this))
   }
 
   private rfc0592ProposalFromV1ProposeMessage(proposalMessage: V1ProposeCredentialMessage) {

@@ -1,7 +1,7 @@
 import type { ConstructableDidCommMessage } from '../didcomm'
 import type { InboundMessageContext, OutboundMessageContext } from './models'
 
-export interface Handler {
+export interface MessageHandler {
   readonly supportedMessages: readonly ConstructableDidCommMessage[]
 
   handle(messageContext: InboundMessageContext): Promise<OutboundMessageContext | void>
@@ -12,8 +12,8 @@ export interface Handler {
  * of a handler. It takes all possible types from `supportedMessageTypes`
  *
  * @example
- * async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {}
+ * async handle(messageContext: MessageHandlerInboundMessage<BasicMessageHandler>) {}
  */
-export type HandlerInboundMessage<H extends Handler> = InboundMessageContext<
+export type MessageHandlerInboundMessage<H extends MessageHandler> = InboundMessageContext<
   InstanceType<H['supportedMessages'][number]>
 >

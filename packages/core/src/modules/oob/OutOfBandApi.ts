@@ -1,5 +1,4 @@
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/v1/Attachment'
 import type { DidCommV1Message, PlaintextMessage } from '../../didcomm'
 import type { Query } from '../../storage/StorageService'
@@ -15,6 +14,7 @@ import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
+import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { getPlaintextMessageType } from '../../didcomm'
 import { AriesFrameworkError } from '../../error'
@@ -78,6 +78,7 @@ export interface ReceiveOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
+  acceptInvitationTimeoutMs?: number
 }
 
 @injectable()
@@ -118,7 +119,7 @@ export class OutOfBandApi {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -435,6 +436,7 @@ export class OutOfBandApi {
         autoAcceptConnection,
         reuseConnection,
         routing,
+        timeoutMs: config.acceptInvitationTimeoutMs,
       })
     }
 
@@ -463,8 +465,8 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       routing?: Routing
+      timeoutMs?: number
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
@@ -472,6 +474,7 @@ export class OutOfBandApi {
     if (outOfBandRecord.v2OutOfBandInvitation) {
       return this.v2OutOfBandService.acceptInvitation(this.agentContext, outOfBandRecord.v2OutOfBandInvitation)
     }
+    const timeoutMs = config.timeoutMs ?? 20000
 
     if (outOfBandRecord.outOfBandInvitation) {
       const { outOfBandInvitation } = outOfBandRecord
@@ -536,7 +539,7 @@ export class OutOfBandApi {
           } else {
             // Wait until the connection is ready and then pass the messages to the agent for further processing
             this.connectionsApi
-              .returnWhenIsConnected(connectionRecord.id)
+              .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
               .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
               .catch((error) => {
                 if (error instanceof EmptyError) {
@@ -619,6 +622,22 @@ export class OutOfBandApi {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+
+    const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
+
+    // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    // Note: if OOB Record is reusable, it is safe to delete it because every connection created from
+    // it will use its own recipient key
+    if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
+      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+
+      await this.routingService.removeRouting(this.agentContext, {
+        recipientKeys,
+        mediatorId: outOfBandRecord.mediatorId,
+      })
+    }
+
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
@@ -801,8 +820,8 @@ export class OutOfBandApi {
     return reuseAcceptedEventPromise
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
-    dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
+    dispatcher.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

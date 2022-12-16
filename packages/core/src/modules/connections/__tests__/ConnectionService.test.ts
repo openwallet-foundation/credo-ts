@@ -969,4 +969,55 @@ describe('ConnectionService', () => {
       expect(result).toEqual(expect.arrayContaining(expected))
     })
   })
+
+  describe('connectionType', () => {
+    it('addConnectionType', async () => {
+      const connection = getMockConnection()
+
+      await connectionService.addConnectionType(agentContext, connection, 'type-1')
+      let connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes).toMatchObject(['type-1'])
+
+      await connectionService.addConnectionType(agentContext, connection, 'type-2')
+      await connectionService.addConnectionType(agentContext, connection, 'type-3')
+
+      connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes.sort()).toMatchObject(['type-1', 'type-2', 'type-3'].sort())
+    })
+
+    it('removeConnectionType - existing type', async () => {
+      const connection = getMockConnection()
+
+      connection.setTag('connectionType', ['type-1', 'type-2', 'type-3'])
+      let connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes).toMatchObject(['type-1', 'type-2', 'type-3'])
+
+      await connectionService.removeConnectionType(agentContext, connection, 'type-2')
+      connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes.sort()).toMatchObject(['type-1', 'type-3'].sort())
+    })
+
+    it('removeConnectionType - type not existent', async () => {
+      const connection = getMockConnection()
+
+      connection.setTag('connectionType', ['type-1', 'type-2', 'type-3'])
+      let connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes).toMatchObject(['type-1', 'type-2', 'type-3'])
+
+      await connectionService.removeConnectionType(agentContext, connection, 'type-4')
+      connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes.sort()).toMatchObject(['type-1', 'type-2', 'type-3'].sort())
+    })
+
+    it('removeConnectionType - no previous types', async () => {
+      const connection = getMockConnection()
+
+      let connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes).toMatchObject([])
+
+      await connectionService.removeConnectionType(agentContext, connection, 'type-4')
+      connectionTypes = await connectionService.getConnectionTypes(connection)
+      expect(connectionTypes).toMatchObject([])
+    })
+  })
 })

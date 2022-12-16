@@ -36,7 +36,7 @@ export class RevocationNotificationService {
     this.dispatcher = dispatcher
     this.logger = logger
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   private async processRevocationNotification(
@@ -146,8 +146,8 @@ export class RevocationNotificationService {
     }
   }
 
-  private registerHandlers() {
-    this.dispatcher.registerHandler(new V1RevocationNotificationHandler(this))
-    this.dispatcher.registerHandler(new V2RevocationNotificationHandler(this))
+  private registerMessageHandlers() {
+    this.dispatcher.registerMessageHandler(new V1RevocationNotificationHandler(this))
+    this.dispatcher.registerMessageHandler(new V2RevocationNotificationHandler(this))
   }
 }

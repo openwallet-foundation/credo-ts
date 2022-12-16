@@ -18,8 +18,10 @@ import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
+import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
+import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -28,6 +30,7 @@ import { RoutingEventTypes } from './RoutingEvents'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
 import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
@@ -81,7 +84,7 @@ export class RecipientApi {
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = recipientModuleConfig
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -370,8 +373,22 @@ export class RecipientApi {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string, action?: KeylistUpdateAction) {
+    // Use our useDidKey configuration unless we know the key formatting other party is using
+    let useDidKey = this.agentContext.config.useDidKeyInProtocols
+
+    const useDidKeysConnectionMetadata = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)
+    if (useDidKeysConnectionMetadata) {
+      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+    }
+
+    const message = this.mediationRecipientService.createKeylistUpdateMessage([
+      new KeylistUpdate({
+        action: action ?? KeylistUpdateAction.add,
+        recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
+      }),
+    ])
+
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,
@@ -467,12 +484,12 @@ export class RecipientApi {
   }
 
   // Register handlers for the several messages for the mediator.
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
-    //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+    //dispatcher.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

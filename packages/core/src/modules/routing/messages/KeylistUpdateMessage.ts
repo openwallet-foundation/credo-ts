@@ -9,8 +9,13 @@ export enum KeylistUpdateAction {
   remove = 'remove',
 }
 
+export interface KeylistUpdateOptions {
+  recipientKey: string
+  action: KeylistUpdateAction
+}
+
 export class KeylistUpdate {
-  public constructor(options: { recipientKey: string; action: KeylistUpdateAction }) {
+  public constructor(options: KeylistUpdateOptions) {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action

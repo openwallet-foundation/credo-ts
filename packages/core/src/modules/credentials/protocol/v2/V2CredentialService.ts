@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { HandlerInboundMessage } from '../../../../agent/Handler'
+import type { MessageHandlerInboundMessage } from '../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DidCommV1Message } from '../../../../didcomm'
 import type { ProblemReportMessage } from '../../../problem-reports'
@@ -100,7 +100,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
       {}
     ) as CredentialFormatServiceMap<CFs>
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   /**
@@ -371,7 +371,7 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
    * @returns credential record appropriate for this incoming message (once accepted)
    */
   public async processOffer(
-    messageContext: HandlerInboundMessage<V2OfferCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V2OfferCredentialHandler>
   ): Promise<CredentialExchangeRecord> {
     const { message: offerMessage, connection } = messageContext
 
@@ -1166,20 +1166,24 @@ export class V2CredentialService<CFs extends CredentialFormat[] = CredentialForm
     return formatData
   }
 
-  protected registerHandlers() {
+  protected registerMessageHandlers() {
     this.logger.debug('Registering V2 handlers')
 
-    this.dispatcher.registerHandler(new V2ProposeCredentialHandler(this, this.logger))
+    this.dispatcher.registerMessageHandler(new V2ProposeCredentialHandler(this, this.logger))
 
-    this.dispatcher.registerHandler(
+    this.dispatcher.registerMessageHandler(
       new V2OfferCredentialHandler(this, this.routingService, this.didCommMessageRepository, this.logger)
     )
 
-    this.dispatcher.registerHandler(new V2RequestCredentialHandler(this, this.didCommMessageRepository, this.logger))
+    this.dispatcher.registerMessageHandler(
+      new V2RequestCredentialHandler(this, this.didCommMessageRepository, this.logger)
+    )
 
-    this.dispatcher.registerHandler(new V2IssueCredentialHandler(this, this.didCommMessageRepository, this.logger))
-    this.dispatcher.registerHandler(new V2CredentialAckHandler(this))
-    this.dispatcher.registerHandler(new V2CredentialProblemReportHandler(this))
+    this.dispatcher.registerMessageHandler(
+      new V2IssueCredentialHandler(this, this.didCommMessageRepository, this.logger)
+    )
+    this.dispatcher.registerMessageHandler(new V2CredentialAckHandler(this))
+    this.dispatcher.registerMessageHandler(new V2CredentialProblemReportHandler(this))
   }
 
   /**

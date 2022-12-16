@@ -6,6 +6,9 @@ import { IsInstance, IsOptional, IsString } from 'class-validator'
 
 import { ActionMenuOption } from '../models'
 
+/**
+ * @internal
+ */
 export interface MenuMessageOptions {
   id?: string
   title: string
@@ -15,6 +18,9 @@ export interface MenuMessageOptions {
   threadId?: string
 }
 
+/**
+ * @internal
+ */
 export class MenuMessage extends DidCommV1Message {
   public constructor(options: MenuMessageOptions) {
     super()

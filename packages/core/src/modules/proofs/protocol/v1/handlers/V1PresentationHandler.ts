@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofExchangeRecord } from '../../../repository'
@@ -8,7 +8,7 @@ import type { V1ProofService } from '../V1ProofService'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1PresentationMessage, V1RequestPresentationMessage } from '../messages'
 
-export class V1PresentationHandler implements Handler {
+export class V1PresentationHandler implements MessageHandler {
   private proofService: V1ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -27,7 +27,7 @@ export class V1PresentationHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1PresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
     const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToPresentation(
@@ -40,7 +40,10 @@ export class V1PresentationHandler implements Handler {
     }
   }
 
-  private async createAck(record: ProofExchangeRecord, messageContext: HandlerInboundMessage<V1PresentationHandler>) {
+  private async createAck(
+    record: ProofExchangeRecord,
+    messageContext: MessageHandlerInboundMessage<V1PresentationHandler>
+  ) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )

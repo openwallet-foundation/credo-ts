@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { BasicMessage } from '../messages'
 
-export class BasicMessageHandler implements Handler {
+export class BasicMessageHandler implements MessageHandler {
   private basicMessageService: BasicMessageService
   public supportedMessages = [BasicMessage]
 
@@ -11,7 +11,7 @@ export class BasicMessageHandler implements Handler {
     this.basicMessageService = basicMessageService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<BasicMessageHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<BasicMessageHandler>) {
     const connection = messageContext.assertReadyConnection()
     await this.basicMessageService.save(messageContext, connection)
   }
