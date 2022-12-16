@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../../agent/MessageHandler'
 import type { MessagePickupService } from '../MessagePickupService'
 
 import { BatchPickupMessage } from '../messages'
 
-export class BatchPickupHandler implements Handler {
+export class BatchPickupHandler implements MessageHandler {
   private messagePickupService: MessagePickupService
   public supportedMessages = [BatchPickupMessage]
 
@@ -11,7 +11,7 @@ export class BatchPickupHandler implements Handler {
     this.messagePickupService = messagePickupService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<BatchPickupHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<BatchPickupHandler>) {
     messageContext.assertReadyConnection()
 
     return this.messagePickupService.batch(messageContext)

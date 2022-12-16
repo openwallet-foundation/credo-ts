@@ -33,7 +33,7 @@ export class DummyApi {
     this.connectionService = connectionService
     this.agentContext = agentContext
 
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -94,8 +94,8 @@ export class DummyApi {
     return this.dummyService.findAllByQuery(this.agentContext, query)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new DummyRequestHandler(this.dummyService))
-    dispatcher.registerHandler(new DummyResponseHandler(this.dummyService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new DummyRequestHandler(this.dummyService))
+    dispatcher.registerMessageHandler(new DummyResponseHandler(this.dummyService))
   }
 }

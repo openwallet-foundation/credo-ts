@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { MediationRecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
 
-export class KeylistUpdateResponseHandler implements Handler {
+export class KeylistUpdateResponseHandler implements MessageHandler {
   public mediationRecipientService: MediationRecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 
@@ -11,7 +11,7 @@ export class KeylistUpdateResponseHandler implements Handler {
     this.mediationRecipientService = mediationRecipientService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<KeylistUpdateResponseHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<KeylistUpdateResponseHandler>) {
     messageContext.assertReadyConnection()
 
     return await this.mediationRecipientService.processKeylistUpdateResults(messageContext)

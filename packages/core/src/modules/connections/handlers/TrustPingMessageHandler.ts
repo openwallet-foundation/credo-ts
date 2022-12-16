@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { ConnectionService } from '../services/ConnectionService'
 import type { TrustPingService } from '../services/TrustPingService'
 
@@ -6,7 +6,7 @@ import { AriesFrameworkError } from '../../../error'
 import { TrustPingMessage } from '../messages'
 import { DidExchangeState } from '../models'
 
-export class TrustPingMessageHandler implements Handler {
+export class TrustPingMessageHandler implements MessageHandler {
   private trustPingService: TrustPingService
   private connectionService: ConnectionService
   public supportedMessages = [TrustPingMessage]
@@ -16,7 +16,7 @@ export class TrustPingMessageHandler implements Handler {
     this.connectionService = connectionService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<TrustPingMessageHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<TrustPingMessageHandler>) {
     const { connection, recipientKey } = messageContext
     if (!connection) {
       throw new AriesFrameworkError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)

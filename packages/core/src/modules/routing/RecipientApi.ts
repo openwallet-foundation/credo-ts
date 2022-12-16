@@ -84,7 +84,7 @@ export class RecipientApi {
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = recipientModuleConfig
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -484,12 +484,12 @@ export class RecipientApi {
   }
 
   // Register handlers for the several messages for the mediator.
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
-    //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+    //dispatcher.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

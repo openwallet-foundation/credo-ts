@@ -36,7 +36,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   ) {
     super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesConfig)
 
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -44,9 +44,9 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v1'
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new V1DiscloseMessageHandler(this))
-    dispatcher.registerHandler(new V1QueryMessageHandler(this))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new V1DiscloseMessageHandler(this))
+    dispatcher.registerMessageHandler(new V1QueryMessageHandler(this))
   }
 
   public async createQuery(
