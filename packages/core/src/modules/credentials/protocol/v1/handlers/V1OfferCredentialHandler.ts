@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { Logger } from '../../../../../logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { RoutingService } from '../../../../routing/services/RoutingService'
@@ -10,7 +10,7 @@ import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecor
 import { DidCommMessageRole } from '../../../../../storage'
 import { V1OfferCredentialMessage } from '../messages'
 
-export class V1OfferCredentialHandler implements Handler {
+export class V1OfferCredentialHandler implements MessageHandler {
   private credentialService: V1CredentialService
   private routingService: RoutingService
   private didCommMessageRepository: DidCommMessageRepository
@@ -29,7 +29,7 @@ export class V1OfferCredentialHandler implements Handler {
     this.logger = logger
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1OfferCredentialHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>) {
     const credentialRecord = await this.credentialService.processOffer(messageContext)
 
     const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer(messageContext.agentContext, {
@@ -44,7 +44,7 @@ export class V1OfferCredentialHandler implements Handler {
 
   private async acceptOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>
   ) {
     this.logger.info(`Automatically sending request with autoAccept`)
     if (messageContext.connection) {

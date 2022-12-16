@@ -1,11 +1,11 @@
 import type { EventEmitter } from '../../../../../../agent/EventEmitter'
 import type { AgentMessageReceivedEvent } from '../../../../../../agent/Events'
-import type { Handler, HandlerInboundMessage } from '../../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../../agent/MessageHandler'
 
 import { AgentEventTypes } from '../../../../../../agent/Events'
 import { BatchMessage } from '../messages'
 
-export class BatchHandler implements Handler {
+export class BatchHandler implements MessageHandler {
   private eventEmitter: EventEmitter
   public supportedMessages = [BatchMessage]
 
@@ -13,7 +13,7 @@ export class BatchHandler implements Handler {
     this.eventEmitter = eventEmitter
   }
 
-  public async handle(messageContext: HandlerInboundMessage<BatchHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<BatchHandler>) {
     const { message } = messageContext
 
     messageContext.assertReadyConnection()

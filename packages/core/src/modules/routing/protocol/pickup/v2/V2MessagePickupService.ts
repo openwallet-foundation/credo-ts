@@ -35,7 +35,7 @@ export class V2MessagePickupService {
     this.dispatcher = dispatcher
     this.mediationRecipientService = mediationRecipientService
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   public async processStatusRequest(messageContext: InboundMessageContext<StatusRequestMessage>) {
@@ -116,11 +116,11 @@ export class V2MessagePickupService {
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new StatusRequestHandler(this))
-    this.dispatcher.registerHandler(new DeliveryRequestHandler(this))
-    this.dispatcher.registerHandler(new MessagesReceivedHandler(this))
-    this.dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    this.dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+  protected registerMessageHandlers() {
+    this.dispatcher.registerMessageHandler(new StatusRequestHandler(this))
+    this.dispatcher.registerMessageHandler(new DeliveryRequestHandler(this))
+    this.dispatcher.registerMessageHandler(new MessagesReceivedHandler(this))
+    this.dispatcher.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
+    this.dispatcher.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
   }
 }

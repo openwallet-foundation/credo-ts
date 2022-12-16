@@ -113,7 +113,7 @@ export class OutOfBandApi {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -766,8 +766,8 @@ export class OutOfBandApi {
     return reuseAcceptedEventPromise
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
-    dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
+    dispatcher.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }
