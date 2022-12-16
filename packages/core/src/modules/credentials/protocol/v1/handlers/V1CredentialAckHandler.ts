@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { V1CredentialAckMessage } from '../messages'
 
-export class V1CredentialAckHandler implements Handler {
+export class V1CredentialAckHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1CredentialAckMessage]
 
@@ -11,7 +11,7 @@ export class V1CredentialAckHandler implements Handler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1CredentialAckHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1CredentialAckHandler>) {
     await this.credentialProtocol.processAck(messageContext)
   }
 }

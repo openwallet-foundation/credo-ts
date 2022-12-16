@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { ConnectionService } from '../services/ConnectionService'
 
 import { AckMessage } from '../../common'
 
-export class AckMessageHandler implements Handler {
+export class AckMessageHandler implements MessageHandler {
   private connectionService: ConnectionService
   public supportedMessages = [AckMessage]
 
@@ -11,7 +11,7 @@ export class AckMessageHandler implements Handler {
     this.connectionService = connectionService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<AckMessageHandler>) {
+  public async handle(inboundMessage: MessageHandlerInboundMessage<AckMessageHandler>) {
     await this.connectionService.processAck(inboundMessage)
   }
 }

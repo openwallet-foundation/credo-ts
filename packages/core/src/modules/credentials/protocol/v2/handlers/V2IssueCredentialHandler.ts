@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
@@ -8,7 +8,7 @@ import { DidCommMessageRepository } from '../../../../../storage'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
-export class V2IssueCredentialHandler implements Handler {
+export class V2IssueCredentialHandler implements MessageHandler {
   private credentialProtocol: V2CredentialProtocol
   public supportedMessages = [V2IssueCredentialMessage]
 
@@ -31,7 +31,7 @@ export class V2IssueCredentialHandler implements Handler {
 
   private async acceptCredential(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V2IssueCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V2IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending acknowledgement with autoAccept`)
 

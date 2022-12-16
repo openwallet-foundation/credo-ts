@@ -32,7 +32,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      dispatcher.registerHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
+      dispatcher.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -50,7 +50,7 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      dispatcher.registerHandler({ supportedMessages: [], handle: mockHandle })
+      dispatcher.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
 
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
         'No handler for message type "https://didcomm.org/fake-protocol/1.5/message" found'

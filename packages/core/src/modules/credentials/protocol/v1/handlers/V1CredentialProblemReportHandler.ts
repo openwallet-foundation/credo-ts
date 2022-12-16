@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { V1CredentialProblemReportMessage } from '../messages'
 
-export class V1CredentialProblemReportHandler implements Handler {
+export class V1CredentialProblemReportHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1CredentialProblemReportMessage]
 
@@ -11,7 +11,7 @@ export class V1CredentialProblemReportHandler implements Handler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1CredentialProblemReportHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1CredentialProblemReportHandler>) {
     await this.credentialProtocol.processProblemReport(messageContext)
   }
 }

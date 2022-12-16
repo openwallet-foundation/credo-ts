@@ -1,4 +1,4 @@
-import type { Handler } from '../Handler'
+import type { MessageHandler } from '../MessageHandler'
 
 import { parseMessageType } from '../../utils/messageType'
 import { AgentMessage } from '../AgentMessage'
@@ -28,7 +28,7 @@ class CustomProtocolMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
-class TestHandler implements Handler {
+class TestHandler implements MessageHandler {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public constructor(classes: any[]) {
@@ -52,10 +52,10 @@ describe('MessageHandlerRegistry', () => {
 
   const messageHandlerRegistry = new MessageHandlerRegistry()
 
-  messageHandlerRegistry.registerHandler(connectionHandler)
-  messageHandlerRegistry.registerHandler(new TestHandler([NotificationAckTestMessage]))
-  messageHandlerRegistry.registerHandler(new TestHandler([CredentialProposalTestMessage]))
-  messageHandlerRegistry.registerHandler(fakeProtocolHandler)
+  messageHandlerRegistry.registerMessageHandler(connectionHandler)
+  messageHandlerRegistry.registerMessageHandler(new TestHandler([NotificationAckTestMessage]))
+  messageHandlerRegistry.registerMessageHandler(new TestHandler([CredentialProposalTestMessage]))
+  messageHandlerRegistry.registerMessageHandler(fakeProtocolHandler)
 
   describe('supportedMessageTypes', () => {
     test('return all supported message types URIs', async () => {

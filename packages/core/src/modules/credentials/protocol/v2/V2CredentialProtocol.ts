@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
-import type { HandlerInboundMessage } from '../../../../agent/Handler'
+import type { MessageHandlerInboundMessage } from '../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
 import type { ProblemReportMessage } from '../../../problem-reports'
@@ -364,7 +364,7 @@ export class V2CredentialProtocol<
    * @returns credential record appropriate for this incoming message (once accepted)
    */
   public async processOffer(
-    messageContext: HandlerInboundMessage<V2OfferCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V2OfferCredentialHandler>
   ): Promise<CredentialExchangeRecord> {
     const { message: offerMessage, connection, agentContext } = messageContext
 

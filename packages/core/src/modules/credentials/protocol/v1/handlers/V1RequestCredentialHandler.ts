@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
@@ -6,7 +6,7 @@ import { OutboundMessageContext } from '../../../../../agent/models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
 import { V1RequestCredentialMessage } from '../messages'
 
-export class V1RequestCredentialHandler implements Handler {
+export class V1RequestCredentialHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1RequestCredentialMessage]
 
@@ -14,7 +14,7 @@ export class V1RequestCredentialHandler implements Handler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1RequestCredentialHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>) {
     const credentialRecord = await this.credentialProtocol.processRequest(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
@@ -29,7 +29,7 @@ export class V1RequestCredentialHandler implements Handler {
 
   private async acceptRequest(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1RequestCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending credential with autoAccept`)
 

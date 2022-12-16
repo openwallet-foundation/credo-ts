@@ -1,9 +1,9 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { ConnectionService } from '../services'
 
 import { ConnectionProblemReportMessage } from '../messages'
 
-export class ConnectionProblemReportHandler implements Handler {
+export class ConnectionProblemReportHandler implements MessageHandler {
   private connectionService: ConnectionService
   public supportedMessages = [ConnectionProblemReportMessage]
 
@@ -11,7 +11,7 @@ export class ConnectionProblemReportHandler implements Handler {
     this.connectionService = connectionService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ConnectionProblemReportHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<ConnectionProblemReportHandler>) {
     await this.connectionService.processProblemReport(messageContext)
   }
 }

@@ -1,6 +1,6 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { Handler } from './Handler'
+import type { MessageHandler } from './MessageHandler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -35,24 +35,24 @@ class Dispatcher {
   }
 
   /**
-   * @deprecated Use {@link MessageHandlerRegistry.registerHandler} directly
+   * @deprecated Use {@link MessageHandlerRegistry.registerMessageHandler} directly
    */
-  public registerHandler(handler: Handler) {
-    this.messageHandlerRegistry.registerHandler(handler)
+  public registerMessageHandler(messageHandler: MessageHandler) {
+    this.messageHandlerRegistry.registerMessageHandler(messageHandler)
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message } = messageContext
-    const handler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
+    const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
 
-    if (!handler) {
+    if (!messageHandler) {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
     let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
-      outboundMessage = await handler.handle(messageContext)
+      outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
 

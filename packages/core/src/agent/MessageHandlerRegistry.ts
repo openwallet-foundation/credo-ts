@@ -1,5 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
-import type { Handler } from './Handler'
+import type { MessageHandler } from './MessageHandler'
 
 import { injectable } from 'tsyringe'
 
@@ -7,16 +7,16 @@ import { canHandleMessageType, parseMessageType } from '../utils/messageType'
 
 @injectable()
 export class MessageHandlerRegistry {
-  private handlers: Handler[] = []
+  private messageHandlers: MessageHandler[] = []
 
-  public registerHandler(handler: Handler) {
-    this.handlers.push(handler)
+  public registerMessageHandler(messageHandler: MessageHandler) {
+    this.messageHandlers.push(messageHandler)
   }
 
-  public getHandlerForMessageType(messageType: string): Handler | undefined {
+  public getHandlerForMessageType(messageType: string): MessageHandler | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
-    for (const handler of this.handlers) {
+    for (const handler of this.messageHandlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (canHandleMessageType(MessageClass, incomingMessageType)) return handler
       }
@@ -26,7 +26,7 @@ export class MessageHandlerRegistry {
   public getMessageClassForMessageType(messageType: string): typeof AgentMessage | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
-    for (const handler of this.handlers) {
+    for (const handler of this.messageHandlers) {
       for (const MessageClass of handler.supportedMessages) {
         if (canHandleMessageType(MessageClass, incomingMessageType)) return MessageClass
       }
@@ -38,7 +38,7 @@ export class MessageHandlerRegistry {
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
   public get supportedMessageTypes() {
-    return this.handlers
+    return this.messageHandlers
       .reduce<typeof AgentMessage[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
   }

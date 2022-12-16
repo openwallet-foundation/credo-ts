@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
@@ -8,7 +8,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../sto
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { V1OfferCredentialMessage } from '../messages'
 
-export class V1OfferCredentialHandler implements Handler {
+export class V1OfferCredentialHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1OfferCredentialMessage]
 
@@ -16,7 +16,7 @@ export class V1OfferCredentialHandler implements Handler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1OfferCredentialHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>) {
     const credentialRecord = await this.credentialProtocol.processOffer(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToOffer(messageContext.agentContext, {
@@ -31,7 +31,7 @@ export class V1OfferCredentialHandler implements Handler {
 
   private async acceptOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
     if (messageContext.connection) {

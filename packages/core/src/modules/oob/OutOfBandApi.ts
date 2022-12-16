@@ -113,7 +113,7 @@ export class OutOfBandApi {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerHandlers(messageHandlerRegistry)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -769,8 +769,8 @@ export class OutOfBandApi {
   }
 
   // TODO: we should probably move these to the out of band module and register the handler there
-  private registerHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
-    messageHandlerRegistry.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

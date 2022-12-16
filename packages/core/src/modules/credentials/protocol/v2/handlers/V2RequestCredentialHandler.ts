@@ -1,4 +1,4 @@
-import type { Handler } from '../../../../../agent/Handler'
+import type { MessageHandler } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
@@ -8,7 +8,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../sto
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
-export class V2RequestCredentialHandler implements Handler {
+export class V2RequestCredentialHandler implements MessageHandler {
   private credentialProtocol: V2CredentialProtocol
 
   public supportedMessages = [V2RequestCredentialMessage]

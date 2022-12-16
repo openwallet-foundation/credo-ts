@@ -1,5 +1,5 @@
 import type { ModulesMap } from '../agent/AgentModules'
-import type { Handler } from '../agent/Handler'
+import type { MessageHandler } from '../agent/MessageHandler'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyContainer } from 'tsyringe'
 
@@ -38,11 +38,11 @@ export class DependencyManager {
     }
   }
 
-  public registerMessageHandlers(handlers: Handler[]) {
+  public registerMessageHandlers(messageHandlers: MessageHandler[]) {
     const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
 
-    for (const handler of handlers) {
-      messageHandlerRegistry.registerHandler(handler)
+    for (const messageHandler of messageHandlers) {
+      messageHandlerRegistry.registerMessageHandler(messageHandler)
     }
   }
 
