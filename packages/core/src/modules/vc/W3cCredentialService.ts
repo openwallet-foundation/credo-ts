@@ -34,16 +34,16 @@ import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 @injectable()
 export class W3cCredentialService {
   private w3cCredentialRepository: W3cCredentialRepository
-  private suiteRegistry: SignatureSuiteRegistry
+  private signatureSuiteRegistry: SignatureSuiteRegistry
   private w3cVcModuleConfig: W3cVcModuleConfig
 
   public constructor(
     w3cCredentialRepository: W3cCredentialRepository,
-    suiteRegistry: SignatureSuiteRegistry,
+    signatureSuiteRegistry: SignatureSuiteRegistry,
     w3cVcModuleConfig: W3cVcModuleConfig
   ) {
     this.w3cCredentialRepository = w3cCredentialRepository
-    this.suiteRegistry = suiteRegistry
+    this.signatureSuiteRegistry = signatureSuiteRegistry
     this.w3cVcModuleConfig = w3cVcModuleConfig
   }
 
@@ -60,7 +60,7 @@ export class W3cCredentialService {
     const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
 
     const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
-    const suiteInfo = this.suiteRegistry.getByProofType(options.proofType)
+    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
     if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
       throw new AriesFrameworkError('The key type of the verification method does not match the suite')
@@ -160,7 +160,7 @@ export class W3cCredentialService {
     // create keyPair
     const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
 
-    const suiteInfo = this.suiteRegistry.getByProofType(options.signatureType)
+    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.signatureType)
 
     if (!suiteInfo) {
       throw new AriesFrameworkError(`The requested proofType ${options.signatureType} is not supported`)
@@ -228,7 +228,7 @@ export class W3cCredentialService {
     }
 
     const presentationSuites = proofs.map((proof) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(proof.type).suiteClass
+      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type).suiteClass
       return new SuiteClass({
         LDKeyClass: WalletKeyPair,
         proof: {
@@ -267,7 +267,7 @@ export class W3cCredentialService {
 
   public async deriveProof(agentContext: AgentContext, options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
     // TODO: make suite dynamic
-    const suiteInfo = this.suiteRegistry.getByProofType('BbsBlsSignatureProof2020')
+    const suiteInfo = this.signatureSuiteRegistry.getByProofType('BbsBlsSignatureProof2020')
     const SuiteClass = suiteInfo.suiteClass
 
     const suite = new SuiteClass()
@@ -344,11 +344,11 @@ export class W3cCredentialService {
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
-    return this.suiteRegistry.getByProofType(proofType).verificationMethodTypes
+    return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
   }
 
   public getKeyTypesByProofType(proofType: string): string[] {
-    return this.suiteRegistry.getByProofType(proofType).keyTypes
+    return this.signatureSuiteRegistry.getByProofType(proofType).keyTypes
   }
 
   public async findCredentialRecordByQuery(
@@ -369,7 +369,7 @@ export class W3cCredentialService {
     }
 
     return proofs.map((proof) => {
-      const SuiteClass = this.suiteRegistry.getByProofType(proof.type)?.suiteClass
+      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type)?.suiteClass
       if (SuiteClass) {
         return new SuiteClass({
           LDKeyClass: WalletKeyPair,
