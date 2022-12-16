@@ -1,6 +1,6 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { Handler } from './Handler'
+import type { MessageHandler } from './MessageHandler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -17,7 +17,7 @@ import { OutboundMessageContext } from './models'
 
 @injectable()
 class Dispatcher {
-  private handlers: Handler[] = []
+  private messageHandlers: MessageHandler[] = []
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
@@ -32,22 +32,22 @@ class Dispatcher {
     this.logger = logger
   }
 
-  public registerHandler(handler: Handler) {
-    this.handlers.push(handler)
+  public registerMessageHandler(handler: MessageHandler) {
+    this.messageHandlers.push(handler)
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message } = messageContext
-    const handler = this.getHandlerForType(message.type)
+    const messageHandler = this.getMessageHandlerForType(message.type)
 
-    if (!handler) {
+    if (!messageHandler) {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
     let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
-      outboundMessage = await handler.handle(messageContext)
+      outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
 
@@ -90,12 +90,12 @@ class Dispatcher {
     })
   }
 
-  private getHandlerForType(messageType: string): Handler | undefined {
+  private getMessageHandlerForType(messageType: string): MessageHandler | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
-    for (const handler of this.handlers) {
-      for (const MessageClass of handler.supportedMessages) {
-        if (canHandleMessageType(MessageClass, incomingMessageType)) return handler
+    for (const messageHandler of this.messageHandlers) {
+      for (const MessageClass of messageHandler.supportedMessages) {
+        if (canHandleMessageType(MessageClass, incomingMessageType)) return messageHandler
       }
     }
   }
@@ -103,8 +103,8 @@ class Dispatcher {
   public getMessageClassForType(messageType: string): typeof AgentMessage | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
-    for (const handler of this.handlers) {
-      for (const MessageClass of handler.supportedMessages) {
+    for (const messageHandler of this.messageHandlers) {
+      for (const MessageClass of messageHandler.supportedMessages) {
         if (canHandleMessageType(MessageClass, incomingMessageType)) return MessageClass
       }
     }
@@ -115,7 +115,7 @@ class Dispatcher {
    * Message type format is MTURI specified at https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0003-protocols/README.md#mturi.
    */
   public get supportedMessageTypes() {
-    return this.handlers
+    return this.messageHandlers
       .reduce<typeof AgentMessage[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
   }

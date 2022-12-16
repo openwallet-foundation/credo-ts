@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { Logger } from '../../../../../logger'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialService } from '../V1CredentialService'
@@ -6,7 +6,7 @@ import type { V1CredentialService } from '../V1CredentialService'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1ProposeCredentialMessage } from '../messages'
 
-export class V1ProposeCredentialHandler implements Handler {
+export class V1ProposeCredentialHandler implements MessageHandler {
   private credentialService: V1CredentialService
   private logger: Logger
   public supportedMessages = [V1ProposeCredentialMessage]
@@ -16,7 +16,7 @@ export class V1ProposeCredentialHandler implements Handler {
     this.logger = logger
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialService.processProposal(messageContext)
 
     const shouldAutoAcceptProposal = await this.credentialService.shouldAutoRespondToProposal(
@@ -34,7 +34,7 @@ export class V1ProposeCredentialHandler implements Handler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
     this.logger.info(`Automatically sending offer with autoAccept`)
 
