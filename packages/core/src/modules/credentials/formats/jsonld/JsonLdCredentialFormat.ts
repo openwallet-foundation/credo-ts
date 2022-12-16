@@ -29,7 +29,18 @@ export interface SignCredentialOptionsRFC0593 {
 }
 
 export interface JsonVerifiableCredential extends JsonLdSignCredentialFormat {
-  proof: LinkedDataProof
+  proof: {
+    type: string
+    proofPurpose: string
+    verificationMethod: string
+    created: string
+    domain?: string
+    challenge?: string
+    jws?: string
+    proofValue?: string
+    nonce?: string
+    [key: string]: unknown
+  }
 }
 
 // use empty object in the acceptXXX jsonld format interface so we indicate that
