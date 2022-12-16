@@ -3,6 +3,9 @@ import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
 
 import { PerformMessage } from '../messages'
 
+/**
+ * @internal
+ */
 export class PerformMessageHandler implements Handler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [PerformMessage]

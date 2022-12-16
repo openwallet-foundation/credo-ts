@@ -7,6 +7,9 @@ import { Type } from 'class-transformer'
 
 import { ActionMenuSelection, ActionMenu } from '../models'
 
+/**
+ * @public
+ */
 export interface ActionMenuRecordProps {
   id?: string
   state: ActionMenuState
@@ -19,14 +22,23 @@ export interface ActionMenuRecordProps {
   tags?: CustomActionMenuTags
 }
 
+/**
+ * @public
+ */
 export type CustomActionMenuTags = TagsBase
 
+/**
+ * @public
+ */
 export type DefaultActionMenuTags = {
   role: ActionMenuRole
   connectionId: string
   threadId: string
 }
 
+/**
+ * @public
+ */
 export class ActionMenuRecord
   extends BaseRecord<DefaultActionMenuTags, CustomActionMenuTags>
   implements ActionMenuRecordProps
