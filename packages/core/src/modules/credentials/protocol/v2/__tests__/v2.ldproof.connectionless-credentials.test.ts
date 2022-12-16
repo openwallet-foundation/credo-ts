@@ -14,18 +14,36 @@ import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
+import { W3cVcModule } from '../../../../vc'
+import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
 
-const faberAgentOptions = getAgentOptions('Faber LD connection-less Credentials V2', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber LD connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  {
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+)
 
-const aliceAgentOptions = getAgentOptions('Alice LD connection-less Credentials V2', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Alice LD connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  {
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+)
 
 let wallet
 let signCredentialOptions: JsonLdSignCredentialFormat
