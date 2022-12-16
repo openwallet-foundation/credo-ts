@@ -146,7 +146,7 @@ export class ProofsApi<
 
     this.logger.debug(`Initializing Proofs Module for agent ${this.agentContext.config.label}`)
 
-    this.registerHandlers(dispatcher, mediationRecipientService)
+    this.registerMessageHandlers(dispatcher, mediationRecipientService)
   }
 
   public getService<PVT extends ProofService['version']>(protocolVersion: PVT): ProofService<PFs> {
@@ -742,10 +742,10 @@ export class ProofsApi<
     return await service.findPresentationMessage(this.agentContext, proofRecordId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
+  private registerMessageHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
     for (const service of Object.values(this.serviceMap)) {
       const proofService = service as ProofService
-      proofService.registerHandlers(
+      proofService.registerMessageHandlers(
         dispatcher,
         this.agentConfig,
         new ProofResponseCoordinator(proofService),

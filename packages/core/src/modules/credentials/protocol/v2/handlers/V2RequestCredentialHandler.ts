@@ -1,4 +1,4 @@
-import type { Handler } from '../../../../../agent/Handler'
+import type { MessageHandler } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../../../logger/Logger'
 import type { DidCommMessageRepository } from '../../../../../storage'
@@ -10,7 +10,7 @@ import { DidCommMessageRole } from '../../../../../storage'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
-export class V2RequestCredentialHandler implements Handler {
+export class V2RequestCredentialHandler implements MessageHandler {
   private credentialService: V2CredentialService
   private didCommMessageRepository: DidCommMessageRepository
   private logger: Logger

@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type {
@@ -15,7 +15,7 @@ import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
-export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements Handler {
+export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements MessageHandler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -34,7 +34,7 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
     this.proofResponseCoordinator = proofResponseCoordinator
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
     const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
@@ -49,7 +49,7 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
 
   private async createRequest(
     proofRecord: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V2ProposePresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`

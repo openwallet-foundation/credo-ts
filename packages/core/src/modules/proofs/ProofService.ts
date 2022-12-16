@@ -192,7 +192,7 @@ export abstract class ProofService<PFs extends ProofFormat[] = ProofFormat[]> {
     proofRecord: ProofExchangeRecord
   ): Promise<boolean>
 
-  public abstract registerHandlers(
+  public abstract registerMessageHandlers(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,

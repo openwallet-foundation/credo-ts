@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofRequestFromProposalOptions } from '../../../ProofServiceOptions'
@@ -12,7 +12,7 @@ import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
-export class V1ProposePresentationHandler implements Handler {
+export class V1ProposePresentationHandler implements MessageHandler {
   private proofService: V1ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -31,7 +31,7 @@ export class V1ProposePresentationHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
     const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
@@ -46,7 +46,7 @@ export class V1ProposePresentationHandler implements Handler {
 
   private async createRequest(
     proofRecord: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V1ProposePresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`

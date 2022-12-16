@@ -1,10 +1,10 @@
-import type { Handler } from '../../../../../../agent/Handler'
+import type { MessageHandler } from '../../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../../agent/models/InboundMessageContext'
 import type { V2MessagePickupService } from '../V2MessagePickupService'
 
 import { DeliveryRequestMessage } from '../messages'
 
-export class DeliveryRequestHandler implements Handler {
+export class DeliveryRequestHandler implements MessageHandler {
   public supportedMessages = [DeliveryRequestMessage]
   private messagePickupService: V2MessagePickupService
 
