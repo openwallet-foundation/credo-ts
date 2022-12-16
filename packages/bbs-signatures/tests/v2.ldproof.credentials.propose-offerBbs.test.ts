@@ -233,6 +233,8 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
         'did:key:zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa',
       issuanceDate: '2019-12-03T12:19:52Z',
       expirationDate: '2029-12-03T12:19:52Z',
+      identifier: '83627465',
+      name: 'Permanent Resident Card',
       credentialSubject: {
         id: 'did:example:b34ca6cd37bbf23',
         type: ['PermanentResident', 'Person'],
@@ -241,8 +243,6 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
         gender: 'Male',
         image: 'data:image/png;base64,iVBORw0KGgokJggg==',
         residentSince: '2015-01-01',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
         description: 'Government of Example Permanent Resident Card.',
         lprCategory: 'C09',
         lprNumber: '999-999-999',
