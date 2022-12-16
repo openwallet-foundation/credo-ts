@@ -86,14 +86,12 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
-        timeoutMs: 200000,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
       aliceCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialRecord.threadId,
         state: CredentialState.Done,
-        timeoutMs: 200000,
       })
       expect(aliceCredentialRecord).toMatchObject({
         type: CredentialExchangeRecord.type,
@@ -118,13 +116,11 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
-        timeoutMs: 200000,
       })
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
-        timeoutMs: 200000,
       })
       testLogger.test('Faber waits for credential ack from Alice')
       const faberCredentialRecord: CredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
@@ -188,7 +184,6 @@ describe('credentials', () => {
       let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.ProposalReceived,
-        timeoutMs: 200000,
       })
 
       testLogger.test('Faber sends credential offer to Alice')
@@ -201,7 +196,6 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
-        timeoutMs: 200000,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
@@ -209,7 +203,6 @@ describe('credentials', () => {
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.Done,
-        timeoutMs: 200000,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
@@ -244,7 +237,6 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
-        timeoutMs: 200000,
       })
 
       // below values are not in json object
@@ -271,7 +263,6 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
-        timeoutMs: 200000,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
@@ -279,7 +270,6 @@ describe('credentials', () => {
       const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.Done,
-        timeoutMs: 200000,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
@@ -312,7 +302,6 @@ describe('credentials', () => {
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
-        timeoutMs: 200000,
       })
 
       // below values are not in json object
@@ -339,7 +328,6 @@ describe('credentials', () => {
       const faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceExchangeCredentialRecord.threadId,
         state: CredentialState.ProposalReceived,
-        timeoutMs: 200000,
       })
 
       // Check if the state of faber credential record did not change
@@ -364,7 +352,6 @@ describe('credentials', () => {
       let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.ProposalReceived,
-        timeoutMs: 200000,
       })
 
       await faberAgent.credentials.negotiateProposal({
@@ -379,7 +366,6 @@ describe('credentials', () => {
       const record = await waitForCredentialRecord(aliceAgent, {
         threadId: faberCredentialRecord.threadId,
         state: CredentialState.OfferReceived,
-        timeoutMs: 200000,
       })
 
       // below values are not in json object
