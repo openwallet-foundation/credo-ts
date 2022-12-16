@@ -32,7 +32,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
   ) {
     super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesModuleConfig)
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -40,9 +40,9 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v2'
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new V2DisclosuresMessageHandler(this))
-    dispatcher.registerHandler(new V2QueriesMessageHandler(this))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new V2DisclosuresMessageHandler(this))
+    dispatcher.registerMessageHandler(new V2QueriesMessageHandler(this))
   }
 
   public async createQuery(

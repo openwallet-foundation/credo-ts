@@ -6,6 +6,7 @@ export type ActionMenuProblemReportMessageOptions = ProblemReportMessageOptions
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
+ * @internal
  */
 export class ActionMenuProblemReportMessage extends ProblemReportMessage {
   /**

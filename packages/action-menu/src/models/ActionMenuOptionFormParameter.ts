@@ -1,9 +1,15 @@
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator'
 
+/**
+ * @public
+ */
 export enum ActionMenuFormInputType {
   Text = 'text',
 }
 
+/**
+ * @public
+ */
 export interface ActionMenuFormParameterOptions {
   name: string
   title: string
@@ -13,6 +19,9 @@ export interface ActionMenuFormParameterOptions {
   type?: ActionMenuFormInputType
 }
 
+/**
+ * @public
+ */
 export class ActionMenuFormParameter {
   public constructor(options: ActionMenuFormParameterOptions) {
     if (options) {

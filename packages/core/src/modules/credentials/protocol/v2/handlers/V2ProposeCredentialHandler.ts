@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { Logger } from '../../../../../logger'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -7,7 +7,7 @@ import type { V2CredentialService } from '../V2CredentialService'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
-export class V2ProposeCredentialHandler implements Handler {
+export class V2ProposeCredentialHandler implements MessageHandler {
   private credentialService: V2CredentialService
   private logger: Logger
 
@@ -33,7 +33,7 @@ export class V2ProposeCredentialHandler implements Handler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V2ProposeCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
     this.logger.info(`Automatically sending offer with autoAccept`)
 
