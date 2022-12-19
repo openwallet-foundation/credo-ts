@@ -8,6 +8,7 @@ import type {
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
+  InjectionToken,
   ProofStateChangedEvent,
   SchemaTemplate,
   Wallet,
@@ -28,6 +29,11 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  CredentialsModule,
+  IndyCredentialFormatService,
+  JsonLdCredentialFormatService,
+  V1CredentialProtocol,
+  V2CredentialProtocol,
   W3cVcModule,
   Agent,
   AgentConfig,
@@ -156,14 +162,24 @@ export function getAgentContext({
   wallet,
   agentConfig,
   contextCorrelationId = 'mock',
+  registerInstances = [],
 }: {
   dependencyManager?: DependencyManager
   wallet?: Wallet
   agentConfig?: AgentConfig
   contextCorrelationId?: string
+  // Must be an array of arrays as objects can't have injection tokens
+  // as keys (it must be number, string or symbol)
+  registerInstances?: Array<[InjectionToken, unknown]>
 } = {}) {
   if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+
+  // Register custom instances on the dependency manager
+  for (const [token, instance] of registerInstances.values()) {
+    dependencyManager.registerInstance(token, instance)
+  }
+
   return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
@@ -227,7 +243,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -671,10 +687,23 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
 
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
   // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
 
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
     // Register custom w3cVc module so we can define the test document loader
     w3cVc: new W3cVcModule({
       documentLoader: customDocumentLoader,
@@ -684,7 +713,6 @@ export async function setupCredentialTests(
     faberName,
     {
       endpoints: ['rxjs:faber'],
-      autoAcceptCredentials,
     },
     modules
   )
@@ -693,7 +721,6 @@ export async function setupCredentialTests(
     aliceName,
     {
       endpoints: ['rxjs:alice'],
-      autoAcceptCredentials,
     },
     modules
   )
