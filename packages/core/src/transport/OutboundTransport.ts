@@ -6,6 +6,7 @@ export interface OutboundTransport {
 
   sendMessage(outboundPackage: OutboundPackage): Promise<void>
 
-  start(agent: Agent): Promise<void>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  start(agent: Agent<any>): Promise<void>
   stop(): Promise<void>
 }

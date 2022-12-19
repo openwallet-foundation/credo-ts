@@ -1,10 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { Dispatcher } from '../../../agent/Dispatcher'
-import type { EventEmitter } from '../../../agent/EventEmitter'
+import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../logger'
-import type { DidCommMessageRepository } from '../../../storage'
+import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
@@ -22,41 +20,28 @@ import type {
   AcceptCredentialOptions,
   GetFormatDataReturn,
   CreateProblemReportOptions,
-} from '../CredentialServiceOptions'
-import type { CredentialFormat, CredentialFormatService } from '../formats'
-import type { CredentialExchangeRecord, CredentialRepository } from './../repository'
+} from '../CredentialProtocolOptions'
+import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
+import type { CredentialExchangeRecord } from '../repository'
+import type { CredentialProtocol } from './CredentialProtocol'
 
+import { EventEmitter } from '../../../agent/EventEmitter'
+import { DidCommMessageRepository } from '../../../storage'
 import { JsonTransformer } from '../../../utils'
+import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../models/CredentialState'
+import { CredentialRepository } from '../repository'
 
-import { CredentialEventTypes } from './../CredentialEvents'
-
-export abstract class CredentialService<CFs extends CredentialFormat[] = CredentialFormat[]> {
-  protected credentialRepository: CredentialRepository
-  protected didCommMessageRepository: DidCommMessageRepository
-  protected eventEmitter: EventEmitter
-  protected dispatcher: Dispatcher
-  protected logger: Logger
-
-  public constructor(
-    credentialRepository: CredentialRepository,
-    didCommMessageRepository: DidCommMessageRepository,
-    eventEmitter: EventEmitter,
-    dispatcher: Dispatcher,
-    logger: Logger
-  ) {
-    this.credentialRepository = credentialRepository
-    this.didCommMessageRepository = didCommMessageRepository
-    this.eventEmitter = eventEmitter
-    this.dispatcher = dispatcher
-    this.logger = logger
-  }
-
+/**
+ * Base implementation of the CredentialProtocol that can be used as a foundation for implementing
+ * the CredentialProtocol interface.
+ */
+export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService[] = CredentialFormatService[]>
+  implements CredentialProtocol<CFs>
+{
   abstract readonly version: string
 
-  abstract getFormatServiceForRecordType(
-    credentialRecordType: CFs[number]['credentialRecordType']
-  ): CredentialFormatService<CFs[number]>
+  protected abstract getFormatServiceForRecordType(credentialRecordType: string): CFs[number]
 
   // methods for proposal
   abstract createProposal(
@@ -116,7 +101,12 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   abstract findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findRequestMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
   abstract findCredentialMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract getFormatData(agentContext: AgentContext, credentialExchangeId: string): Promise<GetFormatDataReturn<CFs>>
+  abstract getFormatData(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<CFs>>>
+
+  abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
 
   /**
    * Decline a credential offer
@@ -142,11 +132,11 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
   public async processProblemReport(
     messageContext: InboundMessageContext<ProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
-    const { message: credentialProblemReportMessage } = messageContext
+    const { message: credentialProblemReportMessage, agentContext } = messageContext
 
     const connection = messageContext.assertReadyConnection()
 
-    this.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
+    agentContext.config.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(
       messageContext.agentContext,
@@ -173,13 +163,15 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     credentialRecord: CredentialExchangeRecord,
     newState: CredentialState
   ) {
-    this.logger.debug(
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    agentContext.config.logger.debug(
       `Updating credential record ${credentialRecord.id} to state ${newState} (previous=${credentialRecord.state})`
     )
 
     const previousState = credentialRecord.state
     credentialRecord.state = newState
-    await this.credentialRepository.update(agentContext, credentialRecord)
+    await credentialRepository.update(agentContext, credentialRecord)
 
     this.emitStateChangedEvent(agentContext, credentialRecord, previousState)
   }
@@ -189,9 +181,11 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     credentialRecord: CredentialExchangeRecord,
     previousState: CredentialState | null
   ) {
+    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+
     const clonedCredential = JsonTransformer.clone(credentialRecord)
 
-    this.eventEmitter.emit<CredentialStateChangedEvent>(agentContext, {
+    eventEmitter.emit<CredentialStateChangedEvent>(agentContext, {
       type: CredentialEventTypes.CredentialStateChanged,
       payload: {
         credentialRecord: clonedCredential,
@@ -209,7 +203,9 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
    *
    */
   public getById(agentContext: AgentContext, credentialRecordId: string): Promise<CredentialExchangeRecord> {
-    return this.credentialRepository.getById(agentContext, credentialRecordId)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.getById(agentContext, credentialRecordId)
   }
 
   /**
@@ -218,14 +214,18 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
    * @returns List containing all credential records
    */
   public getAll(agentContext: AgentContext): Promise<CredentialExchangeRecord[]> {
-    return this.credentialRepository.getAll(agentContext)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.getAll(agentContext)
   }
 
   public async findAllByQuery(
     agentContext: AgentContext,
     query: Query<CredentialExchangeRecord>
   ): Promise<CredentialExchangeRecord[]> {
-    return this.credentialRepository.findByQuery(agentContext, query)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.findByQuery(agentContext, query)
   }
 
   /**
@@ -235,7 +235,9 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
    * @returns The credential record or null if not found
    */
   public findById(agentContext: AgentContext, connectionId: string): Promise<CredentialExchangeRecord | null> {
-    return this.credentialRepository.findById(agentContext, connectionId)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.findById(agentContext, connectionId)
   }
 
   public async delete(
@@ -243,7 +245,10 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     credentialRecord: CredentialExchangeRecord,
     options?: DeleteCredentialOptions
   ): Promise<void> {
-    await this.credentialRepository.delete(agentContext, credentialRecord)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+    const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
+
+    await credentialRepository.delete(agentContext, credentialRecord)
 
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
     const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
@@ -256,11 +261,11 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     }
 
     if (deleteAssociatedDidCommMessages) {
-      const didCommMessages = await this.didCommMessageRepository.findByQuery(agentContext, {
+      const didCommMessages = await didCommMessageRepository.findByQuery(agentContext, {
         associatedRecordId: credentialRecord.id,
       })
       for (const didCommMessage of didCommMessages) {
-        await this.didCommMessageRepository.delete(agentContext, didCommMessage)
+        await didCommMessageRepository.delete(agentContext, didCommMessage)
       }
     }
   }
@@ -279,7 +284,9 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     threadId: string,
     connectionId?: string
   ): Promise<CredentialExchangeRecord> {
-    return this.credentialRepository.getSingleByQuery(agentContext, {
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.getSingleByQuery(agentContext, {
       connectionId,
       threadId,
     })
@@ -297,13 +304,17 @@ export abstract class CredentialService<CFs extends CredentialFormat[] = Credent
     threadId: string,
     connectionId?: string
   ): Promise<CredentialExchangeRecord | null> {
-    return this.credentialRepository.findSingleByQuery(agentContext, {
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return credentialRepository.findSingleByQuery(agentContext, {
       connectionId,
       threadId,
     })
   }
 
   public async update(agentContext: AgentContext, credentialRecord: CredentialExchangeRecord) {
-    return await this.credentialRepository.update(agentContext, credentialRecord)
+    const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+
+    return await credentialRepository.update(agentContext, credentialRecord)
   }
 }
