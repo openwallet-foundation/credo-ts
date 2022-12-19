@@ -459,7 +459,7 @@ export class OutOfBandApi {
    */
   public async acceptInvitation(
     outOfBandId: string,
-    config?: {
+    config: {
       autoAcceptConnection?: boolean
       reuseConnection?: boolean
       label?: string

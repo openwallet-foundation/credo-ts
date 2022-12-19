@@ -53,7 +53,7 @@ export class TrustPingService {
   }
 
   protected registerHandlers() {
-    this.dispatcher.registerHandler(new TrustPingMessageHandler(this, this.connectionService))
-    this.dispatcher.registerHandler(new TrustPingResponseMessageHandler(this))
+    this.dispatcher.registerMessageHandler(new TrustPingMessageHandler(this, this.connectionService))
+    this.dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this))
   }
 }

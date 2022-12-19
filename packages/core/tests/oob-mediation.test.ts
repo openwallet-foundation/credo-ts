@@ -154,7 +154,7 @@ describe('out of band with mediation', () => {
     )
 
     const outOfBandRecord = await aliceAgent.oob.createInvitation({})
-    const { outOfBandInvitation } = outOfBandRecord
+    const outOfBandInvitation = outOfBandRecord.outOfBandInvitation!
 
     const keyAddMessage = await keyAddMessagePromise
 

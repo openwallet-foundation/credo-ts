@@ -126,7 +126,7 @@ describe('connections', () => {
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitation = faberOutOfBandRecord.outOfBandInvitation!
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
@@ -198,7 +198,7 @@ describe('connections', () => {
   it('agent using mediator should be able to make multiple connections using a multi use invite', async () => {
     // Make Faber use a mediator
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.oob.createInvitation({})
-    let { connectionRecord } = await faberAgent.oob.receiveInvitation(mediatorOutOfBandInvitation)
+    let { connectionRecord } = await faberAgent.oob.receiveInvitation(mediatorOutOfBandInvitation!)
     connectionRecord = await faberAgent.connections.returnWhenIsConnected(connectionRecord!.id)
     await faberAgent.mediationRecipient.provision(connectionRecord!)
     await faberAgent.mediationRecipient.initialize()
@@ -225,7 +225,7 @@ describe('connections', () => {
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitation = faberOutOfBandRecord.outOfBandInvitation!
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
