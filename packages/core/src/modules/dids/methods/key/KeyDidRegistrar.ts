@@ -3,22 +3,17 @@ import type { KeyType } from '../../../../crypto'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
-import { injectable } from '../../../../plugins'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRepository, DidRecord } from '../../repository'
 
 import { DidKey } from './DidKey'
 
-@injectable()
 export class KeyDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['key']
-  private didRepository: DidRepository
-
-  public constructor(didRepository: DidRepository) {
-    this.didRepository = didRepository
-  }
 
   public async create(agentContext: AgentContext, options: KeyDidCreateOptions): Promise<DidCreateResult> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+
     const keyType = options.options.keyType
     const seed = options.secret?.seed
 
@@ -57,7 +52,7 @@ export class KeyDidRegistrar implements DidRegistrar {
         id: didKey.did,
         role: DidDocumentRole.Created,
       })
-      await this.didRepository.save(agentContext, didRecord)
+      await didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},

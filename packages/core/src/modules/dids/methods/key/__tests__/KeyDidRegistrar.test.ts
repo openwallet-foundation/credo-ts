@@ -17,20 +17,20 @@ const walletMock = {
   createKey: jest.fn(() => Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
 } as unknown as Wallet
 
+const didRepositoryMock = new DidRepositoryMock()
+const keyDidRegistrar = new KeyDidRegistrar()
+
 const agentContext = getAgentContext({
   wallet: walletMock,
+  registerInstances: [[DidRepository, didRepositoryMock]],
 })
 
 describe('DidRegistrar', () => {
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('KeyDidRegistrar', () => {
-    let keyDidRegistrar: KeyDidRegistrar
-    let didRepositoryMock: DidRepository
-
-    beforeEach(() => {
-      didRepositoryMock = new DidRepositoryMock()
-      keyDidRegistrar = new KeyDidRegistrar(didRepositoryMock)
-    })
-
     it('should correctly create a did:key document using Ed25519 key type', async () => {
       const seed = '96213c3d7fc8d4d6754c712fd969598e'
 
