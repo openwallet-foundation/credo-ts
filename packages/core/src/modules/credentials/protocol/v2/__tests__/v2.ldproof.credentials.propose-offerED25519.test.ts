@@ -1,14 +1,13 @@
 import type { Awaited } from '../../../../../types'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { W3cCredential } from '../../../../vc/models/credential/W3cCredential'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
@@ -24,7 +23,7 @@ describe('credentials', () => {
 
   let didCommMessageRepository: DidCommMessageRepository
 
-  const inputDoc = {
+  const inputDocAsJson: JsonCredential = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',
       'https://w3id.org/citizenship/v1',
@@ -33,11 +32,10 @@ describe('credentials', () => {
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-    identifier: '83627465',
-    name: 'Permanent Resident Card',
-    description: 'Government of Example Permanent Resident Card.',
     issuanceDate: '2019-12-03T12:19:52Z',
     expirationDate: '2029-12-03T12:19:52Z',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
     credentialSubject: {
       id: 'did:example:b34ca6cd37bbf23',
       type: ['PermanentResident', 'Person'],
@@ -46,6 +44,7 @@ describe('credentials', () => {
       gender: 'Male',
       image: 'data:image/png;base64,iVBORw0KGgokJggg==',
       residentSince: '2015-01-01',
+      description: 'Government of Example Permanent Resident Card.',
       lprCategory: 'C09',
       lprNumber: '999-999-999',
       commuterClassification: 'C1',
@@ -54,9 +53,7 @@ describe('credentials', () => {
     },
   }
 
-  const credential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
-
-  let signCredentialOptions: SignCredentialOptionsRFC0593
+  let signCredentialOptions: JsonLdSignCredentialFormat
 
   let wallet
   const seed = 'testseed000000000000000000000001'
@@ -70,7 +67,7 @@ describe('credentials', () => {
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
     await wallet.createDid({ seed })
     signCredentialOptions = {
-      credential,
+      credential: inputDocAsJson,
       options: {
         proofType: 'Ed25519Signature2018',
         proofPurpose: 'assertionMethod',
@@ -112,9 +109,6 @@ describe('credentials', () => {
     await faberAgent.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
-      credentialFormats: {
-        jsonld: signCredentialOptions,
-      },
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
@@ -171,7 +165,7 @@ describe('credentials', () => {
       const offerCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
-          jsonld: undefined,
+          jsonld: {},
         },
       })
 
@@ -308,7 +302,7 @@ describe('credentials', () => {
           credentialDefinitionId: credDefId,
           attributes: credentialPreview.attributes,
         },
-        jsonld: signCredentialOptions,
+        jsonld: {}, // this is to ensure both services are formatted
       },
     })
 
@@ -325,11 +319,11 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<SignCredentialOptionsRFC0593>()
+    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<JsonLdSignCredentialFormat>()
 
     expect(credOfferJson).toMatchObject({
       credential: {
-        context: [
+        '@context': [
           'https://www.w3.org/2018/credentials/v1',
           'https://w3id.org/citizenship/v1',
           'https://w3id.org/security/bbs/v1',
@@ -337,18 +331,18 @@ describe('credentials', () => {
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
         issuanceDate: '2019-12-03T12:19:52Z',
         expirationDate: '2029-12-03T12:19:52Z',
+        identifier: '83627465',
+        name: 'Permanent Resident Card',
         credentialSubject: {
           id: 'did:example:b34ca6cd37bbf23',
-          // type: [Array],
+          type: expect.any(Array),
           givenName: 'JOHN',
           familyName: 'SMITH',
           gender: 'Male',
           image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+          description: 'Government of Example Permanent Resident Card.',
           residentSince: '2015-01-01',
           lprCategory: 'C09',
           lprNumber: '999-999-999',
@@ -475,11 +469,10 @@ describe('credentials', () => {
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-        identifier: '83627465',
-        name: 'Permanent Resident Card',
-        description: 'Government of Example Permanent Resident Card.',
         issuanceDate: '2019-12-03T12:19:52Z',
         expirationDate: '2029-12-03T12:19:52Z',
+        identifier: '83627465',
+        name: 'Permanent Resident Card',
         credentialSubject: {
           id: 'did:example:b34ca6cd37bbf23',
           type: ['PermanentResident', 'Person'],
@@ -488,6 +481,7 @@ describe('credentials', () => {
           gender: 'Male',
           image: 'data:image/png;base64,iVBORw0KGgokJggg==',
           residentSince: '2015-01-01',
+          description: 'Government of Example Permanent Resident Card.',
           lprCategory: 'C09',
           lprNumber: '999-999-999',
           commuterClassification: 'C1',

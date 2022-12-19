@@ -1,5 +1,6 @@
+import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { JsonObject } from '../../../types'
-import type { DocumentLoaderResult } from '../jsonldUtil'
+import type { DocumentLoaderResult } from '../libraries/jsonld'
 
 import jsonld from '../libraries/jsonld'
 
@@ -103,6 +104,7 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
         '@embed': '@never',
         id: url,
       },
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       { documentLoader: this }
     )
@@ -115,4 +117,5 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
   }
 }
 
-export const customDocumentLoader = _customDocumentLoader.bind(_customDocumentLoader)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const customDocumentLoader = (agentContext?: AgentContext) => _customDocumentLoader.bind(_customDocumentLoader)

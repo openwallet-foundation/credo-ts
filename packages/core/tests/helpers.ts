@@ -34,6 +34,7 @@ import {
   JsonLdCredentialFormatService,
   V1CredentialProtocol,
   V2CredentialProtocol,
+  W3cVcModule,
   Agent,
   AgentConfig,
   AgentContext,
@@ -67,6 +68,7 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -701,6 +703,10 @@ export async function setupCredentialTests(
           credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
         }),
       ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
     }),
   }
   const faberAgentOptions = getAgentOptions(
