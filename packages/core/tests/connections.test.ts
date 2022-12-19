@@ -10,7 +10,6 @@ import {
   Key,
   AgentEventTypes,
   KeylistUpdateMessage,
-  MediatorPickupStrategy,
   DidExchangeState,
   HandshakeProtocol,
   KeylistUpdateAction,
