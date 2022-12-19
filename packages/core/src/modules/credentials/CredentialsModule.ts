@@ -1,24 +1,62 @@
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
-import type { DependencyManager, Module } from '../../plugins'
+import type { ApiModule, DependencyManager } from '../../plugins'
+import type { Constructor } from '../../utils/mixins'
+import type { Optional } from '../../utils/type'
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
+import type { CredentialProtocol } from './protocol/CredentialProtocol'
 
 import { Protocol } from '../../agent/models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { IndyCredentialFormatService } from './formats/indy'
-import { JsonLdCredentialFormatService } from './formats/jsonld/JsonLdCredentialFormatService'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
-import { V1CredentialService } from './protocol/v1'
-import { V2CredentialService } from './protocol/v2'
+import { V1CredentialProtocol } from './protocol/v1'
+import { V2CredentialProtocol } from './protocol/v2'
 import { CredentialRepository } from './repository'
 
-export class CredentialsModule implements Module {
-  public readonly config: CredentialsModuleConfig
-  public readonly api = CredentialsApi
+/**
+ * Default credentialProtocols that will be registered if the `credentialProtocols` property is not configured.
+ */
+export type DefaultCredentialProtocols = [V1CredentialProtocol, V2CredentialProtocol<IndyCredentialFormatService[]>]
 
-  public constructor(config?: CredentialsModuleConfigOptions) {
-    this.config = new CredentialsModuleConfig(config)
+// CredentialModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
+export type CredentialsModuleOptions<CredentialProtocols extends CredentialProtocol[]> = Optional<
+  CredentialsModuleConfigOptions<CredentialProtocols>,
+  'credentialProtocols'
+>
+
+export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] = DefaultCredentialProtocols>
+  implements ApiModule
+{
+  public readonly config: CredentialsModuleConfig<CredentialProtocols>
+
+  // Infer Api type from the config
+  public readonly api: Constructor<CredentialsApi<CredentialProtocols>> = CredentialsApi
+
+  public constructor(config?: CredentialsModuleOptions<CredentialProtocols>) {
+    this.config = new CredentialsModuleConfig({
+      ...config,
+      // NOTE: the credentialProtocols defaults are set in the CredentialsModule rather than the CredentialsModuleConfig to
+      // void dependency cycles.
+      credentialProtocols: config?.credentialProtocols ?? this.getDefaultCredentialProtocols(),
+    }) as CredentialsModuleConfig<CredentialProtocols>
+  }
+
+  /**
+   * Get the default credential protocols that will be registered if the `credentialProtocols` property is not configured.
+   */
+  private getDefaultCredentialProtocols(): DefaultCredentialProtocols {
+    // Instantiate credential formats
+    const indyCredentialFormat = new IndyCredentialFormatService()
+
+    // Instantiate credential protocols
+    const v1CredentialProtocol = new V1CredentialProtocol({ indyCredentialFormat })
+    const v2CredentialProtocol = new V2CredentialProtocol({
+      credentialFormats: [indyCredentialFormat],
+    })
+
+    return [v1CredentialProtocol, v2CredentialProtocol]
   }
 
   /**
@@ -32,23 +70,13 @@ export class CredentialsModule implements Module {
     dependencyManager.registerInstance(CredentialsModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(V1CredentialService)
     dependencyManager.registerSingleton(RevocationNotificationService)
-    dependencyManager.registerSingleton(V2CredentialService)
 
     // Repositories
     dependencyManager.registerSingleton(CredentialRepository)
 
     // Features
     featureRegistry.register(
-      new Protocol({
-        id: 'https://didcomm.org/issue-credential/1.0',
-        roles: ['holder', 'issuer'],
-      }),
-      new Protocol({
-        id: 'https://didcomm.org/issue-credential/2.0',
-        roles: ['holder', 'issuer'],
-      }),
       new Protocol({
         id: 'https://didcomm.org/revocation_notification/1.0',
         roles: ['holder'],
@@ -59,8 +87,9 @@ export class CredentialsModule implements Module {
       })
     )
 
-    // Credential Formats
-    dependencyManager.registerSingleton(IndyCredentialFormatService)
-    dependencyManager.registerSingleton(JsonLdCredentialFormatService)
+    // Protocol needs to register feature registry items and handlers
+    for (const credentialProtocol of this.config.credentialProtocols) {
+      credentialProtocol.register(dependencyManager, featureRegistry)
+    }
   }
 }

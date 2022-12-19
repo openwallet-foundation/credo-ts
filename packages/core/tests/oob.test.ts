@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateOfferOptions } from '../src/modules/credentials'
-import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
+import type { CreateOfferOptions, V1CredentialProtocol } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -58,7 +57,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<[IndyCredentialFormat]>
+  let credentialTemplate: CreateOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -69,6 +68,7 @@ describe('out of band', () => {
     }
 
     faberAgent = new Agent(faberAgentOptions)
+
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()

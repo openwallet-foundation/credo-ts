@@ -1,13 +1,7 @@
-import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type {
-  JsonCredential,
-  JsonLdCredentialFormat,
-  JsonLdSignCredentialFormat,
-} from '../../../formats/jsonld/JsonLdCredentialFormat'
-import type { V2CredentialService } from '../V2CredentialService'
+import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -68,18 +62,14 @@ describe('credentials', () => {
     test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      const options: ProposeCredentialOptions<
-        [JsonLdCredentialFormat],
-        [V2CredentialService<[JsonLdCredentialFormat]>]
-      > = {
+      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
         protocolVersion: 'v2',
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
         comment: 'v2 propose credential test',
-      }
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(options)
+      })
 
       testLogger.test('Alice waits for credential from Faber')
 
