@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
+import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   FormatAcceptOfferOptions,
   FormatAcceptProposalOptions,
@@ -25,34 +25,22 @@ import type {
   SignCredentialOptionsRFC0593,
 } from './JsonLdCredentialFormat'
 
-import { injectable } from 'tsyringe'
-
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
-import { objectEquality } from '../../../../utils'
+import { JsonEncoder, objectEquality } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
-import { CredentialFormatService } from '../CredentialFormatService'
 
 import { JsonLdCredentialDetail } from './JsonLdCredentialOptions'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@1.0'
 
-@injectable()
-export class JsonLdCredentialFormatService extends CredentialFormatService<JsonLdCredentialFormat> {
-  private w3cCredentialService: W3cCredentialService
-  private didResolver: DidResolverService
-
-  public constructor(w3cCredentialService: W3cCredentialService, didResolver: DidResolverService) {
-    super()
-    this.w3cCredentialService = w3cCredentialService
-    this.didResolver = didResolver
-  }
-
+export class JsonLdCredentialFormatService implements CredentialFormatService<JsonLdCredentialFormat> {
   public readonly formatKey = 'jsonld' as const
   public readonly credentialRecordType = 'w3c' as const
 
@@ -221,6 +209,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
     const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
@@ -247,7 +237,7 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
     const credential = JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential)
 
-    const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
+    const verifiableCredential = await w3cCredentialService.signCredential(agentContext, {
       credential,
       proofType: credentialRequest.options.proofType,
       verificationMethod: verificationMethod,
@@ -267,6 +257,9 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     credentialAsJson: JsonCredential,
     credentialRequest: JsonLdSignCredentialFormat
   ): Promise<string> {
+    const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cCredential)
 
     // extract issuer from vc (can be string or Issuer)
@@ -276,13 +269,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       issuerDid = issuerDid.id
     }
     // this will throw an error if the issuer did is invalid
-    const issuerDidDocument = await this.didResolver.resolveDidDocument(agentContext, issuerDid)
+    const issuerDidDocument = await didResolver.resolveDidDocument(agentContext, issuerDid)
 
     // find first key which matches proof type
     const proofType = credentialRequest.options.proofType
 
     // actually gets the key type(s)
-    const keyType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
+    const keyType = w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
 
     if (!keyType || keyType.length === 0) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
@@ -304,6 +297,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialRecord, attachment, requestAttachment }: FormatProcessCredentialOptions
   ): Promise<void> {
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
 
@@ -320,11 +315,12 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     }
 
     // verify signatures of the credential
-    const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential })
+    const result = await w3cCredentialService.verifyCredential(agentContext, { credential })
     if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
     }
-    const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
+
+    const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
     })
 
@@ -431,5 +427,24 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
         return false
       }
     }
+  }
+
+  /**
+   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  public getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(data),
+      }),
+    })
+
+    return attachment
   }
 }

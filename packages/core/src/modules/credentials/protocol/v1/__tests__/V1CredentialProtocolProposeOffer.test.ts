@@ -1,6 +1,5 @@
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CreateOfferOptions, CreateProposalOptions } from '../../../CredentialServiceOptions'
-import type { IndyCredentialFormat } from '../../../formats/indy/IndyCredentialFormat'
+import type { CreateOfferOptions, CreateProposalOptions } from '../../../CredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
 
@@ -16,14 +15,13 @@ import { ConnectionService } from '../../../../connections/services/ConnectionSe
 import { IndyLedgerService } from '../../../../ledger/services'
 import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
-import { CredentialsModuleConfig } from '../../../CredentialsModuleConfig'
 import { schema, credDef } from '../../../__tests__/fixtures'
 import { IndyCredentialFormatService } from '../../../formats'
 import { CredentialFormatSpec } from '../../../models'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { CredentialRepository } from '../../../repository/CredentialRepository'
-import { V1CredentialService } from '../V1CredentialService'
+import { V1CredentialProtocol } from '../V1CredentialProtocol'
 import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 import { V1CredentialPreview } from '../messages/V1CredentialPreview'
 
@@ -53,8 +51,20 @@ const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
 
-const agentConfig = getAgentConfig('V1CredentialServiceProposeOfferTest')
-const agentContext = getAgentContext()
+const agentConfig = getAgentConfig('V1CredentialProtocolProposeOfferTest')
+const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+
+const agentContext = getAgentContext({
+  registerInstances: [
+    [CredentialRepository, credentialRepository],
+    [DidCommMessageRepository, didCommMessageRepository],
+    [RoutingService, routingService],
+    [Dispatcher, dispatcher],
+    [ConnectionService, connectionService],
+    [EventEmitter, eventEmitter],
+  ],
+  agentConfig,
+})
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -92,32 +102,18 @@ const proposalAttachment = new Attachment({
   }),
 })
 
-describe('V1CredentialServiceProposeOffer', () => {
-  let eventEmitter: EventEmitter
-
-  let credentialService: V1CredentialService
+describe('V1CredentialProtocolProposeOffer', () => {
+  let credentialProtocol: V1CredentialProtocol
 
   beforeEach(async () => {
-    eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connection)
     mockFunction(indyLedgerService.getCredentialDefinition).mockResolvedValue(credDef)
     mockFunction(indyLedgerService.getSchema).mockResolvedValue(schema)
-    // mockFunction(didCommMessageRepository.findAgentMessage).mockImplementation(getAgentMessageMock)
-    // mockFunction(didCommMessageRepository.getAgentMessage).mockImplementation(getAgentMessageMock)
 
-    credentialService = new V1CredentialService(
-      connectionService,
-      didCommMessageRepository,
-      agentConfig.logger,
-      routingService,
-      dispatcher,
-      eventEmitter,
-      credentialRepository,
-      indyCredentialFormatService,
-      new CredentialsModuleConfig()
-    )
+    credentialProtocol = new V1CredentialProtocol({
+      indyCredentialFormat: indyCredentialFormatService,
+    })
   })
 
   afterEach(() => {
@@ -125,7 +121,7 @@ describe('V1CredentialServiceProposeOffer', () => {
   })
 
   describe('createProposal', () => {
-    const proposeOptions: CreateProposalOptions<[IndyCredentialFormat]> = {
+    const proposeOptions: CreateProposalOptions<[IndyCredentialFormatService]> = {
       connection,
       credentialFormats: {
         indy: {
@@ -140,7 +136,6 @@ describe('V1CredentialServiceProposeOffer', () => {
       },
       comment: 'v1 propose credential test',
     }
-
     test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread id`, async () => {
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
@@ -152,7 +147,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         }),
       })
 
-      await credentialService.createProposal(agentContext, proposeOptions)
+      await credentialProtocol.createProposal(agentContext, proposeOptions)
 
       // then
       expect(repositorySaveSpy).toHaveBeenNthCalledWith(
@@ -180,7 +175,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         }),
       })
 
-      await credentialService.createProposal(agentContext, proposeOptions)
+      await credentialProtocol.createProposal(agentContext, proposeOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -206,7 +201,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         previewAttributes: credentialPreview.attributes,
       })
 
-      const { message } = await credentialService.createProposal(agentContext, proposeOptions)
+      const { message } = await credentialProtocol.createProposal(agentContext, proposeOptions)
 
       expect(message.toJSON()).toMatchObject({
         '@id': expect.any(String),
@@ -238,7 +233,7 @@ describe('V1CredentialServiceProposeOffer', () => {
   })
 
   describe('createOffer', () => {
-    const offerOptions: CreateOfferOptions<[IndyCredentialFormat]> = {
+    const offerOptions: CreateOfferOptions<[IndyCredentialFormatService]> = {
       comment: 'some comment',
       connection,
       credentialFormats: {
@@ -261,7 +256,7 @@ describe('V1CredentialServiceProposeOffer', () => {
 
       const repositorySaveSpy = jest.spyOn(credentialRepository, 'save')
 
-      await credentialService.createOffer(agentContext, offerOptions)
+      await credentialProtocol.createOffer(agentContext, offerOptions)
 
       // then
       expect(repositorySaveSpy).toHaveBeenCalledTimes(1)
@@ -290,7 +285,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         previewAttributes: credentialPreview.attributes,
       })
 
-      await credentialService.createOffer(agentContext, offerOptions)
+      await credentialProtocol.createOffer(agentContext, offerOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
         type: 'CredentialStateChanged',
@@ -315,7 +310,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         }),
       })
 
-      await expect(credentialService.createOffer(agentContext, offerOptions)).rejects.toThrowError(
+      await expect(credentialProtocol.createOffer(agentContext, offerOptions)).rejects.toThrowError(
         'Missing required credential preview from indy format service'
       )
     })
@@ -330,7 +325,7 @@ describe('V1CredentialServiceProposeOffer', () => {
         previewAttributes: credentialPreview.attributes,
       })
 
-      const { message: credentialOffer } = await credentialService.createOffer(agentContext, offerOptions)
+      const { message: credentialOffer } = await credentialProtocol.createOffer(agentContext, offerOptions)
       expect(credentialOffer.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
@@ -365,7 +360,7 @@ describe('V1CredentialServiceProposeOffer', () => {
 
     test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
       // when
-      await credentialService.processOffer(messageContext)
+      await credentialProtocol.processOffer(messageContext)
 
       // then
       expect(credentialRepository.save).toHaveBeenNthCalledWith(
@@ -388,7 +383,7 @@ describe('V1CredentialServiceProposeOffer', () => {
       eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
 
       // when
-      await credentialService.processOffer(messageContext)
+      await credentialProtocol.processOffer(messageContext)
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
