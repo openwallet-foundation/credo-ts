@@ -1,33 +1,23 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
-import type { Logger } from '../../../../../logger'
-import type { DidCommMessageRepository } from '../../../../../storage'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V1CredentialService } from '../V1CredentialService'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
-import { DidCommMessageRole } from '../../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
 import { V1RequestCredentialMessage } from '../messages'
 
-export class V1RequestCredentialHandler implements Handler {
-  private credentialService: V1CredentialService
-  private didCommMessageRepository: DidCommMessageRepository
-  private logger: Logger
+export class V1RequestCredentialHandler implements MessageHandler {
+  private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1RequestCredentialMessage]
 
-  public constructor(
-    credentialService: V1CredentialService,
-    didCommMessageRepository: DidCommMessageRepository,
-    logger: Logger
-  ) {
-    this.credentialService = credentialService
-    this.logger = logger
-    this.didCommMessageRepository = didCommMessageRepository
+  public constructor(credentialProtocol: V1CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1RequestCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processRequest(messageContext)
+  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>) {
+    const credentialRecord = await this.credentialProtocol.processRequest(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToRequest(messageContext.agentContext, {
+    const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
       credentialRecord,
       requestMessage: messageContext.message,
     })
@@ -39,13 +29,16 @@ export class V1RequestCredentialHandler implements Handler {
 
   private async acceptRequest(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1RequestCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>
   ) {
-    this.logger.info(`Automatically sending credential with autoAccept`)
+    messageContext.agentContext.config.logger.info(`Automatically sending credential with autoAccept`)
 
-    const offerMessage = await this.credentialService.findOfferMessage(messageContext.agentContext, credentialRecord.id)
+    const offerMessage = await this.credentialProtocol.findOfferMessage(
+      messageContext.agentContext,
+      credentialRecord.id
+    )
 
-    const { message } = await this.credentialService.acceptRequest(messageContext.agentContext, {
+    const { message } = await this.credentialProtocol.acceptRequest(messageContext.agentContext, {
       credentialRecord,
     })
 
@@ -62,7 +55,8 @@ export class V1RequestCredentialHandler implements Handler {
       // Set ~service, update message in record (for later use)
       message.setService(ourService)
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
@@ -77,6 +71,6 @@ export class V1RequestCredentialHandler implements Handler {
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create credential request`)
   }
 }

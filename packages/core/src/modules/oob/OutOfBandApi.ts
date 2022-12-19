@@ -9,9 +9,9 @@ import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
@@ -84,7 +84,7 @@ export class OutOfBandApi {
   private routingService: RoutingService
   private connectionsApi: ConnectionsApi
   private didCommMessageRepository: DidCommMessageRepository
-  private dispatcher: Dispatcher
+  private messageHandlerRegistry: MessageHandlerRegistry
   private didCommDocumentService: DidCommDocumentService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -92,7 +92,7 @@ export class OutOfBandApi {
   private logger: Logger
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     didCommDocumentService: DidCommDocumentService,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
@@ -103,7 +103,7 @@ export class OutOfBandApi {
     @inject(InjectionSymbols.Logger) logger: Logger,
     agentContext: AgentContext
   ) {
-    this.dispatcher = dispatcher
+    this.messageHandlerRegistry = messageHandlerRegistry
     this.didCommDocumentService = didCommDocumentService
     this.agentContext = agentContext
     this.logger = logger
@@ -113,7 +113,7 @@ export class OutOfBandApi {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -602,8 +602,10 @@ export class OutOfBandApi {
   }
 
   private getSupportedHandshakeProtocols(): HandshakeProtocol[] {
+    // TODO: update to featureRegistry
     const handshakeMessageFamilies = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
-    const handshakeProtocols = this.dispatcher.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
+    const handshakeProtocols =
+      this.messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
 
     if (handshakeProtocols.length === 0) {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
@@ -650,7 +652,7 @@ export class OutOfBandApi {
   }
 
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
-    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
+    const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
@@ -677,7 +679,7 @@ export class OutOfBandApi {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
-    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
+    const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
@@ -766,8 +768,9 @@ export class OutOfBandApi {
     return reuseAcceptedEventPromise
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
-    dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  // TODO: we should probably move these to the out of band module and register the handler there
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

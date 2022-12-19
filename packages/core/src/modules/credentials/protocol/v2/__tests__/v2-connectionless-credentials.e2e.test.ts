@@ -1,10 +1,6 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type {
-  AcceptCredentialOfferOptions,
-  AcceptCredentialRequestOptions,
-  CreateOfferOptions,
-} from '../../../CredentialsApiOptions'
+import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../CredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -81,7 +77,8 @@ describe('V2 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    const offerOptions: CreateOfferOptions = {
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         indy: {
@@ -90,9 +87,7 @@ describe('V2 Connectionless Credentials', () => {
         },
       },
       protocolVersion: 'v2',
-    }
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+    })
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
@@ -181,7 +176,8 @@ describe('V2 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    const offerOptions: CreateOfferOptions = {
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         indy: {
@@ -191,9 +187,7 @@ describe('V2 Connectionless Credentials', () => {
       },
       protocolVersion: 'v2',
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-    }
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+    })
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,

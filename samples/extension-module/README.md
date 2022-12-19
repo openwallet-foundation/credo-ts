@@ -11,7 +11,7 @@ An extension module could be used for different purposes, such as storing data i
 This example consists of a module that implements a very simple request-response protocol called Dummy. In order to do so and be able to be injected into an AFJ instance, some steps were followed:
 
 - Define Dummy protocol message classes (inherited from `AgentMessage`)
-- Create handlers for those messages (inherited from `Handler`)
+- Create handlers for those messages (inherited from `MessageHandler`)
 - Define records (inherited from `BaseRecord`) and a singleton repository (inherited from `Repository`) for state persistance
 - Define events (inherited from `BaseEvent`)
 - Create a singleton service class that manages records and repository, and also trigger events using Agent's `EventEmitter`
