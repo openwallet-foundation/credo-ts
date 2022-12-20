@@ -230,9 +230,9 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     // Get a list of fields found in the options that are not supported at the moment
     const unsupportedFields = ['challenge', 'domain', 'credentialStatus', 'created'] as const
-    const foundFields = unsupportedFields.filter((field) => options[field])
+    const foundFields = unsupportedFields.filter((field) => options[field] !== undefined)
 
-    if (foundFields) {
+    if (foundFields.length > 0) {
       throw new AriesFrameworkError(
         `The fields ${foundFields.join(', ')} are not currently supported in credential options`
       )
