@@ -26,14 +26,15 @@
   "dependencies": {
     "class-transformer": "0.5.1",
     "class-validator": "0.13.1",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "indy-vdr-test-shared": "^0.1.3"
   },
   "peerDependencies": {
-    "@aries-framework/core": "0.2.5",
-    "indy-vdr-test-shared": "^0.1.2"
+    "@aries-framework/core": "0.2.5"
   },
   "devDependencies": {
     "@aries-framework/node": "0.2.5",
+    "indy-vdr-test-nodejs": "^0.1.3",
     "indy-vdr-test-shared": "^0.1.13",
     "reflect-metadata": "^0.1.13",
     "rimraf": "~3.0.2",

@@ -1,9 +1,15 @@
-import * as IndyVdr from 'indy-vdr-test-shared'
-import { GetTransactionAuthorAgreementRequest, GetAcceptanceMechanismsRequest, PoolCreate, IndyVdrRequest, IndyVdrPool as indyVdrPool, indyVdr } from 'indy-vdr-test-shared'
-import { Logger, TypedArrayEncoder, AgentContext, AriesFrameworkError, Key } from '@aries-framework/core'
+import type { Logger, AgentContext, Key } from '@aries-framework/core'
+import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from 'indy-vdr-test-shared'
 
-import { IndyVdrError, IndyVdrNotFoundError } from '../error'
+import { TypedArrayEncoder, AriesFrameworkError } from '@aries-framework/core'
+import {
+  GetTransactionAuthorAgreementRequest,
+  GetAcceptanceMechanismsRequest,
+  PoolCreate,
+  indyVdr,
+} from 'indy-vdr-test-shared'
 
+import { IndyVdrError } from '../error'
 
 export interface TransactionAuthorAgreement {
   version?: `${number}.${number}` | `${number}`
@@ -19,7 +25,7 @@ export interface AuthorAgreement {
 }
 
 export interface AcceptanceMechanisms {
-  aml: string[]
+  aml: Record<string, string>
   amlContext: string
   version: string
 }
@@ -38,7 +44,7 @@ export class IndyVdrPool {
   private poolConfig: IndyVdrPoolConfig
   public authorAgreement?: AuthorAgreement | null
 
-  constructor(poolConfig: IndyVdrPoolConfig, logger: Logger) {
+  public constructor(poolConfig: IndyVdrPoolConfig, logger: Logger) {
     this.logger = logger
     this.poolConfig = poolConfig
   }
@@ -70,22 +76,31 @@ export class IndyVdrPool {
     return this._pool
   }
 
-  public async close() {
-    this.pool?.close()
+  public close() {
+    if (!this.pool) {
+      throw new IndyVdrError("Can't close pool. Pool is not connected")
+    }
+
+    // FIXME: this method doesn't work??
+    // this.pool.close()
   }
 
-  public async submitWriteRequest<Request extends IndyVdrRequest>(agentContext: AgentContext, request: Request, signingKey: Key) {
+  public async submitWriteRequest<Request extends IndyVdrRequest>(
+    agentContext: AgentContext,
+    request: Request,
+    signingKey: Key
+  ) {
     await this.appendTaa(request)
-    
+
     const signature = await agentContext.wallet.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
-      key: signingKey
+      key: signingKey,
     })
-    
+
     request.setSignature({
-      signature
+      signature,
     })
-    
+
     return await this.pool.submitRequest(request)
   }
 
@@ -114,7 +129,7 @@ export class IndyVdrPool {
     // Throw an error if the pool doesn't have the specified version and acceptance mechanism
     if (
       authorAgreement.version !== poolTaa.version ||
-      !authorAgreement.acceptanceMechanisms.aml.includes(poolTaa.acceptanceMechanism)
+      !authorAgreement.acceptanceMechanisms.aml[poolTaa.acceptanceMechanism]
     ) {
       // Throw an error with a helpful message
       const errMessage = `Unable to satisfy matching TAA with mechanism ${JSON.stringify(
@@ -136,20 +151,17 @@ export class IndyVdrPool {
     request.setTransactionAuthorAgreementAcceptance({ acceptance })
   }
 
-  private async getTransactionAuthorAgreement(
-  ): Promise<AuthorAgreement | null> {
+  private async getTransactionAuthorAgreement(): Promise<AuthorAgreement | null> {
     // TODO Replace this condition with memoization
     if (this.authorAgreement !== undefined) {
       return this.authorAgreement
     }
 
-    const taaRequest  = new GetTransactionAuthorAgreementRequest({})
+    const taaRequest = new GetTransactionAuthorAgreementRequest({})
     const taaResponse = await this.submitReadRequest(taaRequest)
 
     const acceptanceMechanismRequest = new GetAcceptanceMechanismsRequest({})
-    const acceptanceMechanismResponse = await this.submitReadRequest(
-      acceptanceMechanismRequest
-    )
+    const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest)
 
     const taaData = taaResponse.result.data
 

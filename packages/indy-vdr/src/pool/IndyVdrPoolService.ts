@@ -1,21 +1,17 @@
-import { GetNymRequest, GetNymResponse } from 'indy-vdr-test-shared'
+import type { IndyVdrPoolConfig } from './IndyVdrPool'
+import type { AgentContext } from '@aries-framework/core'
+import type { GetNymResponse } from 'indy-vdr-test-shared'
 
-import {
-  AgentDependencies,
-  Logger,
-  InjectionSymbols,
-  injectable,
-  AgentContext,
-  inject,
-  LedgerNotConfiguredError,
-} from '@aries-framework/core'
+import { Logger, InjectionSymbols, injectable, inject, LedgerNotConfiguredError } from '@aries-framework/core'
+import { GetNymRequest } from 'indy-vdr-test-shared'
 
-import { DID_INDY_REGEX } from './DidIdentifier'
 import { CacheRepository, PersistedLruCache } from '../../../core/src/cache'
+import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
+
+import { DID_INDY_REGEX } from './DidIdentifier'
 import { IndyVdrPool } from './IndyVdrPool'
-import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 
 export const INDY_VDR_LEGACY_DID_POOL_CACHE_ID = 'INDY_VDR_LEGACY_DID_POOL_CACHE'
 export const DID_POOL_CACHE_LIMIT = 500
@@ -30,18 +26,16 @@ export interface CachedDidResponse {
 export class IndyVdrPoolService {
   public pools: IndyVdrPool[] = []
   private logger: Logger
-  private agentDependencies: AgentDependencies
   private didCache: PersistedLruCache<CachedDidResponse>
 
-  public constructor(
-    cacheRepository: CacheRepository,
-    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
-    @inject(InjectionSymbols.Logger) logger: Logger
-  ) {
+  public constructor(cacheRepository: CacheRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
     this.logger = logger
-    this.agentDependencies = agentDependencies
 
     this.didCache = new PersistedLruCache(INDY_VDR_LEGACY_DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
+  }
+
+  public setPools(poolConfigs: IndyVdrPoolConfig[]) {
+    this.pools = poolConfigs.map((poolConfig) => new IndyVdrPool(poolConfig, this.logger))
   }
 
   /**
@@ -60,12 +54,12 @@ export class IndyVdrPoolService {
   }
 
   /**
-   * Get the most appropriate pool for the given did. 
-   * If the did is a qualified indy did, the pool will be determined based on the namespace. 
+   * Get the most appropriate pool for the given did.
+   * If the did is a qualified indy did, the pool will be determined based on the namespace.
    * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
    */
-  public async getPoolForDid(agentContext: AgentContext, did: string): Promise< IndyVdrPool > {
+  public async getPoolForDid(agentContext: AgentContext, did: string): Promise<IndyVdrPool> {
     // Check if the did starts with did:indy
     const match = did.match(DID_INDY_REGEX)
 
@@ -80,7 +74,7 @@ export class IndyVdrPoolService {
 
       const pool = this.pools.find((pool) => pool.indyNamespace === nameSpace)
 
-      if (pool) return  pool 
+      if (pool) return pool
 
       throw new IndyVdrNotFoundError('Pool not found')
     } else {
@@ -88,10 +82,7 @@ export class IndyVdrPoolService {
     }
   }
 
-  private async getPoolForLegacyDid(
-    agentContext: AgentContext,
-    did: string
-  ): Promise<IndyVdrPool > {
+  private async getPoolForLegacyDid(agentContext: AgentContext, did: string): Promise<IndyVdrPool> {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -106,7 +97,7 @@ export class IndyVdrPoolService {
     // If we have the nym response with associated pool in the cache, we'll use that
     if (cachedNymResponse && pool) {
       this.logger.trace(`Found ledger id '${pool.indyNamespace}' for did '${did}' in cache`)
-      return  pool 
+      return pool
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
@@ -154,7 +145,7 @@ export class IndyVdrPoolService {
       },
       indyNamespace: value.did.indyNamespace,
     })
-    return value.pool 
+    return value.pool
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyVdrPool[]) {

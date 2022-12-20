@@ -19,6 +19,7 @@ import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcce
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
+import { readFileSync } from 'fs'
 import path from 'path'
 import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
@@ -69,6 +70,8 @@ import testLogger, { TestLogger } from './logger'
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
+
+export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 export { agentDependencies }
