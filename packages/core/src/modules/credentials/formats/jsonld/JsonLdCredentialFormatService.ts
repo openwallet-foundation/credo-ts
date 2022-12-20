@@ -15,8 +15,14 @@ import type {
   CredentialFormatCreateReturn,
   FormatProcessCredentialOptions,
   FormatProcessOptions,
+  FormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
-import type { JsonLdCredentialFormat, JsonCredential, JsonLdFormatDataCredentialDetail } from './JsonLdCredentialFormat'
+import type {
+  JsonLdCredentialFormat,
+  JsonCredential,
+  JsonLdFormatDataCredentialDetail,
+  JsonLdFormatDataVerifiableCredential,
+} from './JsonLdCredentialFormat'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
@@ -222,9 +228,13 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     const options = credentialRequest.options
 
-    if (options.challenge || options.domain || options.credentialStatus || options.created) {
+    // Get a list of fields found in the options that are not supported at the moment
+    const unsupportedFields = ['challenge', 'domain', 'credentialStatus', 'created'] as const
+    const foundFields = unsupportedFields.filter((field) => options[field])
+
+    if (foundFields) {
       throw new AriesFrameworkError(
-        'The fields challenge, domain, created and credentialStatus not currently supported in credential options'
+        `The fields ${foundFields.join(', ')} are not currently supported in credential options`
       )
     }
 
@@ -319,15 +329,8 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     credential: W3cVerifiableCredential,
     request: JsonLdFormatDataCredentialDetail
   ): void {
-    // const request = JsonTransformer.fromJSON(requestAsJson.credential, W3cCredential)
-
     const jsonCredential = JsonTransformer.toJSON(credential)
     delete jsonCredential.proof
-
-    // Check whether the received credential (minus the proof) matches the credential request
-    if (!areObjectsEqual(jsonCredential, request.credential)) {
-      throw new AriesFrameworkError('Received credential does not match credential request')
-    }
 
     if (Array.isArray(credential.proof)) {
       throw new AriesFrameworkError('Credential proof arrays are not supported')
@@ -355,6 +358,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       throw new AriesFrameworkError(
         'Received credential proof purpose does not match proof purpose from credential request'
       )
+    }
+
+    // Check whether the received credential (minus the proof) matches the credential request
+    if (!areObjectsEqual(jsonCredential, request.credential)) {
+      throw new AriesFrameworkError('Received credential does not match credential request')
     }
 
     // TODO: add check for the credentialStatus once this is supported in AFJ
@@ -398,10 +406,23 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 
-  public shouldAutoRespondToCredential() {
-    // The credential is already compared in the processCredential method, for now
-    // we will always return true.
-    return true
+  public shouldAutoRespondToCredential(
+    agentContext: AgentContext,
+    { requestAttachment, credentialAttachment }: FormatAutoRespondCredentialOptions
+  ) {
+    const credentialJson = credentialAttachment.getDataAsJson<JsonLdFormatDataVerifiableCredential>()
+    const w3cCredential = JsonTransformer.fromJSON(credentialJson, W3cVerifiableCredential)
+    const request = requestAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
+
+    try {
+      // This check is also done in the processCredential method, but we do it here as well
+      // to be certain we don't skip the check
+      this.verifyReceivedCredentialMatchesRequest(w3cCredential, request)
+
+      return true
+    } catch (error) {
+      return false
+    }
   }
 
   /**
