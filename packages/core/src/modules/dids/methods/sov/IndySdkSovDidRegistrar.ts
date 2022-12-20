@@ -89,7 +89,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: qualifiedSovDid,
+        did: qualifiedSovDid,
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),

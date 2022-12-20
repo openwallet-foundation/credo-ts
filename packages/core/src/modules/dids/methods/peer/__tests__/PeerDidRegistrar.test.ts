@@ -119,7 +119,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: [],
@@ -213,7 +213,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           didDocument: didState.didDocument,
           role: DidDocumentRole.Created,
           _tags: {
@@ -305,7 +305,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),

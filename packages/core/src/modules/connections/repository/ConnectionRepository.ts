@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../agent'
+import type { DidExchangeRole } from '../models'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -26,5 +27,13 @@ export class ConnectionRepository extends Repository<ConnectionRecord> {
 
   public getByThreadId(agentContext: AgentContext, threadId: string): Promise<ConnectionRecord> {
     return this.getSingleByQuery(agentContext, { threadId })
+  }
+
+  public getByRoleAndThreadId(
+    agentContext: AgentContext,
+    role: DidExchangeRole,
+    threadId: string
+  ): Promise<ConnectionRecord> {
+    return this.getSingleByQuery(agentContext, { threadId, role })
   }
 }

@@ -81,7 +81,7 @@ export class PeerDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
-        id: didDocument.id,
+        did: didDocument.id,
         role: DidDocumentRole.Created,
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
         tags: {

@@ -128,7 +128,7 @@ describe('peer dids', () => {
 
     // Save the record to storage
     const didDocumentRecord = new DidRecord({
-      id: didPeer1zQmY.id,
+      did: didPeer1zQmY.id,
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
@@ -165,7 +165,7 @@ describe('peer dids', () => {
     }
 
     const didDocumentRecord = new DidRecord({
-      id: did,
+      did: did,
       role: DidDocumentRole.Received,
       // If the method is a genesis doc (did:peer:1) we should store the document
       // Otherwise we only need to store the did itself (as the did can be generated)

@@ -6,7 +6,7 @@ describe('DidRecord', () => {
   describe('getTags', () => {
     it('should return default tags', () => {
       const didRecord = new DidRecord({
-        id: 'did:example:123456789abcdefghi',
+        did: 'did:example:123456789abcdefghi',
         role: DidDocumentRole.Created,
       })
 
@@ -19,6 +19,8 @@ describe('DidRecord', () => {
         role: DidDocumentRole.Created,
         method: 'example',
         legacyUnqualifiedDid: 'unqualifiedDid',
+        did: 'did:example:123456789abcdefghi',
+        methodSpecificIdentifier: '123456789abcdefghi',
       })
     })
   })
