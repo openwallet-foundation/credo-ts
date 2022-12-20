@@ -423,8 +423,6 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     // assert state
     options.proofRecord.assertState(ProofState.RequestReceived)
-
-    console.log(">>QUACK GOING TO CREATE PRESENTATION...>>")
     const proofRequest = await this.didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,

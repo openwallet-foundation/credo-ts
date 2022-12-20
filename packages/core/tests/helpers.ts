@@ -972,7 +972,6 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
   const aliceKey = await aliceWallet.createKey({ keyType: KeyType.Ed25519, seed: holderSeed })
   const holderDidKey = new DidKey(aliceKey)
 
-
   const inputDocAsJson: JsonCredential = {
     '@context': [
       'https://www.w3.org/2018/credentials/v1',

@@ -194,20 +194,14 @@ export class W3cCredentialService {
       key: keyPair,
       useNativeCanonize: false,
     })
-    console.log('>>>>> QUACK ABOUT TO SIGN PRESENTATION in vc = ')
-    let result
-    try {
-      result = await vc.signPresentation({
-        presentation: JsonTransformer.toJSON(options.presentation),
-        suite: suite,
-        challenge: options.challenge,
-        documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
-      })
-    } catch (error) {
-      console.log('OOOOOH QUACK error = ', error)
-    }
 
-    console.log('>>>>> QUACK RESULT = ', result)
+    const result = await vc.signPresentation({
+      presentation: JsonTransformer.toJSON(options.presentation),
+      suite: suite,
+      challenge: options.challenge,
+      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+    })
+
     return JsonTransformer.fromJSON(result, W3cVerifiablePresentation)
   }
 
