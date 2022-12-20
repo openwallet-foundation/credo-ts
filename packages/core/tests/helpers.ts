@@ -8,13 +8,18 @@ import type {
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
+  InjectionToken,
   ProofStateChangedEvent,
   SchemaTemplate,
   Wallet,
 } from '../src'
 import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { SignCredentialOptionsRFC0593 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonCredential,
+  JsonLdSignCredentialFormat,
+  SignCredentialOptionsRFC0593,
+} from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
 import type { CredDef, Schema } from 'indy-sdk'
@@ -29,7 +34,12 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  JsonTransformer,
+  CredentialsModule,
+  IndyCredentialFormatService,
+  JsonLdCredentialFormatService,
+  V1CredentialProtocol,
+  V2CredentialProtocol,
+  W3cVcModule,
   Agent,
   AgentConfig,
   AgentContext,
@@ -63,8 +73,8 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../src/modules/vc/__tests__/fixtures'
-import { W3cCredential } from '../src/modules/vc/models'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -158,14 +168,24 @@ export function getAgentContext({
   wallet,
   agentConfig,
   contextCorrelationId = 'mock',
+  registerInstances = [],
 }: {
   dependencyManager?: DependencyManager
   wallet?: Wallet
   agentConfig?: AgentConfig
   contextCorrelationId?: string
+  // Must be an array of arrays as objects can't have injection tokens
+  // as keys (it must be number, string or symbol)
+  registerInstances?: Array<[InjectionToken, unknown]>
 } = {}) {
   if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+
+  // Register custom instances on the dependency manager
+  for (const [token, instance] of registerInstances.values()) {
+    dependencyManager.registerInstance(token, instance)
+  }
+
   return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
@@ -229,7 +249,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -673,14 +693,32 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
 
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
+  // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
+
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
   }
   const faberAgentOptions = getAgentOptions(
     faberName,
     {
       endpoints: ['rxjs:faber'],
-      autoAcceptCredentials,
     },
     modules
   )
@@ -689,7 +727,6 @@ export async function setupCredentialTests(
     aliceName,
     {
       endpoints: ['rxjs:alice'],
-      autoAcceptCredentials,
     },
     modules
   )
@@ -837,18 +874,42 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
   const unique = uuid().substring(0, 4)
 
   const autoAcceptCredentials = AutoAcceptCredential.Always
-  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
-    autoAcceptProofs,
-    endpoints: ['rxjs:faber'],
-    autoAcceptCredentials,
-  })
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
 
-  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
-    autoAcceptProofs,
-    endpoints: ['rxjs:alice'],
-    autoAcceptCredentials,
-  })
+  const modules = {
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+  const faberAgentOptions = getAgentOptions(
+    `${faberName}-${unique}`,
+    {
+      autoAcceptProofs,
+      endpoints: ['rxjs:faber'],
+    },
+    modules
+  )
 
+  const aliceAgentOptions = getAgentOptions(
+    `${aliceName}-${unique}`,
+    {
+      autoAcceptProofs,
+      endpoints: ['rxjs:alice'],
+    },
+    modules
+  )
   const faberMessages = new Subject<SubjectMessage>()
   const aliceMessages = new Subject<SubjectMessage>()
 
@@ -897,8 +958,8 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
     ],
   })
 
-  const issuerSeed = 'testseed0000000000000000000000I1'
-  const holderSeed = 'testseed0000000000000000000000H1'
+  const issuerSeed = 'testseed000000000000000000000001'
+  const holderSeed = 'testseed000000000000000000000001'
 
   //  create issuer did for test
 
@@ -911,25 +972,67 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
   const aliceKey = await aliceWallet.createKey({ keyType: KeyType.Ed25519, seed: holderSeed })
   const holderDidKey = new DidKey(aliceKey)
 
-  const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_2
-  const credentialJsonDL = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_2
 
-  credentialJson.id = 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd'
-  credentialJson.credentialSubject.id = holderDidKey.did
-  credentialJson.issuer = issuerDidKey.did
-
-  credentialJsonDL.id = 'https://issuer.oidp.uscis.gov/credentials/83627465'
-  credentialJsonDL.credentialSubject.id = holderDidKey.did
-  credentialJsonDL.issuer = issuerDidKey.did
-
-  const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
-  const credentialDL = JsonTransformer.fromJSON(credentialJson, W3cCredential)
-
-  const credentialResidency: W3cCredential = JsonTransformer.fromJSON(credential, W3cCredential)
-  const credentialDriversLicense: W3cCredential = JsonTransformer.fromJSON(credentialDL, W3cCredential)
-
-  const signCredentialOptions: SignCredentialOptionsRFC0593 = {
-    credential: credentialResidency,
+  const inputDocAsJson: JsonCredential = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      description: 'Government of Example Permanent Resident Card.',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  }
+  const inputDocAsJsonDL: JsonCredential = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      description: 'Government of Example Permanent Resident Card.',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  }
+  const signCredentialOptions: JsonLdSignCredentialFormat = {
+    credential: inputDocAsJson,
     options: {
       proofType: 'Ed25519Signature2018',
       proofPurpose: 'assertionMethod',
@@ -937,7 +1040,7 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
   }
 
   const signCredentialOptionsDriversLicense: SignCredentialOptionsRFC0593 = {
-    credential: credentialDriversLicense,
+    credential: inputDocAsJsonDL,
     options: {
       proofType: 'Ed25519Signature2018',
       proofPurpose: 'assertionMethod',

@@ -33,7 +33,7 @@ export interface SignPresentationOptions {
   presentation: W3cPresentation
   signatureType: string
   purpose: ProofPurpose
-  verificationMethod?: string
+  verificationMethod: string
   challenge: string
 }
 

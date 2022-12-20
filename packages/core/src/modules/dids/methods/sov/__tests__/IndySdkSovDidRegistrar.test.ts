@@ -330,7 +330,7 @@ describe('DidRegistrar', () => {
       const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
       expect(didRecord).toMatchObject({
-        id: 'did:sov:R1xKJw17sUoXhejEpugMYJ',
+        did: 'did:sov:R1xKJw17sUoXhejEpugMYJ',
         role: DidDocumentRole.Created,
         _tags: {
           recipientKeyFingerprints: ['z6LSrH6AdsQeZuKKmG6Ehx7abEQZsVg2psR2VU536gigUoAe'],
