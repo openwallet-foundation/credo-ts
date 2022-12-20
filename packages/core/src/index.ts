@@ -10,6 +10,7 @@ export { EventEmitter } from './agent/EventEmitter'
 export { FeatureRegistry } from './agent/FeatureRegistry'
 export { Handler, HandlerInboundMessage } from './agent/Handler'
 export * from './agent/models'
+export * from './modules/ledger/error'
 export * from './agent/helpers'
 export { AgentConfig } from './agent/AgentConfig'
 export { AgentMessage } from './agent/AgentMessage'
@@ -25,6 +26,7 @@ export type {
   JsonObject,
   JsonValue,
 } from './types'
+export * from './cache'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export * from './storage/BaseRecord'

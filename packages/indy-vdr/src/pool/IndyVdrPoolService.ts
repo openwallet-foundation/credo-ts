@@ -8,10 +8,11 @@ import {
   AgentContext,
   inject,
   LedgerNotConfiguredError,
+  PersistedLruCache,
+  CacheRepository
 } from '@aries-framework/core'
 
 import { DID_INDY_REGEX } from './DidIdentifier'
-import { CacheRepository, PersistedLruCache } from '../../../core/src/cache'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 import { IndyVdrPool } from './IndyVdrPool'
@@ -69,16 +70,10 @@ export class IndyVdrPoolService {
     // Check if the did starts with did:indy
     const match = did.match(DID_INDY_REGEX)
 
-    // if (match) {
-    //   const [, namespace] = match
-    // } else {
-    //   // legacy way
-    // }
+    if (match) {
+      const [, namespace] = match
 
-    if (did.startsWith('did:indy')) {
-      const nameSpace = did.split(':')[2]
-
-      const pool = this.pools.find((pool) => pool.indyNamespace === nameSpace)
+      const pool = this.getPoolForNamespace(namespace);
 
       if (pool) return  pool 
 
