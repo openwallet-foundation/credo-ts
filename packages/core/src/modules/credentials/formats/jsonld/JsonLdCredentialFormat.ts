@@ -2,7 +2,6 @@ import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
 import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
 import type { CredentialFormat } from '../CredentialFormat'
-import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
 export interface JsonCredential {
   '@context': Array<string> | JsonObject
@@ -15,19 +14,53 @@ export interface JsonCredential {
   [key: string]: unknown
 }
 
-// this is the API interface (only)
-export interface JsonLdSignCredentialFormat {
+/**
+ * Format for creating a jsonld proposal, offer or request.
+ */
+export interface JsonLdCredentialDetailFormat {
   credential: JsonCredential
-  options: JsonLdOptionsRFC0593
+  options: {
+    proofPurpose: string
+    proofType: string
+  }
 }
 
-// use this interface internally as the above may diverge in future
-export interface SignCredentialOptionsRFC0593 {
-  credential: JsonCredential
-  options: JsonLdOptionsRFC0593
+// use empty object in the acceptXXX jsonld format interface so we indicate that
+// the jsonld format service needs to be invoked
+type EmptyObject = Record<string, never>
+
+/**
+ * Format for accepting a jsonld credential request. Optionally allows the verification
+ * method to use to sign the credential.
+ */
+export interface JsonLdAcceptRequestFormat {
+  verificationMethod?: string
 }
 
-export interface JsonVerifiableCredential extends JsonLdSignCredentialFormat {
+export interface JsonLdCredentialFormat extends CredentialFormat {
+  formatKey: 'jsonld'
+  credentialRecordType: 'w3c'
+  credentialFormats: {
+    createProposal: JsonLdCredentialDetailFormat
+    acceptProposal: EmptyObject
+    createOffer: JsonLdCredentialDetailFormat
+    acceptOffer: EmptyObject
+    createRequest: JsonLdCredentialDetailFormat
+    acceptRequest: JsonLdAcceptRequestFormat
+  }
+  formatData: {
+    proposal: JsonLdFormatDataCredentialDetail
+    offer: JsonLdFormatDataCredentialDetail
+    request: JsonLdFormatDataCredentialDetail
+    credential: JsonLdFormatDataVerifiableCredential
+  }
+}
+
+/**
+ * Represents a signed verifiable credential. Only meant to be used for credential
+ * format data interfaces.
+ */
+export interface JsonLdFormatDataVerifiableCredential extends JsonCredential {
   proof: {
     type: string
     proofPurpose: string
@@ -42,30 +75,27 @@ export interface JsonVerifiableCredential extends JsonLdSignCredentialFormat {
   }
 }
 
-// use empty object in the acceptXXX jsonld format interface so we indicate that
-// the jsonld format service needs to be invoked
-type EmptyObject = Record<string, never>
-
-// it is an option to provide the verification method in acceptRequest
-export interface JsonLdCreateRequestFormat {
-  verificationMethod?: string
+/**
+ * Represents the jsonld credential detail. Only meant to be used for credential
+ * format data interfaces.
+ */
+export interface JsonLdFormatDataCredentialDetail {
+  credential: JsonCredential
+  options: JsonLdFormatDataCredentialDetailOptions
 }
 
-export interface JsonLdCredentialFormat extends CredentialFormat {
-  formatKey: 'jsonld'
-  credentialRecordType: 'w3c'
-  credentialFormats: {
-    createProposal: JsonLdSignCredentialFormat
-    acceptProposal: EmptyObject
-    createOffer: JsonLdSignCredentialFormat
-    acceptOffer: EmptyObject
-    createRequest: JsonLdSignCredentialFormat
-    acceptRequest: JsonLdCreateRequestFormat
-  }
-  formatData: {
-    proposal: JsonLdSignCredentialFormat
-    offer: JsonLdSignCredentialFormat
-    request: JsonLdSignCredentialFormat
-    credential: JsonVerifiableCredential
+/**
+ * Represents the jsonld credential detail options. Only meant to be used for credential
+ * format data interfaces.
+ */
+export interface JsonLdFormatDataCredentialDetailOptions {
+  proofPurpose: string
+  proofType: string
+  created?: string
+  domain?: string
+  challenge?: string
+  credentialStatus?: {
+    type: string
+    [key: string]: unknown
   }
 }
