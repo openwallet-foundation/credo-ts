@@ -177,7 +177,7 @@ export class DidExchangeProtocol {
     // This can be called from both the did exchange and the connection protocol.
     const didDocument = await this.extractDidDocument(messageContext.agentContext, message)
     const didRecord = new DidRecord({
-      id: message.did,
+      did: message.did,
       role: DidDocumentRole.Received,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
@@ -191,6 +191,7 @@ export class DidExchangeProtocol {
 
     this.logger.debug('Saving DID record', {
       id: didRecord.id,
+      did: didRecord.did,
       role: didRecord.role,
       tags: didRecord.getTags(),
       didDocument: 'omitted...',
@@ -321,7 +322,7 @@ export class DidExchangeProtocol {
         .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
     )
     const didRecord = new DidRecord({
-      id: message.did,
+      did: message.did,
       role: DidDocumentRole.Received,
       didDocument,
       tags: {
@@ -333,6 +334,7 @@ export class DidExchangeProtocol {
 
     this.logger.debug('Saving DID record', {
       id: didRecord.id,
+      did: didRecord.did,
       role: didRecord.role,
       tags: didRecord.getTags(),
       didDocument: 'omitted...',
