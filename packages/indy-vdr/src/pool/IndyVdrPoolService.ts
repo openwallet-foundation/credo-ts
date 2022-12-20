@@ -1,40 +1,35 @@
-import type { AgentContext } from '../../../core/src/agent'
-import { GetNymRequest, indyVdr,} from 'indy-vdr-test-shared'
+import { GetNymRequest, GetNymResponse } from 'indy-vdr-test-shared'
 
 import {
   AgentDependencies,
   Logger,
   InjectionSymbols,
   injectable,
+  AgentContext,
   inject,
-  LedgerError,
   LedgerNotConfiguredError,
-  LedgerNotFoundError,
 } from '@aries-framework/core'
 
-import { IndyVdrError, GetNymResponse } from 'indy-vdr-test-shared'
+import { DID_INDY_REGEX } from './DidIdentifier'
 import { CacheRepository, PersistedLruCache } from '../../../core/src/cache'
-import { IndySdkError } from '../../../core/src/error'
-import { isSelfCertifiedDid } from '../../../core/src/utils/did'
-import { isIndyError } from '../../../core/src/utils/indyError'
-import { allSettled, onlyFulfilled, onlyRejected } from '../../../core/src/utils/promises'
-import { assertIndyWallet } from '../../../core/src/wallet/util/assertIndyWallet'
+import { isSelfCertifiedDid } from '../utils/did'
+import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 import { IndyVdrPool } from './IndyVdrPool'
+import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 
-export const DID_POOL_CACHE_ID = 'DID_POOL_CACHE'
+export const INDY_VDR_LEGACY_DID_POOL_CACHE_ID = 'INDY_VDR_LEGACY_DID_POOL_CACHE'
 export const DID_POOL_CACHE_LIMIT = 500
 export interface CachedDidResponse {
   nymResponse: {
     did: string
     verkey: string
   }
-  poolId?: string
+  indyNamespace: string
 }
 @injectable()
 export class IndyVdrPoolService {
   public pools: IndyVdrPool[] = []
   private logger: Logger
-  private indyVdr!: typeof indyVdr
   private agentDependencies: AgentDependencies
   private didCache: PersistedLruCache<CachedDidResponse>
 
@@ -46,7 +41,7 @@ export class IndyVdrPoolService {
     this.logger = logger
     this.agentDependencies = agentDependencies
 
-    this.didCache = new PersistedLruCache(DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
+    this.didCache = new PersistedLruCache(INDY_VDR_LEGACY_DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
   }
 
   /**
@@ -56,28 +51,38 @@ export class IndyVdrPoolService {
     const handleArray: number[] = []
     // Sequentially connect to pools so we don't use up too many resources connecting in parallel
     for (const pool of this.pools) {
-      this.logger.debug(`Connecting to pool: ${pool.id}`)
+      this.logger.debug(`Connecting to pool: ${pool.indyNamespace}`)
       const poolHandle = await pool.connect()
-      this.logger.debug(`Finished connection to pool: ${pool.id}`)
+      this.logger.debug(`Finished connection to pool: ${pool.indyNamespace}`)
       handleArray.push(poolHandle)
     }
     return handleArray
   }
 
   /**
-   * Get the most appropriate pool for the given did. The algorithm is based on the approach as described in this document:
+   * Get the most appropriate pool for the given did. 
+   * If the did is a qualified indy did, the pool will be determined based on the namespace. 
+   * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
    */
-  public async getPoolForDid(agentContext: AgentContext, did: string): Promise<{ pool: IndyVdrPool }> {
+  public async getPoolForDid(agentContext: AgentContext, did: string): Promise< IndyVdrPool > {
     // Check if the did starts with did:indy
+    const match = did.match(DID_INDY_REGEX)
+
+    // if (match) {
+    //   const [, namespace] = match
+    // } else {
+    //   // legacy way
+    // }
+
     if (did.startsWith('did:indy')) {
       const nameSpace = did.split(':')[2]
 
-      const pool = this.pools.find((pool) => pool.IndyNamespace === nameSpace)
+      const pool = this.pools.find((pool) => pool.indyNamespace === nameSpace)
 
-      if (pool) return { pool }
+      if (pool) return  pool 
 
-      throw new LedgerNotFoundError('Pool not found')
+      throw new IndyVdrNotFoundError('Pool not found')
     } else {
       return await this.getPoolForLegacyDid(agentContext, did)
     }
@@ -86,7 +91,7 @@ export class IndyVdrPoolService {
   private async getPoolForLegacyDid(
     agentContext: AgentContext,
     did: string
-  ): Promise<{ pool: IndyVdrPool; did: string }> {
+  ): Promise<IndyVdrPool > {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -96,27 +101,27 @@ export class IndyVdrPoolService {
     }
 
     const cachedNymResponse = await this.didCache.get(agentContext, did)
-    const pool = this.pools.find((pool) => pool.config.indyNamespace === cachedNymResponse?.poolId)
+    const pool = this.pools.find((pool) => pool.indyNamespace === cachedNymResponse?.indyNamespace)
 
     // If we have the nym response with associated pool in the cache, we'll use that
     if (cachedNymResponse && pool) {
-      this.logger.trace(`Found ledger id '${pool.id}' for did '${did}' in cache`)
-      return { did: cachedNymResponse.nymResponse.did, pool }
+      this.logger.trace(`Found ledger id '${pool.indyNamespace}' for did '${did}' in cache`)
+      return  pool 
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
 
     if (successful.length === 0) {
-      const allNotFound = rejected.every((e) => e.reason instanceof LedgerNotFoundError)
-      const rejectedOtherThanNotFound = rejected.filter((e) => !(e.reason instanceof LedgerNotFoundError))
+      const allNotFound = rejected.every((e) => e.reason instanceof IndyVdrNotFoundError)
+      const rejectedOtherThanNotFound = rejected.filter((e) => !(e.reason instanceof IndyVdrNotFoundError))
 
       // All ledgers returned response that the did was not found
       if (allNotFound) {
-        throw new LedgerNotFoundError(`Did '${did}' not found on any of the ledgers (total ${this.pools.length}).`)
+        throw new IndyVdrNotFoundError(`Did '${did}' not found on any of the ledgers (total ${this.pools.length}).`)
       }
 
       // one or more of the ledgers returned an unknown error
-      throw new LedgerError(
+      throw new IndyVdrError(
         `Unknown error retrieving did '${did}' from '${rejectedOtherThanNotFound.length}' of '${pools.length}' ledgers`,
         { cause: rejectedOtherThanNotFound[0].reason }
       )
@@ -125,7 +130,9 @@ export class IndyVdrPoolService {
     // If there are self certified DIDs we always prefer it over non self certified DIDs
     // We take the first self certifying DID as we take the order in the
     // indyLedgers config as the order of preference of ledgers
-    let value = successful.find((response) => isSelfCertifiedDid(response.value.did.nymResponse.did, response.value.did.nymResponse.verkey))?.value
+    let value = successful.find((response) =>
+      isSelfCertifiedDid(response.value.did.nymResponse.did, response.value.did.nymResponse.verkey)
+    )?.value
 
     if (!value) {
       // Split between production and nonProduction ledgers. If there is at least one
@@ -145,8 +152,9 @@ export class IndyVdrPoolService {
         did: value.did.nymResponse.did,
         verkey: value.did.nymResponse.verkey,
       },
+      indyNamespace: value.did.indyNamespace,
     })
-    return { pool: value.pool, did: value.did.nymResponse.did }
+    return value.pool 
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyVdrPool[]) {
@@ -179,10 +187,10 @@ export class IndyVdrPoolService {
       return this.pools[0]
     }
 
-    const pool = this.pools.find((pool) => pool.config.indyNamespace === indyNamespace) // TODO check if this is corect
+    const pool = this.pools.find((pool) => pool.indyNamespace === indyNamespace)
 
     if (!pool) {
-      throw new LedgerNotFoundError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
+      throw new IndyVdrNotFoundError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
     }
 
     return pool
@@ -190,19 +198,20 @@ export class IndyVdrPoolService {
 
   private async getDidFromPool(did: string, pool: IndyVdrPool): Promise<PublicDidRequest> {
     try {
-      this.logger.trace(`Get public did '${did}' from ledger '${pool.id}'`)
+      this.logger.trace(`Get public did '${did}' from ledger '${pool.indyNamespace}'`)
       const request = await new GetNymRequest({ dest: did })
 
-      this.logger.trace(`Submitting get did request for did '${did}' to ledger '${pool.id}'`)
+      this.logger.trace(`Submitting get did request for did '${did}' to ledger '${pool.indyNamespace}'`)
       const response = await pool.submitReadRequest(request)
 
       if (!response.result.data) {
-        throw new LedgerError('Not Found')
+        // TODO: Set a descriptive message
+        throw new IndyVdrError('Not Found')
       }
 
       const result = JSON.parse(response.result.data)
 
-      this.logger.trace(`Retrieved did '${did}' from ledger '${pool.id}'`, result)
+      this.logger.trace(`Retrieved did '${did}' from ledger '${pool.indyNamespace}'`, result)
 
       return {
         did: result,
@@ -210,15 +219,11 @@ export class IndyVdrPoolService {
         response,
       }
     } catch (error) {
-      this.logger.trace(`Error retrieving did '${did}' from ledger '${pool.id}'`, {
+      this.logger.trace(`Error retrieving did '${did}' from ledger '${pool.indyNamespace}'`, {
         error,
         did,
       })
-      if (isIndyError(error, 'LedgerNotFound')) {
-        throw new LedgerNotFoundError(`Did '${did}' not found on ledger ${pool.id}`)
-      } else {
-        throw isIndyError(error) ? new IndySdkError(error) : error
-      }
+      throw error
     }
   }
 }

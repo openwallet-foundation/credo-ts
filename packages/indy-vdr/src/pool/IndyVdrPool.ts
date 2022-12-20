@@ -1,7 +1,9 @@
-import { Logger, TypedArrayEncoder } from '@aries-framework/core'
-
 import * as IndyVdr from 'indy-vdr-test-shared'
-import { AgentDependencies, AgentContext, LedgerError, AriesFrameworkError, Key } from '@aries-framework/core'
+import { GetTransactionAuthorAgreementRequest, GetAcceptanceMechanismsRequest, PoolCreate, IndyVdrRequest, IndyVdrPool as indyVdrPool, indyVdr } from 'indy-vdr-test-shared'
+import { Logger, TypedArrayEncoder, AgentContext, AriesFrameworkError, Key } from '@aries-framework/core'
+
+import { IndyVdrError, IndyVdrNotFoundError } from '../error'
+
 
 export interface TransactionAuthorAgreement {
   version?: `${number}.${number}` | `${number}`
@@ -31,7 +33,7 @@ export interface IndyVdrPoolConfig {
 
 export class IndyVdrPool {
   // indyVdr?: typeof IndyVdr
-  private _pool?: IndyVdr.IndyVdrPool
+  private _pool?: indyVdrPool
   private logger: Logger
   private poolConfig: IndyVdrPoolConfig
   public authorAgreement?: AuthorAgreement | null
@@ -41,7 +43,7 @@ export class IndyVdrPool {
     this.poolConfig = poolConfig
   }
 
-  public get IndyNamespace(): string {
+  public get indyNamespace(): string {
     return this.poolConfig.indyNamespace
   }
 
@@ -49,12 +51,8 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
-  public get id() {
-    return this.pool.handle
-  }
-
   public async connect() {
-    this._pool = new IndyVdr.PoolCreate({
+    this._pool = new PoolCreate({
       parameters: {
         transactions: this.config.genesisTransactions,
       },
@@ -63,7 +61,7 @@ export class IndyVdrPool {
     return this.pool.handle
   }
 
-  private get pool(): IndyVdr.IndyVdrPool {
+  private get pool(): indyVdrPool {
     if (!this._pool) {
       // TODO: create custom IndyVdrError
       throw new AriesFrameworkError('Pool is not connected. Make sure to call .connect() first')
@@ -76,7 +74,7 @@ export class IndyVdrPool {
     this.pool?.close()
   }
 
-  public async submitWriteRequest<Request extends IndyVdr.IndyVdrRequest>(agentContext: AgentContext, request: IndyVdr.IndyVdrRequest, signingKey: Key) {
+  public async submitWriteRequest<Request extends IndyVdrRequest>(agentContext: AgentContext, request: Request, signingKey: Key) {
     await this.appendTaa(request)
     
     const signature = await agentContext.wallet.sign({
@@ -88,14 +86,14 @@ export class IndyVdrPool {
       signature
     })
     
-    await this.pool.submitRequest(request)
-  }
-
-  public async submitReadRequest<Request extends IndyVdr.IndyVdrRequest>(request: Request) {
     return await this.pool.submitRequest(request)
   }
 
-  private async appendTaa(request: IndyVdr.IndyVdrRequest) {
+  public async submitReadRequest<Request extends IndyVdrRequest>(request: Request) {
+    return await this.pool.submitRequest(request)
+  }
+
+  private async appendTaa(request: IndyVdrRequest) {
     const authorAgreement = await this.getTransactionAuthorAgreement()
     const poolTaa = this.config.transactionAuthorAgreement
 
@@ -106,7 +104,7 @@ export class IndyVdrPool {
 
     // Ledger has taa but user has not specified which one to use
     if (!poolTaa) {
-      throw new LedgerError(
+      throw new IndyVdrError(
         `Please, specify a transaction author agreement with version and acceptance mechanism. ${JSON.stringify(
           authorAgreement
         )}`
@@ -124,10 +122,10 @@ export class IndyVdrPool {
       )} and version ${poolTaa.version} in pool.\n Found ${JSON.stringify(
         authorAgreement.acceptanceMechanisms.aml
       )} and version ${authorAgreement.version} in pool.`
-      throw new LedgerError(errMessage)
+      throw new IndyVdrError(errMessage)
     }
 
-    const acceptance = IndyVdr.indyVdr.prepareTxnAuthorAgreementAcceptance({
+    const acceptance = indyVdr.prepareTxnAuthorAgreementAcceptance({
       text: authorAgreement.text,
       version: authorAgreement.version,
       taaDigest: authorAgreement.digest,
@@ -145,10 +143,10 @@ export class IndyVdrPool {
       return this.authorAgreement
     }
 
-    const taaRequest  =new IndyVdr.GetTransactionAuthorAgreementRequest({})
+    const taaRequest  = new GetTransactionAuthorAgreementRequest({})
     const taaResponse = await this.submitReadRequest(taaRequest)
 
-    const acceptanceMechanismRequest = new IndyVdr.GetAcceptanceMechanismsRequest({})
+    const acceptanceMechanismRequest = new GetAcceptanceMechanismsRequest({})
     const acceptanceMechanismResponse = await this.submitReadRequest(
       acceptanceMechanismRequest
     )
