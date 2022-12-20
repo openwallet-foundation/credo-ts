@@ -234,7 +234,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     if (foundFields.length > 0) {
       throw new AriesFrameworkError(
-        `The fields ${foundFields.join(', ')} are not currently supported in credential options`
+        `Some fields are not currently supported in credential options: ${foundFields.join(', ')}`
       )
     }
 
