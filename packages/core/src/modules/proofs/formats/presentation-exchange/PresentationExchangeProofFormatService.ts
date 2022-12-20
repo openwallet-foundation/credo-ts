@@ -237,7 +237,9 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (!options.proofFormats.presentationExchange) {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
     }
+
     const requestPresentation = options.attachment.getDataAsJson<FormatRequestPresentationExchangeOptions>()
+
     const credential: IVerifiableCredential = options.proofFormats.presentationExchange.formats
 
     const pex: PEXv1 = new PEXv1()
@@ -523,14 +525,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       verificationMethod: signatureOptions.verificationMethod,
       challenge: proofOptions.challenge,
     }
-    console.log(">>>>>>>>>>>>>>>> GOING TO SIGN PRESENTATION...>>>>>>>>>>>>>>>>>>>>>")
-
-    const b = JsonTransformer.toJSON(
+    return JsonTransformer.toJSON(
       this.w3cCredentialService.signPresentation(this.agentContext, signPresentationOptions)
     ) as IVerifiablePresentation
-
-    console.log(">>>>>>>>>>>>>>>> DONE!--------------> b = ", b)
-
-    return b
   }
 }
