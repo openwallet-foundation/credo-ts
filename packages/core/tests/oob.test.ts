@@ -605,7 +605,7 @@ describe('out of band', () => {
         new AriesFrameworkError(
           `An out of band record with invitation ${
             outOfBandRecord.outOfBandInvitation!.id
-          } already exists. Invitations should have a unique id.`
+          } has already been received. Invitations should have a unique id.`
         )
       )
     })

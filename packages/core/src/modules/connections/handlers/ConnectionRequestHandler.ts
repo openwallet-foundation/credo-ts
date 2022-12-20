@@ -38,7 +38,10 @@ export class ConnectionRequestHandler implements MessageHandler {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const outOfBandRecord = await this.outOfBandService.findByRecipientKey(messageContext.agentContext, recipientKey)
+    const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientKey(
+      messageContext.agentContext,
+      recipientKey
+    )
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
@@ -50,9 +53,12 @@ export class ConnectionRequestHandler implements MessageHandler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
-    if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
+      messageContext.agentContext,
+      senderKey
+    )
+    if (receivedDidRecord) {
+      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)

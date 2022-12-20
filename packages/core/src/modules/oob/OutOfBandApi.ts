@@ -383,11 +383,14 @@ export class OutOfBandApi {
         )
       }
 
-      // Make sure we haven't processed this invitation before.
-      outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
+      // Make sure we haven't received this invitation before. (it's fine if we created it, that means we're connecting with ourselves
+      ;[outOfBandRecord] = await this.outOfBandService.findAllByQuery(this.agentContext, {
+        invitationId: outOfBandInvitation.id,
+        role: OutOfBandRole.Receiver,
+      })
       if (outOfBandRecord) {
         throw new AriesFrameworkError(
-          `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       }
 
@@ -568,12 +571,12 @@ export class OutOfBandApi {
     return { outOfBandRecord }
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandService.findByRecipientKey(this.agentContext, recipientKey)
+  public async findByReceivedInvitationId(receivedInvitationId: string) {
+    return this.outOfBandService.findByReceivedInvitationId(this.agentContext, receivedInvitationId)
   }
 
-  public async findByInvitationId(invitationId: string) {
-    return this.outOfBandService.findByInvitationId(this.agentContext, invitationId)
+  public async findByCreatedInvitationId(createdInvitationId: string) {
+    return this.outOfBandService.findByCreatedInvitationId(this.agentContext, createdInvitationId)
   }
 
   /**

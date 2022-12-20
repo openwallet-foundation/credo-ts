@@ -1384,8 +1384,10 @@ Object {
   "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT": Object {
     "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
     "tags": Object {
+      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "legacyUnqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "recipientKeyFingerprints": Array [
         "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
       ],
@@ -1399,6 +1401,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1454,8 +1457,10 @@ Object {
   "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56": Object {
     "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
     "tags": Object {
+      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "legacyUnqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "recipientKeyFingerprints": Array [
         "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
       ],
@@ -1469,6 +1474,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1524,8 +1530,10 @@ Object {
   "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ": Object {
     "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
     "tags": Object {
+      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "legacyUnqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "recipientKeyFingerprints": Array [
         "z6Mkw81EsWQioXYC9YJ7uKHCRh6LTN7sfD9sJbSPBGXmUpzC",
       ],
@@ -1539,6 +1547,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1594,8 +1603,10 @@ Object {
   "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb": Object {
     "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
     "tags": Object {
+      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "legacyUnqualifiedDid": "RtH4qxVPL1Dpmdv7GytjBv",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "recipientKeyFingerprints": Array [
         "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
       ],
@@ -1609,6 +1620,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1664,8 +1676,10 @@ Object {
   "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU": Object {
     "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
     "tags": Object {
+      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "legacyUnqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "recipientKeyFingerprints": Array [
         "z6Mkwc6efk75y4Y1agRx4NGpvtrpKxtKvMfgBEdQkHBwU8Xu",
       ],
@@ -1679,6 +1693,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1734,8 +1749,10 @@ Object {
   "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy": Object {
     "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
     "tags": Object {
+      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "legacyUnqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "recipientKeyFingerprints": Array [
         "z6MkvW9GxjjUdL9qpaj2qQW6YBhCjZY7Zkzrks3cgpJaRjxR",
       ],
@@ -1749,6 +1766,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-20T13:02:21.646Z",
+      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1804,8 +1822,10 @@ Object {
   "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf": Object {
     "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
     "tags": Object {
+      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "legacyUnqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "recipientKeyFingerprints": Array [
         "z6MktpVtPC5j91aycGPT5pceiu8EGKDzM5RLwqAZBuCgxw4V",
       ],
@@ -1819,6 +1839,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1874,8 +1895,10 @@ Object {
   "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga": Object {
     "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
     "tags": Object {
+      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "legacyUnqualifiedDid": "YKc7qhYN1TckZAMUf7jgwc",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "recipientKeyFingerprints": Array [
         "z6MkwXNXTehVH7YijDmN1PtaXaSaCniTyaVepmY1EJgS15xq",
       ],
@@ -1889,6 +1912,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1944,8 +1968,10 @@ Object {
   "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ": Object {
     "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
     "tags": Object {
+      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "legacyUnqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "recipientKeyFingerprints": Array [
         "z6MkjmCrDWJVf8H2pCHcu11UDs4jb6FVu8nn5yQW24rrgez6",
       ],
@@ -1959,6 +1985,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2014,8 +2041,10 @@ Object {
   "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui": Object {
     "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
     "tags": Object {
+      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "legacyUnqualifiedDid": "9jTqUnV4k5ucxbyxumAaV7",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "recipientKeyFingerprints": Array [
         "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
       ],
@@ -2029,6 +2058,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2084,8 +2114,10 @@ Object {
   "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw": Object {
     "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
     "tags": Object {
+      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "legacyUnqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "recipientKeyFingerprints": Array [
         "z6MkvcgxQSsX5WA8vcBokLZ46znnhRBH6aKAGYnonEUfUnQV",
       ],
@@ -2099,6 +2131,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.635Z",
+      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2154,8 +2187,10 @@ Object {
   "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX": Object {
     "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
     "tags": Object {
+      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "recipientKeyFingerprints": Array [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -2169,6 +2204,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2224,8 +2260,10 @@ Object {
   "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv": Object {
     "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
     "tags": Object {
+      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "legacyUnqualifiedDid": "Ud6AWCk6WrwfYKZUw5tJmt",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "recipientKeyFingerprints": Array [
         "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
       ],
@@ -2239,6 +2277,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.653Z",
+      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",

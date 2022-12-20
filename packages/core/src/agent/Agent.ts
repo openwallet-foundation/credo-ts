@@ -220,7 +220,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   protected async getMediationConnection(mediatorInvitationUrl: string) {
     const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
-    const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
+    const outOfBandRecord = await this.oob.findByReceivedInvitationId(outOfBandInvitation.id)
     const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 
     if (!connection) {
