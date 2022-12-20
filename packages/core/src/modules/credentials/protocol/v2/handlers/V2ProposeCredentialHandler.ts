@@ -1,27 +1,24 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { Logger } from '../../../../../logger'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialService } from '../V2CredentialService'
+import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
 export class V2ProposeCredentialHandler implements MessageHandler {
-  private credentialService: V2CredentialService
-  private logger: Logger
+  private credentialProtocol: V2CredentialProtocol
 
   public supportedMessages = [V2ProposeCredentialMessage]
 
-  public constructor(credentialService: V2CredentialService, logger: Logger) {
-    this.credentialService = credentialService
-    this.logger = logger
+  public constructor(credentialProtocol: V2CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
   public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
-    const credentialRecord = await this.credentialService.processProposal(messageContext)
+    const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToProposal(messageContext.agentContext, {
+    const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
       credentialRecord,
       proposalMessage: messageContext.message,
     })
@@ -35,14 +32,14 @@ export class V2ProposeCredentialHandler implements MessageHandler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
-    this.logger.info(`Automatically sending offer with autoAccept`)
+    messageContext.agentContext.config.logger.info(`Automatically sending offer with autoAccept`)
 
     if (!messageContext.connection) {
-      this.logger.error('No connection on the messageContext, aborting auto accept')
+      messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')
       return
     }
 
-    const { message } = await this.credentialService.acceptProposal(messageContext.agentContext, { credentialRecord })
+    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialRecord })
 
     return new OutboundMessageContext(message, {
       agentContext: messageContext.agentContext,

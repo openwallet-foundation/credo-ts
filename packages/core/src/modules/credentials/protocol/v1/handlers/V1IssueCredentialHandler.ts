@@ -1,32 +1,24 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { Logger } from '../../../../../logger'
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V1CredentialService } from '../V1CredentialService'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
+import { DidCommMessageRepository } from '../../../../../storage'
 import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements MessageHandler {
-  private credentialService: V1CredentialService
-  private didCommMessageRepository: DidCommMessageRepository
-  private logger: Logger
+  private credentialProtocol: V1CredentialProtocol
+
   public supportedMessages = [V1IssueCredentialMessage]
 
-  public constructor(
-    credentialService: V1CredentialService,
-    didCommMessageRepository: DidCommMessageRepository,
-    logger: Logger
-  ) {
-    this.credentialService = credentialService
-    this.didCommMessageRepository = didCommMessageRepository
-    this.logger = logger
+  public constructor(credentialProtocol: V1CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1IssueCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processCredential(messageContext)
+    const credentialRecord = await this.credentialProtocol.processCredential(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToCredential(messageContext.agentContext, {
+    const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToCredential(messageContext.agentContext, {
       credentialRecord,
       credentialMessage: messageContext.message,
     })
@@ -40,12 +32,13 @@ export class V1IssueCredentialHandler implements MessageHandler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1IssueCredentialHandler>
   ) {
-    this.logger.info(`Automatically sending acknowledgement with autoAccept`)
-    const { message } = await this.credentialService.acceptCredential(messageContext.agentContext, {
+    messageContext.agentContext.config.logger.info(`Automatically sending acknowledgement with autoAccept`)
+    const { message } = await this.credentialProtocol.acceptCredential(messageContext.agentContext, {
       credentialRecord,
     })
 
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+    const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+    const requestMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialRecord.id,
       messageClass: V1RequestCredentialMessage,
     })
@@ -69,6 +62,6 @@ export class V1IssueCredentialHandler implements MessageHandler {
       })
     }
 
-    this.logger.error(`Could not automatically create credential ack`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create credential ack`)
   }
 }
