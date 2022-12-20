@@ -1,6 +1,6 @@
 import type { DidCommV1Message } from '../../didcomm/versions/v1'
 import type { Query } from '../../storage/StorageService'
-import type { DeleteCredentialOptions } from './CredentialServiceOptions'
+import type { CFsFromCPs, DeleteCredentialOptions } from './CredentialProtocolOptions'
 import type {
   AcceptCredentialOptions,
   AcceptCredentialOfferOptions,
@@ -17,13 +17,10 @@ import type {
   OfferCredentialOptions,
   ProposeCredentialOptions,
   SendCredentialProblemReportOptions,
-  CredentialServiceMap,
+  CredentialProtocolMap,
 } from './CredentialsApiOptions'
-import type { CredentialFormat } from './formats'
-import type { IndyCredentialFormat } from './formats/indy/IndyCredentialFormat'
-import type { JsonLdCredentialFormat } from './formats/jsonld/JsonLdCredentialFormat'
+import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
-import type { CredentialService } from './services/CredentialService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
@@ -41,34 +38,32 @@ import { RoutingService } from '../routing/services/RoutingService'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { CredentialState } from './models/CredentialState'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
-import { V1CredentialService } from './protocol/v1/V1CredentialService'
-import { V2CredentialService } from './protocol/v2/V2CredentialService'
 import { CredentialRepository } from './repository/CredentialRepository'
 
-export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends CredentialService<CFs>[]> {
+export interface CredentialsApi<CPs extends CredentialProtocol[]> {
   // Propose Credential methods
-  proposeCredential(options: ProposeCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord>
-  acceptProposal(options: AcceptCredentialProposalOptions<CFs>): Promise<CredentialExchangeRecord>
-  negotiateProposal(options: NegotiateCredentialProposalOptions<CFs>): Promise<CredentialExchangeRecord>
+  proposeCredential(options: ProposeCredentialOptions<CPs>): Promise<CredentialExchangeRecord>
+  acceptProposal(options: AcceptCredentialProposalOptions<CPs>): Promise<CredentialExchangeRecord>
+  negotiateProposal(options: NegotiateCredentialProposalOptions<CPs>): Promise<CredentialExchangeRecord>
 
   // Offer Credential Methods
-  offerCredential(options: OfferCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord>
-  acceptOffer(options: AcceptCredentialOfferOptions<CFs>): Promise<CredentialExchangeRecord>
+  offerCredential(options: OfferCredentialOptions<CPs>): Promise<CredentialExchangeRecord>
+  acceptOffer(options: AcceptCredentialOfferOptions<CPs>): Promise<CredentialExchangeRecord>
   declineOffer(credentialRecordId: string): Promise<CredentialExchangeRecord>
-  negotiateOffer(options: NegotiateCredentialOfferOptions<CFs>): Promise<CredentialExchangeRecord>
+  negotiateOffer(options: NegotiateCredentialOfferOptions<CPs>): Promise<CredentialExchangeRecord>
 
   // Request Credential Methods
   // This is for beginning the exchange with a request (no proposal or offer). Only possible
   // (currently) with W3C. We will not implement this in phase I
 
   // when the issuer accepts the request he issues the credential to the holder
-  acceptRequest(options: AcceptCredentialRequestOptions<CFs>): Promise<CredentialExchangeRecord>
+  acceptRequest(options: AcceptCredentialRequestOptions<CPs>): Promise<CredentialExchangeRecord>
 
   // Issue Credential Methods
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
 
   // out of band
-  createOffer(options: CreateOfferOptions<CFs, CSs>): Promise<{
+  createOffer(options: CreateOfferOptions<CPs>): Promise<{
     message: DidCommV1Message
     credentialRecord: CredentialExchangeRecord
   }>
@@ -82,25 +77,21 @@ export interface CredentialsApi<CFs extends CredentialFormat[], CSs extends Cred
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
   update(credentialRecord: CredentialExchangeRecord): Promise<void>
-  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>>
+  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFsFromCPs<CPs>>>
 
   // DidComm Message Records
-  findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CSs>>
-  findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CSs>>
-  findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CSs>>
-  findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CSs>>
+  findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>>
+  findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CPs>>
+  findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CPs>>
+  findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CPs>>
 }
 
 @injectable()
-export class CredentialsApi<
-  CFs extends CredentialFormat[] = [IndyCredentialFormat, JsonLdCredentialFormat],
-  CSs extends CredentialService<CFs>[] = [V1CredentialService, V2CredentialService<CFs>]
-> implements CredentialsApi<CFs, CSs>
-{
+export class CredentialsApi<CPs extends CredentialProtocol[]> implements CredentialsApi<CPs> {
   /**
    * Configuration for the connections module
    */
-  public readonly config: CredentialsModuleConfig
+  public readonly config: CredentialsModuleConfig<CPs>
 
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -109,7 +100,7 @@ export class CredentialsApi<
   private didCommMessageRepository: DidCommMessageRepository
   private routingService: RoutingService
   private logger: Logger
-  private serviceMap: CredentialServiceMap<CFs, CSs>
+  private credentialProtocolMap: CredentialProtocolMap<CPs>
 
   public constructor(
     messageSender: MessageSender,
@@ -119,12 +110,10 @@ export class CredentialsApi<
     credentialRepository: CredentialRepository,
     mediationRecipientService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository,
-    v1Service: V1CredentialService,
-    v2Service: V2CredentialService<CFs>,
     // only injected so the handlers will be registered
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _revocationNotificationService: RevocationNotificationService,
-    config: CredentialsModuleConfig
+    config: CredentialsModuleConfig<CPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -136,23 +125,21 @@ export class CredentialsApi<
     this.config = config
 
     // Dynamically build service map. This will be extracted once services are registered dynamically
-    this.serviceMap = [v1Service, v2Service].reduce(
-      (serviceMap, service) => ({
-        ...serviceMap,
+    this.credentialProtocolMap = config.credentialProtocols.reduce(
+      (protocolMap, service) => ({
+        ...protocolMap,
         [service.version]: service,
       }),
       {}
-    ) as CredentialServiceMap<CFs, CSs>
-
-    this.logger.debug(`Initializing Credentials Module for agent ${this.agentContext.config.label}`)
+    ) as CredentialProtocolMap<CPs>
   }
 
-  public getService<PVT extends CredentialService['version']>(protocolVersion: PVT): CredentialService<CFs> {
-    if (!this.serviceMap[protocolVersion]) {
-      throw new AriesFrameworkError(`No credential service registered for protocol version ${protocolVersion}`)
+  private getProtocol<PVT extends keyof CredentialProtocolMap<CPs>>(protocolVersion: PVT) {
+    if (!this.credentialProtocolMap[protocolVersion]) {
+      throw new AriesFrameworkError(`No credential protocol registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion]
+    return this.credentialProtocolMap[protocolVersion]
   }
 
   /**
@@ -163,10 +150,10 @@ export class CredentialsApi<
    * @returns Credential exchange record associated with the sent proposal message
    */
 
-  public async proposeCredential(options: ProposeCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord> {
-    const service = this.getService(options.protocolVersion)
+  public async proposeCredential(options: ProposeCredentialOptions<CPs>): Promise<CredentialExchangeRecord> {
+    const service = this.getProtocol(options.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${options.protocolVersion}`)
 
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
 
@@ -200,7 +187,7 @@ export class CredentialsApi<
    * @returns Credential exchange record associated with the credential offer
    *
    */
-  public async acceptProposal(options: AcceptCredentialProposalOptions<CFs>): Promise<CredentialExchangeRecord> {
+  public async acceptProposal(options: AcceptCredentialProposalOptions<CPs>): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
@@ -210,7 +197,7 @@ export class CredentialsApi<
     }
 
     // with version we can get the Service
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
     // will get back a credential record -> map to Credential Exchange Record
     const { message } = await service.acceptProposal(this.agentContext, {
@@ -240,7 +227,7 @@ export class CredentialsApi<
    * @returns Credential exchange record associated with the credential offer
    *
    */
-  public async negotiateProposal(options: NegotiateCredentialProposalOptions<CFs>): Promise<CredentialExchangeRecord> {
+  public async negotiateProposal(options: NegotiateCredentialProposalOptions<CPs>): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     if (!credentialRecord.connectionId) {
@@ -250,7 +237,7 @@ export class CredentialsApi<
     }
 
     // with version we can get the Service
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
     const { message } = await service.negotiateProposal(this.agentContext, {
       credentialRecord,
@@ -277,11 +264,11 @@ export class CredentialsApi<
    * @param options config options for the credential offer
    * @returns Credential exchange record associated with the sent credential offer message
    */
-  public async offerCredential(options: OfferCredentialOptions<CFs, CSs>): Promise<CredentialExchangeRecord> {
+  public async offerCredential(options: OfferCredentialOptions<CPs>): Promise<CredentialExchangeRecord> {
     const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
-    const service = this.getService(options.protocolVersion)
+    const service = this.getProtocol(options.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${options.protocolVersion}`)
 
     const { message, credentialRecord } = await service.createOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
@@ -308,12 +295,12 @@ export class CredentialsApi<
    * @param options The object containing config options of the offer to be accepted
    * @returns Object containing offer associated credential record
    */
-  public async acceptOffer(options: AcceptCredentialOfferOptions<CFs>): Promise<CredentialExchangeRecord> {
+  public async acceptOffer(options: AcceptCredentialOfferOptions<CPs>): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(options.credentialRecordId)
 
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for this version; version = ${service.version}`)
+    this.logger.debug(`Got a credentialProtocol object for this version; version = ${service.version}`)
     const offerMessage = await service.findOfferMessage(this.agentContext, credentialRecord.id)
 
     // Use connection if present
@@ -388,16 +375,16 @@ export class CredentialsApi<
     credentialRecord.assertState(CredentialState.OfferReceived)
 
     // with version we can get the Service
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
     await service.updateState(this.agentContext, credentialRecord, CredentialState.Declined)
 
     return credentialRecord
   }
 
-  public async negotiateOffer(options: NegotiateCredentialOfferOptions<CFs>): Promise<CredentialExchangeRecord> {
+  public async negotiateOffer(options: NegotiateCredentialOfferOptions<CPs>): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(options.credentialRecordId)
 
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
     const { message } = await service.negotiateOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
       credentialRecord,
@@ -428,13 +415,13 @@ export class CredentialsApi<
    * @param options The credential options to use for the offer
    * @returns The credential record and credential offer message
    */
-  public async createOffer(options: CreateOfferOptions<CFs>): Promise<{
+  public async createOffer(options: CreateOfferOptions<CPs>): Promise<{
     message: DidCommV1Message
     credentialRecord: CredentialExchangeRecord
   }> {
-    const service = this.getService(options.protocolVersion)
+    const service = this.getProtocol(options.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${options.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${options.protocolVersion}`)
     const { message, credentialRecord } = await service.createOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
       comment: options.comment,
@@ -453,13 +440,13 @@ export class CredentialsApi<
    * @param options The object containing config options of the request
    * @returns CredentialExchangeRecord updated with information pertaining to this request
    */
-  public async acceptRequest(options: AcceptCredentialRequestOptions<CFs>): Promise<CredentialExchangeRecord> {
+  public async acceptRequest(options: AcceptCredentialRequestOptions<CPs>): Promise<CredentialExchangeRecord> {
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     // with version we can get the Service
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${credentialRecord.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${credentialRecord.protocolVersion}`)
 
     const { message } = await service.acceptRequest(this.agentContext, {
       credentialRecord,
@@ -529,9 +516,9 @@ export class CredentialsApi<
     const credentialRecord = await this.getById(options.credentialRecordId)
 
     // with version we can get the Service
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
-    this.logger.debug(`Got a CredentialService object for version ${credentialRecord.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${credentialRecord.protocolVersion}`)
 
     const { message } = await service.acceptCredential(this.agentContext, {
       credentialRecord,
@@ -591,7 +578,7 @@ export class CredentialsApi<
     }
     const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
 
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
     const problemReportMessage = service.createProblemReport(this.agentContext, { message: options.message })
     problemReportMessage.setThread({
       threadId: credentialRecord.threadId,
@@ -606,9 +593,9 @@ export class CredentialsApi<
     return credentialRecord
   }
 
-  public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFs>> {
+  public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFsFromCPs<CPs>>> {
     const credentialRecord = await this.getById(credentialRecordId)
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
 
     return service.getFormatData(this.agentContext, credentialRecordId)
   }
@@ -661,7 +648,7 @@ export class CredentialsApi<
    */
   public async deleteById(credentialId: string, options?: DeleteCredentialOptions) {
     const credentialRecord = await this.getById(credentialId)
-    const service = this.getService(credentialRecord.protocolVersion)
+    const service = this.getProtocol(credentialRecord.protocolVersion)
     return service.delete(this.agentContext, credentialRecord, options)
   }
 
@@ -674,25 +661,25 @@ export class CredentialsApi<
     await this.credentialRepository.update(this.agentContext, credentialRecord)
   }
 
-  public async findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CSs>> {
+  public async findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
     return service.findProposalMessage(this.agentContext, credentialExchangeId)
   }
 
-  public async findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CSs>> {
+  public async findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
     return service.findOfferMessage(this.agentContext, credentialExchangeId)
   }
 
-  public async findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CSs>> {
+  public async findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
     return service.findRequestMessage(this.agentContext, credentialExchangeId)
   }
 
-  public async findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CSs>> {
+  public async findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
     return service.findCredentialMessage(this.agentContext, credentialExchangeId)
@@ -701,6 +688,6 @@ export class CredentialsApi<
   private async getServiceForCredentialExchangeId(credentialExchangeId: string) {
     const credentialExchangeRecord = await this.getById(credentialExchangeId)
 
-    return this.getService(credentialExchangeRecord.protocolVersion)
+    return this.getProtocol(credentialExchangeRecord.protocolVersion)
   }
 }

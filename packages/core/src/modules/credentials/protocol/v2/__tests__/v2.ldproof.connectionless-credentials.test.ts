@@ -1,7 +1,6 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
 import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
@@ -18,8 +17,11 @@ import { W3cVcModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModule } from '../../../CredentialsModule'
+import { JsonLdCredentialFormatService } from '../../../formats'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
+import { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 const faberAgentOptions = getAgentOptions(
   'Faber LD connection-less Credentials V2',
@@ -27,6 +29,9 @@ const faberAgentOptions = getAgentOptions(
     endpoints: ['rxjs:faber'],
   },
   {
+    credentials: new CredentialsModule({
+      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+    }),
     w3cVc: new W3cVcModule({
       documentLoader: customDocumentLoader,
     }),
@@ -39,6 +44,9 @@ const aliceAgentOptions = getAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {
+    credentials: new CredentialsModule({
+      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+    }),
     w3cVc: new W3cVcModule({
       documentLoader: customDocumentLoader,
     }),
@@ -115,17 +123,16 @@ describe('credentials', () => {
   })
 
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
-    const offerOptions: CreateOfferOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
       protocolVersion: 'v2',
-    }
-    testLogger.test('Faber sends credential offer to Alice')
-
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+    })
 
     const offerMsg = message as V2OfferCredentialMessage
     const attachment = offerMsg?.offerAttachments[0]

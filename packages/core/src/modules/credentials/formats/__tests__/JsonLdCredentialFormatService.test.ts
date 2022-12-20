@@ -9,10 +9,11 @@ import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewA
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
 import type { CustomCredentialTags } from '../../repository/CredentialExchangeRecord'
 
-import { getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
 import { JsonTransformer } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { DidDocument } from '../../../dids'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialRecord, W3cCredentialService } from '../../../vc'
 import { Ed25519Signature2018Fixtures } from '../../../vc/__tests__/fixtures'
@@ -31,36 +32,39 @@ jest.mock('../../../dids/services/DidResolverService')
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
-const didDocument = {
-  context: [
-    'https://w3id.org/did/v1',
-    'https://w3id.org/security/suites/ed25519-2018/v1',
-    'https://w3id.org/security/suites/x25519-2019/v1',
-  ],
-  id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  verificationMethod: [
-    {
-      id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-      type: 'Ed25519VerificationKey2018',
-      controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-      publicKeyBase58: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
-    },
-  ],
-  authentication: [
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  ],
-  assertionMethod: [
-    'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-  ],
-  keyAgreement: [
-    {
-      id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6LSbkodSr6SU2trs8VUgnrnWtSm7BAPG245ggrBmSrxbv1R',
-      type: 'X25519KeyAgreementKey2019',
-      controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-      publicKeyBase58: '5dTvYHaNaB7mk7iA9LqCJEHG2dGZQsvoi8WGzDRtYEf',
-    },
-  ],
-}
+const didDocument = JsonTransformer.fromJSON(
+  {
+    '@context': [
+      'https://w3id.org/did/v1',
+      'https://w3id.org/security/suites/ed25519-2018/v1',
+      'https://w3id.org/security/suites/x25519-2019/v1',
+    ],
+    id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    verificationMethod: [
+      {
+        id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        type: 'Ed25519VerificationKey2018',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        publicKeyBase58: '3Dn1SJNPaCXcvvJvSbsFWP2xaCjMom3can8CQNhWrTRx',
+      },
+    ],
+    authentication: [
+      'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    ],
+    assertionMethod: [
+      'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    ],
+    keyAgreement: [
+      {
+        id: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6LSbkodSr6SU2trs8VUgnrnWtSm7BAPG245ggrBmSrxbv1R',
+        type: 'X25519KeyAgreementKey2019',
+        controller: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        publicKeyBase58: '5dTvYHaNaB7mk7iA9LqCJEHG2dGZQsvoi8WGzDRtYEf',
+      },
+    ],
+  },
+  DidDocument
+)
 
 const vcJson = {
   ...Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
@@ -165,23 +169,32 @@ const requestAttachment = new Attachment({
     base64: JsonEncoder.toBase64(signCredentialOptions),
   }),
 })
-let jsonldFormatService: CredentialFormatService<JsonLdCredentialFormat>
+let jsonLdFormatService: CredentialFormatService<JsonLdCredentialFormat>
 let w3cCredentialService: W3cCredentialService
 let didResolver: DidResolverService
 
 describe('JsonLd CredentialFormatService', () => {
   let agentContext: AgentContext
   beforeEach(async () => {
-    agentContext = getAgentContext()
     w3cCredentialService = new W3cCredentialServiceMock()
     didResolver = new DidResolverServiceMock()
-    jsonldFormatService = new JsonLdCredentialFormatService(w3cCredentialService, didResolver)
+
+    const agentConfig = getAgentConfig('JsonLdCredentialFormatServiceTest')
+    agentContext = getAgentContext({
+      registerInstances: [
+        [DidResolverService, didResolver],
+        [W3cCredentialService, w3cCredentialService],
+      ],
+      agentConfig,
+    })
+
+    jsonLdFormatService = new JsonLdCredentialFormatService()
   })
 
   describe('Create JsonLd Credential Proposal / Offer', () => {
     test(`Creates JsonLd Credential Proposal`, async () => {
       // when
-      const { attachment, format } = await jsonldFormatService.createProposal(agentContext, {
+      const { attachment, format } = await jsonLdFormatService.createProposal(agentContext, {
         credentialRecord: mockCredentialRecord(),
         credentialFormats: {
           jsonld: signCredentialOptions,
@@ -214,7 +227,7 @@ describe('JsonLd CredentialFormatService', () => {
 
     test(`Creates JsonLd Credential Offer`, async () => {
       // when
-      const { attachment, previewAttributes, format } = await jsonldFormatService.createOffer(agentContext, {
+      const { attachment, previewAttributes, format } = await jsonLdFormatService.createOffer(agentContext, {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
@@ -251,7 +264,7 @@ describe('JsonLd CredentialFormatService', () => {
   describe('Accept Credential Offer', () => {
     test('returns credential request message base on existing credential offer message', async () => {
       // when
-      const { attachment, format } = await jsonldFormatService.acceptOffer(agentContext, {
+      const { attachment, format } = await jsonLdFormatService.acceptOffer(agentContext, {
         credentialFormats: {
           jsonld: undefined,
         },
@@ -291,13 +304,12 @@ describe('JsonLd CredentialFormatService', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
 
     test('Derive Verification Method', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument as any))
+      mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
       mockFunction(w3cCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
         'Ed25519VerificationKey2018',
       ])
 
-      const service = jsonldFormatService as JsonLdCredentialFormatService
+      const service = jsonLdFormatService as JsonLdCredentialFormatService
       const credentialRequest = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
 
       // calls private method in the format service
@@ -321,7 +333,7 @@ describe('JsonLd CredentialFormatService', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const { format, attachment } = await jsonldFormatService.acceptRequest(agentContext, {
+      const { format, attachment } = await jsonLdFormatService.acceptRequest(agentContext, {
         credentialRecord,
         credentialFormats: {
           jsonld: {
@@ -383,11 +395,10 @@ describe('JsonLd CredentialFormatService', () => {
     })
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when
-      await jsonldFormatService.processCredential(agentContext, {
+      await jsonLdFormatService.processCredential(agentContext, {
         attachment: credentialAttachment,
         requestAttachment: requestAttachment,
         credentialRecord,
@@ -417,12 +428,11 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when/then
       await expect(
-        jsonldFormatService.processCredential(agentContext, {
+        jsonLdFormatService.processCredential(agentContext, {
           attachment: credentialAttachment,
           requestAttachment: requestAttachment,
           credentialRecord,
@@ -439,12 +449,11 @@ describe('JsonLd CredentialFormatService', () => {
         }),
       })
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when/then
       await expect(
-        jsonldFormatService.processCredential(agentContext, {
+        jsonLdFormatService.processCredential(agentContext, {
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithDomain,
           credentialRecord,
@@ -462,12 +471,11 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when/then
       await expect(
-        jsonldFormatService.processCredential(agentContext, {
+        jsonLdFormatService.processCredential(agentContext, {
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithChallenge,
           credentialRecord,
@@ -485,12 +493,11 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when/then
       await expect(
-        jsonldFormatService.processCredential(agentContext, {
+        jsonLdFormatService.processCredential(agentContext, {
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofType,
           credentialRecord,
@@ -508,12 +515,11 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // given
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c as any))
+      mockFunction(w3cCredentialService.storeCredential).mockReturnValue(Promise.resolve(w3c))
 
       // when/then
       await expect(
-        jsonldFormatService.processCredential(agentContext, {
+        jsonLdFormatService.processCredential(agentContext, {
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofPurpose,
           credentialRecord,
@@ -539,7 +545,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // indirectly test areCredentialsEqual as black box rather than expose that method in the API
-      let areCredentialsEqual = jsonldFormatService.shouldAutoRespondToProposal(agentContext, {
+      let areCredentialsEqual = jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
         credentialRecord,
         proposalAttachment: message1,
         offerAttachment: message2,
@@ -557,7 +563,7 @@ describe('JsonLd CredentialFormatService', () => {
         base64: JsonEncoder.toBase64(inputDoc2),
       })
 
-      areCredentialsEqual = jsonldFormatService.shouldAutoRespondToProposal(agentContext, {
+      areCredentialsEqual = jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
         credentialRecord,
         proposalAttachment: message1,
         offerAttachment: message2,
