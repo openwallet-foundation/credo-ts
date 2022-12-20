@@ -1,4 +1,4 @@
-import { objectEquality } from './objectEquality'
+import { areObjectsEqual } from './objectEquality'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function deepEquality(x: any, y: any): boolean {
@@ -7,7 +7,7 @@ export function deepEquality(x: any, y: any): boolean {
   const isXSimpleEqualY = simpleEqual(x, y)
   if (isXSimpleEqualY !== undefined) return isXSimpleEqualY
 
-  if (!(x instanceof Map) || !(y instanceof Map)) return objectEquality(x, y)
+  if (!(x instanceof Map) || !(y instanceof Map)) return areObjectsEqual(x, y)
 
   const xMap = x as Map<string, unknown>
   const yMap = y as Map<string, unknown>

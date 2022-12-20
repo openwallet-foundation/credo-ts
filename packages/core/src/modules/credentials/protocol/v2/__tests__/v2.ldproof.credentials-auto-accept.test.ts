@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
@@ -30,7 +30,7 @@ describe('credentials', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  let signCredentialOptions: JsonLdSignCredentialFormat
+  let signCredentialOptions: JsonLdCredentialDetailFormat
   let wallet
   const seed = 'testseed000000000000000000000001'
 

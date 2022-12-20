@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 import { ReplaySubject, Subject } from 'rxjs'
@@ -54,7 +54,7 @@ const aliceAgentOptions = getAgentOptions(
 )
 
 let wallet
-let signCredentialOptions: JsonLdSignCredentialFormat
+let signCredentialOptions: JsonLdCredentialDetailFormat
 
 describe('credentials', () => {
   let faberAgent: Agent
