@@ -1,6 +1,9 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
-import type { SignCredentialOptionsRFC0593 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
+import type {
+  JsonCredential,
+  JsonLdSignCredentialFormat,
+} from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationExchangeProofFormat } from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
@@ -16,13 +19,22 @@ import { Agent } from '../src/agent/Agent'
 import { InjectionSymbols } from '../src/constants'
 import { KeyType } from '../src/crypto/KeyType'
 import { HandshakeProtocol } from '../src/modules/connections/models/HandshakeProtocol'
-import { AutoAcceptCredential, CredentialEventTypes, CredentialState } from '../src/modules/credentials'
+import {
+  CredentialsModule,
+  IndyCredentialFormatService,
+  JsonLdCredentialFormatService,
+  V1CredentialProtocol,
+  V2CredentialProtocol,
+  AutoAcceptCredential,
+  CredentialEventTypes,
+  CredentialState,
+} from '../src/modules/credentials'
 import { DidKey } from '../src/modules/dids'
 import { ProofEventTypes, ProofState, AutoAcceptProof } from '../src/modules/proofs'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../src/modules/proofs/__tests__/fixtures'
 import { MediatorPickupStrategy } from '../src/modules/routing/MediatorPickupStrategy'
-import { W3cCredential } from '../src/modules/vc/models'
-import { JsonTransformer } from '../src/utils/JsonTransformer'
+import { W3cVcModule } from '../src/modules/vc'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
 import { uuid } from '../src/utils/uuid'
 
 import {
@@ -185,12 +197,34 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
+    const indyCredentialFormat = new IndyCredentialFormatService()
+    const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
-      autoAcceptMediationRequests: true,
-      endpoints: ['rxjs:mediator'],
-    })
+    // TODO remove the dependency on BbsModule
+    const modules = {
+      // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+      credentials: new CredentialsModule({
+        credentialProtocols: [
+          new V1CredentialProtocol({ indyCredentialFormat }),
+          new V2CredentialProtocol({
+            credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+          }),
+        ],
+      }),
+      // Register custom w3cVc module so we can define the test document loader
+      w3cVc: new W3cVcModule({
+        documentLoader: customDocumentLoader,
+      }),
+    }
+    const mediatorOptions = getAgentOptions(
+      `Connectionless proofs with mediator Mediator-${unique}`,
+      {
+        endpoints: ['rxjs:faber'],
+      },
+      modules
+    )
 
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()
@@ -199,7 +233,6 @@ describe('Present Proof', () => {
     const subjectMap = {
       'rxjs:mediator': mediatorMessages,
     }
-
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
@@ -216,14 +249,18 @@ describe('Present Proof', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
-      autoAcceptProofs: AutoAcceptProof.Always,
-      autoAcceptCredentials: AutoAcceptCredential.Always,
-      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-        domain: 'https://example.com',
-      }),
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-    })
+    const faberOptions = getAgentOptions(
+      `Connectionless proofs with mediator Faber-${unique}`,
+      {
+        autoAcceptProofs: AutoAcceptProof.Always,
+        autoAcceptCredentials: AutoAcceptCredential.Always,
+        mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com',
+        }),
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
+      modules
+    )
 
     const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
       autoAcceptProofs: AutoAcceptProof.Always,
@@ -264,7 +301,7 @@ describe('Present Proof', () => {
     const aliceKey = await aliceWallet.createKey({ keyType: KeyType.Ed25519, seed: holderSeed })
     const aliceDidKey = new DidKey(aliceKey)
 
-    const inputDoc = {
+    const inputDoc: JsonCredential = {
       '@context': [
         'https://www.w3.org/2018/credentials/v1',
         'https://w3id.org/citizenship/v1',
@@ -294,10 +331,8 @@ describe('Present Proof', () => {
       },
     }
 
-    const credential: W3cCredential = JsonTransformer.fromJSON(inputDoc, W3cCredential)
-
-    const signCredentialOptions: SignCredentialOptionsRFC0593 = {
-      credential,
+    const signCredentialOptions: JsonLdSignCredentialFormat = {
+      credential: inputDoc,
       options: {
         proofPurpose: 'assertionMethod',
         proofType: 'Ed25519Signature2018',

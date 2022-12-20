@@ -238,13 +238,19 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw Error('Presentation Exchange format missing while creating presentation in presentation exchange service.')
     }
 
+    console.log(">>QUACK PEX FORMAT SERVICE CREATE PRESENTATION...>>")
+
     const requestPresentation = options.attachment.getDataAsJson<FormatRequestPresentationExchangeOptions>()
+
+    console.log(">> QUACK requestPresentation = ", requestPresentation)
 
     const credential: IVerifiableCredential = options.proofFormats.presentationExchange.formats
 
     const pex: PEXv1 = new PEXv1()
 
     const subject: ICredentialSubject = credential.credentialSubject as ICredentialSubject
+
+    console.log(">> QUACK subject = ", subject)
 
     // Credential is allowed to be presented without a subject id. In that case we can't prove ownerhsip of credential
     // And it is more like a bearer token.
@@ -256,7 +262,11 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       )
     }
 
+    console.log(">> QUACK going to resolve id  = ", subject.id)
+
     const didResolutionResult = await this.didResolver.resolve(agentContext, subject.id)
+
+    console.log(">> QUACK didReesolutionResult = ", didResolutionResult)
 
     if (!didResolutionResult.didDocument) {
       throw new AriesFrameworkError(`No did document found for did ${subject.id}`)
@@ -311,12 +321,20 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     this.agentContext = agentContext
 
+    console.log(">> QUACK GOING TO CREATE VERIFIABLE PRESENTATION------------------------------")
+    console.log(">> QUACK 1. presentation defnition = ", requestPresentation.presentationDefinition)
+    console.log(">> QUACK 2. formats 0 = ", options.proofFormats.presentationExchange.formats[0])
+    console.log(">> QUACK 3. params = ", params)
+
     const verifiablePresentation = await pex.verifiablePresentationFromAsync(
       requestPresentation.presentationDefinition,
       [options.proofFormats.presentationExchange.formats], // TBD required an IVerifiableCredential[] but AutoSelectCredential returns single credential
       this.signedProofCallBack.bind(this),
       params
     )
+
+    console.log(">> QUACK verifiablePresentation = ", verifiablePresentation)
+
 
     const attachId = options.id ?? uuid()
 
@@ -513,6 +531,10 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
 
+    if (!signatureOptions) {
+      throw new AriesFrameworkError('Missing signature options in proof options for signing the presentation.')
+    }
+
     const w3Presentation = JsonTransformer.fromJSON(presentation, W3cPresentation)
     const signPresentationOptions: SignPresentationOptions = {
       presentation: w3Presentation,
@@ -521,8 +543,14 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       verificationMethod: signatureOptions.verificationMethod,
       challenge: proofOptions.challenge,
     }
-    return JsonTransformer.toJSON(
+    console.log(">>>>>>>>>>>>>>>> GOING TO SIGN PRESENTATION...>>>>>>>>>>>>>>>>>>>>>")
+
+    const b = JsonTransformer.toJSON(
       this.w3cCredentialService.signPresentation(this.agentContext, signPresentationOptions)
     ) as IVerifiablePresentation
+
+    console.log(">>>>>>>>>>>>>>>> DONE!--------------> b = ", b)
+
+    return b
   }
 }
