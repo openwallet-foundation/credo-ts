@@ -127,9 +127,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
       const key = getKeyFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
-      const encoded = `.${purpose}${key.fingerprint}`
-
-      return encoded
+      return `.${purpose}${key.fingerprint}`
     })
 
     // Add all encoded keys

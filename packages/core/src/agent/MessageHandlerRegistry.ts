@@ -1,10 +1,9 @@
-import type { MessageHandler } from './MessageHandler'
 import type { ConstructableDidCommMessage } from '../didcomm'
+import type { MessageHandler } from './MessageHandler'
 
 import { injectable } from 'tsyringe'
 
 import { canHandleMessageType, parseMessageType } from '../utils/messageType'
-
 
 @injectable()
 export class MessageHandlerRegistry {
