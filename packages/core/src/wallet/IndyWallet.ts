@@ -63,6 +63,12 @@ export class IndyWallet implements Wallet {
     return this.walletHandle !== undefined
   }
 
+  /**
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public get publicDid() {
     return this.publicDidInfo
   }
@@ -435,6 +441,12 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  /**
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public async initPublicDid(didConfig: DidConfig) {
     const { did, verkey } = await this.createDid(didConfig)
     this.publicDidInfo = {
@@ -443,6 +455,12 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  /**
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public async createDid(didConfig?: DidConfig): Promise<DidInfo> {
     try {
       const [did, verkey] = await this.indy.createAndStoreMyDid(this.handle, didConfig || {})
