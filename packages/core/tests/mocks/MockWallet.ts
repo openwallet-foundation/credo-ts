@@ -44,9 +44,6 @@ export class MockWallet implements Wallet {
   public initPublicDid(didConfig: DidConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public createDid(didConfig?: DidConfig): Promise<DidInfo> {
-    throw new Error('Method not implemented.')
-  }
   public pack(
     payload: Record<string, unknown>,
     recipientKeys: string[],

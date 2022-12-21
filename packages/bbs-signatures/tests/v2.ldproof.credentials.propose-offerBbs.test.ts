@@ -36,7 +36,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       'Alice Agent Credentials LD BBS+'
     ))
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+    await wallet.createKey({ keyType: KeyType.Ed25519, seed })
     const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
     issuerDidKey = new DidKey(key)

@@ -52,10 +52,12 @@ describe('peer dids', () => {
   test('create a peer did method 1 document from ed25519 keys with a service', async () => {
     // The following scenario show how we could create a key and create a did document from it for DID Exchange
 
-    const { verkey: publicKeyBase58 } = await wallet.createDid({ seed: 'astringoftotalin32characterslong' })
-    const { verkey: mediatorPublicKeyBase58 } = await wallet.createDid({ seed: 'anotherstringof32characterslong1' })
+    const ed25519Key = await wallet.createKey({ seed: 'astringoftotalin32characterslong', keyType: KeyType.Ed25519 })
+    const mediatorEd25519Key = await wallet.createKey({
+      seed: 'anotherstringof32characterslong1',
+      keyType: KeyType.Ed25519,
+    })
 
-    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
     const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
 
     const ed25519VerificationMethod = getEd25519VerificationMethod({
@@ -77,10 +79,9 @@ describe('peer dids', () => {
       controller: '#id',
     })
 
-    const mediatorEd25519Key = Key.fromPublicKeyBase58(mediatorPublicKeyBase58, KeyType.Ed25519)
     const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
-
     const mediatorX25519Key = Key.fromPublicKey(convertPublicKeyToX25519(mediatorEd25519Key.publicKey), KeyType.X25519)
+
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
     const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
 

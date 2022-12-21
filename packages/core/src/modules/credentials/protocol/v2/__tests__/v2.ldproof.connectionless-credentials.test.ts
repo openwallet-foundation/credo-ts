@@ -12,6 +12,7 @@ import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } f
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { W3cVcModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
@@ -104,7 +105,8 @@ describe('credentials', () => {
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+
+    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
     signCredentialOptions = {
       credential: TEST_LD_DOCUMENT,

@@ -42,14 +42,6 @@ export interface Wallet extends Disposable {
    */
   initPublicDid(didConfig: DidConfig): Promise<void>
 
-  /**
-   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
-   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
-   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  createDid(didConfig?: DidConfig): Promise<DidInfo>
-
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
