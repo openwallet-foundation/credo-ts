@@ -251,7 +251,7 @@ export class ConnectionsApi {
 
   /**
    * Allows for the addition of connectionType to the record.
-   *  Either updates or creates an array of string conection types
+   *  Either updates or creates an array of string connection types
    * @param connectionId
    * @param type
    * @throws {RecordNotFoundError} If no record is found
