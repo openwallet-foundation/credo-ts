@@ -1,11 +1,11 @@
 import { IsObject, IsOptional, IsString } from 'class-validator'
 
-export interface JsonLdOptionsCredentialStatusOptions {
+export interface JsonLdCredentialDetailCredentialStatusOptions {
   type: string
 }
 
-export class JsonLdOptionsCredentialStatus {
-  public constructor(options: JsonLdOptionsCredentialStatusOptions) {
+export class JsonLdCredentialDetailCredentialStatus {
+  public constructor(options: JsonLdCredentialDetailCredentialStatusOptions) {
     if (options) {
       this.type = options.type
     }
@@ -14,17 +14,17 @@ export class JsonLdOptionsCredentialStatus {
   public type!: string
 }
 
-export interface JsonLdOptionsRFC0593Options {
+export interface JsonLdCredentialDetailOptionsOptions {
   proofPurpose: string
   created?: string
   domain?: string
   challenge?: string
-  credentialStatus?: JsonLdOptionsCredentialStatus
+  credentialStatus?: JsonLdCredentialDetailCredentialStatus
   proofType: string
 }
 
-export class JsonLdOptionsRFC0593 {
-  public constructor(options: JsonLdOptionsRFC0593Options) {
+export class JsonLdCredentialDetailOptions {
+  public constructor(options: JsonLdCredentialDetailOptionsOptions) {
     if (options) {
       this.proofPurpose = options.proofPurpose
       this.created = options.created
@@ -55,5 +55,5 @@ export class JsonLdOptionsRFC0593 {
 
   @IsOptional()
   @IsObject()
-  public credentialStatus?: JsonLdOptionsCredentialStatus
+  public credentialStatus?: JsonLdCredentialDetailCredentialStatus
 }

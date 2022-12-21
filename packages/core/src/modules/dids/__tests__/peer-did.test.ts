@@ -4,11 +4,13 @@ import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
 import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
@@ -33,16 +35,24 @@ describe('peer dids', () => {
 
   beforeEach(async () => {
     wallet = new IndyWallet(config.agentDependencies, config.logger, new KeyProviderRegistry([]))
-    agentContext = getAgentContext({ wallet })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
-
     const storageService = new IndyStorageService<DidRecord>(config.agentDependencies)
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)
 
-    // Mocking IndyLedgerService as we're only interested in the did:peer resolver
-    didResolverService = new DidResolverService(config.logger, [new PeerDidResolver(didRepository)])
+    agentContext = getAgentContext({
+      wallet,
+      registerInstances: [
+        [DidRepository, didRepository],
+        [InjectionSymbols.StorageService, storageService],
+      ],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await wallet.createAndOpen(config.walletConfig!)
+
+    didResolverService = new DidResolverService(
+      config.logger,
+      new DidsModuleConfig({ resolvers: [new PeerDidResolver()] })
+    )
   })
 
   afterEach(async () => {

@@ -1,3 +1,4 @@
+import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { Wallet } from '../../../../../wallet'
 import type { IndyPool } from '../../../../ledger'
 import type * as Indy from 'indy-sdk'
@@ -22,26 +23,28 @@ mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
 } as IndyPool)
 
 const agentConfig = getAgentConfig('IndySdkSovDidRegistrar')
-
 const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'])
 
 const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
 mockProperty(wallet, 'handle', 10)
 
+const didRepositoryMock = new DidRepositoryMock()
 const agentContext = getAgentContext({
   wallet,
+  registerInstances: [
+    [DidRepository, didRepositoryMock],
+    [IndyPoolService, indyPoolServiceMock],
+  ],
+  agentConfig: {
+    ...agentConfig,
+    agentDependencies: {
+      ...agentConfig.agentDependencies,
+      indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
+    },
+  } as AgentConfig,
 })
 
-const didRepositoryMock = new DidRepositoryMock()
-const indySdkSovDidRegistrar = new IndySdkSovDidRegistrar(
-  didRepositoryMock,
-  indyPoolServiceMock,
-  {
-    ...agentConfig.agentDependencies,
-    indy: { createAndStoreMyDid: createDidMock } as unknown as typeof Indy,
-  },
-  agentConfig.logger
-)
+const indySdkSovDidRegistrar = new IndySdkSovDidRegistrar()
 
 describe('DidRegistrar', () => {
   describe('IndySdkSovDidRegistrar', () => {
@@ -75,6 +78,7 @@ describe('DidRegistrar', () => {
     it('should return an error state if the wallet is not an indy wallet', async () => {
       const agentContext = getAgentContext({
         wallet: {} as unknown as Wallet,
+        agentConfig,
       })
 
       const result = await indySdkSovDidRegistrar.create(agentContext, {

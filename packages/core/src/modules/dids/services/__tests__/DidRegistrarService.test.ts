@@ -1,6 +1,7 @@
 import type { DidDocument, DidRegistrar } from '../../domain'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { DidsModuleConfig } from '../../DidsModuleConfig'
 import { DidRegistrarService } from '../DidRegistrarService'
 
 const agentConfig = getAgentConfig('DidResolverService')
@@ -13,7 +14,12 @@ const didRegistrarMock = {
   deactivate: jest.fn(),
 } as DidRegistrar
 
-const didRegistrarService = new DidRegistrarService(agentConfig.logger, [didRegistrarMock])
+const didRegistrarService = new DidRegistrarService(
+  agentConfig.logger,
+  new DidsModuleConfig({
+    registrars: [didRegistrarMock],
+  })
+)
 
 describe('DidResolverService', () => {
   afterEach(() => {
