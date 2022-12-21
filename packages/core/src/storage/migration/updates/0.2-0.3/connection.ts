@@ -22,15 +22,12 @@ export async function migrateConnectionRecordToV0_3<Agent extends BaseAgent>(age
   const allMediators = await mediationRepository.getAll(agent.context)
   agent.config.logger.debug(`Found a total of ${allMediators.length} mediation records`)
 
-  const mediatorConnectionIds = allMediators.map((mediator) => mediator.connectionId)
+  const mediatorConnectionIds = new Set(allMediators.map((mediator) => mediator.connectionId))
 
   for (const connectionRecord of allConnections) {
     agent.config.logger.debug(`Migrating connection record with id ${connectionRecord.id} to storage version 0.3`)
 
-    if (mediatorConnectionIds.includes(connectionRecord.id)) {
-      await migrateConnectionRecordMediatorTags(agent, connectionRecord)
-    }
-
+    await migrateConnectionRecordTags(agent, connectionRecord, mediatorConnectionIds)
     await connectionRepository.update(agent.context, connectionRecord)
 
     agent.config.logger.debug(
@@ -44,18 +41,27 @@ export async function migrateConnectionRecordToV0_3<Agent extends BaseAgent>(age
  * @param agent
  * @param connectionRecord
  */
-export async function migrateConnectionRecordMediatorTags<Agent extends BaseAgent>(
+export async function migrateConnectionRecordTags<Agent extends BaseAgent>(
   agent: Agent,
-  connectionRecord: ConnectionRecord
+  connectionRecord: ConnectionRecord,
+  mediatorConnectionIds: Set<string> = new Set()
 ) {
   agent.config.logger.debug(
-    `Migrating internal connection record ${connectionRecord.id} to storage version 0.3 with mediator tags`
+    `Migrating internal connection record type tags ${connectionRecord.id} to storage version 0.3`
   )
 
-  const connectionTypeTags = (connectionRecord.getTag('connectionType') || []) as [string]
-  connectionRecord.setTag('connectionType', [...connectionTypeTags, ConnectionType.Mediator])
+  // Old connection records will have tags set in the 'connectionType' property
+  const connectionTypeTags = connectionRecord.getTags().connectionType || []
+  const connectionTypes = [...connectionTypeTags]
+
+  if (mediatorConnectionIds.has(connectionRecord.id)) {
+    connectionTypes.push(ConnectionType.Mediator)
+  }
+
+  connectionRecord.connectionTypes = connectionTypes
+  connectionRecord.setTag('connectionType', undefined)
 
   agent.config.logger.debug(
-    `Successfully migrated internal connection record ${connectionRecord.id} to storage version 0.3 with mediator tags`
+    `Successfully migrated internal connection record type tags ${connectionRecord.id} to storage version 0.3`
   )
 }

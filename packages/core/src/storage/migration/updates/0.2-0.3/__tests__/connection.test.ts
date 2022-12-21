@@ -87,7 +87,7 @@ describe('0.2-0.3 | Connection', () => {
   })
 
   describe('migrateConnectionRecordMediatorTags', () => {
-    it('should set the mediator connection type tag on the record', async () => {
+    it('should set the mediator connection type on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
         state: DidExchangeState.Completed,
         role: DidExchangeRole.Responder,
@@ -96,18 +96,19 @@ describe('0.2-0.3 | Connection', () => {
 
       const connectionRecord = getConnection(connectionRecordProps)
 
-      await testModule.migrateConnectionRecordMediatorTags(agent, connectionRecord)
+      await testModule.migrateConnectionRecordTags(agent, connectionRecord, new Set(['theConnectionId']))
 
       expect(connectionRecord.toJSON()).toEqual({
         ...connectionRecordProps,
+        connectionTypes: [ConnectionType.Mediator],
         _tags: {
-          connectionType: [ConnectionType.Mediator],
+          connectionType: undefined,
         },
         metadata: {},
       })
     })
 
-    it('should add the mediator connection type to existing tag on the record', async () => {
+    it('should add the mediator connection type to existing types on the record, connection type tags should be undefined', async () => {
       const connectionRecordProps = {
         state: DidExchangeState.Completed,
         role: DidExchangeRole.Responder,
@@ -119,12 +120,58 @@ describe('0.2-0.3 | Connection', () => {
 
       const connectionRecord = getConnection(connectionRecordProps)
 
-      await testModule.migrateConnectionRecordMediatorTags(agent, connectionRecord)
+      await testModule.migrateConnectionRecordTags(agent, connectionRecord, new Set(['theConnectionId']))
 
       expect(connectionRecord.toJSON()).toEqual({
         ...connectionRecordProps,
+        connectionTypes: ['theConnectionType', ConnectionType.Mediator],
         _tags: {
-          connectionType: ['theConnectionType', ConnectionType.Mediator],
+          connectionType: undefined,
+        },
+        metadata: {},
+      })
+    })
+
+    it('should not set the mediator connection type on the record, connection type tags should be undefined', async () => {
+      const connectionRecordProps = {
+        state: DidExchangeState.Completed,
+        role: DidExchangeRole.Responder,
+        id: 'theConnectionId',
+      }
+
+      const connectionRecord = getConnection(connectionRecordProps)
+
+      await testModule.migrateConnectionRecordTags(agent, connectionRecord)
+
+      expect(connectionRecord.toJSON()).toEqual({
+        ...connectionRecordProps,
+        connectionTypes: [],
+        _tags: {
+          connectionType: undefined,
+        },
+        metadata: {},
+      })
+    })
+
+    it('should not add the mediator connection type to existing types on the record, connection type tags should be undefined', async () => {
+      const connectionRecordProps = {
+        state: DidExchangeState.Completed,
+        role: DidExchangeRole.Responder,
+        id: 'theConnectionId',
+        _tags: {
+          connectionType: ['theConnectionType'],
+        },
+      }
+
+      const connectionRecord = getConnection(connectionRecordProps)
+
+      await testModule.migrateConnectionRecordTags(agent, connectionRecord)
+
+      expect(connectionRecord.toJSON()).toEqual({
+        ...connectionRecordProps,
+        connectionTypes: ['theConnectionType'],
+        _tags: {
+          connectionType: undefined,
         },
         metadata: {},
       })
