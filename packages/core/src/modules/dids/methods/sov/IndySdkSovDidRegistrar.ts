@@ -4,11 +4,8 @@ import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import type * as Indy from 'indy-sdk'
 
-import { AgentDependencies } from '../../../../agent/AgentDependencies'
-import { InjectionSymbols } from '../../../../constants'
 import { IndySdkError } from '../../../../error'
-import { Logger } from '../../../../logger'
-import { inject, injectable } from '../../../../plugins'
+import { injectable } from '../../../../plugins'
 import { isIndyError } from '../../../../utils/indyError'
 import { assertIndyWallet } from '../../../../wallet/util/assertIndyWallet'
 import { IndyPoolService } from '../../../ledger'
@@ -20,24 +17,12 @@ import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './util'
 @injectable()
 export class IndySdkSovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['sov']
-  private didRepository: DidRepository
-  private indy: typeof Indy
-  private indyPoolService: IndyPoolService
-  private logger: Logger
-
-  public constructor(
-    didRepository: DidRepository,
-    indyPoolService: IndyPoolService,
-    @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
-    @inject(InjectionSymbols.Logger) logger: Logger
-  ) {
-    this.didRepository = didRepository
-    this.indy = agentDependencies.indy
-    this.indyPoolService = indyPoolService
-    this.logger = logger
-  }
 
   public async create(agentContext: AgentContext, options: SovDidCreateOptions): Promise<DidCreateResult> {
+    const indy = agentContext.config.agentDependencies.indy
+    const indyPoolService = agentContext.dependencyManager.resolve(IndyPoolService)
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+
     const { alias, role, submitterDid, indyNamespace } = options.options
     const seed = options.secret?.seed
 
@@ -70,7 +55,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       // to rely directly on the indy SDK, as we don't want to expose a createDid method just for.
       // FIXME: once askar/indy-vdr is supported we need to adjust this to work with both indy-sdk and askar
       assertIndyWallet(agentContext.wallet)
-      const [unqualifiedIndyDid, verkey] = await this.indy.createAndStoreMyDid(agentContext.wallet.handle, {
+      const [unqualifiedIndyDid, verkey] = await indy.createAndStoreMyDid(agentContext.wallet.handle, {
         seed,
       })
 
@@ -79,7 +64,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
 
       // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
       // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
-      const pool = this.indyPoolService.getPoolForNamespace(indyNamespace)
+      const pool = indyPoolService.getPoolForNamespace(indyNamespace)
       await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, pool, role)
 
       // Create did document
@@ -111,7 +96,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
           qualifiedIndyDid,
         },
       })
-      await this.didRepository.save(agentContext, didRecord)
+      await didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {
@@ -177,20 +162,23 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     pool: IndyPool,
     role?: Indy.NymRole
   ) {
+    const indyPoolService = agentContext.dependencyManager.resolve(IndyPoolService)
+    const indy = agentContext.config.agentDependencies.indy
+
     try {
-      this.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
+      agentContext.config.logger.debug(`Register public did '${targetDid}' on ledger '${pool.id}'`)
 
-      const request = await this.indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
+      const request = await indy.buildNymRequest(submitterDid, targetDid, verkey, alias, role || null)
 
-      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, submitterDid)
+      const response = await indyPoolService.submitWriteRequest(agentContext, pool, request, submitterDid)
 
-      this.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
+      agentContext.config.logger.debug(`Registered public did '${targetDid}' on ledger '${pool.id}'`, {
         response,
       })
 
       return targetDid
     } catch (error) {
-      this.logger.error(`Error registering public did '${targetDid}' on ledger '${pool.id}'`, {
+      agentContext.config.logger.error(`Error registering public did '${targetDid}' on ledger '${pool.id}'`, {
         error,
         submitterDid,
         targetDid,
@@ -210,18 +198,21 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     endpoints: IndyEndpointAttrib,
     pool: IndyPool
   ): Promise<void> {
+    const indyPoolService = agentContext.dependencyManager.resolve(IndyPoolService)
+    const indy = agentContext.config.agentDependencies.indy
+
     try {
-      this.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
+      agentContext.config.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.id}'`, endpoints)
 
-      const request = await this.indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
+      const request = await indy.buildAttribRequest(did, did, null, { endpoint: endpoints }, null)
 
-      const response = await this.indyPoolService.submitWriteRequest(agentContext, pool, request, did)
-      this.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
+      const response = await indyPoolService.submitWriteRequest(agentContext, pool, request, did)
+      agentContext.config.logger.debug(`Successfully set endpoints for did '${did}' on ledger '${pool.id}'`, {
         response,
         endpoints,
       })
     } catch (error) {
-      this.logger.error(`Error setting endpoints for did '${did}' on ledger '${pool.id}'`, {
+      agentContext.config.logger.error(`Error setting endpoints for did '${did}' on ledger '${pool.id}'`, {
         error,
         did,
         endpoints,
