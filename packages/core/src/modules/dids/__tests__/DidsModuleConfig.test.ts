@@ -51,4 +51,22 @@ describe('DidsModuleConfig', () => {
     expect(config.registrars).toEqual([registrar, expect.any(PeerDidRegistrar)])
     expect(config.resolvers).toEqual([resolver, expect.any(PeerDidResolver)])
   })
+
+  test('add resolver and registrar after creation', () => {
+    const registrar = {} as DidRegistrar
+    const resolver = {} as DidResolver
+    const config = new DidsModuleConfig({
+      resolvers: [],
+      registrars: [],
+    })
+
+    expect(config.registrars).not.toContain(registrar)
+    expect(config.resolvers).not.toContain(resolver)
+
+    config.addRegistrar(registrar)
+    config.addResolver(resolver)
+
+    expect(config.registrars).toContain(registrar)
+    expect(config.resolvers).toContain(resolver)
+  })
 })

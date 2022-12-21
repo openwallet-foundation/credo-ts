@@ -70,6 +70,10 @@ export class DidsModuleConfig {
     return registrars
   }
 
+  public addRegistrar(registrar: DidRegistrar) {
+    this.registrars.push(registrar)
+  }
+
   /** See {@link DidsModuleConfigOptions.resolvers} */
   public get resolvers() {
     // This prevents creating new instances every time this property is accessed
@@ -90,5 +94,9 @@ export class DidsModuleConfig {
 
     this._resolvers = resolvers
     return resolvers
+  }
+
+  public addResolver(resolver: DidResolver) {
+    this.resolvers.push(resolver)
   }
 }
