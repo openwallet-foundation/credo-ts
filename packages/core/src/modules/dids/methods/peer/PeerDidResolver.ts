@@ -4,24 +4,18 @@ import type { DidResolver } from '../../domain/DidResolver'
 import type { DidResolutionResult } from '../../types'
 
 import { AriesFrameworkError } from '../../../../error'
-import { injectable } from '../../../../plugins'
 import { DidRepository } from '../../repository'
 
 import { getNumAlgoFromPeerDid, isValidPeerDid, PeerDidNumAlgo } from './didPeer'
 import { didToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didToNumAlgo2DidDocument } from './peerDidNumAlgo2'
 
-@injectable()
 export class PeerDidResolver implements DidResolver {
   public readonly supportedMethods = ['peer']
 
-  private didRepository: DidRepository
-
-  public constructor(didRepository: DidRepository) {
-    this.didRepository = didRepository
-  }
-
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+
     const didDocumentMetadata = {}
 
     try {
@@ -41,9 +35,7 @@ export class PeerDidResolver implements DidResolver {
       else if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
         // We can have multiple did document records stored for a single did (one created and one received). In this case it
         // doesn't matter which one we use, and they should be identical. So we just take the first one.
-        const [didDocumentRecord] = await this.didRepository.findByQuery(agentContext, {
-          did,
-        })
+        const [didDocumentRecord] = await didRepository.findAllByDid(agentContext, did)
 
         if (!didDocumentRecord) {
           throw new AriesFrameworkError(`No did record found for peer did ${did}.`)

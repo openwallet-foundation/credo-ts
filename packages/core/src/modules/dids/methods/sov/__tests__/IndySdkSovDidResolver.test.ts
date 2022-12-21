@@ -1,4 +1,3 @@
-import type { AgentContext } from '../../../../../agent'
 import type { IndyPool } from '../../../../ledger'
 import type { IndyEndpointAttrib } from '../../../../ledger/services/IndyLedgerService'
 import type { GetNymResponse } from 'indy-sdk'
@@ -25,20 +24,15 @@ const agentConfig = getAgentConfig('IndySdkSovDidResolver')
 const wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
 mockProperty(wallet, 'handle', 10)
 
+const agentContext = getAgentContext({
+  agentConfig,
+  registerInstances: [[IndyPoolService, indyPoolServiceMock]],
+})
+
+const indySdkSovDidResolver = new IndySdkSovDidResolver()
+
 describe('DidResolver', () => {
   describe('IndySdkSovDidResolver', () => {
-    let indySdkSovDidResolver: IndySdkSovDidResolver
-    let agentContext: AgentContext
-
-    beforeEach(() => {
-      indySdkSovDidResolver = new IndySdkSovDidResolver(
-        indyPoolServiceMock,
-        agentConfig.agentDependencies,
-        agentConfig.logger
-      )
-      agentContext = getAgentContext()
-    })
-
     it('should correctly resolve a did:sov document', async () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
