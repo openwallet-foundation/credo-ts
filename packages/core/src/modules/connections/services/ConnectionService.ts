@@ -658,9 +658,7 @@ export class ConnectionService {
   }
 
   public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const connectionTypes = connectionRecord.connectionTypes || []
-    const newConnectionTypes = connectionTypes.filter((value: string) => value !== type)
-    connectionRecord.connectionTypes = [...newConnectionTypes]
+    connectionRecord.connectionTypes = connectionRecord.connectionTypes.filter((value) => value !== type)
     await this.update(agentContext, connectionRecord)
   }
 
