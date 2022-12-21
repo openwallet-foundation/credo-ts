@@ -610,7 +610,7 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findAllByConnectionType(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
+  public async findAllByConnectionTypes(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
     return this.connectionRepository.findByQuery(agentContext, { connectionTypes })
   }
 
@@ -658,9 +658,7 @@ export class ConnectionService {
   }
 
   public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const connectionTypes = connectionRecord.connectionTypes || []
-    const newConnectionTypes = connectionTypes.filter((value: string) => value !== type)
-    connectionRecord.connectionTypes = [...newConnectionTypes]
+    connectionRecord.connectionTypes = connectionRecord.connectionTypes.filter((value: string) => value !== type)
     await this.update(agentContext, connectionRecord)
   }
 
