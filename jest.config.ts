@@ -6,7 +6,7 @@ const config: Config.InitialOptions = {
   ...base,
   roots: ['<rootDir>'],
   projects: [
-    '<rootDir>/packages/*',
+    '<rootDir>/packages/*/jest.config.ts',
     '<rootDir>/tests/jest.config.ts',
     '<rootDir>/samples/extension-module/jest.config.ts',
   ],

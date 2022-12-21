@@ -8,6 +8,7 @@ import { OutboundMessageContext } from '../../../agent/models'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
+import { DidExchangeRole } from '../models'
 
 export class ConnectionResponseHandler implements MessageHandler {
   private connectionService: ConnectionService
@@ -36,7 +37,12 @@ export class ConnectionResponseHandler implements MessageHandler {
       throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
+    // Query by both role and thread id to allow connecting to self
+    const connectionRecord = await this.connectionService.getByRoleAndThreadId(
+      messageContext.agentContext,
+      DidExchangeRole.Requester,
+      message.threadId
+    )
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }

@@ -54,7 +54,7 @@ export class KeyDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: didKey.did,
+        did: didKey.did,
         role: DidDocumentRole.Created,
       })
       await this.didRepository.save(agentContext, didRecord)
