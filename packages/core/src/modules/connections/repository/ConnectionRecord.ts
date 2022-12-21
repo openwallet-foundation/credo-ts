@@ -110,6 +110,7 @@ export class ConnectionRecord
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      connectionTypes: this.connectionTypes,
     }
   }
 
