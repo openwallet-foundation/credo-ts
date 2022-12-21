@@ -69,7 +69,7 @@ export class ConnectionRecord
   public outOfBandId?: string
   public invitationDid?: string
 
-  public connectionTypes?: string[] | undefined
+  public connectionTypes: string[] = []
 
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
