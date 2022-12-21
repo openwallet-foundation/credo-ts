@@ -3,7 +3,6 @@ import type { KeyType } from '../../../../crypto'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
-import { injectable } from '../../../../plugins'
 import { JsonTransformer } from '../../../../utils'
 import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
@@ -14,19 +13,14 @@ import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 
-@injectable()
 export class PeerDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['peer']
-  private didRepository: DidRepository
-
-  public constructor(didRepository: DidRepository) {
-    this.didRepository = didRepository
-  }
 
   public async create(
     agentContext: AgentContext,
     options: PeerDidNumAlgo0CreateOptions | PeerDidNumAlgo1CreateOptions | PeerDidNumAlgo2CreateOptions
   ): Promise<DidCreateResult> {
+    const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     let didDocument: DidDocument
 
     try {
@@ -96,7 +90,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
-      await this.didRepository.save(agentContext, didRecord)
+      await didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},

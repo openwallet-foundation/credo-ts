@@ -45,6 +45,10 @@ export class DidRepository extends Repository<DidRecord> {
     return this.findByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
+  public findAllByDid(agentContext: AgentContext, did: string) {
+    return this.findByQuery(agentContext, { did })
+  }
+
   public findReceivedDid(agentContext: AgentContext, receivedDid: string) {
     return this.findSingleByQuery(agentContext, { did: receivedDid, role: DidDocumentRole.Received })
   }
