@@ -51,10 +51,10 @@ export async function migrateConnectionRecordTags<Agent extends BaseAgent>(
   )
 
   // Old connection records will have tags set in the 'connectionType' property
-  const connectionTypeTags = connectionRecord.getTags().connectionType || []
+  const connectionTypeTags = (connectionRecord.getTags().connectionType || []) as [string]
   const connectionTypes = [...connectionTypeTags]
 
-  if (mediatorConnectionIds.has(connectionRecord.id)) {
+  if (mediatorConnectionIds.has(connectionRecord.id) && !connectionTypes.includes(ConnectionType.Mediator)) {
     connectionTypes.push(ConnectionType.Mediator)
   }
 

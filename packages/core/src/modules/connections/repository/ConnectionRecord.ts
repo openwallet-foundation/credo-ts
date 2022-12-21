@@ -40,10 +40,6 @@ export type DefaultConnectionTags = {
   outOfBandId?: string
   invitationDid?: string
   connectionTypes?: Array<ConnectionType | string>
-  /**
-   * @deprecated This property should not be used and will be removed in a subsequent release
-   */
-  connectionType?: Array<ConnectionType | string>
 }
 
 export class ConnectionRecord
