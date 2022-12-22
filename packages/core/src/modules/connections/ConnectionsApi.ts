@@ -28,7 +28,10 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { HandshakeProtocol } from './models'
+import { 
+  HandshakeProtocol,
+  DidExchangeState 
+} from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
@@ -226,6 +229,42 @@ export class ConnectionsApi {
     await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
+
+
+  /**
+   * Send a trust ping to an established connection
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param responseRequested do we want a response to our ping
+   * @param withReturnRouting do we want a response at the time of posting
+   * @returns boolean indicating success or failure
+   */
+  public async trustPing(connectionId: string, responseRequested=true, withReturnRouting=false): Promise<boolean> {
+    const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
+
+    let outboundMessageContext
+    if (connectionRecord.state === DidExchangeState.Completed) {
+
+      const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
+        responseRequested: responseRequested,
+      })
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      if (!withReturnRouting) {
+        message.setReturnRouting(ReturnRouteTypes.none)
+      }
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
+
+      await this.messageSender.sendMessage(outboundMessageContext)
+      return true
+    }
+    
+    return false
+  }
+
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
