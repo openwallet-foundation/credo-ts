@@ -58,6 +58,12 @@ export class IndyWallet implements Wallet {
     return this.walletHandle !== undefined
   }
 
+  /**
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public get publicDid() {
     return this.publicDidInfo
   }
@@ -430,19 +436,21 @@ export class IndyWallet implements Wallet {
     }
   }
 
+  /**
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public async initPublicDid(didConfig: DidConfig) {
-    const { did, verkey } = await this.createDid(didConfig)
-    this.publicDidInfo = {
-      did,
-      verkey,
-    }
-  }
-
-  public async createDid(didConfig?: DidConfig): Promise<DidInfo> {
+    // The Indy SDK cannot use a key to sign a request for the ledger. This is the only place where we need to call createDid
     try {
       const [did, verkey] = await this.indy.createAndStoreMyDid(this.handle, didConfig || {})
 
-      return { did, verkey }
+      this.publicDidInfo = {
+        did,
+        verkey,
+      }
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error')

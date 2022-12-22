@@ -22,11 +22,13 @@ import type {
 import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
+import { KeyType } from '../../../../crypto'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getIndyDidFromVerificationMethod } from '../../../../utils/did'
 import { uuid } from '../../../../utils/uuid'
 import { ConnectionService } from '../../../connections'
@@ -517,7 +519,8 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     // If it wasn't successful to extract the did from the connection, we'll create a new key (e.g. if using connection-less)
     // FIXME: we already create a did for the exchange when using connection-less, but this is on a higher level. We should look at
     // a way to reuse this key, but for now this is easier.
-    const { did } = await agentContext.wallet.createDid()
+    const key = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
+    const did = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
 
     return did
   }

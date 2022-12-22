@@ -170,6 +170,12 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     }
   }
 
+  /**
+   * @deprecated The publicDid property has been deprecated in favour of the DidsModule, which can be used to
+   * create and resolve dids. Currently the global agent `publicDid` property is still used by the `LedgerModule`, but
+   * will be removed once the LedgerApi has been refactored. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public get publicDid() {
     return this.agentContext.wallet.publicDid
   }

@@ -6,7 +6,6 @@ import { DidKey } from '../../modules/dids'
 import { Buffer, JsonEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
-import { Key } from '../Key'
 import { KeyType } from '../KeyType'
 import { KeyProviderRegistry } from '../key-provider'
 
@@ -36,15 +35,15 @@ describe('JwsService', () => {
 
   describe('createJws', () => {
     it('creates a jws for the payload with the key associated with the verkey', async () => {
-      const { verkey } = await wallet.createDid({ seed: didJwsz6Mkf.SEED })
+      const key = await wallet.createKey({ seed: didJwsz6Mkf.SEED, keyType: KeyType.Ed25519 })
 
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
       const kid = new DidKey(key).did
 
       const jws = await jwsService.createJws(agentContext, {
         payload,
-        verkey,
+        // FIXME: update to use key instance instead of verkey
+        verkey: key.publicKeyBase58,
         header: { kid },
       })
 

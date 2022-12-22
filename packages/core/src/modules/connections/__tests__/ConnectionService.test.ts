@@ -19,6 +19,7 @@ import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { DidCommV1Message } from '../../../didcomm'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { uuid } from '../../../utils/uuid'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
@@ -389,8 +390,10 @@ describe('ConnectionService', () => {
     it('returns a connection response message containing the information from the connection record', async () => {
       expect.assertions(2)
 
+      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+
       // Needed for signing connection~sig
-      const { did, verkey } = await wallet.createDid()
       const mockConnection = getMockConnection({
         state: DidExchangeState.RequestReceived,
         role: DidExchangeRole.Responder,
@@ -399,13 +402,13 @@ describe('ConnectionService', () => {
         },
       })
 
-      const recipientKeys = [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519))]
+      const recipientKeys = [new DidKey(key)]
       const outOfBand = getMockOutOfBand({ recipientKeys: recipientKeys.map((did) => did.did) })
 
       const publicKey = new Ed25119Sig2018({
         id: `${did}#1`,
         controller: did,
-        publicKeyBase58: verkey,
+        publicKeyBase58: key.publicKeyBase58,
       })
       const mockDidDoc = new DidDoc({
         id: did,
@@ -478,16 +481,17 @@ describe('ConnectionService', () => {
     it('returns a connection record containing the information from the connection response', async () => {
       expect.assertions(2)
 
-      const { did, verkey } = await wallet.createDid()
-      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
+      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+
+      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
 
       const connectionRecord = getMockConnection({
         did,
         state: DidExchangeState.RequestSent,
         role: DidExchangeRole.Requester,
       })
-
-      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -514,7 +518,7 @@ describe('ConnectionService', () => {
       })
 
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirVerkey)
+      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
 
       const connectionResponse = new ConnectionResponseMessage({
         threadId: uuid(),
@@ -528,7 +532,7 @@ describe('ConnectionService', () => {
         agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
-        recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
+        recipientKey: key,
       })
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
@@ -563,15 +567,16 @@ describe('ConnectionService', () => {
     it('throws an error when the connection sig is not signed with the same key as the recipient key from the invitation', async () => {
       expect.assertions(1)
 
-      const { did, verkey } = await wallet.createDid()
-      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
+      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+
+      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
       const connectionRecord = getMockConnection({
         did,
         role: DidExchangeRole.Requester,
         state: DidExchangeState.RequestSent,
       })
-
-      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
 
       const otherPartyConnection = new Connection({
         did: theirDid,
@@ -597,7 +602,7 @@ describe('ConnectionService', () => {
         }),
       })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirVerkey)
+      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
 
       const connectionResponse = new ConnectionResponseMessage({
         threadId: uuid(),
@@ -607,13 +612,13 @@ describe('ConnectionService', () => {
       // Recipient key `verkey` is not the same as theirVerkey which was used to sign message,
       // therefore it should cause a failure.
       const outOfBandRecord = getMockOutOfBand({
-        recipientKeys: [new DidKey(Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)).did],
+        recipientKeys: [new DidKey(key).did],
       })
       const messageContext = new InboundMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
-        recipientKey: Key.fromPublicKeyBase58(verkey, KeyType.Ed25519),
+        recipientKey: key,
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -626,19 +631,20 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a DID Document', async () => {
       expect.assertions(1)
 
-      const { did } = await wallet.createDid()
-      const { did: theirDid, verkey: theirVerkey } = await wallet.createDid()
+      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+
+      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
+      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
       const connectionRecord = getMockConnection({
         did,
         state: DidExchangeState.RequestSent,
         theirDid: undefined,
       })
 
-      const theirKey = Key.fromPublicKeyBase58(theirVerkey, KeyType.Ed25519)
-
       const otherPartyConnection = new Connection({ did: theirDid })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirVerkey)
+      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
 
       const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
@@ -987,10 +993,9 @@ describe('ConnectionService', () => {
 
     it('removeConnectionType - existing type', async () => {
       const connection = getMockConnection()
-
-      connection.setTag('connectionType', ['type-1', 'type-2', 'type-3'])
+      connection.connectionTypes = ['type-1', 'type-2', 'type-3']
       let connectionTypes = await connectionService.getConnectionTypes(connection)
-      expect(connectionTypes).toMatchObject(['type-1', 'type-2', 'type-3'])
+      expect(connectionTypes.sort()).toMatchObject(['type-1', 'type-2', 'type-3'].sort())
 
       await connectionService.removeConnectionType(agentContext, connection, 'type-2')
       connectionTypes = await connectionService.getConnectionTypes(connection)
@@ -999,8 +1004,7 @@ describe('ConnectionService', () => {
 
     it('removeConnectionType - type not existent', async () => {
       const connection = getMockConnection()
-
-      connection.setTag('connectionType', ['type-1', 'type-2', 'type-3'])
+      connection.connectionTypes = ['type-1', 'type-2', 'type-3']
       let connectionTypes = await connectionService.getConnectionTypes(connection)
       expect(connectionTypes).toMatchObject(['type-1', 'type-2', 'type-3'])
 

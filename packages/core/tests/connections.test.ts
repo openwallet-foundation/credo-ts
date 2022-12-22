@@ -140,23 +140,23 @@ describe('connections', () => {
     aliceFaberConnection = await aliceAgent.connections.addConnectionType(aliceFaberConnection.id, 'alice-faber-3')
 
     // Now search for them
-    let connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-4'])
+    let connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-4'])
     expect(connectionsFound).toEqual([])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-2'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-2'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-3'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-3'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-3'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1', 'alice-faber-3'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType([
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes([
       'alice-faber-1',
       'alice-faber-2',
       'alice-faber-3',
     ])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-4'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1', 'alice-faber-4'])
     expect(connectionsFound).toEqual([])
   })
 

@@ -613,8 +613,8 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findAllByConnectionType(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
-    return this.connectionRepository.findByQuery(agentContext, { connectionType: connectionTypes })
+  public async findAllByConnectionTypes(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionRepository.findByQuery(agentContext, { connectionTypes })
   }
 
   public async findByInvitationDid(agentContext: AgentContext, invitationDid: string) {
@@ -655,23 +655,18 @@ export class ConnectionService {
   }
 
   public async addConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const tags = connectionRecord.getTags().connectionType || []
-    connectionRecord.setTag('connectionType', [type, ...tags])
+    const connectionTypes = connectionRecord.connectionTypes || []
+    connectionRecord.connectionTypes = [type, ...connectionTypes]
     await this.update(agentContext, connectionRecord)
   }
 
   public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
-    const tags = connectionRecord.getTags().connectionType || []
-
-    const newTags = tags.filter((value: string) => value !== type)
-    connectionRecord.setTag('connectionType', [...newTags])
-
+    connectionRecord.connectionTypes = connectionRecord.connectionTypes.filter((value) => value !== type)
     await this.update(agentContext, connectionRecord)
   }
 
   public async getConnectionTypes(connectionRecord: ConnectionRecord) {
-    const tags = connectionRecord.getTags().connectionType
-    return tags || []
+    return connectionRecord.connectionTypes || []
   }
 
   private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {

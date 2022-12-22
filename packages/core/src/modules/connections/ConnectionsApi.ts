@@ -253,7 +253,7 @@ export class ConnectionsApi {
 
   /**
    * Allows for the addition of connectionType to the record.
-   *  Either updates or creates an array of string conection types
+   *  Either updates or creates an array of string connection types
    * @param connectionId
    * @param type
    * @throws {RecordNotFoundError} If no record is found
@@ -311,8 +311,8 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
-    return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
+  public async findAllByConnectionTypes(connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionService.findAllByConnectionTypes(this.agentContext, connectionTypes)
   }
 
   /**
