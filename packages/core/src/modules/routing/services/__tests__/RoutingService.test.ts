@@ -34,10 +34,7 @@ const routing = {
   routingKeys: [],
 }
 mockFunction(mediationRecipientService.addMediationRouting).mockResolvedValue(routing)
-mockFunction(wallet.createDid).mockResolvedValue({
-  did: 'some-did',
-  verkey: recipientKey.publicKeyBase58,
-})
+mockFunction(wallet.createKey).mockResolvedValue(recipientKey)
 
 describe('RoutingService', () => {
   afterEach(() => {
