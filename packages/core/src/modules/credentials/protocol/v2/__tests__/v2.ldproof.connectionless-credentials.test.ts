@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 import { ReplaySubject, Subject } from 'rxjs'
@@ -12,6 +12,7 @@ import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } f
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { W3cVcModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
@@ -54,7 +55,7 @@ const aliceAgentOptions = getAgentOptions(
 )
 
 let wallet
-let signCredentialOptions: JsonLdSignCredentialFormat
+let signCredentialOptions: JsonLdCredentialDetailFormat
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -104,7 +105,8 @@ describe('credentials', () => {
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+
+    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
     signCredentialOptions = {
       credential: TEST_LD_DOCUMENT,

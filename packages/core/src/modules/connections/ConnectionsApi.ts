@@ -144,12 +144,17 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
+    // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
+    // all connections will use the same routing keys
+    const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(this.agentContext) : undefined
+
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
       outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
@@ -159,7 +164,8 @@ export class ConnectionsApi {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
       outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
@@ -245,7 +251,7 @@ export class ConnectionsApi {
 
   /**
    * Allows for the addition of connectionType to the record.
-   *  Either updates or creates an array of string conection types
+   *  Either updates or creates an array of string connection types
    * @param connectionId
    * @param type
    * @throws {RecordNotFoundError} If no record is found
@@ -289,8 +295,8 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
-    return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
+  public async findAllByConnectionTypes(connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionService.findAllByConnectionTypes(this.agentContext, connectionTypes)
   }
 
   /**

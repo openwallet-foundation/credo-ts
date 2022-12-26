@@ -1,8 +1,15 @@
 import { promises } from 'fs'
 import * as indy from 'indy-sdk'
 
+import { KeyType } from '../src'
 import { Agent } from '../src/agent/Agent'
-import { DID_IDENTIFIER_REGEX, isAbbreviatedVerkey, isFullVerkey, VERKEY_REGEX } from '../src/utils/did'
+import {
+  DID_IDENTIFIER_REGEX,
+  indyDidFromPublicKeyBase58,
+  isAbbreviatedVerkey,
+  isFullVerkey,
+  VERKEY_REGEX,
+} from '../src/utils/did'
 import { sleep } from '../src/utils/sleep'
 
 import { genesisPath, getAgentOptions } from './helpers'
@@ -63,11 +70,12 @@ describe('ledger', () => {
     }
 
     const faberWallet = faberAgent.context.wallet
-    const didInfo = await faberWallet.createDid()
+    const key = await faberWallet.createKey({ keyType: KeyType.Ed25519 })
+    const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
 
-    const result = await faberAgent.ledger.registerPublicDid(didInfo.did, didInfo.verkey, 'alias', 'TRUST_ANCHOR')
+    const result = await faberAgent.ledger.registerPublicDid(did, key.publicKeyBase58, 'alias', 'TRUST_ANCHOR')
 
-    expect(result).toEqual(didInfo.did)
+    expect(result).toEqual(did)
   })
 
   test('register schema on ledger', async () => {
