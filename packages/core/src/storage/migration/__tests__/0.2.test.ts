@@ -26,10 +26,7 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
-    const aliceCredentialRecordsString = readFileSync(
-      path.join(__dirname, '__fixtures__/alice-4-proofs-0.2.json'),
-      'utf8'
-    )
+    const aliceProofRecordsString = readFileSync(path.join(__dirname, '__fixtures__/alice-4-proofs-0.2.json'), 'utf8')
 
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
@@ -58,7 +55,7 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.records = JSON.parse(aliceProofRecordsString)
 
     expect(await updateAssistant.isUpToDate()).toBe(false)
     expect(await updateAssistant.getNeededUpdates()).toEqual([
@@ -93,8 +90,126 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
-    const aliceCredentialRecordsString = readFileSync(
-      path.join(__dirname, '__fixtures__/alice-4-proofs-0.2.json'),
+    const aliceProofRecordsString = readFileSync(path.join(__dirname, '__fixtures__/alice-4-proofs-0.2.json'), 'utf8')
+
+    const dependencyManager = new DependencyManager()
+    const storageService = new InMemoryStorageService()
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+
+    const agent = new Agent(
+      {
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+          autoUpdateStorageOnStartup: true,
+        },
+        dependencies: agentDependencies,
+      },
+      dependencyManager
+    )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
+    // We need to manually initialize the wallet as we're using the in memory wallet service
+    // When we call agent.initialize() it will create the wallet and store the current framework
+    // version in the in memory storage service. We need to manually set the records between initializing
+    // the wallet and calling agent.initialize()
+    await agent.wallet.initialize(walletConfig)
+
+    // Set storage after initialization. This mimics as if this wallet
+    // is opened as an existing wallet instead of a new wallet
+    storageService.records = JSON.parse(aliceProofRecordsString)
+
+    await agent.initialize()
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
+    expect(storageService.records).toMatchSnapshot()
+
+    // Need to remove backupFiles after each run so we don't get IOErrors
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    unlinkSync(backupPath)
+
+    await agent.shutdown()
+    await agent.wallet.delete()
+
+    uuidSpy.mockReset()
+  })
+
+  it(`should correctly update the connections records`, async () => {
+    // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+
+    const aliceConnectionRecordsString = readFileSync(
+      path.join(__dirname, '__fixtures__/alice-4-connections-0.2.json'),
+      'utf8'
+    )
+
+    const dependencyManager = new DependencyManager()
+    const storageService = new InMemoryStorageService()
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+
+    const agent = new Agent(
+      {
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+        },
+        dependencies: agentDependencies,
+      },
+      dependencyManager
+    )
+
+    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
+    const updateAssistant = new UpdateAssistant(agent, {
+      v0_1ToV0_2: {
+        mediationRoleUpdateStrategy: 'doNotChange',
+      },
+    })
+
+    await updateAssistant.initialize()
+
+    // Set storage after initialization. This mimics as if this wallet
+    // is opened as an existing wallet instead of a new wallet
+    storageService.records = JSON.parse(aliceConnectionRecordsString)
+
+    expect(await updateAssistant.isUpToDate()).toBe(false)
+    expect(await updateAssistant.getNeededUpdates()).toEqual([
+      {
+        fromVersion: '0.2',
+        toVersion: '0.3',
+        doUpdate: expect.any(Function),
+      },
+    ])
+
+    await updateAssistant.update()
+
+    expect(await updateAssistant.isUpToDate()).toBe(true)
+    expect(await updateAssistant.getNeededUpdates()).toEqual([])
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
+    expect(storageService.records).toMatchSnapshot()
+
+    // Need to remove backupFiles after each run so we don't get IOErrors
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    unlinkSync(backupPath)
+
+    await agent.shutdown()
+    await agent.wallet.delete()
+
+    uuidSpy.mockReset()
+  })
+
+  it(`should correctly update the connections records with auto update`, async () => {
+    // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+
+    const aliceConnectionRecordsString = readFileSync(
+      path.join(__dirname, '__fixtures__/alice-4-connections-0.2.json'),
       'utf8'
     )
 
@@ -124,7 +239,7 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
 
     // Set storage after initialization. This mimics as if this wallet
     // is opened as an existing wallet instead of a new wallet
-    storageService.records = JSON.parse(aliceCredentialRecordsString)
+    storageService.records = JSON.parse(aliceConnectionRecordsString)
 
     await agent.initialize()
 

@@ -1,0 +1,121 @@
+{
+  "STORAGE_VERSION_RECORD_ID": {
+    "value": {
+      "metadata": {},
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "createdAt": "2022-12-26T21:13:38.092Z",
+      "storageVersion": "0.2"
+    },
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "type": "StorageVersionRecord",
+    "tags": {}
+  },
+  "f4478cb0-a469-43ca-8290-248f3f0a8fee": {
+    "id": "f4478cb0-a469-43ca-8290-248f3f0a8fee",
+    "type": "ConnectionRecord",
+    "value": {
+      "metadata": {},
+      "id": "f4478cb0-a469-43ca-8290-248f3f0a8fee",
+      "createdAt": "2022-12-26T20:51:28.428Z",
+      "did": "did:peer:1zQmbmwD52xMD4CjpuyMZJ9idffqbsmbofHDAqPwU748Tuc3",
+      "theirDid": "did:peer:1zQmXveLWNXtWwkqTx5sD4CqRDjmbr8p29Yn7wcopTyh2KRT",
+      "theirLabel": "Test Agent two",
+      "state": "response-sent",
+      "role": "responder",
+      "autoAcceptConnection": true,
+      "threadId": "a5237f8f-850e-45df-85bd-2ec3e394ef25",
+      "protocol": "https://didcomm.org/didexchange/1.0",
+      "outOfBandId": "445b9764-d604-40e5-a75b-20154a35518c"
+    },
+    "tags": {
+      "role": "responder",
+      "did": "did:peer:1zQmbmwD52xMD4CjpuyMZJ9idffqbsmbofHDAqPwU748Tuc3",
+      "outOfBandId": "445b9764-d604-40e5-a75b-20154a35518c",
+      "threadId": "a5237f8f-850e-45df-85bd-2ec3e394ef25",
+      "state": "response-sent",
+      "theirDid": "did:peer:1zQmXveLWNXtWwkqTx5sD4CqRDjmbr8p29Yn7wcopTyh2KRT",
+      "connectionType": ["test-connection-type-1", "test-connection-type-2"]
+    }
+  },
+  "ef00d9aa-1593-4387-ad8d-0653a4f77406": {
+    "id": "ef00d9aa-1593-4387-ad8d-0653a4f77406",
+    "type": "ConnectionRecord",
+    "value": {
+      "metadata": {},
+      "id": "ef00d9aa-1593-4387-ad8d-0653a4f77406",
+      "createdAt": "2022-12-26T20:51:28.423Z",
+      "did": "did:peer:1zQmRj33HznYF4S3cj7x7C3FKeZ62njEyXforSALUcVHP6vr",
+      "theirDid": "did:peer:1zQmQrdQkD5GZZC6JD97Y5ojZMvwNYpTe95FMXF1RHePnrgV",
+      "theirLabel": "Test Agent two",
+      "state": "response-sent",
+      "role": "responder",
+      "autoAcceptConnection": true,
+      "threadId": "7bbbb76a-cd10-432e-9b61-a322b28dc289",
+      "protocol": "https://didcomm.org/didexchange/1.0",
+      "outOfBandId": "b4dc56c1-71ce-46a4-8e8d-ceb8cf81b132"
+    },
+    "tags": {
+      "state": "response-sent",
+      "threadId": "7bbbb76a-cd10-432e-9b61-a322b28dc289",
+      "outOfBandId": "b4dc56c1-71ce-46a4-8e8d-ceb8cf81b132",
+      "role": "responder",
+      "did": "did:peer:1zQmRj33HznYF4S3cj7x7C3FKeZ62njEyXforSALUcVHP6vr",
+      "theirDid": "did:peer:1zQmQrdQkD5GZZC6JD97Y5ojZMvwNYpTe95FMXF1RHePnrgV",
+      "connectionType": ["test-connection-type-1", "test-connection-type-2"]
+    }
+  },
+  "78cfae61-fb0c-492b-8b65-176adf0cc66d": {
+    "id": "78cfae61-fb0c-492b-8b65-176adf0cc66d",
+    "type": "ConnectionRecord",
+    "value": {
+      "metadata": {},
+      "id": "78cfae61-fb0c-492b-8b65-176adf0cc66d",
+      "createdAt": "2022-12-26T20:51:28.426Z",
+      "did": "did:peer:1zQmThVDrn6x4BKoTYaY7z1P4HS6bwvCgjnQiVZLSuZWCPBp",
+      "theirDid": "did:peer:1zQmR2nb6CrdbGxbG2c36AN49otRFHqLnMrubav7qusHvx5W",
+      "theirLabel": "Test Agent two",
+      "state": "response-sent",
+      "role": "responder",
+      "autoAcceptConnection": true,
+      "threadId": "6c8714bd-da73-4772-a812-b336bcc0ae48",
+      "protocol": "https://didcomm.org/didexchange/1.0",
+      "outOfBandId": "4312fb2d-7c6f-4f02-bf0a-ef060a098fac"
+    },
+    "tags": {
+      "threadId": "6c8714bd-da73-4772-a812-b336bcc0ae48",
+      "role": "responder",
+      "theirDid": "did:peer:1zQmR2nb6CrdbGxbG2c36AN49otRFHqLnMrubav7qusHvx5W",
+      "outOfBandId": "4312fb2d-7c6f-4f02-bf0a-ef060a098fac",
+      "state": "response-sent",
+      "did": "did:peer:1zQmThVDrn6x4BKoTYaY7z1P4HS6bwvCgjnQiVZLSuZWCPBp",
+      "connectionType": ["test-connection-type-1", "test-connection-type-2"]
+    }
+  },
+  "cfc308b1-b515-4f4f-8f57-d86ab5b06563": {
+    "id": "cfc308b1-b515-4f4f-8f57-d86ab5b06563",
+    "type": "ConnectionRecord",
+    "value": {
+      "metadata": {},
+      "id": "cfc308b1-b515-4f4f-8f57-d86ab5b06563",
+      "createdAt": "2022-12-26T20:51:28.442Z",
+      "did": "did:peer:1zQmNzAR1HL1tjy7jZgnUMmSw7i8BvLP2E6rbMXjTPWx9mfk",
+      "theirDid": "did:peer:1zQmVuzEWaVi8TJLZJCeU8kBgF6gPTU9Dx8uW73Bc74CEzKw",
+      "theirLabel": "Test Agent two",
+      "state": "response-sent",
+      "role": "responder",
+      "autoAcceptConnection": true,
+      "threadId": "a1adf0d1-8ea5-43d0-ad2b-9d12fc58de9f",
+      "protocol": "https://didcomm.org/didexchange/1.0",
+      "outOfBandId": "ab0b992a-f927-4186-9bcf-de3da1400864"
+    },
+    "tags": {
+      "role": "responder",
+      "outOfBandId": "ab0b992a-f927-4186-9bcf-de3da1400864",
+      "theirDid": "did:peer:1zQmVuzEWaVi8TJLZJCeU8kBgF6gPTU9Dx8uW73Bc74CEzKw",
+      "did": "did:peer:1zQmNzAR1HL1tjy7jZgnUMmSw7i8BvLP2E6rbMXjTPWx9mfk",
+      "threadId": "a1adf0d1-8ea5-43d0-ad2b-9d12fc58de9f",
+      "state": "response-sent",
+      "connectionType": ["test-connection-type-1", "test-connection-type-2"]
+    }
+  }
+}
