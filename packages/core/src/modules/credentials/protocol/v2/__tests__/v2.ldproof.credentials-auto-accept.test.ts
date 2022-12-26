@@ -6,6 +6,7 @@ import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../form
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
@@ -43,7 +44,7 @@ describe('credentials', () => {
       ))
 
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createDid({ seed })
+      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
         options: {
@@ -142,7 +143,7 @@ describe('credentials', () => {
         AutoAcceptCredential.ContentApproved
       ))
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createDid({ seed })
+      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
         options: {

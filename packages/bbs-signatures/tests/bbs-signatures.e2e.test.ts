@@ -6,7 +6,6 @@ import {
   KeyType,
   JsonTransformer,
   DidKey,
-  Key,
   SigningProviderRegistry,
   W3cVerifiableCredential,
   W3cCredentialService,
@@ -220,7 +219,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
     describe('signPresentation', () => {
       it('should sign the presentation successfully', async () => {
-        const signingKey = Key.fromPublicKeyBase58((await wallet.createDid({ seed })).verkey, KeyType.Ed25519)
+        const signingKey = await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
         const signingDidKey = new DidKey(signingKey)
         const verificationMethod = `${signingDidKey.did}#${signingDidKey.key.fingerprint}`
         const presentation = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT, W3cPresentation)

@@ -6,6 +6,7 @@ import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../form
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CredentialState } from '../../../models'
@@ -65,7 +66,7 @@ describe('credentials', () => {
       'Alice Agent Credentials LD'
     ))
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
     signCredentialOptions = {
       credential: inputDocAsJson,
       options: {
