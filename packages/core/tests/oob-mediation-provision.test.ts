@@ -110,7 +110,7 @@ describe('out of band with mediation set up with provision method', () => {
     expect(basicMessage.content).toBe('hello')
 
     // Test if we can call provision for the same out-of-band record, respectively connection
-    const reusedOutOfBandRecord = await aliceAgent.oob.findByInvitationId(mediatorOutOfBandInvitation.id)
+    const reusedOutOfBandRecord = await aliceAgent.oob.findByReceivedInvitationId(mediatorOutOfBandInvitation.id)
     const [reusedAliceMediatorConnection] = reusedOutOfBandRecord
       ? await aliceAgent.connections.findAllByOutOfBandId(reusedOutOfBandRecord.id)
       : []

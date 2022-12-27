@@ -8,6 +8,7 @@ import type {
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
+  InjectionToken,
   ProofStateChangedEvent,
   SchemaTemplate,
   Wallet,
@@ -28,6 +29,12 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  CredentialsModule,
+  IndyCredentialFormatService,
+  JsonLdCredentialFormatService,
+  V1CredentialProtocol,
+  V2CredentialProtocol,
+  W3cVcModule,
   Agent,
   AgentConfig,
   AgentContext,
@@ -61,6 +68,7 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -71,6 +79,8 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
+const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
 export function getAgentOptions<AgentModules extends AgentModulesInput>(
@@ -93,7 +103,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
         isProduction: false,
         genesisPath,
         indyNamespace: `pool:localtest`,
-        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
       },
     ],
     // TODO: determine the log level based on an environment variable. This will make it
@@ -152,14 +162,24 @@ export function getAgentContext({
   wallet,
   agentConfig,
   contextCorrelationId = 'mock',
+  registerInstances = [],
 }: {
   dependencyManager?: DependencyManager
   wallet?: Wallet
   agentConfig?: AgentConfig
   contextCorrelationId?: string
+  // Must be an array of arrays as objects can't have injection tokens
+  // as keys (it must be number, string or symbol)
+  registerInstances?: Array<[InjectionToken, unknown]>
 } = {}) {
   if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+
+  // Register custom instances on the dependency manager
+  for (const [token, instance] of registerInstances.values()) {
+    dependencyManager.registerInstance(token, instance)
+  }
+
   return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
@@ -223,7 +243,7 @@ export function waitForCredentialRecordSubject(
     threadId,
     state,
     previousState,
-    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -667,15 +687,32 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
 
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
   // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
+
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
   }
   const faberAgentOptions = getAgentOptions(
     faberName,
     {
       endpoints: ['rxjs:faber'],
-      autoAcceptCredentials,
     },
     modules
   )
@@ -684,7 +721,6 @@ export async function setupCredentialTests(
     aliceName,
     {
       endpoints: ['rxjs:alice'],
-      autoAcceptCredentials,
     },
     modules
   )

@@ -5,9 +5,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   KeyType,
   JsonTransformer,
-  DidResolverService,
   DidKey,
-  Key,
   SigningProviderRegistry,
   W3cVerifiableCredential,
   W3cCredentialService,
@@ -24,6 +22,7 @@ import {
 } from '@aries-framework/core'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
+import { W3cVcModuleConfig } from '../../core/src/modules/vc/W3cVcModuleConfig'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
@@ -62,7 +61,6 @@ const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentContext: AgentContext
-  let didResolverService: DidResolverService
   let w3cCredentialService: W3cCredentialService
   const seed = 'testseed000000000000000000000001'
 
@@ -74,13 +72,13 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
       agentConfig,
       wallet,
     })
-    didResolverService = new DidResolverService(agentConfig.logger, [])
     w3cCredentialService = new W3cCredentialService(
       {} as unknown as W3cCredentialRepository,
-      didResolverService,
-      signatureSuiteRegistry
+      signatureSuiteRegistry,
+      new W3cVcModuleConfig({
+        documentLoader: customDocumentLoader,
+      })
     )
-    w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader
   })
 
   afterAll(async () => {
@@ -221,7 +219,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
     describe('signPresentation', () => {
       it('should sign the presentation successfully', async () => {
-        const signingKey = Key.fromPublicKeyBase58((await wallet.createDid({ seed })).verkey, KeyType.Ed25519)
+        const signingKey = await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
         const signingDidKey = new DidKey(signingKey)
         const verificationMethod = `${signingDidKey.did}#${signingDidKey.key.fingerprint}`
         const presentation = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT, W3cPresentation)

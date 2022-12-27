@@ -4,11 +4,13 @@ import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
@@ -33,16 +35,24 @@ describe('peer dids', () => {
 
   beforeEach(async () => {
     wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
-    agentContext = getAgentContext({ wallet })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
-
     const storageService = new IndyStorageService<DidRecord>(config.agentDependencies)
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)
 
-    // Mocking IndyLedgerService as we're only interested in the did:peer resolver
-    didResolverService = new DidResolverService(config.logger, [new PeerDidResolver(didRepository)])
+    agentContext = getAgentContext({
+      wallet,
+      registerInstances: [
+        [DidRepository, didRepository],
+        [InjectionSymbols.StorageService, storageService],
+      ],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await wallet.createAndOpen(config.walletConfig!)
+
+    didResolverService = new DidResolverService(
+      config.logger,
+      new DidsModuleConfig({ resolvers: [new PeerDidResolver()] })
+    )
   })
 
   afterEach(async () => {
@@ -52,10 +62,12 @@ describe('peer dids', () => {
   test('create a peer did method 1 document from ed25519 keys with a service', async () => {
     // The following scenario show how we could create a key and create a did document from it for DID Exchange
 
-    const { verkey: publicKeyBase58 } = await wallet.createDid({ seed: 'astringoftotalin32characterslong' })
-    const { verkey: mediatorPublicKeyBase58 } = await wallet.createDid({ seed: 'anotherstringof32characterslong1' })
+    const ed25519Key = await wallet.createKey({ seed: 'astringoftotalin32characterslong', keyType: KeyType.Ed25519 })
+    const mediatorEd25519Key = await wallet.createKey({
+      seed: 'anotherstringof32characterslong1',
+      keyType: KeyType.Ed25519,
+    })
 
-    const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
     const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
 
     const ed25519VerificationMethod = getEd25519VerificationMethod({
@@ -77,10 +89,9 @@ describe('peer dids', () => {
       controller: '#id',
     })
 
-    const mediatorEd25519Key = Key.fromPublicKeyBase58(mediatorPublicKeyBase58, KeyType.Ed25519)
     const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
-
     const mediatorX25519Key = Key.fromPublicKey(convertPublicKeyToX25519(mediatorEd25519Key.publicKey), KeyType.X25519)
+
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
     const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
 
@@ -118,7 +129,7 @@ describe('peer dids', () => {
 
     // Save the record to storage
     const didDocumentRecord = new DidRecord({
-      id: didPeer1zQmY.id,
+      did: didPeer1zQmY.id,
       role: DidDocumentRole.Created,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
@@ -155,7 +166,7 @@ describe('peer dids', () => {
     }
 
     const didDocumentRecord = new DidRecord({
-      id: did,
+      did: did,
       role: DidDocumentRole.Received,
       // If the method is a genesis doc (did:peer:1) we should store the document
       // Otherwise we only need to store the did itself (as the did can be generated)

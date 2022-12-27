@@ -1,22 +1,29 @@
-import type { ProposeCredentialOptions } from '../../..'
 import type { Agent } from '../../../../../agent/Agent'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type {
-  JsonLdCredentialFormat,
-  SignCredentialOptionsRFC0593,
-} from '../../../formats/jsonld/JsonLdCredentialFormat'
-import type { V2CredentialService } from '../V2CredentialService'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
-import { W3cCredential } from '../../../../../modules/vc/models'
-import { JsonTransformer } from '../../../../../utils'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+
+const TEST_LD_DOCUMENT: JsonCredential = {
+  '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
+  type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+  issuanceDate: '2017-10-22T12:23:48Z',
+  credentialSubject: {
+    degree: {
+      type: 'BachelorDegree',
+      name: 'Bachelor of Science and Arts',
+    },
+  },
+}
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -24,8 +31,7 @@ describe('credentials', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
-  let credential: W3cCredential
-  let signCredentialOptions: SignCredentialOptionsRFC0593
+  let signCredentialOptions: JsonLdCredentialDetailFormat
   let wallet
   const seed = 'testseed000000000000000000000001'
 
@@ -37,11 +43,10 @@ describe('credentials', () => {
         AutoAcceptCredential.Always
       ))
 
-      credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createDid({ seed })
+      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
-        credential,
+        credential: TEST_LD_DOCUMENT,
         options: {
           proofType: 'Ed25519Signature2018',
           proofPurpose: 'assertionMethod',
@@ -58,20 +63,17 @@ describe('credentials', () => {
     test('Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on `always`', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      const options: ProposeCredentialOptions<
-        [JsonLdCredentialFormat],
-        [V2CredentialService<[JsonLdCredentialFormat]>]
-      > = {
+      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
         connectionId: aliceConnection.id,
         protocolVersion: 'v2',
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
         comment: 'v2 propose credential test',
-      }
-      const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential(options)
+      })
 
       testLogger.test('Alice waits for credential from Faber')
+
       aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
@@ -140,11 +142,10 @@ describe('credentials', () => {
         'alice agent: content-approved v2 jsonld',
         AutoAcceptCredential.ContentApproved
       ))
-      credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
       wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createDid({ seed })
+      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
-        credential,
+        credential: TEST_LD_DOCUMENT,
         options: {
           proofType: 'Ed25519Signature2018',
           proofPurpose: 'assertionMethod',
@@ -180,9 +181,6 @@ describe('credentials', () => {
       const faberCredentialExchangeRecord = await faberAgent.credentials.acceptProposal({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 JsonLd Offer',
-        credentialFormats: {
-          jsonld: signCredentialOptions,
-        },
       })
 
       testLogger.test('Alice waits for credential from Faber')

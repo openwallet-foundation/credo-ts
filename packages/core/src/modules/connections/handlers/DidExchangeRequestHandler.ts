@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
@@ -12,8 +12,9 @@ import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../../oob/messages'
 import { OutOfBandRecord } from '../../oob/repository'
 import { DidExchangeRequestMessage } from '../messages'
+import { HandshakeProtocol } from '../models'
 
-export class DidExchangeRequestHandler implements Handler {
+export class DidExchangeRequestHandler implements MessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
@@ -35,7 +36,7 @@ export class DidExchangeRequestHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
     const { recipientKey, senderKey, message, connection } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -46,13 +47,19 @@ export class DidExchangeRequestHandler implements Handler {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
 
-    const createOobRecord = async () => {
+    const createOobRecord = async (did: string) => {
+      const outOfBandInvitation = new OutOfBandInvitation({
+        services: [did],
+        handshakeProtocols: [HandshakeProtocol.DidExchange],
+      })
+
       const outOfBandRecord = new OutOfBandRecord({
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,
         alias: 'config.alias',
         reusable: true,
         autoAcceptConnection: messageContext.agentContext.config.autoAcceptConnections,
+        outOfBandInvitation,
       })
 
       await this.outOfBandService.save(messageContext.agentContext, outOfBandRecord)
@@ -62,8 +69,11 @@ export class DidExchangeRequestHandler implements Handler {
 
     const outOfBandRecord =
       message.thread?.parentThreadId === 'publicDID'
-        ? await createOobRecord()
-        : await this.outOfBandService.findByInvitationId(messageContext.agentContext, message.thread.parentThreadId)
+        ? await createOobRecord('publicDID')
+        : await this.outOfBandService.findByCreatedInvitationId(
+            messageContext.agentContext,
+            message.thread.parentThreadId
+          )
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }
@@ -74,9 +84,12 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
-    if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
+      messageContext.agentContext,
+      senderKey
+    )
+    if (receivedDidRecord) {
+      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?

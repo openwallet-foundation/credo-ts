@@ -152,6 +152,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       willConfirm: options.willConfirm,
     })
 
+    proposalMessage.setThread({ threadId: options.proofRecord.threadId })
+
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: proposalMessage,
       role: DidCommMessageRole.Sender,
@@ -911,18 +913,18 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     return returnValue
   }
 
-  public registerHandlers(
+  public registerMessageHandlers(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     routingService: RoutingService
   ): void {
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V2ProposePresentationHandler<PFs>(this, agentConfig, this.didCommMessageRepository, proofResponseCoordinator)
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V2RequestPresentationHandler(
         this,
         agentConfig,
@@ -933,11 +935,11 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       )
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V2PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )
-    dispatcher.registerHandler(new V2PresentationAckHandler(this))
-    dispatcher.registerHandler(new V2PresentationProblemReportHandler(this))
+    dispatcher.registerMessageHandler(new V2PresentationAckHandler(this))
+    dispatcher.registerMessageHandler(new V2PresentationProblemReportHandler(this))
   }
 
   private getFormatServiceForFormat(format: ProofFormatSpec) {

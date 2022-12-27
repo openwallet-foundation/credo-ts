@@ -8,6 +8,7 @@ import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
+import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
@@ -199,11 +200,14 @@ export class MediatorService {
   }
 
   public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
-    const { verkey } = await agentContext.wallet.createDid()
+    const routingKey = await agentContext.wallet.createKey({
+      keyType: KeyType.Ed25519,
+    })
 
     const routingRecord = new MediatorRoutingRecord({
       id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-      routingKeys: [verkey],
+      // FIXME: update to fingerprint to include the key type
+      routingKeys: [routingKey.publicKeyBase58],
     })
 
     await this.mediatorRoutingRepository.save(agentContext, routingRecord)

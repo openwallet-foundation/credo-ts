@@ -2,18 +2,18 @@ import type { AgentContext } from '../../../agent'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
-import { Key } from '../../../crypto/Key'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
-import { DidKey, DidResolverService } from '../../dids'
+import { DidKey } from '../../dids'
 import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids/domain/key-type/ed25519'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { W3cCredentialService } from '../W3cCredentialService'
+import { W3cVcModuleConfig } from '../W3cVcModuleConfig'
 import { orArrayToArray } from '../jsonldUtil'
 import jsonld from '../libraries/jsonld'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
@@ -52,7 +52,7 @@ const agentConfig = getAgentConfig('W3cCredentialServiceTest')
 // Helper func
 const credentialRecordFactory = async (credential: W3cVerifiableCredential) => {
   const expandedTypes = (
-    await jsonld.expand(JsonTransformer.toJSON(credential), { documentLoader: customDocumentLoader })
+    await jsonld.expand(JsonTransformer.toJSON(credential), { documentLoader: customDocumentLoader() })
   )[0]['@type']
 
   // Create an instance of the w3cCredentialRecord
@@ -65,7 +65,6 @@ const credentialRecordFactory = async (credential: W3cVerifiableCredential) => {
 describe('W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentContext: AgentContext
-  let didResolverService: DidResolverService
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
   const seed = 'testseed000000000000000000000001'
@@ -78,10 +77,14 @@ describe('W3cCredentialService', () => {
       agentConfig,
       wallet,
     })
-    didResolverService = new DidResolverService(agentConfig.logger, [])
     w3cCredentialRepository = new W3cCredentialRepositoryMock()
-    w3cCredentialService = new W3cCredentialService(w3cCredentialRepository, didResolverService, signatureSuiteRegistry)
-    w3cCredentialService.documentLoaderWithContext = () => customDocumentLoader
+    w3cCredentialService = new W3cCredentialService(
+      w3cCredentialRepository,
+      signatureSuiteRegistry,
+      new W3cVcModuleConfig({
+        documentLoader: customDocumentLoader,
+      })
+    )
   })
 
   afterAll(async () => {
@@ -112,9 +115,8 @@ describe('W3cCredentialService', () => {
     let issuerDidKey: DidKey
     let verificationMethod: string
     beforeAll(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const issuerDidInfo = await wallet.createDid({ seed })
-      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      // TODO: update to use did registrar
+      const issuerKey = await wallet.createKey({ keyType: KeyType.Ed25519, seed })
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })

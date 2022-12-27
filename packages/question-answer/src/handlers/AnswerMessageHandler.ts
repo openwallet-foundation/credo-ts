@@ -1,9 +1,9 @@
 import type { QuestionAnswerService } from '../services'
-import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
 import { AnswerMessage } from '../messages'
 
-export class AnswerMessageHandler implements Handler {
+export class AnswerMessageHandler implements MessageHandler {
   private questionAnswerService: QuestionAnswerService
   public supportedMessages = [AnswerMessage]
 
@@ -11,7 +11,7 @@ export class AnswerMessageHandler implements Handler {
     this.questionAnswerService = questionAnswerService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<AnswerMessageHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<AnswerMessageHandler>) {
     await this.questionAnswerService.receiveAnswer(messageContext)
   }
 }

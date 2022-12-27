@@ -29,7 +29,7 @@ export class BasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -91,7 +91,7 @@ export class BasicMessagesApi {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }

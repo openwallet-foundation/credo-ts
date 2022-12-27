@@ -1,10 +1,10 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2QueriesMessage } from '../messages'
 
-export class V2QueriesMessageHandler implements Handler {
+export class V2QueriesMessageHandler implements MessageHandler {
   private discoverFeaturesService: V2DiscoverFeaturesService
   public supportedMessages = [V2QueriesMessage]
 
@@ -12,7 +12,7 @@ export class V2QueriesMessageHandler implements Handler {
     this.discoverFeaturesService = discoverFeaturesService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<V2QueriesMessageHandler>) {
+  public async handle(inboundMessage: MessageHandlerInboundMessage<V2QueriesMessageHandler>) {
     const connection = inboundMessage.assertReadyConnection()
 
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)

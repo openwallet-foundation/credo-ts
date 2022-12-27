@@ -1,35 +1,61 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { Wallet } from '../../../../../wallet'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CreateOfferOptions } from '../../../CredentialsApiOptions'
-import type { SignCredentialOptionsRFC0593 } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { JsonTransformer } from '../../../../../../src/utils'
 import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
-import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/__tests__/fixtures'
-import { W3cCredential } from '../../../../vc/models/'
+import { KeyType } from '../../../../../crypto'
+import { JsonEncoder } from '../../../../../utils/JsonEncoder'
+import { W3cVcModule } from '../../../../vc'
+import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
+import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialsModule } from '../../../CredentialsModule'
+import { JsonLdCredentialFormatService } from '../../../formats'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
+import { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-const faberAgentOptions = getAgentOptions('Faber LD connection-less Credentials V2', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber LD connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  {
+    credentials: new CredentialsModule({
+      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+    }),
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+)
 
-const aliceAgentOptions = getAgentOptions('Alice LD connection-less Credentials V2', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Alice LD connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  {
+    credentials: new CredentialsModule({
+      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+    }),
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+)
 
 let wallet
-let credential: W3cCredential
-let signCredentialOptions: SignCredentialOptionsRFC0593
+let signCredentialOptions: JsonLdCredentialDetailFormat
 
 describe('credentials', () => {
   let faberAgent: Agent
@@ -37,7 +63,18 @@ describe('credentials', () => {
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   const seed = 'testseed000000000000000000000001'
-
+  const TEST_LD_DOCUMENT: JsonCredential = {
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    issuanceDate: '2017-10-22T12:23:48Z',
+    credentialSubject: {
+      degree: {
+        type: 'BachelorDegree',
+        name: 'Bachelor of Science and Arts',
+      },
+    },
+  }
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
     const aliceMessages = new Subject<SubjectMessage>()
@@ -68,12 +105,11 @@ describe('credentials', () => {
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
 
-    credential = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT, W3cCredential)
+    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
     signCredentialOptions = {
-      credential,
+      credential: TEST_LD_DOCUMENT,
       options: {
         proofType: 'Ed25519Signature2018',
         proofPurpose: 'assertionMethod',
@@ -89,17 +125,40 @@ describe('credentials', () => {
   })
 
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
-    const offerOptions: CreateOfferOptions = {
+    testLogger.test('Faber sends credential offer to Alice')
+
+    // eslint-disable-next-line prefer-const
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
       },
       protocolVersion: 'v2',
-    }
-    testLogger.test('Faber sends credential offer to Alice')
+    })
 
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer(offerOptions)
+    const offerMsg = message as V2OfferCredentialMessage
+    const attachment = offerMsg?.offerAttachments[0]
+
+    if (attachment.data.base64) {
+      expect(JsonEncoder.fromBase64(attachment.data.base64)).toMatchObject({
+        credential: {
+          '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+          type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+          issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          issuanceDate: '2017-10-22T12:23:48Z',
+          credentialSubject: {
+            degree: {
+              name: 'Bachelor of Science and Arts',
+              type: 'BachelorDegree',
+            },
+          },
+        },
+        options: {
+          proofType: 'Ed25519Signature2018',
+          proofPurpose: 'assertionMethod',
+        },
+      })
+    }
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,

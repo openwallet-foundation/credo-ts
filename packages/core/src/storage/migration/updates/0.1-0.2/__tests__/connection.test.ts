@@ -141,6 +141,7 @@ describe('0.1-0.2 | Connection', () => {
           'did:peer:2.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3NZVTRNSHRmbU5oTm0xdUdNdkFOcjlqNENCdjJGeW1qaUp0UmdBMzZiU1ZII3o2TWtzWVU0TUh0Zm1OaE5tMXVHTXZBTnI5ajRDQnYyRnltamlKdFJnQTM2YlNWSCJdfQ',
         theirDid: didPeer4kgVt6CidfKgo1MoWMqsQX.id,
         outOfBandId: expect.any(String),
+        connectionTypes: [],
       })
     })
   })
@@ -171,6 +172,7 @@ describe('0.1-0.2 | Connection', () => {
           serviceEndpoint: 'https://example.com',
           label: 'test',
         },
+        connectionTypes: [],
       })
     })
   })
@@ -199,6 +201,7 @@ describe('0.1-0.2 | Connection', () => {
           serviceEndpoint: 'https://example.com',
           label: 'test',
         },
+        connectionTypes: [],
       })
     })
 
@@ -271,6 +274,7 @@ describe('0.1-0.2 | Connection', () => {
         theirDidDoc: undefined,
         metadata: {},
         _tags: {},
+        connectionTypes: [],
       })
     })
 
@@ -341,6 +345,7 @@ describe('0.1-0.2 | Connection', () => {
           serviceEndpoint: 'https://example.com',
           label: 'test',
         },
+        connectionTypes: [],
       })
     })
   })
@@ -367,6 +372,7 @@ describe('0.1-0.2 | Connection', () => {
         outOfBandId: expect.any(String),
         autoAcceptConnection: true,
         mediatorId: 'a-mediator-id',
+        connectionTypes: [],
       })
     })
 
@@ -424,6 +430,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
+        role: OutOfBandRole.Sender,
       })
 
       // Expect the out of band record to be created
@@ -474,6 +481,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
+        role: OutOfBandRole.Sender,
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
 
@@ -490,6 +498,7 @@ describe('0.1-0.2 | Connection', () => {
         autoAcceptConnection: true,
         mediatorId: 'a-mediator-id',
         outOfBandId: outOfBandRecord.id,
+        connectionTypes: [],
       })
     })
 
@@ -540,6 +549,7 @@ describe('0.1-0.2 | Connection', () => {
       expect(outOfBandRepository.findByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         invitationId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeyFingerprints: ['z6MksYU4MHtfmNhNm1uGMvANr9j4CBv2FymjiJtRgA36bSVH'],
+        role: OutOfBandRole.Sender,
       })
       expect(outOfBandRepository.save).not.toHaveBeenCalled()
       expect(outOfBandRepository.update).toHaveBeenCalledWith(agentContext, outOfBandRecord)

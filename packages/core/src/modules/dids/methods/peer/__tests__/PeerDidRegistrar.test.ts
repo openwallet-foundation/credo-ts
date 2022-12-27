@@ -19,18 +19,17 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 const walletMock = {
   createKey: jest.fn(() => Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
 } as unknown as Wallet
-const agentContext = getAgentContext({ wallet: walletMock })
+const didRepositoryMock = new DidRepositoryMock()
+
+const agentContext = getAgentContext({ wallet: walletMock, registerInstances: [[DidRepository, didRepositoryMock]] })
+const peerDidRegistrar = new PeerDidRegistrar()
 
 describe('DidRegistrar', () => {
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('PeerDidRegistrar', () => {
-    let peerDidRegistrar: PeerDidRegistrar
-    let didRepositoryMock: DidRepository
-
-    beforeEach(() => {
-      didRepositoryMock = new DidRepositoryMock()
-      peerDidRegistrar = new PeerDidRegistrar(didRepositoryMock)
-    })
-
     describe('did:peer:0', () => {
       it('should correctly create a did:peer:0 document using Ed25519 key type', async () => {
         const seed = '96213c3d7fc8d4d6754c712fd969598e'
@@ -120,7 +119,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: [],
@@ -214,7 +213,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           didDocument: didState.didDocument,
           role: DidDocumentRole.Created,
           _tags: {
@@ -306,7 +305,7 @@ describe('DidRegistrar', () => {
         const [, didRecord] = mockFunction(didRepositoryMock.save).mock.calls[0]
 
         expect(didRecord).toMatchObject({
-          id: did,
+          did: did,
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),

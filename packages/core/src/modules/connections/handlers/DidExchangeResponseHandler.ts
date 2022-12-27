@@ -1,4 +1,4 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
@@ -10,9 +10,9 @@ import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorat
 import { AriesFrameworkError } from '../../../error'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { DidExchangeRole, HandshakeProtocol } from '../models'
 
-export class DidExchangeResponseHandler implements Handler {
+export class DidExchangeResponseHandler implements MessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
@@ -34,14 +34,18 @@ export class DidExchangeResponseHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeResponseHandler>) {
     const { agentContext, recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(agentContext, message.threadId)
+    const connectionRecord = await this.connectionService.getByRoleAndThreadId(
+      agentContext,
+      DidExchangeRole.Requester,
+      message.threadId
+    )
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
