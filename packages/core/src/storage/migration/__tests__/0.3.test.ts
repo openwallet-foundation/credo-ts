@@ -16,8 +16,8 @@ jest.useFakeTimers().setSystemTime(backupDate)
 const backupIdentifier = backupDate.getTime()
 
 const walletConfig = {
-  id: `Wallet: 0.2 Update`,
-  key: `Key: 0.2 Update`,
+  id: `Wallet: 0.3 Update`,
+  key: `Key: 0.3 Update`,
 }
 
 describe('UpdateAssistant | v0.3 - v0.3.1', () => {
