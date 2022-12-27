@@ -4,6 +4,7 @@ import type { V0_1ToV0_2UpdateConfig } from './updates/0.1-0.2'
 
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
+import { updateV0_3ToV0_3_1 } from './updates/0.3-0.3.1'
 
 export const INITIAL_STORAGE_VERSION = '0.1'
 
@@ -33,6 +34,11 @@ export const supportedUpdates = [
     fromVersion: '0.2',
     toVersion: '0.3',
     doUpdate: updateV0_2ToV0_3,
+  },
+  {
+    fromVersion: '0.3',
+    toVersion: '0.3.1',
+    doUpdate: updateV0_3ToV0_3_1,
   },
 ] as const
 
