@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.0...v0.3.1) (2022-12-27)
+
+### Bug Fixes
+
+- missing migration script and exports ([#1184](https://github.com/hyperledger/aries-framework-javascript/issues/1184)) ([460510d](https://github.com/hyperledger/aries-framework-javascript/commit/460510db43a7c63fd8dc1c3614be03fd8772f63c))
+
 # [0.3.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.5...v0.3.0) (2022-12-22)
 
 ### Bug Fixes
