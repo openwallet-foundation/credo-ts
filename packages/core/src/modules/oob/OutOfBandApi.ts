@@ -395,6 +395,34 @@ export class OutOfBandApi {
   }
 
   /**
+   * Creates inbound out-of-band record from an implicit invitation, given as a public DID the agent
+   * should be capable of resolving. It automatically passes out-of-band invitation for further
+   * processing to `acceptInvitation` method. If you don't want to do that you can set
+   * `autoAcceptInvitation` attribute in `config` parameter to `false` and accept the message later by
+   * calling `acceptInvitation`.
+   *
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
+   * (0160: Connection Protocol).
+   *
+   * Agent role: receiver (invitee)
+   *
+   * @param did public DID
+   * @param config config for handling of invitation
+   *
+   * @returns out-of-band record and connection record if one has been created.
+   */
+  public async receiveImplicitInvitation(did: string, config: ReceiveOutOfBandInvitationConfig) {
+    const invitation = new OutOfBandInvitation({
+      id: 'publicDID',
+      label: config.label,
+      services: [did],
+      handshakeProtocols: [HandshakeProtocol.DidExchange],
+    })
+
+    return this.receiveInvitation(invitation, config)
+  }
+
+  /**
    * Creates a connection if the out-of-band invitation message contains `handshake_protocols`
    * attribute, except for the case when connection already exists and `reuseConnection` is enabled.
    *
@@ -423,15 +451,14 @@ export class OutOfBandApi {
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
-    const { handshakeProtocols } = outOfBandInvitation
-    const services = outOfBandInvitation.getServices()
-    const messages = outOfBandInvitation.getRequests()
+    const services = outOfBandInvitation?.getServices()
+    const messages = outOfBandInvitation?.getRequests()
 
-    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
+    const existingConnection = outOfBandInvitation ? await this.findExistingConnection(outOfBandInvitation) : undefined
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 
-    if (handshakeProtocols) {
+    if (outOfBandInvitation?.handshakeProtocols) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
       let connectionRecord

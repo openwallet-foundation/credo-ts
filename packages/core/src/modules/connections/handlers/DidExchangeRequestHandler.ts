@@ -7,7 +7,10 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { OutOfBandRole } from '../../oob/domain'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../../oob/messages'
+import { OutOfBandRecord } from '../../oob/repository'
 import { DidExchangeRequestMessage } from '../messages'
 
 export class DidExchangeRequestHandler implements Handler {
@@ -42,11 +45,25 @@ export class DidExchangeRequestHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
-      messageContext.agentContext,
-      message.thread.parentThreadId
-    )
 
+    const createOobRecord = async () => {
+      const outOfBandRecord = new OutOfBandRecord({
+        role: OutOfBandRole.Sender,
+        state: OutOfBandState.AwaitResponse,
+        alias: 'config.alias',
+        reusable: true,
+        autoAcceptConnection: messageContext.agentContext.config.autoAcceptConnections,
+      })
+
+      await this.outOfBandService.save(messageContext.agentContext, outOfBandRecord)
+      this.outOfBandService.emitStateChangedEvent(messageContext.agentContext, outOfBandRecord, null)
+      return outOfBandRecord
+    }
+
+    const outOfBandRecord =
+      message.thread?.parentThreadId === 'publicDID'
+        ? await createOobRecord()
+        : await this.outOfBandService.findByInvitationId(messageContext.agentContext, message.thread.parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }

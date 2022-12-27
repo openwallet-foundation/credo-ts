@@ -104,7 +104,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandInvitation.id
+    const parentThreadId = outOfBandInvitation.implicit ? 'publicDID' : outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -148,7 +148,10 @@ export class DidExchangeProtocol {
 
     // Check corresponding invitation ID is the request's ~thread.pthid
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
+    if (
+      message.thread?.parentThreadId !== 'publicDID' &&
+      (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId)
+    ) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })

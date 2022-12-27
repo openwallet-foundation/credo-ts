@@ -12,7 +12,7 @@ import { OutOfBandInvitation } from '../messages'
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
-  invitationId: string
+  invitationId?: string
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -36,7 +36,7 @@ export interface OutOfBandRecordProps {
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
   @Type(() => OutOfBandInvitation)
-  public outOfBandInvitation!: OutOfBandInvitation
+  public outOfBandInvitation?: OutOfBandInvitation
   public role!: OutOfBandRole
   public state!: OutOfBandState
   public alias?: string
@@ -71,7 +71,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       ...this._tags,
       role: this.role,
       state: this.state,
-      invitationId: this.outOfBandInvitation.id,
+      invitationId: this.outOfBandInvitation?.id,
     }
   }
 
