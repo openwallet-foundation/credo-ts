@@ -2,7 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CreateOfferOptions } from '../src/modules/credentials'
 import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { AgentMessage, SovDidCreateOptions } from '@aries-framework/core'
+import type { SovDidCreateOptions } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -10,15 +10,13 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
-import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
+import { sleep } from '../src/utils/sleep'
 
 import { getAgentOptions } from './helpers'
 
-import { ConsoleLogger, LogLevel, AriesFrameworkError } from '@aries-framework/core'
-import { sleep } from '../src/utils/sleep'
+import { ConsoleLogger, LogLevel } from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -29,7 +27,7 @@ const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
   logger: new ConsoleLogger(LogLevel.debug),
 })
 
-describe('out of band', () => {
+describe('out of band implicit', () => {
   const makeConnectionConfig = {
     goal: 'To make a connection',
     goalCode: 'p2p-messaging',
@@ -37,20 +35,8 @@ describe('out of band', () => {
     alias: `Faber's connection with Alice`,
   }
 
-  const issueCredentialConfig = {
-    goal: 'To issue a credential',
-    goalCode: 'issue-vc',
-    label: 'Faber College',
-    handshake: false,
-  }
-
-  const receiveInvitationConfig = {
-    autoAcceptConnection: false,
-  }
-
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<[IndyCredentialFormat]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -147,7 +133,9 @@ describe('out of band', () => {
 
       await sleep(1000)
       // TODO: Wait for a connection event
-      const [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
+      expect((await faberAgent.connections.getAll()).length).toEqual(1)
+      //const [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
+      let [faberAliceConnection] = await faberAgent.connections.getAll()
       faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
       expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 

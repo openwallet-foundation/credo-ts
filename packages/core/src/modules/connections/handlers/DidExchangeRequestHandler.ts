@@ -49,6 +49,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     const createOobRecord = async (did: string) => {
       const outOfBandInvitation = new OutOfBandInvitation({
+        id: message.threadId,
         services: [did],
         handshakeProtocols: [HandshakeProtocol.DidExchange],
       })

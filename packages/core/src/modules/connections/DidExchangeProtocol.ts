@@ -104,7 +104,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandInvitation.implicit ? 'publicDID' : outOfBandInvitation.id
+    const parentThreadId = outOfBandInvitation.isImplicit ? 'publicDID' : outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -404,8 +404,8 @@ export class DidExchangeProtocol {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
     }
-
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
+    const pthid = message.thread?.parentThreadId
+    if (!pthid || (pthid !== outOfBandRecord.getTags().invitationId && pthid !== 'publicDID')) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })

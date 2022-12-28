@@ -36,7 +36,7 @@ export interface OutOfBandRecordProps {
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
   @Type(() => OutOfBandInvitation)
-  public outOfBandInvitation?: OutOfBandInvitation
+  public outOfBandInvitation!: OutOfBandInvitation
   public role!: OutOfBandRole
   public state!: OutOfBandState
   public alias?: string

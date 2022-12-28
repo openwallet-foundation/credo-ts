@@ -12,7 +12,7 @@ import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from 
 
 export interface BaseInvitationOptions {
   id?: string
-  label: string
+  label?: string
   imageUrl?: string
   appendedAttachments?: Attachment[]
 }
@@ -72,7 +72,8 @@ export class ConnectionInvitationMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/connections/1.0/invitation')
 
   @IsString()
-  public label!: string
+  @IsOptional()
+  public label?: string
 
   @IsString()
   @ValidateIf((o: ConnectionInvitationMessage) => o.recipientKeys === undefined)
