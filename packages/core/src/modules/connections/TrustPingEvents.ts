@@ -1,22 +1,25 @@
 import type { BaseEvent } from '../../agent/Events'
+import type { TrustPingMessage, TrustPingResponseMessage } from './messages'
 import type { DidExchangeState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum TrustPingEventTypes {
-  TrustPingRequestEvent = 'TrustPingRequestEvent',
-  TrustPingResponseEvent = 'TrustPingResponseEvent',
+  TrustPingReceivedEvent = 'TrustPingReceivedEvent',
+  TrustPingResponseReceivedEvent = 'TrustPingResponseReceivedEvent',
 }
 
-export interface TrustPingRequestEvent extends BaseEvent {
-  type: typeof TrustPingEventTypes.TrustPingRequestEvent
+export interface TrustPingReceivedEvent extends BaseEvent {
+  type: typeof TrustPingEventTypes.TrustPingReceivedEvent
   payload: {
     connectionRecord: ConnectionRecord
+    message: TrustPingMessage
   }
 }
 
-export interface TrustPingResponseEvent extends BaseEvent {
-    type: typeof TrustPingEventTypes.TrustPingResponseEvent
-    payload: {
-      connectionRecord: ConnectionRecord
-    }
+export interface TrustPingResponseReceivedEvent extends BaseEvent {
+  type: typeof TrustPingEventTypes.TrustPingResponseReceivedEvent
+  payload: {
+    connectionRecord: ConnectionRecord
+    message: TrustPingResponseMessage
   }
+}

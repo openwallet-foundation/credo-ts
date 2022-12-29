@@ -18,7 +18,7 @@ import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
-import { getAgentOptions } from './helpers'
+import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 
 describe('connections', () => {
   let faberAgent: Agent
@@ -83,6 +83,25 @@ describe('connections', () => {
     await acmeAgent.wallet.delete()
     await mediatorAgent.shutdown()
     await mediatorAgent.wallet.delete()
+  })
+
+  it('one agent should be able to send and receive a ping', async () => {
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+      multiUseInvitation: true,
+    })
+
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
+
+    // Receive invitation with alice agent
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+    const ping = await aliceAgent.connections.sendPing(aliceFaberConnection.id, {})
+
+    await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
   })
 
   it('one should be able to make multiple connections using a multi use invite', async () => {

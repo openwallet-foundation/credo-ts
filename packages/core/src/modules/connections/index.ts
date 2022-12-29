@@ -8,4 +8,3 @@ export * from './ConnectionsApi'
 export * from './DidExchangeProtocol'
 export * from './ConnectionsModuleConfig'
 export * from './ConnectionsModule'
-
