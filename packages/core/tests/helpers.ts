@@ -260,11 +260,9 @@ export function waitForTrustPingResponseReceivedEventSubject(
   subject: ReplaySubject<TrustPingResponseReceivedEvent> | Observable<TrustPingResponseReceivedEvent>,
   {
     threadId,
-    parentThreadId,
     timeoutMs = 10000,
   }: {
     threadId?: string
-    parentThreadId?: string
     timeoutMs?: number
   }
 ) {
@@ -272,13 +270,11 @@ export function waitForTrustPingResponseReceivedEventSubject(
   return firstValueFrom(
     observable.pipe(
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
-      filter((e) => parentThreadId === undefined || e.payload.message.parentThreadId === parentThreadId),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
           `TrustPingResponseReceivedEvent event not emitted within specified timeout: {
   threadId: ${threadId},
-  parentThreadId: ${parentThreadId},
 }`
         )
       }),
