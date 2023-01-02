@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
 import type {
   JsonCredential,
-  JsonLdCredentialDetailFormat
+  JsonLdCredentialDetailFormat,
 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
