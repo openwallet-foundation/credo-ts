@@ -2,11 +2,11 @@ import { Expose, Type } from 'class-transformer'
 
 import { W3cCredential } from '../../../vc/models/credential/W3cCredential'
 
-import { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
+import { JsonLdCredentialDetailOptions } from './JsonLdCredentialDetailOptions'
 
-export interface JsonLdCredentialDetailOptions {
+export interface JsonLdCredentialDetailInputOptions {
   credential: W3cCredential
-  options: JsonLdOptionsRFC0593
+  options: JsonLdCredentialDetailOptions
 }
 
 /**
@@ -14,7 +14,7 @@ export interface JsonLdCredentialDetailOptions {
  *
  */
 export class JsonLdCredentialDetail {
-  public constructor(options: JsonLdCredentialDetailOptions) {
+  public constructor(options: JsonLdCredentialDetailInputOptions) {
     if (options) {
       this.credential = options.credential
       this.options = options.options
@@ -25,6 +25,6 @@ export class JsonLdCredentialDetail {
   public credential!: W3cCredential
 
   @Expose({ name: 'options' })
-  @Type(() => JsonLdOptionsRFC0593)
-  public options!: JsonLdOptionsRFC0593
+  @Type(() => JsonLdCredentialDetailOptions)
+  public options!: JsonLdCredentialDetailOptions
 }

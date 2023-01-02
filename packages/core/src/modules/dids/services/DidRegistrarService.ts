@@ -11,21 +11,18 @@ import type {
 
 import { InjectionSymbols } from '../../../constants'
 import { Logger } from '../../../logger'
-import { inject, injectable, injectAll } from '../../../plugins'
-import { DidRegistrarToken } from '../domain/DidRegistrar'
+import { inject, injectable } from '../../../plugins'
+import { DidsModuleConfig } from '../DidsModuleConfig'
 import { tryParseDid } from '../domain/parse'
 
 @injectable()
 export class DidRegistrarService {
   private logger: Logger
-  private registrars: DidRegistrar[]
+  private didsModuleConfig: DidsModuleConfig
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    @injectAll(DidRegistrarToken) registrars: DidRegistrar[]
-  ) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, didsModuleConfig: DidsModuleConfig) {
     this.logger = logger
-    this.registrars = registrars
+    this.didsModuleConfig = didsModuleConfig
   }
 
   public async create<CreateOptions extends DidCreateOptions = DidCreateOptions>(
@@ -154,6 +151,6 @@ export class DidRegistrarService {
   }
 
   private findRegistrarForMethod(method: string): DidRegistrar | null {
-    return this.registrars.find((r) => r.supportedMethods.includes(method)) ?? null
+    return this.didsModuleConfig.registrars.find((r) => r.supportedMethods.includes(method)) ?? null
   }
 }

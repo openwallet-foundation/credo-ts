@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.0...v0.3.1) (2022-12-27)
+
+**Note:** Version bump only for package @aries-framework/react-native
+
+# [0.3.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.5...v0.3.0) (2022-12-22)
+
+### Bug Fixes
+
+- peer dependency for rn bbs signatures ([#785](https://github.com/hyperledger/aries-framework-javascript/issues/785)) ([c751e28](https://github.com/hyperledger/aries-framework-javascript/commit/c751e286aa11a1d2b9424ae23de5647efc5d536f))
+- **react-native:** move bbs dep to bbs package ([#1076](https://github.com/hyperledger/aries-framework-javascript/issues/1076)) ([c6762bb](https://github.com/hyperledger/aries-framework-javascript/commit/c6762bbe9d64ac5220915af3425d493e505dcc2c))
+
+### Features
+
+- bbs createKey, sign and verify ([#684](https://github.com/hyperledger/aries-framework-javascript/issues/684)) ([5f91738](https://github.com/hyperledger/aries-framework-javascript/commit/5f91738337fac1efbbb4597e7724791e542f0762))
+- **dids:** add did registrar ([#953](https://github.com/hyperledger/aries-framework-javascript/issues/953)) ([93f3c93](https://github.com/hyperledger/aries-framework-javascript/commit/93f3c93310f9dae032daa04a920b7df18e2f8a65))
+- jsonld-credential support ([#718](https://github.com/hyperledger/aries-framework-javascript/issues/718)) ([ea34c47](https://github.com/hyperledger/aries-framework-javascript/commit/ea34c4752712efecf3367c5a5fc4b06e66c1e9d7))
+
 ## [0.2.5](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.4...v0.2.5) (2022-10-13)
 
 **Note:** Version bump only for package @aries-framework/react-native

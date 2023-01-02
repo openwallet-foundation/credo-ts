@@ -11,8 +11,8 @@ import { uuid } from '../../../../utils/uuid'
  * The following transformations are applied:
  *  - {@link extractDidAsSeparateProperty}
  */
-export async function migrateDidRecordToV0_3<Agent extends BaseAgent>(agent: Agent) {
-  agent.config.logger.info('Migrating did records to storage version 0.3')
+export async function migrateDidRecordToV0_3_1<Agent extends BaseAgent>(agent: Agent) {
+  agent.config.logger.info('Migrating did records to storage version 0.3.1')
   const didRepository = agent.dependencyManager.resolve(DidRepository)
 
   agent.config.logger.debug(`Fetching all did records from storage`)
@@ -20,7 +20,7 @@ export async function migrateDidRecordToV0_3<Agent extends BaseAgent>(agent: Age
 
   agent.config.logger.debug(`Found a total of ${allDids.length} did records to update.`)
   for (const didRecord of allDids) {
-    agent.config.logger.debug(`Migrating did record with id ${didRecord.id} to storage version 0.3`)
+    agent.config.logger.debug(`Migrating did record with id ${didRecord.id} to storage version 0.3.1`)
 
     const newId = uuid()
 
@@ -36,7 +36,7 @@ export async function migrateDidRecordToV0_3<Agent extends BaseAgent>(agent: Age
     await didRepository.deleteById(agent.context, didRecord.did)
 
     agent.config.logger.debug(
-      `Successfully migrated did record with old id ${didRecord.did} to new id ${didRecord.id} to storage version 0.3`
+      `Successfully migrated did record with old id ${didRecord.did} to new id ${didRecord.id} to storage version 0.3.1`
     )
   }
 }

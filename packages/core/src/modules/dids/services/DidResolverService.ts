@@ -5,21 +5,18 @@ import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../ty
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
-import { injectable, inject, injectAll } from '../../../plugins'
-import { DidResolverToken } from '../domain/DidResolver'
+import { injectable, inject } from '../../../plugins'
+import { DidsModuleConfig } from '../DidsModuleConfig'
 import { parseDid } from '../domain/parse'
 
 @injectable()
 export class DidResolverService {
   private logger: Logger
-  private resolvers: DidResolver[]
+  private didsModuleConfig: DidsModuleConfig
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    @injectAll(DidResolverToken) resolvers: DidResolver[]
-  ) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, didsModuleConfig: DidsModuleConfig) {
     this.logger = logger
-    this.resolvers = resolvers
+    this.didsModuleConfig = didsModuleConfig
   }
 
   public async resolve(
@@ -69,6 +66,6 @@ export class DidResolverService {
   }
 
   private findResolver(parsed: ParsedDid): DidResolver | null {
-    return this.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
+    return this.didsModuleConfig.resolvers.find((r) => r.supportedMethods.includes(parsed.method)) ?? null
   }
 }

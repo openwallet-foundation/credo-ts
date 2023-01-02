@@ -3,7 +3,7 @@ import type { CredentialFormatService } from '../../formats'
 import type {
   JsonCredential,
   JsonLdCredentialFormat,
-  JsonLdSignCredentialFormat,
+  JsonLdCredentialDetailFormat,
 } from '../../formats/jsonld/JsonLdCredentialFormat'
 import type { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import type { V2OfferCredentialMessageOptions } from '../../protocol/v2/messages/V2OfferCredentialMessage'
@@ -155,7 +155,7 @@ const inputDocAsJson: JsonCredential = {
 }
 const verificationMethod = `8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K`
 
-const signCredentialOptions: JsonLdSignCredentialFormat = {
+const signCredentialOptions: JsonLdCredentialDetailFormat = {
   credential: inputDocAsJson,
   options: {
     proofPurpose: 'assertionMethod',
@@ -310,7 +310,7 @@ describe('JsonLd CredentialFormatService', () => {
       ])
 
       const service = jsonLdFormatService as JsonLdCredentialFormatService
-      const credentialRequest = requestAttachment.getDataAsJson<JsonLdSignCredentialFormat>()
+      const credentialRequest = requestAttachment.getDataAsJson<JsonLdCredentialDetailFormat>()
 
       // calls private method in the format service
       const verificationMethod = await service['deriveVerificationMethod'](
@@ -373,7 +373,7 @@ describe('JsonLd CredentialFormatService', () => {
       state: CredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
-    let signCredentialOptionsWithProperty: JsonLdSignCredentialFormat
+    let signCredentialOptionsWithProperty: JsonLdCredentialDetailFormat
     beforeEach(async () => {
       signCredentialOptionsWithProperty = signCredentialOptions
       signCredentialOptionsWithProperty.options = {
@@ -437,10 +437,13 @@ describe('JsonLd CredentialFormatService', () => {
           requestAttachment: requestAttachment,
           credentialRecord,
         })
-      ).rejects.toThrow('Received credential subject does not match subject from credential request')
+      ).rejects.toThrow('Received credential does not match credential request')
     })
 
     test('throws error if credential domain not equal to request domain', async () => {
+      // this property is not supported yet by us, but could be in the credential we received
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       signCredentialOptionsWithProperty.options.domain = 'https://test.com'
       const requestAttachmentWithDomain = new Attachment({
         mimeType: 'application/json',
@@ -462,7 +465,11 @@ describe('JsonLd CredentialFormatService', () => {
     })
 
     test('throws error if credential challenge not equal to request challenge', async () => {
+      // this property is not supported yet by us, but could be in the credential we received
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
+
       const requestAttachmentWithChallenge = new Attachment({
         mimeType: 'application/json',
         data: new AttachmentData({
