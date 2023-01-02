@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
 import type {
   JsonCredential,
-  JsonLdSignCredentialFormat,
+  JsonLdCredentialDetailFormat
 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
@@ -331,7 +331,7 @@ describe('Present Proof', () => {
       },
     }
 
-    const signCredentialOptions: JsonLdSignCredentialFormat = {
+    const signCredentialOptions: JsonLdCredentialDetailFormat = {
       credential: inputDoc,
       options: {
         proofPurpose: 'assertionMethod',

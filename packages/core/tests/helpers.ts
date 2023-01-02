@@ -17,8 +17,8 @@ import type { AgentModulesInput } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type {
   JsonCredential,
-  JsonLdSignCredentialFormat,
-  SignCredentialOptionsRFC0593,
+  JsonLdCredentialDetailFormat,
+  JsonLdCredentialFormat,
 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
@@ -1030,7 +1030,7 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
       birthDate: '1958-07-17',
     },
   }
-  const signCredentialOptions: JsonLdSignCredentialFormat = {
+  const signCredentialOptions: JsonLdCredentialDetailFormat = {
     credential: inputDocAsJson,
     options: {
       proofType: 'Ed25519Signature2018',
@@ -1038,7 +1038,7 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
     },
   }
 
-  const signCredentialOptionsDriversLicense: SignCredentialOptionsRFC0593 = {
+  const signCredentialOptionsDriversLicense = {
     credential: inputDocAsJsonDL,
     options: {
       proofType: 'Ed25519Signature2018',
