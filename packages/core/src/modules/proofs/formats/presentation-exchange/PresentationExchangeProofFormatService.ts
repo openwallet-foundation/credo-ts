@@ -513,7 +513,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
 
-    if (!signatureOptions) {
+    if (!signatureOptions || !signatureOptions.verificationMethod) {
       throw new AriesFrameworkError('Missing signature options in proof options for signing the presentation.')
     }
 
