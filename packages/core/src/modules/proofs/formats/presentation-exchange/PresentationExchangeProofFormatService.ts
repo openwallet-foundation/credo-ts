@@ -513,8 +513,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('Missing challenge in proof options for signing the presentation.')
     }
 
-    if (!signatureOptions) {
-      throw new AriesFrameworkError('Missing signature options in proof options for signing the presentation.')
+    if (!signatureOptions || !signatureOptions.verificationMethod) {
+      throw new AriesFrameworkError('Missing verification method in proof options for signing the presentation.')
     }
 
     const w3Presentation = JsonTransformer.fromJSON(presentation, W3cPresentation)
