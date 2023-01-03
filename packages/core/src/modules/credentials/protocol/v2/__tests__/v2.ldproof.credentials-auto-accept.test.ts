@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../../agent/Agent'
+import type { CredentialTestsAgent } from '../../../../../../tests/helpers'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
@@ -26,8 +26,8 @@ const TEST_LD_DOCUMENT: JsonCredential = {
 }
 
 describe('credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: CredentialTestsAgent
+  let aliceAgent: CredentialTestsAgent
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
