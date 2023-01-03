@@ -1,0 +1,417 @@
+{
+  "STORAGE_VERSION_RECORD_ID": {
+    "value": {
+      "metadata": {},
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "createdAt": "2022-09-08T19:35:53.872Z",
+      "storageVersion": "0.3"
+    },
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "type": "StorageVersionRecord",
+    "tags": {}
+  },
+  "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd": {
+    "value": {
+      "_tags": {
+        "role": "created",
+        "method": "peer",
+        "recipientKeyFingerprints": ["z6Mkpg6nDPuYdLMuzNEjaa2Xprh3J2MC1WtNakWUEFqC4wvU"]
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+      "role": "created",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#57a05508-1d1c-474c-8c68-1afcf3188720"],
+            "routingKeys": [
+              "did:key:z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop#z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop"
+            ]
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#57a05508-1d1c-474c-8c68-1afcf3188720",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "BDqjd9f7HnsSssQ2u14gym93UT5Lbde1tjbYPysB9j96"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#59d2ce6f-c9fc-49c6-a8f6-eab14820b028",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "avivQP6GvWj6cBbxbXSSZnZTA4tGsvQ5DB9FXm45tZt"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:51:21.344Z"
+    },
+    "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+    "type": "DidRecord",
+    "tags": {
+      "role": "created",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6Mkpg6nDPuYdLMuzNEjaa2Xprh3J2MC1WtNakWUEFqC4wvU"]
+    }
+  },
+  "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W": {
+    "value": {
+      "_tags": {
+        "recipientKeyFingerprints": ["z6MkuLL6bQykGpposTrQhfYceQRR4JDzvdm133xpwb7Dv1oz"],
+        "role": "received",
+        "method": "peer"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+      "role": "received",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "http://ssi.verifier.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#6173438e-09a5-4b1e-895a-0563f5a169b7"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#6173438e-09a5-4b1e-895a-0563f5a169b7",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "Ft541AjJwHLLky1i26amoJsREix9WkWeM33u7K9Czo2c"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#a0448ee3-093a-4b16-bc59-8bf8559d60a5",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "JCfZJ72mtgGE9xuekJKV6yoAGzLgQCNkdHKkct8uaNKb"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:51:51.414Z"
+    },
+    "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+    "type": "DidRecord",
+    "tags": {
+      "role": "received",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6MkuLL6bQykGpposTrQhfYceQRR4JDzvdm133xpwb7Dv1oz"]
+    }
+  },
+  "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q": {
+    "value": {
+      "_tags": {
+        "recipientKeyFingerprints": ["z6Mkv6Kd744JcBL5P9gi5Ddtehxn1gSMTgM9kbTdfQ9soB8G"],
+        "role": "created",
+        "method": "peer"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+      "role": "created",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "didcomm:transport/queue",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#d9d97b3e-5615-4e60-9366-a8ab1ec1a84d"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#d9d97b3e-5615-4e60-9366-a8ab1ec1a84d",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "Ge4aWoosGdqcGer1Peg3ocQnC7AW3o6o4aYhq8BrsxLt"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#c30ea91b-5f49-461f-b0bd-046f947ef668",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "HKBdBGRK8uxgCwge2QHPBzVuuayEQFhC2LM3g1fzMFGE"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:50:32.815Z"
+    },
+    "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+    "type": "DidRecord",
+    "tags": {
+      "role": "created",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6Mkv6Kd744JcBL5P9gi5Ddtehxn1gSMTgM9kbTdfQ9soB8G"]
+    }
+  },
+  "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx": {
+    "value": {
+      "_tags": {
+        "method": "peer",
+        "recipientKeyFingerprints": ["z6MkvcuHjVcNRBM78E3xWy7MnVqQV9hAvTawBsPmg3bR1DaE"],
+        "role": "created"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+      "role": "created",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#22219a28-b52a-4024-bc0f-62d3969131fd"],
+            "routingKeys": [
+              "did:key:z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop#z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop"
+            ]
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#22219a28-b52a-4024-bc0f-62d3969131fd",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "HAeF9FMw5dre1jDFqQ9WwQHQfaRKWaLaVrUqqmdQ5znr"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#0f9535d1-9c9c-4491-be1e-1628f365b513",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "FztF8HCahTeL9gYHoHnDFo6HruwnKB19ZtbHFbLndAmE"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:51:50.193Z"
+    },
+    "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+    "type": "DidRecord",
+    "tags": {
+      "role": "created",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6MkvcuHjVcNRBM78E3xWy7MnVqQV9hAvTawBsPmg3bR1DaE"]
+    }
+  },
+  "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce": {
+    "value": {
+      "_tags": {
+        "method": "peer",
+        "role": "received",
+        "recipientKeyFingerprints": ["z6Mkp1wyxzqoUrZ3TvnerfZBq48o1XLDSPH8ibFALkNABSgh"]
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+      "role": "received",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#075b7e8b-a7bd-41e1-9b01-044f1ccab1a6"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#075b7e8b-a7bd-41e1-9b01-044f1ccab1a6",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "AZgwNkbN9K4aMRwxB6bLyxaoBx4N2W2n2aLEWUQ9GDuK"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#bf888dc5-0f54-4e71-9058-c43bebfc7d01",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "3Q8wpgxdCVdJfznYERZR1r9eVnCy7oxpjzGVucDLF2tG"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:50:44.957Z"
+    },
+    "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+    "type": "DidRecord",
+    "tags": {
+      "role": "received",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6Mkp1wyxzqoUrZ3TvnerfZBq48o1XLDSPH8ibFALkNABSgh"]
+    }
+  },
+  "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN": {
+    "value": {
+      "_tags": {
+        "role": "received",
+        "recipientKeyFingerprints": ["z6MkrQzQqPtNjJHGLGjWC7H3mjMSNA36bCBTYJeoR44JoFvH"],
+        "method": "peer"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+      "role": "received",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "ws://ssi.issuer.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#b6d349fb-93fb-4298-b57a-3f2fecffccd8"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#b6d349fb-93fb-4298-b57a-3f2fecffccd8",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "CxjNF9dwPknoDmtoWYKCvdoSYamFBJw6rHjsan6Ht38u"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#c0917f9f-1102-4f13-800c-ff7b522999eb",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "Eso3A6AmL5qiWr9syqHx8NgdQ8EMkYcitmrW5G7bX9uU"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:50:34.057Z"
+    },
+    "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+    "type": "DidRecord",
+    "tags": {
+      "role": "received",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6MkrQzQqPtNjJHGLGjWC7H3mjMSNA36bCBTYJeoR44JoFvH"]
+    }
+  },
+  "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3": {
+    "value": {
+      "_tags": {
+        "method": "peer",
+        "recipientKeyFingerprints": ["z6Mkt4ohp4uT74HdENeGVGAyVFTerCzzuDXP8kpU3yo6SqqM"],
+        "role": "received"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+      "role": "received",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "http://ssi.verifier.com",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#5ea98568-dfcd-4614-9495-ba95ec2665d3"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#5ea98568-dfcd-4614-9495-ba95ec2665d3",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "EcYfDpf1mWoA7soZohD8e9uf2dj9VLH2SjuYDhq5Xd3y"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#506e5ead-ddbc-44ef-848b-6593a692a916",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "EeQHhb6CqWGrQR9PfWpS1L8CedsbK2mZfPdaxaHN4s8b"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:51:22.817Z"
+    },
+    "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+    "type": "DidRecord",
+    "tags": {
+      "role": "received",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6Mkt4ohp4uT74HdENeGVGAyVFTerCzzuDXP8kpU3yo6SqqM"]
+    }
+  },
+  "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S": {
+    "value": {
+      "_tags": {
+        "method": "peer",
+        "recipientKeyFingerprints": ["z6MktdgEKUiH5kt5t2dKAH14WzFYhzj3JFobUf2PFFQAg2ma"],
+        "role": "created"
+      },
+      "metadata": {},
+      "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+      "role": "created",
+      "didDocument": {
+        "@context": ["https://w3id.org/did/v1"],
+        "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+        "service": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "didcomm:transport/queue",
+            "type": "did-communication",
+            "priority": 0,
+            "recipientKeys": ["#12b8b7d4-87b9-4638-a929-f98df2f1f566"],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          {
+            "id": "#12b8b7d4-87b9-4638-a929-f98df2f1f566",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "FBRBjETqkDPcmXncUi3DfthYtRTBtNZEne7TQyS9kozC"
+          }
+        ],
+        "keyAgreement": [
+          {
+            "id": "#77b9cf84-2441-419f-b295-945d06e29edc",
+            "type": "X25519KeyAgreementKey2019",
+            "controller": "#id",
+            "publicKeyBase58": "EgsQArrmCUru9MxR1RNNiomnMFz6E3ia2GfjVvoCjAWY"
+          }
+        ]
+      },
+      "createdAt": "2022-12-27T13:50:43.937Z"
+    },
+    "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+    "type": "DidRecord",
+    "tags": {
+      "role": "created",
+      "method": "peer",
+      "recipientKeyFingerprints": ["z6MktdgEKUiH5kt5t2dKAH14WzFYhzj3JFobUf2PFFQAg2ma"]
+    }
+  }
+}
