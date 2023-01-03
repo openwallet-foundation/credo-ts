@@ -699,16 +699,18 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       messageClass: V2ProposalPresentationMessage,
     })
 
-    if (!proposal) return false
-
+    if (!proposal) {
+      return false
+    }
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
-    if (!request) return false
-
-    MessageValidator.validateSync(proposal)
+    if (!request) {
+      return true
+    }
+    await MessageValidator.validateSync(proposal)
 
     const proposalAttachments = proposal.getAttachmentFormats()
     const requestAttachments = request.getAttachmentFormats()
@@ -718,7 +720,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
       equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
     }
-    return true
+    return equalityResults.every((x) => x === true)
   }
 
   public async shouldAutoRespondToRequest(
@@ -731,14 +733,13 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     })
 
     if (!proposal) {
-      return false
+      return true
     }
 
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
-
     if (!request) {
       throw new AriesFrameworkError(
         `Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`

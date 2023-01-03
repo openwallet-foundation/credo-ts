@@ -181,17 +181,15 @@ describe('Auto accept present proof', () => {
       await aliceAgent.wallet.delete()
     })
 
-    xtest('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
+    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       await aliceAgent.proofs.proposeProof({
@@ -238,13 +236,11 @@ describe('Auto accept present proof', () => {
       await waitForProofExchangeRecord(faberAgent, {
         threadId: faberProofExchangeRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
       // Alice waits till it receives presentation ack
       await waitForProofExchangeRecord(aliceAgent, {
         threadId: faberProofExchangeRecord.threadId,
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
     })
 
@@ -289,12 +285,10 @@ describe('Auto accept present proof', () => {
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       await aliceAgent.proofs.proposeProof({
@@ -321,7 +315,7 @@ describe('Auto accept present proof', () => {
     })
   })
 
-  xdescribe('Auto accept on `contentApproved`', () => {
+  describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
@@ -343,12 +337,10 @@ describe('Auto accept present proof', () => {
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
-        timeoutMs: 300000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
-        timeoutMs: 300000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       await aliceAgent.proofs.proposeProof({
@@ -375,12 +367,10 @@ describe('Auto accept present proof', () => {
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
-        timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
       })
 
       await faberAgent.proofs.requestProof({

@@ -46,7 +46,6 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
       return this.createRequest(proofRecord, messageContext)
     }
   }
-
   private async createRequest(
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>

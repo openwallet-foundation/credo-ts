@@ -68,7 +68,7 @@ describe('Present Proof', () => {
       comment: 'V2 Presentation Exchange propose proof test',
     })
 
-    // Faber waits for a presentation proposal from Alice
+    // // Faber waits for a presentation proposal from Alice
     testLogger.test('Faber waits for a presentation proposal from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
