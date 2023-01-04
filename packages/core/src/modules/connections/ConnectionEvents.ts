@@ -4,8 +4,6 @@ import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum ConnectionEventTypes {
   ConnectionStateChanged = 'ConnectionStateChanged',
-  PingReceived = 'PingReceived',
-  PingResponseReceived = 'PingResponseReceived',
 }
 
 export interface ConnectionStateChangedEvent extends BaseEvent {
@@ -16,15 +14,20 @@ export interface ConnectionStateChangedEvent extends BaseEvent {
   }
 }
 
+export enum TrustPingEventTypes {
+  PingReceived = 'PingReceived',
+  PingResponseReceived = 'PingResponseReceived',
+}
+
 export interface PingReceivedEvent extends BaseEvent {
-  type: typeof ConnectionEventTypes.PingReceived
+  type: typeof TrustPingEventTypes.PingReceived
   payload: {
     from: string
   }
 }
 
 export interface PingResponseReceivedEvent extends BaseEvent {
-  type: typeof ConnectionEventTypes.PingResponseReceived
+  type: typeof TrustPingEventTypes.PingResponseReceived
   payload: {
     from: string
   }

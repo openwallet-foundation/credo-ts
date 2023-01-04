@@ -17,11 +17,11 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import {
   BasicMessageEventTypes,
   BasicMessageRole,
-  ConnectionEventTypes,
   CredentialEventTypes,
   CredentialState,
   ProofEventTypes,
   ProofState,
+  TrustPingEventTypes,
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
@@ -82,10 +82,10 @@ export class Listener {
   }
 
   public pingListener(agent: Agent, name: string) {
-    agent.events.on(ConnectionEventTypes.PingReceived, async (event: PingReceivedEvent) => {
+    agent.events.on(TrustPingEventTypes.PingReceived, async (event: PingReceivedEvent) => {
       this.ui.updateBottomBar(purpleText(`\n${name} received ping message from ${event.payload.from}\n`))
     })
-    agent.events.on(ConnectionEventTypes.PingResponseReceived, async (event: PingResponseReceivedEvent) => {
+    agent.events.on(TrustPingEventTypes.PingResponseReceived, async (event: PingResponseReceivedEvent) => {
       this.ui.updateBottomBar(purpleText(`\n${name} received ping response message from ${event.payload.from}\n`))
     })
   }

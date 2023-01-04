@@ -7,7 +7,7 @@ import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../../constants'
 import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
-import { ConnectionEventTypes } from '../../../ConnectionEvents'
+import { TrustPingEventTypes } from '../../../ConnectionEvents'
 
 import { TrustPingMessageHandler, TrustPingResponseMessageHandler } from './handlers'
 import { TrustPingMessage } from './messages/TrustPingMessage'
@@ -46,7 +46,7 @@ export class V2TrustPingService {
     this.logger.info('Trust Ping message received.', message)
 
     this.eventEmitter.emit<PingReceivedEvent>(agentContext, {
-      type: ConnectionEventTypes.PingReceived,
+      type: TrustPingEventTypes.PingReceived,
       payload: {
         from: message.from,
       },
@@ -66,7 +66,7 @@ export class V2TrustPingService {
     this.logger.info('Trust Ping Response message received.', message)
 
     this.eventEmitter.emit<PingResponseReceivedEvent>(agentContext, {
-      type: ConnectionEventTypes.PingResponseReceived,
+      type: TrustPingEventTypes.PingResponseReceived,
       payload: {
         from: message.from,
       },
