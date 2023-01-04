@@ -28,7 +28,7 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentMessa
   }
 
   public setReturnRouting(): void {
-    throw new AriesFrameworkError('DidComm V2 message does provide `setReturnRouting` method')
+    throw new AriesFrameworkError('DidComm V2 message does not provide `setReturnRouting` method')
   }
 
   public is<C extends typeof DidCommV2Message>(Class: C): this is InstanceType<C> {

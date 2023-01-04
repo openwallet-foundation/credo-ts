@@ -15,7 +15,7 @@ import { KeyProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { X25519KeyProvider } from '../crypto/key-provider/X25519KeyProvider'
 import { DidCommV1EnvelopeServiceToken } from '../didcomm/versions/v1'
-import { DidCommV1EnvelopeServiceImpl } from '../didcomm/versions/v1/indy/DidCommV1EnvelopeServiceImpl'
+import { DefaultDidCommV1EnvelopeService } from '../didcomm/versions/v1/indy/DefaultDidCommV1EnvelopeService'
 import { DefaultDidCommV2EnvelopeService, DidCommV2EnvelopeServiceToken } from '../didcomm/versions/v2'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
@@ -68,7 +68,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
-    dependencyManager.registerSingleton(DidCommV1EnvelopeServiceToken, DidCommV1EnvelopeServiceImpl)
+    dependencyManager.registerSingleton(DidCommV1EnvelopeServiceToken, DefaultDidCommV1EnvelopeService)
     dependencyManager.registerInstance(DidCommV2EnvelopeServiceToken, DefaultDidCommV2EnvelopeService)
 
     dependencyManager.registerInstance(KeyProviderToken, new X25519KeyProvider())

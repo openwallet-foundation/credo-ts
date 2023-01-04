@@ -13,7 +13,7 @@ import { DidCommMessageVersion, EnvelopeType } from '../../../types'
 import { DidCommV1EnvelopeService } from '../index'
 
 @injectable()
-export class DidCommV1EnvelopeServiceImpl implements DidCommV1EnvelopeService {
+export class DefaultDidCommV1EnvelopeService implements DidCommV1EnvelopeService {
   private logger: Logger
 
   public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
@@ -26,7 +26,7 @@ export class DidCommV1EnvelopeServiceImpl implements DidCommV1EnvelopeService {
     params: PackMessageParams
   ): Promise<EncryptedMessage> {
     if (params.envelopeType === EnvelopeType.Signed) {
-      throw new AriesFrameworkError('JWS messages are not supported by DIDComm V1 Indy service')
+      throw new AriesFrameworkError('JWS messages are not supported by DIDComm V1 service')
     }
 
     const { recipientKeys, routingKeys, senderKey } = params
