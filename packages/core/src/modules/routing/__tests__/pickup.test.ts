@@ -71,7 +71,7 @@ describe('E2E Pick Up protocol', () => {
       mediatorOutOfBandRecord!.id
     )
 
-    mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
+    mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection.id)
 
     const message = 'hello pickup V1'
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
@@ -125,7 +125,7 @@ describe('E2E Pick Up protocol', () => {
       mediatorOutOfBandRecord!.id
     )
 
-    mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
+    mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection.id)
 
     const message = 'hello pickup V2'
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)

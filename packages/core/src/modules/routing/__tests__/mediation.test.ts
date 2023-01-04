@@ -95,12 +95,12 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
     const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
-      mediatorOutOfBandRecord!.id
+      mediatorOutOfBandRecord.id
     )
-    expect(mediatorRecipientConnection!.isReady).toBe(true)
+    expect(mediatorRecipientConnection.isReady).toBe(true)
 
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
-    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
+    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
 
@@ -127,11 +127,11 @@ describe('mediator establishment', () => {
       recipientOutOfBandRecord!.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
-    expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
-    expect(recipientSenderConnection!.isReady).toBe(true)
+    expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection)
+    expect(recipientSenderConnection.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
 
-    recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(recipientSenderConnection!.id)
+    recipientSenderConnection = await recipientAgent.connections.returnWhenIsConnected(recipientSenderConnection.id)
 
     const message = 'hello, world'
     await senderAgent.basicMessages.sendMessage(senderRecipientConnection.id, message)
@@ -220,13 +220,13 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
     const [mediatorRecipientConnection] = await mediatorAgent.connections.findAllByOutOfBandId(
-      mediatorOutOfBandRecord!.id
+      mediatorOutOfBandRecord.id
     )
-    expect(mediatorRecipientConnection!.isReady).toBe(true)
+    expect(mediatorRecipientConnection.isReady).toBe(true)
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection!)
-    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
+    expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
+    expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
     expect(recipientMediator?.state).toBe(MediationState.Granted)
 
@@ -265,12 +265,12 @@ describe('mediator establishment', () => {
 
     senderRecipientConnection = await senderAgent.connections.returnWhenIsConnected(senderRecipientConnection!.id)
     const [recipientSenderConnection] = await recipientAgent.connections.findAllByOutOfBandId(
-      recipientOutOfBandRecord!.id
+      recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
-    expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
+    expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection)
 
-    expect(recipientSenderConnection!.isReady).toBe(true)
+    expect(recipientSenderConnection.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'
