@@ -77,7 +77,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
     dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
     dependencyManager.registerInstance(InjectionSymbols.FileSystem, new agentConfig.agentDependencies.FileSystem())
-    dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
 
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
