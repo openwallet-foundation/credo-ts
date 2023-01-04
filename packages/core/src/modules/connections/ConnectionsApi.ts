@@ -27,7 +27,7 @@ import {
   DidExchangeResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
-import { TrustPingService } from './protocols/trust-ping/v1/TrustPingService'
+import { V1TrustPingService } from './protocols/trust-ping/v1/V1TrustPingService'
 import { V2TrustPingService } from './protocols/trust-ping/v2/V2TrustPingService'
 import { ConnectionService } from './services/ConnectionService'
 
@@ -42,7 +42,7 @@ export class ConnectionsApi {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
-  private trustPingService: TrustPingService
+  private v1trustPingService: V1TrustPingService
   private v2TrustPingService: V2TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -54,7 +54,7 @@ export class ConnectionsApi {
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
-    trustPingService: TrustPingService,
+    v1TrustPingService: V1TrustPingService,
     v2TrustPingService: V2TrustPingService,
     routingService: RoutingService,
     didRepository: DidRepository,
@@ -66,7 +66,7 @@ export class ConnectionsApi {
     this.didExchangeProtocol = didExchangeProtocol
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
-    this.trustPingService = trustPingService
+    this.v1trustPingService = v1TrustPingService
     this.v2TrustPingService = v2TrustPingService
     this.routingService = routingService
     this.didRepository = didRepository
@@ -286,7 +286,7 @@ export class ConnectionsApi {
   public async sendPing(connectionId: string) {
     const connection = await this.getById(connectionId)
     const message = connection.isDidCommV1Connection
-      ? await this.trustPingService.createPing()
+      ? await this.v1trustPingService.createPing()
       : await this.v2TrustPingService.createPing(connection)
 
     await this.messageSender.sendMessage(

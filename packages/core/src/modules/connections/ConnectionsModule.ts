@@ -8,7 +8,7 @@ import { ConnectionsApi } from './ConnectionsApi'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { ConnectionRole, DidExchangeRole } from './models'
-import { TrustPingService, V2TrustPingService } from './protocols/trust-ping'
+import { V1TrustPingService, V2TrustPingService } from './protocols/trust-ping'
 import { ConnectionRepository } from './repository'
 import { ConnectionService } from './services'
 
@@ -33,7 +33,7 @@ export class ConnectionsModule implements Module {
     // Services
     dependencyManager.registerSingleton(ConnectionService)
     dependencyManager.registerSingleton(DidExchangeProtocol)
-    dependencyManager.registerSingleton(TrustPingService)
+    dependencyManager.registerSingleton(V1TrustPingService)
     dependencyManager.registerSingleton(V2TrustPingService)
 
     // Repositories

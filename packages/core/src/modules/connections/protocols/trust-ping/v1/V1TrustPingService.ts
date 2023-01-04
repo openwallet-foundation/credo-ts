@@ -12,7 +12,7 @@ import { TrustPingMessage } from './messages'
 import { TrustPingResponseMessage } from './messages/TrustPingResponseMessage'
 
 @injectable()
-export class TrustPingService {
+export class V1TrustPingService {
   private logger: Logger
   private dispatcher: Dispatcher
   private connectionService: ConnectionService

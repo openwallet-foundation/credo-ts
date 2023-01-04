@@ -1,6 +1,6 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../../agent/MessageHandler'
 import type { ConnectionService } from '../../../../services/ConnectionService'
-import type { TrustPingService } from '../TrustPingService'
+import type { V1TrustPingService } from '../V1TrustPingService'
 
 import { OutboundMessageContext } from '../../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../../error'
@@ -8,11 +8,11 @@ import { DidExchangeState } from '../../../../models'
 import { TrustPingMessage } from '../messages'
 
 export class TrustPingMessageHandler implements MessageHandler {
-  private trustPingService: TrustPingService
+  private trustPingService: V1TrustPingService
   private connectionService: ConnectionService
   public supportedMessages = [TrustPingMessage]
 
-  public constructor(trustPingService: TrustPingService, connectionService: ConnectionService) {
+  public constructor(trustPingService: V1TrustPingService, connectionService: ConnectionService) {
     this.trustPingService = trustPingService
     this.connectionService = connectionService
   }

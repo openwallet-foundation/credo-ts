@@ -7,7 +7,7 @@ import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
 import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
-import { TrustPingService } from '../../modules/connections/protocols/trust-ping/v1/TrustPingService'
+import { V1TrustPingService } from '../../modules/connections/protocols/trust-ping/v1/V1TrustPingService'
 import { ConnectionRepository } from '../../modules/connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { CredentialRepository } from '../../modules/credentials'
@@ -159,7 +159,7 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionsApi)).toBeInstanceOf(ConnectionsApi)
       expect(container.resolve(ConnectionService)).toBeInstanceOf(ConnectionService)
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
-      expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
+      expect(container.resolve(V1TrustPingService)).toBeInstanceOf(V1TrustPingService)
 
       expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
       expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
@@ -202,7 +202,7 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionsApi)).toBe(container.resolve(ConnectionsApi))
       expect(container.resolve(ConnectionService)).toBe(container.resolve(ConnectionService))
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
-      expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
+      expect(container.resolve(V1TrustPingService)).toBe(container.resolve(V1TrustPingService))
 
       expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
       expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))

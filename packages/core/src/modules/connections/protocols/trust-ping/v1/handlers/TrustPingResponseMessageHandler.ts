@@ -1,13 +1,13 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../../agent/MessageHandler'
-import type { TrustPingService } from '../TrustPingService'
+import type { V1TrustPingService } from '../V1TrustPingService'
 
 import { TrustPingResponseMessage } from '../messages'
 
 export class TrustPingResponseMessageHandler implements MessageHandler {
-  private trustPingService: TrustPingService
+  private trustPingService: V1TrustPingService
   public supportedMessages = [TrustPingResponseMessage]
 
-  public constructor(trustPingService: TrustPingService) {
+  public constructor(trustPingService: V1TrustPingService) {
     this.trustPingService = trustPingService
   }
 
