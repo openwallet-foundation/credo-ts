@@ -28,11 +28,11 @@
     "didcomm": "0.3.4"
   },
   "peerDependencies": {
-    "@aries-framework/core": "0.3.1"
+    "@aries-framework/core": "0.3.2"
   },
   "devDependencies": {
-    "@aries-framework/core": "0.3.1",
-    "@aries-framework/node": "0.3.1",
+    "@aries-framework/core": "0.3.2",
+    "@aries-framework/node": "0.3.2",
     "didcomm-node": "0.3.4",
     "reflect-metadata": "^0.1.13",
     "rimraf": "~3.0.2",
