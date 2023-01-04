@@ -2,6 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AcceptCredentialOfferOptions,
+  AgentDependencies,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
@@ -13,10 +14,11 @@ import type {
   SchemaTemplate,
   Wallet,
 } from '../src'
-import type { AgentModulesInput } from '../src/agent/AgentModules'
+import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { Awaited } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -83,11 +85,11 @@ const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${n
 const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput>(
+export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
-) {
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
@@ -111,7 +113,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
-  return { config, modules, dependencies: agentDependencies } as const
+
+  return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -675,6 +678,8 @@ export function mockProperty<T extends {}, K extends keyof T>(object: T, propert
   Object.defineProperty(object, property, { get: () => value })
 }
 
+// Helper type to get the type of the agents (with the custom modules) for the credential tests
+export type CredentialTestsAgent = Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
 export async function setupCredentialTests(
   faberName: string,
   aliceName: string,
