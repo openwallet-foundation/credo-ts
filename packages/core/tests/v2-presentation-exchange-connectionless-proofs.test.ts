@@ -1,9 +1,6 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { CredentialStateChangedEvent } from '../src/modules/credentials'
-import type {
-  JsonCredential,
-  JsonLdCredentialDetailFormat,
-} from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofStateChangedEvent } from '../src/modules/proofs'
 import type { CreateProofRequestOptions } from '../src/modules/proofs/ProofsApiOptions'
 import type { PresentationExchangeProofFormat } from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
@@ -56,7 +53,7 @@ describe('Present Proof', () => {
     }
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice', async () => {
+  test('Faber starts with connection-less proof requests to Alice', async () => {
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
@@ -141,7 +138,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
@@ -202,7 +199,6 @@ describe('Present Proof', () => {
 
     const unique = uuid().substring(0, 4)
 
-    // TODO remove the dependency on BbsModule
     const modules = {
       // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
       credentials: new CredentialsModule({
@@ -331,7 +327,7 @@ describe('Present Proof', () => {
       },
     }
 
-    const signCredentialOptions: JsonLdCredentialDetailFormat = {
+    const signCredentialOptions = {
       credential: inputDoc,
       options: {
         proofPurpose: 'assertionMethod',
