@@ -5,7 +5,7 @@ import { Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
@@ -24,7 +24,7 @@ export interface OutOfBandInvitationOptions {
   handshakeProtocols?: HandshakeProtocol[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
-  appendedAttachments?: Attachment[]
+  appendedAttachments?: V1Attachment[]
 }
 
 export class OutOfBandInvitation extends DidCommV1Message {
@@ -46,10 +46,10 @@ export class OutOfBandInvitation extends DidCommV1Message {
 
   public addRequest(message: DidCommV1Message) {
     if (!this.requests) this.requests = []
-    const requestAttachment = new Attachment({
+    const requestAttachment = new V1Attachment({
       id: this.generateId(),
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(message.toJSON()),
       }),
     })
@@ -130,14 +130,14 @@ export class OutOfBandInvitation extends DidCommV1Message {
   public handshakeProtocols?: HandshakeProtocol[]
 
   @Expose({ name: 'requests~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(Attachment, { each: true })
+  @IsInstance(V1Attachment, { each: true })
   @IsOptional()
-  private requests?: Attachment[]
+  private requests?: V1Attachment[]
 
   @IsArray()
   @ArrayNotEmpty()

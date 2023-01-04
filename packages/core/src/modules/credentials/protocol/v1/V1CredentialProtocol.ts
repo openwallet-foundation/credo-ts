@@ -20,7 +20,7 @@ import type { GetFormatDataReturn } from '../../CredentialsApiOptions'
 import type { CredentialFormatService, ExtractCredentialFormats, IndyCredentialFormat } from '../../formats'
 
 import { Protocol } from '../../../../agent/models/features'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
@@ -234,8 +234,8 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
 
       await this.indyCredentialFormat.processProposal(messageContext.agentContext, {
         credentialRecord,
-        attachment: new Attachment({
-          data: new AttachmentData({
+        attachment: new V1Attachment({
+          data: new V1AttachmentData({
             json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
           }),
         }),
@@ -310,8 +310,8 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
-      proposalAttachment: new Attachment({
-        data: new AttachmentData({
+      proposalAttachment: new V1Attachment({
+        data: new V1AttachmentData({
           json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
         }),
       }),

@@ -4,7 +4,7 @@ import type { IndyProof } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
-import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
@@ -16,8 +16,8 @@ export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 export interface PresentationOptions {
   id?: string
   comment?: string
-  presentationAttachments: Attachment[]
-  attachments?: Attachment[]
+  presentationAttachments: V1Attachment[]
+  attachments?: V1Attachment[]
 }
 
 /**
@@ -53,13 +53,13 @@ export class V1PresentationMessage extends DidCommV1Message {
    * An array of attachments containing the presentation in the requested format(s).
    */
   @Expose({ name: 'presentations~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(Attachment, { each: true })
-  public presentationAttachments!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public presentationAttachments!: V1Attachment[]
 
   public getAttachmentFormats(): ProofAttachmentFormat[] {
     const attachment = this.indyAttachment
@@ -76,7 +76,7 @@ export class V1PresentationMessage extends DidCommV1Message {
     ]
   }
 
-  public get indyAttachment(): Attachment | null {
+  public get indyAttachment(): V1Attachment | null {
     return this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID) ?? null
   }
 

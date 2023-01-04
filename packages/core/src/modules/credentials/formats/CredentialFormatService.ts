@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   FormatCreateProposalOptions,
@@ -60,5 +60,5 @@ export interface CredentialFormatService<CF extends CredentialFormat = Credentia
 
   supportsFormat(format: string): boolean
 
-  getFormatData(data: unknown, id: string): Attachment
+  getFormatData(data: unknown, id: string): V1Attachment
 }

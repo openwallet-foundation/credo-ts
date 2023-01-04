@@ -27,7 +27,7 @@ import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
@@ -103,10 +103,10 @@ export class IndyProofFormatService extends ProofFormatService {
     // Assert attribute and predicate (group) names do not match
     checkProofRequestForDuplicates(request)
 
-    const attachment = new Attachment({
+    const attachment = new V1Attachment({
       id: options.id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(request),
       }),
     })
@@ -122,10 +122,10 @@ export class IndyProofFormatService extends ProofFormatService {
     const request = new ProofRequest(options.proofProposalOptions)
     MessageValidator.validateSync(request)
 
-    const attachment = new Attachment({
+    const attachment = new V1Attachment({
       id: options.id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(JsonTransformer.toJSON(request)),
       }),
     })
@@ -173,10 +173,10 @@ export class IndyProofFormatService extends ProofFormatService {
       format: V2_INDY_PRESENTATION_REQUEST,
     })
 
-    const attachment = new Attachment({
+    const attachment = new V1Attachment({
       id: id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(options.proofFormats.indy),
       }),
     })
@@ -246,10 +246,10 @@ export class IndyProofFormatService extends ProofFormatService {
       format: V2_INDY_PRESENTATION,
     })
 
-    const attachment = new Attachment({
+    const attachment = new V1Attachment({
       id: attachmentId,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(proof),
       }),
     })

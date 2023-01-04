@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
 import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
@@ -42,19 +42,19 @@ export type ExtractCredentialFormats<CFs extends CredentialFormatService[]> = {
  */
 export interface CredentialFormatCreateReturn {
   format: CredentialFormatSpec
-  attachment: Attachment
+  attachment: V1Attachment
 }
 
 /**
  * Base return type for all process methods.
  */
 export interface FormatProcessOptions {
-  attachment: Attachment
+  attachment: V1Attachment
   credentialRecord: CredentialExchangeRecord
 }
 
 export interface FormatProcessCredentialOptions extends FormatProcessOptions {
-  requestAttachment: Attachment
+  requestAttachment: V1Attachment
 }
 
 export interface FormatCreateProposalOptions<CF extends CredentialFormat> {
@@ -67,7 +67,7 @@ export interface FormatAcceptProposalOptions<CF extends CredentialFormat> {
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptProposal'>
   attachId?: string
 
-  proposalAttachment: Attachment
+  proposalAttachment: V1Attachment
 }
 
 export interface FormatCreateProposalReturn extends CredentialFormatCreateReturn {
@@ -85,7 +85,7 @@ export interface FormatAcceptOfferOptions<CF extends CredentialFormat> {
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptOffer'>
   attachId?: string
 
-  offerAttachment: Attachment
+  offerAttachment: V1Attachment
 }
 
 export interface FormatCreateOfferReturn extends CredentialFormatCreateReturn {
@@ -102,40 +102,40 @@ export interface FormatAcceptRequestOptions<CF extends CredentialFormat> {
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
   attachId?: string
 
-  requestAttachment: Attachment
-  offerAttachment?: Attachment
+  requestAttachment: V1Attachment
+  offerAttachment?: V1Attachment
 }
 
 export interface FormatAcceptCredentialOptions {
   credentialRecord: CredentialExchangeRecord
   attachId?: string
-  requestAttachment: Attachment
-  offerAttachment?: Attachment
+  requestAttachment: V1Attachment
+  offerAttachment?: V1Attachment
 }
 // Auto accept method interfaces
 export interface FormatAutoRespondProposalOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment: Attachment
-  offerAttachment: Attachment
+  proposalAttachment: V1Attachment
+  offerAttachment: V1Attachment
 }
 
 export interface FormatAutoRespondOfferOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment: Attachment
-  offerAttachment: Attachment
+  proposalAttachment: V1Attachment
+  offerAttachment: V1Attachment
 }
 
 export interface FormatAutoRespondRequestOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment?: Attachment
-  offerAttachment: Attachment
-  requestAttachment: Attachment
+  proposalAttachment?: V1Attachment
+  offerAttachment: V1Attachment
+  requestAttachment: V1Attachment
 }
 
 export interface FormatAutoRespondCredentialOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment?: Attachment
-  offerAttachment?: Attachment
-  requestAttachment: Attachment
-  credentialAttachment: Attachment
+  proposalAttachment?: V1Attachment
+  offerAttachment?: V1Attachment
+  requestAttachment: V1Attachment
+  credentialAttachment: V1Attachment
 }

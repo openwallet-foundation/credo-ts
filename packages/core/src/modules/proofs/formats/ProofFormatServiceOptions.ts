@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofFormat } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
@@ -27,5 +27,5 @@ export type ProofFormatServiceMap<PFs extends ProofFormat[]> = {
  */
 export interface ProofFormatCreateReturn {
   format: ProofFormatSpec
-  attachment: Attachment
+  attachment: V1Attachment
 }

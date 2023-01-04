@@ -1,9 +1,9 @@
-import type { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 
 export interface IndyCredentialViewModel {
   metadata?: IndyCredentialViewMetadata | null
   claims: Record<string, string>
-  attachments?: Attachment[]
+  attachments?: V1Attachment[]
 }
 
 export interface IndyCredentialViewMetadata {
@@ -20,5 +20,5 @@ export class IndyCredentialView {
 
   public metadata: IndyCredentialViewMetadata
   public claims: Record<string, string>
-  public attachments?: Attachment[]
+  public attachments?: V1Attachment[]
 }

@@ -4,7 +4,7 @@ import type { Constructor } from '../../../utils/mixins'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsNumber, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { Attachment } from '../../../decorators/attachment/v2/Attachment'
+import { V2Attachment } from '../../../decorators/attachment/V2Attachment'
 import { uuid } from '../../../utils/uuid'
 import { MessageIdRegExp, MessageTypeRegExp } from '../../validation'
 
@@ -20,7 +20,7 @@ export type DidCommV2MessageParams = {
   createdTime?: number
   expiresTime?: number
   fromPrior?: string
-  attachments?: Array<Attachment>
+  attachments?: Array<V2Attachment>
   body?: unknown
 }
 
@@ -71,12 +71,12 @@ export class DidCommV2BaseMessage {
   public body!: unknown
 
   @IsOptional()
-  @Type(() => Attachment)
+  @Type(() => V2Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  public attachments?: Array<Attachment>
+  public attachments?: Array<V2Attachment>
 
   public constructor(options?: DidCommV2MessageParams) {
     if (options) {

@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../models'
@@ -9,7 +9,7 @@ import { CredentialFormatSpec } from '../../../models'
 export interface V2RequestCredentialMessageOptions {
   id?: string
   formats: CredentialFormatSpec[]
-  requestAttachments: Attachment[]
+  requestAttachments: V1Attachment[]
   comment?: string
 }
 
@@ -35,13 +35,13 @@ export class V2RequestCredentialMessage extends DidCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/request-credential')
 
   @Expose({ name: 'requests~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(Attachment, { each: true })
-  public requestAttachments!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public requestAttachments!: V1Attachment[]
 
   /**
    * Human readable information about this Credential Request,
@@ -51,7 +51,7 @@ export class V2RequestCredentialMessage extends DidCommV1Message {
   @IsString()
   public comment?: string
 
-  public getRequestAttachmentById(id: string): Attachment | undefined {
+  public getRequestAttachmentById(id: string): V1Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id == id)
   }
 }

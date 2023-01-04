@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import type { ProposeProofFormats } from '../../models/SharedOptions'
 import type { ProofExchangeRecord } from '../../repository'
 import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
@@ -37,7 +37,7 @@ export interface ProcessRequestOptions {
 
 export interface FormatCreatePresentationOptions<PF extends ProofFormat> {
   id?: string
-  attachment: Attachment
+  attachment: V1Attachment
   proofFormats: ProofFormatPayload<[PF], 'createPresentation'>
 }
 
@@ -50,8 +50,8 @@ export interface ProcessPresentationOptions {
 }
 
 export interface VerifyProofOptions {
-  request: Attachment
-  proof: Attachment
+  request: V1Attachment
+  proof: V1Attachment
 }
 
 export interface CreateProblemReportOptions {
@@ -60,5 +60,5 @@ export interface CreateProblemReportOptions {
 }
 
 export interface CreatePresentationFormatsOptions {
-  presentationAttachment: Attachment
+  presentationAttachment: V1Attachment
 }

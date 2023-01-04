@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
 
@@ -60,7 +60,7 @@ export class DidExchangeRequestMessage extends DidCommV1Message {
   public readonly did!: string
 
   @Expose({ name: 'did_doc~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @ValidateNested()
-  public didDoc?: Attachment
+  public didDoc?: V1Attachment
 }

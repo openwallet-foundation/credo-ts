@@ -23,7 +23,7 @@ import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
 import { KeyType } from '../../../../crypto'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
@@ -364,7 +364,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: V1Attachment[]): V1Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
     const supportedAttachments = messageAttachments.filter((attachment) =>
       supportedAttachmentIds.includes(attachment.id)
@@ -536,7 +536,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     attributes?: CredentialPreviewAttributeOptions[],
     linkedAttachments?: LinkedAttachment[]
   ): {
-    attachments?: Attachment[]
+    attachments?: V1Attachment[]
     previewAttributes?: CredentialPreviewAttribute[]
   } {
     if (!linkedAttachments && !attributes) {
@@ -544,7 +544,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     }
 
     let previewAttributes = attributes?.map((attribute) => new CredentialPreviewAttribute(attribute)) ?? []
-    let attachments: Attachment[] | undefined
+    let attachments: V1Attachment[] | undefined
 
     if (linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
@@ -557,17 +557,17 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link V1Attachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  public getFormatData(data: unknown, id: string): V1Attachment {
+    const attachment = new V1Attachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

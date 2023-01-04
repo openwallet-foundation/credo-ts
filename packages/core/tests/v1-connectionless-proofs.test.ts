@@ -6,7 +6,7 @@ import { Subject, ReplaySubject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../src/agent/Agent'
-import { Attachment, AttachmentData } from '../src/decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../src/decorators/attachment/V1Attachment'
 import { HandshakeProtocol } from '../src/modules/connections'
 import { V1CredentialPreview } from '../src/modules/credentials'
 import {
@@ -293,16 +293,16 @@ describe('Present Proof', () => {
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
           new LinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

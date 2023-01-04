@@ -1,4 +1,4 @@
-import { Attachment } from '../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
 import { DidCommV1Service } from '../../dids'
@@ -15,7 +15,7 @@ describe('convertToNewInvitation', () => {
       serviceEndpoint: 'https://my-agent.com',
       routingKeys: ['6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'],
       appendedAttachments: [
-        new Attachment({
+        new V1Attachment({
           id: 'attachment-1',
           mimeType: 'text/plain',
           description: 'attachment description',
@@ -62,7 +62,7 @@ describe('convertToNewInvitation', () => {
       label: 'a-label',
       did: 'did:sov:a-did',
       appendedAttachments: [
-        new Attachment({
+        new V1Attachment({
           id: 'attachment-1',
           mimeType: 'text/plain',
           description: 'attachment description',

@@ -1,7 +1,7 @@
-import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 
 export interface ProofAttachmentFormat {
   format: ProofFormatSpec
-  attachment: Attachment
+  attachment: V1Attachment
 }

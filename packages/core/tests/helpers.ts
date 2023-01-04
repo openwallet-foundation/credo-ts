@@ -52,7 +52,7 @@ import {
   ProofEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { Attachment, AttachmentData } from '../src/decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../src/decorators/attachment/V1Attachment'
 import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
 import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service } from '../src/modules/dids'
@@ -831,16 +831,16 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
       linkedAttachments: [
         new LinkedAttachment({
           name: 'image_0',
-          attachment: new Attachment({
+          attachment: new V1Attachment({
             filename: 'picture-of-a-cat.png',
-            data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+            data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
           }),
         }),
         new LinkedAttachment({
           name: 'image_1',
-          attachment: new Attachment({
+          attachment: new V1Attachment({
             filename: 'picture-of-a-dog.png',
-            data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+            data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
           }),
         }),
       ],

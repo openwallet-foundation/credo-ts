@@ -1,5 +1,5 @@
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Attachment } from '../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../decorators/attachment/V1Attachment'
 import type { DidCommV1Message, PlaintextMessage } from '../../didcomm'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
@@ -58,7 +58,7 @@ export interface CreateOutOfBandInvitationConfig {
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
-  appendedAttachments?: Attachment[]
+  appendedAttachments?: V1Attachment[]
 }
 
 export interface CreateLegacyInvitationConfig {

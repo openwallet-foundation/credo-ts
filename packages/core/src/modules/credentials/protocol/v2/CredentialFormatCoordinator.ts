@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentialFormats } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
@@ -41,7 +41,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const proposalAttachments: Attachment[] = []
+    const proposalAttachments: V1Attachment[] = []
     let credentialPreview: V2CredentialPreview | undefined
 
     for (const formatService of formatServices) {
@@ -129,7 +129,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const offerAttachments: Attachment[] = []
+    const offerAttachments: V1Attachment[] = []
     let credentialPreview: V2CredentialPreview | undefined
 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
@@ -218,7 +218,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const offerAttachments: Attachment[] = []
+    const offerAttachments: V1Attachment[] = []
     let credentialPreview: V2CredentialPreview | undefined
 
     for (const formatService of formatServices) {
@@ -318,7 +318,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const requestAttachments: Attachment[] = []
+    const requestAttachments: V1Attachment[] = []
 
     for (const formatService of formatServices) {
       const offerAttachment = this.getAttachmentForService(
@@ -381,7 +381,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const requestAttachments: Attachment[] = []
+    const requestAttachments: V1Attachment[] = []
 
     for (const formatService of formatServices) {
       const { format, attachment } = await formatService.createRequest(agentContext, {
@@ -468,7 +468,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: CredentialFormatSpec[] = []
-    const credentialAttachments: Attachment[] = []
+    const credentialAttachments: V1Attachment[] = []
 
     for (const formatService of formatServices) {
       const requestAttachment = this.getAttachmentForService(
@@ -551,7 +551,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   public getAttachmentForService(
     credentialFormatService: CredentialFormatService,
     formats: CredentialFormatSpec[],
-    attachments: Attachment[]
+    attachments: V1Attachment[]
   ) {
     const attachmentId = this.getAttachmentIdForService(credentialFormatService, formats)
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)

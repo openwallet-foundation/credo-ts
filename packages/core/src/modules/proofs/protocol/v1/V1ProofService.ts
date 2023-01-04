@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import type { DidCommV1Message } from '../../../../didcomm'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
@@ -696,8 +696,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     agentContext: AgentContext,
     indyProofRequest: ProofRequest,
     requestedCredentials: RequestedCredentials
-  ): Promise<Attachment[] | undefined> {
-    const attachments: Attachment[] = []
+  ): Promise<V1Attachment[] | undefined> {
+    const attachments: V1Attachment[] = []
     const credentialIds = new Set<string>()
     const requestedAttributesNames: (string | undefined)[] = []
 

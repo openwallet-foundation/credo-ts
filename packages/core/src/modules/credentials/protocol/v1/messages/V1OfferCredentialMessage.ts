@@ -3,7 +3,7 @@ import type { CredOffer } from 'indy-sdk'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
@@ -14,9 +14,9 @@ export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 export interface V1OfferCredentialMessageOptions {
   id?: string
   comment?: string
-  offerAttachments: Attachment[]
+  offerAttachments: V1Attachment[]
   credentialPreview: V1CredentialPreview
-  attachments?: Attachment[]
+  attachments?: V1Attachment[]
 }
 
 /**
@@ -52,13 +52,13 @@ export class V1OfferCredentialMessage extends DidCommV1Message {
   public credentialPreview!: V1CredentialPreview
 
   @Expose({ name: 'offers~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(Attachment, { each: true })
-  public offerAttachments!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public offerAttachments!: V1Attachment[]
 
   public get indyCredentialOffer(): CredOffer | null {
     const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -69,7 +69,7 @@ export class V1OfferCredentialMessage extends DidCommV1Message {
     return credentialOfferJson
   }
 
-  public getOfferAttachmentById(id: string): Attachment | undefined {
+  public getOfferAttachmentById(id: string): V1Attachment | undefined {
     return this.offerAttachments.find((attachment) => attachment.id == id)
   }
 }

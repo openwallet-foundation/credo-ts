@@ -1,13 +1,13 @@
 import { Type } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { Attachment } from '../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../decorators/attachment/V1Attachment'
 
 import { encodeAttachment } from './attachment'
 
 export interface LinkedAttachmentOptions {
   name: string
-  attachment: Attachment
+  attachment: V1Attachment
 }
 
 export class LinkedAttachment {
@@ -26,8 +26,8 @@ export class LinkedAttachment {
   /**
    * The attachment that needs to be linked to the credential
    */
-  @Type(() => Attachment)
-  public attachment: Attachment
+  @Type(() => V1Attachment)
+  public attachment: V1Attachment
 
   /**
    * Generates an ID based on the data in the attachment
@@ -35,7 +35,7 @@ export class LinkedAttachment {
    * @param attachment the attachment that requires a hashlink
    * @returns the id
    */
-  private getId(attachment: Attachment): string {
+  private getId(attachment: V1Attachment): string {
     // Take the second element since the id property
     // of a decorator MUST not contain a colon and has a maximum size of 64 characters
     return encodeAttachment(attachment).split(':')[1].substring(0, 64)

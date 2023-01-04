@@ -1,4 +1,4 @@
-import type { Attachment } from '../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../decorators/attachment/V1Attachment'
 import type { BaseName } from './MultiBaseEncoder'
 
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
@@ -15,7 +15,7 @@ import { TypedArrayEncoder } from './TypedArrayEncoder'
  * @returns A hashlink based on the attachment data
  */
 export function encodeAttachment(
-  attachment: Attachment,
+  attachment: V1Attachment,
   hashAlgorithm: 'sha2-256' = 'sha2-256',
   baseName: BaseName = 'base58btc'
 ) {
@@ -38,6 +38,6 @@ export function encodeAttachment(
  * @param attachment the attachment that has to be validated
  * @returns a boolean whether the attachment is a linkedAttachment
  */
-export function isLinkedAttachment(attachment: Attachment) {
+export function isLinkedAttachment(attachment: V1Attachment) {
   return HashlinkEncoder.isValid(`hl:${attachment.id}`)
 }

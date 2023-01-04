@@ -24,7 +24,7 @@ import type {
   JsonLdFormatDataVerifiableCredential,
 } from './JsonLdCredentialFormat'
 
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
@@ -378,7 +378,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     throw new Error('Not implemented.')
   }
 
-  public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
+  public areCredentialsEqual = (message1: V1Attachment, message2: V1Attachment): boolean => {
     const obj1 = message1.getDataAsJson()
     const obj2 = message2.getDataAsJson()
 
@@ -426,17 +426,17 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link V1Attachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  public getFormatData(data: unknown, id: string): V1Attachment {
+    const attachment = new V1Attachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

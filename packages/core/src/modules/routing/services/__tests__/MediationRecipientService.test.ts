@@ -9,7 +9,7 @@ import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Key } from '../../../../crypto'
 import { KeyProviderRegistry } from '../../../../crypto/key-provider'
-import { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
@@ -278,7 +278,7 @@ describe('MediationRecipientService', () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new Attachment({
+          new V1Attachment({
             id: '1',
             data: {
               json: {
@@ -307,7 +307,7 @@ describe('MediationRecipientService', () => {
       const messageDeliveryMessage = new MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new Attachment({
+          new V1Attachment({
             id: '1',
             data: {
               json: {
@@ -315,7 +315,7 @@ describe('MediationRecipientService', () => {
               },
             },
           }),
-          new Attachment({
+          new V1Attachment({
             id: '2',
             data: {
               json: {

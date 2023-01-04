@@ -1,4 +1,4 @@
-import type { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
@@ -19,7 +19,7 @@ export interface V1ProposeCredentialMessageOptions {
   schemaVersion?: string
   credentialDefinitionId?: string
   issuerDid?: string
-  attachments?: Attachment[]
+  attachments?: V1Attachment[]
 }
 
 /**
@@ -122,7 +122,7 @@ export class V1ProposeCredentialMessage extends DidCommV1Message {
   @Matches(indyDidRegex)
   public issuerDid?: string
 
-  public getAttachment(): Attachment | undefined {
+  public getAttachment(): V1Attachment | undefined {
     if (this.appendedAttachments) {
       return this.appendedAttachments[0]
     } else {

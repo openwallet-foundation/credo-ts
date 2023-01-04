@@ -3,7 +3,7 @@ import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachm
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { AriesFrameworkError } from '../../../../../error'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
@@ -117,9 +117,9 @@ export class V2RequestPresentationMessage extends DidCommV1Message {
   public formats!: ProofFormatSpec[]
 
   @Expose({ name: 'request_presentations~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({ each: true })
-  @IsInstance(Attachment, { each: true })
-  public requestPresentationsAttach!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public requestPresentationsAttach!: V1Attachment[]
 }

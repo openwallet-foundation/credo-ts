@@ -5,7 +5,7 @@ import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMess
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { InjectionSymbols } from '../../../../../constants'
-import { Attachment } from '../../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
@@ -75,7 +75,7 @@ export class V2MessagePickupService {
     // of delivery message
     const attachments = messages.map(
       (msg) =>
-        new Attachment({
+        new V1Attachment({
           data: {
             json: msg,
           },

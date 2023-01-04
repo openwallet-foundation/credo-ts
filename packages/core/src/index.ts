@@ -30,7 +30,7 @@ export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
-export { Attachment, AttachmentData } from './decorators/attachment/v1/Attachment'
+export { V1Attachment, V1AttachmentData } from './decorators/attachment/V1Attachment'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
 export * from './plugins'

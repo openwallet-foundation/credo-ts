@@ -9,7 +9,7 @@ import type { CustomCredentialTags } from '../../repository/CredentialExchangeRe
 import type { RevocRegDef } from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
-import { Attachment, AttachmentData } from '../../../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
@@ -82,27 +82,27 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const requestAttachment = new Attachment({
+const requestAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64: JsonEncoder.toBase64(credReq),
   }),
 })
 
-const credentialAttachment = new Attachment({
+const credentialAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64: JsonEncoder.toBase64({
       values: IndyCredentialUtils.convertAttributesToValues(credentialPreview.attributes),
     }),

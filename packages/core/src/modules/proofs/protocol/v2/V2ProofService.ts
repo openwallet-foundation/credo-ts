@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { Dispatcher } from '../../../../agent/Dispatcher'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { Attachment } from '../../../../decorators/attachment/v1/Attachment'
+import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import type { DidCommV1Message } from '../../../../didcomm'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
@@ -839,7 +839,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   private getAttachmentForService(
     proofFormatService: ProofFormatService,
     formats: ProofFormatSpec[],
-    attachments: Attachment[]
+    attachments: V1Attachment[]
   ) {
     const attachmentId = this.getAttachmentIdForService(proofFormatService, formats)
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)

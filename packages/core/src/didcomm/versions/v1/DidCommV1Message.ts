@@ -2,7 +2,7 @@ import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
 import { AckDecorated } from '../../../decorators/ack/AckDecoratorExtension'
-import { AttachmentDecorated } from '../../../decorators/attachment/v1/AttachmentExtension'
+import { V1AttachmentDecorated } from '../../../decorators/attachment/V1AttachmentExtension'
 import { L10nDecorated } from '../../../decorators/l10n/L10nDecoratorExtension'
 import { ServiceDecorated } from '../../../decorators/service/ServiceDecoratorExtension'
 import { ThreadDecorated } from '../../../decorators/thread/ThreadDecoratorExtension'
@@ -16,7 +16,7 @@ import { DidCommV1BaseMessage } from './DidCommV1BaseMessage'
 
 const Decorated = ThreadDecorated(
   L10nDecorated(
-    TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(DidCommV1BaseMessage)))))
+    TransportDecorated(TimingDecorated(AckDecorated(V1AttachmentDecorated(ServiceDecorated(DidCommV1BaseMessage)))))
   )
 )
 

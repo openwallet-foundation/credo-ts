@@ -1,3 +1,3 @@
-export { Attachment } from './v1/Attachment'
-export { Attachment as V2Attachment } from './v2/Attachment'
-export { AttachmentDecorated } from './v1/AttachmentExtension'
+export { V1Attachment } from './V1Attachment'
+export { V2Attachment } from './V2Attachment'
+export { V1AttachmentDecorated } from './V1AttachmentExtension'

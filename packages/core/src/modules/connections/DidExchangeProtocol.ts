@@ -10,7 +10,7 @@ import type { Routing } from './services/ConnectionService'
 import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
-import { Attachment, AttachmentData } from '../../decorators/attachment/v1/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
@@ -453,9 +453,9 @@ export class DidExchangeProtocol {
   }
 
   private async createSignedAttachment(agentContext: AgentContext, didDoc: DidDocument, verkeys: string[]) {
-    const didDocAttach = new Attachment({
+    const didDocAttach = new V1Attachment({
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(didDoc),
       }),
     })
