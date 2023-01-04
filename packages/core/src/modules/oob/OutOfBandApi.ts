@@ -301,19 +301,8 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitationShortUrl(invitationUrl)
+    const message = await this.parseInvitation(invitationUrl)
     return this.receiveInvitation(message, config)
-  }
-
-  /**
-   * Parses URL containing encoded invitation and returns invitation message.
-   *
-   * @param invitationUrl URL containing encoded invitation
-   *
-   * @returns OutOfBandInvitation
-   */
-  public parseInvitation(invitationUrl: string): OutOfBandInvitation | V2OutOfBandInvitation {
-    return parseInvitationUrl(invitationUrl)
   }
 
   /**
@@ -324,7 +313,7 @@ export class OutOfBandApi {
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitationShortUrl(invitationUrl: string): Promise<OutOfBandInvitation | V2OutOfBandInvitation> {
+  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation | V2OutOfBandInvitation> {
     return await parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
   }
 
