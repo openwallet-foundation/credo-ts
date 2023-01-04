@@ -10,13 +10,8 @@ export const KeyProviderToken = Symbol('KeyProviderToken')
 export class KeyProviderRegistry {
   public keyProviders: KeyProvider[]
 
-  public constructor(@injectAll(KeyProviderToken) keyProviders: Array<'default' | KeyProvider>) {
-    // This is a really ugly hack to make tsyringe work without any KeyProviders registered
-    // It is currently impossible to use @injectAll if there are no instances registered for the
-    // token. We register a value of `default` by default and will filter that out in the registry.
-    // Once we have a key provider that should always be registered we can remove this. We can make an ed25519
-    // signer using the @stablelib/ed25519 library.
-    this.keyProviders = keyProviders.filter((provider) => provider !== 'default') as KeyProvider[]
+  public constructor(@injectAll(KeyProviderToken) keyProviders: KeyProvider[]) {
+    this.keyProviders = keyProviders
   }
 
   public hasProviderForKeyType(keyType: KeyType): boolean {
