@@ -4,7 +4,7 @@ import type {
   AnonCredsCredentialRequest,
   CredValue,
 } from '../models/exchange'
-import type { AnonCredsSchema } from '../models/vdr'
+import type { AnonCredsSchema } from '../models/registry'
 
 export interface CreateSchemaOptions {
   issuerId: string

@@ -1,5 +1,5 @@
 import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/vdr'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/registry'
 import type {
   CreateSchemaOptions,
   CreateCredentialDefinitionOptions,

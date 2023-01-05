@@ -3,7 +3,7 @@ import type {
   AnonCredsRevocationList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
-} from '../models/vdr'
+} from '../models/registry'
 import type { AgentContext } from '@aries-framework/core'
 
 export interface RegisterSchemaOptions {
