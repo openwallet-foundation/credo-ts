@@ -1,5 +1,4 @@
-import { CredentialInfo, RequestedCredentials } from '../models'
-
+import type { CredentialInfo, RequestedCredentials } from '../models'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
@@ -8,13 +7,12 @@ import type {
   NonRevokedInterval,
   ReferentWalletQuery,
 } from '../models/exchange'
-
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRevocationList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
-} from '../models/vdr'
+} from '../models/registry'
 
 export interface AttributeInfo {
   name?: string
@@ -40,29 +38,15 @@ export interface CreateProofOptions {
   }
 }
 
-export type CreateProofMetadata = {
-  schemasMetaData: { [key: string]: { seqNo: number; ver: string } }
-  credentialDefinitionsMetaData: { [key: string]: { ver: string } }
-}
-
 export interface StoreCredentialOptions {
   // TODO: what is in credential request metadata?
   credentialRequestMetadata: Record<string, unknown>
   credential: AnonCredsCredential
   credentialDefinition: AnonCredsCredentialDefinition
+  credentialDefinitionId: string
   credentialId?: string
   revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
-}
-export type StoreCredentialMetadata = {
-  credentialDefinitionMetadata: {
-    id: string
-    ver: string
-  }
-  revocationRegistryDefinition: {
-    id: string
-    issuanceType: 'ISSUANCE_BY_DEFAULT' | 'ISSUANCE_ON_DEMAND'
-    ver: string
-  }
+  revocationRegistryDefinitionId: string
 }
 
 export interface GetCredentialOptions {
@@ -77,7 +61,6 @@ export interface GetCredentialsForProofRequestOptions {
   extraQuery?: ReferentWalletQuery
 }
 
-
 export interface GetCredentialsForProofRequestReturn {
   credentialInfo: CredentialInfo
   interval?: NonRevokedInterval
@@ -89,11 +72,6 @@ export interface CreateCredentialRequestOptions {
   holderDid: string
   credentialOffer: AnonCredsCredentialOffer
   credentialDefinition: AnonCredsCredentialDefinition
-}
-
-export type CreateCredentialRequestMetadata = {
-  id: string
-  ver: string
 }
 
 export interface CreateCredentialRequestReturn {

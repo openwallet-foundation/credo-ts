@@ -1,3 +1,4 @@
+import type { CredentialInfo } from '../models'
 import type { AnonCredsProof } from '../models/exchange'
 import type {
   CreateCredentialRequestOptions,
@@ -6,10 +7,9 @@ import type {
   GetCredentialOptions,
   StoreCredentialOptions,
   GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn
+  GetCredentialsForProofRequestReturn,
 } from './AnonCredsHolderServiceOptions'
 import type { AgentContext } from '@aries-framework/core'
-import { CredentialInfo } from '../models'
 
 export interface AnonCredsHolderService {
   createProof(
@@ -33,5 +33,8 @@ export interface AnonCredsHolderService {
   ): Promise<CreateCredentialRequestReturn>
 
   deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void>
-  getCredentialsForProofRequest(agentContext: AgentContext, options: GetCredentialsForProofRequestOptions): Promise<GetCredentialsForProofRequestReturn[]>
+  getCredentialsForProofRequest(
+    agentContext: AgentContext,
+    options: GetCredentialsForProofRequestOptions
+  ): Promise<GetCredentialsForProofRequestReturn[]>
 }

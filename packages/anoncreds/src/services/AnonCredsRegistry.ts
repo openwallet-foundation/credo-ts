@@ -3,7 +3,7 @@ import type {
   AnonCredsRevocationList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
-} from '../models/vdr'
+} from '../models/registry'
 import type {
   RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
