@@ -1,5 +1,5 @@
 import type { CreateTenantOptions, GetTenantAgentOptions, WithTenantAgentCallback } from './TenantsApiOptions'
-import type { EmptyModuleMap, ModulesMap } from '@aries-framework/core'
+import type { DefaultAgentModules, ModulesMap } from '@aries-framework/core'
 
 import { AgentContext, inject, InjectionSymbols, AgentContextProvider, injectable, Logger } from '@aries-framework/core'
 
@@ -7,7 +7,7 @@ import { TenantAgent } from './TenantAgent'
 import { TenantRecordService } from './services'
 
 @injectable()
-export class TenantsApi<AgentModules extends ModulesMap = EmptyModuleMap> {
+export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   private agentContext: AgentContext
   private tenantRecordService: TenantRecordService
   private agentContextProvider: AgentContextProvider

@@ -1,4 +1,5 @@
 import type { Module, DependencyManager, ApiModule } from '../plugins'
+import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 import type { AgentConfig } from './AgentConfig'
 
@@ -101,7 +102,9 @@ export type AgentApi<Modules extends ModulesMap> = {
 export type CustomOrDefaultApi<
   CustomModuleType,
   DefaultModuleType extends ApiModule
-> = CustomModuleType extends ApiModule
+> = IsAny<CustomModuleType> extends true
+  ? InstanceType<DefaultModuleType['api']>
+  : CustomModuleType extends ApiModule
   ? InstanceType<CustomModuleType['api']>
   : CustomModuleType extends Module
   ? never
