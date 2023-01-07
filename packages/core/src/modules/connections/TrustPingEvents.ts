@@ -1,6 +1,5 @@
 import type { BaseEvent } from '../../agent/Events'
 import type { TrustPingMessage, TrustPingResponseMessage } from './messages'
-import type { DidExchangeState } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 
 export enum TrustPingEventTypes {

@@ -35,18 +35,17 @@ export class TrustPingService {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
-    const { agentContext, connection, message } = inboundMessage
+    const { agentContext, message } = inboundMessage
 
-    if (connection) {
-      this.eventEmitter.emit<TrustPingResponseReceivedEvent>(agentContext, {
-        type: TrustPingEventTypes.TrustPingResponseReceivedEvent,
-        payload: {
-          connectionRecord: connection,
-          message: message,
-        },
-      })
-    }
+    const connection = inboundMessage.assertReadyConnection()
+
+    this.eventEmitter.emit<TrustPingResponseReceivedEvent>(agentContext, {
+      type: TrustPingEventTypes.TrustPingResponseReceivedEvent,
+      payload: {
+        connectionRecord: connection,
+        message: message,
+      },
+    })
   }
 }
