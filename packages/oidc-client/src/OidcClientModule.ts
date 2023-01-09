@@ -1,37 +1,25 @@
-import type { DependencyManager, FeatureRegistry, Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@aries-framework/core'
 
-import { Protocol } from '@aries-framework/core'
+import { W3cCredentialService } from '@aries-framework/core'
 
-import { ActionMenuApi } from './ActionMenuApi'
-import { ActionMenuRole } from './ActionMenuRole'
-import { ActionMenuRepository } from './repository'
-import { ActionMenuService } from './services'
+import { OidcClientApi } from './OidcClientApi'
+import { OidcClientService } from './OidcClientService'
 
 /**
  * @public
  */
-export class ActionMenuModule implements Module {
-  public readonly api = ActionMenuApi
+export class OidcClientModule implements Module {
+  public readonly api = OidcClientApi
 
   /**
    * Registers the dependencies of the question answer module on the dependency manager.
    */
-  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
+  public register(dependencyManager: DependencyManager) {
     // Api
-    dependencyManager.registerContextScoped(ActionMenuApi)
+    dependencyManager.registerContextScoped(OidcClientApi)
 
     // Services
-    dependencyManager.registerSingleton(ActionMenuService)
-
-    // Repositories
-    dependencyManager.registerSingleton(ActionMenuRepository)
-
-    // Feature Registry
-    featureRegistry.register(
-      new Protocol({
-        id: 'https://didcomm.org/action-menu/1.0',
-        roles: [ActionMenuRole.Requester, ActionMenuRole.Responder],
-      })
-    )
+    dependencyManager.registerSingleton(OidcClientService)
+    dependencyManager.registerSingleton(W3cCredentialService)
   }
 }
