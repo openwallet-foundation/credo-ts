@@ -1,4 +1,5 @@
 import { getAgentConfig } from '../../../tests/helpers'
+import { KeyType } from '../../crypto'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { IndyWallet } from '../../wallet/IndyWallet'
 
@@ -53,9 +54,9 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   test('signData signs json object and returns SignatureDecorator', async () => {
     const seed1 = '00000000000000000000000000000My1'
-    const { verkey } = await wallet.createDid({ seed: seed1 })
+    const key = await wallet.createKey({ seed: seed1, keyType: KeyType.Ed25519 })
 
-    const result = await signData(data, wallet, verkey)
+    const result = await signData(data, wallet, key.publicKeyBase58)
 
     expect(result).toEqual(signedData)
   })

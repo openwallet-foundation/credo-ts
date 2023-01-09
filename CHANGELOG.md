@@ -3,6 +3,151 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.1...v0.3.2) (2023-01-04)
+
+### Bug Fixes
+
+- **credentials:** typing if no modules provided ([#1188](https://github.com/hyperledger/aries-framework-javascript/issues/1188)) ([541356e](https://github.com/hyperledger/aries-framework-javascript/commit/541356e866bcd3ce06c69093d8cb6100dca4d09f))
+
+## [0.3.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.0...v0.3.1) (2022-12-27)
+
+### Bug Fixes
+
+- missing migration script and exports ([#1184](https://github.com/hyperledger/aries-framework-javascript/issues/1184)) ([460510d](https://github.com/hyperledger/aries-framework-javascript/commit/460510db43a7c63fd8dc1c3614be03fd8772f63c))
+
+# [0.3.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.5...v0.3.0) (2022-12-22)
+
+### Bug Fixes
+
+- **connections:** do not log AgentContext object ([#1085](https://github.com/hyperledger/aries-framework-javascript/issues/1085)) ([ef20f1e](https://github.com/hyperledger/aries-framework-javascript/commit/ef20f1ef420e5345825cc9e79f52ecfb191489fc))
+- **connections:** use new did for each connection from reusable invitation ([#1174](https://github.com/hyperledger/aries-framework-javascript/issues/1174)) ([c0569b8](https://github.com/hyperledger/aries-framework-javascript/commit/c0569b88c27ee7785cf150ee14a5f9ebcc99898b))
+- credential values encoding ([#1157](https://github.com/hyperledger/aries-framework-javascript/issues/1157)) ([0e89e6c](https://github.com/hyperledger/aries-framework-javascript/commit/0e89e6c9f4a3cdbf98c5d85de2e015becdc3e1fc))
+- **demo:** direct import to remove warnings ([#1094](https://github.com/hyperledger/aries-framework-javascript/issues/1094)) ([6747756](https://github.com/hyperledger/aries-framework-javascript/commit/674775692bd60b2a0d8a726fa0ed3603b4fc724e))
+- expose AttachmentData and DiscoverFeaturesEvents ([#1146](https://github.com/hyperledger/aries-framework-javascript/issues/1146)) ([e48f481](https://github.com/hyperledger/aries-framework-javascript/commit/e48f481024810a0eba17e32b995a8db0730bbcb1))
+- expose OutOfBandEvents ([#1151](https://github.com/hyperledger/aries-framework-javascript/issues/1151)) ([3c040b6](https://github.com/hyperledger/aries-framework-javascript/commit/3c040b68e0c8a7f5625df427a2ace28f0223bfbc))
+- invalid injection symbols in W3cCredService ([#786](https://github.com/hyperledger/aries-framework-javascript/issues/786)) ([38cb106](https://github.com/hyperledger/aries-framework-javascript/commit/38cb1065e6fbf46c676c7ad52e160b721cb1b4e6))
+- peer dependency for rn bbs signatures ([#785](https://github.com/hyperledger/aries-framework-javascript/issues/785)) ([c751e28](https://github.com/hyperledger/aries-framework-javascript/commit/c751e286aa11a1d2b9424ae23de5647efc5d536f))
+- **problem-report:** proper string interpolation ([#1120](https://github.com/hyperledger/aries-framework-javascript/issues/1120)) ([c4e9679](https://github.com/hyperledger/aries-framework-javascript/commit/c4e96799d8390225ba5aaecced19c79ec1f12fa8))
+- **proofs:** await shouldAutoRespond to correctly handle the check ([#1116](https://github.com/hyperledger/aries-framework-javascript/issues/1116)) ([f294129](https://github.com/hyperledger/aries-framework-javascript/commit/f294129821cd6fcb9b82d875f19cab5a63310b23))
+- **react-native:** move bbs dep to bbs package ([#1076](https://github.com/hyperledger/aries-framework-javascript/issues/1076)) ([c6762bb](https://github.com/hyperledger/aries-framework-javascript/commit/c6762bbe9d64ac5220915af3425d493e505dcc2c))
+- remove sensitive information from agent config toJSON() method ([#1112](https://github.com/hyperledger/aries-framework-javascript/issues/1112)) ([427a80f](https://github.com/hyperledger/aries-framework-javascript/commit/427a80f7759e029222119cf815a866fe9899a170))
+- **routing:** add connection type on mediation grant ([#1147](https://github.com/hyperledger/aries-framework-javascript/issues/1147)) ([979c695](https://github.com/hyperledger/aries-framework-javascript/commit/979c69506996fb1853e200b53d052d474f497bf1))
+- **routing:** async message pickup on init ([#1093](https://github.com/hyperledger/aries-framework-javascript/issues/1093)) ([15cfd91](https://github.com/hyperledger/aries-framework-javascript/commit/15cfd91d1c6ba8e3f8355db4c4941fcbd85382ac))
+- unable to resolve nodejs document loader in react native environment ([#1003](https://github.com/hyperledger/aries-framework-javascript/issues/1003)) ([5cdcfa2](https://github.com/hyperledger/aries-framework-javascript/commit/5cdcfa203e6d457f74250028678dbc3393d8eb5c))
+- use custom document loader in jsonld.frame ([#1119](https://github.com/hyperledger/aries-framework-javascript/issues/1119)) ([36d4656](https://github.com/hyperledger/aries-framework-javascript/commit/36d465669c6714b00167b17fe2924f3c53b5fa68))
+- **vc:** change pubKey input from Buffer to Uint8Array ([#935](https://github.com/hyperledger/aries-framework-javascript/issues/935)) ([80c3740](https://github.com/hyperledger/aries-framework-javascript/commit/80c3740f625328125fe8121035f2d83ce1dee6a5))
+
+- refactor!: rename Handler to MessageHandler (#1161) ([5e48696](https://github.com/hyperledger/aries-framework-javascript/commit/5e48696ec16d88321f225628e6cffab243718b4c)), closes [#1161](https://github.com/hyperledger/aries-framework-javascript/issues/1161)
+- feat!: use did:key in protocols by default (#1149) ([9f10da8](https://github.com/hyperledger/aries-framework-javascript/commit/9f10da85d8739f7be6c5e6624ba5f53a1d6a3116)), closes [#1149](https://github.com/hyperledger/aries-framework-javascript/issues/1149)
+- feat(action-menu)!: move to separate package (#1049) ([e0df0d8](https://github.com/hyperledger/aries-framework-javascript/commit/e0df0d884b1a7816c7c638406606e45f6e169ff4)), closes [#1049](https://github.com/hyperledger/aries-framework-javascript/issues/1049)
+- feat(question-answer)!: separate logic to a new module (#1040) ([97d3073](https://github.com/hyperledger/aries-framework-javascript/commit/97d3073aa9300900740c3e8aee8233d38849293d)), closes [#1040](https://github.com/hyperledger/aries-framework-javascript/issues/1040)
+- feat!: agent module registration api (#955) ([82a17a3](https://github.com/hyperledger/aries-framework-javascript/commit/82a17a3a1eff61008b2e91695f6527501fe44237)), closes [#955](https://github.com/hyperledger/aries-framework-javascript/issues/955)
+- feat!: Discover Features V2 (#991) ([273e353](https://github.com/hyperledger/aries-framework-javascript/commit/273e353f4b36ab5d2420356eb3a53dcfb1c59ec6)), closes [#991](https://github.com/hyperledger/aries-framework-javascript/issues/991)
+- refactor!: module to api and module config (#943) ([7cbccb1](https://github.com/hyperledger/aries-framework-javascript/commit/7cbccb1ce9dae2cb1e4887220898f2f74cca8dbe)), closes [#943](https://github.com/hyperledger/aries-framework-javascript/issues/943)
+- refactor!: add agent context (#920) ([b47cfcb](https://github.com/hyperledger/aries-framework-javascript/commit/b47cfcba1450cd1d6839bf8192d977bfe33f1bb0)), closes [#920](https://github.com/hyperledger/aries-framework-javascript/issues/920)
+
+### Features
+
+- add agent context provider ([#921](https://github.com/hyperledger/aries-framework-javascript/issues/921)) ([a1b1e5a](https://github.com/hyperledger/aries-framework-javascript/commit/a1b1e5a22fd4ab9ef593b5cd7b3c710afcab3142))
+- add base agent class ([#922](https://github.com/hyperledger/aries-framework-javascript/issues/922)) ([113a575](https://github.com/hyperledger/aries-framework-javascript/commit/113a5756ed1b630b3c05929d79f6afcceae4fa6a))
+- add dynamic suite and signing provider ([#949](https://github.com/hyperledger/aries-framework-javascript/issues/949)) ([ab8b8ef](https://github.com/hyperledger/aries-framework-javascript/commit/ab8b8ef1357c7a8dc338eaea16b20d93a0c92d4f))
+- add indynamespace for ledger id for anoncreds ([#965](https://github.com/hyperledger/aries-framework-javascript/issues/965)) ([df3777e](https://github.com/hyperledger/aries-framework-javascript/commit/df3777ee394211a401940bf27b3e5a9e1688f6b2))
+- add present proof v2 ([#979](https://github.com/hyperledger/aries-framework-javascript/issues/979)) ([f38ac05](https://github.com/hyperledger/aries-framework-javascript/commit/f38ac05875e38b6cc130bcb9f603e82657aabe9c))
+- bbs createKey, sign and verify ([#684](https://github.com/hyperledger/aries-framework-javascript/issues/684)) ([5f91738](https://github.com/hyperledger/aries-framework-javascript/commit/5f91738337fac1efbbb4597e7724791e542f0762))
+- **bbs:** extract bbs logic into separate module ([#1035](https://github.com/hyperledger/aries-framework-javascript/issues/1035)) ([991151b](https://github.com/hyperledger/aries-framework-javascript/commit/991151bfff829fa11cd98a1951be9b54a77385a8))
+- **dids:** add did registrar ([#953](https://github.com/hyperledger/aries-framework-javascript/issues/953)) ([93f3c93](https://github.com/hyperledger/aries-framework-javascript/commit/93f3c93310f9dae032daa04a920b7df18e2f8a65))
+- fetch verification method types by proof type ([#913](https://github.com/hyperledger/aries-framework-javascript/issues/913)) ([ed69dac](https://github.com/hyperledger/aries-framework-javascript/commit/ed69dac7784feea7abe430ad685911faa477fa11))
+- issue credentials v2 (W3C/JSON-LD) ([#1092](https://github.com/hyperledger/aries-framework-javascript/issues/1092)) ([574e6a6](https://github.com/hyperledger/aries-framework-javascript/commit/574e6a62ebbd77902c50da821afdfd1b1558abe7))
+- jsonld-credential support ([#718](https://github.com/hyperledger/aries-framework-javascript/issues/718)) ([ea34c47](https://github.com/hyperledger/aries-framework-javascript/commit/ea34c4752712efecf3367c5a5fc4b06e66c1e9d7))
+- **ledger:** smart schema and credential definition registration ([#900](https://github.com/hyperledger/aries-framework-javascript/issues/900)) ([1e708e9](https://github.com/hyperledger/aries-framework-javascript/commit/1e708e9aeeb63977a7305999a5027d9743a56f91))
+- **oob:** receive Invitation with timeout ([#1156](https://github.com/hyperledger/aries-framework-javascript/issues/1156)) ([9352fa5](https://github.com/hyperledger/aries-framework-javascript/commit/9352fa5eea1e01d29acd0757298398aac45fcab2))
+- **proofs:** add getRequestedCredentialsForProofRequest ([#1028](https://github.com/hyperledger/aries-framework-javascript/issues/1028)) ([26bb9c9](https://github.com/hyperledger/aries-framework-javascript/commit/26bb9c9989a97bf22859a7eccbeabc632521a6c2))
+- **proofs:** delete associated didcomm messages ([#1021](https://github.com/hyperledger/aries-framework-javascript/issues/1021)) ([dba46c3](https://github.com/hyperledger/aries-framework-javascript/commit/dba46c3bc3a1d6b5669f296f0c45cd03dc2294b1))
+- **proofs:** proof negotiation ([#1131](https://github.com/hyperledger/aries-framework-javascript/issues/1131)) ([c752461](https://github.com/hyperledger/aries-framework-javascript/commit/c75246147ffc6be3c815c66b0a7ad66e48996568))
+- **proofs:** proofs module migration script for 0.3.0 ([#1020](https://github.com/hyperledger/aries-framework-javascript/issues/1020)) ([5e9e0fc](https://github.com/hyperledger/aries-framework-javascript/commit/5e9e0fcc7f13b8a27e35761464c8fd970c17d28c))
+- remove keys on mediator when deleting connections ([#1143](https://github.com/hyperledger/aries-framework-javascript/issues/1143)) ([1af57fd](https://github.com/hyperledger/aries-framework-javascript/commit/1af57fde5016300e243eafbbdea5ea26bd8ef313))
+- **routing:** add reconnection parameters to RecipientModuleConfig ([#1070](https://github.com/hyperledger/aries-framework-javascript/issues/1070)) ([d4fd1ae](https://github.com/hyperledger/aries-framework-javascript/commit/d4fd1ae16dc1fd99b043835b97b33f4baece6790))
+- specify httpinboundtransport path ([#1115](https://github.com/hyperledger/aries-framework-javascript/issues/1115)) ([03cdf39](https://github.com/hyperledger/aries-framework-javascript/commit/03cdf397b61253d2eb20694049baf74843b7ed92))
+- **tenants:** initial tenants module ([#932](https://github.com/hyperledger/aries-framework-javascript/issues/932)) ([7cbd08c](https://github.com/hyperledger/aries-framework-javascript/commit/7cbd08c9bb4b14ab2db92b0546d6fcb520f5fec9))
+- **tenants:** tenant lifecycle ([#942](https://github.com/hyperledger/aries-framework-javascript/issues/942)) ([adfa65b](https://github.com/hyperledger/aries-framework-javascript/commit/adfa65b13152a980ba24b03082446e91d8ec5b37))
+- **vc:** delete w3c credential record ([#886](https://github.com/hyperledger/aries-framework-javascript/issues/886)) ([be37011](https://github.com/hyperledger/aries-framework-javascript/commit/be37011c139c5cc69fc591060319d8c373e9508b))
+- **w3c:** add custom document loader option ([#1159](https://github.com/hyperledger/aries-framework-javascript/issues/1159)) ([ff6abdf](https://github.com/hyperledger/aries-framework-javascript/commit/ff6abdfc4e8ca64dd5a3b9859474bfc09e1a6c21))
+
+### BREAKING CHANGES
+
+- Handler has been renamed to MessageHandler to be more descriptive, along with related types and methods. This means:
+
+Handler is now MessageHandler
+HandlerInboundMessage is now MessageHandlerInboundMessage
+Dispatcher.registerHandler is now Dispatcher.registerMessageHandlers
+
+- `useDidKeyInProtocols` configuration parameter is now enabled by default. If your agent only interacts with modern agents (e.g. AFJ 0.2.5 and newer) this will not represent any issue. Otherwise it is safer to explicitly set it to `false`. However, keep in mind that we expect this setting to be deprecated in the future, so we encourage you to update all your agents to use did:key.
+- action-menu module has been removed from the core and moved to a separate package. To integrate it in an Agent instance, it can be injected in constructor like this:
+
+```ts
+const agent = new Agent({
+  config: {
+    /* config */
+  },
+  dependencies: agentDependencies,
+  modules: {
+    actionMenu: new ActionMenuModule(),
+    /* other custom modules */
+  },
+})
+```
+
+Then, module API can be accessed in `agent.modules.actionMenu`.
+
+- question-answer module has been removed from the core and moved to a separate package. To integrate it in an Agent instance, it can be injected in constructor like this:
+
+```ts
+const agent = new Agent({
+  config: {
+    /* config */
+  },
+  dependencies: agentDependencies,
+  modules: {
+    questionAnswer: new QuestionAnswerModule(),
+    /* other custom modules */
+  },
+})
+```
+
+Then, module API can be accessed in `agent.modules.questionAnswer`.
+
+- custom modules have been moved to the .modules namespace. In addition the agent constructor has been updated to a single options object that contains the `config` and `dependencies` properties. Instead of constructing the agent like this:
+
+```ts
+const agent = new Agent(
+  {
+    /* config */
+  },
+  agentDependencies
+)
+```
+
+You should now construct it like this:
+
+```ts
+const agent = new Agent({
+  config: {
+    /* config */
+  },
+  dependencies: agentDependencies,
+})
+```
+
+This allows for the new custom modules to be defined in the agent constructor.
+
+- - `queryFeatures` method parameters have been unified to a single `QueryFeaturesOptions` object that requires specification of Discover Features protocol to be used.
+
+* `isProtocolSupported` has been replaced by the more general synchronous mode of `queryFeatures`, which works when `awaitDisclosures` in options is set. Instead of returning a boolean, it returns an object with matching features
+* Custom modules implementing protocols must register them in Feature Registry in order to let them be discovered by other agents (this can be done in module `register(dependencyManager, featureRegistry)` method)
+
+- All module api classes have been renamed from `XXXModule` to `XXXApi`. A module now represents a module plugin, and is separate from the API of a module. If you previously imported e.g. the `CredentialsModule` class, you should now import the `CredentialsApi` class
+- To make AFJ multi-tenancy ready, all services and repositories have been made stateless. A new `AgentContext` is introduced that holds the current context, which is passed to each method call. The public API hasn't been affected, but due to the large impact of this change it is marked as breaking.
+
 ## [0.2.5](https://github.com/hyperledger/aries-framework-javascript/compare/v0.2.4...v0.2.5) (2022-10-13)
 
 ### Bug Fixes

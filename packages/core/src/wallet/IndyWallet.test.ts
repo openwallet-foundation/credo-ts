@@ -68,14 +68,6 @@ describe('IndyWallet', () => {
     })
   })
 
-  test('Create DID', async () => {
-    const didInfo = await indyWallet.createDid({ seed: '00000000000000000000000Forward01' })
-    expect(didInfo).toMatchObject({
-      did: 'DtWRdd6C5dN5vpcN6XRAvu',
-      verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
-    })
-  })
-
   test('Generate Nonce', async () => {
     await expect(indyWallet.generateNonce()).resolves.toEqual(expect.any(String))
   })
