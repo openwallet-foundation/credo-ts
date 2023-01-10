@@ -3,6 +3,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type {
   AcceptCredentialOfferOptions,
   AgentDependencies,
+  AgentMessageProcessedEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
@@ -31,6 +32,8 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  AgentEventTypes,
+  TrustPingMessage,
   CredentialsModule,
   IndyCredentialFormatService,
   JsonLdCredentialFormatService,
@@ -71,7 +74,9 @@ import {
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { KeyDerivationMethod } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
+import { parseMessageType, supportsIncomingMessageType } from '../src/utils/messageType'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
@@ -94,7 +99,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -285,6 +291,25 @@ export async function waitForCredentialRecord(
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
   return waitForCredentialRecordSubject(observable, options)
+}
+
+export async function waitForTrustPing(agent: Agent): Promise<void> {
+  return new Promise((resolve) => {
+    const listener = (event: AgentMessageProcessedEvent) => {
+      const messageTypeMatches = supportsIncomingMessageType(
+        parseMessageType(event.payload.message.type),
+        TrustPingMessage.type
+      )
+
+      if (messageTypeMatches) {
+        agent.events.off<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed, listener)
+
+        resolve()
+      }
+    }
+
+    agent.events.on<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed, listener)
+  })
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {

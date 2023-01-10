@@ -1,1 +1,1 @@
-export * from './IndyWallet'
+export { IndySdkWallet } from './IndySdkWallet'

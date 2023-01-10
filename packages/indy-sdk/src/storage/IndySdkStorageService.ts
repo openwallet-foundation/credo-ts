@@ -1,33 +1,31 @@
-import type { BaseRecordConstructor } from '../../../core/src/storage/StorageService'
-import type { IndyWallet } from '../wallet/IndyWallet'
-import type { AgentContext, BaseRecord, TagsBase, Query, StorageService } from '@aries-framework/core'
+import type { IndySdkWallet } from '../wallet/IndySdkWallet'
+import type {
+  BaseRecordConstructor,
+  AgentContext,
+  BaseRecord,
+  TagsBase,
+  Query,
+  StorageService,
+} from '@aries-framework/core'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
-import {
-  AgentDependencies,
-  InjectionSymbols,
-  RecordDuplicateError,
-  RecordNotFoundError,
-  injectable,
-  inject,
-  JsonTransformer,
-} from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@aries-framework/core'
 
-import { isBoolean } from '../../../core/src/utils'
 import { isIndyError, IndySdkError } from '../error'
-import { assertIndyWallet } from '../util/assertIndyWallet'
+import { IndySdk, IndySdkSymbol } from '../types'
+import { assertIndySdkWallet } from '../utils/assertIndySdkWallet'
 
 @injectable()
 export class IndySdkStorageService<T extends BaseRecord> implements StorageService<T> {
-  private indy: typeof Indy
+  private indySdk: IndySdk
 
   private static DEFAULT_QUERY_OPTIONS = {
     retrieveType: true,
     retrieveTags: true,
   }
 
-  public constructor(@inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies) {
-    this.indy = agentDependencies.indy
+  public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
+    this.indySdk = indySdk
   }
 
   private transformToRecordTagValues(tags: { [key: number]: string | undefined }): TagsBase {
@@ -76,7 +74,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
       }
       // If the value is a boolean use the indy
       // '1' or '0' syntax
-      else if (isBoolean(value)) {
+      else if (typeof value === 'boolean') {
         transformedTags[key] = value ? '1' : '0'
       }
       // If the value is 1 or 0, we need to add something to the value, otherwise
@@ -139,13 +137,13 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
 
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.addWalletRecord(agentContext.wallet.handle, record.type, record.id, value, tags)
+      await this.indySdk.addWalletRecord(agentContext.wallet.handle, record.type, record.id, value, tags)
     } catch (error) {
       // Record already exists
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
@@ -158,14 +156,14 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
 
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      await this.indy.updateWalletRecordValue(agentContext.wallet.handle, record.type, record.id, value)
-      await this.indy.updateWalletRecordTags(agentContext.wallet.handle, record.type, record.id, tags)
+      await this.indySdk.updateWalletRecordValue(agentContext.wallet.handle, record.type, record.id, value)
+      await this.indySdk.updateWalletRecordTags(agentContext.wallet.handle, record.type, record.id, tags)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -181,10 +179,10 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
 
   /** @inheritDoc */
   public async delete(agentContext: AgentContext, record: T) {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     try {
-      await this.indy.deleteWalletRecord(agentContext.wallet.handle, record.type, record.id)
+      await this.indySdk.deleteWalletRecord(agentContext.wallet.handle, record.type, record.id)
     } catch (error) {
       // Record does not exist
       if (isIndyError(error, 'WalletItemNotFound')) {
@@ -204,10 +202,10 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     try {
-      await this.indy.deleteWalletRecord(agentContext.wallet.handle, recordClass.type, id)
+      await this.indySdk.deleteWalletRecord(agentContext.wallet.handle, recordClass.type, id)
     } catch (error) {
       if (isIndyError(error, 'WalletItemNotFound')) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
@@ -222,10 +220,10 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
 
   /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     try {
-      const record = await this.indy.getWalletRecord(
+      const record = await this.indySdk.getWalletRecord(
         agentContext.wallet.handle,
         recordClass.type,
         id,
@@ -246,7 +244,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
 
   /** @inheritDoc */
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     const recordIterator = this.search(
       agentContext.wallet,
@@ -267,7 +265,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>
   ): Promise<T[]> {
-    assertIndyWallet(agentContext.wallet)
+    assertIndySdkWallet(agentContext.wallet)
 
     const indyQuery = this.indyQueryFromSearchQuery(query)
 
@@ -285,13 +283,13 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
   }
 
   private async *search(
-    wallet: IndyWallet,
+    wallet: IndySdkWallet,
     type: string,
     query: WalletQuery,
     { limit = Infinity, ...options }: WalletSearchOptions & { limit?: number }
   ) {
     try {
-      const searchHandle = await this.indy.openWalletSearch(wallet.handle, type, query, options)
+      const searchHandle = await this.indySdk.openWalletSearch(wallet.handle, type, query, options)
 
       let records: Indy.WalletRecord[] = []
 
@@ -301,7 +299,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
       // Loop while limit not reached (or no limit specified)
       while (!limit || records.length < limit) {
         // Retrieve records
-        const recordsJson = await this.indy.fetchWalletSearchNextRecords(wallet.handle, searchHandle, chunk)
+        const recordsJson = await this.indySdk.fetchWalletSearchNextRecords(wallet.handle, searchHandle, chunk)
 
         if (recordsJson.records) {
           records = [...records, ...recordsJson.records]
@@ -314,7 +312,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
         // If the number of records returned is less than chunk
         // It means we reached the end of the iterator (no more records)
         if (!records.length || !recordsJson.records || recordsJson.records.length < chunk) {
-          await this.indy.closeWalletSearch(searchHandle)
+          await this.indySdk.closeWalletSearch(searchHandle)
 
           return
         }

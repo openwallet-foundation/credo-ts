@@ -1,12 +1,7 @@
 {
   "extends": "../../tsconfig.build.json",
-
   "compilerOptions": {
-    "outDir": "./build",
-    "paths": {
-      "@aries-framework/core": ["../../node_modules/@aries-framework/core/src"]
-    }
+    "outDir": "./build"
   },
-
   "include": ["src/**/*"]
 }

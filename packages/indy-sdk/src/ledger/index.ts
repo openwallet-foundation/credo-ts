@@ -1,3 +1,2 @@
-export * from './IndyPool'
-export * from './IndySdkRegistry'
-export * from './services'
+export * from './IndySdkPool'
+export * from './IndySdkPoolService'

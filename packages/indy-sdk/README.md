@@ -29,4 +29,3 @@
 <br />
 
 IndySDK module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git).
-
