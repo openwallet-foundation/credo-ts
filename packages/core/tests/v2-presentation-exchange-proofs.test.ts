@@ -530,12 +530,12 @@ describe('Present Proof', () => {
         filterByPresentationPreview: true,
       },
     })
-    let credential: IVerifiableCredential
+    let credential: IVerifiableCredential[]
     if (
       requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential &&
       requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential.length > 0
     ) {
-      credential = requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential[0]
+      credential = requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential
     } else {
       throw new AriesFrameworkError('No credential found in getRequestedCredentialsForProofRequest')
     }

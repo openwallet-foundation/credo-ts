@@ -71,7 +71,6 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
           filterByPresentationPreview: false,
         },
       })
-
     const requestedCredentials: RequestedCredentialReturn<PFs> =
       await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
 

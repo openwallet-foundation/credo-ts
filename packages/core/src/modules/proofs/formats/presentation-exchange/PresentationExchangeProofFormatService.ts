@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { Query } from '../../../../storage/StorageService'
+import type { JsonCredential } from '../../../credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { W3cCredentialRecord } from '../../../vc'
 import type { SignPresentationOptions, VerifyPresentationOptions } from '../../../vc/models/W3cCredentialServiceOptions'
 import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
@@ -22,17 +22,13 @@ import type {
 } from '../ProofFormatServiceOptions'
 import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
 import type { InputDescriptorsSchema } from './models'
-import type { PresentationSignCallBackParams, PresentationSignOptions, Validated } from '@sphereon/pex'
+import type { PresentationSignCallBackParams, PresentationSignOptions, SelectResults, Validated } from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
-import type {
-  ICredentialSubject,
-  IPresentation,
-  IVerifiableCredential,
-  IVerifiablePresentation,
-} from '@sphereon/ssi-types'
+import type { ICredentialSubject, IVerifiablePresentation, IVerifiableCredential } from '@sphereon/ssi-types'
 
-import { KeyEncoding, Status, PEXv1 } from '@sphereon/pex'
+import { Status, PEXv1 } from '@sphereon/pex'
 import { IProofPurpose } from '@sphereon/ssi-types'
+import { query } from 'jsonpath'
 import { Lifecycle, scoped } from 'tsyringe'
 
 import { AgentConfig } from '../../../../agent/AgentConfig'
@@ -40,9 +36,8 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
 import { deepEquality, JsonTransformer } from '../../../../utils'
 import { uuid } from '../../../../utils/uuid'
-import { DidResolverService, keyReferenceToKey, keyTypeToProofType, VerificationMethod } from '../../../dids'
+import { DidResolverService, keyReferenceToKey } from '../../../dids'
 import { W3cPresentation, W3cCredentialService } from '../../../vc'
-import { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
 import { W3cVerifiablePresentation } from '../../../vc/models/presentation/W3cVerifiablePresentation'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import { ProofFormatService } from '../ProofFormatService'
@@ -240,11 +235,16 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     const requestPresentation = options.attachment.getDataAsJson<FormatRequestPresentationExchangeOptions>()
 
-    const credential: IVerifiableCredential = options.proofFormats.presentationExchange.formats
+    // we may have multiple credentials for the given presentation
+    const credentials: IVerifiableCredential[] = options.proofFormats.presentationExchange.formats
 
     const pex: PEXv1 = new PEXv1()
 
-    const subject: ICredentialSubject = credential.credentialSubject as ICredentialSubject
+    // We use the subject id to resolve the DID document.
+    // I am assuming the subject is the same for all credentials (for now)
+    // The presentation contains multiple credentials and these are being added
+    // TODO how do we derive the verification method if there are multiple subject Ids
+    const subject: ICredentialSubject = credentials[0].credentialSubject as ICredentialSubject
 
     // Credential is allowed to be presented without a subject id. In that case we can't prove ownerhsip of credential
     // And it is more like a bearer token.
@@ -297,6 +297,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`Unsupported key type: ${privateKey.keyType}`)
     }
 
+    // Q1: is holder always subject id, what if there are multiple subjects???
+    // Q2: What about proofType, proofPurpose verification method for multiple subjects?
     const params: PresentationSignOptions = {
       holder: subject.id,
       proofOptions: {
@@ -313,7 +315,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     const verifiablePresentation = await pex.verifiablePresentationFromAsync(
       requestPresentation.presentationDefinition,
-      [options.proofFormats.presentationExchange.formats], // TBD required an IVerifiableCredential[] but AutoSelectCredential returns single credential
+      options.proofFormats.presentationExchange.formats, // TBD required an IVerifiableCredential[] but AutoSelectCredential returns single credential
       this.signedProofCallBack.bind(this),
       params
     )
@@ -405,11 +407,12 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     const pexCredentials = credentials.map((c) => JsonTransformer.toJSON(c) as IVerifiableCredential)
 
     const pex: PEXv1 = new PEXv1()
-    const selectResults = pex.selectFrom(presentationDefinition, pexCredentials)
+    const selectResults: SelectResults = pex.selectFrom(presentationDefinition, pexCredentials)
 
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
+    console.log('QUACK selectResults = ', selectResults)
 
     return {
       proofFormats: {
@@ -434,30 +437,58 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     ) {
       throw new AriesFrameworkError('No credentials provided')
     }
+    const listOfAllCredentials = presentationExchange.formats.verifiableCredential
 
     // check if this is INFO / (maybe WARNING. check when this is warning?)
     presentationExchange.formats.areRequiredCredentialsPresent
 
-    // TODO SubmissionRequests...
-
-    // 100 credentials in the credential list
-    // 4 groups in total that satisfy the proof request
-    //  for each group I need to know which credentials it needs
-
     // How to auto select the credentials:
 
-    //  1. loop over all matches and find the first match for each submission requirement
+    //  1. loop over all matches and find the match for each submission requirement
     //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
-    // We probably also need to return the selected matches we used so we can use those to create the presentation submission
 
-    // Check how to correlate it. I think we may need to do something with the count here?
+    // match gives a jsonpath based on *.verifiableCredential[x] so add that as the json array key
+    const jsonPexCredentials = {
+      verifiableCredential: listOfAllCredentials,
+    }
 
-    // note matches is array of SubmissionRequirementMatch
-    // presentationExchange.formats.matches[0].count
+    if (!presentationExchange.formats.matches) {
+      throw new AriesFrameworkError('No matches found in PeX selectFrom filter')
+    }
+
+    const selectedCredentialsMatches: IVerifiableCredential[] = []
+    for (const match of presentationExchange.formats.matches) {
+      for (const path of match.vc_path) {
+        // extract the verifiable credential for the given match (expressed as a jsonpath)
+        // from the the full list of credentials
+        const credential: JsonCredential[] = query(jsonPexCredentials, path) as JsonCredential[]
+        for (const c of credential) {
+          const verifiableCredential = c as IVerifiableCredential
+          selectedCredentialsMatches.push(verifiableCredential)
+        }
+      }
+    }
+
+    // We need to return the selected matches we used so we can use those to create the presentation submission
+
+    console.log("selected = ", selectedCredentialsMatches.length)
+    let total = 0
+    presentationExchange.formats.matches.reduce((acc, curr) => {
+      total += curr.vc_path.length
+      return acc
+    }, {})
+
+    console.log("QUACK >>>>>>>>>>>>>> total = ", total)
+
+    // Check how to correlate it I think we may need to do something with the count here?
+    if (selectedCredentialsMatches.length != total) {
+      throw new AriesFrameworkError('Mismatch - number of selected matches does not equal credentials extracted')
+    }
+
     return {
       proofFormats: {
         presentationExchange: {
-          formats: presentationExchange.formats.verifiableCredential[0],
+          formats: selectedCredentialsMatches,
         },
       },
     }

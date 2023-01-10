@@ -870,6 +870,357 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   }
 }
 
+export async function setupJsonLdProofsTestMultipleCredentials(
+  faberName: string,
+  aliceName: string,
+  autoAcceptProofs?: AutoAcceptProof
+) {
+  const unique = uuid().substring(0, 4)
+
+  const autoAcceptCredentials = AutoAcceptCredential.Always
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
+  const modules = {
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  }
+  const faberAgentOptions = getAgentOptions(
+    `${faberName}-${unique}`,
+    {
+      autoAcceptProofs,
+      endpoints: ['rxjs:faber'],
+    },
+    modules
+  )
+
+  const aliceAgentOptions = getAgentOptions(
+    `${aliceName}-${unique}`,
+    {
+      autoAcceptProofs,
+      endpoints: ['rxjs:alice'],
+    },
+    modules
+  )
+  const faberMessages = new Subject<SubjectMessage>()
+  const aliceMessages = new Subject<SubjectMessage>()
+
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
+  const faberAgent = new Agent(faberAgentOptions)
+  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await faberAgent.initialize()
+
+  const aliceAgent = new Agent(aliceAgentOptions)
+  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await aliceAgent.initialize()
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  expect(agentAConnection.isReady).toBe(true)
+  expect(agentBConnection.isReady).toBe(true)
+
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  const presentationPreview = new PresentationPreview({
+    attributes: [
+      new PresentationPreviewAttribute({
+        name: 'name',
+        credentialDefinitionId: definition.id,
+        referent: '0',
+        value: 'John',
+      }),
+      new PresentationPreviewAttribute({
+        name: 'image_0',
+        credentialDefinitionId: definition.id,
+      }),
+    ],
+    predicates: [
+      new PresentationPreviewPredicate({
+        name: 'age',
+        credentialDefinitionId: definition.id,
+        predicate: PredicateType.GreaterThanOrEqualTo,
+        threshold: 50,
+      }),
+    ],
+  })
+
+  const issuerSeed = 'testseed000000000000000000000001'
+  const holderSeed = 'testseed000000000000000000000001'
+
+  //  create issuer did for test
+
+  const faberWallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+  const aliceWallet = aliceAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+
+  const faberKey = await faberWallet.createKey({ keyType: KeyType.Ed25519, seed: issuerSeed })
+  const issuerDidKey = new DidKey(faberKey)
+
+  const aliceKey = await aliceWallet.createKey({ keyType: KeyType.Ed25519, seed: holderSeed })
+  const holderDidKey = new DidKey(aliceKey)
+
+  const inputDocAsJson: JsonCredential = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      description: 'Government of Example Permanent Resident Card.',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  }
+  const inputDocAsJsonDL: JsonCredential = {
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      'https://w3id.org/citizenship/v1',
+      'https://w3id.org/security/bbs/v1',
+    ],
+    id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
+    type: ['VerifiableCredential', 'PermanentResidentCard'],
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    identifier: '83627465',
+    name: 'Permanent Resident Card',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: ['PermanentResident', 'Person'],
+      givenName: 'JOHN',
+      familyName: 'SMITH',
+      gender: 'Male',
+      image: 'data:image/png;base64,iVBORw0KGgokJggg==',
+      residentSince: '2015-01-01',
+      description: 'Government of Example Permanent Resident Card.',
+      lprCategory: 'C09',
+      lprNumber: '999-999-999',
+      commuterClassification: 'C1',
+      birthCountry: 'Bahamas',
+      birthDate: '1958-07-17',
+    },
+  }
+  const inputVaccineDocAsJson: JsonCredential = {
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/vaccination/v1'],
+    type: ['VerifiableCredential', 'VaccinationCertificate'],
+    id: 'urn:uvci:af5vshde843jf831j128fj',
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    name: 'Vaccination Information',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: 'VaccinationEvent',
+      batchNumber: '1183738569',
+      administeringCentre: 'MoH',
+      countryOfVaccination: 'NZ',
+      recipient: {
+        type: 'VaccineRecipient',
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        birthDate: '1958-07-17',
+      },
+      vaccine: {
+        type: 'Vaccine',
+        atcCode: 'J07BX03',
+      },
+    },
+  }
+  const inputVaccineDocAsJson2: JsonCredential = {
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/vaccination/v1'],
+    type: ['VerifiableCredential', 'VaccinationCertificate'],
+    id: 'urn:uvci:af5vshde843jf831j128fk',
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    name: 'Vaccination Information 2',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: 'VaccinationEvent',
+      batchNumber: '1183738569',
+      administeringCentre: 'MoH',
+      countryOfVaccination: 'NZ',
+      recipient: {
+        type: 'VaccineRecipient',
+        givenName: 'JOHN',
+        familyName: 'JONES',
+        gender: 'Male',
+        birthDate: '1958-07-17',
+      },
+      vaccine: {
+        type: 'Vaccine',
+        atcCode: 'J07BX03',
+      },
+    },
+  }
+  const signCredentialOptions: JsonLdCredentialDetailFormat = {
+    credential: inputDocAsJson,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+
+  const signCredentialOptionsDriversLicense = {
+    credential: inputDocAsJsonDL,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+
+  const signCredentialOptionsVaccination = {
+    credential: inputVaccineDocAsJson,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+  const signCredentialOptionsVaccination2 = {
+    credential: inputVaccineDocAsJson2,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
+  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
+
+  faberAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(issuerReplay)
+  aliceAgent.events
+    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+    .subscribe(holderReplay)
+
+  let issuerCredentialRecord = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptions,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+
+  let issuerCredentialRecordDL = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsDriversLicense,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+
+  let issuerCredentialRecordVaccine = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsVaccination,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+  let issuerCredentialRecordVaccine2 = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential 2',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsVaccination2,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecord.threadId,
+    state: CredentialState.Done,
+  })
+
+  // Because we use auto-accept it can take a while to have the whole credential flow finished
+  // Both parties need to interact with the ledger and sign/verify the credential
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordDL = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordDL.threadId,
+    state: CredentialState.Done,
+  })
+
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordVaccine.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordVaccine = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordVaccine.threadId,
+    state: CredentialState.Done,
+  })
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordVaccine2.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordVaccine2 = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordVaccine2.threadId,
+    state: CredentialState.Done,
+  })
+  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  return {
+    faberAgent,
+    aliceAgent,
+    credDefId: definition.id,
+    faberConnection,
+    aliceConnection,
+    presentationPreview,
+    faberReplay,
+    aliceReplay,
+  }
+}
+
+// TODO move common code out into separate method
 export async function setupJsonLdProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
   const unique = uuid().substring(0, 4)
 
@@ -1066,7 +1417,6 @@ export async function setupJsonLdProofsTest(faberName: string, aliceName: string
     autoAcceptCredential: AutoAcceptCredential.Always,
   })
 
-  // console.log(">>>> OFFER DRIVING LICENSE CREDENTIAL")
   let issuerCredentialRecordDL = await faberAgent.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: faberConnection.id,

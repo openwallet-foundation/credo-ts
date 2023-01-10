@@ -35,7 +35,7 @@ export interface PresentationExchangeAcceptRequestFormat {
 }
 
 export interface PresentationExchangeCreatePresentationFormat {
-  formats: IVerifiableCredential
+  formats: IVerifiableCredential[]
 }
 
 export interface PresentationExchangeSelectResultsFormat {
