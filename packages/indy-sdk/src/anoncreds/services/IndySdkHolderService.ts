@@ -124,7 +124,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         agentContext.wallet.handle,
         options.credentialId ?? null,
         options.credentialRequestMetadata,
-        options.credential as Cred, // FIXME: Types are incorrect in @types/indy-sdk
+        options.credential,
         indySdkCredentialDefinitionFromAnonCreds(options.credentialDefinitionId, options.credentialDefinition),
         indyRevocationRegistryDefinition
       )
@@ -149,7 +149,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         referent: result.referent,
         schemaId: result.schema_id,
         credentialRevocationId: result.cred_rev_id,
-        revocationRegistryId: result.rev_reg_id as string | undefined, // FIXME: this is incorrectly typed in @types/indy-sdk
+        revocationRegistryId: result.rev_reg_id,
       }
     } catch (error) {
       agentContext.config.logger.error(`Error getting Indy Credential '${options.credentialId}'`, {
@@ -244,7 +244,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
             referent: credential.cred_info.referent,
             attributes: credential.cred_info.attrs,
             schemaId: credential.cred_info.schema_id,
-            revocationRegistryId: credential.cred_info.rev_reg_id as string | undefined, // FIXME: Types are incorrect in @types/indy-sdk
+            revocationRegistryId: credential.cred_info.rev_reg_id,
             credentialRevocationId: credential.cred_info.cred_rev_id,
           },
           interval: credential.interval,

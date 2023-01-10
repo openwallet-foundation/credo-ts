@@ -1,5 +1,5 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { RevocReg, CredentialDefs, Schemas, RevocRegDefs } from 'indy-sdk'
+import type { RevStates, CredentialDefs, Schemas, RevocRegDefs } from 'indy-sdk'
 
 import { inject } from '@aries-framework/core'
 
@@ -12,13 +12,6 @@ import {
   indySdkRevocationRegistryFromAnonCreds,
   indySdkSchemaFromAnonCreds,
 } from '../utils/transform'
-
-// FIXME: Add type to @types/indy-sdk
-type RevStates = {
-  [revocationRegistryDefinitionId: string]: {
-    [timestamp: number]: RevocReg
-  }
-}
 
 export class IndySdkVerifierService implements AnonCredsVerifierService {
   private indySdk: IndySdk

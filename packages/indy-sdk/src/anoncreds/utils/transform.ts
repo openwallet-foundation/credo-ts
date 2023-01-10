@@ -64,8 +64,7 @@ export function anonCredsRevocationRegistryDefinitionFromIndySdk(
     issuerId,
     credDefId: revocationRegistryDefinition.credDefId,
     maxCredNum: revocationRegistryDefinition.value.maxCredNum,
-    publicKeys: revocationRegistryDefinition.value
-      .publicKeys as unknown as AnonCredsRevocationRegistryDefinition['publicKeys'], // FIXME: type is incorrect in @types/indy-sdk
+    publicKeys: revocationRegistryDefinition.value.publicKeys,
     tag: revocationRegistryDefinition.tag,
     tailsHash: revocationRegistryDefinition.value.tailsHash,
     tailsLocation: revocationRegistryDefinition.value.tailsLocation,
@@ -85,7 +84,7 @@ export function indySdkRevocationRegistryDefinitionFromAnonCreds(
     value: {
       issuanceType: 'ISSUANCE_BY_DEFAULT', // NOTE: we always use ISSUANCE_BY_DEFAULT when passing to the indy-sdk. It doesn't matter, as we have the revocation List with the full state
       maxCredNum: revocationRegistryDefinition.maxCredNum,
-      publicKeys: revocationRegistryDefinition.publicKeys as unknown as string[], // FIXME: @types/indy-sdk contains incorrect types
+      publicKeys: revocationRegistryDefinition.publicKeys,
       tailsHash: revocationRegistryDefinition.tailsHash,
       tailsLocation: revocationRegistryDefinition.tailsLocation,
     },
