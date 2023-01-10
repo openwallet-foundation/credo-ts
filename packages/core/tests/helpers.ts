@@ -8,6 +8,7 @@ import type {
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
+  TrustPingResponseReceivedEvent,
   InitConfig,
   InjectionToken,
   ProofStateChangedEvent,
@@ -45,6 +46,7 @@ import {
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  TrustPingEventTypes,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
@@ -236,6 +238,50 @@ export function waitForProofExchangeRecordSubject(
         )
       }),
       map((e) => e.payload.proofRecord)
+    )
+  )
+}
+
+export async function waitForTrustPingResponseReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    parentThreadId?: string
+    state?: ProofState
+    previousState?: ProofState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
+    TrustPingEventTypes.TrustPingResponseReceivedEvent
+  )
+
+  return waitForTrustPingResponseReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingResponseReceivedEventSubject(
+  subject: ReplaySubject<TrustPingResponseReceivedEvent> | Observable<TrustPingResponseReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: {
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
     )
   )
 }
