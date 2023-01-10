@@ -67,7 +67,11 @@ const revDef: RevocRegDef = {
     maxCredNum: 33,
     tailsHash: 'd',
     tailsLocation: 'x',
-    publicKeys: ['x'],
+    publicKeys: {
+      accumKey: {
+        z: 'x',
+      },
+    },
   },
   ver: 't',
 }
