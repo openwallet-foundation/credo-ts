@@ -169,7 +169,7 @@ export class IndySdkWallet implements Wallet {
         this.logger.debug(errorMessage)
 
         throw new WalletDuplicateError(errorMessage, {
-          walletType: 'IndyWallet',
+          walletType: 'IndySdkWallet',
           cause: error,
         })
       } else {
@@ -247,14 +247,14 @@ export class IndySdkWallet implements Wallet {
         this.logger.debug(errorMessage)
 
         throw new WalletNotFoundError(errorMessage, {
-          walletType: 'IndyWallet',
+          walletType: 'IndySdkWallet',
           cause: error,
         })
       } else if (isIndyError(error, 'WalletAccessFailed')) {
         const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
         this.logger.debug(errorMessage)
         throw new WalletInvalidKeyError(errorMessage, {
-          walletType: 'IndyWallet',
+          walletType: 'IndySdkWallet',
           cause: error,
         })
       } else {
@@ -302,7 +302,7 @@ export class IndySdkWallet implements Wallet {
         this.logger.debug(errorMessage)
 
         throw new WalletNotFoundError(errorMessage, {
-          walletType: 'IndyWallet',
+          walletType: 'IndySdkWallet',
           cause: error,
         })
       } else {
@@ -499,7 +499,7 @@ export class IndySdkWallet implements Wallet {
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
 
-    throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndyWallet`)
+    throw new WalletError(`Unsupported key type: '${keyType}' for wallet IndySdkWallet`)
   }
 
   /**

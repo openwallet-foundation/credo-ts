@@ -14,7 +14,7 @@ import { IndySdkWallet } from '../IndySdkWallet'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
-  id: 'Wallet: IndyWalletTest',
+  id: 'Wallet: IndySdkWalletTest',
   // generated using indy.generateWalletKey
   key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
   keyDerivationMethod: KeyDerivationMethod.Raw,
@@ -52,7 +52,7 @@ describe('IndySdkWallet', () => {
   })
 
   test('Get the Master Secret', () => {
-    expect(indySdkWallet.masterSecretId).toEqual('Wallet: IndyWalletTest')
+    expect(indySdkWallet.masterSecretId).toEqual('Wallet: IndySdkWalletTest')
   })
 
   test('Get the wallet handle', () => {

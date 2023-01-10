@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, waitForBasicMessage, waitForTrustPing } from '../../../../tests/helpers'
+import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -134,7 +134,7 @@ describe('E2E Pick Up protocol', () => {
     const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
     })
-    const trustPingPromise = waitForTrustPing(mediatorAgent)
+    const trustPingPromise = waitForTrustPingReceivedEvent(mediatorAgent, {})
     await recipientAgent.mediationRecipient.pickupMessages(recipientMediatorConnection, MediatorPickupStrategy.PickUpV2)
 
     const basicMessage = await basicMessagePromise
