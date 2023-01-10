@@ -1,6 +1,6 @@
 import type { IndySdk } from '../types'
 import type { FileSystem, Logger } from '@aries-framework/core'
-import type * as Indy from 'indy-sdk'
+import type { LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
 import { AriesFrameworkError } from '@aries-framework/core'
@@ -134,28 +134,28 @@ export class IndySdkPool {
     }
   }
 
-  private async submitRequest(request: Indy.LedgerRequest) {
+  private async submitRequest(request: LedgerRequest) {
     return this.indySdk.submitRequest(await this.getPoolHandle(), request)
   }
 
-  public async submitReadRequest(request: Indy.LedgerRequest) {
+  public async submitReadRequest(request: LedgerRequest) {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
       throw new IndySdkPoolError(`Ledger '${this.id}' rejected read transaction request: ${response.reason}`)
     }
 
-    return response as Indy.LedgerReadReplyResponse
+    return response as LedgerReadReplyResponse
   }
 
-  public async submitWriteRequest(request: Indy.LedgerRequest) {
+  public async submitWriteRequest(request: LedgerRequest) {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
       throw new IndySdkPoolError(`Ledger '${this.id}' rejected write transaction request: ${response.reason}`)
     }
 
-    return response as Indy.LedgerWriteReplyResponse
+    return response as LedgerWriteReplyResponse
   }
 
   private async getPoolHandle() {

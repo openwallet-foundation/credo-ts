@@ -1,5 +1,5 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type * as Indy from 'indy-sdk'
+import type { RevocReg, CredentialDefs, Schemas, RevocRegDefs } from 'indy-sdk'
 
 import { inject } from '@aries-framework/core'
 
@@ -16,7 +16,7 @@ import {
 // FIXME: Add type to @types/indy-sdk
 type RevStates = {
   [revocationRegistryDefinitionId: string]: {
-    [timestamp: number]: Indy.RevocReg
+    [timestamp: number]: RevocReg
   }
 }
 
@@ -34,7 +34,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
       const seqNoMap: { [schemaId: string]: number } = {}
 
       // Convert AnonCreds credential definitions to Indy credential definitions
-      const indyCredentialDefinitions: Indy.CredentialDefs = {}
+      const indyCredentialDefinitions: CredentialDefs = {}
       for (const credentialDefinitionId in options.credentialDefinitions) {
         const credentialDefinition = options.credentialDefinitions[credentialDefinitionId]
 
@@ -49,14 +49,14 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
       }
 
       // Convert AnonCreds schemas to Indy schemas
-      const indySchemas: Indy.Schemas = {}
+      const indySchemas: Schemas = {}
       for (const schemaId in options.schemas) {
         const schema = options.schemas[schemaId]
         indySchemas[schemaId] = indySdkSchemaFromAnonCreds(schemaId, schema, seqNoMap[schemaId])
       }
 
       // Convert AnonCreds revocation definitions to Indy revocation definitions
-      const indyRevocationDefinitions: Indy.RevocRegDefs = {}
+      const indyRevocationDefinitions: RevocRegDefs = {}
       const indyRevocationStates: RevStates = {}
 
       for (const revocationRegistryDefinitionId in options.revocationStates) {

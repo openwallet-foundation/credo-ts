@@ -14,7 +14,7 @@ import type {
   WalletExportImportConfig,
   WalletConfigRekey,
 } from '@aries-framework/core'
-import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
+import type { WalletStorageConfig, WalletConfig as IndySdkWalletConfig, OpenWalletCredentials } from 'indy-sdk'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
@@ -100,8 +100,8 @@ export class IndySdkWallet implements Wallet {
     }
   }
 
-  private walletStorageConfig(walletConfig: WalletConfig): Indy.WalletConfig {
-    const walletStorageConfig: Indy.WalletConfig = {
+  private walletStorageConfig(walletConfig: WalletConfig): IndySdkWalletConfig {
+    const walletStorageConfig: IndySdkWalletConfig = {
       id: walletConfig.id,
       storage_type: walletConfig.storage?.type,
     }
@@ -117,8 +117,8 @@ export class IndySdkWallet implements Wallet {
     walletConfig: WalletConfig,
     rekey?: string,
     rekeyDerivation?: KeyDerivationMethod
-  ): Indy.OpenWalletCredentials {
-    const walletCredentials: Indy.OpenWalletCredentials = {
+  ): OpenWalletCredentials {
+    const walletCredentials: OpenWalletCredentials = {
       key: walletConfig.key,
       key_derivation_method: walletConfig.keyDerivationMethod,
     }

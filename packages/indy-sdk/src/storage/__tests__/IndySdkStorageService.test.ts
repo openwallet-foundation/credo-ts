@@ -1,5 +1,5 @@
+import type { IndySdk } from '../../types'
 import type { AgentContext, TagsBase } from '@aries-framework/core'
-import type * as Indy from 'indy-sdk'
 
 import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
 
@@ -10,7 +10,7 @@ import { IndySdkStorageService } from '../IndySdkStorageService'
 
 describe('IndySdkStorageService', () => {
   let wallet: IndySdkWallet
-  let indy: typeof Indy
+  let indy: IndySdk
   let storageService: IndySdkStorageService<TestRecord>
   let agentContext: AgentContext
 
@@ -241,7 +241,7 @@ describe('IndySdkStorageService', () => {
         openWalletSearch: indySpy,
         fetchWalletSearchNextRecords: jest.fn(() => ({ records: undefined })),
         closeWalletSearch: jest.fn(),
-      } as unknown as typeof Indy)
+      } as unknown as IndySdk)
 
       await storageServiceWithoutIndy.findByQuery(agentContext, TestRecord, {
         $and: [

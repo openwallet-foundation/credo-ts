@@ -1,6 +1,6 @@
 import type { AcceptanceMechanisms, AuthorAgreement, IndySdkPoolConfig } from './IndySdkPool'
 import type { AgentContext } from '@aries-framework/core'
-import type { default as Indy, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
+import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
 import {
   InjectionSymbols,
@@ -25,7 +25,7 @@ import { IndySdkPoolError, IndySdkPoolNotConfiguredError, IndySdkPoolNotFoundErr
 export const INDY_SDK_DID_POOL_CACHE_ID = 'INDY_SDK_DID_POOL_CACHE'
 export const INDY_SDK_DID_POOL_CACHE_LIMIT = 500
 export interface CachedDidResponse {
-  nymResponse: Indy.GetNymResponse
+  nymResponse: GetNymResponse
   poolId: string
 }
 
@@ -81,7 +81,7 @@ export class IndySdkPoolService {
   public async getPoolForDid(
     agentContext: AgentContext,
     did: string
-  ): Promise<{ pool: IndySdkPool; did: Indy.GetNymResponse }> {
+  ): Promise<{ pool: IndySdkPool; did: GetNymResponse }> {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -221,7 +221,7 @@ export class IndySdkPoolService {
     }
   }
 
-  private async appendTaa(pool: IndySdkPool, request: Indy.LedgerRequest) {
+  private async appendTaa(pool: IndySdkPool, request: LedgerRequest) {
     try {
       const authorAgreement = await this.getTransactionAuthorAgreement(pool)
       const taa = pool.config.transactionAuthorAgreement
@@ -332,7 +332,7 @@ export class IndySdkPoolService {
 }
 
 export interface PublicDidRequest {
-  did: Indy.GetNymResponse
+  did: GetNymResponse
   pool: IndySdkPool
-  response: Indy.LedgerReadReplyResponse
+  response: LedgerReadReplyResponse
 }

@@ -12,7 +12,14 @@ import type {
   RequestedCredentials,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
-import type * as Indy from 'indy-sdk'
+import type {
+  Cred,
+  CredentialDefs,
+  IndyRequestedCredentials,
+  RevStates,
+  Schemas,
+  IndyCredential as IndySdkCredential,
+} from 'indy-sdk'
 
 import { inject } from '@aries-framework/core'
 
@@ -44,7 +51,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
 
     try {
       agentContext.config.logger.debug('Creating Indy Proof')
-      const indyRevocationStates: Indy.RevStates = await this.indyRevocationService.createRevocationState(
+      const indyRevocationStates: RevStates = await this.indyRevocationService.createRevocationState(
         agentContext,
         proofRequest,
         requestedCredentials,
@@ -56,7 +63,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       const seqNoMap: { [schemaId: string]: number } = {}
 
       // Convert AnonCreds credential definitions to Indy credential definitions
-      const indyCredentialDefinitions: Indy.CredentialDefs = {}
+      const indyCredentialDefinitions: CredentialDefs = {}
       for (const credentialDefinitionId in credentialDefinitions) {
         const credentialDefinition = credentialDefinitions[credentialDefinitionId]
         indyCredentialDefinitions[credentialDefinitionId] = indySdkCredentialDefinitionFromAnonCreds(
@@ -70,7 +77,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       }
 
       // Convert AnonCreds schemas to Indy schemas
-      const indySchemas: Indy.Schemas = {}
+      const indySchemas: Schemas = {}
       for (const schemaId in schemas) {
         const schema = schemas[schemaId]
         indySchemas[schemaId] = indySdkSchemaFromAnonCreds(schemaId, schema, seqNoMap[schemaId])
@@ -117,7 +124,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         agentContext.wallet.handle,
         options.credentialId ?? null,
         options.credentialRequestMetadata,
-        options.credential as Indy.Cred, // FIXME: Types are incorrect in @types/indy-sdk
+        options.credential as Cred, // FIXME: Types are incorrect in @types/indy-sdk
         indySdkCredentialDefinitionFromAnonCreds(options.credentialDefinitionId, options.credentialDefinition),
         indyRevocationRegistryDefinition
       )
@@ -262,7 +269,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     limit?: number
   ) {
     try {
-      let credentials: Indy.IndyCredential[] = []
+      let credentials: IndySdkCredential[] = []
 
       // Allow max of 256 per fetch operation
       const chunk = limit ? Math.min(256, limit) : 256
@@ -293,8 +300,8 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   /**
    * Converts a public api form of {@link RequestedCredentials} interface into a format {@link Indy.IndyRequestedCredentials} that Indy SDK expects.
    **/
-  private parseRequestedCredentials(requestedCredentials: RequestedCredentials): Indy.IndyRequestedCredentials {
-    const indyRequestedCredentials: Indy.IndyRequestedCredentials = {
+  private parseRequestedCredentials(requestedCredentials: RequestedCredentials): IndyRequestedCredentials {
+    const indyRequestedCredentials: IndyRequestedCredentials = {
       requested_attributes: {},
       requested_predicates: {},
       self_attested_attributes: {},

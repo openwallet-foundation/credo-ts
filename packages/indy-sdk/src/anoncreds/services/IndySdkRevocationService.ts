@@ -7,7 +7,7 @@ import type {
   NonRevokedInterval,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
-import type { default as Indy } from 'indy-sdk'
+import type { RevStates } from 'indy-sdk'
 
 import { AriesFrameworkError, inject, injectable } from '@aries-framework/core'
 
@@ -58,13 +58,13 @@ export class IndySdkRevocationService {
         }
       }
     }
-  ): Promise<Indy.RevStates> {
+  ): Promise<RevStates> {
     try {
       agentContext.config.logger.debug(`Creating Revocation State(s) for proof request`, {
         proofRequest,
         requestedCredentials,
       })
-      const indyRevocationStates: Indy.RevStates = {}
+      const indyRevocationStates: RevStates = {}
       const referentCredentials: Array<{
         type: RequestReferentType
         referent: string

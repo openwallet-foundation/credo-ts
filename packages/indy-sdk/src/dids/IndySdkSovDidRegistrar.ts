@@ -9,7 +9,7 @@ import type {
   DidUpdateResult,
   Key,
 } from '@aries-framework/core'
-import type * as Indy from 'indy-sdk'
+import type { NymRole } from 'indy-sdk'
 
 import { inject, injectable, DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
 
@@ -176,7 +176,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     verkey: string,
     alias: string,
     pool: IndySdkPool,
-    role?: Indy.NymRole
+    role?: NymRole
   ) {
     try {
       agentContext.config.logger.debug(`Register public did '${targetDid}' on ledger '${pool.didIndyNamespace}'`)
@@ -250,7 +250,7 @@ export interface IndySdkSovDidCreateOptions extends DidCreateOptions {
   didDocument?: never
   options: {
     alias: string
-    role?: Indy.NymRole
+    role?: NymRole
     endpoints?: IndyEndpointAttrib
     indyNamespace?: string
     submitterDid: string

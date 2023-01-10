@@ -1,9 +1,9 @@
-import type * as Indy from 'indy-sdk'
+import type { LedgerResponse, LedgerRejectResponse, LedgerReqnackResponse } from 'indy-sdk'
 
-export function isLedgerRejectResponse(response: Indy.LedgerResponse): response is Indy.LedgerRejectResponse {
+export function isLedgerRejectResponse(response: LedgerResponse): response is LedgerRejectResponse {
   return response.op === 'REJECT'
 }
 
-export function isLedgerReqnackResponse(response: Indy.LedgerResponse): response is Indy.LedgerReqnackResponse {
+export function isLedgerReqnackResponse(response: LedgerResponse): response is LedgerReqnackResponse {
   return response.op === 'REQNACK'
 }

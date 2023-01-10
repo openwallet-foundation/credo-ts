@@ -7,7 +7,7 @@ import type {
   Query,
   StorageService,
 } from '@aries-framework/core'
-import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
+import type { WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { RecordDuplicateError, RecordNotFoundError, injectable, inject, JsonTransformer } from '@aries-framework/core'
 
@@ -291,7 +291,7 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
     try {
       const searchHandle = await this.indySdk.openWalletSearch(wallet.handle, type, query, options)
 
-      let records: Indy.WalletRecord[] = []
+      let records: WalletRecord[] = []
 
       // Allow max of 256 per fetch operation
       const chunk = limit ? Math.min(256, limit) : 256
