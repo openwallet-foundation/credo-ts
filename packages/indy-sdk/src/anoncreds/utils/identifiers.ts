@@ -1,3 +1,10 @@
+export const legacyIndyIssuerIdRegex = /^[a-zA-Z0-9]{21,22}$/
+export const legacyIndySchemaIdRegex = /^[a-zA-Z0-9]{21,22}:2:.+:[0-9.]+$/
+export const legacyIndyCredentialDefinitionIdRegex =
+  /^[a-zA-Z0-9]{21,22}:3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+)):(.+)?$/
+export const legacyIndyRevocationRegistryIdRegex =
+  /^[a-zA-Z0-9]{21,22}:4:[a-zA-Z0-9]{21,22}:3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+))(:.+)?:CL_ACCUM:(.+$)/
+
 export function getIndySeqNoFromUnqualifiedCredentialDefinitionId(unqualifiedCredentialDefinitionId: string): number {
   // 5nDyJVP1NrcPAttP3xwMB9:3:CL:56495:npbd
   const [, , , seqNo] = unqualifiedCredentialDefinitionId.split(':')
