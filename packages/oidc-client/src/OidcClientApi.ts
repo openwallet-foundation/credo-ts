@@ -11,6 +11,7 @@ export class OidcClientApi {
   private oidcClientService: OidcClientService
 
   public constructor(agentContext: AgentContext, oidcClientService: OidcClientService) {
-    ;(this.agentContext = agentContext), (this.oidcClientService = oidcClientService)
+    this.agentContext = agentContext
+    this.oidcClientService = oidcClientService
   }
 }
