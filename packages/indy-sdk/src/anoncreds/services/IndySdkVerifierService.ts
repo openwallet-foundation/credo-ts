@@ -1,5 +1,5 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { RevStates, CredentialDefs, Schemas, RevocRegDefs } from 'indy-sdk'
+import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs } from 'indy-sdk'
 
 import { inject } from '@aries-framework/core'
 
@@ -50,7 +50,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
 
       // Convert AnonCreds revocation definitions to Indy revocation definitions
       const indyRevocationDefinitions: RevocRegDefs = {}
-      const indyRevocationStates: RevStates = {}
+      const indyRevocationRegistries: RevRegs = {}
 
       for (const revocationRegistryDefinitionId in options.revocationStates) {
         const { definition, revocationLists } = options.revocationStates[revocationRegistryDefinitionId]
@@ -60,13 +60,13 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
         )
 
         // Initialize empty object for this revocation registry
-        indyRevocationStates[revocationRegistryDefinitionId] = {}
+        indyRevocationRegistries[revocationRegistryDefinitionId] = {}
 
         // Also transform the revocation lists for the specified timestamps into the revocation registry
         // format Indy expects
         for (const timestamp in revocationLists) {
           const revocationList = revocationLists[timestamp]
-          indyRevocationStates[revocationRegistryDefinitionId][timestamp] =
+          indyRevocationRegistries[revocationRegistryDefinitionId][timestamp] =
             indySdkRevocationRegistryFromAnonCreds(revocationList)
         }
       }
@@ -77,7 +77,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
         indySchemas,
         indyCredentialDefinitions,
         indyRevocationDefinitions,
-        indyRevocationStates
+        indyRevocationRegistries
       )
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
