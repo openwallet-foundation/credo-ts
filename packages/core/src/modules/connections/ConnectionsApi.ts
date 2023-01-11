@@ -32,6 +32,11 @@ import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
 
+export interface SendPingOptions {
+  responseRequested?: boolean
+  withReturnRouting?: boolean
+}
+
 @injectable()
 export class ConnectionsApi {
   /**
@@ -225,6 +230,41 @@ export class ConnectionsApi {
 
     await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
+  }
+
+  /**
+   * Send a trust ping to an established connection
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param responseRequested do we want a response to our ping
+   * @param withReturnRouting do we want a response at the time of posting
+   * @returns TurstPingMessage
+   */
+  public async sendPing(
+    connectionId: string,
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+  ) {
+    const connection = await this.getById(connectionId)
+
+    const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
+      responseRequested: responseRequested,
+    })
+
+    if (withReturnRouting === true) {
+      message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    // Disable return routing as we don't want to receive a response for this message over the same channel
+    // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+    if (withReturnRouting === false) {
+      message.setReturnRouting(ReturnRouteTypes.none)
+    }
+
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+    )
+
+    return message
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
