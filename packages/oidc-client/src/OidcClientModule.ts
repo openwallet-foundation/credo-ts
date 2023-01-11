@@ -20,6 +20,5 @@ export class OidcClientModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(OidcClientService)
-    dependencyManager.registerSingleton(W3cCredentialService)
   }
 }
