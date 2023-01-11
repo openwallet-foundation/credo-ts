@@ -37,7 +37,7 @@ import {
  */
 export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   /**
-   * This class only supports resoling and registering objects with legacy indy identifiers.
+   * This class only supports resolving and registering objects with legacy indy identifiers.
    * It needs to include support for the schema, credential definition, revocation registry as well
    * as the issuer id (which is needed when registering objects).
    */
