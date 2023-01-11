@@ -20,8 +20,7 @@ describe('OidcClientModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OidcClientApi)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OidcClientService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialService)
   })
 })
