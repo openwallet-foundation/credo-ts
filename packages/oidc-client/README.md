@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/oidc-client"
+    <a href="https://www.npmjs.com/package/@aries-framework/openid4vc-client"
     ><img
-      alt="@aries-framework/oidc-client version"
-      src="https://img.shields.io/npm/v/@aries-framework/oidc-client"
+      alt="@aries-framework/openid4vc-client version"
+      src="https://img.shields.io/npm/v/@aries-framework/openid4vc-client"
   /></a>
 
 </p>

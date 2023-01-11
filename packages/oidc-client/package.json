@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/oidc-client",
+  "name": "@aries-framework/openid4vc-client",
   "main": "build/index",
   "types": "build/index",
   "version": "0.3.2",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/oidc-client",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-client",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/oidc-client"
+    "directory": "packages/openid4vc-client"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
