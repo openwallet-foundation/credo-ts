@@ -94,10 +94,14 @@ describe('Auto accept present proof', () => {
     //   ))
     // })
     afterAll(async () => {
-      await faberAgent.shutdown()
-      await faberAgent.wallet.delete()
-      await aliceAgent.shutdown()
-      await aliceAgent.wallet.delete()
+      if (faberAgent) {
+        await faberAgent.shutdown()
+        await faberAgent.wallet.delete()
+      }
+      if (aliceAgent) {
+        await aliceAgent.shutdown()
+        await aliceAgent.wallet.delete()
+      }
     })
 
     xtest('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
@@ -181,42 +185,6 @@ describe('Auto accept present proof', () => {
       )
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      const submissionRequirements: SubmissionRequirement[] = [
-        {
-          name: 'Driving License Information',
-          purpose: 'We need you to prove you currently hold a valid drivers license.',
-          rule: 'pick',
-          count: 1,
-          from: 'A',
-        },
-        {
-          name: 'Vaccine Information',
-          purpose: 'We are only verifying one current vaccination.',
-          rule: 'all',
-          from: 'B',
-        },
-        // {
-        //   name: 'Citizenship Information',
-        //   rule: 'pick',
-        //   count: 1,
-        //   from_nested: [
-        //     {
-        //       name: 'United States Citizenship Proofs',
-        //       purpose: 'We need you to prove your US citizenship.',
-        //       rule: 'all',
-        //       from: 'C',
-        //     },
-        //     {
-        //       name: 'European Union Citizenship Proofs',
-        //       purpose: 'We need you to prove you are a citizen of an EU member state.',
-        //       rule: 'pick',
-        //       count: 1,
-        //       from: 'D',
-        //     },
-        //   ],
-        // },
-      ]
-
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
       })
@@ -233,8 +201,289 @@ describe('Auto accept present proof', () => {
             // this is of type PresentationDefinitionV1 (see pex library)
             presentationDefinition: {
               id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-              input_descriptors: [inputDescriptorCitizenship, inputDescriptorVaccine],
-              submission_requirements: submissionRequirements,
+              input_descriptors: [
+                {
+                  id: 'vaccine_input_1',
+                  name: 'Vaccine Information',
+                  purpose: 'We need your Vaccine information.',
+                  group: ['A'],
+                  schema: [
+                    {
+                      uri: 'https://w3id.org/vaccination/v1',
+                    },
+                  ],
+                },
+                {
+                  id: 'citizenship_input_1',
+                  name: 'Residency Information',
+                  purpose: 'We need your Residency information.',
+                  group: ['B'],
+                  schema: [
+                    {
+                      uri: 'https://w3id.org/citizenship/v1',
+                    },
+                  ],
+                },
+                {
+                  id: 'citizenship_input_2',
+                  name: 'Residency Information',
+                  purpose: 'We need your Residency information.',
+                  group: ['B'],
+                  schema: [
+                    {
+                      uri: 'https://w3id.org/citizenship/v2',
+                    },
+                  ],
+                },
+              ],
+              submission_requirements: [
+                {
+                  name: 'Vaccine Information',
+                  purpose: 'We need to know if you are vaccinated',
+                  rule: 'all',
+                  from: 'A',
+                },
+                {
+                  name: 'Citizenship Information',
+                  purpose: 'We need to know if you are a resident',
+                  rule: 'pick',
+                  count: 1,
+                  from: 'B',
+                },
+              ],
+            },
+          },
+        },
+        comment: 'V2 Presentation Exchange propose proof test',
+      })
+
+      testLogger.test('Faber waits for presentation from Alice')
+      await faberProofExchangeRecordPromise
+
+      testLogger.test('Alice waits till it receives presentation ack')
+      await aliceProofExchangeRecordPromise
+    })
+
+    xtest('Submission Requirements Version 2 (using PEX example config)', async () => {
+      const { faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTestMultipleCredentials(
+        'Faber Auto Accept Always Proofs',
+        'Alice Auto Accept Always Proofs',
+        AutoAcceptProof.Always
+      )
+      testLogger.test('Alice sends presentation proposal to Faber')
+
+      const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+        state: ProofState.Done,
+      })
+
+      const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+        state: ProofState.Done,
+      })
+
+      await aliceAgent.proofs.proposeProof({
+        connectionId: aliceConnection.id,
+        protocolVersion: 'v2',
+        proofFormats: {
+          presentationExchange: {
+            // this is of type PresentationDefinitionV1 (see pex library)
+            presentationDefinition: {
+              id: '32f54163-7166-48f1-93d8-ff217bdb0653',
+              input_descriptors: [
+                {
+                  id: 'vaccine_input_1',
+                  name: 'Vaccine Information',
+                  purpose: 'We need your Vaccine information.',
+                  group: ['A'],
+                  schema: [
+                    {
+                      uri: 'https://www.w3.org/2018/credentials/v1',
+                    },
+                    {
+                      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+                    },
+                    {
+                      uri: 'https://w3id.org/vaccination#VaccineRecipient",',
+                    },
+                    {
+                      uri: 'https://w3id.org/vaccination/v1',
+                    },
+                  ],
+                  constraints: {
+                    limit_disclosure: 'required',
+                    fields: [
+                      {
+                        path: ['$.issuer', '$.vc.issuer', '$.iss'],
+                        purpose: 'The claim must be from one of the specified issuers',
+                        filter: {
+                          type: 'string',
+                          pattern: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+                        },
+                      },
+                      {
+                        path: [
+                          '$.credentialSubject.recipient.giveName',
+                          '$.credentialSubject.recipient.familyName',
+                          '$.credentialSubject.batchNumber',
+                          // '$.vc.credentialSubject.account[*].account_number',
+                          // '$.account[*].account_number',
+                        ],
+                        purpose: 'We need your batch number for processing purposes',
+                        filter: {
+                          type: 'string',
+                          minLength: 10,
+                          maxLength: 12,
+                        },
+                      },
+                    ],
+                  },
+                },
+                // {
+                //   id: 'banking_input_2',
+                //   name: 'Bank Account Information',
+                //   purpose: 'We need your bank and account information.',
+                //   group: ['A'],
+                //   schema: [
+                //     {
+                //       uri: 'https://bank-schemas.org/1.0.0/accounts.json',
+                //     },
+                //     {
+                //       uri: 'https://bank-schemas.org/2.0.0/accounts.json',
+                //     },
+                //   ],
+                //   constraints: {
+                //     fields: [
+                //       {
+                //         path: ['$.issuer', '$.vc.issuer', '$.iss'],
+                //         purpose: 'The claim must be from one of the specified issuers',
+                //         filter: {
+                //           type: 'string',
+                //           pattern: 'did:example:123|did:example:456',
+                //         },
+                //       },
+                //       {
+                //         path: [
+                //           '$.credentialSubject.account[*].id',
+                //           '$.vc.credentialSubject.account[*].id',
+                //           '$.account[*].id',
+                //         ],
+                //         purpose: 'We need your bank account number for processing purposes',
+                //         filter: {
+                //           type: 'string',
+                //           minLength: 10,
+                //           maxLength: 12,
+                //         },
+                //       },
+                //       {
+                //         path: [
+                //           '$.credentialSubject.account[*].route',
+                //           '$.vc.credentialSubject.account[*].route',
+                //           '$.account[*].route',
+                //         ],
+                //         purpose: 'You must have an account with a German, US, or Japanese bank account',
+                //         filter: {
+                //           type: 'string',
+                //           pattern: '^DE|^US|^JP',
+                //         },
+                //       },
+                //     ],
+                //   },
+                // },
+                // {
+                //   id: 'employment_input',
+                //   name: 'Employment History',
+                //   purpose: 'We need to know your work history.',
+                //   group: ['B'],
+                //   schema: [
+                //     {
+                //       uri: 'https://business-standards.org/schemas/employment-history.json',
+                //     },
+                //   ],
+                //   constraints: {
+                //     fields: [
+                //       {
+                //         path: ['$.jobs[*].active'],
+                //         filter: {
+                //           type: 'boolean',
+                //           pattern: 'true',
+                //         },
+                //       },
+                //     ],
+                //   },
+                // },
+                // {
+                //   id: 'citizenship_input_1',
+                //   name: "EU Driver's License",
+                //   group: ['C'],
+                //   schema: [
+                //     {
+                //       uri: 'https://eu.com/claims/DriversLicense.json',
+                //     },
+                //   ],
+                //   constraints: {
+                //     fields: [
+                //       {
+                //         path: ['$.issuer', '$.vc.issuer', '$.iss'],
+                //         purpose: 'The claim must be from one of the specified issuers',
+                //         filter: {
+                //           type: 'string',
+                //           pattern: 'did:example:gov1|did:example:gov2',
+                //         },
+                //       },
+                //       {
+                //         path: ['$.credentialSubject.dob', '$.vc.credentialSubject.dob', '$.dob'],
+                //         filter: {
+                //           type: 'string',
+                //           format: 'date',
+                //           minimum: '1999-5-16',
+                //         },
+                //       },
+                //     ],
+                //   },
+                // },
+                // {
+                //   id: 'citizenship_input_2',
+                //   name: 'US Passport',
+                //   group: ['C'],
+                //   schema: [
+                //     {
+                //       uri: 'hub://did:foo:123/Collections/schema.us.gov/passport.json',
+                //     },
+                //   ],
+                //   constraints: {
+                //     fields: [
+                //       {
+                //         path: ['$.credentialSubject.birth_date', '$.vc.credentialSubject.birth_date', '$.birth_date'],
+                //         filter: {
+                //           type: 'string',
+                //           format: 'date',
+                //           minimum: '1999-5-16',
+                //         },
+                //       },
+                //     ],
+                //   },
+                // },
+              ],
+              submission_requirements: [
+                {
+                  name: 'Banking Information',
+                  purpose: 'We need to know if you have an established banking history.',
+                  rule: 'pick',
+                  count: 1,
+                  from: 'A',
+                },
+                // {
+                //   name: 'Employment Information',
+                //   purpose: 'We need to know that you are currently employed.',
+                //   rule: 'all',
+                //   from: 'B',
+                // },
+                // {
+                //   name: 'Citizenship Information',
+                //   rule: 'pick',
+                //   count: 1,
+                //   from: 'C',
+                // },
+              ],
             },
           },
         },

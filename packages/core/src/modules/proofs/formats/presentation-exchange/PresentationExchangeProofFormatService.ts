@@ -27,6 +27,7 @@ import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type { ICredentialSubject, IVerifiablePresentation, IVerifiableCredential } from '@sphereon/ssi-types'
 
 import { Status, PEXv1 } from '@sphereon/pex'
+import { Rules } from '@sphereon/pex-models'
 import { IProofPurpose } from '@sphereon/ssi-types'
 import { query } from 'jsonpath'
 import { Lifecycle, scoped } from 'tsyringe'
@@ -297,6 +298,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`Unsupported key type: ${privateKey.keyType}`)
     }
 
+    // console.log('+++++++++++++++ QUACK verification id = ', verificationMethod.id)
     // Q1: is holder always subject id, what if there are multiple subjects???
     // Q2: What about proofType, proofPurpose verification method for multiple subjects?
     const params: PresentationSignOptions = {
@@ -320,6 +322,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       params
     )
 
+    // console.log('QUACK >>>>>>>>>>>> Verifiable Presentation = ', verifiablePresentation)
     const attachId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
@@ -412,7 +415,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
-    console.log('QUACK selectResults = ', selectResults)
+    // console.log('selectResults vc paths len = ', selectResults.matches[0].vc_path.length)
 
     return {
       proofFormats: {
@@ -446,7 +449,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
 
     //  1. loop over all matches and find the match for each submission requirement
     //  2. then for each match we extract the associated credentials from the `presentationExchange.verifiableCredential` array
-
     // match gives a jsonpath based on *.verifiableCredential[x] so add that as the json array key
     const jsonPexCredentials = {
       verifiableCredential: listOfAllCredentials,
@@ -457,33 +459,48 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     }
 
     const selectedCredentialsMatches: IVerifiableCredential[] = []
+    let num = 0
     for (const match of presentationExchange.formats.matches) {
-      for (const path of match.vc_path) {
-        // extract the verifiable credential for the given match (expressed as a jsonpath)
-        // from the the full list of credentials
-        const credential: JsonCredential[] = query(jsonPexCredentials, path) as JsonCredential[]
-        for (const c of credential) {
-          const verifiableCredential = c as IVerifiableCredential
-          selectedCredentialsMatches.push(verifiableCredential)
+      // console.log('MATCH NUM  = ', num)
+      // console.log('QUACK rule = ', match.rule)
+      // console.log('QUACK count = ', match.count)
+
+      if (match.rule === Rules.All) {
+        for (const path of match.vc_path) {
+          // extract all verifiable credentials for the given match (expressed as a jsonpath)
+          // from the the full list of credentials
+          selectedCredentialsMatches.push(...(query(jsonPexCredentials, path) as IVerifiableCredential[]))
         }
+      } else if (match.rule === Rules.Pick) {
+        if (!match.count) {
+          throw new AriesFrameworkError(`PeX Library missing match count`)
+        }
+        for (let i = 0; i < match.count; i++) {
+          // extract [count] verifiable credentials for the given match (expressed as a jsonpath)
+          // from the the full list of credentials
+          const credentials = query(jsonPexCredentials, match.vc_path[i])
+          selectedCredentialsMatches.push(...credentials)
+        }
+      } else {
+        throw new AriesFrameworkError(`PeX Library unsupported rule type: ${match.rule}`)
       }
+      num++
     }
 
     // We need to return the selected matches we used so we can use those to create the presentation submission
+    // let total = 0
+    // presentationExchange.formats.matches.reduce((acc, curr) => {
+    //   total += curr.vc_path.length
+    //   return acc
+    // }, {})
 
-    console.log("selected = ", selectedCredentialsMatches.length)
-    let total = 0
-    presentationExchange.formats.matches.reduce((acc, curr) => {
-      total += curr.vc_path.length
-      return acc
-    }, {})
-
-    console.log("QUACK >>>>>>>>>>>>>> total = ", total)
+    // console.log('1. QUACK Select matches = ', selectedCredentialsMatches.length)
+    // console.log('1. QUACK Num VC Paths = ', total)
 
     // Check how to correlate it I think we may need to do something with the count here?
-    if (selectedCredentialsMatches.length != total) {
-      throw new AriesFrameworkError('Mismatch - number of selected matches does not equal credentials extracted')
-    }
+    // if (selectedCredentialsMatches.length != total) {
+    //   throw new AriesFrameworkError('Mismatch - number of selected matches does not equal credentials extracted')
+    // }
 
     return {
       proofFormats: {

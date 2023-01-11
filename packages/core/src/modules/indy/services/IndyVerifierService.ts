@@ -26,7 +26,7 @@ export class IndyVerifierService {
     { proofRequest, proof, schemas, credentialDefinitions }: VerifyProofOptions
   ): Promise<boolean> {
     try {
-      const { revocationRegistryDefinitions, revocationRegistryStates } = await this.getRevocationRegistries(
+      const { revocationRegistryDefinitions, revocationRegistries } = await this.getRevocationRegistries(
         agentContext,
         proof
       )
@@ -37,7 +37,7 @@ export class IndyVerifierService {
         schemas,
         credentialDefinitions,
         revocationRegistryDefinitions,
-        revocationRegistryStates
+        revocationRegistries
       )
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
@@ -46,7 +46,7 @@ export class IndyVerifierService {
 
   private async getRevocationRegistries(agentContext: AgentContext, proof: Indy.IndyProof) {
     const revocationRegistryDefinitions: Indy.RevocRegDefs = {}
-    const revocationRegistryStates: Indy.RevStates = Object.create(null)
+    const revocationRegistries: Indy.RevRegs = Object.create(null)
     for (const identifier of proof.identifiers) {
       const revocationRegistryId = identifier.rev_reg_id
       const timestamp = identifier.timestamp
@@ -61,19 +61,19 @@ export class IndyVerifierService {
       }
 
       //Fetch Revocation Registry by Timestamp if not already fetched
-      if (revocationRegistryId && timestamp && !revocationRegistryStates[revocationRegistryId]?.[timestamp]) {
-        if (!revocationRegistryStates[revocationRegistryId]) {
-          revocationRegistryStates[revocationRegistryId] = Object.create(null)
+      if (revocationRegistryId && timestamp && !revocationRegistries[revocationRegistryId]?.[timestamp]) {
+        if (!revocationRegistries[revocationRegistryId]) {
+          revocationRegistries[revocationRegistryId] = Object.create(null)
         }
         const { revocationRegistry } = await this.ledgerService.getRevocationRegistry(
           agentContext,
           revocationRegistryId,
           timestamp
         )
-        revocationRegistryStates[revocationRegistryId][timestamp] = revocationRegistry
+        revocationRegistries[revocationRegistryId][timestamp] = revocationRegistry
       }
     }
-    return { revocationRegistryDefinitions, revocationRegistryStates }
+    return { revocationRegistryDefinitions, revocationRegistries }
   }
 }
 
