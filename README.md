@@ -109,15 +109,6 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
       </a>
     </td>
   </tr>
-  <tr>
-    <td>@aries-framework/bbs-signatures</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/bbs-signatures">
-        <img alt="@aries-framework/bbs-signatures version" src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
     <td>@aries-framework/question-answer</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/question-answer">
