@@ -118,7 +118,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/action-menu</td>
+    <td>@aries-framework/question-answer</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/question-answer">
         <img alt="@aries-framework/question-answer version" src="https://img.shields.io/npm/v/@aries-framework/question-answer"/>
