@@ -126,7 +126,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/action-menu</td>
+    <td>@aries-framework/tenants</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/tenants">
         <img alt="@aries-framework/tenants version" src="https://img.shields.io/npm/v/@aries-framework/tenants"/>
