@@ -67,7 +67,7 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
 - ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
 - 🚧 Receiving and Verifying revocable Indy Credentials
 - 🚧 W3C Linked Data VCs, BBS+ Signatures
-- 🚧 Multi Tenancy
+- ✅ Multi Tenancy
 - ❌ Browser
 
 ### Packages
@@ -98,6 +98,38 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
     <td>
       <a href="https://npmjs.com/package/@aries-framework/react-native">
         <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+   <tr>
+    <td>@aries-framework/action-menu</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/action-menu">
+        <img alt="@aries-framework/action-menu version" src="https://img.shields.io/npm/v/@aries-framework/action-menu"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/bbs-signatures</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/bbs-signatures">
+        <img alt="@aries-framework/bbs-signatures version" src="https://img.shields.io/npm/v/@aries-framework/bbs-signatures"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/action-menu</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/question-answer">
+        <img alt="@aries-framework/question-answer version" src="https://img.shields.io/npm/v/@aries-framework/question-answer"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/action-menu</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/tenants">
+        <img alt="@aries-framework/tenants version" src="https://img.shields.io/npm/v/@aries-framework/tenants"/>
       </a>
     </td>
   </tr>
