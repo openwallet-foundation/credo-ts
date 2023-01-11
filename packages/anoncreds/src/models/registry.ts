@@ -1,10 +1,12 @@
 export interface AnonCredsSchema {
+  issuerId: string
   name: string
   version: string
   attrNames: string[]
 }
 
 export interface AnonCredsCredentialDefinition {
+  issuerId: string
   schemaId: string
   type: 'CL'
   tag: string
@@ -16,6 +18,7 @@ export interface AnonCredsCredentialDefinition {
 }
 
 export interface AnonCredsRevocationRegistryDefinition {
+  issuerId: string
   type: 'CL_ACCUM'
   credDefId: string
   tag: string
@@ -30,7 +33,7 @@ export interface AnonCredsRevocationRegistryDefinition {
 }
 
 export interface AnonCredsRevocationList {
-  // TODO: this is a new property, but do we keep abbreviation or not?
+  issuerId: string
   revRegId: string
   revocationList: number[]
   currentAccumulator: string

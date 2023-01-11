@@ -24,6 +24,8 @@ export type {
   JsonArray,
   JsonObject,
   JsonValue,
+  WalletConfigRekey,
+  WalletExportImportConfig,
 } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
@@ -31,7 +33,7 @@ export * from './storage/BaseRecord'
 export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export { StorageService, Query } from './storage/StorageService'
+export { StorageService, Query, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
 export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'
@@ -63,6 +65,7 @@ export { parseMessageType, IsValidMessageType } from './utils/messageType'
 export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
+export { PersistedLruCache, CacheRepository } from './cache'
 
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'

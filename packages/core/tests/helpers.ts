@@ -8,7 +8,6 @@ import type {
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
-  TrustPingResponseReceivedEvent,
   InitConfig,
   InjectionToken,
   ProofStateChangedEvent,
@@ -16,6 +15,7 @@ import type {
   Wallet,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
@@ -73,6 +73,7 @@ import {
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { KeyDerivationMethod } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -96,7 +97,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -229,7 +231,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
+          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
   previousState: ${previousState},
   threadId: ${threadId},
   parentThreadId: ${parentThreadId},
@@ -242,13 +244,49 @@ export function waitForProofExchangeRecordSubject(
   )
 }
 
+export async function waitForTrustPingReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+
+  return waitForTrustPingReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingReceivedEventSubject(
+  subject: ReplaySubject<TrustPingReceivedEvent> | Observable<TrustPingReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export async function waitForTrustPingResponseReceivedEvent(
   agent: Agent,
   options: {
     threadId?: string
-    parentThreadId?: string
-    state?: ProofState
-    previousState?: ProofState | null
     timeoutMs?: number
   }
 ) {
@@ -276,7 +314,7 @@ export function waitForTrustPingResponseReceivedEventSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `TrustPingResponseReceivedEvent event not emitted within specified timeout: {
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: ${timeoutMs}
   threadId: ${threadId},
 }`
         )
