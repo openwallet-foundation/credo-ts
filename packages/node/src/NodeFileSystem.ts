@@ -29,6 +29,10 @@ export class NodeFileSystem implements FileSystem {
     }
   }
 
+  public async createDirectory(path: string): Promise<void> {
+    await promises.mkdir(dirname(path), { recursive: true })
+  }
+
   public async write(path: string, data: string): Promise<void> {
     // Make sure parent directories exist
     await promises.mkdir(dirname(path), { recursive: true })

@@ -1,0 +1,41 @@
+{
+  "name": "@aries-framework/askar",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.3.2",
+  "private": true,
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/askar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/askar"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "0.3.2",
+    "aries-askar-shared": "file:../../../aries-askar/wrappers/javascript/shared/aries-askar-shared-v0.0.1.tgz",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "rxjs": "^7.2.0",
+    "tsyringe": "^4.7.0"
+  },
+  "devDependencies": {
+    "aries-askar-nodejs": "file:../../../aries-askar/wrappers/javascript/nodejs/aries-askar-nodejs-v0.0.1.tgz",
+    "@aries-framework/node": "0.3.2",
+    "rimraf": "~3.0.2",
+    "typescript": "~4.3.0"
+  }
+}
