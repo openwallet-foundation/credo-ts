@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Open ID Connect Client Module</b></h1>
+<h1 align="center"><b>Aries Framework JavaScript Open ID Connect For Verifiable Credentials Client Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Open ID Connect Client plugin for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git).
+Open ID Connect Client plugin for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
 
 ### Installation
 

@@ -2233,21 +2233,20 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/openid4vci-client@^0.3.4":
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/@sphereon/openid4vci-client/-/openid4vci-client-0.3.4.tgz#b0a3b840fbfb853a6ee0db88c001a718ffdf79b6"
-  integrity sha512-JzB2Ot+oGUkwn7ROJQ9AumayajDARKm4B+V+5mzfWzi1CIjvDeHWE1X9q4Gx8o/q9OvaFxXLZtapASqNv8msQw==
+"@sphereon/openid4vci-client@^0.3.6":
+  version "0.3.6"
+  resolved "https://registry.yarnpkg.com/@sphereon/openid4vci-client/-/openid4vci-client-0.3.6.tgz#70bd76bb888b458274007170e2bb7e784849cbbe"
+  integrity sha512-C336F3VPMu1LSQAv1rn1KkXOVC3JxbrUzMzOBFlJfSKfnSxfqTqGSK0NTJLnAwGNOEAQ1M4Q/2KIXbDIaTU4Ww==
   dependencies:
-    "@sphereon/ssi-types" "0.8.1-unstable.86"
-    bs58 "^5.0.0"
+    "@sphereon/ssi-types" "^0.8.1-next.123"
     cross-fetch "^3.1.5"
     debug "^4.3.4"
     uint8arrays "^3.1.1"
 
-"@sphereon/ssi-types@0.8.1-unstable.86":
-  version "0.8.1-unstable.86"
-  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.1-unstable.86.tgz#3e465ca32170aea52ad0a4fa2035a6480974b598"
-  integrity sha512-iFmPg5ohqw1FCI3R3Vn8MO32SDk9aKfFRYWsZ4U3FSrR0rR1uDldNTlNa5KtE9KJziOOl5BsMLdNNJ9L/mNzkA==
+"@sphereon/ssi-types@^0.8.1-next.123":
+  version "0.8.1-unstable.145"
+  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.1-unstable.145.tgz#418cf00ebb077ccb9644e652bc4e7fb0eb23b645"
+  integrity sha512-ixT8z5bwDWKJaMQTsUeRs7vMg5fz68BRJhxn10Tkeg68nJUEUHck44QJOhog0MmjNJKw2k6U/IqIS0oOdxTSHQ==
   dependencies:
     jwt-decode "^3.1.2"
 
@@ -3371,11 +3370,6 @@ base-x@^3.0.2:
   dependencies:
     safe-buffer "^5.0.1"
 
-base-x@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/base-x/-/base-x-4.0.0.tgz#d0e3b7753450c73f8ad2389b5c018a4af7b2224a"
-  integrity sha512-FuwxlW4H5kh37X/oW59pwTzzTKRzfrrQwhmyspRM7swOEZcHtDZSCt45U6oKgtuFE+WYPblePMVIPR4RZrh/hw==
-
 base64-js@*, base64-js@^1.1.2, base64-js@^1.3.0, base64-js@^1.3.1, base64-js@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
@@ -3532,13 +3526,6 @@ bs58@4.0.1:
   integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
   dependencies:
     base-x "^3.0.2"
-
-bs58@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
-  integrity sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==
-  dependencies:
-    base-x "^4.0.0"
 
 bser@2.1.1:
   version "2.1.1"
