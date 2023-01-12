@@ -38,7 +38,7 @@ export class IndySdkModuleConfig {
     this.options = options
   }
 
-  /** See {@link IndySdkModuleConfigOptions.resolvers} */
+  /** See {@link IndySdkModuleConfigOptions.indySdk} */
   public get indySdk() {
     return this.options.indySdk
   }

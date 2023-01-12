@@ -13,7 +13,6 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
-  Cred,
   CredentialDefs,
   IndyRequestedCredentials,
   RevStates,
