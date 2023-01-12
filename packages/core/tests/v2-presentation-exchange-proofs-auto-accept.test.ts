@@ -1,5 +1,4 @@
 import type { Agent, ConnectionRecord } from '../src'
-import type { SubmissionRequirement } from '@sphereon/pex-models'
 
 import { AutoAcceptProof, ProofState } from '../src'
 
@@ -54,37 +53,6 @@ describe('Auto accept present proof', () => {
     id: 'citizenship_input_1',
   }
 
-  // To use in Submission Request tests
-  const inputDescriptorVaccine = {
-    name: 'EU Vaccine Passport',
-    group: ['B'],
-    id: 'vaccine_input_1',
-    purpose: 'The claim must be from one of the specified issuers',
-    constraints: {
-      fields: [
-        {
-          path: ['$.credentialSubject.recipient.familyName'],
-        },
-        {
-          path: ['$.credentialSubject.recipient.givenName'],
-        },
-      ],
-    },
-    schema: [
-      {
-        uri: 'https://www.w3.org/2018/credentials/v1',
-      },
-      {
-        uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
-      },
-      {
-        uri: 'https://w3id.org/vaccination#VaccineRecipient",',
-      },
-      {
-        uri: 'https://w3id.org/vaccination/v1',
-      },
-    ],
-  }
   describe('Auto accept on `always`', () => {
     // beforeAll(async () => {
     //   ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTestMultipleCredentials(
