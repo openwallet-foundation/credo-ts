@@ -28,8 +28,10 @@ export interface CreateProofOptions {
   credentialDefinitions: {
     [credentialDefinitionId: string]: AnonCredsCredentialDefinition
   }
-  revocationStates: {
+  revocationRegistries: {
     [revocationRegistryDefinitionId: string]: {
+      // tails file MUST already be downloaded on a higher level and stored
+      tailsFilePath: string
       definition: AnonCredsRevocationRegistryDefinition
       revocationLists: {
         [timestamp: string]: AnonCredsRevocationList
@@ -45,8 +47,10 @@ export interface StoreCredentialOptions {
   credentialDefinition: AnonCredsCredentialDefinition
   credentialDefinitionId: string
   credentialId?: string
-  revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
-  revocationRegistryDefinitionId: string
+  revocationRegistry?: {
+    id: string
+    definition: AnonCredsRevocationRegistryDefinition
+  }
 }
 
 export interface GetCredentialOptions {
@@ -61,10 +65,10 @@ export interface GetCredentialsForProofRequestOptions {
   extraQuery?: ReferentWalletQuery
 }
 
-export interface GetCredentialsForProofRequestReturn {
+export type GetCredentialsForProofRequestReturn = Array<{
   credentialInfo: CredentialInfo
   interval?: NonRevokedInterval
-}
+}>
 
 export interface CreateCredentialRequestOptions {
   // TODO: Why is this needed? It is just used as context in Ursa, can be any string. Should we remove it?

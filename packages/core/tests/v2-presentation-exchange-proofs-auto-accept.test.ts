@@ -104,7 +104,7 @@ describe('Auto accept present proof', () => {
       }
     })
 
-    xtest('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
+    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
       const { faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -141,7 +141,7 @@ describe('Auto accept present proof', () => {
       await aliceProofExchangeRecordPromise
     })
 
-    xtest('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
+    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       const { faberAgent, aliceAgent, faberConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -498,7 +498,7 @@ describe('Auto accept present proof', () => {
     })
   })
 
-  xdescribe('Auto accept on `contentApproved`', () => {
+  describe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(

@@ -15,14 +15,11 @@ export interface CreateSchemaOptions {
 
 export interface CreateCredentialDefinitionOptions {
   issuerId: string
-  tag: string // TODO: this was initially defined as optional, is that the case?
+  tag: string
   supportRevocation?: boolean
 
-  // If schema doesn't include the id, we need to add it as a separate input parameter
-  schema: {
-    value: AnonCredsSchema
-    id: string
-  }
+  schemaId: string
+  schema: AnonCredsSchema
 }
 
 export interface CreateCredentialOfferOptions {

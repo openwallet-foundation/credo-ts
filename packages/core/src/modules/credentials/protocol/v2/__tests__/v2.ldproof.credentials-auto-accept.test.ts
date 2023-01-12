@@ -310,7 +310,17 @@ describe('credentials', () => {
       const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
-          jsonld: signCredentialOptions,
+          // Send a different object
+          jsonld: {
+            ...signCredentialOptions,
+            credential: {
+              ...signCredentialOptions.credential,
+              credentialSubject: {
+                ...signCredentialOptions.credential.credentialSubject,
+                name: 'Different Property',
+              },
+            },
+          },
         },
         comment: 'v2 propose credential test',
       })
@@ -328,6 +338,7 @@ describe('credentials', () => {
       aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
       aliceCredentialRecord.assertState(CredentialState.ProposalSent)
     })
+
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
@@ -348,7 +359,17 @@ describe('credentials', () => {
       await faberAgent.credentials.negotiateProposal({
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
-          jsonld: signCredentialOptions,
+          // Send a different object
+          jsonld: {
+            ...signCredentialOptions,
+            credential: {
+              ...signCredentialOptions.credential,
+              credentialSubject: {
+                ...signCredentialOptions.credential.credentialSubject,
+                name: 'Different Property',
+              },
+            },
+          },
         },
       })
 

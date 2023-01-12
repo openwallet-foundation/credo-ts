@@ -90,7 +90,7 @@ export interface AnonCredsProofRequest {
     string,
     {
       name?: string
-      names?: string
+      names?: string[]
       restrictions?: WalletQuery[]
       non_revoked?: NonRevokedInterval
     }

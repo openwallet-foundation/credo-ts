@@ -149,9 +149,6 @@ describe('Auto accept present proof', () => {
         state: ProofState.ProposalReceived,
       })
 
-      testLogger.test('Faber accepts presentation proposal from Alice')
-      await faberAgent.proofs.acceptProposal({ proofRecordId })
-
       await Promise.all([
         waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
         waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
@@ -202,7 +199,6 @@ describe('Auto accept present proof', () => {
         state: ProofState.RequestReceived,
       })
       const { proofFormats } = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({ proofRecordId })
-      await aliceAgent.proofs.acceptRequest({ proofRecordId, proofFormats })
 
       await Promise.all([
         waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),

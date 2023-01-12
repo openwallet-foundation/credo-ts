@@ -5,7 +5,7 @@ export interface CredentialInfo {
   }
   schemaId: string
   credentialDefinitionId: string
-  revocationRegistryId?: number | undefined
+  revocationRegistryId?: string | undefined
   credentialRevocationId?: string | undefined
 }
 
@@ -13,14 +13,14 @@ export interface RequestedAttribute {
   credentialId: string
   timestamp?: number
   revealed: boolean
-  credentialInfo?: CredentialInfo
+  credentialInfo: CredentialInfo
   revoked?: boolean
 }
 
 export interface RequestedPredicate {
   credentialId: string
   timestamp?: number
-  credentialInfo?: CredentialInfo
+  credentialInfo: CredentialInfo
   revoked?: boolean
 }
 
