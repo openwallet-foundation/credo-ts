@@ -17,7 +17,7 @@ export class AnonCredsRegistryService {
     const registries = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).registries
 
     // TODO: should we check if multiple are registered?
-    const registry = registries.find((registry) => registry.supportedMethods.some((method) => method.test(identifier)))
+    const registry = registries.find((registry) => registry.supportedIdentifier.test(identifier))
 
     if (!registry) {
       throw new AnonCredsError(`No AnonCredsRegistry registered for identifier '${registry}'`)

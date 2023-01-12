@@ -12,9 +12,7 @@ import type { AgentContext } from '@aries-framework/core'
  * @public
  */
 export interface AnonCredsRegistry {
-  // TODO: should this be a single regex? So just supportedMethodRegex. If you support multiple / has complex queries you can just combine them.
-  // This would prevent the need for a double loop (loop through all registries, then loop through all supportedMethods)
-  supportedMethods: RegExp[]
+  supportedIdentifier: RegExp
 
   getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn>
   registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn>

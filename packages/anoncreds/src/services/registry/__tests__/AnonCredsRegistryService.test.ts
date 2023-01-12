@@ -6,11 +6,11 @@ import { AnonCredsError } from '../../../error'
 import { AnonCredsRegistryService } from '../AnonCredsRegistryService'
 
 const registryOne = {
-  supportedMethods: [/a/],
+  supportedIdentifier: /a/,
 } as AnonCredsRegistry
 
 const registryTwo = {
-  supportedMethods: [/b/],
+  supportedIdentifier: /b/,
 } as AnonCredsRegistry
 
 const agentContext = getAgentContext({

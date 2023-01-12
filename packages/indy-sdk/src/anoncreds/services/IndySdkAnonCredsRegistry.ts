@@ -22,10 +22,7 @@ import {
   didFromSchemaId,
   getLegacyCredentialDefinitionId,
   getLegacySchemaId,
-  legacyIndyCredentialDefinitionIdRegex,
-  legacyIndyIssuerIdRegex,
-  legacyIndyRevocationRegistryIdRegex,
-  legacyIndySchemaIdRegex,
+  indySdkAnonCredsRegistryIdentifierRegex,
 } from '../utils/identifiers'
 import {
   anonCredsRevocationListFromIndySdk,
@@ -41,12 +38,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
    * It needs to include support for the schema, credential definition, revocation registry as well
    * as the issuer id (which is needed when registering objects).
    */
-  public readonly supportedMethods = [
-    legacyIndyIssuerIdRegex,
-    legacyIndySchemaIdRegex,
-    legacyIndyCredentialDefinitionIdRegex,
-    legacyIndyRevocationRegistryIdRegex,
-  ]
+  public readonly supportedIdentifier = indySdkAnonCredsRegistryIdentifierRegex
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
