@@ -60,7 +60,7 @@ export const indyErrors = {
   706: 'TransactionNotAllowedError',
 } as const
 
-type IndyErrorValues = typeof indyErrors[keyof typeof indyErrors]
+type IndyErrorValues = (typeof indyErrors)[keyof typeof indyErrors]
 
 export interface IndyError {
   name: 'IndyError'

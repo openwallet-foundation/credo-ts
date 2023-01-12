@@ -10,6 +10,15 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+
+import {
+  AgentEventTypes,
+  AriesFrameworkError,
+  AutoAcceptCredential,
+  CredentialState,
+  V1CredentialPreview,
+} from '@aries-framework/core'
+
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -20,14 +29,6 @@ import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
-
-import {
-  AgentEventTypes,
-  AriesFrameworkError,
-  AutoAcceptCredential,
-  CredentialState,
-  V1CredentialPreview,
-} from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],

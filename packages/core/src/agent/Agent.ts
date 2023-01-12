@@ -1,9 +1,9 @@
-import type { InboundTransport } from '../transport/InboundTransport'
-import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
+import type { InboundTransport } from '../transport/InboundTransport'
+import type { OutboundTransport } from '../transport/OutboundTransport'
+import type { InitConfig } from '../types'
 import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'

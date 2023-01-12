@@ -1,5 +1,5 @@
-import type { LinkedDataProofOptions } from '../LinkedDataProof'
 import type { W3cCredentialOptions } from './W3cCredential'
+import type { LinkedDataProofOptions } from '../LinkedDataProof'
 
 import { instanceToPlain, plainToInstance, Transform, TransformationType } from 'class-transformer'
 

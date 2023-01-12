@@ -1,6 +1,6 @@
-import type { DidDocumentService } from '../../../dids/domain/service'
 import type { Authentication } from './authentication'
 import type { PublicKey } from './publicKey'
+import type { DidDocumentService } from '../../../dids/domain/service'
 
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'

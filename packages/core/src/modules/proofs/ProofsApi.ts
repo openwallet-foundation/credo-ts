@@ -1,5 +1,3 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
   RequestedCredentialReturn,
@@ -29,6 +27,8 @@ import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
 import type { PresentationExchangeProofFormat } from './formats/presentation-exchange/PresentationExchangeProofFormat'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 
 import { inject, injectable } from 'tsyringe'
 

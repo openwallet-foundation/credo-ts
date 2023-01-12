@@ -1,7 +1,7 @@
-import type { AgentContext } from '../agent'
-import type { IndyWallet } from '../wallet/IndyWallet'
 import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
+import type { AgentContext } from '../agent'
+import type { IndyWallet } from '../wallet/IndyWallet'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { AgentDependencies } from '../agent/AgentDependencies'

@@ -1,8 +1,8 @@
-import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
-import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
+import type { ConnectionRecord } from '../connections'
 
 import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'

@@ -1,5 +1,5 @@
-import type { ParsedMessageType } from '../../utils/messageType'
 import type { ConnectionRecord } from './repository'
+import type { ParsedMessageType } from '../../utils/messageType'
 
 import { AriesFrameworkError } from '../../error'
 import { canHandleMessageType } from '../../utils/messageType'

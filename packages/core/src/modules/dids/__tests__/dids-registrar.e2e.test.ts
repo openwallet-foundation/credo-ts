@@ -10,9 +10,10 @@ import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { TypedArrayEncoder } from '../../../utils'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
-import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { InjectionSymbols, JsonTransformer } from '@aries-framework/core'
+
+import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar', {
   indyLedgers: [
