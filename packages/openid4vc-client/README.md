@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Open ID Connect Client plugin for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
+Open ID Connect For Verifiable Credentials Client Module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
 
 ### Installation
 
