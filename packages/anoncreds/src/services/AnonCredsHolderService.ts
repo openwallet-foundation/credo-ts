@@ -12,11 +12,7 @@ import type {
 import type { AgentContext } from '@aries-framework/core'
 
 export interface AnonCredsHolderService {
-  createProof(
-    agentContext: AgentContext,
-    options: CreateProofOptions,
-    metadata?: Record<string, unknown>
-  ): Promise<AnonCredsProof>
+  createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof>
   storeCredential(
     agentContext: AgentContext,
     options: StoreCredentialOptions,
@@ -28,13 +24,12 @@ export interface AnonCredsHolderService {
 
   createCredentialRequest(
     agentContext: AgentContext,
-    options: CreateCredentialRequestOptions,
-    metadata?: Record<string, unknown>
+    options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn>
 
   deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void>
   getCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetCredentialsForProofRequestOptions
-  ): Promise<GetCredentialsForProofRequestReturn[]>
+  ): Promise<GetCredentialsForProofRequestReturn>
 }

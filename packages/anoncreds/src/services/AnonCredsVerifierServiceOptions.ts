@@ -24,7 +24,7 @@ export interface VerifyProofOptions {
       // this means we need to retrieve _ALL_ deltas from the ledger to verify a proof. While currently we
       // only need to fetch the registry.
       revocationLists: {
-        [timestamp: string]: AnonCredsRevocationList
+        [timestamp: number]: AnonCredsRevocationList
       }
     }
   }

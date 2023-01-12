@@ -11,7 +11,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   private agent!: Agent
   private stop$!: Subject<boolean>
 
-  public supportedSchemes = ['rxjs']
+  public supportedSchemes = ['rxjs', 'wss']
 
   public constructor(subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }) {
     this.subjectMap = subjectMap
