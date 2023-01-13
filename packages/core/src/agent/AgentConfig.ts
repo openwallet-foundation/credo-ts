@@ -18,7 +18,7 @@ export class AgentConfig {
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
     this.label = initConfig.label
-    this.logger = new ConsoleLogger(LogLevel.debug)
+    this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
 
     const { mediatorConnectionsInvite, clearDefaultMediator, defaultMediatorId } = this.initConfig
