@@ -1,0 +1,590 @@
+yarn run v1.22.15
+$ jest /home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/tests/v2-presentation-exchange-connectionless-proofs.test.ts
+  console.info
+    INFO: Creating agent with config {
+      "agentConfig": {
+        "label": "Agent: Connectionless proofs with mediator Mediator-9742",
+        "walletConfig": {
+          "id": "Wallet: Connectionless proofs with mediator Mediator-9742",
+          "key": "[*****]",
+          "keyDerivationMethod": "RAW",
+          "storage": {}
+        },
+        "publicDidSeed": "000000000000000000000000Trustee9",
+        "autoAcceptConnections": true,
+        "connectToIndyLedgersOnStartup": false,
+        "indyLedgers": [
+          {
+            "id": "pool-Connectionless proofs with mediator Mediator-9742",
+            "isProduction": false,
+            "genesisPath": "/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/network/genesis/local-genesis.txn",
+            "indyNamespace": "pool:localtest",
+            "transactionAuthorAgreement": {
+              "version": "1",
+              "acceptanceMechanism": "accept"
+            }
+          }
+        ],
+        "logger": 2,
+        "endpoints": [
+          "rxjs:faber"
+        ],
+        "agentDependencies": true
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Initializing Proofs Module for agent Agent: Connectionless proofs with mediator Mediator-9742
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.info
+    INFO: Initializing wallet 'Wallet: Connectionless proofs with mediator Mediator-9742' {
+      "id": "Wallet: Connectionless proofs with mediator Mediator-9742",
+      "key": "[*****]",
+      "keyDerivationMethod": "RAW",
+      "storage": {}
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Wallet 'Wallet: Connectionless proofs with mediator Mediator-9742' not found
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Creating wallet 'Wallet: Connectionless proofs with mediator Mediator-9742' using SQLite storage
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Wallet 'Wallet: Connectionless proofs with mediator Mediator-9742' opened with handle '3'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Creating master secret with id 'Wallet: Connectionless proofs with mediator Mediator-9742' in wallet with handle '3'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Successfully created wallet 'Wallet: Connectionless proofs with mediator Mediator-9742'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Setting current agent storage version to 0.3.1
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.info
+    INFO: Agent storage is up to date.
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Mediator routing record not loaded yet, retrieving from storage
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Mediator routing record does not exist yet, creating routing keys and record
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.info
+    INFO: Creating agent with config {
+      "agentConfig": {
+        "label": "Agent: Connectionless proofs with mediator Faber-9742",
+        "walletConfig": {
+          "id": "Wallet: Connectionless proofs with mediator Faber-9742",
+          "key": "[*****]",
+          "keyDerivationMethod": "RAW",
+          "storage": {}
+        },
+        "publicDidSeed": "000000000000000000000000Trustee9",
+        "autoAcceptConnections": true,
+        "connectToIndyLedgersOnStartup": false,
+        "indyLedgers": [
+          {
+            "id": "pool-Connectionless proofs with mediator Faber-9742",
+            "isProduction": false,
+            "genesisPath": "/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/network/genesis/local-genesis.txn",
+            "indyNamespace": "pool:localtest",
+            "transactionAuthorAgreement": {
+              "version": "1",
+              "acceptanceMechanism": "accept"
+            }
+          }
+        ],
+        "logger": 2,
+        "autoAcceptProofs": "always",
+        "autoAcceptCredentials": "always",
+        "mediatorConnectionsInvite": "https://example.com?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4xL2ludml0YXRpb24iLCJAaWQiOiJhMWI5MTk5MC02YzE1LTRhNzItYjkzMC0yNzQyZmUxM2RhNzgiLCJsYWJlbCI6ImZhYmVyIGludml0YXRpb24iLCJhY2NlcHQiOlsiZGlkY29tbS9haXAxIiwiZGlkY29tbS9haXAyO2Vudj1yZmMxOSJdLCJoYW5kc2hha2VfcHJvdG9jb2xzIjpbImh0dHBzOi8vZGlkY29tbS5vcmcvY29ubmVjdGlvbnMvMS4wIl0sInNlcnZpY2VzIjpbeyJpZCI6IiNpbmxpbmUtMCIsInNlcnZpY2VFbmRwb2ludCI6InJ4anM6ZmFiZXIiLCJ0eXBlIjoiZGlkLWNvbW11bmljYXRpb24iLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2dKS3ZnNDFIZTVRUGFzcWptazZucEMyZzM4d2Q2WVBQa1ljeXJFcXpqdWZEIl0sInJvdXRpbmdLZXlzIjpbXX1dfQ",
+        "mediatorPickupStrategy": "PickUpV1",
+        "agentDependencies": true
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Initializing Proofs Module for agent Agent: Connectionless proofs with mediator Faber-9742
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.info
+    INFO: Initializing wallet 'Wallet: Connectionless proofs with mediator Faber-9742' {
+      "id": "Wallet: Connectionless proofs with mediator Faber-9742",
+      "key": "[*****]",
+      "keyDerivationMethod": "RAW",
+      "storage": {}
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Wallet 'Wallet: Connectionless proofs with mediator Faber-9742' not found
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Creating wallet 'Wallet: Connectionless proofs with mediator Faber-9742' using SQLite storage
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Wallet 'Wallet: Connectionless proofs with mediator Faber-9742' opened with handle '8'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Creating master secret with id 'Wallet: Connectionless proofs with mediator Faber-9742' in wallet with handle '8'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Successfully created wallet 'Wallet: Connectionless proofs with mediator Faber-9742'
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Setting current agent storage version to 0.3.1
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.info
+    INFO: Agent storage is up to date.
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Provision mediation with invitation {
+      "mediatorInvitationUrl": "https://example.com?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4xL2ludml0YXRpb24iLCJAaWQiOiJhMWI5MTk5MC02YzE1LTRhNzItYjkzMC0yNzQyZmUxM2RhNzgiLCJsYWJlbCI6ImZhYmVyIGludml0YXRpb24iLCJhY2NlcHQiOlsiZGlkY29tbS9haXAxIiwiZGlkY29tbS9haXAyO2Vudj1yZmMxOSJdLCJoYW5kc2hha2VfcHJvdG9jb2xzIjpbImh0dHBzOi8vZGlkY29tbS5vcmcvY29ubmVjdGlvbnMvMS4wIl0sInNlcnZpY2VzIjpbeyJpZCI6IiNpbmxpbmUtMCIsInNlcnZpY2VFbmRwb2ludCI6InJ4anM6ZmFiZXIiLCJ0eXBlIjoiZGlkLWNvbW11bmljYXRpb24iLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2dKS3ZnNDFIZTVRUGFzcWptazZucEMyZzM4d2Q2WVBQa1ljeXJFcXpqdWZEIl0sInJvdXRpbmdLZXlzIjpbXX1dfQ"
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Mediation connection does not exist, creating connection
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Routing created {
+      "endpoints": [
+        "didcomm:transport/queue"
+      ],
+      "routingKeys": [],
+      "recipientKey": {
+        "publicKey": {
+          "type": "Buffer",
+          "data": [
+            36,
+            109,
+            44,
+            160,
+            211,
+            105,
+            156,
+            252,
+            230,
+            103,
+            24,
+            7,
+            116,
+            117,
+            185,
+            5,
+            183,
+            221,
+            99,
+            151,
+            171,
+            192,
+            245,
+            13,
+            235,
+            190,
+            39,
+            95,
+            113,
+            24,
+            181,
+            234
+          ]
+        },
+        "keyType": "ed25519"
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Searching for an existing connection for out-of-band invitation. {
+      "outOfBandInvitation": {
+        "@type": "https://didcomm.org/out-of-band/1.1/invitation",
+        "@id": "a1b91990-6c15-4a72-b930-2742fe13da78",
+        "label": "faber invitation",
+        "accept": [
+          "didcomm/aip1",
+          "didcomm/aip2;env=rfc19"
+        ],
+        "handshake_protocols": [
+          "https://didcomm.org/connections/1.0"
+        ],
+        "services": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "did-communication",
+            "recipientKeys": [
+              "did:key:z6MkgJKvg41He5QPasqjmk6npC2g38wd6YPPkYcyrEqzjufD"
+            ],
+            "routingKeys": []
+          }
+        ]
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Retrieved 0 connections for invitation did did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2dKS3ZnNDFIZTVRUGFzcWptazZucEMyZzM4d2Q2WVBQa1ljeXJFcXpqdWZEI3o2TWtnSkt2ZzQxSGU1UVBhc3FqbWs2bnBDMmczOHdkNllQUGtZY3lyRXF6anVmRCJdLCJyIjpbXX0
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Out of band message contains handshake protocols.
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Connection does not exist or reuse is disabled. Creating a new connection.
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Create message https://didcomm.org/connections/1.0/request start {
+      "_tags": {
+        "invitationId": "a1b91990-6c15-4a72-b930-2742fe13da78",
+        "state": "initial",
+        "recipientKeyFingerprints": [
+          "z6MkgJKvg41He5QPasqjmk6npC2g38wd6YPPkYcyrEqzjufD"
+        ],
+        "role": "receiver"
+      },
+      "metadata": {},
+      "id": "bc65809d-a42e-48eb-9256-a119c19dd520",
+      "createdAt": "2023-01-12T12:17:20.264Z",
+      "outOfBandInvitation": {
+        "@type": "https://didcomm.org/out-of-band/1.1/invitation",
+        "@id": "a1b91990-6c15-4a72-b930-2742fe13da78",
+        "label": "faber invitation",
+        "accept": [
+          "didcomm/aip1",
+          "didcomm/aip2;env=rfc19"
+        ],
+        "handshake_protocols": [
+          "https://didcomm.org/connections/1.0"
+        ],
+        "services": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "did-communication",
+            "recipientKeys": [
+              "did:key:z6MkgJKvg41He5QPasqjmk6npC2g38wd6YPPkYcyrEqzjufD"
+            ],
+            "routingKeys": []
+          }
+        ]
+      },
+      "role": "receiver",
+      "state": "prepare-response",
+      "autoAcceptConnection": true,
+      "reusable": false
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Saving DID record {
+      "id": "1f0c7d64-5afc-4173-b891-5b0cdede2286",
+      "did": "did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc",
+      "role": "created",
+      "tags": {
+        "recipientKeyFingerprints": [
+          "z6MkguTH1qow3gkmx5urWgQkt85dBh7Be78WNeWv5baXJcnd"
+        ],
+        "role": "created",
+        "method": "peer",
+        "legacyUnqualifiedDid": "5VtbHNeEVFuTuTCCQ6cn6g",
+        "did": "did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc",
+        "methodSpecificIdentifier": "1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc"
+      },
+      "didDocument": "omitted..."
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Did record created. {
+      "_tags": {
+        "recipientKeyFingerprints": [
+          "z6MkguTH1qow3gkmx5urWgQkt85dBh7Be78WNeWv5baXJcnd"
+        ]
+      },
+      "metadata": {
+        "_internal/legacyDid": {
+          "unqualifiedDid": "5VtbHNeEVFuTuTCCQ6cn6g",
+          "didDocumentString": "{\"@context\":\"https://w3id.org/did/v1\",\"publicKey\":[{\"id\":\"5VtbHNeEVFuTuTCCQ6cn6g#1\",\"controller\":\"5VtbHNeEVFuTuTCCQ6cn6g\",\"type\":\"Ed25519VerificationKey2018\",\"publicKeyBase58\":\"3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F\"}],\"service\":[{\"id\":\"5VtbHNeEVFuTuTCCQ6cn6g#IndyAgentService\",\"serviceEndpoint\":\"didcomm:transport/queue\",\"type\":\"IndyAgent\",\"priority\":0,\"recipientKeys\":[\"3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F\"],\"routingKeys\":[]}],\"authentication\":[{\"publicKey\":\"5VtbHNeEVFuTuTCCQ6cn6g#1\",\"type\":\"Ed25519SignatureAuthentication2018\"}],\"id\":\"5VtbHNeEVFuTuTCCQ6cn6g\"}"
+        }
+      },
+      "id": "1f0c7d64-5afc-4173-b891-5b0cdede2286",
+      "did": "did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc",
+      "role": "created",
+      "didDocument": {
+        "@context": [
+          "https://w3id.org/did/v1"
+        ],
+        "id": "did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc",
+        "verificationMethod": [
+          {
+            "id": "#3TCERbZV",
+            "type": "Ed25519VerificationKey2018",
+            "controller": "#id",
+            "publicKeyBase58": "3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F"
+          }
+        ],
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "serviceEndpoint": "didcomm:transport/queue",
+            "type": "IndyAgent",
+            "priority": 0,
+            "recipientKeys": [
+              "3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F"
+            ],
+            "routingKeys": []
+          }
+        ],
+        "authentication": [
+          "#3TCERbZV"
+        ]
+      },
+      "createdAt": "2023-01-12T12:17:20.406Z"
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Send outbound message {
+      "message": {
+        "@type": "https://didcomm.org/connections/1.0/request",
+        "@id": "dfc2de76-515c-4c02-a987-ab7dc77b4239",
+        "label": "Agent: Connectionless proofs with mediator Faber-9742",
+        "connection": {
+          "DID": "5VtbHNeEVFuTuTCCQ6cn6g",
+          "DIDDoc": {
+            "@context": "https://w3id.org/did/v1",
+            "publicKey": [
+              {
+                "id": "5VtbHNeEVFuTuTCCQ6cn6g#1",
+                "controller": "5VtbHNeEVFuTuTCCQ6cn6g",
+                "type": "Ed25519VerificationKey2018",
+                "publicKeyBase58": "3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F"
+              }
+            ],
+            "service": [
+              {
+                "id": "5VtbHNeEVFuTuTCCQ6cn6g#IndyAgentService",
+                "serviceEndpoint": "didcomm:transport/queue",
+                "type": "IndyAgent",
+                "priority": 0,
+                "recipientKeys": [
+                  "3TCERbZVi9GJqb59q7Sv32XdN7qLEDt9gdbzFKcWPQ1F"
+                ],
+                "routingKeys": []
+              }
+            ],
+            "authentication": [
+              {
+                "publicKey": "5VtbHNeEVFuTuTCCQ6cn6g#1",
+                "type": "Ed25519SignatureAuthentication2018"
+              }
+            ],
+            "id": "5VtbHNeEVFuTuTCCQ6cn6g"
+          }
+        },
+        "~thread": {
+          "thid": "dfc2de76-515c-4c02-a987-ab7dc77b4239",
+          "pthid": "a1b91990-6c15-4a72-b930-2742fe13da78"
+        }
+      },
+      "connectionId": "d2d6ea24-db22-466d-ab85-a48c22e9e8d5"
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Retrieving services for connection 'd2d6ea24-db22-466d-ab85-a48c22e9e8d5' (faber invitation) {
+      "connection": {
+        "_tags": {},
+        "metadata": {},
+        "connectionTypes": [],
+        "id": "d2d6ea24-db22-466d-ab85-a48c22e9e8d5",
+        "createdAt": "2023-01-12T12:17:20.433Z",
+        "did": "did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc",
+        "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2dKS3ZnNDFIZTVRUGFzcWptazZucEMyZzM4d2Q2WVBQa1ljeXJFcXpqdWZEI3o2TWtnSkt2ZzQxSGU1UVBhc3FqbWs2bnBDMmczOHdkNllQUGtZY3lyRXF6anVmRCJdLCJyIjpbXX0",
+        "theirLabel": "faber invitation",
+        "state": "request-sent",
+        "role": "requester",
+        "autoAcceptConnection": true,
+        "threadId": "dfc2de76-515c-4c02-a987-ab7dc77b4239",
+        "protocol": "https://didcomm.org/connections/1.0",
+        "outOfBandId": "bc65809d-a42e-48eb-9256-a119c19dd520"
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Resolving services from out-of-band record bc65809d-a42e-48eb-9256-a119c19dd520.
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Retrieved 1 services for message to connection 'd2d6ea24-db22-466d-ab85-a48c22e9e8d5'(faber invitation)' {
+      "hasQueueService": false
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: resolving didUrl did:peer:1zQmTyFN953qipVoDZNMiP6vCrYS4VDK81P38436JAxXVdTc
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Sending outbound message to service: {
+      "messageId": "dfc2de76-515c-4c02-a987-ab7dc77b4239",
+      "service": {
+        "id": "#inline-0",
+        "recipientKeys": "omitted...",
+        "routingKeys": "omitted...",
+        "serviceEndpoint": "rxjs:faber"
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Pack outbound message https://didcomm.org/connections/1.0/request
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Sending outbound message to endpoint rxjs:faber {
+      "endpoint": "rxjs:faber"
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.debug
+    DEBUG: Agent received message
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:33:28)
+
+  console.debug
+    DEBUG: Mediation invitation processed {
+      "outOfBandInvitation": {
+        "@type": "https://didcomm.org/out-of-band/1.1/invitation",
+        "@id": "a1b91990-6c15-4a72-b930-2742fe13da78",
+        "label": "faber invitation",
+        "accept": [
+          "didcomm/aip1",
+          "didcomm/aip2;env=rfc19"
+        ],
+        "handshake_protocols": [
+          "https://didcomm.org/connections/1.0"
+        ],
+        "services": [
+          {
+            "id": "#inline-0",
+            "serviceEndpoint": "rxjs:faber",
+            "type": "did-communication",
+            "recipientKeys": [
+              "did:key:z6MkgJKvg41He5QPasqjmk6npC2g38wd6YPPkYcyrEqzjufD"
+            ],
+            "routingKeys": []
+          }
+        ]
+      }
+    }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+
+  console.error
+    ERROR: Error while decrypting message {
+      "error": {
+        "message": "Error unpacking message",
+        "name": "WalletError",
+        "stack": "WalletError: Error unpacking message\n    at IndyWallet.unpack (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/src/wallet/IndyWallet.ts:630:13)\n    at EnvelopeService.unpackMessage (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/src/agent/EnvelopeService.ts:65:30)\n    at MessageReceiver.decryptMessage (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/src/agent/MessageReceiver.ts:171:14)\n    at MessageReceiver.receiveEncryptedMessage (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/src/agent/MessageReceiver.ts:113:30)\n    at MessageReceiver.receiveMessage (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/packages/core/src/agent/MessageReceiver.ts:86:9)\n    at Object.next (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/tests/transport/SubjectInboundTransport.ts:51:9)",
+        "cause": {
+          "stack": "IndyError: WalletItemNotFound\n    at Object.callback (/home/mike/aries/forks/PEX-JAN2/aries-framework-javascript/node_modules/indy-sdk/src/wrapIndyCallback.js:15:10)",
+          "name": "IndyError",
+          "message": "WalletItemNotFound",
+          "indyCode": 212,
+          "indyName": "WalletItemNotFound",
+          "indyCurrentErrorJson": null
+        }
+      },
+      "encryptedMessage": {
+        "protected": "eyJlbmMiOiJ4Y2hhY2hhMjBwb2x5MTMwNV9pZXRmIiwidHlwIjoiSldNLzEuMCIsImFsZyI6IkF1dGhjcnlwdCIsInJlY2lwaWVudHMiOlt7ImVuY3J5cHRlZF9rZXkiOiI0bkIyMTRSVS1nRThOVXZLUzRQRVF3eUtRaDg4RlRpWTdzQUxQZmZsR0ljWm1CT09NeFd3TGE0MEVVVi1pUktYIiwiaGVhZGVyIjp7ImtpZCI6IjJyNHQ1b2tySlh1dlVQMTM2Qjh3eTZVZ0RaZm1nZjkzNFhpNDF4c3lwZ3NxIiwiaXYiOiJIOUhnU0dQR2VPa1gzZG01NnZ3MkczV3F0QWZBbzNlYSIsInNlbmRlciI6InhRejEyN3JzRnU4SzVjU0NqUjctYW43VU5zQjZ4TjZab1ZidlBtNV9VRHVoOEhXaHFWS3JkSWcwb2Z1NkRpVmdVRWVsQjBmSWUtUHl0Q05GZlFXelM3RHpZcEt1Y0VwZHR4ZmlWVW1GdHI3SEtRTnJfZXFVNm9EaDZVOD0ifX1dfQ==",
+        "iv": "JKVEl6CYOocuwPXJ",
+        "ciphertext": "_BezXc7YE-6PX8S52nMEsyYSlCLG84qtZc1DqLMimV4L5YAYVe4M7CgytrsBm6smYIAzLlSjWumKvjMtxX_L_jpwVtm2sXduLC-MiWYwvr4UiA_skkm8lkg7V70C0h8HOOtRpx06XPdnCH_ejKeIgb3hCdl_3Gu_D5WFLuRuZvrmzgx5nR3i1_tdF3gAT4sqcV0l0tzQoqZnYmJd8C14vmVjT8qrOPD5WiCuGbqm7gFkiMWL3iwnVrlC8DXuLZcGJmHi11OLR8lrdAJnz3Gx9vreeLzfG71sRoNyxrqTiYz6FJlCI1PlD6Awcp0fWEIrVlZZ0s7PDH7hAQ5wkKBXHFm0YFzL_xVUwn68Y0XXWph139BKZ_XFKN1BpsNlFvIpYzVBQEHZfAYEnAdEy-u76I7urhCnFfoB2r9lFlGwZwSD9WCBrQbBjjcKuknXwTiJZL9DlCxejYLN7sMaIPbD6bjJh3Fc9hJ4a8nvp2dug6YzZP1g2YUH3RMSG7oJU5SSdPFgxcrQuhMee0SPXrIr7mY7-4WxuBL1ymg6Mm_qwxxfiSd3E4gFkmjoQpN8skQ6cFHntLXGh4iWWH1NNAEbKn8JqsKT_zhijrg9z52UIiPVr7Kg-rSsZYfI1FiiEOWVd8c1NWcw5e7ob8cwFOH_ITi3xONlYV4j9NeknobnypabC2dd328nnUze2fuSRg32J9Vb6rMibTG6UNOl22bCZL1TgRBcMpsBWCUpyz0d1ZNeG5CyS7MV5vlpk85JOveTPjjbU0b0wNja3lUi1AOGNceXCR8Tgl8wUMp4HMSo_56IAHdejyMPy8sr2mTLNbtR5h0mNMMyXL0EfNmwHs_jCpLkrQoEY332SDpOc-xW_NMxcoyDu9g8bUiJDHNa10_aGfZ_BuFncz5LljQDsgaSkCD5ScIf7zIX_QFs91rcVw1XH8I16vukpQgrBd_VA3iOMmyu0rU96khnwuAgx6tDNuMeZSpt7XiYdYAlzQAS-nCJ0GAa9ehIBy6GvJULkamOJx_weIlkIqhurER_MmW9H8Z1P7lTjxc6Ot0pJG6lzJQ8LLhAK7qMZzlr0GC_uLhI-8qnuNTXlLybArHty5XDKf7GlOahdOhJ-QrJCW4kAD-EpXclM8aobk3eHMWdfEToYhz5Jg9heFUYSAyDF5WLeqGgEhJUhw0wAx77MpV2JErGzCZG9__Ru1ZjB6Qx0Y5Y3hVZvE3ntDsQeRJPnMvchCBYG5M26C9cU2hC",
+        "tag": "L-4qazYW7d7Ls7QJdPw1oQ=="
+      },
+      "errorMessage": "Error unpacking message"
+    }
+
+      29 |     // Log, with or without data
+      30 |     if (data) {
+    > 31 |       console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, replaceError, 2))
+         |                            ^
+      32 |     } else {
+      33 |       console[consoleLevel](`${prefix}: ${message}`)
+      34 |     }
+
+      at ConsoleLogger.log (src/logger/ConsoleLogger.ts:31:28)
+      at ConsoleLogger.error (src/logger/ConsoleLogger.ts:58:10)
+      at MessageReceiver.decryptMessage (src/agent/MessageReceiver.ts:173:19)
+      at async MessageReceiver.receiveEncryptedMessage (src/agent/MessageReceiver.ts:113:30)
+      at async MessageReceiver.receiveMessage (src/agent/MessageReceiver.ts:86:9)
+      at async Object.next (../../tests/transport/SubjectInboundTransport.ts:51:9)
+
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

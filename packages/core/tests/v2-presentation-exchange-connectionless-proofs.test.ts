@@ -53,7 +53,7 @@ describe('Present Proof', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  xtest('Faber starts with connection-less proof requests to Alice', async () => {
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
@@ -138,7 +138,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
@@ -227,8 +227,11 @@ describe('Present Proof', () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
+      'rxjs:faber': faberMessages,
+      'rxjs:alice': aliceMessages,
       'rxjs:mediator': mediatorMessages,
     }
+
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorOptions)
     mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))

@@ -145,7 +145,7 @@ describe('Auto accept present proof', () => {
         },
       })
 
-      const { id: proofRecordId } = await waitForProofExchangeRecord(faberAgent, {
+      await waitForProofExchangeRecord(faberAgent, {
         state: ProofState.ProposalReceived,
       })
 
