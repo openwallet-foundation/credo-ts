@@ -1,10 +1,10 @@
 import type { WalletConfig } from '@aries-framework/core'
 
 import { KeyType, SigningProviderRegistry, TypedArrayEncoder, KeyDerivationMethod } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/core/tests/helpers'
-import { NodeJSAriesAskar } from 'aries-askar-nodejs'
-import { registerAriesAskar, Store } from 'aries-askar-shared'
+import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
+import { registerAriesAskar, Store } from 'aries-askar-test-shared'
 
+import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { AskarWallet } from '../AskarWallet'
 

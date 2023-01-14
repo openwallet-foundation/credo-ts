@@ -11,7 +11,7 @@ import type {
   WalletExportImportConfig,
   WalletConfigRekey,
 } from '@aries-framework/core'
-import type { Session } from 'aries-askar-shared'
+import type { Session } from 'aries-askar-test-shared'
 
 import {
   Buffer,
@@ -25,7 +25,7 @@ import {
   TypedArrayEncoder,
   FileSystem,
 } from '@aries-framework/core'
-import { CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-shared'
+import { CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 

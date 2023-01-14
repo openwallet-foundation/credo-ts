@@ -1,8 +1,8 @@
 import type { AgentContext, TagsBase } from '@aries-framework/core'
 
 import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
-import { NodeJSAriesAskar } from 'aries-askar-nodejs'
-import { registerAriesAskar } from 'aries-askar-shared'
+import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
+import { registerAriesAskar } from 'aries-askar-test-shared'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'

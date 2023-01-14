@@ -7,10 +7,10 @@ import type {
   Query,
   StorageService,
 } from '@aries-framework/core'
-import type { EntryObject } from 'aries-askar-shared'
+import type { EntryObject } from 'aries-askar-test-shared'
 
 import { WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@aries-framework/core'
-import { Scan } from 'aries-askar-shared'
+import { Scan } from 'aries-askar-test-shared'
 
 import { assertAskarWallet } from '../utils/assertAskarWallet'
 

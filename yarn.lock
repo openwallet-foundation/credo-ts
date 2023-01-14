@@ -3007,25 +3007,22 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-"aries-askar-nodejs@file:../aries-askar/wrappers/javascript/nodejs/aries-askar-nodejs-v0.0.1.tgz":
+aries-askar-test-nodejs@^0.0.1:
   version "0.0.1"
-  resolved "file:../aries-askar/wrappers/javascript/nodejs/aries-askar-nodejs-v0.0.1.tgz#8fb197be27602f4054f5d03aa419acbc16a707e5"
+  resolved "https://registry.yarnpkg.com/aries-askar-test-nodejs/-/aries-askar-test-nodejs-0.0.1.tgz#bddb73e2bc2bdb5ed12f839282879e059c768076"
+  integrity sha512-I0SBjisZiyFxXQtVVmQzYAKaXneFhVm5W/ZK8Hn44FFkI++IYTzT5/iT1g1H+Jsj8LSY+Boex+CL1o4B6qGfGw==
   dependencies:
-    aries-askar-shared "*"
+    aries-askar-test-shared "*"
     ffi-napi "^4.0.3"
     node-cache "^5.1.2"
     ref-array-di "^1.2.2"
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-aries-askar-shared@*:
-  version "0.0.1-security"
-  resolved "https://registry.yarnpkg.com/aries-askar-shared/-/aries-askar-shared-0.0.1-security.tgz#6a77eb60274014998b16f7f4754612c28ad7489a"
-  integrity sha512-VmZYUXUtJQs2dU9n7yzFjExla6KV/cZejk2iYZ4cd6hdgZ6dQtcGI/NUJnUVzmYaeOX7fHUyQQK20q54jUPZsw==
-
-"aries-askar-shared@file:../aries-askar/wrappers/javascript/shared/aries-askar-shared-v0.0.1.tgz":
+aries-askar-test-shared@*, aries-askar-test-shared@^0.0.1:
   version "0.0.1"
-  resolved "file:../aries-askar/wrappers/javascript/shared/aries-askar-shared-v0.0.1.tgz#b3020fd627d015629d9788926a6c28a593bf343a"
+  resolved "https://registry.yarnpkg.com/aries-askar-test-shared/-/aries-askar-test-shared-0.0.1.tgz#3f7492139ef902aa1371cc532f887b5eea2dd445"
+  integrity sha512-EhQW2j94cV7l3fgwDxr9mdS7JTAtOrgF6Ze0vA+i2dypOJrWzQpMdmLQKWyE90vEXoEP0yxjpSTKh6qPniySsA==
   dependencies:
     fast-text-encoding "^1.0.3"
 
