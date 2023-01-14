@@ -2,6 +2,15 @@ import { AgentContext, injectable } from '@aries-framework/core'
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 
+
+
+
+interface PreAuthorizedOptions {
+  issuerUri: string,
+  did: string,
+}
+
+
 /**
  * @public
  */
@@ -14,4 +23,11 @@ export class OpenId4VcClientApi {
     this.agentContext = agentContext
     this.openId4VcClientService = openId4VcClientService
   }
+
+
+  public async preAuthorized(options: PreAuthorizedOptions) {
+    this.openId4VcClientService.preAuthorized(this.agentContext, options)
+
+  }
+
 }

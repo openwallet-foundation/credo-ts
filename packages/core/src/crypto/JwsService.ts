@@ -17,17 +17,37 @@ const JWS_ALG = 'EdDSA'
 
 @injectable()
 export class JwsService {
+
+  private async createJwsBase(
+    agentContext: AgentContext,
+    options: {
+      verkey: string,
+      payload: Buffer,
+      header: Record<string, unknown>
+    }
+  ) {
+    const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
+    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.verkey))
+    const key = Key.fromPublicKeyBase58(options.verkey, KeyType.Ed25519)
+
+    const signature = TypedArrayEncoder.toBase64URL(
+      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
+
+    )
+
+    return {
+      base64Payload,
+      base64Protected,
+      signature,
+    }
+  }
+
   public async createJws(
     agentContext: AgentContext,
     { payload, verkey, header }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
-    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
-    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(verkey))
-    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+    const { base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, })
 
-    const signature = TypedArrayEncoder.toBase64URL(
-      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
-    )
 
     return {
       protected: base64Protected,
@@ -35,6 +55,19 @@ export class JwsService {
       header,
     }
   }
+
+  /**
+   *  @see {@link https://www.rfc-editor.org/rfc/rfc7515#section-3.1}
+   * */
+  public async createJwsCompact(
+    agentContext: AgentContext,
+    { payload, verkey, header }: CreateJwsOptions
+  ): Promise<string> {
+    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, })
+    return `${base64Protected}.${base64Payload}.${signature}`
+
+  }
+
 
   /**
    * Verify a JWS
