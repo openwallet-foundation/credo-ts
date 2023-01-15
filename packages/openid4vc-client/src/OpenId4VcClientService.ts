@@ -89,6 +89,8 @@ export class OpenId4VcClientService {
       tokenEndpoint: serverMetadata.token_endpoint
     })
 
+    this.logger.debug('Full server metadata', serverMetadata)
+
     // proof of possesion
     const callbacks = this.getSignCallback(agentContext)
 
