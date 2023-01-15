@@ -25,6 +25,7 @@ import {
   TypedArrayEncoder,
   FileSystem,
 } from '@aries-framework/core'
+// eslint-disable-next-line import/order
 import { CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error

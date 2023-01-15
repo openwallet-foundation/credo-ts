@@ -1,7 +1,7 @@
 import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { DependencyManager, Module } from '@aries-framework/core'
 
-import { registerAriesAskar } from 'aries-askar-shared'
+import { registerAriesAskar } from 'aries-askar-test-shared'
 
 import { AskarModuleConfig } from './AskarModuleConfig'
 import { AskarSymbol } from './types'

@@ -9,9 +9,16 @@ import type {
 } from '@aries-framework/core'
 import type { EntryObject } from 'aries-askar-test-shared'
 
-import { WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@aries-framework/core'
+import {
+  RecordDuplicateError,
+  WalletError,
+  RecordNotFoundError,
+  injectable,
+  JsonTransformer,
+} from '@aries-framework/core'
 import { Scan } from 'aries-askar-test-shared'
 
+import { askarErrors, isAskarError } from '../utils/askarError'
 import { assertAskarWallet } from '../utils/assertAskarWallet'
 
 @injectable()
@@ -95,13 +102,13 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
    * method.
    */
   // TODO: Transform to Askar format
-  private indyQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
+  private askarQueryFromSearchQuery(query: Query<T>): Record<string, unknown> {
     // eslint-disable-next-line prefer-const
     let { $and, $or, $not, ...tags } = query
 
-    $and = ($and as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
-    $or = ($or as Query<T>[] | undefined)?.map((q) => this.indyQueryFromSearchQuery(q))
-    $not = $not ? this.indyQueryFromSearchQuery($not as Query<T>) : undefined
+    $and = ($and as Query<T>[] | undefined)?.map((q) => this.askarQueryFromSearchQuery(q))
+    $or = ($or as Query<T>[] | undefined)?.map((q) => this.askarQueryFromSearchQuery(q))
+    $not = $not ? this.askarQueryFromSearchQuery($not as Query<T>) : undefined
 
     const indyQuery = {
       ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
@@ -134,6 +141,10 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await session.insert({ category: record.type, name: record.id, value, tags })
     } catch (error) {
+      if (isAskarError(error) && error.code === askarErrors.Duplicate) {
+        throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
+      }
+
       throw new WalletError('Error saving record', { cause: error })
     }
   }
@@ -149,6 +160,13 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await session.replace({ category: record.type, name: record.id, value, tags })
     } catch (error) {
+      if (isAskarError(error) && error.code === askarErrors.NotFound) {
+        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+          recordType: record.type,
+          cause: error,
+        })
+      }
+
       throw new WalletError('Error updating record', { cause: error })
     }
   }
@@ -161,6 +179,12 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await session.remove({ category: record.type, name: record.id })
     } catch (error) {
+      if (isAskarError(error) && error.code === askarErrors.NotFound) {
+        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+          recordType: record.type,
+          cause: error,
+        })
+      }
       throw new WalletError('Error deleting record', { cause: error })
     }
   }
@@ -177,6 +201,12 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await session.remove({ category: recordClass.type, name: id })
     } catch (error) {
+      if (isAskarError(error) && error.code === askarErrors.NotFound) {
+        throw new RecordNotFoundError(`record with id ${id} not found.`, {
+          recordType: recordClass.type,
+          cause: error,
+        })
+      }
       throw new WalletError('Error deleting record', { cause: error })
     }
   }
@@ -186,15 +216,28 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     assertAskarWallet(agentContext.wallet)
     const session = (agentContext.wallet as AskarWallet).session
 
-    const record = await session.fetch({ category: recordClass.type, name: id })
-
-    if (!record) {
-      throw new RecordNotFoundError(`record with id ${id} not found.`, {
-        recordType: recordClass.type,
-      })
+    try {
+      const record = await session.fetch({ category: recordClass.type, name: id })
+      if (!record) {
+        throw new RecordNotFoundError(`record with id ${id} not found.`, {
+          recordType: recordClass.type,
+        })
+      }
+      return this.recordToInstance(record, recordClass)
+    } catch (error) {
+      if (
+        isAskarError(error) &&
+        (error.code === askarErrors.NotFound ||
+          // FIXME: this is current output from askar wrapper but does not describe specifically a not found scenario
+          error.message === 'Received null pointer. The native library could not find the value.')
+      ) {
+        throw new RecordNotFoundError(`record with id ${id} not found.`, {
+          recordType: recordClass.type,
+          cause: error,
+        })
+      }
+      throw new WalletError(`Error getting record`, { cause: error })
     }
-
-    return this.recordToInstance(record, recordClass)
   }
 
   /** @inheritDoc */
@@ -220,12 +263,12 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     assertAskarWallet(agentContext.wallet)
     const store = agentContext.wallet.handle
 
-    const indyQuery = this.indyQueryFromSearchQuery(query)
+    const askarQuery = this.askarQueryFromSearchQuery(query)
 
     const scan = new Scan({
       category: recordClass.type,
       store,
-      tagFilter: indyQuery,
+      tagFilter: askarQuery,
     })
 
     const records = await scan.fetchAll()

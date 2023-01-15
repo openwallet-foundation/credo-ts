@@ -3,6 +3,7 @@ import type { AgentContext, TagsBase } from '@aries-framework/core'
 import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar } from 'aries-askar-test-shared'
+import { TextEncoder } from 'util'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -13,10 +14,11 @@ describe('AskarStorageService', () => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
   let agentContext: AgentContext
+  const askar = new NodeJSAriesAskar()
 
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
-    registerAriesAskar({ askar: new NodeJSAriesAskar() })
+    registerAriesAskar({ askar })
 
     wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     agentContext = getAgentContext({
@@ -43,7 +45,7 @@ describe('AskarStorageService', () => {
     return record
   }
 
-  describe.skip('tag transformation', () => {
+  describe('tag transformation', () => {
     it('should correctly transform tag values to string before storing', async () => {
       const record = await insertRecord({
         id: 'test-id',
@@ -58,12 +60,15 @@ describe('AskarStorageService', () => {
         },
       })
 
-      const retrieveRecord = await indy.getWalletRecord(wallet.handle, record.type, record.id, {
-        retrieveType: true,
-        retrieveTags: true,
+      const retrieveRecord = await askar.sessionFetch({
+        category: record.type,
+        name: record.id,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        sessionHandle: wallet.session.handle!,
+        forUpdate: false,
       })
 
-      expect(retrieveRecord.tags).toEqual({
+      expect(JSON.parse(retrieveRecord.getTags(0))).toEqual({
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
@@ -75,15 +80,23 @@ describe('AskarStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await indy.addWalletRecord(wallet.handle, TestRecord.type, 'some-id', '{}', {
-        someBoolean: '1',
-        someOtherBoolean: '0',
-        someStringValue: 'string',
-        'anArrayValue:foo': '1',
-        'anArrayValue:bar': '1',
-        // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
-        someStringNumberValue: 'n__1',
-        anotherStringNumberValue: 'n__0',
+      await askar.sessionUpdate({
+        category: TestRecord.type,
+        name: 'some-id',
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        sessionHandle: wallet.session.handle!,
+        value: new Uint8Array(new TextEncoder().encode('{}')),
+        tags: {
+          someBoolean: '1',
+          someOtherBoolean: '0',
+          someStringValue: 'string',
+          'anArrayValue:foo': '1',
+          'anArrayValue:bar': '1',
+          // booleans are stored as '1' and '0' so we store the string values '1' and '0' as 'n__1' and 'n__0'
+          someStringNumberValue: 'n__1',
+          anotherStringNumberValue: 'n__0',
+        },
+        operation: 0, // EntryOperation.Insert
       })
 
       const record = await storageService.getById(agentContext, TestRecord, 'some-id')
@@ -187,15 +200,16 @@ describe('AskarStorageService', () => {
     })
   })
 
-  describe.skip('findByQuery()', () => {
+  describe('findByQuery()', () => {
     it('should retrieve all records that match the query', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foobar' } })
+      const expectedRecord2 = await insertRecord({ tags: { myTag: 'foobar' } })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
       const records = await storageService.findByQuery(agentContext, TestRecord, { myTag: 'foobar' })
 
-      expect(records.length).toBe(1)
-      expect(records[0]).toEqual(expectedRecord)
+      expect(records.length).toBe(2)
+      expect(records).toEqual(expect.arrayContaining([expectedRecord, expectedRecord2]))
     })
 
     it('finds records using $and statements', async () => {
