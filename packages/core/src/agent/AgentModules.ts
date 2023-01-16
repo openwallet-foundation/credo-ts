@@ -1,7 +1,7 @@
-import type { AgentConfig } from './AgentConfig'
 import type { Module, DependencyManager, ApiModule } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
+import type { AgentConfig } from './AgentConfig'
 
 import { BasicMessagesModule } from '../modules/basic-messages'
 import { ConnectionsModule } from '../modules/connections'

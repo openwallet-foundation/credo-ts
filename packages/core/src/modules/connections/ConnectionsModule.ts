@@ -1,6 +1,6 @@
-import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
+import type { ConnectionsModuleConfigOptions } from './ConnectionsModuleConfig'
 
 import { Protocol } from '../../agent/models'
 

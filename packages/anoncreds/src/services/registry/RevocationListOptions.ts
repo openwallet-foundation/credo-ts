@@ -1,5 +1,5 @@
-import type { AnonCredsResolutionMetadata, Extensible } from './base'
 import type { AnonCredsRevocationList } from '../../models/registry'
+import type { AnonCredsResolutionMetadata, Extensible } from './base'
 
 export interface GetRevocationListReturn {
   revocationList: AnonCredsRevocationList | null

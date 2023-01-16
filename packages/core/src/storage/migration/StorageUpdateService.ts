@@ -1,6 +1,6 @@
-import type { UpdateToVersion } from './updates'
 import type { AgentContext } from '../../agent'
 import type { VersionString } from '../../utils/version'
+import type { UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { Logger } from '../../logger'

@@ -1,5 +1,5 @@
-import type { MediationRecord } from './repository'
 import type { EncryptedMessage } from '../../types'
+import type { MediationRecord } from './repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'

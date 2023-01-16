@@ -1,8 +1,8 @@
+import type { AgentContext } from '../agent'
+import type { EventEmitter } from '../agent/EventEmitter'
 import type { BaseRecord } from './BaseRecord'
 import type { RecordSavedEvent, RecordUpdatedEvent, RecordDeletedEvent } from './RepositoryEvents'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
-import type { AgentContext } from '../agent'
-import type { EventEmitter } from '../agent/EventEmitter'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 import { JsonTransformer } from '../utils/JsonTransformer'

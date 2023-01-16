@@ -1,13 +1,13 @@
-import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
-import type { ProofFormat, ProofFormatPayload } from './ProofFormat'
-import type { ProofFormatService } from './ProofFormatService'
-import type { IndyProposeProofFormat, IndyRequestProofFormat, ProofRequest, ProofRequestOptions } from './indy'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { BaseOptions } from '../ProofServiceOptions'
 import type { GetRequestedCredentialsConfig } from '../models/GetRequestedCredentialsConfig'
 import type { RequestPresentationOptions } from '../protocol'
 import type { PresentationPreview } from '../protocol/v1/models/V1PresentationPreview'
 import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { ProofFormat, ProofFormatPayload } from './ProofFormat'
+import type { ProofFormatService } from './ProofFormatService'
+import type { IndyProposeProofFormat, IndyRequestProofFormat, ProofRequest, ProofRequestOptions } from './indy'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 
 /**

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { AgentContext } from '../agent'
 import type { Constructor } from '../utils/mixins'
+import type { BaseRecord, TagsBase } from './BaseRecord'
 
 // https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
 export type SimpleQuery<T extends BaseRecord> = Partial<ReturnType<T['getTags']>> & TagsBase

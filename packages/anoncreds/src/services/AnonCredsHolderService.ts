@@ -1,3 +1,5 @@
+import type { CredentialInfo } from '../models'
+import type { AnonCredsProof } from '../models/exchange'
 import type {
   CreateCredentialRequestOptions,
   CreateCredentialRequestReturn,
@@ -7,8 +9,6 @@ import type {
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
 } from './AnonCredsHolderServiceOptions'
-import type { CredentialInfo } from '../models'
-import type { AnonCredsProof } from '../models/exchange'
 import type { AgentContext } from '@aries-framework/core'
 
 export interface AnonCredsHolderService {

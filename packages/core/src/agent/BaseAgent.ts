@@ -1,9 +1,9 @@
-import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
-import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
 import type { CredentialsModule } from '../modules/credentials'
 import type { DependencyManager } from '../plugins'
+import type { AgentConfig } from './AgentConfig'
+import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
+import type { TransportSession } from './TransportService'
 
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'

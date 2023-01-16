@@ -1,5 +1,3 @@
-import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
-import type { InputDescriptorsSchema } from './models'
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
 import type { Query } from '../../../../storage/StorageService'
@@ -21,7 +19,15 @@ import type {
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
 } from '../ProofFormatServiceOptions'
-import type { PresentationSignCallBackParams, PresentationSignOptions, SelectResults, Validated } from '@sphereon/pex'
+import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
+import type { InputDescriptorsSchema } from './models'
+import type {
+  PresentationSignCallBackParams,
+  PresentationSignOptions,
+  SelectResults,
+  SubmissionRequirementMatch,
+  Validated,
+} from '@sphereon/pex'
 import type { PresentationDefinitionV1 } from '@sphereon/pex-models'
 import type { ICredentialSubject, IVerifiablePresentation, IVerifiableCredential } from '@sphereon/ssi-types'
 
@@ -320,8 +326,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       params
     )
 
-    // console.log(">>>>>>>>>>>>> Verifiable Presentation = ", verifiablePresentation)
-
     const attachId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
@@ -414,7 +418,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
-    // console.log('selectResults.matches = ', selectResults.matches)
 
     return {
       proofFormats: {
@@ -457,46 +460,14 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError('No matches found in PeX selectFrom filter')
     }
 
-    const selectedCredentialsMatches: IVerifiableCredential[] = []
-    let num = 0
+    let selectedCredentialsMatches: IVerifiableCredential[] = []
+
     for (const match of presentationExchange.formats.matches) {
-      // console.log('MATCH NUM  = ', num)
-      // console.log('QUACK rule = ', match.rule)
-      // console.log('QUACK count = ', match.count)
-
-      if (match.rule === Rules.All) {
-        for (const path of match.vc_path) {
-          // extract all verifiable credentials for the given match (expressed as a jsonpath)
-          // from the the full list of credentials
-          selectedCredentialsMatches.push(...(query(jsonPexCredentials, path) as IVerifiableCredential[]))
-        }
-      } else if (match.rule === Rules.Pick) {
-        if (!match.count) {
-          throw new AriesFrameworkError(`PeX Library missing match count`)
-        }
-        for (let i = 0; i < match.count; i++) {
-          // extract [count] verifiable credentials for the given match (expressed as a jsonpath)
-          // from the the full list of credentials
-          selectedCredentialsMatches.push(...query(jsonPexCredentials, match.vc_path[i]))
-        }
-      } else {
-        throw new AriesFrameworkError(`PeX Library unsupported rule type: ${match.rule}`)
-      }
-      num++
+      selectedCredentialsMatches = selectedCredentialsMatches.concat(
+        this.retrieveSelectedCredentials(match, jsonPexCredentials)
+      )
     }
-
-    // We need to return the selected matches we used so we can use those to create the presentation submission
-    // presentationExchange.formats.matches.reduce((acc, curr) => {
-    //   total += curr.vc_path.length
-    //   return acc
-    // }, {})
-    // console.log('1. QUACK Select matches = ', selectedCredentialsMatches.length)
-    // console.log('1. QUACK Num VC Paths = ', total)
-
-    // Check how to correlate it I think we may need to do something with the count here?
-    // if (selectedCredentialsMatches.length != total) {
-    //   throw new AriesFrameworkError('Mismatch - number of selected matches does not equal credentials extracted')
-    // }
+    // TODO Check how to correlate it I think we may need to do something with the count here?
 
     return {
       proofFormats: {
@@ -505,6 +476,76 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
         },
       },
     }
+  }
+
+  private ruleAll(
+    match: SubmissionRequirementMatch,
+    jsonPexCredentials: { verifiableCredential: IVerifiableCredential[] }
+  ): IVerifiableCredential[] {
+    const credentials: IVerifiableCredential[] = []
+
+    // extract all verifiable credentials for the given match (expressed as a jsonpath)
+    // from the the full list of credentials
+    if (match.from_nested) {
+      // nested query: loop through all sub objects recursively adding to the results array
+      for (let i = 0; i < match.from_nested.length; i++) {
+        credentials.push(...this.retrieveSelectedCredentials(match.from_nested[i], jsonPexCredentials))
+      }
+    } else {
+      for (const path of match.vc_path) {
+        credentials.push(...query(jsonPexCredentials, path))
+      }
+    }
+    return credentials
+  }
+
+  private rulePick(
+    match: SubmissionRequirementMatch,
+    jsonPexCredentials: { verifiableCredential: IVerifiableCredential[] },
+    index: number
+  ): IVerifiableCredential[] {
+    const credentials: IVerifiableCredential[] = []
+    // extract [count] verifiable credentials for the given match (expressed as a jsonpath)
+    // from the the full list of credentials
+
+    // if we have nested credentials (from_nested is defined) use count as number
+    // of recursive calls
+    if (match.from_nested) {
+      credentials.push(...this.retrieveSelectedCredentials(match.from_nested[index], jsonPexCredentials))
+    } else {
+      credentials.push(...query(jsonPexCredentials, match.vc_path[index]))
+    }
+    return credentials
+  }
+
+  private retrieveSelectedCredentials(
+    match: SubmissionRequirementMatch,
+    jsonPexCredentials: { verifiableCredential: IVerifiableCredential[] }
+  ): IVerifiableCredential[] {
+    let credentials: IVerifiableCredential[] = []
+
+    if (match.rule === Rules.All) {
+      credentials = this.ruleAll(match, jsonPexCredentials)
+    } else if (match.rule === Rules.Pick) {
+      if (!match.count) {
+        throw new AriesFrameworkError(`PeX Library missing match count`)
+      }
+      for (let i = 0; i < match.count; i++) {
+        // extract [count] verifiable credentials for the given match (expressed as a jsonpath)
+        // from the the full list of credentials
+
+        // if we have nested credentials (from_nested is defined) use count as number
+        // of recursive calls
+        if (match.from_nested) {
+          credentials.push(...this.rulePick(match, jsonPexCredentials, i))
+        } else {
+          credentials.push(...query(jsonPexCredentials, match.vc_path[i]))
+        }
+      }
+    } else {
+      throw new AriesFrameworkError(`PeX Library unsupported rule type: ${match.rule}`)
+    }
+    return credentials
   }
 
   public proposalAndRequestAreEqual(

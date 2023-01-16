@@ -1,5 +1,5 @@
-import type { DidExchangeProblemReportReason } from './DidExchangeProblemReportReason'
 import type { ProblemReportErrorOptions } from '../../problem-reports'
+import type { DidExchangeProblemReportReason } from './DidExchangeProblemReportReason'
 
 import { ProblemReportError } from '../../problem-reports'
 import { DidExchangeProblemReportMessage } from '../messages'

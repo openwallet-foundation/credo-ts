@@ -1,3 +1,6 @@
+import type { AgentContext } from '../../agent/context'
+import type { Key } from '../../crypto/Key'
+import type { Query } from '../../storage/StorageService'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -9,9 +12,6 @@ import type {
   VerifyPresentationOptions,
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
-import type { AgentContext } from '../../agent/context'
-import type { Key } from '../../crypto/Key'
-import type { Query } from '../../storage/StorageService'
 
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'

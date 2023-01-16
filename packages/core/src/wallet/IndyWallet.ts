@@ -1,12 +1,3 @@
-import type {
-  WalletCreateKeyOptions,
-  DidConfig,
-  DidInfo,
-  WalletSignOptions,
-  UnpackedMessageContext,
-  WalletVerifyOptions,
-  Wallet,
-} from './Wallet'
 import type { KeyPair } from '../crypto/signing-provider/SigningProvider'
 import type {
   EncryptedMessage,
@@ -16,6 +7,15 @@ import type {
   WalletExportImportConfig,
 } from '../types'
 import type { Buffer } from '../utils/buffer'
+import type {
+  WalletCreateKeyOptions,
+  DidConfig,
+  DidInfo,
+  WalletSignOptions,
+  UnpackedMessageContext,
+  WalletVerifyOptions,
+  Wallet,
+} from './Wallet'
 import type { default as Indy, WalletStorageConfig } from 'indy-sdk'
 
 import { inject, injectable } from 'tsyringe'

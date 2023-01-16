@@ -1,5 +1,5 @@
-import type { VersionString } from './version'
 import type { PlaintextMessage } from '../types'
+import type { VersionString } from './version'
 import type { ValidationOptions, ValidationArguments } from 'class-validator'
 
 import { ValidateBy, buildMessage } from 'class-validator'

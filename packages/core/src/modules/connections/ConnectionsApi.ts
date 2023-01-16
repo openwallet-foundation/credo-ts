@@ -1,8 +1,8 @@
+import type { Query } from '../../storage/StorageService'
+import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
-import type { Query } from '../../storage/StorageService'
-import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'

@@ -1,3 +1,5 @@
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 import type { CFsFromCPs, DeleteCredentialOptions } from './CredentialProtocolOptions'
 import type {
   AcceptCredentialOptions,
@@ -19,8 +21,6 @@ import type {
 } from './CredentialsApiOptions'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'

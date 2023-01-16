@@ -1,5 +1,5 @@
-import type { ProofExchangeRecord } from './repository'
 import type { AgentContext } from '../../agent/context/AgentContext'
+import type { ProofExchangeRecord } from './repository'
 
 import { injectable } from '../../plugins'
 

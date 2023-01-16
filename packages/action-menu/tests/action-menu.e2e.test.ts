@@ -9,6 +9,8 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 
+import { waitForActionMenuRecord } from './helpers'
+
 import {
   ActionMenu,
   ActionMenuModule,
@@ -16,8 +18,6 @@ import {
   ActionMenuRole,
   ActionMenuState,
 } from '@aries-framework/action-menu'
-
-import { waitForActionMenuRecord } from './helpers'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Action Menu',

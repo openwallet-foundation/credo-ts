@@ -1,6 +1,6 @@
-import type { RecipientModuleConfigOptions } from './RecipientModuleConfig'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
+import type { RecipientModuleConfigOptions } from './RecipientModuleConfig'
 
 import { Protocol } from '../../agent/models'
 

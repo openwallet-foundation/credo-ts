@@ -1,4 +1,3 @@
-import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../agent/Events'
@@ -10,6 +9,7 @@ import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
 import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
+import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'

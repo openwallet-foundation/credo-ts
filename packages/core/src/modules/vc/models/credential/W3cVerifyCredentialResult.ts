@@ -1,5 +1,5 @@
-import type { W3cVerifiableCredential } from './W3cVerifiableCredential'
 import type { JsonObject } from '../../../../types'
+import type { W3cVerifiableCredential } from './W3cVerifiableCredential'
 
 export interface VerifyCredentialResult {
   credential: W3cVerifiableCredential

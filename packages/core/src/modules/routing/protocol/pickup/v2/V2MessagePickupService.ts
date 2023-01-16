@@ -1,6 +1,6 @@
-import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from './messages'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../../../types'
+import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { OutboundMessageContext } from '../../../../../agent/models'

@@ -1,3 +1,5 @@
+import type { AgentContext } from '../../../agent'
+import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   FormatCreateProposalOptions,
@@ -16,8 +18,6 @@ import type {
   FormatAutoRespondRequestOptions,
   FormatProcessCredentialOptions,
 } from './CredentialFormatServiceOptions'
-import type { AgentContext } from '../../../agent'
-import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 export interface CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
   formatKey: CF['formatKey']

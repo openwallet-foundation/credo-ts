@@ -1,10 +1,10 @@
-import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
-import type { OutOfBandRecord } from './repository'
 import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionRecord } from '../connections'
+import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
+import type { OutOfBandRecord } from './repository'
 
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'

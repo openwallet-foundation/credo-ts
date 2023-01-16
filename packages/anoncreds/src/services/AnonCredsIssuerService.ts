@@ -1,3 +1,5 @@
+import type { AnonCredsCredentialOffer } from '../models/exchange'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/registry'
 import type {
   CreateSchemaOptions,
   CreateCredentialDefinitionOptions,
@@ -5,8 +7,6 @@ import type {
   CreateCredentialReturn,
   CreateCredentialOptions,
 } from './AnonCredsIssuerServiceOptions'
-import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/registry'
 import type { AgentContext } from '@aries-framework/core'
 
 export interface AnonCredsIssuerService {

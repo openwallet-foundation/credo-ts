@@ -1,3 +1,11 @@
+import type { AgentContext } from '../../../agent'
+import type { AgentConfig } from '../../../agent/AgentConfig'
+import type { DidCommMessageRepository } from '../../../storage'
+import type {
+  CreateRequestAsResponseOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
+} from '../ProofServiceOptions'
 import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 import type { ProofFormat } from './ProofFormat'
 import type {
@@ -11,14 +19,6 @@ import type {
   FormatProcessRequestOptions,
   FormatProofRequestOptions,
 } from './ProofFormatServiceOptions'
-import type { AgentContext } from '../../../agent'
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { DidCommMessageRepository } from '../../../storage'
-import type {
-  CreateRequestAsResponseOptions,
-  RequestedCredentialReturn,
-  RetrievedCredentialOptions,
-} from '../ProofServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils/JsonTransformer'

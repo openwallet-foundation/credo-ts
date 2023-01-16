@@ -1,6 +1,6 @@
-import type { UpdateConfig, UpdateToVersion } from './updates'
 import type { BaseAgent } from '../../agent/BaseAgent'
 import type { FileSystem } from '../FileSystem'
+import type { UpdateConfig, UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'

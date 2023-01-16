@@ -39,7 +39,7 @@ export class MessageHandlerRegistry {
    */
   public get supportedMessageTypes() {
     return this.messageHandlers
-      .reduce<(typeof AgentMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
+      .reduce<typeof AgentMessage[]>((all, cur) => [...all, ...cur.supportedMessages], [])
       .map((m) => m.type)
   }
 

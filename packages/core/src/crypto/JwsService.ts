@@ -1,6 +1,6 @@
-import type { Jws, JwsGeneralFormat } from './JwsTypes'
 import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
+import type { Jws, JwsGeneralFormat } from './JwsTypes'
 
 import { AriesFrameworkError } from '../error'
 import { injectable } from '../plugins'

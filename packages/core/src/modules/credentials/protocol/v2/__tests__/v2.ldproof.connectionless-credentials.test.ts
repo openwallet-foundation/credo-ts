@@ -58,8 +58,8 @@ let wallet
 let signCredentialOptions: JsonLdCredentialDetailFormat
 
 describe('credentials', () => {
-  let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
-  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
+  let faberAgent: Agent<typeof faberAgentOptions['modules']>
+  let aliceAgent: Agent<typeof aliceAgentOptions['modules']>
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   const seed = 'testseed000000000000000000000001'

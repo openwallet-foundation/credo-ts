@@ -6,10 +6,9 @@ import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
-
-import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 const recipientAgentOptions = getAgentOptions('E2E Subject Recipient', {
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,

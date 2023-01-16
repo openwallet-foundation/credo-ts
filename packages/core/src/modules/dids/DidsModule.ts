@@ -1,5 +1,5 @@
-import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
+import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 
 import { DidsApi } from './DidsApi'
 import { DidsModuleConfig } from './DidsModuleConfig'

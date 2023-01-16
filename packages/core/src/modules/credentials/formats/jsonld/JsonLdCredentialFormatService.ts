@@ -1,9 +1,3 @@
-import type {
-  JsonLdCredentialFormat,
-  JsonCredential,
-  JsonLdFormatDataCredentialDetail,
-  JsonLdFormatDataVerifiableCredential,
-} from './JsonLdCredentialFormat'
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
@@ -23,6 +17,12 @@ import type {
   FormatProcessOptions,
   FormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
+import type {
+  JsonLdCredentialFormat,
+  JsonCredential,
+  JsonLdFormatDataCredentialDetail,
+  JsonLdFormatDataVerifiableCredential,
+} from './JsonLdCredentialFormat'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'

@@ -1,4 +1,3 @@
-import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type { AgentContext } from '../../../../agent'
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../models/CredentialPreviewAttribute'
@@ -20,6 +19,7 @@ import type {
   FormatProcessOptions,
   FormatProcessCredentialOptions,
 } from '../CredentialFormatServiceOptions'
+import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
 import { KeyType } from '../../../../crypto'

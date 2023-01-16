@@ -1,9 +1,9 @@
+import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
+import type { ProofFormat } from '../ProofFormat'
 import type { IndyRequestProofFormat } from './IndyProofFormatsServiceOptions'
 import type { RequestedAttribute } from './models/RequestedAttribute'
 import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
 import type { RequestedPredicate } from './models/RequestedPredicate'
-import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
-import type { ProofFormat } from '../ProofFormat'
 import type { IndyProof, IndyProofRequest } from 'indy-sdk'
 
 export const INDY_ATTACH_ID = 'indy'

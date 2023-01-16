@@ -1,8 +1,8 @@
-import type { OutboundTransport } from './OutboundTransport'
 import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
+import type { OutboundTransport } from './OutboundTransport'
 import type fetch from 'node-fetch'
 
 import { AbortController } from 'abort-controller'

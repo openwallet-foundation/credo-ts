@@ -1,3 +1,4 @@
+import type { AnonCredsSchema } from '../../models/registry'
 import type {
   AnonCredsResolutionMetadata,
   Extensible,
@@ -5,7 +6,6 @@ import type {
   AnonCredsOperationStateFinished,
   AnonCredsOperationState,
 } from './base'
-import type { AnonCredsSchema } from '../../models/registry'
 
 // Get Schema
 export interface GetSchemaReturn {

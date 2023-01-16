@@ -1,8 +1,8 @@
-import type { CustomProofTags } from './../repository/ProofExchangeRecord'
 import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet/Wallet'
 import type { CredentialRepository } from '../../credentials/repository'
 import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { CustomProofTags } from './../repository/ProofExchangeRecord'
 
 import { Subject } from 'rxjs'
 

@@ -1,4 +1,3 @@
-import type { CredentialProtocol } from './CredentialProtocol'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
@@ -24,6 +23,7 @@ import type {
 } from '../CredentialProtocolOptions'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialExchangeRecord } from '../repository'
+import type { CredentialProtocol } from './CredentialProtocol'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage'
