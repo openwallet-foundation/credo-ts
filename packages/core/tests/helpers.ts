@@ -1149,6 +1149,33 @@ export async function setupJsonLdProofsTestMultipleCredentials(
       },
     },
   }
+  const inputVaccineDocAsJsonV2: JsonCredential = {
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/vaccination/v2'],
+    type: ['VerifiableCredential', 'VaccinationCertificate'],
+    id: 'urn:uvci:af5vshde843jf831j12VAX',
+    issuer: issuerDidKey.did,
+    issuanceDate: '2019-12-03T12:19:52Z',
+    expirationDate: '2029-12-03T12:19:52Z',
+    name: 'More Vaccination Information',
+    credentialSubject: {
+      id: holderDidKey.did,
+      type: 'VaccinationEvent',
+      batchNumber: '1183738569',
+      administeringCentre: 'MoH',
+      countryOfVaccination: 'NZ',
+      recipient: {
+        type: 'VaccineRecipient',
+        givenName: 'JOHN',
+        familyName: 'SMITH',
+        gender: 'Male',
+        birthDate: '1958-07-17',
+      },
+      vaccine: {
+        type: 'Vaccine',
+        atcCode: 'J07BX03',
+      },
+    },
+  }
 
   const signCredentialOptions: JsonLdCredentialDetailFormat = {
     credential: inputDocAsJson,
@@ -1166,6 +1193,13 @@ export async function setupJsonLdProofsTestMultipleCredentials(
   }
   const signCredentialOptionsVaccination = {
     credential: inputVaccineDocAsJson,
+    options: {
+      proofType: 'Ed25519Signature2018',
+      proofPurpose: 'assertionMethod',
+    },
+  }
+  const signCredentialOptionsVaccinationV2 = {
+    credential: inputVaccineDocAsJsonV2,
     options: {
       proofType: 'Ed25519Signature2018',
       proofPurpose: 'assertionMethod',
@@ -1209,14 +1243,28 @@ export async function setupJsonLdProofsTestMultipleCredentials(
     protocolVersion: 'v2',
     autoAcceptCredential: AutoAcceptCredential.Always,
   })
+  let issuerCredentialRecordVaccineV2 = await faberAgent.credentials.offerCredential({
+    comment: 'some comment about credential',
+    connectionId: faberConnection.id,
+    credentialFormats: {
+      jsonld: signCredentialOptionsVaccinationV2,
+    },
+    protocolVersion: 'v2',
+    autoAcceptCredential: AutoAcceptCredential.Always,
+  })
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
+  console.log("Add Citizenship JsonLd Credential 1 to Wallet (Group A)")
+
   issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
+
+    console.log("Add Citizenship JsonLd Credential 2 to Wallet (Group B)")
+
 
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecordV2.threadId,
@@ -1229,12 +1277,23 @@ export async function setupJsonLdProofsTestMultipleCredentials(
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
 
+  console.log("Add Vaccine JsonLd Credential 1 to Wallet (Group B)")
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecordVaccine.threadId,
     state: CredentialState.Done,
   })
   issuerCredentialRecordVaccine = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecordVaccine.threadId,
+    state: CredentialState.Done,
+  })
+  console.log("Add Vaccine JsonLd Credential 2 to Wallet (Group C)")
+
+  await waitForCredentialRecordSubject(holderReplay, {
+    threadId: issuerCredentialRecordVaccineV2.threadId,
+    state: CredentialState.Done,
+  })
+  issuerCredentialRecordVaccineV2 = await waitForCredentialRecordSubject(issuerReplay, {
+    threadId: issuerCredentialRecordVaccineV2.threadId,
     state: CredentialState.Done,
   })
   const faberReplay = new ReplaySubject<ProofStateChangedEvent>()

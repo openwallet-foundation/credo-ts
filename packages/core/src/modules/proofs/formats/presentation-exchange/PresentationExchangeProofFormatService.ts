@@ -297,7 +297,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       throw new AriesFrameworkError(`Unsupported key type: ${privateKey.keyType}`)
     }
 
-    // console.log('+++++++++++++++ QUACK verification id = ', verificationMethod.id)
     // Q1: is holder always subject id, what if there are multiple subjects???
     // Q2: What about proofType, proofPurpose verification method for multiple subjects?
     const params: PresentationSignOptions = {
@@ -321,7 +320,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       params
     )
 
-    // console.log('QUACK >>>>>>>>>>>> Verifiable Presentation = ', verifiablePresentation)
+    console.log(">>>>>>>>>>>>> Verifiable Presentation = ", verifiablePresentation)
+
     const attachId = options.id ?? uuid()
 
     const format = new ProofFormatSpec({
@@ -414,7 +414,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
-    // console.log('selectResults vc paths len = ', selectResults.matches[0].vc_path.length)
+    console.log('selectResults.matches = ', selectResults.matches)
 
     return {
       proofFormats: {
@@ -477,8 +477,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
         for (let i = 0; i < match.count; i++) {
           // extract [count] verifiable credentials for the given match (expressed as a jsonpath)
           // from the the full list of credentials
-          const credentials = query(jsonPexCredentials, match.vc_path[i])
-          selectedCredentialsMatches.push(...credentials)
+          selectedCredentialsMatches.push(...query(jsonPexCredentials, match.vc_path[i]))
         }
       } else {
         throw new AriesFrameworkError(`PeX Library unsupported rule type: ${match.rule}`)
@@ -487,12 +486,10 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     }
 
     // We need to return the selected matches we used so we can use those to create the presentation submission
-    // let total = 0
     // presentationExchange.formats.matches.reduce((acc, curr) => {
     //   total += curr.vc_path.length
     //   return acc
     // }, {})
-
     // console.log('1. QUACK Select matches = ', selectedCredentialsMatches.length)
     // console.log('1. QUACK Num VC Paths = ', total)
 
