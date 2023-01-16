@@ -66,9 +66,9 @@ To offer a credential:
 - Select 'offer credential' in Faber
 - Faber will start with registering a schema and the credential definition accordingly
 - You have now send a credential offer to Alice!
-- Go to Alice and accept the incoming credential offer by selecting 'yes'.
+- Go to Alice to accept the incoming credential offer by selecting 'yes'.
 
-To Request a proof:
+To request a proof:
 
 - Select 'request proof' in Faber
 - Faber will create a new proof attribute and will then send a proof request to Alice!
