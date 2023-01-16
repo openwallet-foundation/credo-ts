@@ -57,8 +57,8 @@ yarn faber
 
 To set up a connection:
 
-- Select 'setup connection' in both Agents
-- Alice will print a invitation link which you then copy and paste to Faber
+- Select 'receive connection invitation' in Alice and 'create connection invitation' in Faber
+- Faber will print a invitation link which you then copy and paste to Alice
 - You have now set up a connection!
 
 To offer a credential:
@@ -66,9 +66,9 @@ To offer a credential:
 - Select 'offer credential' in Faber
 - Faber will start with registering a schema and the credential definition accordingly
 - You have now send a credential offer to Alice!
-- Go to Alice to accept the incoming credential offer
+- Go to Alice and accept the incoming credential offer by selecting 'yes'.
 
-To request a proof:
+To Request a proof:
 
 - Select 'request proof' in Faber
 - Faber will create a new proof attribute and will then send a proof request to Alice!
