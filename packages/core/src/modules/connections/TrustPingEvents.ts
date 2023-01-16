@@ -1,6 +1,6 @@
-import type { BaseEvent } from '../../agent/Events'
 import type { TrustPingMessage, TrustPingResponseMessage } from './messages'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
+import type { BaseEvent } from '../../agent/Events'
 
 export enum TrustPingEventTypes {
   TrustPingReceivedEvent = 'TrustPingReceivedEvent',

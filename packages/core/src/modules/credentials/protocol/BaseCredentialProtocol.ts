@@ -1,3 +1,4 @@
+import type { CredentialProtocol } from './CredentialProtocol'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
@@ -23,7 +24,6 @@ import type {
 } from '../CredentialProtocolOptions'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialExchangeRecord } from '../repository'
-import type { CredentialProtocol } from './CredentialProtocol'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage'
@@ -39,74 +39,93 @@ import { CredentialRepository } from '../repository'
 export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService[] = CredentialFormatService[]>
   implements CredentialProtocol<CFs>
 {
-  abstract readonly version: string
+  public abstract readonly version: string
 
   protected abstract getFormatServiceForRecordType(credentialRecordType: string): CFs[number]
 
   // methods for proposal
-  abstract createProposal(
+  public abstract createProposal(
     agentContext: AgentContext,
     options: CreateProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptProposal(
+  public abstract processProposal(
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<CredentialExchangeRecord>
+  public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract negotiateProposal(
+  public abstract negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
-  abstract createOffer(
+  public abstract createOffer(
     agentContext: AgentContext,
     options: CreateOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptOffer(
+  public abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  public abstract acceptOffer(
     agentContext: AgentContext,
     options: AcceptOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract negotiateOffer(
+  public abstract negotiateOffer(
     agentContext: AgentContext,
     options: NegotiateOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for request
-  abstract createRequest(
+  public abstract createRequest(
     agentContext: AgentContext,
     options: CreateRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptRequest(
+  public abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for issue
-  abstract processCredential(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
-  abstract acceptCredential(
+  public abstract processCredential(
+    messageContext: InboundMessageContext<AgentMessage>
+  ): Promise<CredentialExchangeRecord>
+  public abstract acceptCredential(
     agentContext: AgentContext,
     options: AcceptCredentialOptions
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for ack
-  abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  public abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
 
   // methods for problem-report
-  abstract createProblemReport(agentContext: AgentContext, options: CreateProblemReportOptions): ProblemReportMessage
+  public abstract createProblemReport(
+    agentContext: AgentContext,
+    options: CreateProblemReportOptions
+  ): ProblemReportMessage
 
-  abstract findProposalMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findRequestMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract findCredentialMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  abstract getFormatData(
+  public abstract findProposalMessage(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<AgentMessage | null>
+  public abstract findOfferMessage(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<AgentMessage | null>
+  public abstract findRequestMessage(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<AgentMessage | null>
+  public abstract findCredentialMessage(
+    agentContext: AgentContext,
+    credentialExchangeId: string
+  ): Promise<AgentMessage | null>
+  public abstract getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
   ): Promise<GetFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
-  abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
+  public abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
 
   /**
    * Decline a credential offer

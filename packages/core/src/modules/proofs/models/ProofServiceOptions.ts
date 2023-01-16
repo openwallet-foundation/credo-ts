@@ -1,8 +1,8 @@
+import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
+import type { AutoAcceptProof } from './ProofAutoAcceptType'
 import type { ConnectionRecord } from '../../connections'
 import type { ProofFormat, ProofFormatPayload } from '../formats/ProofFormat'
 import type { ProofExchangeRecord } from '../repository'
-import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
-import type { AutoAcceptProof } from './ProofAutoAcceptType'
 
 export type FormatDataMessagePayload<
   CFs extends ProofFormat[] = ProofFormat[],

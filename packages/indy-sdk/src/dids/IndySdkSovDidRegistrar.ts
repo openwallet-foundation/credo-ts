@@ -1,5 +1,5 @@
-import type { IndySdkPool } from '../ledger'
 import type { IndyEndpointAttrib } from './didSovUtil'
+import type { IndySdkPool } from '../ledger'
 import type {
   AgentContext,
   DidRegistrar,

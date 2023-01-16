@@ -310,7 +310,7 @@ describe('W3cCredentialService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<typeof w3cCredentialRepository['delete']>
+    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(typeof w3cCredentialRepository)['delete']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(

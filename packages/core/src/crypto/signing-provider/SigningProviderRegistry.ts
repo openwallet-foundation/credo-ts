@@ -1,5 +1,5 @@
-import type { KeyType } from '..'
 import type { SigningProvider } from './SigningProvider'
+import type { KeyType } from '../KeyType'
 
 import { AriesFrameworkError } from '../../error'
 import { injectable, injectAll } from '../../plugins'

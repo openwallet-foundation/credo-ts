@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateOfferOptions, V1CredentialProtocol } from '../src/modules/credentials'
+import type { CreateOfferOptions, DefaultCredentialProtocols } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -10,6 +10,15 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+
+import {
+  AgentEventTypes,
+  AriesFrameworkError,
+  AutoAcceptCredential,
+  CredentialState,
+  V1CredentialPreview,
+} from '@aries-framework/core'
+
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -20,14 +29,6 @@ import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
-
-import {
-  AgentEventTypes,
-  AriesFrameworkError,
-  AutoAcceptCredential,
-  CredentialState,
-  V1CredentialPreview,
-} from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -57,7 +58,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<[V1CredentialProtocol]>
+  let credentialTemplate: CreateOfferOptions<DefaultCredentialProtocols>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()

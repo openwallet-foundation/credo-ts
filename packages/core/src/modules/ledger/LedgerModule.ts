@@ -1,5 +1,5 @@
-import type { DependencyManager, Module } from '../../plugins'
 import type { LedgerModuleConfigOptions } from './LedgerModuleConfig'
+import type { DependencyManager, Module } from '../../plugins'
 
 import { AnonCredsCredentialDefinitionRepository } from '../indy/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from '../indy/repository/AnonCredsSchemaRepository'
