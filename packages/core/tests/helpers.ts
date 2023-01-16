@@ -20,7 +20,6 @@ import type { IndyOfferCredentialFormat } from '../src/modules/credentials/forma
 import type {
   JsonCredential,
   JsonLdCredentialDetailFormat,
-  JsonLdCredentialFormat,
 } from '../src/modules/credentials/formats/jsonld/JsonLdCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
@@ -1256,15 +1255,11 @@ export async function setupJsonLdProofsTestMultipleCredentials(
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
-  console.log("Add Citizenship JsonLd Credential 1 to Wallet (Group A)")
 
   issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialRecord.threadId,
     state: CredentialState.Done,
   })
-
-    console.log("Add Citizenship JsonLd Credential 2 to Wallet (Group B)")
-
 
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecordV2.threadId,
@@ -1277,7 +1272,6 @@ export async function setupJsonLdProofsTestMultipleCredentials(
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
 
-  console.log("Add Vaccine JsonLd Credential 1 to Wallet (Group B)")
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecordVaccine.threadId,
     state: CredentialState.Done,
@@ -1286,8 +1280,6 @@ export async function setupJsonLdProofsTestMultipleCredentials(
     threadId: issuerCredentialRecordVaccine.threadId,
     state: CredentialState.Done,
   })
-  console.log("Add Vaccine JsonLd Credential 2 to Wallet (Group C)")
-
   await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialRecordVaccineV2.threadId,
     state: CredentialState.Done,

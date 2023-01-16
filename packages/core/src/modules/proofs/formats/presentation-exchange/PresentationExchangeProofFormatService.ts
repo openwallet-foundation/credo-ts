@@ -320,7 +320,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       params
     )
 
-    console.log(">>>>>>>>>>>>> Verifiable Presentation = ", verifiablePresentation)
+    // console.log(">>>>>>>>>>>>> Verifiable Presentation = ", verifiablePresentation)
 
     const attachId = options.id ?? uuid()
 
@@ -414,7 +414,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
     if (selectResults.verifiableCredential?.length === 0) {
       throw new AriesFrameworkError('No matching credentials found.')
     }
-    console.log('selectResults.matches = ', selectResults.matches)
+    // console.log('selectResults.matches = ', selectResults.matches)
 
     return {
       proofFormats: {

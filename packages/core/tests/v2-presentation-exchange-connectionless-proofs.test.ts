@@ -53,7 +53,7 @@ describe('Present Proof', () => {
     }
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice', async () => {
+  test('Faber starts with connection-less proof requests to Alice', async () => {
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
       'Faber connection-less Proofs',
       'Alice connection-less Proofs',
@@ -138,7 +138,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
   })
 
-  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const { aliceAgent, faberAgent, aliceReplay, faberReplay } = await setupJsonLdProofsTest(
@@ -191,7 +191,7 @@ describe('Present Proof', () => {
     await faberProofExchangeRecordPromise
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
+  xtest('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const indyCredentialFormat = new IndyCredentialFormatService()
