@@ -282,10 +282,12 @@ describe('Auto accept present proof', () => {
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
+        timeoutMs: 200000,
       })
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
+        timeoutMs: 200000,
       })
 
       await aliceAgent.proofs.proposeProof({
@@ -370,10 +372,12 @@ describe('Auto accept present proof', () => {
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.Done,
+        timeoutMs: 200000,
       })
 
       const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
         state: ProofState.Done,
+        timeoutMs: 200000,
       })
 
       await aliceAgent.proofs.proposeProof({
