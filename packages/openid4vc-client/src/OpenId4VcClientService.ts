@@ -73,12 +73,16 @@ export class OpenId4VcClientService {
       clientId: 'test-clientId'
     })
 
-    const accessToken = {
-      access_token: 'N4vZQGi1TiFztlkxvp5yE3zC8aqF7eZwLCDdaPQpNdh',
-      expires_in: 3600,
-      scope: 'OpenBadgeCredential',
-      token_type: 'Bearer'
-    }
+
+
+    const accessToken = await client.acquireAccessToken({ clientId: 'test-clientId' })
+
+//     const accessToken = {
+//   "access_token": "Qt66ehVgvJZvchmFr-Pzy9JvpEPEC69nho_81TZ7GM7",
+//   "expires_in": 3600,
+//   "scope": "OpenBadgeCredential",
+//   "token_type": "Bearer"
+// }
 
     this.logger.info('Fetched server accessToken', accessToken)
 
@@ -106,14 +110,18 @@ export class OpenId4VcClientService {
     this.logger.debug('Generated JTS', proofInput)
 
 
-    // const credentialRequestClient = CredentialRequestClientBuilder.fromIssuanceInitiationURI({ uri: options.issuerUri, metadata: serverMetadata }).build()
+    const credentialRequestClient = CredentialRequestClientBuilder
+      .fromIssuanceInitiationURI({ uri: options.issuerUri, metadata: serverMetadata })
+      .withTokenFromResponse(accessToken)
+      .build()
 
-    // const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
-    //   proofInput,
-    //   credentialType: 'OpenBadgeCredential', // Needs to match a type from the Initiate Issance Request!
-    //   format: 'jwt_vc_json' // Allows us to override the format
-    // })
+    const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
+      proofInput,
+      credentialType: 'OpenBadgeCredential', // Needs to match a type from the Initiate Issance Request!
+      format: 'ldp_vc' // Allows us to override the format
+    })
 
+    this.logger.debug('Credential request response', credentialResponse)
 
   }
 }

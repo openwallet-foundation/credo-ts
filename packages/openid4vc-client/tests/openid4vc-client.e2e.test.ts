@@ -26,8 +26,8 @@ describe('OpenId4VcClient', () => {
 
     it('Test', async () => {
 
-        const issuerUri = 'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential&pre-authorized_code=tFDvFQesDCj0s4kCRYVnfcYcsFVVRCH4HfEDrv1pKn2'
-
+        // const issuerUri = 'openid-initiate-issuance://?issuer=https://localhost:3001&credential_type=AcademicAward&pre-authorized_code=igAGg3cz1t5XrNA5uTpCdsRRwzC6ggN2zaGvlUjn6UC'
+        const issuerUri = 'openid-initiate-issuance://?issuer=https://68f94666-7538-4c34-91c6-cb2af8384616.mock.pstmn.io&credential_type=OpenBadgeCredential&pre-authorized_code=hTcG9E_-cvSBRhQDxEfyPeAoVxRjXd5RFOeaMX4x0ng'
         const did = await agent.dids.create<KeyDidCreateOptions>({
             method: 'key',
             options: {
