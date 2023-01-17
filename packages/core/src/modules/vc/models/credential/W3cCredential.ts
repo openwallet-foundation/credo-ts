@@ -1,6 +1,6 @@
-import type { JsonObject } from '../../../../types'
 import type { CredentialSubjectOptions } from './CredentialSubject'
 import type { IssuerOptions } from './Issuer'
+import type { JsonObject } from '../../../../types'
 import type { ValidationOptions } from 'class-validator'
 
 import { Expose, Type } from 'class-transformer'

@@ -1,9 +1,9 @@
+import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 import type { IndyProposeProofFormat } from '../formats/indy/IndyProofFormat'
 import type { IndyRequestProofFormat, IndyVerifyProofFormat } from '../formats/indy/IndyProofFormatsServiceOptions'
 import type { ProofRequest } from '../formats/indy/models/ProofRequest'
 import type { IndyRequestedCredentialsOptions } from '../formats/indy/models/RequestedCredentials'
 import type { RetrievedCredentials } from '../formats/indy/models/RetrievedCredentials'
-import type { GetRequestedCredentialsConfig } from './GetRequestedCredentialsConfig'
 
 export interface ProposeProofFormats {
   // If you want to propose an indy proof without attributes or

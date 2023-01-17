@@ -1,5 +1,5 @@
-import type { AgentContext } from '../agent'
 import type { CacheRepository } from './CacheRepository'
+import type { AgentContext } from '../agent'
 
 import { LRUMap } from 'lru_map'
 

@@ -1,6 +1,6 @@
+import type { AgentDependencies } from './AgentDependencies'
 import type { Logger } from '../logger'
 import type { InitConfig } from '../types'
-import type { AgentDependencies } from './AgentDependencies'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'

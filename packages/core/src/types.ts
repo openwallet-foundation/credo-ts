@@ -176,7 +176,6 @@ export interface JsonObject {
   [property: string]: JsonValue
 }
 
-// Flatten an array of arrays
 /**
  * Flatten an array of arrays
  * @example

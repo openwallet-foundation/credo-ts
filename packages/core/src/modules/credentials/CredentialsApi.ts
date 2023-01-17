@@ -1,6 +1,4 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
-import type { CFsFromCPs, DeleteCredentialOptions } from './CredentialProtocolOptions'
+import type { CredentialFormatsFromProtocols, DeleteCredentialOptions } from './CredentialProtocolOptions'
 import type {
   AcceptCredentialOptions,
   AcceptCredentialOfferOptions,
@@ -21,6 +19,8 @@ import type {
 } from './CredentialsApiOptions'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
@@ -77,7 +77,7 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
   findById(credentialRecordId: string): Promise<CredentialExchangeRecord | null>
   deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
   update(credentialRecord: CredentialExchangeRecord): Promise<void>
-  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFsFromCPs<CPs>>>
+  getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CredentialFormatsFromProtocols<CPs>>>
 
   // DidComm Message Records
   findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>>
@@ -134,12 +134,12 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     ) as CredentialProtocolMap<CPs>
   }
 
-  private getProtocol<PVT extends keyof CredentialProtocolMap<CPs>>(protocolVersion: PVT) {
+  private getProtocol<PVT extends keyof CredentialProtocolMap<CPs>>(protocolVersion: PVT): CredentialProtocol {
     if (!this.credentialProtocolMap[protocolVersion]) {
       throw new AriesFrameworkError(`No credential protocol registered for protocol version ${protocolVersion}`)
     }
 
-    return this.credentialProtocolMap[protocolVersion]
+    return this.credentialProtocolMap[protocolVersion] as CredentialProtocol
   }
 
   /**
@@ -593,7 +593,9 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     return credentialRecord
   }
 
-  public async getFormatData(credentialRecordId: string): Promise<GetFormatDataReturn<CFsFromCPs<CPs>>> {
+  public async getFormatData(
+    credentialRecordId: string
+  ): Promise<GetFormatDataReturn<CredentialFormatsFromProtocols<CPs>>> {
     const credentialRecord = await this.getById(credentialRecordId)
     const service = this.getProtocol(credentialRecord.protocolVersion)
 
@@ -664,25 +666,31 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   public async findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
-    return service.findProposalMessage(this.agentContext, credentialExchangeId)
+    return service.findProposalMessage(
+      this.agentContext,
+      credentialExchangeId
+    ) as FindCredentialProposalMessageReturn<CPs>
   }
 
   public async findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
-    return service.findOfferMessage(this.agentContext, credentialExchangeId)
+    return service.findOfferMessage(this.agentContext, credentialExchangeId) as FindCredentialOfferMessageReturn<CPs>
   }
 
   public async findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
-    return service.findRequestMessage(this.agentContext, credentialExchangeId)
+    return service.findRequestMessage(
+      this.agentContext,
+      credentialExchangeId
+    ) as FindCredentialRequestMessageReturn<CPs>
   }
 
   public async findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CPs>> {
     const service = await this.getServiceForCredentialExchangeId(credentialExchangeId)
 
-    return service.findCredentialMessage(this.agentContext, credentialExchangeId)
+    return service.findCredentialMessage(this.agentContext, credentialExchangeId) as FindCredentialMessageReturn<CPs>
   }
 
   private async getServiceForCredentialExchangeId(credentialExchangeId: string) {

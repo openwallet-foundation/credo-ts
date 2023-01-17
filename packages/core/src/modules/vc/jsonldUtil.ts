@@ -1,6 +1,6 @@
+import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './models'
 import type { JsonObject, JsonValue } from '../../types'
 import type { SingleOrArray } from '../../utils/type'
-import type { GetProofsOptions, GetProofsResult, GetTypeOptions } from './models'
 
 import { SECURITY_CONTEXT_URL } from './constants'
 import jsonld from './libraries/jsonld'

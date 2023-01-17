@@ -1,9 +1,9 @@
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { ProposeProofFormats } from '../../models/SharedOptions'
 import type { ProofExchangeRecord } from '../../repository'
 import type { ProofFormat, ProofFormatPayload } from '../ProofFormat'
 import type { ProofRequestOptions } from '../indy/models/ProofRequest'
-import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 
 export interface CreateRequestAttachmentOptions {
   id?: string

@@ -1,6 +1,6 @@
+import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
 
 import { Protocol } from '../../agent/models'
 

@@ -1,5 +1,5 @@
-import type { ProblemReportErrorOptions } from '../../problem-reports'
 import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
+import type { ProblemReportErrorOptions } from '../../problem-reports'
 
 import { ProblemReportError } from '../../problem-reports'
 import { ConnectionProblemReportMessage } from '../messages'
