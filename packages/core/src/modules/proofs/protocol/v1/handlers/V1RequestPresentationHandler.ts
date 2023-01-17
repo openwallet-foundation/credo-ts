@@ -3,11 +3,8 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../.
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
+import type { RetrievedCredentialOptions, RequestedCredentialReturn } from '../../../ProofServiceOptions'
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type {
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../../../models/ProofServiceOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
@@ -75,7 +72,7 @@ export class V1RequestPresentationHandler implements MessageHandler {
       throw new AriesFrameworkError('No proof request found.')
     }
 
-    const retrievedCredentials: FormatRetrievedCredentialOptions<[IndyProofFormat]> =
+    const retrievedCredentials: RetrievedCredentialOptions<[IndyProofFormat]> =
       await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
         proofRecord: record,
         config: {
@@ -87,10 +84,10 @@ export class V1RequestPresentationHandler implements MessageHandler {
       throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')
     }
 
-    const options: FormatRetrievedCredentialOptions<[IndyProofFormat]> = {
+    const options: RetrievedCredentialOptions<[IndyProofFormat]> = {
       proofFormats: retrievedCredentials.proofFormats,
     }
-    const requestedCredentials: FormatRequestedCredentialReturn<[IndyProofFormat]> =
+    const requestedCredentials: RequestedCredentialReturn<[IndyProofFormat]> =
       await this.proofService.autoSelectCredentialsForProofRequest(options)
 
     const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {

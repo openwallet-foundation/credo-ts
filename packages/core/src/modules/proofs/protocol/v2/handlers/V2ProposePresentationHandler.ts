@@ -2,12 +2,12 @@ import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofFormat } from '../../../formats/ProofFormat'
 import type {
   CreateProofRequestFromProposalOptions,
-  CreateRequestAsResponseOptions,
   ProofRequestFromProposalOptions,
-} from '../../../models/ProofServiceOptions'
+  CreateRequestAsResponseOptions,
+} from '../../../ProofServiceOptions'
+import type { ProofFormat } from '../../../formats/ProofFormat'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
@@ -46,7 +46,6 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
       return this.createRequest(proofRecord, messageContext)
     }
   }
-
   private async createRequest(
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>

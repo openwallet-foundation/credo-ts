@@ -1,5 +1,7 @@
 import type { DidDocumentService } from './service'
 
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { IProofType } from '@sphereon/ssi-types'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -32,6 +34,22 @@ interface DidDocumentOptions {
   keyAgreement?: Array<string | VerificationMethod>
   capabilityInvocation?: Array<string | VerificationMethod>
   capabilityDelegation?: Array<string | VerificationMethod>
+}
+
+export function keyTypeToProofType(key: Key): IProofType | undefined {
+  if (key.keyType === KeyType.Ed25519) {
+    return IProofType.Ed25519Signature2018
+  } else if (key.keyType === KeyType.Bls12381g2) {
+    return IProofType.BbsBlsSignatureProof2020
+  }
+}
+
+export function proofTypeToKeyType(proofType: IProofType): KeyType | undefined {
+  if (proofType === IProofType.Ed25519Signature2018) {
+    return KeyType.Ed25519
+  } else if (proofType === IProofType.BbsBlsSignatureProof2020) {
+    return KeyType.Bls12381g2
+  }
 }
 
 export class DidDocument {

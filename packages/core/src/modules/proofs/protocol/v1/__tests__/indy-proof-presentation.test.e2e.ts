@@ -6,7 +6,7 @@ import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../t
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage/didcomm'
 import { ProofState } from '../../../models/ProofState'
-import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
+import { ProofExchangeRecord } from '../../../repository'
 import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
 
 describe('Present Proof', () => {
@@ -21,8 +21,8 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
+      'Faber Agent Proofs',
+      'Alice Agent Proofs'
     ))
   })
 

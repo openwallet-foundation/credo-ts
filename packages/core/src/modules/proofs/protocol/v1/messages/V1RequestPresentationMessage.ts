@@ -1,4 +1,4 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
+import type { ProofAttachmentFormat } from '../../../formats/ProofAttachmentFormat'
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -9,7 +9,7 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/indy/IndyProofFormat'
 import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 

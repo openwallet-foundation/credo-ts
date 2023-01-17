@@ -9,7 +9,7 @@ import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../t
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage/didcomm'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats/indy/IndyProofFormat'
 import { AttributeFilter } from '../../../formats/indy/models/AttributeFilter'
 import { PredicateType } from '../../../formats/indy/models/PredicateType'
 import { ProofAttributeInfo } from '../../../formats/indy/models/ProofAttributeInfo'

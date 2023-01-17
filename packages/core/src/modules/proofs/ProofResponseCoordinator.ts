@@ -65,7 +65,7 @@ export class ProofResponseCoordinator {
     }
 
     if (autoAccept === AutoAcceptProof.ContentApproved) {
-      return this.proofService.shouldAutoRespondToRequest(agentContext, proofRecord)
+      return await this.proofService.shouldAutoRespondToRequest(agentContext, proofRecord)
     }
 
     return false

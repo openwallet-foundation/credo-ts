@@ -44,8 +44,8 @@ describe('Present Proof', () => {
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
-      'Faber connection-less Proofs',
-      'Alice connection-less Proofs',
+      'Faber connection-less Proofs v2',
+      'Alice connection-less Proofs v2',
       AutoAcceptProof.Never
     )
     agents = [aliceAgent, faberAgent]

@@ -1,20 +1,14 @@
-import type { Agent, ConnectionRecord } from '../src'
-import type { AcceptProofProposalOptions } from '../src/modules/proofs/ProofsApiOptions'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { CredDefId } from 'indy-sdk'
+import type { AcceptProofPresentationOptions, Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
+import type { PresentationExchangeProofFormat } from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
+import type { IVerifiableCredential } from '@sphereon/ssi-types'
 
+import { AriesFrameworkError, ProofState } from '../src'
+import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from '../src/modules/proofs/__tests__/fixtures'
 import {
-  V2_INDY_PRESENTATION,
-  V2_INDY_PRESENTATION_PROPOSAL,
-  V2_INDY_PRESENTATION_REQUEST,
-  ProofExchangeRecord,
-  AttributeFilter,
-  PredicateType,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
-  ProofState,
-} from '../src'
-import { getGroupKeysFromIndyProofFormatData } from '../src/modules/proofs/__tests__/groupKeys'
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
+  V2_PRESENTATION_EXCHANGE_PRESENTATION,
+} from '../src/modules/proofs/formats/presentation-exchange/PresentationExchangeProofFormat'
 import {
   V2PresentationMessage,
   V2ProposalPresentationMessage,
@@ -22,24 +16,26 @@ import {
 } from '../src/modules/proofs/protocol/v2/messages'
 import { DidCommMessageRepository } from '../src/storage/didcomm'
 
-import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
+import { setupJsonLdProofsTest, waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credDefId: CredDefId
   let aliceConnection: ConnectionRecord
   let faberConnection: ConnectionRecord
   let faberProofExchangeRecord: ProofExchangeRecord
   let aliceProofExchangeRecord: ProofExchangeRecord
-  let presentationPreview: PresentationPreview
   let didCommMessageRepository: DidCommMessageRepository
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent indy proofs', 'Alice agent indy proofs'))
+    ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
+      'Faber agent',
+      'Alice agent'
+    ))
+
+    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
   })
 
   afterAll(async () => {
@@ -62,21 +58,19 @@ describe('Present Proof', () => {
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       proofFormats: {
-        indy: {
-          name: 'abc',
-          version: '1.0',
-          nonce: '947121108704767252195126',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+        presentationExchange: {
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
         },
       },
+      comment: 'V2 Presentation Exchange propose proof test',
     })
 
-    // Faber waits for a presentation proposal from Alice
+    // // Faber waits for a presentation proposal from Alice
     testLogger.test('Faber waits for a presentation proposal from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
-
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofExchangeRecord.id,
@@ -88,7 +82,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION_PROPOSAL,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL,
         },
       ],
       proposalsAttach: [
@@ -96,11 +90,14 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              input_descriptors: expect.any(Array),
+            },
           },
         },
       ],
       id: expect.any(String),
+      comment: 'V2 Presentation Exchange propose proof test',
     })
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
@@ -109,11 +106,17 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
     })
 
-    const acceptProposalOptions: AcceptProofProposalOptions = {
+    const acceptProposalOptions = {
+      config: {
+        name: 'proof-request',
+        version: '1.0',
+      },
       proofRecordId: faberProofExchangeRecord.id,
     }
 
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
+      threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
@@ -132,10 +135,11 @@ describe('Present Proof', () => {
 
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      id: expect.any(String),
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION_REQUEST,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -143,14 +147,34 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              options: {
+                challenge: expect.any(String),
+              },
+              presentationDefinition: {
+                id: expect.any(String),
+                input_descriptors: [
+                  {
+                    id: expect.any(String),
+                    name: expect.any(String),
+                    group: expect.any(Array),
+                    schema: expect.any(Array),
+                    constraints: {
+                      fields: expect.any(Array),
+                    },
+                  },
+                ],
+              },
+            },
           },
         },
       ],
+    })
+    expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.any(String),
-      thread: {
-        threadId: faberProofExchangeRecord.threadId,
-      },
+      threadId: faberProofExchangeRecord.threadId,
+      state: ProofState.RequestReceived,
+      protocolVersion: 'v2',
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -162,15 +186,15 @@ describe('Present Proof', () => {
         filterByPresentationPreview: true,
       },
     })
-
     faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    await aliceAgent.proofs.acceptRequest({
+    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
+      proofFormats: { presentationExchange: requestedCredentials.proofFormats.presentationExchange },
     })
 
     // Faber waits for the presentation from Alice
@@ -187,7 +211,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -195,7 +219,11 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              '@context': expect.any(Array),
+              type: expect.any(Array),
+              verifiableCredential: expect.any(Array),
+            },
           },
         },
       ],
@@ -225,7 +253,6 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -233,149 +260,16 @@ describe('Present Proof', () => {
       isVerified: true,
       state: ProofState.PresentationReceived,
     })
-
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       state: ProofState.Done,
     })
-
-    const proposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofExchangeRecord.id)
-    const requestMessage = await aliceAgent.proofs.findRequestMessage(aliceProofExchangeRecord.id)
-    const presentationMessage = await aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
-
-    expect(proposalMessage).toBeInstanceOf(V2ProposalPresentationMessage)
-    expect(requestMessage).toBeInstanceOf(V2RequestPresentationMessage)
-    expect(presentationMessage).toBeInstanceOf(V2PresentationMessage)
-
-    const formatData = await aliceAgent.proofs.getFormatData(aliceProofExchangeRecord.id)
-
-    // eslint-disable-next-line prefer-const
-    let { proposeKey1, proposeKey2, requestKey1, requestKey2 } = getGroupKeysFromIndyProofFormatData(formatData)
-
-    expect(formatData).toMatchObject({
-      proposal: {
-        indy: {
-          name: 'abc',
-          version: '1.0',
-          nonce: '947121108704767252195126',
-          requested_attributes: {
-            0: {
-              name: 'name',
-            },
-            [proposeKey1]: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credDefId,
-                },
-              ],
-            },
-          },
-          requested_predicates: {
-            [proposeKey2]: {
-              name: 'age',
-              p_type: '>=',
-              p_value: 50,
-              restrictions: [
-                {
-                  cred_def_id: credDefId,
-                },
-              ],
-            },
-          },
-        },
-      },
-      request: {
-        indy: {
-          name: 'abc',
-          version: '1.0',
-          nonce: '947121108704767252195126',
-          requested_attributes: {
-            0: {
-              name: 'name',
-            },
-            [requestKey1]: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credDefId,
-                },
-              ],
-            },
-          },
-          requested_predicates: {
-            [requestKey2]: {
-              name: 'age',
-              p_type: '>=',
-              p_value: 50,
-              restrictions: [
-                {
-                  cred_def_id: credDefId,
-                },
-              ],
-            },
-          },
-        },
-      },
-      presentation: {
-        indy: {
-          proof: {
-            proofs: [
-              {
-                primary_proof: expect.any(Object),
-                non_revoc_proof: null,
-              },
-            ],
-            aggregated_proof: {
-              c_hash: expect.any(String),
-              c_list: expect.any(Array),
-            },
-          },
-          requested_proof: expect.any(Object),
-          identifiers: expect.any(Array),
-        },
-      },
-    })
   })
 
   test('Faber starts with proof request to Alice', async () => {
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-      image_0: new ProofAttributeInfo({
-        name: 'image_0',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    // Sample predicates
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       state: ProofState.RequestReceived,
     })
@@ -386,9 +280,15 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
       connectionId: faberConnection.id,
       proofFormats: {
-        indy: {
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+        presentationExchange: {
+          options: {
+            challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            domain: '',
+          },
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
         },
       },
     })
@@ -404,10 +304,11 @@ describe('Present Proof', () => {
 
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      id: expect.any(String),
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION_REQUEST,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -415,16 +316,33 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              options: {
+                challenge: expect.any(String),
+                domain: expect.any(String),
+              },
+              presentationDefinition: {
+                id: expect.any(String),
+                input_descriptors: [
+                  {
+                    id: expect.any(String),
+                    name: expect.any(String),
+                    group: expect.any(Array),
+                    schema: expect.any(Array),
+                    constraints: {
+                      fields: expect.any(Array),
+                    },
+                  },
+                ],
+              },
+            },
           },
         },
       ],
-      id: expect.any(String),
     })
-
-    expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
+      id: expect.any(String),
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
       protocolVersion: 'v2',
     })
@@ -439,17 +357,20 @@ describe('Present Proof', () => {
       },
     })
 
+    const acceptPresentationOptions = {
+      proofRecordId: aliceProofExchangeRecord.id,
+      proofFormats: { presentationExchange: requestedCredentials.proofFormats.presentationExchange },
+    }
+
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-    })
+    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
-    // Faber waits until it receives a presentation from Alice
+    // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
@@ -463,7 +384,7 @@ describe('Present Proof', () => {
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
         },
       ],
       presentationsAttach: [
@@ -471,7 +392,11 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              '@context': expect.any(Array),
+              type: expect.any(Array),
+              verifiableCredential: expect.any(Array),
+            },
           },
         },
       ],
@@ -492,16 +417,15 @@ describe('Present Proof', () => {
       state: ProofState.Done,
     })
 
-    // Faber accepts the presentation
-    testLogger.test('Faber accept the presentation from Alice')
+    // Faber accepts the presentation provided by Alice
+    testLogger.test('Faber accepts the presentation provided by Alice')
     await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
 
-    // Alice waits until she receives a presentation acknowledgement
-    testLogger.test('Alice waits for acceptance by Faber')
+    // Alice waits until she received a presentation acknowledgement
+    testLogger.test('Alice waits until she receives a presentation acknowledgement')
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
@@ -511,7 +435,6 @@ describe('Present Proof', () => {
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
@@ -520,41 +443,8 @@ describe('Present Proof', () => {
     })
   })
 
-  test('Alice provides credentials via call to getRequestedCredentials', async () => {
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-      image_0: new ProofAttributeInfo({
-        name: 'image_0',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    // Sample predicates
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+  test('Faber starts with proof request to Alice - call getRequestedCredentialsForProofRequest', async () => {
+    let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       state: ProofState.RequestReceived,
     })
 
@@ -564,84 +454,15 @@ describe('Present Proof', () => {
       protocolVersion: 'v2',
       connectionId: faberConnection.id,
       proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '1298236324864',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
-        },
-      },
-    })
-
-    // Alice waits for presentation request from Faber
-    testLogger.test('Alice waits for presentation request from Faber')
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    const retrievedCredentials = await faberAgent.proofs.getRequestedCredentialsForProofRequest({
-      proofRecordId: faberProofExchangeRecord.id,
-      config: {},
-    })
-
-    if (retrievedCredentials.proofFormats.indy) {
-      const keys = Object.keys(retrievedCredentials.proofFormats.indy?.requestedAttributes)
-      expect(keys).toContain('name')
-      expect(keys).toContain('image_0')
-    } else {
-      fail()
-    }
-  })
-
-  test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-      image_0: new ProofAttributeInfo({
-        name: 'image_0',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    // Sample predicates
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
-    })
-
-    // Faber sends a presentation request to Alice
-    testLogger.test('Faber sends a presentation request to Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
-      protocolVersion: 'v2',
-      connectionId: faberConnection.id,
-      proofFormats: {
-        indy: {
-          name: 'proof-request',
-          version: '1.0',
-          nonce: '1298236324864',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+        presentationExchange: {
+          options: {
+            challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            domain: '',
+          },
+          presentationDefinition: {
+            id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+            input_descriptors: [TEST_INPUT_DESCRIPTORS_CITIZENSHIP],
+          },
         },
       },
     })
@@ -657,10 +478,11 @@ describe('Present Proof', () => {
 
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
+      id: expect.any(String),
       formats: [
         {
           attachmentId: expect.any(String),
-          format: V2_INDY_PRESENTATION_REQUEST,
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION_REQUEST,
         },
       ],
       requestPresentationsAttach: [
@@ -668,36 +490,143 @@ describe('Present Proof', () => {
           id: expect.any(String),
           mimeType: 'application/json',
           data: {
-            base64: expect.any(String),
+            json: {
+              options: {
+                challenge: expect.any(String),
+                domain: expect.any(String),
+              },
+              presentationDefinition: {
+                id: expect.any(String),
+                input_descriptors: [
+                  {
+                    id: expect.any(String),
+                    name: expect.any(String),
+                    group: expect.any(Array),
+                    schema: expect.any(Array),
+                    constraints: {
+                      fields: expect.any(Array),
+                    },
+                  },
+                ],
+              },
+            },
           },
         },
       ],
-      id: expect.any(String),
     })
-
-    expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
+      id: expect.any(String),
+      threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
+    // Alice retrieves the requested credentials and accepts the presentation request
+    testLogger.test('Alice accepts presentation request from Faber')
+
+    const requestedCredentials = await aliceAgent.proofs.getRequestedCredentialsForProofRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+      config: {
+        filterByPresentationPreview: true,
+      },
+    })
+    let credential: IVerifiableCredential[]
+    if (
+      requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential &&
+      requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential.length > 0
+    ) {
+      credential = requestedCredentials.proofFormats.presentationExchange?.formats.verifiableCredential
+    } else {
+      throw new AriesFrameworkError('No credential found in getRequestedCredentialsForProofRequest')
+    }
+
+    const acceptPresentationOptions: AcceptProofPresentationOptions<[PresentationExchangeProofFormat]> = {
+      proofRecordId: aliceProofExchangeRecord.id,
+      proofFormats: {
+        presentationExchange: {
+          formats: credential,
+        },
+      },
+    }
+
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: ProofState.PresentationReceived,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
-    aliceProofExchangeRecord = await aliceAgent.proofs.sendProblemReport(
-      aliceProofExchangeRecord.id,
-      'Problem inside proof request'
-    )
+    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest(acceptPresentationOptions)
 
+    // Faber waits for the presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
+    const presentation = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
+      associatedRecordId: faberProofExchangeRecord.id,
+      messageClass: V2PresentationMessage,
+    })
+
+    expect(presentation).toMatchObject({
+      type: 'https://didcomm.org/present-proof/2.0/presentation',
+      formats: [
+        {
+          attachmentId: expect.any(String),
+          format: V2_PRESENTATION_EXCHANGE_PRESENTATION,
+        },
+      ],
+      presentationsAttach: [
+        {
+          id: expect.any(String),
+          mimeType: 'application/json',
+          data: {
+            json: {
+              '@context': expect.any(Array),
+              type: expect.any(Array),
+              verifiableCredential: expect.any(Array),
+            },
+          },
+        },
+      ],
+      id: expect.any(String),
+      thread: {
+        threadId: faberProofExchangeRecord.threadId,
+      },
+    })
+    expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      threadId: faberProofExchangeRecord.threadId,
+      state: ProofState.PresentationReceived,
       protocolVersion: 'v2',
+    })
+
+    aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: ProofState.Done,
+    })
+
+    // Faber accepts the presentation provided by Alice
+    testLogger.test('Faber accepts the presentation provided by Alice')
+    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
+
+    // Alice waits until she received a presentation acknowledgement
+    testLogger.test('Alice waits until she receives a presentation acknowledgement')
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+
+    expect(faberProofExchangeRecord).toMatchObject({
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: aliceProofExchangeRecord.threadId,
+      connectionId: expect.any(String),
+      isVerified: true,
+      state: ProofState.PresentationReceived,
+    })
+
+    expect(aliceProofExchangeRecord).toMatchObject({
+      id: expect.any(String),
+      createdAt: expect.any(Date),
+      threadId: faberProofExchangeRecord.threadId,
+      connectionId: expect.any(String),
+      state: ProofState.Done,
     })
   })
 })

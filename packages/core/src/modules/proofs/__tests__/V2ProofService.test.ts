@@ -14,8 +14,9 @@ import { ConnectionService, DidExchangeState } from '../../connections'
 import { IndyLedgerService } from '../../ledger/services/IndyLedgerService'
 import { ProofEventTypes } from '../ProofEvents'
 import { PresentationProblemReportReason } from '../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_REQUEST } from '../formats'
 import { IndyProofFormatService } from '../formats/indy/IndyProofFormatService'
+import { PresentationExchangeProofFormatService } from '../formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { ProofState } from '../models/ProofState'
 import { V2ProofService } from '../protocol/v2/V2ProofService'
 import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from '../protocol/v2/messages'
@@ -38,7 +39,9 @@ const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const IndyLedgerServiceMock = IndyLedgerService as jest.Mock<IndyLedgerService>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const indyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
+const IndyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
+const PresentationExchangeFormatServiceMock =
+  PresentationExchangeProofFormatService as jest.Mock<PresentationExchangeProofFormatService>
 
 const connection = getMockConnection({
   id: '123',
@@ -104,6 +107,7 @@ describe('V2ProofService', () => {
   let connectionService: ConnectionService
   let didCommMessageRepository: DidCommMessageRepository
   let indyProofFormatService: IndyProofFormatService
+  let presentationExchangeFormatService: PresentationExchangeProofFormatService
   let agentContext: AgentContext
 
   beforeEach(() => {
@@ -114,7 +118,8 @@ describe('V2ProofService', () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionService = new connectionServiceMock()
     didCommMessageRepository = new didCommMessageRepositoryMock()
-    indyProofFormatService = new indyProofFormatServiceMock()
+    indyProofFormatService = new IndyProofFormatServiceMock()
+    presentationExchangeFormatService = new PresentationExchangeFormatServiceMock()
 
     proofService = new V2ProofService(
       agentConfig,
@@ -123,6 +128,7 @@ describe('V2ProofService', () => {
       didCommMessageRepository,
       eventEmitter,
       indyProofFormatService,
+      presentationExchangeFormatService,
       wallet
     )
 

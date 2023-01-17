@@ -3,23 +3,25 @@ import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidCommMessageRepository } from '../../../storage'
 import type {
   CreateRequestAsResponseOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../models/SharedOptions'
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
+} from '../ProofServiceOptions'
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
 import type { ProofFormat } from './ProofFormat'
-import type { IndyProofFormat } from './indy/IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServiceOptions'
-import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
-  CreatePresentationFormatsOptions,
-  FormatCreateProofProposalOptions,
-  CreateRequestOptions,
+  FormatPresentationAttachment,
+  FormatCreateProofRequestOptions,
   FormatCreatePresentationOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
-} from './models/ProofFormatServiceOptions'
+  FormatCreateProofProposalOptions,
+  FormatGetRequestedCredentials,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
+  FormatProofRequestOptions,
+} from './ProofFormatServiceOptions'
+
+import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
+import { JsonTransformer } from '../../../utils/JsonTransformer'
 
 /**
  * This abstract class is the base class for any proof format
@@ -42,29 +44,29 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
 
   abstract createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat>
 
-  abstract processProposal(options: ProcessProposalOptions): Promise<void>
+  abstract processProposal(options: FormatProcessProposalOptions): Promise<void>
 
-  abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
+  abstract createRequest(options: FormatCreateProofRequestOptions): Promise<ProofAttachmentFormat>
 
-  abstract processRequest(options: ProcessRequestOptions): Promise<void>
+  abstract processRequest(options: FormatProcessRequestOptions): Promise<void>
 
   abstract createPresentation(
     agentContext: AgentContext,
     options: FormatCreatePresentationOptions<PF>
   ): Promise<ProofAttachmentFormat>
 
-  abstract processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean>
+  abstract processPresentation(agentContext: AgentContext, options: FormatProcessPresentationOptions): Promise<boolean>
 
-  abstract createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats>
+  abstract createProofRequestFromProposal(options: FormatPresentationAttachment): Promise<FormatProofRequestOptions>
 
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
-  ): Promise<FormatRetrievedCredentialOptions<[PF]>>
+    options: FormatGetRequestedCredentials
+  ): Promise<RetrievedCredentialOptions<[PF]>>
 
   public abstract autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[PF]>
-  ): Promise<FormatRequestedCredentialReturn<[PF]>>
+    options: RetrievedCredentialOptions<[PF]>
+  ): Promise<RequestedCredentialReturn<[PF]>>
 
   abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],
@@ -73,7 +75,24 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
 
   abstract supportsFormat(formatIdentifier: string): boolean
 
-  abstract createRequestAsResponse(
-    options: CreateRequestAsResponseOptions<[IndyProofFormat]>
-  ): Promise<ProofAttachmentFormat>
+  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions<[PF]>): Promise<ProofAttachmentFormat>
+
+  /**
+   * Returns an object of type {@link Attachment} for use in proof exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  protected getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        json: JsonTransformer.toJSON(data),
+      }),
+    })
+
+    return attachment
+  }
 }

@@ -4,9 +4,18 @@ import type { DocumentLoaderResult } from '../libraries/jsonld'
 
 import jsonld from '../libraries/jsonld'
 
-import { BBS_V1, EXAMPLES_V1, ODRL, SCHEMA_ORG, VACCINATION_V1 } from './contexts'
+import {
+  BBS_V1,
+  EXAMPLES_V1,
+  ODRL,
+  PRESENTATION_SUBMISSION,
+  SCHEMA_ORG,
+  VACCINATION_V1,
+  VACCINATION_V2,
+} from './contexts'
 import { X25519_V1 } from './contexts/X25519_v1'
 import { CITIZENSHIP_V1 } from './contexts/citizenship_v1'
+import { CITIZENSHIP_V2 } from './contexts/citizenship_v2'
 import { CREDENTIALS_V1 } from './contexts/credentials_v1'
 import { DID_V1 } from './contexts/did_v1'
 import { ED25519_V1 } from './contexts/ed25519_v1'
@@ -89,9 +98,12 @@ export const DOCUMENTS = {
   'https://w3id.org/did/v1': DID_V1,
   'https://www.w3.org/ns/did/v1': DID_V1,
   'https://w3id.org/citizenship/v1': CITIZENSHIP_V1,
+  'https://w3id.org/citizenship/v2': CITIZENSHIP_V2,
   'https://www.w3.org/ns/odrl.jsonld': ODRL,
   'http://schema.org/': SCHEMA_ORG,
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
+  'https://w3id.org/vaccination/v2': VACCINATION_V2,
+  'https://identity.foundation/presentation-exchange/submission/v1': PRESENTATION_SUBMISSION,
 }
 
 async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {

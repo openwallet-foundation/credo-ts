@@ -2,11 +2,12 @@ import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 
-import { Protocol } from '../../agent/models'
+import { Protocol } from '../../agent/models/features/Protocol'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
+import { PresentationExchangeProofFormatService } from './formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { V1ProofService } from './protocol/v1'
 import { V2ProofService } from './protocol/v2'
 import { ProofRepository } from './repository'
@@ -36,9 +37,6 @@ export class ProofsModule implements Module {
     // Repositories
     dependencyManager.registerSingleton(ProofRepository)
 
-    // Proof Formats
-    dependencyManager.registerSingleton(IndyProofFormatService)
-
     // Features
     featureRegistry.register(
       new Protocol({
@@ -46,5 +44,15 @@ export class ProofsModule implements Module {
         roles: ['verifier', 'prover'],
       })
     )
+    featureRegistry.register(
+      new Protocol({
+        id: 'https://didcomm.org/present-proof/2.0',
+        roles: ['verifier', 'prover'],
+      })
+    )
+
+    // Proof Formats
+    dependencyManager.registerSingleton(IndyProofFormatService)
+    dependencyManager.registerSingleton(PresentationExchangeProofFormatService)
   }
 }

@@ -6,11 +6,6 @@ import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { MediationRecipientService } from '../../../routing/services/MediationRecipientService'
 import type { RoutingService } from '../../../routing/services/RoutingService'
 import type { ProofResponseCoordinator } from '../../ProofResponseCoordinator'
-import type { ProofFormatServiceMap } from '../../formats'
-import type { ProofFormat } from '../../formats/ProofFormat'
-import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { CreateProblemReportOptions } from '../../formats/models/ProofFormatServiceOptions'
-import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import type {
   CreateAckOptions,
   CreatePresentationOptions,
@@ -20,12 +15,16 @@ import type {
   CreateRequestAsResponseOptions,
   CreateRequestOptions,
   FormatDataMessagePayload,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
   GetFormatDataReturn,
   GetRequestedCredentialsForProofRequestOptions,
   ProofRequestFromProposalOptions,
-} from '../../models/ProofServiceOptions'
+} from '../../ProofServiceOptions'
+import type { CreateProblemReportOptions, ProofFormatServiceMap } from '../../formats'
+import type { ProofFormat } from '../../formats/ProofFormat'
+import type { ProofFormatService } from '../../formats/ProofFormatService'
+import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
 
 import { inject, Lifecycle, scoped } from 'tsyringe'
 
@@ -40,8 +39,8 @@ import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { ProofService } from '../../ProofService'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../formats/ProofFormatConstants'
 import { IndyProofFormatService } from '../../formats/indy/IndyProofFormatService'
+import { PresentationExchangeProofFormatService } from '../../formats/presentation-exchange/PresentationExchangeProofFormatService'
 import { ProofState } from '../../models/ProofState'
 import { ProofExchangeRecord, ProofRepository } from '../../repository'
 
@@ -68,12 +67,15 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     didCommMessageRepository: DidCommMessageRepository,
     eventEmitter: EventEmitter,
     indyProofFormatService: IndyProofFormatService,
+    presentationExchangeFormatService: PresentationExchangeProofFormatService,
+
     @inject(InjectionSymbols.Wallet) wallet: Wallet
   ) {
     super(agentConfig, proofRepository, connectionService, didCommMessageRepository, wallet, eventEmitter)
     this.wallet = wallet
+
     // Dynamically build format service map. This will be extracted once services are registered dynamically
-    this.formatServiceMap = [indyProofFormatService].reduce(
+    this.formatServiceMap = [indyProofFormatService, presentationExchangeFormatService].reduce(
       (formatServiceMap, formatService) => ({
         ...formatServiceMap,
         [formatService.formatKey]: formatService,
@@ -421,7 +423,6 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
     // assert state
     options.proofRecord.assertState(ProofState.RequestReceived)
-
     const proofRequest = await this.didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -430,12 +431,27 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     const formats = []
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
-      formats.push(
-        await service.createPresentation(agentContext, {
-          attachment: proofRequest.getAttachmentByFormatIdentifier(V2_INDY_PRESENTATION_REQUEST),
-          proofFormats: options.proofFormats,
-        })
-      )
+
+      if (!service) {
+        throw new AriesFrameworkError(`service ${service} not supported`)
+      }
+      for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
+        try {
+          formats.push(
+            await service.createPresentation(agentContext, {
+              attachment: proofRequest.getAttachmentByFormatIdentifier(attachmentFormat.format.format),
+              proofFormats: options.proofFormats,
+            })
+          )
+        } catch (e) {
+          if (e instanceof AriesFrameworkError) {
+            throw new V2PresentationProblemReportError(e.message, {
+              problemCode: PresentationProblemReportReason.Abandoned,
+            })
+          }
+          throw e
+        }
+      }
     }
 
     const presentationMessage = new V2PresentationMessage({
@@ -683,16 +699,18 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       messageClass: V2ProposalPresentationMessage,
     })
 
-    if (!proposal) return false
-
+    if (!proposal) {
+      return false
+    }
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
-    if (!request) return false
-
-    MessageValidator.validateSync(proposal)
+    if (!request) {
+      return true
+    }
+    await MessageValidator.validateSync(proposal)
 
     const proposalAttachments = proposal.getAttachmentFormats()
     const requestAttachments = request.getAttachmentFormats()
@@ -702,7 +720,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
       equalityResults.push(service?.proposalAndRequestAreEqual(proposalAttachments, requestAttachments))
     }
-    return true
+    return equalityResults.every((x) => x === true)
   }
 
   public async shouldAutoRespondToRequest(
@@ -715,14 +733,13 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     })
 
     if (!proposal) {
-      return false
+      return true
     }
 
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
-
     if (!request) {
       throw new AriesFrameworkError(
         `Expected to find a request message for ProofExchangeRecord with id ${proofRecord.id}`
@@ -862,7 +879,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
     options: GetRequestedCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
+  ): Promise<RetrievedCredentialOptions<PFs>> {
     const requestMessage = await this.didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: options.proofRecord.id,
       messageClass: V2RequestPresentationMessage,
@@ -898,15 +915,14 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<PFs>
-  ): Promise<FormatRequestedCredentialReturn<PFs>> {
+    options: RetrievedCredentialOptions<PFs>
+  ): Promise<RequestedCredentialReturn<PFs>> {
     let returnValue = {
       proofFormats: {},
     }
-
     for (const [id] of Object.entries(options.proofFormats)) {
-      const service = this.formatServiceMap[id]
-      const credentials = await service.autoSelectCredentialsForProofRequest(options)
+      const formatService = this.formatServiceMap[id]
+      const credentials = await formatService.autoSelectCredentialsForProofRequest(options)
       returnValue = { ...returnValue, ...credentials }
     }
 

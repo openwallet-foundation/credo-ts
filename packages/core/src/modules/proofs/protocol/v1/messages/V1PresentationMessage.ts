@@ -1,4 +1,4 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
+import type { ProofAttachmentFormat } from '../../../formats/ProofAttachmentFormat'
 import type { IndyProof } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -8,7 +8,7 @@ import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION } from '../../../formats/indy/IndyProofFormat'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'

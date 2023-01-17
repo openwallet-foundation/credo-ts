@@ -926,7 +926,6 @@ export class V2CredentialProtocol<
       credentialRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
-
     // Handle always / never cases
     if (autoAccept === AutoAcceptCredential.Always) return true
     if (autoAccept === AutoAcceptCredential.Never) return false

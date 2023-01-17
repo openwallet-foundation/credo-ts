@@ -358,6 +358,15 @@ export class W3cCredentialService {
     const result = await this.w3cCredentialRepository.findSingleByQuery(agentContext, query)
     return result?.credential
   }
+  public getProofTypeByVerificationMethodType(verificationMethodType: string): string {
+    const suite = this.signatureSuiteRegistry.getByVerificationMethodType(verificationMethodType)
+
+    if (!suite) {
+      throw new AriesFrameworkError(`No suite found for verification method type ${verificationMethodType}}`)
+    }
+
+    return suite.proofType
+  }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cVerifiableCredential) {
     const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)

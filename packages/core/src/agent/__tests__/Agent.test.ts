@@ -263,10 +263,11 @@ describe('Agent', () => {
         'https://didcomm.org/messagepickup/2.0',
         'https://didcomm.org/out-of-band/1.1',
         'https://didcomm.org/present-proof/1.0',
+        'https://didcomm.org/present-proof/2.0',
         'https://didcomm.org/revocation_notification/1.0',
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(14)
+    expect(protocols.length).toEqual(15)
   })
 })

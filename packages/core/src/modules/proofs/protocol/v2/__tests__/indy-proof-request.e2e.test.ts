@@ -7,7 +7,7 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from '../../../formats'
 import { ProofState } from '../../../models/ProofState'
 import { V2RequestPresentationMessage } from '../messages'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
@@ -24,8 +24,8 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
+      'Faber agent v2',
+      'Alice agent v2'
     ))
   })
 
@@ -97,7 +97,7 @@ describe('Present Proof', () => {
     })
   })
 
-  test(`Faber accepts the Proposal send by Alice`, async () => {
+  test(`Faber accepts the Proposal sent by Alice`, async () => {
     // Accept Proposal
     const acceptProposalOptions: AcceptProofProposalOptions = {
       proofRecordId: faberProofExchangeRecord.id,

@@ -2,26 +2,26 @@ import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
   CreateRequestAsResponseOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../../models/SharedOptions'
+  RequestedCredentialReturn,
+  RetrievedCredentialOptions,
+} from '../../ProofServiceOptions'
 import type { PresentationPreviewAttribute } from '../../protocol/v1/models'
-import type { ProofAttachmentFormat } from '../models/ProofAttachmentFormat'
+import type { ProofAttachmentFormat } from '../ProofAttachmentFormat'
 import type {
-  CreatePresentationFormatsOptions,
+  FormatPresentationAttachment,
   CreateProofAttachmentOptions,
   FormatCreateProofProposalOptions,
   CreateRequestAttachmentOptions,
-  CreateRequestOptions,
+  FormatCreateProofRequestOptions,
   FormatCreatePresentationOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
   VerifyProofOptions,
-} from '../models/ProofFormatServiceOptions'
+  FormatGetRequestedCredentials,
+  FormatProofRequestOptions,
+} from '../ProofFormatServiceOptions'
 import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -43,13 +43,9 @@ import { IndyHolderService, IndyVerifierService, IndyRevocationService } from '.
 import { IndyLedgerService } from '../../../ledger'
 import { ProofFormatSpec } from '../../models/ProofFormatSpec'
 import { PartialProof, PresentationPreview } from '../../protocol/v1/models'
-import {
-  V2_INDY_PRESENTATION_REQUEST,
-  V2_INDY_PRESENTATION_PROPOSAL,
-  V2_INDY_PRESENTATION,
-} from '../ProofFormatConstants'
 import { ProofFormatService } from '../ProofFormatService'
 
+import { V2_INDY_PRESENTATION, V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST } from './IndyProofFormat'
 import { InvalidEncodedValueError } from './errors/InvalidEncodedValueError'
 import { MissingIndyProofMessageError } from './errors/MissingIndyProofMessageError'
 import {
@@ -144,7 +140,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async processProposal(options: ProcessProposalOptions): Promise<void> {
+  public async processProposal(options: FormatProcessProposalOptions): Promise<void> {
     const proofProposalJson = options.proposal.attachment.getDataAsJson<ProofRequest>()
 
     // Assert attachment
@@ -183,7 +179,7 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat> {
+  public async createRequest(options: FormatCreateProofRequestOptions): Promise<ProofAttachmentFormat> {
     if (!options.formats.indy) {
       throw new AriesFrameworkError('Missing indy format to create proof request attachment format.')
     }
@@ -201,7 +197,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async processRequest(options: ProcessRequestOptions): Promise<void> {
+  public async processRequest(options: FormatProcessRequestOptions): Promise<void> {
     const proofRequestJson = options.requestAttachment.attachment.getDataAsJson<ProofRequest>()
 
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
@@ -256,7 +252,10 @@ export class IndyProofFormatService extends ProofFormatService {
     return { format, attachment }
   }
 
-  public async processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean> {
+  public async processPresentation(
+    agentContext: AgentContext,
+    options: FormatProcessPresentationOptions
+  ): Promise<boolean> {
     const requestFormat = options.formatAttachments.request.find(
       (x) => x.format.format === V2_INDY_PRESENTATION_REQUEST
     )
@@ -386,8 +385,8 @@ export class IndyProofFormatService extends ProofFormatService {
 
   public async getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
-  ): Promise<FormatRetrievedCredentialOptions<[IndyProofFormat]>> {
+    options: FormatGetRequestedCredentials
+  ): Promise<RetrievedCredentialOptions<[IndyProofFormat]>> {
     const retrievedCredentials = new RetrievedCredentials({})
     const { attachment, presentationProposal } = options
     const filterByNonRevocationRequirements = options.config?.filterByNonRevocationRequirements
@@ -501,8 +500,8 @@ export class IndyProofFormatService extends ProofFormatService {
   }
 
   public async autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[IndyProofFormat]>
-  ): Promise<FormatRequestedCredentialReturn<[IndyProofFormat]>> {
+    options: RetrievedCredentialOptions<[IndyProofFormat]>
+  ): Promise<RequestedCredentialReturn<[IndyProofFormat]>> {
     const { proofFormats } = options
     const indy = proofFormats.indy
 
@@ -596,7 +595,9 @@ export class IndyProofFormatService extends ProofFormatService {
     })
   }
 
-  public async createProofRequestFromProposal(options: CreatePresentationFormatsOptions): Promise<ProofRequestFormats> {
+  public async createProofRequestFromProposal(
+    options: FormatPresentationAttachment
+  ): Promise<FormatProofRequestOptions> {
     const proofRequestJson = options.presentationAttachment.getDataAsJson<ProofRequest>()
 
     const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)

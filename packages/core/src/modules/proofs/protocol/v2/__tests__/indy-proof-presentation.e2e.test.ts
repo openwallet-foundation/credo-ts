@@ -6,11 +6,7 @@ import type { PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
-import {
-  V2_INDY_PRESENTATION_PROPOSAL,
-  V2_INDY_PRESENTATION_REQUEST,
-  V2_INDY_PRESENTATION,
-} from '../../../formats/ProofFormatConstants'
+import { V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST, V2_INDY_PRESENTATION } from '../../../formats'
 import { ProofState } from '../../../models/ProofState'
 import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
@@ -28,8 +24,8 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
+      'Faber agent v2 present proof',
+      'Alice agent v2 present proof'
     ))
   })
 
