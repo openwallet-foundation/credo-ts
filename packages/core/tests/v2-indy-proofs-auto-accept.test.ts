@@ -193,13 +193,6 @@ describe('Auto accept present proof', () => {
           },
         },
       })
-
-      testLogger.test('Alice waits for request from Faber')
-      const { id: proofRecordId } = await waitForProofExchangeRecord(aliceAgent, {
-        state: ProofState.RequestReceived,
-      })
-      const { proofFormats } = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({ proofRecordId })
-
       await Promise.all([
         waitForProofExchangeRecord(faberAgent, { state: ProofState.Done }),
         waitForProofExchangeRecord(aliceAgent, { state: ProofState.Done }),
