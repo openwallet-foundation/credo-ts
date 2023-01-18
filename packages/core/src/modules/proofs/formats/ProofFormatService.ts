@@ -1,3 +1,16 @@
+import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
+import type { ProofFormat } from './ProofFormat'
+import type {
+  FormatCreatePresentationOptions,
+  FormatCreateProofProposalOptions,
+  FormatCreateProofRequestOptions,
+  FormatGetRequestedCredentials,
+  FormatPresentationAttachment,
+  FormatProcessPresentationOptions,
+  FormatProcessProposalOptions,
+  FormatProcessRequestOptions,
+  FormatProofRequestOptions,
+} from './ProofFormatServiceOptions'
 import type { AgentContext } from '../../../agent'
 import type { AgentConfig } from '../../../agent/AgentConfig'
 import type { DidCommMessageRepository } from '../../../storage'
@@ -6,19 +19,6 @@ import type {
   RequestedCredentialReturn,
   RetrievedCredentialOptions,
 } from '../ProofServiceOptions'
-import type { ProofAttachmentFormat } from './ProofAttachmentFormat'
-import type { ProofFormat } from './ProofFormat'
-import type {
-  FormatPresentationAttachment,
-  FormatCreateProofRequestOptions,
-  FormatCreatePresentationOptions,
-  FormatCreateProofProposalOptions,
-  FormatGetRequestedCredentials,
-  FormatProcessPresentationOptions,
-  FormatProcessProposalOptions,
-  FormatProcessRequestOptions,
-  FormatProofRequestOptions,
-} from './ProofFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -35,29 +35,34 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
   protected didCommMessageRepository: DidCommMessageRepository
   protected agentConfig: AgentConfig
 
-  abstract readonly formatKey: PF['formatKey']
+  public abstract readonly formatKey: PF['formatKey']
 
   public constructor(didCommMessageRepository: DidCommMessageRepository, agentConfig: AgentConfig) {
     this.didCommMessageRepository = didCommMessageRepository
     this.agentConfig = agentConfig
   }
 
-  abstract createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat>
+  public abstract createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat>
 
-  abstract processProposal(options: FormatProcessProposalOptions): Promise<void>
+  public abstract processProposal(options: FormatProcessProposalOptions): Promise<void>
 
-  abstract createRequest(options: FormatCreateProofRequestOptions): Promise<ProofAttachmentFormat>
+  public abstract createRequest(options: FormatCreateProofRequestOptions): Promise<ProofAttachmentFormat>
 
-  abstract processRequest(options: FormatProcessRequestOptions): Promise<void>
+  public abstract processRequest(options: FormatProcessRequestOptions): Promise<void>
 
-  abstract createPresentation(
+  public abstract createPresentation(
     agentContext: AgentContext,
     options: FormatCreatePresentationOptions<PF>
   ): Promise<ProofAttachmentFormat>
 
-  abstract processPresentation(agentContext: AgentContext, options: FormatProcessPresentationOptions): Promise<boolean>
+  public abstract processPresentation(
+    agentContext: AgentContext,
+    options: FormatProcessPresentationOptions
+  ): Promise<boolean>
 
-  abstract createProofRequestFromProposal(options: FormatPresentationAttachment): Promise<FormatProofRequestOptions>
+  public abstract createProofRequestFromProposal(
+    options: FormatPresentationAttachment
+  ): Promise<FormatProofRequestOptions>
 
   public abstract getRequestedCredentialsForProofRequest(
     agentContext: AgentContext,
@@ -68,14 +73,14 @@ export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
     options: RetrievedCredentialOptions<[PF]>
   ): Promise<RequestedCredentialReturn<[PF]>>
 
-  abstract proposalAndRequestAreEqual(
+  public abstract proposalAndRequestAreEqual(
     proposalAttachments: ProofAttachmentFormat[],
     requestAttachments: ProofAttachmentFormat[]
   ): boolean
 
-  abstract supportsFormat(formatIdentifier: string): boolean
+  public abstract supportsFormat(formatIdentifier: string): boolean
 
-  abstract createRequestAsResponse(options: CreateRequestAsResponseOptions<[PF]>): Promise<ProofAttachmentFormat>
+  public abstract createRequestAsResponse(options: CreateRequestAsResponseOptions<[PF]>): Promise<ProofAttachmentFormat>
 
   /**
    * Returns an object of type {@link Attachment} for use in proof exchange messages.

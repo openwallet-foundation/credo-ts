@@ -1,8 +1,11 @@
+import type { IndyRequestedCredentialsFormat } from './IndyProofFormat'
+import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
+import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { IndyRevocationInterval } from '../../../credentials'
 import type { ProofExchangeRecord } from '../../repository/ProofExchangeRecord'
-import type { ProofAttributeInfo } from '.././indy/models/ProofAttributeInfo'
-import type { ProofPredicateInfo } from '.././indy/models/ProofPredicateInfo'
+
+export type IndyPresentationProofFormat = IndyRequestedCredentialsFormat
 
 export interface IndyRequestProofFormat {
   name?: string

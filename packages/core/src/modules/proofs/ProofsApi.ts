@@ -1,5 +1,3 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
   RequestedCredentialReturn,
@@ -24,11 +22,16 @@ import type {
   GetRequestedCredentialsForProofRequest,
   NegotiateRequestOptions,
   NegotiateProposalOptions,
+  FindProofPresentationMessageReturn,
+  FindProofProposalMessageReturn,
+  FindProofRequestMessageReturn,
 } from './ProofsApiOptions'
 import type { ProofFormat } from './formats/ProofFormat'
 import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
 import type { PresentationExchangeProofFormat } from './formats/presentation-exchange/PresentationExchangeProofFormat'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 
 import { inject, injectable } from 'tsyringe'
 
@@ -95,9 +98,9 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>>
 
   // DidComm Message Records
-  findProposalMessage(proofRecordId: string): Promise<AgentMessage | null>
-  findRequestMessage(proofRecordId: string): Promise<AgentMessage | null>
-  findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null>
+  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>>
+  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>>
+  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>>
 }
 
 @injectable()
@@ -154,7 +157,7 @@ export class ProofsApi<
       throw new AriesFrameworkError(`No proof service registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion]
+    return this.serviceMap[protocolVersion] as ProofService<PFs>
   }
 
   /**
@@ -723,23 +726,22 @@ export class ProofsApi<
     await this.proofRepository.update(this.agentContext, proofRecord)
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<AgentMessage | null> {
+  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-
-    return await service.findProposalMessage(this.agentContext, proofRecordId)
+    return service.findProposalMessage(this.agentContext, proofRecordId) as FindProofProposalMessageReturn<PSs>
   }
 
-  public async findRequestMessage(proofRecordId: string): Promise<AgentMessage | null> {
+  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-    return await service.findRequestMessage(this.agentContext, proofRecordId)
+    return service.findRequestMessage(this.agentContext, proofRecordId) as FindProofRequestMessageReturn<PSs>
   }
 
-  public async findPresentationMessage(proofRecordId: string): Promise<AgentMessage | null> {
+  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-    return await service.findPresentationMessage(this.agentContext, proofRecordId)
+    return service.findPresentationMessage(this.agentContext, proofRecordId) as FindProofPresentationMessageReturn<PSs>
   }
 
   private registerMessageHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {

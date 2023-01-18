@@ -1,3 +1,5 @@
+import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
+import type { InputDescriptorsSchema } from './models'
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto/Key'
 import type { Query } from '../../../../storage/StorageService'
@@ -19,8 +21,6 @@ import type {
   FormatRequestedCredentialReturn,
   FormatRetrievedCredentialOptions,
 } from '../ProofFormatServiceOptions'
-import type { PresentationExchangeProofFormat } from './PresentationExchangeProofFormat'
-import type { InputDescriptorsSchema } from './models'
 import type {
   PresentationSignCallBackParams,
   PresentationSignOptions,

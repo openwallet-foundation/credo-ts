@@ -1,6 +1,3 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { FlatArray } from '../../types'
-import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 import type {
   CredentialFormat,
   CredentialFormatPayload,
@@ -11,6 +8,8 @@ import type { CredentialPreviewAttributeOptions } from './models'
 import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
 
 /**
  * Get the format data payload for a specific message from a list of CredentialFormat interfaces and a message
@@ -42,14 +41,15 @@ export type FormatDataMessagePayload<
 }
 
 /**
- * Infer an array of {@link CredentialFormatService} types based on a {@link CredentialProtocol}.
+ * Infer the {@link CredentialFormat} types based on an array of {@link CredentialProtocol} types.
  *
- * It does this by extracting the `CredentialFormatServices` generic from the `CredentialProtocol`.
+ * It does this by extracting the `CredentialFormatServices` generic from the `CredentialProtocol`, and
+ * then extracting the `CredentialFormat` generic from each of the `CredentialFormatService` types.
  *
  * @example
  * ```
  * // TheCredentialFormatServices is now equal to [IndyCredentialFormatService]
- * type TheCredentialFormatServices = ExtractCredentialFormatServices<V1CredentialProtocol>
+ * type TheCredentialFormatServices = CredentialFormatsFromProtocols<[V1CredentialProtocol]>
  * ```
  *
  * Because the `V1CredentialProtocol` is defined as follows:
@@ -58,26 +58,13 @@ export type FormatDataMessagePayload<
  * }
  * ```
  */
-export type ExtractCredentialFormatServices<Type> = Type extends CredentialProtocol<infer CredentialFormatServices>
-  ? CredentialFormatServices
+export type CredentialFormatsFromProtocols<Type extends CredentialProtocol[]> = Type[number] extends CredentialProtocol<
+  infer CredentialFormatServices
+>
+  ? CredentialFormatServices extends CredentialFormatService[]
+    ? ExtractCredentialFormats<CredentialFormatServices>
+    : never
   : never
-
-/**
- * Infer an array of {@link CredentialFormat} types based on an array of {@link CredentialProtocol} types.
- *
- * This is based on {@link ExtractCredentialFormatServices}, but allows to handle arrays.
- */
-export type CFsFromCPs<CPs extends CredentialProtocol[]> = _CFsFromCPs<CPs> extends CredentialFormat[]
-  ? _CFsFromCPs<CPs>
-  : []
-
-/**
- * Utility type for {@link ExtractCredentialFormatServicesFromCredentialProtocols} to reduce duplication.
- * Should not be used directly.
- */
-type _CFsFromCPs<CPs extends CredentialProtocol[]> = FlatArray<{
-  [CP in keyof CPs]: ExtractCredentialFormats<ExtractCredentialFormatServices<CPs[CP]>>
-}>[]
 
 /**
  * Get format data return value. Each key holds a mapping of credential format key to format data.

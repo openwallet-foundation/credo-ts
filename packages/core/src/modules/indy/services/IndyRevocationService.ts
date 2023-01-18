@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../agent'
 import type { IndyRevocationInterval } from '../../credentials'
 import type { RequestedCredentials } from '../../proofs/formats/indy/models/RequestedCredentials'
-import type { default as Indy, RevState, RevStates } from 'indy-sdk'
+import type { default as Indy, RevStates } from 'indy-sdk'
 
 import { AgentDependencies } from '../../../agent/AgentDependencies'
 import { InjectionSymbols } from '../../../constants'

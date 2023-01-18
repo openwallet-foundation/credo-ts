@@ -1,3 +1,4 @@
+import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
 import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
@@ -21,7 +22,6 @@ import type {
   FormatGetRequestedCredentials,
   FormatProofRequestOptions,
 } from '../ProofFormatServiceOptions'
-import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'

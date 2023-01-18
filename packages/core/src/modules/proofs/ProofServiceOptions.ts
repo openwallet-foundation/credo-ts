@@ -1,7 +1,7 @@
-import type { ConnectionRecord } from '../connections'
 import type { ProofFormat, ProofFormatPayload } from './formats'
 import type { AutoAcceptProof, GetRequestedCredentialsConfig } from './models'
 import type { ProofExchangeRecord } from './repository'
+import type { ConnectionRecord } from '../connections'
 
 export type FormatDataMessagePayload<
   CFs extends ProofFormat[] = ProofFormat[],

@@ -1,5 +1,5 @@
-import type { Query } from '../../storage/StorageService'
 import type { BasicMessageRecord } from './repository/BasicMessageRecord'
+import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'

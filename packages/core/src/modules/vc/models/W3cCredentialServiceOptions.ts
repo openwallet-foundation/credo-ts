@@ -1,10 +1,10 @@
-import type { JsonObject } from '../../../types'
-import type { SingleOrArray } from '../../../utils/type'
-import type { ProofPurpose } from '../proof-purposes/ProofPurpose'
 import type { W3cCredential } from './credential/W3cCredential'
 import type { W3cVerifiableCredential } from './credential/W3cVerifiableCredential'
 import type { W3cPresentation } from './presentation/W3cPresentation'
 import type { W3cVerifiablePresentation } from './presentation/W3cVerifiablePresentation'
+import type { JsonObject } from '../../../types'
+import type { SingleOrArray } from '../../../utils/type'
+import type { ProofPurpose } from '../proof-purposes/ProofPurpose'
 
 export interface SignCredentialOptions {
   credential: W3cCredential
