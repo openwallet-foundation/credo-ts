@@ -1,4 +1,4 @@
-import type {
+import {
   EncryptedMessage,
   WalletConfig,
   WalletCreateKeyOptions,
@@ -10,10 +10,12 @@ import type {
   Wallet,
   WalletExportImportConfig,
   WalletConfigRekey,
+  WalletInvalidKeyError,
 } from '@aries-framework/core'
 import type { Session } from 'aries-askar-test-shared'
 
 import {
+  WalletDuplicateError,
   JsonEncoder,
   KeyType,
   Buffer,
@@ -28,7 +30,6 @@ import {
   FileSystem,
   WalletNotFoundError,
 } from '@aries-framework/core'
-// eslint-disable-next-line import/order
 import { KeyAlgs, CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error
@@ -195,7 +196,19 @@ export class AskarWallet implements Wallet {
 
       // TODO: Master Secret creation (now part of IndyCredx/AnonCreds)
     } catch (error) {
-      const errorMessage = `Error creating wallet '${walletConfig.id}'`
+      // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
+      // And if we provide the very same wallet key, it will open it without any error
+      if (isAskarError(error) && (error.code === askarErrors.Encryption || error.code === askarErrors.Duplicate)) {
+        const errorMessage = `Wallet '${walletConfig.id}' already exists`
+        this.logger.debug(errorMessage)
+
+        throw new WalletDuplicateError(errorMessage, {
+          walletType: 'AskarWallet',
+          cause: error,
+        })
+      }
+
+      const errorMessage = `Error creating wallet '${walletConfig.id}'. CODE ${error.code}`
       this.logger.error(errorMessage, {
         error,
         errorMessage: error.message,
@@ -273,9 +286,14 @@ export class AskarWallet implements Wallet {
           walletType: 'AskarWallet',
           cause: error,
         })
+      } else if (isAskarError(error) && error.code === askarErrors.Encryption) {
+        const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
+        this.logger.debug(errorMessage)
+        throw new WalletInvalidKeyError(errorMessage, {
+          walletType: 'AskarWallet',
+          cause: error,
+        })
       }
-      // TODO Access error
-
       throw new WalletError(`Error opening wallet ${walletConfig.id}`, { cause: error })
     }
 

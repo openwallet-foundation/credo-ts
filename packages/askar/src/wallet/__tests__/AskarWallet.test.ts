@@ -1,6 +1,14 @@
 import type { WalletConfig } from '@aries-framework/core'
 
-import { KeyType, SigningProviderRegistry, TypedArrayEncoder, KeyDerivationMethod } from '@aries-framework/core'
+import {
+  WalletDuplicateError,
+  WalletNotFoundError,
+  WalletInvalidKeyError,
+  KeyType,
+  SigningProviderRegistry,
+  TypedArrayEncoder,
+  KeyDerivationMethod,
+} from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar, Store } from 'aries-askar-test-shared'
 
@@ -16,7 +24,7 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-describe('askarWallet', () => {
+describe('AskarWallet basic operations', () => {
   let askarWallet: AskarWallet
 
   const seed = 'sample-seed'
@@ -81,7 +89,7 @@ describe('askarWallet', () => {
   })
 })
 
-describe('AskarWallet key rotation', () => {
+describe('AskarWallet management', () => {
   let askarWallet: AskarWallet
 
   beforeEach(async () => {
@@ -94,24 +102,61 @@ describe('AskarWallet key rotation', () => {
     }
   })
 
-  // TODO: Open, Close (duplicate, non existant, invalid key, etc.)
+  test('Create', async () => {
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+
+    const initialKey = Store.generateRawKey()
+    const anotherKey = Store.generateRawKey()
+
+    // Create and open wallet
+    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create', key: initialKey })
+
+    // Close and try to re-create it
+    await askarWallet.close()
+    await expect(
+      askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create', key: anotherKey })
+    ).rejects.toThrowError(WalletDuplicateError)
+  })
+
+  test('Open', async () => {
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+
+    const initialKey = Store.generateRawKey()
+    const wrongKey = Store.generateRawKey()
+
+    // Create and open wallet
+    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Open', key: initialKey })
+
+    // Close and try to re-opening it with a wrong key
+    await askarWallet.close()
+    await expect(askarWallet.open({ ...walletConfig, id: 'AskarWallet Open', key: wrongKey })).rejects.toThrowError(
+      WalletInvalidKeyError
+    )
+
+    // Try to open a non existent wallet
+    await expect(
+      askarWallet.open({ ...walletConfig, id: 'AskarWallet Open - Non existent', key: initialKey })
+    ).rejects.toThrowError(WalletNotFoundError)
+  })
 
   test('Rotate key', async () => {
     askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
 
     const initialKey = Store.generateRawKey()
-    await askarWallet.createAndOpen({ ...walletConfig, id: 'keyRotation', key: initialKey })
+    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })
 
     await askarWallet.close()
 
     const newKey = Store.generateRawKey()
-    await askarWallet.rotateKey({ ...walletConfig, id: 'keyRotation', key: initialKey, rekey: newKey })
+    await askarWallet.rotateKey({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey, rekey: newKey })
 
     await askarWallet.close()
 
-    await expect(askarWallet.open({ ...walletConfig, id: 'keyRotation', key: initialKey })).rejects.toThrowError()
+    await expect(
+      askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })
+    ).rejects.toThrowError(WalletInvalidKeyError)
 
-    await askarWallet.open({ ...walletConfig, id: 'keyRotation', key: newKey })
+    await askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: newKey })
 
     await askarWallet.close()
   })
