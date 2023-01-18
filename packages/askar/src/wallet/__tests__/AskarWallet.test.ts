@@ -80,3 +80,39 @@ describe('askarWallet', () => {
     expect(askarWallet.masterSecretId).toEqual(walletConfig.id)
   })
 })
+
+describe('AskarWallet key rotation', () => {
+  let askarWallet: AskarWallet
+
+  beforeEach(async () => {
+    registerAriesAskar({ askar: new NodeJSAriesAskar() })
+  })
+
+  afterEach(async () => {
+    if (askarWallet) {
+      await askarWallet.delete()
+    }
+  })
+
+  // TODO: Open, Close (duplicate, non existant, invalid key, etc.)
+
+  test('Rotate key', async () => {
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+
+    const initialKey = Store.generateRawKey()
+    await askarWallet.createAndOpen({ ...walletConfig, id: 'keyRotation', key: initialKey })
+
+    await askarWallet.close()
+
+    const newKey = Store.generateRawKey()
+    await askarWallet.rotateKey({ ...walletConfig, id: 'keyRotation', key: initialKey, rekey: newKey })
+
+    await askarWallet.close()
+
+    await expect(askarWallet.open({ ...walletConfig, id: 'keyRotation', key: initialKey })).rejects.toThrowError()
+
+    await askarWallet.open({ ...walletConfig, id: 'keyRotation', key: newKey })
+
+    await askarWallet.close()
+  })
+})

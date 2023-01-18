@@ -14,6 +14,8 @@ import type {
 import type { Session } from 'aries-askar-test-shared'
 
 import {
+  JsonEncoder,
+  KeyType,
   Buffer,
   KeyDerivationMethod,
   AriesFrameworkError,
@@ -24,16 +26,22 @@ import {
   SigningProviderRegistry,
   TypedArrayEncoder,
   FileSystem,
+  WalletNotFoundError,
 } from '@aries-framework/core'
 // eslint-disable-next-line import/order
-import { CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
+import { KeyAlgs, CryptoBox, Store, StoreKeyMethod, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
 import { inject, injectable } from 'tsyringe'
 import { TextDecoder, TextEncoder } from 'util'
 
-import { encodeToBase58 } from '../../../core/src/utils/base58'
+import { encodeToBase58, decodeFromBase58 } from '../../../core/src/utils/base58'
+import { base64ToBase64URL } from '../../../core/src/utils/base64'
+import { askarErrors, isAskarError } from '../utils/askarError'
+import { askarKeyType } from '../utils/askarKeyTypes'
+
+import { JweEnvelope, JweRecipient } from './JweEnvelope'
 
 @injectable()
 export class AskarWallet implements Wallet {
@@ -250,13 +258,25 @@ export class AskarWallet implements Wallet {
         passKey: askarWalletConfig.passKey,
       })
 
+      if (rekey) {
+        await this.walletHandle.rekey({ passKey: rekey, keyMethod: StoreKeyMethod.Raw /* TODO */ })
+      }
       this._session = await this.walletHandle.openSession()
 
-      // TODO: key rotation
       this.walletConfig = walletConfig
     } catch (error) {
-      // TODO: Improve errors
-      throw new WalletError(error.message, { cause: error })
+      if (isAskarError(error) && error.code === askarErrors.NotFound) {
+        const errorMessage = `Wallet '${walletConfig.id}' not found`
+        this.logger.debug(errorMessage)
+
+        throw new WalletNotFoundError(errorMessage, {
+          walletType: 'AskarWallet',
+          cause: error,
+        })
+      }
+      // TODO Access error
+
+      throw new WalletError(`Error opening wallet ${walletConfig.id}`, { cause: error })
     }
 
     this.logger.debug(`Wallet '${walletConfig.id}' opened with handle '${this.handle}'`)
@@ -350,7 +370,9 @@ export class AskarWallet implements Wallet {
       const algorithm = keyAlgFromString(keyType)
 
       // Create key from seed
-      const key = AskarKey.fromSeed({ seed: new TextEncoder().encode(seed), algorithm })
+      const key = seed
+        ? AskarKey.fromSeed({ seed: new TextEncoder().encode(seed), algorithm })
+        : AskarKey.generate(algorithm)
 
       // Store key
       await this._session?.insertKey({ key, name: encodeToBase58(key.publicBytes) })
@@ -413,37 +435,195 @@ export class AskarWallet implements Wallet {
    */
   public async verify({ data, key, signature }: WalletVerifyOptions): Promise<boolean> {
     try {
-      const keyEntry = await this._session?.fetchKey({ name: key.publicKeyBase58 })
-
-      if (!keyEntry) {
-        throw new WalletError('Key entry not found')
-      }
+      const askarKey = AskarKey.fromPublicBytes({ algorithm: askarKeyType(key.keyType), publicKey: key.publicKey })
 
       if (!TypedArrayEncoder.isTypedArray(data)) {
         throw new WalletError(`Currently not supporting signature of multiple messages`)
       }
 
-      return keyEntry.key.verifySignature({ message: data as Buffer, signature })
+      return askarKey.verifySignature({ message: data as Buffer, signature })
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
-      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+      throw new WalletError(
+        `Error verifying signature of data signed with verkey ${key.publicKeyBase58}. ERROR ${error}`,
+        {
+          cause: error,
+        }
+      )
     }
   }
 
   public async pack(
     payload: Record<string, unknown>,
     recipientKeys: string[],
-    senderVerkey?: string
+    senderVerkey?: string // in base58
   ): Promise<EncryptedMessage> {
-    // TODO
-    throw new WalletError('Pack not yet implemented')
+    const cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+
+    const senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
+
+    const senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
+
+    const recipients: JweRecipient[] = []
+
+    for (const recipientKey of recipientKeys) {
+      const targetExchangeKey = AskarKey.fromPublicBytes({
+        publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
+        algorithm: KeyAlgs.Ed25519,
+      }).convertkey({ algorithm: KeyAlgs.X25519 })
+
+      if (senderVerkey && senderExchangeKey) {
+        const enc_sender = CryptoBox.seal({
+          recipientKey: targetExchangeKey,
+          message: new TextEncoder().encode(senderVerkey),
+        })
+        const nonce = CryptoBox.randomNonce()
+        const encryptedCek = CryptoBox.cryptoBox({
+          recipientKey: targetExchangeKey,
+          senderKey: senderExchangeKey,
+          message: cek.secretBytes,
+          nonce,
+        })
+
+        recipients.push(
+          new JweRecipient({
+            encrypted_key: encryptedCek,
+            header: {
+              kid: recipientKey,
+              sender: base64ToBase64URL(Buffer.from(enc_sender).toString('base64')),
+              iv: base64ToBase64URL(Buffer.from(nonce).toString('base64')),
+            },
+          })
+        )
+      } else {
+        const encryptedCek = CryptoBox.seal({
+          recipientKey: targetExchangeKey,
+          message: cek.secretBytes,
+        })
+        recipients.push(
+          new JweRecipient({
+            encrypted_key: encryptedCek,
+            header: {
+              kid: recipientKey,
+            },
+          })
+        )
+      }
+    }
+
+    const protectedJson = {
+      enc: 'xchacha20poly1305_ietf',
+      typ: 'JWM/1.0',
+      alg: senderVerkey ? 'Authcrypt' : 'Anoncrypt',
+      recipients,
+    }
+
+    const { ciphertext, tag, nonce } = cek.aeadEncrypt({
+      message: new TextEncoder().encode(JSON.stringify(payload)),
+      aad: new TextEncoder().encode(JsonEncoder.toBase64URL(protectedJson)),
+    }).parts
+
+    return new JweEnvelope({
+      ciphertext: base64ToBase64URL(Buffer.from(ciphertext).toString('base64')),
+      iv: base64ToBase64URL(Buffer.from(nonce).toString('base64')),
+      protected: JsonEncoder.toBase64URL(protectedJson),
+      tag: base64ToBase64URL(Buffer.from(tag).toString('base64')),
+    })
   }
 
   public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
-    // TODO
-    throw new WalletError('Unpack not yet implemented')
+    const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
+
+    const alg = protectedJson.alg
+    const isAuthcrypt = alg === 'Authcrypt'
+
+    if (!isAuthcrypt && alg != 'Anoncrypt') {
+      throw new WalletError(`Unsupported pack algorithm: ${alg}`)
+    }
+
+    const recipients = []
+
+    for (const recip of protectedJson.recipients) {
+      const kid = recip.header.kid
+      if (!kid) {
+        throw new WalletError('Blank recipient key')
+      }
+      const sender = recip.header.sender ? new Uint8Array(Buffer.from(recip.header.sender, 'base64')) : undefined
+      const iv = recip.header.iv ? new Uint8Array(Buffer.from(recip.header.iv, 'base64')) : undefined
+      if (sender && !iv) {
+        throw new WalletError('Missing IV')
+      } else if (!sender && iv) {
+        throw new WalletError('Unexpected IV')
+      }
+      recipients.push({
+        kid,
+        sender,
+        iv,
+        encrypted_key: new Uint8Array(Buffer.from(recip.encrypted_key, 'base64')),
+      })
+    }
+
+    let payloadKey, senderKey, recipientKey
+
+    for (const recipient of recipients) {
+      let recipientKeyEntry
+      try {
+        recipientKeyEntry = await this.session.fetchKey({ name: recipient.kid })
+      } catch (error) {
+        // TODO: Currently Askar wrapper throws error when key is not found
+        // In this case we don't need to throw any error because we should
+        // try with other recipient keys
+        continue
+      }
+      if (recipientKeyEntry) {
+        const recip_x = recipientKeyEntry.key.convertkey({ algorithm: KeyAlgs.X25519 })
+        recipientKey = recipient.kid
+
+        if (recipient.sender && recipient.iv) {
+          senderKey = new TextDecoder().decode(
+            CryptoBox.sealOpen({
+              recipientKey: recip_x,
+              ciphertext: recipient.sender,
+            })
+          )
+          const sender_x = AskarKey.fromPublicBytes({
+            algorithm: KeyAlgs.Ed25519,
+            publicKey: decodeFromBase58(senderKey),
+          }).convertkey({ algorithm: KeyAlgs.X25519 })
+
+          payloadKey = CryptoBox.open({
+            recipientKey: recip_x,
+            senderKey: sender_x,
+            message: recipient.encrypted_key,
+            nonce: recipient.iv,
+          })
+        }
+        break
+      }
+    }
+    if (!payloadKey) {
+      throw new WalletError('No corresponding recipient key found')
+    }
+
+    if (!senderKey && isAuthcrypt) {
+      throw new WalletError('Sender public key not provided for Authcrypt')
+    }
+
+    const cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgs.Chacha20C20P, secretKey: payloadKey })
+    const message = cek.aeadDecrypt({
+      ciphertext: new Uint8Array(Buffer.from(messagePackage.ciphertext as any, 'base64')),
+      nonce: new Uint8Array(Buffer.from(messagePackage.iv as any, 'base64')),
+      tag: new Uint8Array(Buffer.from(messagePackage.tag as any, 'base64')),
+      aad: new TextEncoder().encode(messagePackage.protected),
+    })
+
+    return {
+      plaintextMessage: JsonEncoder.fromBuffer(message),
+      senderKey,
+      recipientKey,
+    }
   }
 
   public async generateNonce(): Promise<string> {

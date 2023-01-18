@@ -271,12 +271,21 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       tagFilter: askarQuery,
     })
 
-    const records = await scan.fetchAll()
-
     const instances = []
-    for (const record of records) {
-      instances.push(this.recordToInstance(record, recordClass))
+    try {
+      const records = await scan.fetchAll()
+      for (const record of records) {
+        instances.push(this.recordToInstance(record, recordClass))
+      }
+      return instances
+    } catch (error) {
+      if (
+        isAskarError(error) && // FIXME: this is current output from askar wrapper but does not describe specifically a 0 length scenario
+        error.message === 'Received null pointer. The native library could not find the value.'
+      ) {
+        return instances
+      }
+      throw new WalletError(`Error executing query`, { cause: error })
     }
-    return instances
   }
 }

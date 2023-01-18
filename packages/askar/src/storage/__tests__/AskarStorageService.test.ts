@@ -239,6 +239,9 @@ describe('AskarStorageService', () => {
 
     it('finds records using $not statements', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
+      // FIXME: Seems to be an issue with Askar WQL implementation:
+      // it only takes into account records containing a myTag and returns only those different from the $not rule
+      // (i.e. expectedRecord2 will not be taken into account because it does not have any myTag value)
       const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
@@ -251,29 +254,7 @@ describe('AskarStorageService', () => {
     })
 
     it('correctly transforms an advanced query into a valid WQL query', async () => {
-      const indySpy = jest.fn()
-      const storageServiceWithoutIndy = new AskarStorageService<TestRecord>({
-        openWalletSearch: indySpy,
-        fetchWalletSearchNextRecords: jest.fn(() => ({ records: undefined })),
-        closeWalletSearch: jest.fn(),
-      } as unknown as IndySdk)
-
-      await storageServiceWithoutIndy.findByQuery(agentContext, TestRecord, {
-        $and: [
-          {
-            $or: [{ myTag: true }, { myTag: false }],
-          },
-          {
-            $and: [{ theNumber: '0' }, { theNumber: '1' }],
-          },
-        ],
-        $or: [
-          {
-            aValue: ['foo', 'bar'],
-          },
-        ],
-        $not: { myTag: 'notfoobar' },
-      })
+      const storageService = new AskarStorageService<TestRecord>()
 
       const expectedQuery = {
         $and: [
@@ -306,7 +287,25 @@ describe('AskarStorageService', () => {
         $not: { myTag: 'notfoobar', $and: undefined, $or: undefined, $not: undefined },
       }
 
-      expect(indySpy).toBeCalledWith(expect.anything(), expect.anything(), expectedQuery, expect.anything())
+      expect(
+        //@ts-ignore
+        storageService.askarQueryFromSearchQuery({
+          $and: [
+            {
+              $or: [{ myTag: true }, { myTag: false }],
+            },
+            {
+              $and: [{ theNumber: '0' }, { theNumber: '1' }],
+            },
+          ],
+          $or: [
+            {
+              aValue: ['foo', 'bar'],
+            },
+          ],
+          $not: { myTag: 'notfoobar' },
+        })
+      ).toEqual(expectedQuery)
     })
   })
 })
