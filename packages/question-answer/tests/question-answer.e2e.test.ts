@@ -9,9 +9,9 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 
-import { waitForQuestionAnswerRecord } from './helpers'
-
 import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
+
+import { waitForQuestionAnswerRecord } from './helpers'
 
 const bobAgentOptions = getAgentOptions(
   'Bob Question Answer',

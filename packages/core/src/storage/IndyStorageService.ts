@@ -1,7 +1,7 @@
-import type { AgentContext } from '../agent'
-import type { IndyWallet } from '../wallet/IndyWallet'
 import type { BaseRecord, TagsBase } from './BaseRecord'
 import type { BaseRecordConstructor, Query, StorageService } from './StorageService'
+import type { AgentContext } from '../agent'
+import type { IndyWallet } from '../wallet/IndyWallet'
 import type { default as Indy, WalletQuery, WalletRecord, WalletSearchOptions } from 'indy-sdk'
 
 import { AgentDependencies } from '../agent/AgentDependencies'
@@ -14,7 +14,8 @@ import { isBoolean } from '../utils/type'
 import { assertIndyWallet } from '../wallet/util/assertIndyWallet'
 
 @injectable()
-export class IndyStorageService<T extends BaseRecord> implements StorageService<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class IndyStorageService<T extends BaseRecord<any, any, any>> implements StorageService<T> {
   private indy: typeof Indy
 
   private static DEFAULT_QUERY_OPTIONS = {

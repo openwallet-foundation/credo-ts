@@ -1,8 +1,8 @@
+import type { CredentialMetadata } from './CredentialMetadataTypes'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
 import type { RevocationNotification } from '../models/RevocationNotification'
-import type { CredentialMetadata } from './CredentialMetadataTypes'
 
 import { Type } from 'class-transformer'
 

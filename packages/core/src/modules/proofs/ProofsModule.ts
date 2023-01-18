@@ -1,6 +1,6 @@
+import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
-import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 
 import { Protocol } from '../../agent/models'
 

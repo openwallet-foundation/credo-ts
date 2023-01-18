@@ -1,5 +1,5 @@
-import type { ProblemReportErrorOptions } from '../../problem-reports'
 import type { CredentialProblemReportReason } from './CredentialProblemReportReason'
+import type { ProblemReportErrorOptions } from '../../problem-reports'
 
 import { V1CredentialProblemReportMessage } from '../protocol/v1/messages'
 

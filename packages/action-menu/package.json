@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
-    "clean": "rimraf -rf ./build",
+    "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "yarn run build",
     "test": "jest"
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "reflect-metadata": "^0.1.13",
-    "rimraf": "~3.0.2",
-    "typescript": "~4.3.0"
+    "rimraf": "^4.0.7",
+    "typescript": "~4.9.4"
   }
 }

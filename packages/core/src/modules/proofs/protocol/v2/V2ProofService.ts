@@ -340,7 +340,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
 
     for (const attachmentFormat of requestAttachments) {
       const service = this.getFormatServiceForFormat(attachmentFormat.format)
-      service?.processRequest({
+      await service?.processRequest({
         requestAttachment: attachmentFormat,
       })
     }
