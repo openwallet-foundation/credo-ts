@@ -75,13 +75,13 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           issuerId: issuerId,
         },
         schemaId: schema.id,
-        resolutionMetadata: {
+        resolutionMetadata: {},
+        schemaMetadata: {
           didIndyNamespace: pool.didIndyNamespace,
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
           indyLedgerSeqNo: schema.seqNo,
         },
-        schemaMetadata: {},
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`, {
@@ -111,6 +111,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaMetadata: {},
         registrationMetadata: {},
         schemaState: {
+          schemaId: null,
           reason: 'no didIndyNamespace defined in the options. didIndyNamespace is required when using the Indy SDK',
           schema: options.schema,
           state: 'failed',
@@ -157,13 +158,13 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           },
           schemaId: schema.id,
         },
-        registrationMetadata: {
+        registrationMetadata: {},
+        schemaMetadata: {
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
           indyLedgerSeqNo: schema.seqNo,
           didIndyNamespace: pool.didIndyNamespace,
         },
-        schemaMetadata: {},
       }
     } catch (error) {
       agentContext.config.logger.error(`Error registering schema for did '${options.schema.issuerId}'`, {
@@ -176,6 +177,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaMetadata: {},
         registrationMetadata: {},
         schemaState: {
+          schemaId: null,
           state: 'failed',
           schema: options.schema,
           reason: `unknownError: ${error.message}`,
@@ -229,10 +231,10 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           type: 'CL',
           value: credentialDefinition.value,
         },
-        credentialDefinitionMetadata: {},
-        resolutionMetadata: {
+        credentialDefinitionMetadata: {
           didIndyNamespace: pool.didIndyNamespace,
         },
+        resolutionMetadata: {},
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
@@ -265,6 +267,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           reason: 'no didIndyNamespace defined in the options. didIndyNamespace is required when using the Indy SDK',
           credentialDefinition: options.credentialDefinition,
           state: 'failed',
+          credentialDefinitionId: null,
         },
       }
     }
@@ -280,25 +283,29 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       // TODO: this will bypass caching if done on a higher level.
-      const { schema, resolutionMetadata } = await this.getSchema(agentContext, options.credentialDefinition.schemaId)
+      const { schema, schemaMetadata, resolutionMetadata } = await this.getSchema(
+        agentContext,
+        options.credentialDefinition.schemaId
+      )
 
-      if (!schema || !resolutionMetadata.indyLedgerSeqNo || typeof resolutionMetadata.indyLedgerSeqNo !== 'number') {
+      if (!schema || !schemaMetadata.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
         return {
-          registrationMetadata: {
+          registrationMetadata: {},
+          credentialDefinitionMetadata: {
             didIndyNamespace: pool.didIndyNamespace,
           },
-          credentialDefinitionMetadata: {},
           credentialDefinitionState: {
             credentialDefinition: options.credentialDefinition,
             state: 'failed',
             reason: `error resolving schema with id ${options.credentialDefinition.schemaId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
+            credentialDefinitionId: null,
           },
         }
       }
 
       const credentialDefinitionId = getLegacyCredentialDefinitionId(
         options.credentialDefinition.issuerId,
-        resolutionMetadata.indyLedgerSeqNo,
+        schemaMetadata.indyLedgerSeqNo,
         options.credentialDefinition.tag
       )
 
@@ -327,15 +334,15 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       return {
-        credentialDefinitionMetadata: {},
+        credentialDefinitionMetadata: {
+          didIndyNamespace: pool.didIndyNamespace,
+        },
         credentialDefinitionState: {
           credentialDefinition: options.credentialDefinition,
           credentialDefinitionId,
           state: 'finished',
         },
-        registrationMetadata: {
-          didIndyNamespace: pool.didIndyNamespace,
-        },
+        registrationMetadata: {},
       }
     } catch (error) {
       agentContext.config.logger.error(
@@ -388,13 +395,12 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       return {
-        resolutionMetadata: {
-          didIndyNamespace: pool.didIndyNamespace,
-        },
+        resolutionMetadata: {},
         revocationRegistryDefinition: anonCredsRevocationRegistryDefinitionFromIndySdk(revocationRegistryDefinition),
         revocationRegistryDefinitionId,
         revocationRegistryDefinitionMetadata: {
           issuanceType: revocationRegistryDefinition.value.issuanceType,
+          didIndyNamespace: pool.didIndyNamespace,
         },
       }
     } catch (error) {
@@ -469,10 +475,11 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       ) {
         return {
           resolutionMetadata: {
-            didIndyNamespace: pool.didIndyNamespace,
             error: `error resolving revocation registry definition with id ${revocationRegistryId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
           },
-          revocationListMetadata: {},
+          revocationListMetadata: {
+            didIndyNamespace: pool.didIndyNamespace,
+          },
           revocationList: null,
         }
       }
@@ -480,9 +487,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const isIssuanceByDefault = revocationRegistryDefinitionMetadata.issuanceType === 'ISSUANCE_BY_DEFAULT'
 
       return {
-        resolutionMetadata: {
-          didIndyNamespace: pool.didIndyNamespace,
-        },
+        resolutionMetadata: {},
         revocationList: anonCredsRevocationListFromIndySdk(
           revocationRegistryId,
           revocationRegistryDefinition,
@@ -490,7 +495,9 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           deltaTimestamp,
           isIssuanceByDefault
         ),
-        revocationListMetadata: {},
+        revocationListMetadata: {
+          didIndyNamespace: pool.didIndyNamespace,
+        },
       }
     } catch (error) {
       agentContext.config.logger.error(

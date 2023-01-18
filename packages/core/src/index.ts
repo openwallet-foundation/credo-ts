@@ -67,6 +67,10 @@ export * from './agent/Events'
 export * from './crypto/'
 export { PersistedLruCache, CacheRepository } from './cache'
 
+export { encodeAttachment } from './utils/attachment'
+export { Hasher } from './utils/Hasher'
+export { MessageValidator } from './utils/MessageValidator'
+export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
 

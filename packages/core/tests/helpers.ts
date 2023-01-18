@@ -19,7 +19,7 @@ import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
-import type { Awaited } from '../src/types'
+import type { Awaited, WalletConfig } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -159,9 +159,12 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
   return { config, dependencies: agentDependencies } as const
 }
 
-export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentConfig(
+  name: string,
+  extraConfig: Partial<InitConfig> = {}
+): AgentConfig & { walletConfig: WalletConfig } {
   const { config, dependencies } = getAgentOptions(name, extraConfig)
-  return new AgentConfig(config, dependencies)
+  return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 
 export function getAgentContext({

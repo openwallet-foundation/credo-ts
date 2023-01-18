@@ -5,7 +5,7 @@ export interface ReferentWalletQuery {
   [key: string]: WalletQuery
 }
 
-export interface NonRevokedInterval {
+export interface AnonCredsNonRevokedInterval {
   from?: number
   to?: number
 }
@@ -18,16 +18,16 @@ export interface AnonCredsCredentialOffer {
 }
 
 export interface AnonCredsCredentialRequest {
-  // TODO: Why is this needed? It is just used as context in Ursa, can be any string. Should we remove it?
-  // Should we not make it did related?
-  prover_did: string
+  // prover_did is deprecated, however it is kept for backwards compatibility with legacy anoncreds implementations
+  prover_did?: string
   cred_def_id: string
   blinded_ms: Record<string, unknown>
   blinded_ms_correctness_proof: Record<string, unknown>
   nonce: string
 }
 
-export interface CredValue {
+export type AnonCredsCredentialValues = Record<string, AnonCredsCredentialValue>
+export interface AnonCredsCredentialValue {
   raw: string
   encoded: string // Raw value as number in string
 }
@@ -36,7 +36,7 @@ export interface AnonCredsCredential {
   schema_id: string
   cred_def_id: string
   rev_reg_id?: string
-  values: Record<string, CredValue>
+  values: Record<string, AnonCredsCredentialValue>
   signature: unknown
   signature_correctness_proof: unknown
 }
@@ -92,7 +92,7 @@ export interface AnonCredsProofRequest {
       name?: string
       names?: string[]
       restrictions?: WalletQuery[]
-      non_revoked?: NonRevokedInterval
+      non_revoked?: AnonCredsNonRevokedInterval
     }
   >
   requested_predicates: Record<
@@ -102,9 +102,9 @@ export interface AnonCredsProofRequest {
       p_type: '>=' | '>' | '<=' | '<'
       p_value: number
       restrictions?: WalletQuery[]
-      non_revoked?: NonRevokedInterval
+      non_revoked?: AnonCredsNonRevokedInterval
     }
   >
-  non_revoked?: NonRevokedInterval
+  non_revoked?: AnonCredsNonRevokedInterval
   ver?: '1.0' | '2.0'
 }

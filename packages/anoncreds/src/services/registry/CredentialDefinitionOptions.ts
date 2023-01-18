@@ -20,18 +20,18 @@ export interface RegisterCredentialDefinitionOptions {
 }
 
 export interface RegisterCredentialDefinitionReturnStateFailed extends AnonCredsOperationStateFailed {
-  credentialDefinition: AnonCredsCredentialDefinition
-  credentialDefinitionId?: string
+  credentialDefinition?: AnonCredsCredentialDefinition
+  credentialDefinitionId: string | null
 }
 
 export interface RegisterCredentialDefinitionReturnStateFinished extends AnonCredsOperationStateFinished {
   credentialDefinition: AnonCredsCredentialDefinition
-  credentialDefinitionId?: string
+  credentialDefinitionId: string | null
 }
 
 export interface RegisterCredentialDefinitionReturnState extends AnonCredsOperationState {
-  credentialDefinition: AnonCredsCredentialDefinition
-  credentialDefinitionId?: string
+  credentialDefinition?: AnonCredsCredentialDefinition
+  credentialDefinitionId: string | null
 }
 
 export interface RegisterCredentialDefinitionReturn {

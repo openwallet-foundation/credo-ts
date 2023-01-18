@@ -24,8 +24,8 @@ export interface RegisterSchemaOptions {
 }
 
 export interface RegisterSchemaReturnStateFailed extends AnonCredsOperationStateFailed {
-  schema: AnonCredsSchema
-  schemaId?: string
+  schema: AnonCredsSchema | null
+  schemaId: string | null
 }
 
 export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationStateFinished {
@@ -34,8 +34,8 @@ export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationSta
 }
 
 export interface RegisterSchemaReturnState extends AnonCredsOperationState {
-  schema: AnonCredsSchema
-  schemaId?: string
+  schema: AnonCredsSchema | null
+  schemaId: string | null
 }
 
 export interface RegisterSchemaReturn {
