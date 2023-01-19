@@ -414,11 +414,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
-    const supportedAttachments = messageAttachments.filter((attachment) =>
+    const supportedAttachment = messageAttachments.find((attachment) =>
       supportedAttachmentIds.includes(attachment.id)
     )
 
-    return supportedAttachments[0]
+    return supportedAttachment
   }
 
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
