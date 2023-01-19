@@ -15,7 +15,7 @@ export class TransportService {
   }
 
   public findSessionByConnectionId(connectionId: string) {
-    return Object.values(this.transportSessionTable).find((session) => session?.id === connectionId)
+    return Object.values(this.transportSessionTable).find((session) => session?.connectionId === connectionId)
   }
 
   public hasInboundEndpoint(didDocument: DidDocument): boolean {
