@@ -2,7 +2,7 @@
   "name": "@aries-framework/core",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "files": [
     "build"
   ],
