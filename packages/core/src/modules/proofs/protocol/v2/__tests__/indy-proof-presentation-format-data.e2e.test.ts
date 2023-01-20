@@ -79,7 +79,6 @@ describe('Present Proof', () => {
     faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     // Alice retrieves the requested credentials and accepts the presentation request
-    testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
       proofRecordId: aliceProofExchangeRecord.id,
