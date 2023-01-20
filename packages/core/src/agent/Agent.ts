@@ -9,7 +9,6 @@ import type { Subscription } from 'rxjs'
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
-import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
@@ -59,7 +58,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(EnvelopeService)
     dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
