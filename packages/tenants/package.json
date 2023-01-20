@@ -2,7 +2,7 @@
   "name": "@aries-framework/tenants",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "files": [
     "build"
   ],
@@ -24,11 +24,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.3.2",
+    "@aries-framework/core": "0.3.3",
     "async-mutex": "^0.3.2"
   },
   "devDependencies": {
-    "@aries-framework/node": "0.3.2",
+    "@aries-framework/node": "0.3.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4"
