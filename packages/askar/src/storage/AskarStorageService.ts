@@ -63,11 +63,11 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
     for (const [key, value] of Object.entries(tags)) {
       // If the value is of type null we use the value undefined
-      // Indy doesn't support null as a value
+      // Askar doesn't support null as a value
       if (value === null) {
         transformedTags[key] = undefined
       }
-      // If the value is a boolean use the indy
+      // If the value is a boolean use the Askar
       // '1' or '0' syntax
       else if (typeof value === 'boolean') {
         transformedTags[key] = value ? '1' : '0'
@@ -95,10 +95,10 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   }
 
   /**
-   * Transforms the search query into a wallet query compatible with indy WQL.
+   * Transforms the search query into a wallet query compatible with Askar WQL.
    *
-   * The format used by AFJ is almost the same as the indy query, with the exception of
-   * the encoding of values, however this is handled by the {@link IndyStorageService.transformToRecordTagValues}
+   * The format used by AFJ is almost the same as the WQL query, with the exception of
+   * the encoding of values, however this is handled by the {@link AskarStorageService.transformToRecordTagValues}
    * method.
    */
   // TODO: Transform to Askar format
@@ -110,14 +110,14 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     $or = ($or as Query<T>[] | undefined)?.map((q) => this.askarQueryFromSearchQuery(q))
     $not = $not ? this.askarQueryFromSearchQuery($not as Query<T>) : undefined
 
-    const indyQuery = {
+    const askarQuery = {
       ...this.transformFromRecordTagValues(tags as unknown as TagsBase),
       $and,
       $or,
       $not,
     }
 
-    return indyQuery
+    return askarQuery
   }
 
   private recordToInstance(record: EntryObject, recordClass: BaseRecordConstructor<T>): T {
@@ -261,7 +261,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     query: Query<T>
   ): Promise<T[]> {
     assertAskarWallet(agentContext.wallet)
-    const store = agentContext.wallet.handle
+    const store = agentContext.wallet.store
 
     const askarQuery = this.askarQueryFromSearchQuery(query)
 

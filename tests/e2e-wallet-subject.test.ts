@@ -6,13 +6,15 @@ import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../packages/core/tests/helpers'
 
-import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
-
 import { AskarModule, AskarStorageService, AskarWallet } from '@aries-framework/askar'
 import { Agent, DependencyManager, InjectionSymbols } from '@aries-framework/core'
 import { IndySdkModule, IndySdkStorageService, IndySdkWallet } from '@aries-framework/indy-sdk'
+
+import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
+
 import { agentDependencies } from '@aries-framework/node'
+
+import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 describe('E2E Wallet Subject tests', () => {
   let recipientAgent: Agent

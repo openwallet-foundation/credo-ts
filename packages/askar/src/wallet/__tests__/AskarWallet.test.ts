@@ -1,6 +1,14 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type {
+  SigningProvider,
+  WalletConfig,
+  CreateKeyPairOptions,
+  KeyPair,
+  SignOptions,
+  VerifyOptions,
+} from '@aries-framework/core'
 
 import {
+  WalletError,
   WalletDuplicateError,
   WalletNotFoundError,
   WalletInvalidKeyError,
@@ -8,10 +16,13 @@ import {
   SigningProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
+  Buffer,
 } from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar, Store } from 'aries-askar-test-shared'
+import { TextEncoder } from 'util'
 
+import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { AskarWallet } from '../AskarWallet'
@@ -44,8 +55,8 @@ describe('AskarWallet basic operations', () => {
     expect(askarWallet.masterSecretId).toEqual('Wallet: askarWalletTest')
   })
 
-  test('Get the wallet handle', () => {
-    expect(askarWallet.handle).toEqual(expect.any(Store))
+  test('Get the wallet store', () => {
+    expect(askarWallet.store).toEqual(expect.any(Store))
   })
 
   test('Generate Nonce', async () => {
@@ -64,6 +75,10 @@ describe('AskarWallet basic operations', () => {
     await expect(askarWallet.createKey({ seed, keyType: KeyType.X25519 })).resolves.toMatchObject({
       keyType: KeyType.X25519,
     })
+  })
+
+  test('Fail to create a Bls12381g1g2 keypair', async () => {
+    await expect(askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {
@@ -86,6 +101,82 @@ describe('AskarWallet basic operations', () => {
 
   test('masterSecretId is equal to wallet ID by default', async () => {
     expect(askarWallet.masterSecretId).toEqual(walletConfig.id)
+  })
+})
+
+describe('AskarWallet with custom signing provider', () => {
+  let askarWallet: AskarWallet
+
+  const seed = 'sample-seed'
+  const message = TypedArrayEncoder.fromString('sample-message')
+
+  beforeEach(async () => {
+    registerAriesAskar({ askar: new NodeJSAriesAskar() })
+
+    class DummySigningProvider implements SigningProvider {
+      public keyType: KeyType = KeyType.Bls12381g1g2
+
+      public async createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair> {
+        return {
+          publicKeyBase58: encodeToBase58(new TextEncoder().encode(options.seed || 'publicKeyBase58')),
+          privateKeyBase58: 'privateKeyBase58',
+          keyType: KeyType.Bls12381g1g2,
+        }
+      }
+
+      public async sign(options: SignOptions): Promise<Buffer> {
+        return new Buffer('signed')
+      }
+
+      public async verify(options: VerifyOptions): Promise<boolean> {
+        return true
+      }
+    }
+    askarWallet = new AskarWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([new DummySigningProvider()])
+    )
+    await askarWallet.createAndOpen(walletConfig)
+  })
+
+  afterEach(async () => {
+    await askarWallet.delete()
+  })
+
+  test('Create custom keypair and use it for signing', async () => {
+    const key = await askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })
+    expect(key.keyType).toBe(KeyType.Bls12381g1g2)
+    expect(key.publicKeyBase58).toBe(encodeToBase58(new TextEncoder().encode(seed)))
+
+    const signature = await askarWallet.sign({
+      data: message,
+      key,
+    })
+
+    expect(signature).toBeInstanceOf(Buffer)
+  })
+
+  test('Create custom keypair and use it for verifying', async () => {
+    const key = await askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })
+    expect(key.keyType).toBe(KeyType.Bls12381g1g2)
+    expect(key.publicKeyBase58).toBe(encodeToBase58(new TextEncoder().encode(seed)))
+
+    const signature = await askarWallet.verify({
+      data: message,
+      signature: new Buffer('signature'),
+      key,
+    })
+
+    expect(signature).toBeTruthy()
+  })
+
+  test('Attempt to create the same custom keypair twice', async () => {
+    await askarWallet.createKey({ seed: 'keybase58', keyType: KeyType.Bls12381g1g2 })
+
+    await expect(askarWallet.createKey({ seed: 'keybase58', keyType: KeyType.Bls12381g1g2 })).rejects.toThrow(
+      WalletError
+    )
   })
 })
 
