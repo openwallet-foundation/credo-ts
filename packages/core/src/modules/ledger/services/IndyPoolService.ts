@@ -5,7 +5,6 @@ import type { default as Indy, LedgerReadReplyResponse, LedgerRequest, LedgerWri
 import { Subject } from 'rxjs'
 
 import { AgentDependencies } from '../../../agent/AgentDependencies'
-import { CacheRepository, PersistedLruCache } from '../../../cache'
 import { InjectionSymbols } from '../../../constants'
 import { IndySdkError } from '../../../error/IndySdkError'
 import { Logger } from '../../../logger/Logger'
@@ -15,17 +14,17 @@ import { isSelfCertifiedDid } from '../../../utils/did'
 import { isIndyError } from '../../../utils/indyError'
 import { allSettled, onlyFulfilled, onlyRejected } from '../../../utils/promises'
 import { assertIndyWallet } from '../../../wallet/util/assertIndyWallet'
+import { CacheModuleConfig } from '../../cache'
 import { IndyPool } from '../IndyPool'
 import { LedgerError } from '../error/LedgerError'
 import { LedgerNotConfiguredError } from '../error/LedgerNotConfiguredError'
 import { LedgerNotFoundError } from '../error/LedgerNotFoundError'
 
-export const DID_POOL_CACHE_ID = 'DID_POOL_CACHE'
-export const DID_POOL_CACHE_LIMIT = 500
 export interface CachedDidResponse {
   nymResponse: Indy.GetNymResponse
   poolId: string
 }
+
 @injectable()
 export class IndyPoolService {
   public pools: IndyPool[] = []
@@ -34,10 +33,8 @@ export class IndyPoolService {
   private agentDependencies: AgentDependencies
   private stop$: Subject<boolean>
   private fileSystem: FileSystem
-  private didCache: PersistedLruCache<CachedDidResponse>
 
   public constructor(
-    cacheRepository: CacheRepository,
     @inject(InjectionSymbols.AgentDependencies) agentDependencies: AgentDependencies,
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
@@ -48,8 +45,6 @@ export class IndyPoolService {
     this.agentDependencies = agentDependencies
     this.fileSystem = fileSystem
     this.stop$ = stop$
-
-    this.didCache = new PersistedLruCache(DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
   }
 
   public setPools(poolConfigs: IndyPoolConfig[]) {
@@ -104,7 +99,9 @@ export class IndyPoolService {
       )
     }
 
-    const cachedNymResponse = await this.didCache.get(agentContext, did)
+    const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+
+    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, `IndySdkPoolService:${did}`)
     const pool = this.pools.find((pool) => pool.id === cachedNymResponse?.poolId)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -151,7 +148,7 @@ export class IndyPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await this.didCache.set(agentContext, did, {
+    await cache.set(agentContext, `IndySdkPoolService:${did}`, {
       nymResponse: value.did,
       poolId: value.pool.id,
     })

@@ -4,6 +4,7 @@ import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
 import { BasicMessagesModule } from '../modules/basic-messages'
+import { CacheModule } from '../modules/cache'
 import { ConnectionsModule } from '../modules/connections'
 import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
@@ -157,6 +158,7 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
     oob: () => new OutOfBandModule(),
     indy: () => new IndyModule(),
     w3cVc: () => new W3cVcModule(),
+    cache: () => new CacheModule(),
   } as const
 }
 
