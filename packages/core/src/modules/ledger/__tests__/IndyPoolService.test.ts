@@ -1,25 +1,22 @@
 import type { AgentContext } from '../../../agent'
+import type { Cache } from '../../cache'
 import type { IndyPoolConfig } from '../IndyPool'
 import type { CachedDidResponse } from '../services/IndyPoolService'
 
 import { Subject } from 'rxjs'
 
 import { NodeFileSystem } from '../../../../../node/src/NodeFileSystem'
-import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
-import { CacheRecord } from '../../../cache'
-import { CacheRepository } from '../../../cache/CacheRepository'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { IndyWallet } from '../../../wallet/IndyWallet'
+import { CacheModuleConfig, InMemoryLruCache } from '../../cache'
 import { LedgerError } from '../error/LedgerError'
 import { LedgerNotConfiguredError } from '../error/LedgerNotConfiguredError'
 import { LedgerNotFoundError } from '../error/LedgerNotFoundError'
-import { DID_POOL_CACHE_ID, IndyPoolService } from '../services/IndyPoolService'
+import { IndyPoolService } from '../services/IndyPoolService'
 
 import { getDidResponsesForDid } from './didResponses'
-
-jest.mock('../../../cache/CacheRepository')
-const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
 
 const pools: IndyPoolConfig[] = [
   {
@@ -66,11 +63,11 @@ describe('IndyPoolService', () => {
   let agentContext: AgentContext
   let wallet: IndyWallet
   let poolService: IndyPoolService
-  let cacheRepository: CacheRepository
+  let cache: Cache
 
   beforeAll(async () => {
     wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
-    agentContext = getAgentContext()
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })
@@ -80,16 +77,11 @@ describe('IndyPoolService', () => {
   })
 
   beforeEach(async () => {
-    cacheRepository = new CacheRepositoryMock()
-    mockFunction(cacheRepository.findById).mockResolvedValue(null)
-
-    poolService = new IndyPoolService(
-      cacheRepository,
-      agentDependencies,
-      config.logger,
-      new Subject<boolean>(),
-      new NodeFileSystem()
-    )
+    cache = new InMemoryLruCache({ limit: 200 })
+    agentContext = getAgentContext({
+      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+    })
+    poolService = new IndyPoolService(agentDependencies, config.logger, new Subject<boolean>(), new NodeFileSystem())
 
     poolService.setPools(pools)
   })
@@ -242,20 +234,7 @@ describe('IndyPoolService', () => {
         poolId: expectedPool.id,
       }
 
-      const cachedEntries = [
-        {
-          key: did,
-          value: didResponse,
-        },
-      ]
-
-      mockFunction(cacheRepository.findById).mockResolvedValue(
-        new CacheRecord({
-          id: DID_POOL_CACHE_ID,
-          entries: cachedEntries,
-        })
-      )
-
+      await cache.set(agentContext, `IndySdkPoolService:${did}`, didResponse)
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
       expect(pool.config.id).toBe(pool.id)
@@ -268,15 +247,6 @@ describe('IndyPoolService', () => {
         sovrinBuilder: '~M9kv2Ez61cur7X39DXWh8W',
       })
 
-      mockFunction(cacheRepository.findById).mockResolvedValue(
-        new CacheRecord({
-          id: DID_POOL_CACHE_ID,
-          entries: [],
-        })
-      )
-
-      const spy = mockFunction(cacheRepository.update).mockResolvedValue()
-
       poolService.pools.forEach((pool, index) => {
         const spy = jest.spyOn(pool, 'submitReadRequest')
         spy.mockImplementationOnce(responses[index])
@@ -287,10 +257,7 @@ describe('IndyPoolService', () => {
       expect(pool.config.id).toBe('sovrinBuilder')
       expect(pool.config.indyNamespace).toBe('sovrin:builder')
 
-      const cacheRecord = spy.mock.calls[0][1]
-      expect(cacheRecord.entries.length).toBe(1)
-      expect(cacheRecord.entries[0].key).toBe(did)
-      expect(cacheRecord.entries[0].value).toEqual({
+      expect(await cache.get(agentContext, `IndySdkPoolService:${did}`)).toEqual({
         nymResponse: {
           did,
           verkey: '~M9kv2Ez61cur7X39DXWh8W',
