@@ -1,6 +1,6 @@
 import type { CacheModuleConfigOptions } from './CacheModuleConfig'
+import type { DependencyManager, Module } from '../../plugins'
 import type { Optional } from '../../utils'
-import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { CacheModuleConfig } from './CacheModuleConfig'
 import { CacheRepository } from './singleContextLruCache/CacheRepository'
