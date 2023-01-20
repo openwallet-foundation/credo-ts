@@ -39,7 +39,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
           error: 'notFound',
           message: `Schema with id ${schemaId} not found in memory registry`,
         },
-        schema: null,
         schemaId,
         schemaMetadata: {
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
@@ -93,7 +92,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
           error: 'notFound',
           message: `Credential definition with id ${credentialDefinitionId} not found in memory registry`,
         },
-        credentialDefinition: null,
         credentialDefinitionId,
         credentialDefinitionMetadata: {},
       }

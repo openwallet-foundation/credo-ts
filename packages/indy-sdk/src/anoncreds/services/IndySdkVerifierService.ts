@@ -1,5 +1,5 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs } from 'indy-sdk'
+import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs, IndyProofRequest } from 'indy-sdk'
 
 import { inject } from '@aries-framework/core'
 
@@ -72,7 +72,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
       }
 
       return await this.indySdk.verifierVerifyProof(
-        options.proofRequest,
+        options.proofRequest as IndyProofRequest,
         options.proof,
         indySchemas,
         indyCredentialDefinitions,

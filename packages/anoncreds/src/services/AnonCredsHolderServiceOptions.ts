@@ -9,7 +9,6 @@ import type {
   AnonCredsCredentialRequest,
   AnonCredsProofRequest,
   AnonCredsNonRevokedInterval,
-  ReferentWalletQuery,
 } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
@@ -58,6 +57,12 @@ export interface StoreCredentialOptions {
 
 export interface GetCredentialOptions {
   credentialId: string
+}
+
+// TODO: Maybe we can make this a bit more specific?
+export type WalletQuery = Record<string, unknown>
+export interface ReferentWalletQuery {
+  [referent: string]: WalletQuery
 }
 
 export interface GetCredentialsForProofRequestOptions {

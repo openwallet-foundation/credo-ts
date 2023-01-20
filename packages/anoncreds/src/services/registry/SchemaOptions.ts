@@ -9,7 +9,7 @@ import type { AnonCredsSchema } from '../../models/registry'
 
 // Get Schema
 export interface GetSchemaReturn {
-  schema: AnonCredsSchema | null
+  schema?: AnonCredsSchema
   schemaId: string
   // Can contain e.g. the ledger transaction request/response
   resolutionMetadata: AnonCredsResolutionMetadata
@@ -24,8 +24,8 @@ export interface RegisterSchemaOptions {
 }
 
 export interface RegisterSchemaReturnStateFailed extends AnonCredsOperationStateFailed {
-  schema: AnonCredsSchema | null
-  schemaId: string | null
+  schema?: AnonCredsSchema
+  schemaId?: string
 }
 
 export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationStateFinished {
@@ -34,8 +34,8 @@ export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationSta
 }
 
 export interface RegisterSchemaReturnState extends AnonCredsOperationState {
-  schema: AnonCredsSchema | null
-  schemaId: string | null
+  schema?: AnonCredsSchema
+  schemaId?: string
 }
 
 export interface RegisterSchemaReturn {
