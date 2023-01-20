@@ -3,26 +3,26 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
-export interface CacheItem {
+export interface SingleContextLruCacheItem {
   value: unknown
   expiresAt?: number
 }
 
-export interface CacheStorageProps {
+export interface SingleContextLruCacheProps {
   id?: string
   createdAt?: Date
   tags?: TagsBase
 
-  entries: Array<{ key: string; item: CacheItem }>
+  entries: Map<string, SingleContextLruCacheItem>
 }
 
-export class CacheRecord extends BaseRecord {
-  public entries!: Array<{ key: string; item: CacheItem }>
+export class SingleContextLruCacheRecord extends BaseRecord {
+  public entries!: Map<string, SingleContextLruCacheItem>
 
-  public static readonly type = 'CacheRecord'
-  public readonly type = CacheRecord.type
+  public static readonly type = 'SingleContextLruCacheRecord'
+  public readonly type = SingleContextLruCacheRecord.type
 
-  public constructor(props: CacheStorageProps) {
+  public constructor(props: SingleContextLruCacheProps) {
     super()
 
     if (props) {

@@ -4,14 +4,14 @@ import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 
-import { CacheRecord } from './CacheRecord'
+import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
 
 @injectable()
-export class CacheRepository extends Repository<CacheRecord> {
+export class SingleContextLruCacheRepository extends Repository<SingleContextLruCacheRecord> {
   public constructor(
-    @inject(InjectionSymbols.StorageService) storageService: StorageService<CacheRecord>,
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<SingleContextLruCacheRecord>,
     eventEmitter: EventEmitter
   ) {
-    super(CacheRecord, storageService, eventEmitter)
+    super(SingleContextLruCacheRecord, storageService, eventEmitter)
   }
 }

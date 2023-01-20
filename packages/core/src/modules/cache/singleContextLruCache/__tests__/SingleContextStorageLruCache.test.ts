@@ -1,14 +1,15 @@
 import { getAgentContext, mockFunction } from '../../../../../tests/helpers'
-import { CacheRecord } from '../CacheRecord'
-import { CacheRepository } from '../CacheRepository'
+import { SingleContextLruCacheRecord } from '../SingleContextLruCacheRecord'
+import { SingleContextLruCacheRepository } from '../SingleContextLruCacheRepository'
 import { SingleContextStorageLruCache } from '../SingleContextStorageLruCache'
 
-jest.mock('../CacheRepository')
-const CacheRepositoryMock = CacheRepository as jest.Mock<CacheRepository>
+jest.mock('../SingleContextLruCacheRepository')
+const SingleContextLruCacheRepositoryMock =
+  SingleContextLruCacheRepository as jest.Mock<SingleContextLruCacheRepository>
 
-const cacheRepository = new CacheRepositoryMock()
+const cacheRepository = new SingleContextLruCacheRepositoryMock()
 const agentContext = getAgentContext({
-  registerInstances: [[CacheRepository, cacheRepository]],
+  registerInstances: [[SingleContextLruCacheRepository, cacheRepository]],
 })
 
 describe('SingleContextLruCache', () => {
@@ -21,16 +22,16 @@ describe('SingleContextLruCache', () => {
 
   it('should return the value from the persisted record', async () => {
     const findMock = mockFunction(cacheRepository.findById).mockResolvedValue(
-      new CacheRecord({
+      new SingleContextLruCacheRecord({
         id: 'CONTEXT_STORAGE_LRU_CACHE_ID',
-        entries: [
-          {
-            key: 'test',
-            item: {
+        entries: new Map([
+          [
+            'test',
+            {
               value: 'somevalue',
             },
-          },
-        ],
+          ],
+        ]),
       })
     )
 
@@ -45,9 +46,11 @@ describe('SingleContextLruCache', () => {
     await cache.set(agentContext, 'test', 'somevalue')
     const [[, cacheRecord]] = updateMock.mock.calls
 
-    expect(cacheRecord.entries.length).toBe(1)
-    expect(cacheRecord.entries[0].key).toBe('test')
-    expect(cacheRecord.entries[0].item.value).toBe('somevalue')
+    expect(cacheRecord.entries.size).toBe(1)
+
+    const [[key, item]] = cacheRecord.entries.entries()
+    expect(key).toBe('test')
+    expect(item.value).toBe('somevalue')
 
     expect(await cache.get(agentContext, 'test')).toBe('somevalue')
   })

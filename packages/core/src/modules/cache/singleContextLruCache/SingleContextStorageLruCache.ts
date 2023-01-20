@@ -1,4 +1,4 @@
-import type { CacheItem } from './CacheRecord'
+import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 import type { AgentContext } from '../../../agent/context'
 import type { Cache } from '../Cache'
 
@@ -6,8 +6,8 @@ import { LRUMap } from 'lru_map'
 
 import { AriesFrameworkError } from '../../../error'
 
-import { CacheRecord } from './CacheRecord'
-import { CacheRepository } from './CacheRepository'
+import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
+import { SingleContextLruCacheRepository } from './SingleContextLruCacheRepository'
 
 const CONTEXT_STORAGE_LRU_CACHE_ID = 'CONTEXT_STORAGE_LRU_CACHE_ID'
 
@@ -28,7 +28,7 @@ export interface SingleContextStorageLruCacheOptions {
  */
 export class SingleContextStorageLruCache implements Cache {
   private limit: number
-  private _cache?: LRUMap<string, CacheItem>
+  private _cache?: LRUMap<string, SingleContextLruCacheItem>
   private _contextCorrelationId?: string
 
   public constructor({ limit }: SingleContextStorageLruCacheOptions) {
@@ -100,21 +100,18 @@ export class SingleContextStorageLruCache implements Cache {
     return this._cache
   }
 
-  private lruFromRecord(cacheRecord: CacheRecord) {
-    return new LRUMap<string, CacheItem>(
-      this.limit,
-      cacheRecord.entries.map((e) => [e.key, e.item])
-    )
+  private lruFromRecord(cacheRecord: SingleContextLruCacheRecord) {
+    return new LRUMap<string, SingleContextLruCacheItem>(this.limit, cacheRecord.entries.entries())
   }
 
   private async fetchCacheRecord(agentContext: AgentContext) {
-    const cacheRepository = agentContext.dependencyManager.resolve(CacheRepository)
+    const cacheRepository = agentContext.dependencyManager.resolve(SingleContextLruCacheRepository)
     let cacheRecord = await cacheRepository.findById(agentContext, CONTEXT_STORAGE_LRU_CACHE_ID)
 
     if (!cacheRecord) {
-      cacheRecord = new CacheRecord({
+      cacheRecord = new SingleContextLruCacheRecord({
         id: CONTEXT_STORAGE_LRU_CACHE_ID,
-        entries: [],
+        entries: new Map(),
       })
 
       await cacheRepository.save(agentContext, cacheRecord)
@@ -123,7 +120,7 @@ export class SingleContextStorageLruCache implements Cache {
     return cacheRecord
   }
 
-  private removeExpiredItems(cache: LRUMap<string, CacheItem>) {
+  private removeExpiredItems(cache: LRUMap<string, SingleContextLruCacheItem>) {
     cache.forEach((value, key) => {
       if (value.expiresAt && Date.now() > value.expiresAt) {
         cache.delete(key)
@@ -132,13 +129,13 @@ export class SingleContextStorageLruCache implements Cache {
   }
 
   private async persistCache(agentContext: AgentContext) {
-    const cacheRepository = agentContext.dependencyManager.resolve(CacheRepository)
+    const cacheRepository = agentContext.dependencyManager.resolve(SingleContextLruCacheRepository)
     const cache = await this.getCache(agentContext)
 
     await cacheRepository.update(
       agentContext,
-      new CacheRecord({
-        entries: cache.toJSON().map(({ key, value: item }) => ({ key, item })),
+      new SingleContextLruCacheRecord({
+        entries: new Map(cache.toJSON().map(({ key, value }) => [key, value])),
         id: CONTEXT_STORAGE_LRU_CACHE_ID,
       })
     )

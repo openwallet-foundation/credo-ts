@@ -3,7 +3,7 @@ import { CacheModule } from '../CacheModule'
 import { CacheModuleConfig } from '../CacheModuleConfig'
 import { InMemoryLruCache } from '../InMemoryLruCache'
 import { SingleContextStorageLruCache } from '../singleContextLruCache'
-import { CacheRepository } from '../singleContextLruCache/CacheRepository'
+import { SingleContextLruCacheRepository } from '../singleContextLruCache/SingleContextLruCacheRepository'
 
 jest.mock('../../../plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
@@ -37,6 +37,6 @@ describe('CacheModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(CacheModuleConfig, cacheModule.config)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(CacheRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SingleContextLruCacheRepository)
   })
 })
