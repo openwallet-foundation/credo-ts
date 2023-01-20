@@ -8,7 +8,7 @@ import {
   SigningProviderRegistry,
   TypedArrayEncoder,
 } from '@aries-framework/core'
-import { GetNymRequest, NymRequest, SchemaRequest } from 'indy-vdr-test-shared'
+import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from 'indy-vdr-test-shared'
 import { Subject } from 'rxjs'
 
 import { CacheRepository } from '../../core/src/cache'
@@ -43,7 +43,6 @@ describe('IndyVdrPoolService', () => {
 
     await wallet.createAndOpen(agentConfig.walletConfig!)
     signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
-
   })
 
   afterAll(async () => {
@@ -55,7 +54,6 @@ describe('IndyVdrPoolService', () => {
   })
 
   describe('DIDs', () => {
-
     test('can get a pool based on the namespace', async () => {
       const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
       expect(pool).toBeInstanceOf(IndyVdrPool)
@@ -94,7 +92,6 @@ describe('IndyVdrPoolService', () => {
       const buffer = TypedArrayEncoder.fromBase58(key.publicKeyBase58)
       const did = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
 
-
       const request = new NymRequest({
         dest: did,
         submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
@@ -105,11 +102,33 @@ describe('IndyVdrPoolService', () => {
 
       console.log(response)
     })
+  })
 
+  describe('CredentialDefinition', () => {
+    test('can write a credential definition using the pool', async () => {
+      const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
+
+      const credentialDefinitionRequest = new CredentialDefinitionRequest({
+        submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
+        credentialDefinition: {
+          ver: '1.0',
+          id: 'test-credential-id',
+          schemaId: 'test-schema-id',
+          type: 'CL',
+          tag: 'TAG',
+          value: {
+            primary: {},
+          },
+        },
+      })
+
+      const response = await pool.submitWriteRequest(agentContext, credentialDefinitionRequest, signerKey)
+
+      console.log(response)
+    })
   })
 
   describe('Schemas', () => {
-
     test('can write a schema using the pool', async () => {
       const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
 
@@ -122,20 +141,15 @@ describe('IndyVdrPoolService', () => {
           name: 'test-schema',
           ver: '1.0',
           version: dynamicVersion, // TODO remove this before pushing
-          attrNames: [
-            'first_name',
-            'last_name',
-            'age'
-          ]
-        }
+          attrNames: ['first_name', 'last_name', 'age'],
+        },
       })
-
 
       const response = await pool.submitWriteRequest(agentContext, schemaRequest, signerKey)
 
       console.log(JSON.stringify(response, null, 2))
 
-      expect(response.op).toEqual("REPLY")
+      expect(response.op).toEqual('REPLY')
 
       // FIXME ts-ignore is required. Check that the response type is typed correctly.
 
@@ -146,13 +160,9 @@ describe('IndyVdrPoolService', () => {
       expect(response.result.txn.data.data.version).toEqual(dynamicVersion) // TODO remove this before pushing
 
       // @ts-ignore
-      expect(response.result.txn.data.data.attr_names.sort()).toEqual(expect.arrayContaining(
-        [
-          'first_name',
-          'last_name',
-          'age'
-        ].sort()
-      ))
+      expect(response.result.txn.data.data.attr_names.sort()).toEqual(
+        expect.arrayContaining(['first_name', 'last_name', 'age'].sort())
+      )
 
       expect(response.result.txn.protocolVersion).toEqual(2)
 
@@ -172,7 +182,7 @@ describe('IndyVdrPoolService', () => {
 
       expect(receivedSubmitterDid).toEqual('TL1EaPFCZ8Si5aUrqScBDt')
 
-      expect(receivedProtocolVersion).toEqual("2")
+      expect(receivedProtocolVersion).toEqual('2')
 
       expect(receivedSchemaName).toEqual('test-schema')
 
@@ -184,7 +194,7 @@ describe('IndyVdrPoolService', () => {
       expect(response.result.reqSignature.values[0].from).toEqual('TL1EaPFCZ8Si5aUrqScBDt')
 
       // testing ver
-      expect(response.result.ver).toEqual("1")
+      expect(response.result.ver).toEqual('1')
     })
 
     test('fails writing a schema with existing verson number using the pool', async () => {
@@ -199,12 +209,8 @@ describe('IndyVdrPoolService', () => {
           name: 'test-schema',
           ver: '1.0',
           version: dynamicVersion,
-          attrNames: [
-            'first_name',
-            'last_name',
-            'age'
-          ]
-        }
+          attrNames: ['first_name', 'last_name', 'age'],
+        },
       })
 
       const schemaRequest2 = new SchemaRequest({
@@ -214,14 +220,9 @@ describe('IndyVdrPoolService', () => {
           name: 'test-schema',
           ver: '1.0',
           version: dynamicVersion,
-          attrNames: [
-            'first_name',
-            'last_name',
-            'age'
-          ]
-        }
+          attrNames: ['first_name', 'last_name', 'age'],
+        },
       })
-
 
       const response = await pool.submitWriteRequest(agentContext, schemaRequest, signerKey)
       expect(response).toBeDefined()
@@ -232,8 +233,6 @@ describe('IndyVdrPoolService', () => {
 
       // @ts-ignore
       // expect(response2.identifier).toEqual('TL1EaPFCZ8Si5aUrqScBDt')
-
     })
-
   })
 })
