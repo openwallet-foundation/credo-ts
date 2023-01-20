@@ -20,7 +20,6 @@ import {
 } from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar, Store } from 'aries-askar-test-shared'
-import { TextEncoder } from 'util'
 
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
@@ -29,7 +28,7 @@ import { AskarWallet } from '../AskarWallet'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
-  id: 'Wallet: askarWalletTest',
+  id: 'Wallet: AskarWalletTest',
   // generated using indy.generateWalletKey
   key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
   keyDerivationMethod: KeyDerivationMethod.Raw,
@@ -110,28 +109,29 @@ describe('AskarWallet with custom signing provider', () => {
   const seed = 'sample-seed'
   const message = TypedArrayEncoder.fromString('sample-message')
 
+  class DummySigningProvider implements SigningProvider {
+    public keyType: KeyType = KeyType.Bls12381g1g2
+
+    public async createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair> {
+      return {
+        publicKeyBase58: encodeToBase58(Buffer.from(options.seed || 'publicKeyBase58')),
+        privateKeyBase58: 'privateKeyBase58',
+        keyType: KeyType.Bls12381g1g2,
+      }
+    }
+
+    public async sign(options: SignOptions): Promise<Buffer> {
+      return new Buffer('signed')
+    }
+
+    public async verify(options: VerifyOptions): Promise<boolean> {
+      return true
+    }
+  }
+
   beforeEach(async () => {
     registerAriesAskar({ askar: new NodeJSAriesAskar() })
 
-    class DummySigningProvider implements SigningProvider {
-      public keyType: KeyType = KeyType.Bls12381g1g2
-
-      public async createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair> {
-        return {
-          publicKeyBase58: encodeToBase58(new TextEncoder().encode(options.seed || 'publicKeyBase58')),
-          privateKeyBase58: 'privateKeyBase58',
-          keyType: KeyType.Bls12381g1g2,
-        }
-      }
-
-      public async sign(options: SignOptions): Promise<Buffer> {
-        return new Buffer('signed')
-      }
-
-      public async verify(options: VerifyOptions): Promise<boolean> {
-        return true
-      }
-    }
     askarWallet = new AskarWallet(
       testLogger,
       new agentDependencies.FileSystem(),
@@ -147,7 +147,7 @@ describe('AskarWallet with custom signing provider', () => {
   test('Create custom keypair and use it for signing', async () => {
     const key = await askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
-    expect(key.publicKeyBase58).toBe(encodeToBase58(new TextEncoder().encode(seed)))
+    expect(key.publicKeyBase58).toBe(encodeToBase58(Buffer.from(seed)))
 
     const signature = await askarWallet.sign({
       data: message,
@@ -160,7 +160,7 @@ describe('AskarWallet with custom signing provider', () => {
   test('Create custom keypair and use it for verifying', async () => {
     const key = await askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })
     expect(key.keyType).toBe(KeyType.Bls12381g1g2)
-    expect(key.publicKeyBase58).toBe(encodeToBase58(new TextEncoder().encode(seed)))
+    expect(key.publicKeyBase58).toBe(encodeToBase58(Buffer.from(seed)))
 
     const signature = await askarWallet.verify({
       data: message,

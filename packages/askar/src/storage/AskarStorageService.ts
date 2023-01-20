@@ -133,7 +133,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
@@ -152,7 +152,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
@@ -174,7 +174,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async delete(agentContext: AgentContext, record: T) {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     try {
       await session.remove({ category: record.type, name: record.id })
@@ -196,7 +196,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     id: string
   ): Promise<void> {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     try {
       await session.remove({ category: recordClass.type, name: id })
@@ -214,7 +214,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     try {
       const record = await session.fetch({ category: recordClass.type, name: id })
@@ -243,7 +243,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   /** @inheritDoc */
   public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
     assertAskarWallet(agentContext.wallet)
-    const session = (agentContext.wallet as AskarWallet).session
+    const session = agentContext.wallet.session
 
     const records = await session.fetchAll({ category: recordClass.type })
 

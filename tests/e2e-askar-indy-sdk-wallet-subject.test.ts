@@ -1,6 +1,5 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { Subject } from 'rxjs'
 
@@ -16,7 +15,7 @@ import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-describe('E2E Wallet Subject tests', () => {
+describe('E2E Askar-Indy SDK Wallet Subject tests', () => {
   let recipientAgent: Agent
   let senderAgent: Agent
 

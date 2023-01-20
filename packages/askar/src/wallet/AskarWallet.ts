@@ -34,15 +34,14 @@ import {
   FileSystem,
   WalletNotFoundError,
 } from '@aries-framework/core'
+// eslint-disable-next-line import/order
 import { StoreKeyMethod, KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
 import { inject, injectable } from 'tsyringe'
-import { TextDecoder, TextEncoder } from 'util'
 
 import { encodeToBase58, decodeFromBase58 } from '../../../core/src/utils/base58'
-import { uint8ArrayToBase64URL } from '../../../core/src/utils/base64'
 import {
   askarErrors,
   isAskarError,
@@ -354,9 +353,7 @@ export class AskarWallet implements Wallet {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key from seed
-        const key = seed
-          ? AskarKey.fromSeed({ seed: new TextEncoder().encode(seed), algorithm })
-          : AskarKey.generate(algorithm)
+        const key = seed ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm }) : AskarKey.generate(algorithm)
 
         // Store key
         await this.session.insertKey({ key, name: encodeToBase58(key.publicBytes) })
@@ -507,7 +504,7 @@ export class AskarWallet implements Wallet {
       if (senderVerkey && senderExchangeKey) {
         const encryptedSender = CryptoBox.seal({
           recipientKey: targetExchangeKey,
-          message: new TextEncoder().encode(senderVerkey),
+          message: Buffer.from(senderVerkey),
         })
         const nonce = CryptoBox.randomNonce()
         const encryptedCek = CryptoBox.cryptoBox({
@@ -522,8 +519,8 @@ export class AskarWallet implements Wallet {
             encryptedKey: encryptedCek,
             header: {
               kid: recipientKey,
-              sender: uint8ArrayToBase64URL(encryptedSender),
-              iv: uint8ArrayToBase64URL(nonce),
+              sender: TypedArrayEncoder.toBase64URL(encryptedSender),
+              iv: TypedArrayEncoder.toBase64URL(nonce),
             },
           })
         )
@@ -551,15 +548,15 @@ export class AskarWallet implements Wallet {
     }
 
     const { ciphertext, tag, nonce } = cek.aeadEncrypt({
-      message: new TextEncoder().encode(JSON.stringify(payload)),
-      aad: new TextEncoder().encode(JsonEncoder.toBase64URL(protectedJson)),
+      message: Buffer.from(JSON.stringify(payload)),
+      aad: Buffer.from(JsonEncoder.toBase64URL(protectedJson)),
     }).parts
 
     const envelope = new JweEnvelope({
-      ciphertext: uint8ArrayToBase64URL(ciphertext),
-      iv: uint8ArrayToBase64URL(nonce),
+      ciphertext: TypedArrayEncoder.toBase64URL(ciphertext),
+      iv: TypedArrayEncoder.toBase64URL(nonce),
       protected: JsonEncoder.toBase64URL(protectedJson),
-      tag: uint8ArrayToBase64URL(tag),
+      tag: TypedArrayEncoder.toBase64URL(tag),
     }).toJson()
 
     return envelope as EncryptedMessage
@@ -588,8 +585,8 @@ export class AskarWallet implements Wallet {
       if (!kid) {
         throw new WalletError('Blank recipient key')
       }
-      const sender = recip.header.sender ? new Uint8Array(Buffer.from(recip.header.sender, 'base64')) : undefined
-      const iv = recip.header.iv ? new Uint8Array(Buffer.from(recip.header.iv, 'base64')) : undefined
+      const sender = recip.header.sender ? TypedArrayEncoder.fromBase64(recip.header.sender) : undefined
+      const iv = recip.header.iv ? TypedArrayEncoder.fromBase64(recip.header.iv) : undefined
       if (sender && !iv) {
         throw new WalletError('Missing IV')
       } else if (!sender && iv) {
@@ -599,7 +596,7 @@ export class AskarWallet implements Wallet {
         kid,
         sender,
         iv,
-        encrypted_key: new Uint8Array(Buffer.from(recip.encrypted_key, 'base64')),
+        encrypted_key: TypedArrayEncoder.fromBase64(recip.encrypted_key),
       })
     }
 
@@ -620,7 +617,7 @@ export class AskarWallet implements Wallet {
         recipientKey = recipient.kid
 
         if (recipient.sender && recipient.iv) {
-          senderKey = new TextDecoder().decode(
+          senderKey = TypedArrayEncoder.toUtf8String(
             CryptoBox.sealOpen({
               recipientKey: recip_x,
               ciphertext: recipient.sender,
@@ -651,12 +648,11 @@ export class AskarWallet implements Wallet {
 
     const cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgs.Chacha20C20P, secretKey: payloadKey })
     const message = cek.aeadDecrypt({
-      ciphertext: new Uint8Array(Buffer.from(messagePackage.ciphertext as any, 'base64')),
-      nonce: new Uint8Array(Buffer.from(messagePackage.iv as any, 'base64')),
-      tag: new Uint8Array(Buffer.from(messagePackage.tag as any, 'base64')),
-      aad: new TextEncoder().encode(messagePackage.protected),
+      ciphertext: TypedArrayEncoder.fromBase64(messagePackage.ciphertext as any),
+      nonce: TypedArrayEncoder.fromBase64(messagePackage.iv as any),
+      tag: TypedArrayEncoder.fromBase64(messagePackage.tag as any),
+      aad: TypedArrayEncoder.fromString(messagePackage.protected),
     })
-
     return {
       plaintextMessage: JsonEncoder.fromBuffer(message),
       senderKey,
@@ -666,7 +662,7 @@ export class AskarWallet implements Wallet {
 
   public async generateNonce(): Promise<string> {
     try {
-      return new TextDecoder().decode(CryptoBox.randomNonce())
+      return TypedArrayEncoder.toUtf8String(CryptoBox.randomNonce())
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })

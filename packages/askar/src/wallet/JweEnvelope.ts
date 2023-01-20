@@ -1,7 +1,5 @@
-import { JsonTransformer } from '@aries-framework/core'
+import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
-
-import { uint8ArrayToBase64URL } from '../../../core/src//utils/base64'
 
 export class JweRecipient {
   @Expose({ name: 'encrypted_key' })
@@ -10,7 +8,7 @@ export class JweRecipient {
 
   public constructor(options: { encryptedKey: Uint8Array; header?: Record<string, string> }) {
     if (options) {
-      this.encryptedKey = uint8ArrayToBase64URL(options.encryptedKey)
+      this.encryptedKey = TypedArrayEncoder.toBase64URL(options.encryptedKey)
 
       this.header = options.header
     }
@@ -33,7 +31,6 @@ export class JweEnvelope {
   public protected!: string
   public unprotected?: string
 
-  @Expose()
   @Type(() => JweRecipient)
   public recipients?: JweRecipient[]
   public ciphertext!: string

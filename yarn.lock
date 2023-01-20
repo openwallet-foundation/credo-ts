@@ -3046,7 +3046,7 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-aries-askar-test-nodejs@^0.1.0-dev.4:
+aries-askar-test-nodejs@0.1.0-dev.4, aries-askar-test-nodejs@^0.1.0-dev.4:
   version "0.1.0-dev.4"
   resolved "https://registry.yarnpkg.com/aries-askar-test-nodejs/-/aries-askar-test-nodejs-0.1.0-dev.4.tgz#4fa128489d697cfb0c890b8959c48018cc5d5845"
   integrity sha512-0tVLQLQDXyEQpsZgTGvxDgFpRcfILLp3Lpt5vzfoN0O2Dcgff1sEiMdVucPcZ80LjZ3WlvWtvc48XaZYEUM7Og==

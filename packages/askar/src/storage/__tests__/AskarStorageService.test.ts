@@ -3,7 +3,6 @@ import type { AgentContext, TagsBase } from '@aries-framework/core'
 import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar } from 'aries-askar-test-shared'
-import { TextEncoder } from 'util'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -85,7 +84,7 @@ describe('AskarStorageService', () => {
         name: 'some-id',
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         sessionHandle: wallet.session.handle!,
-        value: new Uint8Array(new TextEncoder().encode('{}')),
+        value: Buffer.from('{}'),
         tags: {
           someBoolean: '1',
           someOtherBoolean: '0',
