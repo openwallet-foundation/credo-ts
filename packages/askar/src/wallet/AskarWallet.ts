@@ -387,11 +387,11 @@ export class AskarWallet implements Wallet {
    */
   public async sign({ data, key }: WalletSignOptions): Promise<Buffer> {
     try {
-      if (!TypedArrayEncoder.isTypedArray(data)) {
-        throw new WalletError(`Currently not supporting signing of multiple messages`)
-      }
-
       if (keyTypeSupportedByAskar(key.keyType)) {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
+          throw new WalletError(`Currently not supporting signing of multiple messages`)
+        }
+
         const keyEntry = await this.session.fetchKey({ name: key.publicKeyBase58 })
 
         if (!keyEntry) {
@@ -439,11 +439,11 @@ export class AskarWallet implements Wallet {
    */
   public async verify({ data, key, signature }: WalletVerifyOptions): Promise<boolean> {
     try {
-      if (!TypedArrayEncoder.isTypedArray(data)) {
-        throw new WalletError(`Currently not supporting signature of multiple messages`)
-      }
-
       if (keyTypeSupportedByAskar(key.keyType)) {
+        if (!TypedArrayEncoder.isTypedArray(data)) {
+          throw new WalletError(`Currently not supporting verification of multiple messages`)
+        }
+
         const askarKey = AskarKey.fromPublicBytes({
           algorithm: keyAlgFromString(key.keyType),
           publicKey: key.publicKey,
