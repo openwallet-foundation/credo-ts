@@ -28,7 +28,7 @@
     "next-version-bump": "ts-node ./scripts/get-next-bump.ts"
   },
   "dependencies": {
-    "aries-askar-test-nodejs": "0.1.0-dev.4"
+    "aries-askar-test-nodejs": "0.1.0-dev.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",

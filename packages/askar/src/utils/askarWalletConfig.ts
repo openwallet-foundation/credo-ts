@@ -1,3 +1,4 @@
+import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPostgresStorageConfig'
 import type { WalletConfig } from '@aries-framework/core'
 
 import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
@@ -33,8 +34,41 @@ export const uriFromWalletConfig = (walletConfig: WalletConfig, basePath: string
       path = `${(walletConfig.storage.path as string) ?? basePath + '/wallet'}/${walletConfig.id}/sqlite.db`
       uri = `sqlite://${path}`
     }
+  } else if (walletConfig.storage.type === 'postgres') {
+    const storageConfig = walletConfig.storage as unknown as AskarWalletPostgresStorageConfig
+
+    if (!storageConfig.config || !storageConfig.credentials) {
+      throw new WalletError('Invalid storage configuration for postgres wallet')
+    }
+
+    const urlParams = []
+    if (storageConfig.config.connectTimeout !== undefined) {
+      urlParams.push(`connect_timeout=${encodeURIComponent(storageConfig.config.connectTimeout)}`)
+    }
+    if (storageConfig.config.idleTimeout !== undefined) {
+      urlParams.push(`idle_timeout=${encodeURIComponent(storageConfig.config.idleTimeout)}`)
+    }
+    if (storageConfig.config.maxConnections !== undefined) {
+      urlParams.push(`max_connections=${encodeURIComponent(storageConfig.config.maxConnections)}`)
+    }
+    if (storageConfig.config.minConnections !== undefined) {
+      urlParams.push(`min_connections=${encodeURIComponent(storageConfig.config.minConnections)}`)
+    }
+    if (storageConfig.credentials.adminAccount !== undefined) {
+      urlParams.push(`admin_account=${encodeURIComponent(storageConfig.credentials.adminAccount)}`)
+    }
+    if (storageConfig.credentials.adminPassword !== undefined) {
+      urlParams.push(`admin_password=${encodeURIComponent(storageConfig.credentials.adminPassword)}`)
+    }
+
+    uri = `postgres://${encodeURIComponent(storageConfig.credentials.account)}:${encodeURIComponent(
+      storageConfig.credentials.password
+    )}@${storageConfig.config.host}/${encodeURIComponent(walletConfig.id)}`
+
+    if (urlParams.length > 0) {
+      uri = `${uri}?${urlParams.join('&')}`
+    }
   } else {
-    // TODO posgres
     throw new WalletError(`Storage type not supported: ${walletConfig.storage.type}`)
   }
 

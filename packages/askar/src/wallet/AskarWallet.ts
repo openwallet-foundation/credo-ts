@@ -691,7 +691,7 @@ export class AskarWallet implements Wallet {
       uri,
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
-      keyMethod: keyDerivationMethodToStoreKeyMethod(walletConfig.keyDerivationMethod) ?? StoreKeyMethod.Raw,
+      keyMethod: keyDerivationMethodToStoreKeyMethod(walletConfig.keyDerivationMethod) ?? StoreKeyMethod.None,
       passKey: walletConfig.key,
     }
   }

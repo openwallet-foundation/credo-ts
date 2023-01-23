@@ -15,6 +15,9 @@ import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
+// FIXME: Remove when Askar JS Wrapper performance issues are solved
+jest.setTimeout(180000)
+
 describe('E2E Askar-Indy SDK Wallet Subject tests', () => {
   let recipientAgent: Agent
   let senderAgent: Agent

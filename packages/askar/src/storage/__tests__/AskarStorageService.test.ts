@@ -1,6 +1,11 @@
 import type { AgentContext, TagsBase } from '@aries-framework/core'
 
-import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
+import {
+  TypedArrayEncoder,
+  SigningProviderRegistry,
+  RecordDuplicateError,
+  RecordNotFoundError,
+} from '@aries-framework/core'
 import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { registerAriesAskar } from 'aries-askar-test-shared'
 
@@ -8,6 +13,7 @@ import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AskarWallet } from '../../wallet/AskarWallet'
 import { AskarStorageService } from '../AskarStorageService'
+import { askarQueryFromSearchQuery } from '../utils'
 
 describe('AskarStorageService', () => {
   let wallet: AskarWallet
@@ -84,7 +90,7 @@ describe('AskarStorageService', () => {
         name: 'some-id',
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         sessionHandle: wallet.session.handle!,
-        value: Buffer.from('{}'),
+        value: TypedArrayEncoder.fromString('{}'),
         tags: {
           someBoolean: '1',
           someOtherBoolean: '0',
@@ -238,9 +244,6 @@ describe('AskarStorageService', () => {
 
     it('finds records using $not statements', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
-      // FIXME: Seems to be an issue with Askar WQL implementation:
-      // it only takes into account records containing a myTag and returns only those different from the $not rule
-      // (i.e. expectedRecord2 will not be taken into account because it does not have any myTag value)
       const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
@@ -253,8 +256,6 @@ describe('AskarStorageService', () => {
     })
 
     it('correctly transforms an advanced query into a valid WQL query', async () => {
-      const storageService = new AskarStorageService<TestRecord>()
-
       const expectedQuery = {
         $and: [
           {
@@ -287,8 +288,7 @@ describe('AskarStorageService', () => {
       }
 
       expect(
-        //@ts-ignore
-        storageService.askarQueryFromSearchQuery({
+        askarQueryFromSearchQuery<TestRecord>({
           $and: [
             {
               $or: [{ myTag: true }, { myTag: false }],

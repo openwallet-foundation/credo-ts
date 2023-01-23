@@ -51,7 +51,7 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('Get the Master Secret', () => {
-    expect(askarWallet.masterSecretId).toEqual('Wallet: askarWalletTest')
+    expect(askarWallet.masterSecretId).toEqual('Wallet: AskarWalletTest')
   })
 
   test('Get the wallet store', () => {
