@@ -59,8 +59,8 @@ describe('credentials', () => {
 
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
-      'Faber Agent Credentials LD',
-      'Alice Agent Credentials LD'
+      'Faber Agent Credentials Format Data LD',
+      'Alice Agent Credentials Format Data LD'
     ))
     wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
     await wallet.createKey({ seed, keyType: KeyType.Ed25519 })

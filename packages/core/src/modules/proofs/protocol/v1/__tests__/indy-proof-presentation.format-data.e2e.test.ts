@@ -21,8 +21,8 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber Agent Proofs',
-      'Alice Agent Proofs'
+      'Faber Agent Proofs Format Data v1',
+      'Alice Agent Proofs Format Data v2'
     ))
   })
 

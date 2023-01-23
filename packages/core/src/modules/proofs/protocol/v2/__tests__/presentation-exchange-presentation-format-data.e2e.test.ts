@@ -1,5 +1,4 @@
 import type { Agent } from '../../../../../agent/Agent'
-import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 
@@ -17,7 +16,10 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTest('Faber agent', 'Alice agent'))
+    ;({ faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTest(
+      'Faber Agent v2 PEX present proof format data',
+      'Alice Agent v2 PEX present proof format data'
+    ))
   })
 
   afterAll(async () => {
@@ -98,6 +100,7 @@ describe('Present Proof', () => {
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
+      timeoutMs: 200000, // Temporary I have increased timeout as, verify presentation takes time to fetch the data from documentLoader
     })
 
     // Faber accepts the presentation provided by Alice

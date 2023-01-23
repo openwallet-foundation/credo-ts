@@ -20,8 +20,8 @@ describe('Present Proof', () => {
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent v2 present proof',
-      'Alice agent v2 present proof'
+      'Faber agent v2 Indy present proof format data',
+      'Alice agent v2 Indy present proof format data'
     ))
   })
 

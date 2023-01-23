@@ -17,8 +17,8 @@ describe('v2 credentials', () => {
 
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
-      'Faber Agent Credentials v2',
-      'Alice Agent Credentials v2'
+      'Faber Agent Credentials Format Data v2',
+      'Alice Agent Credentials Format Data v2'
     ))
   })
 

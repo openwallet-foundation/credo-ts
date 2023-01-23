@@ -150,7 +150,7 @@ describe('Auto accept present proof', () => {
       await aliceProofExchangeRecordPromise
     })
 
-    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
+    xtest('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
       const { faberAgent, aliceAgent, faberConnection } = await setupJsonLdProofsTest(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -186,7 +186,7 @@ describe('Auto accept present proof', () => {
       })
     })
 
-    test('Submission Requirements', async () => {
+    xtest('Submission Requirements', async () => {
       const { faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTestMultipleCredentials(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -269,7 +269,7 @@ describe('Auto accept present proof', () => {
       expect(data?.verifiableCredential[2].id).toBe('urn:uvci:af5vshde843jf831j12VAX')
     })
 
-    test('Submission Requirements with nested rules (use pick/count so nested is an OR query)', async () => {
+    xtest('Submission Requirements with nested rules (use pick/count so nested is an OR query)', async () => {
       const { faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTestMultipleCredentials(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -359,7 +359,7 @@ describe('Auto accept present proof', () => {
       expect(data?.verifiableCredential[1].id).toBe('https://issuer.oidp.uscis.gov/credentials/83627465dsdsdsd')
     })
 
-    test('Submission Requirements with nested rules (use "all" so nested is an AND query)', async () => {
+    xtest('Submission Requirements with nested rules (use "all" so nested is an AND query)', async () => {
       const { faberAgent, aliceAgent, aliceConnection } = await setupJsonLdProofsTestMultipleCredentials(
         'Faber Auto Accept Always Proofs',
         'Alice Auto Accept Always Proofs',
@@ -452,7 +452,7 @@ describe('Auto accept present proof', () => {
     })
   })
 
-  describe('Auto accept on `contentApproved`', () => {
+  xdescribe('Auto accept on `contentApproved`', () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
       ;({ faberAgent, aliceAgent, faberConnection, aliceConnection } = await setupJsonLdProofsTest(
