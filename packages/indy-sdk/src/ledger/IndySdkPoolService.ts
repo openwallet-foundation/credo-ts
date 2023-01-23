@@ -2,15 +2,7 @@ import type { AcceptanceMechanisms, AuthorAgreement, IndySdkPoolConfig } from '.
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
-import {
-  InjectionSymbols,
-  Logger,
-  injectable,
-  inject,
-  FileSystem,
-  CacheRepository,
-  PersistedLruCache,
-} from '@aries-framework/core'
+import { CacheModuleConfig, InjectionSymbols, Logger, injectable, inject, FileSystem } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { IndySdkError, isIndyError } from '../error'
@@ -22,8 +14,6 @@ import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 import { IndySdkPool } from './IndySdkPool'
 import { IndySdkPoolError, IndySdkPoolNotConfiguredError, IndySdkPoolNotFoundError } from './error'
 
-export const INDY_SDK_DID_POOL_CACHE_ID = 'INDY_SDK_DID_POOL_CACHE'
-export const INDY_SDK_DID_POOL_CACHE_LIMIT = 500
 export interface CachedDidResponse {
   nymResponse: GetNymResponse
   poolId: string
@@ -36,10 +26,8 @@ export class IndySdkPoolService {
   private indySdk: IndySdk
   private stop$: Subject<boolean>
   private fileSystem: FileSystem
-  private didCache: PersistedLruCache<CachedDidResponse>
 
   public constructor(
-    cacheRepository: CacheRepository,
     indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
@@ -49,8 +37,6 @@ export class IndySdkPoolService {
     this.indySdk = indySdk
     this.fileSystem = fileSystem
     this.stop$ = stop$
-
-    this.didCache = new PersistedLruCache(INDY_SDK_DID_POOL_CACHE_ID, INDY_SDK_DID_POOL_CACHE_LIMIT, cacheRepository)
   }
 
   public setPools(poolConfigs: IndySdkPoolConfig[]) {
@@ -90,7 +76,8 @@ export class IndySdkPoolService {
       )
     }
 
-    const cachedNymResponse = await this.didCache.get(agentContext, did)
+    const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, `IndySdkPoolService:${did}`)
     const pool = this.pools.find((pool) => pool.id === cachedNymResponse?.poolId)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -137,7 +124,7 @@ export class IndySdkPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await this.didCache.set(agentContext, did, {
+    await cache.set(agentContext, `IndySdkPoolService:${did}`, {
       nymResponse: value.did,
       poolId: value.pool.id,
     })
