@@ -3046,23 +3046,23 @@ argparse@^1.0.7:
   dependencies:
     sprintf-js "~1.0.2"
 
-aries-askar-test-nodejs@0.1.0-dev.5, aries-askar-test-nodejs@^0.1.0-dev.5:
-  version "0.1.0-dev.5"
-  resolved "https://registry.yarnpkg.com/aries-askar-test-nodejs/-/aries-askar-test-nodejs-0.1.0-dev.5.tgz#dd2b804cec69f78cdf51521d30b509afa5354ac0"
-  integrity sha512-Veotp1nUmH0SjmJaNChuRte1YydvMzhE6u18Ht9JwugwjbF+BH9aE/qkMWCa8s6GKkqsxrr7AUUsKDDe8XmBYw==
+aries-askar-test-nodejs@^0.1.0-dev.6:
+  version "0.1.0-dev.6"
+  resolved "https://registry.yarnpkg.com/aries-askar-test-nodejs/-/aries-askar-test-nodejs-0.1.0-dev.6.tgz#ad63f37a5c7ff7c2c77e063d3113e48a56a71c78"
+  integrity sha512-SMF34Ntd20XeL0gFqMLFRRLp+Wsk0U6kTYcZNJQ5FYJR7H2qAIbPp9t3TyyTT2cpRk98bNqcG0xHrXjTnAbtcQ==
   dependencies:
     "@mapbox/node-pre-gyp" "^1.0.10"
-    aries-askar-test-shared "0.1.0-dev.5"
+    aries-askar-test-shared "0.1.0-dev.6"
     ffi-napi "^4.0.3"
     node-cache "^5.1.2"
     ref-array-di "^1.2.2"
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-aries-askar-test-shared@0.1.0-dev.5, aries-askar-test-shared@^0.1.0-dev.5:
-  version "0.1.0-dev.5"
-  resolved "https://registry.yarnpkg.com/aries-askar-test-shared/-/aries-askar-test-shared-0.1.0-dev.5.tgz#5a7c358a5749a1a7d3a96be5eb36e8939902f571"
-  integrity sha512-dYg+YdeVy1hEOxhKUmssbSnkTQ2fe7AVZ4dG9YqFMeD9+DkJ7ThNsAasR54sgXmd3Aa1G7inu2oRveJxlETXuw==
+aries-askar-test-shared@0.1.0-dev.6, aries-askar-test-shared@^0.1.0-dev.6:
+  version "0.1.0-dev.6"
+  resolved "https://registry.yarnpkg.com/aries-askar-test-shared/-/aries-askar-test-shared-0.1.0-dev.6.tgz#409d60067b8772b154f4b549261d317979b05a39"
+  integrity sha512-PKAUqxaqDTAgYxvORZr2ugulmu8KRJ2PKRb45fwjWvNRUgkfWXSEnGCogTZ8Y1Xs4c2gpypnilVbMmUy5fhDhQ==
   dependencies:
     fast-text-encoding "^1.0.3"
 
