@@ -2,10 +2,10 @@ import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from 'indy-vdr-test-shared'
 
-import { Logger, InjectionSymbols, injectable, inject, LedgerNotConfiguredError, PersistedLruCache, CacheRepository } from '@aries-framework/core'
+import { Logger, InjectionSymbols, injectable, inject, PersistedLruCache, CacheRepository } from '@aries-framework/core'
 import { GetNymRequest } from 'indy-vdr-test-shared'
 
-import { IndyVdrError, IndyVdrNotFoundError } from '../error'
+import { IndyVdrError, IndyVdrNotFoundError, IndyVdrConfiguredError } from '../error'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
@@ -84,7 +84,7 @@ export class IndyVdrPoolService {
     const pools = this.pools
 
     if (pools.length === 0) {
-      throw new LedgerNotConfiguredError(
+      throw new IndyVdrConfiguredError(
         "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
       )
     }
@@ -166,7 +166,7 @@ export class IndyVdrPoolService {
    */
   public getPoolForNamespace(indyNamespace: string) {
     if (this.pools.length === 0) {
-      throw new LedgerNotConfiguredError(
+      throw new IndyVdrConfiguredError(
         "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
       )
     }
