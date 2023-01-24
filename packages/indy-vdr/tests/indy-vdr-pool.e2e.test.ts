@@ -1,7 +1,5 @@
-import type { CacheRecord } from '../../core/src/cache'
 
 import {
-  EventEmitter,
   IndyWallet,
   Key,
   KeyType,
@@ -9,19 +7,13 @@ import {
   TypedArrayEncoder,
 } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from 'indy-vdr-test-shared'
-import { Subject } from 'rxjs'
 
-import { CacheRepository } from '../../core/src/cache'
-import { IndyStorageService } from '../../core/src/storage/IndyStorageService'
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 
-const storageService = new IndyStorageService<CacheRecord>(agentDependencies)
-const eventEmitter = new EventEmitter(agentDependencies, new Subject())
-const cacheRepository = new CacheRepository(storageService, eventEmitter)
-const indyVdrPoolService = new IndyVdrPoolService(cacheRepository, testLogger)
+const indyVdrPoolService = new IndyVdrPoolService(testLogger)
 const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })

@@ -2,7 +2,7 @@ import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from 'indy-vdr-test-shared'
 
-import { Logger, InjectionSymbols, injectable, inject, PersistedLruCache, CacheRepository } from '@aries-framework/core'
+import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig} from '@aries-framework/core'
 import { GetNymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrConfiguredError } from '../error'
@@ -25,12 +25,10 @@ export interface CachedDidResponse {
 export class IndyVdrPoolService {
   public pools: IndyVdrPool[] = []
   private logger: Logger
-  private didCache: PersistedLruCache<CachedDidResponse>
 
-  public constructor(cacheRepository: CacheRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor( @inject(InjectionSymbols.Logger) logger: Logger) {
     this.logger = logger
 
-    this.didCache = new PersistedLruCache(INDY_VDR_LEGACY_DID_POOL_CACHE_ID, DID_POOL_CACHE_LIMIT, cacheRepository)
   }
 
   public setPools(poolConfigs: IndyVdrPoolConfig[]) {
@@ -89,7 +87,9 @@ export class IndyVdrPoolService {
       )
     }
 
-    const cachedNymResponse = await this.didCache.get(agentContext, did)
+    const didCache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+
+    const cachedNymResponse = await didCache.get<CachedDidResponse>(agentContext, `IndyVdrPoolService:${did}`)
     const pool = this.pools.find((pool) => pool.indyNamespace === cachedNymResponse?.indyNamespace)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -136,7 +136,7 @@ export class IndyVdrPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await this.didCache.set(agentContext, did, {
+    await didCache.set(agentContext, did, {
       nymResponse: {
         did: value.did.nymResponse.did,
         verkey: value.did.nymResponse.verkey,
