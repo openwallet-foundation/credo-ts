@@ -1,15 +1,16 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { ConnectionResponseMessage } from '../messages'
+import { DidExchangeRole } from '../models'
 
-export class ConnectionResponseHandler implements Handler {
+export class ConnectionResponseHandler implements MessageHandler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
@@ -29,14 +30,19 @@ export class ConnectionResponseHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ConnectionResponseHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<ConnectionResponseHandler>) {
     const { recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection response without senderKey or recipientKey')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
+    // Query by both role and thread id to allow connecting to self
+    const connectionRecord = await this.connectionService.getByRoleAndThreadId(
+      messageContext.agentContext,
+      DidExchangeRole.Requester,
+      message.threadId
+    )
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
@@ -83,7 +89,7 @@ export class ConnectionResponseHandler implements Handler {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      return createOutboundMessage(connection, message)
+      return new OutboundMessageContext(message, { agentContext: messageContext.agentContext, connection })
     }
   }
 }

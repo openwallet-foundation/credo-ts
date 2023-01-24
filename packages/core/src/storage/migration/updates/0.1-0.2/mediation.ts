@@ -1,6 +1,6 @@
+import type { V0_1ToV0_2UpdateConfig } from './index'
 import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { MediationRecord } from '../../../../modules/routing'
-import type { V0_1ToV0_2UpdateConfig } from './index'
 
 import { MediationRepository, MediationRole } from '../../../../modules/routing'
 

@@ -67,7 +67,11 @@ const revDef: RevocRegDef = {
     maxCredNum: 33,
     tailsHash: 'd',
     tailsLocation: 'x',
-    publicKeys: ['x'],
+    publicKeys: {
+      accumKey: {
+        z: 'x',
+      },
+    },
   },
   ver: 't',
 }
@@ -171,23 +175,25 @@ let credentialRecord: CredentialExchangeRecord
 describe('Indy CredentialFormatService', () => {
   let agentContext: AgentContext
   beforeEach(async () => {
-    agentContext = getAgentContext()
-    agentConfig = getAgentConfig('CredentialServiceTest')
-
     indyIssuerService = new IndyIssuerServiceMock()
     indyHolderService = new IndyHolderServiceMock()
     indyLedgerService = new IndyLedgerServiceMock()
     didResolverService = new DidResolverServiceMock()
     connectionService = new ConnectionServiceMock()
 
-    indyFormatService = new IndyCredentialFormatService(
-      indyIssuerService,
-      indyLedgerService,
-      indyHolderService,
-      connectionService,
-      didResolverService,
-      agentConfig.logger
-    )
+    agentConfig = getAgentConfig('IndyCredentialFormatServiceTest')
+    agentContext = getAgentContext({
+      registerInstances: [
+        [IndyIssuerService, indyIssuerService],
+        [IndyHolderService, indyHolderService],
+        [IndyLedgerService, indyLedgerService],
+        [DidResolverService, didResolverService],
+        [ConnectionService, connectionService],
+      ],
+      agentConfig,
+    })
+
+    indyFormatService = new IndyCredentialFormatService()
 
     mockFunction(indyLedgerService.getSchema).mockReturnValue(Promise.resolve(schema))
   })

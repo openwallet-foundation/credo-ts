@@ -4,7 +4,7 @@ import type { Query } from '@aries-framework/core'
 import {
   AgentContext,
   ConnectionService,
-  createOutboundMessage,
+  OutboundMessageContext,
   Dispatcher,
   injectable,
   MessageSender,
@@ -32,7 +32,7 @@ export class QuestionAnswerApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -63,8 +63,13 @@ export class QuestionAnswerApi {
         detail: config?.detail,
       }
     )
-    const outboundMessage = createOutboundMessage(connection, questionMessage)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(questionMessage, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: questionAnswerRecord,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return questionAnswerRecord
   }
@@ -87,8 +92,13 @@ export class QuestionAnswerApi {
 
     const connection = await this.connectionService.getById(this.agentContext, questionRecord.connectionId)
 
-    const outboundMessage = createOutboundMessage(connection, answerMessage)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(answerMessage, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: questionAnswerRecord,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return questionAnswerRecord
   }
@@ -122,8 +132,8 @@ export class QuestionAnswerApi {
     return this.questionAnswerService.findById(this.agentContext, questionAnswerId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new QuestionMessageHandler(this.questionAnswerService))
-    dispatcher.registerHandler(new AnswerMessageHandler(this.questionAnswerService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new QuestionMessageHandler(this.questionAnswerService))
+    dispatcher.registerMessageHandler(new AnswerMessageHandler(this.questionAnswerService))
   }
 }

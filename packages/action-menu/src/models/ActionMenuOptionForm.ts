@@ -5,12 +5,18 @@ import { IsInstance, IsString } from 'class-validator'
 
 import { ActionMenuFormParameter } from './ActionMenuOptionFormParameter'
 
+/**
+ * @public
+ */
 export interface ActionMenuFormOptions {
   description: string
   params: ActionMenuFormParameterOptions[]
   submitLabel: string
 }
 
+/**
+ * @public
+ */
 export class ActionMenuForm {
   public constructor(options: ActionMenuFormOptions) {
     if (options) {

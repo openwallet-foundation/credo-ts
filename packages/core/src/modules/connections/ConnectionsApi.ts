@@ -1,13 +1,13 @@
-import type { Query } from '../../storage/StorageService'
-import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
+import type { Query } from '../../storage/StorageService'
+import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
@@ -31,6 +31,11 @@ import {
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
+
+export interface SendPingOptions {
+  responseRequested?: boolean
+  withReturnRouting?: boolean
+}
 
 @injectable()
 export class ConnectionsApi {
@@ -73,7 +78,7 @@ export class ConnectionsApi {
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
 
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async acceptOutOfBandInvitation(
@@ -114,8 +119,12 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessage = createOutboundMessage(connectionRecord, message, outOfBandRecord)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      outOfBand: outOfBandRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -140,24 +149,36 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    let outboundMessage
+    // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
+    // all connections will use the same routing keys
+    const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(this.agentContext) : undefined
+
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
   }
 
@@ -171,7 +192,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessage
+    let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
@@ -190,7 +211,10 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     } else {
       const { message } = await this.connectionService.createTrustPing(this.agentContext, connectionRecord, {
         responseRequested: false,
@@ -198,11 +222,49 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessage = createOutboundMessage(connectionRecord, message)
+      outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+      })
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return connectionRecord
+  }
+
+  /**
+   * Send a trust ping to an established connection
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param responseRequested do we want a response to our ping
+   * @param withReturnRouting do we want a response at the time of posting
+   * @returns TurstPingMessage
+   */
+  public async sendPing(
+    connectionId: string,
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+  ) {
+    const connection = await this.getById(connectionId)
+
+    const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
+      responseRequested: responseRequested,
+    })
+
+    if (withReturnRouting === true) {
+      message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    // Disable return routing as we don't want to receive a response for this message over the same channel
+    // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+    if (withReturnRouting === false) {
+      message.setReturnRouting(ReturnRouteTypes.none)
+    }
+
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+    )
+
+    return message
   }
 
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
@@ -229,7 +291,7 @@ export class ConnectionsApi {
 
   /**
    * Allows for the addition of connectionType to the record.
-   *  Either updates or creates an array of string conection types
+   *  Either updates or creates an array of string connection types
    * @param connectionId
    * @param type
    * @throws {RecordNotFoundError} If no record is found
@@ -237,10 +299,11 @@ export class ConnectionsApi {
   public async addConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
-    record.setTag('connectionType', [type, ...tags])
-    await this.connectionService.update(this.agentContext, record)
+    await this.connectionService.addConnectionType(this.agentContext, record, type)
+
+    return record
   }
+
   /**
    * Removes the given tag from the given record found by connectionId, if the tag exists otherwise does nothing
    * @param connectionId
@@ -250,15 +313,11 @@ export class ConnectionsApi {
   public async removeConnectionType(connectionId: string, type: ConnectionType | string) {
     const record = await this.getById(connectionId)
 
-    const tags = (record.getTag('connectionType') as string[]) || ([] as string[])
+    await this.connectionService.removeConnectionType(this.agentContext, record, type)
 
-    const newTags = tags.filter((value: string) => {
-      if (value != type) return value
-    })
-    record.setTag('connectionType', [...newTags])
-
-    await this.connectionService.update(this.agentContext, record)
+    return record
   }
+
   /**
    * Gets the known connection types for the record matching the given connectionId
    * @param connectionId
@@ -267,8 +326,8 @@ export class ConnectionsApi {
    */
   public async getConnectionTypes(connectionId: string) {
     const record = await this.getById(connectionId)
-    const tags = record.getTag('connectionType') as string[]
-    return tags || null
+
+    return this.connectionService.getConnectionTypes(record)
   }
 
   /**
@@ -276,8 +335,8 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: [ConnectionType | string]) {
-    return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
+  public async findAllByConnectionTypes(connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionService.findAllByConnectionTypes(this.agentContext, connectionTypes)
   }
 
   /**
@@ -308,6 +367,19 @@ export class ConnectionsApi {
    * @param connectionId the connection record id
    */
   public async deleteById(connectionId: string) {
+    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+
+    if (connection.mediatorId && connection.did) {
+      const did = await this.didResolverService.resolve(this.agentContext, connection.did)
+
+      if (did.didDocument) {
+        await this.routingService.removeRouting(this.agentContext, {
+          recipientKeys: did.didDocument.recipientKeys,
+          mediatorId: connection.mediatorId,
+        })
+      }
+    }
+
     return this.connectionService.deleteById(this.agentContext, connectionId)
   }
 
@@ -335,8 +407,8 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
@@ -345,14 +417,14 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
-    dispatcher.registerHandler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    dispatcher.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    dispatcher.registerMessageHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
+    dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -362,7 +434,7 @@ export class ConnectionsApi {
       )
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -371,6 +443,6 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+    dispatcher.registerMessageHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
   }
 }

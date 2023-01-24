@@ -764,10 +764,8 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       messageClass: V1ProposePresentationMessage,
     })
 
-    if (!proposal) {
-      return false
-    }
-    await MessageValidator.validateSync(proposal)
+    if (!proposal) return false
+    MessageValidator.validateSync(proposal)
 
     // check the proposal against a possible previous request
     const request = await this.didCommMessageRepository.findAgentMessage(agentContext, {
@@ -775,9 +773,7 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       messageClass: V1RequestPresentationMessage,
     })
 
-    if (!request) {
-      return false
-    }
+    if (!request) return false
 
     const proofRequest = request.indyProofRequest
 
@@ -950,18 +946,18 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
     return await this.indyProofFormatService.autoSelectCredentialsForProofRequest(options)
   }
 
-  public registerHandlers(
+  public registerMessageHandlers(
     dispatcher: Dispatcher,
     agentConfig: AgentConfig,
     proofResponseCoordinator: ProofResponseCoordinator,
     mediationRecipientService: MediationRecipientService,
     routingService: RoutingService
   ): void {
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V1ProposePresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V1RequestPresentationHandler(
         this,
         agentConfig,
@@ -972,11 +968,11 @@ export class V1ProofService extends ProofService<[IndyProofFormat]> {
       )
     )
 
-    dispatcher.registerHandler(
+    dispatcher.registerMessageHandler(
       new V1PresentationHandler(this, agentConfig, proofResponseCoordinator, this.didCommMessageRepository)
     )
-    dispatcher.registerHandler(new V1PresentationAckHandler(this))
-    dispatcher.registerHandler(new V1PresentationProblemReportHandler(this))
+    dispatcher.registerMessageHandler(new V1PresentationAckHandler(this))
+    dispatcher.registerMessageHandler(new V1PresentationProblemReportHandler(this))
   }
 
   public async findRequestMessage(

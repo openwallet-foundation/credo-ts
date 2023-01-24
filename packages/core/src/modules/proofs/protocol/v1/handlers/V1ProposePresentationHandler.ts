@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
@@ -8,11 +8,11 @@ import type { ProofRequestFromProposalOptions } from '../../../models/ProofServi
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
-export class V1ProposePresentationHandler implements Handler {
+export class V1ProposePresentationHandler implements MessageHandler {
   private proofService: V1ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -31,16 +31,22 @@ export class V1ProposePresentationHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1ProposePresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createRequest(proofRecord, messageContext)
     }
   }
 
   private async createRequest(
     proofRecord: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V1ProposePresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`
@@ -90,7 +96,6 @@ export class V1ProposePresentationHandler implements Handler {
           requestedAttributes: indyProofRequest.indy?.requestedAttributes,
           requestedPredicates: indyProofRequest.indy?.requestedPredicates,
           ver: indyProofRequest.indy?.ver,
-          proofRequest: indyProofRequest.indy?.proofRequest,
           nonce: indyProofRequest.indy?.nonce,
         },
       },
@@ -99,6 +104,10 @@ export class V1ProposePresentationHandler implements Handler {
       willConfirm: true,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return new OutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: proofRecord,
+    })
   }
 }

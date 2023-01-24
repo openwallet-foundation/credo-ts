@@ -69,7 +69,7 @@ export const UriValidator = /\w+:(\/?\/?)[^\s]+/
 export function IsUri(validationOptions?: ValidationOptions): PropertyDecorator {
   return ValidateBy(
     {
-      name: 'isInstanceOrArrayOfInstances',
+      name: 'isUri',
       validator: {
         validate: (value): boolean => {
           return UriValidator.test(value)

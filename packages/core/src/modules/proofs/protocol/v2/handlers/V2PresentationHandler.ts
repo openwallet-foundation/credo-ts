@@ -1,14 +1,14 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
-export class V2PresentationHandler implements Handler {
+export class V2PresentationHandler implements MessageHandler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -27,15 +27,23 @@ export class V2PresentationHandler implements Handler {
     this.didCommMessageRepository = didCommMessageRepository
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2PresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V2PresentationHandler>) {
     const proofRecord = await this.proofService.processPresentation(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToPresentation(messageContext.agentContext, proofRecord)) {
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToPresentation(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createAck(proofRecord, messageContext)
     }
   }
 
-  private async createAck(record: ProofExchangeRecord, messageContext: HandlerInboundMessage<V2PresentationHandler>) {
+  private async createAck(
+    record: ProofExchangeRecord,
+    messageContext: MessageHandlerInboundMessage<V2PresentationHandler>
+  ) {
     this.agentConfig.logger.info(
       `Automatically sending acknowledgement with autoAccept on ${this.agentConfig.autoAcceptProofs}`
     )
@@ -55,15 +63,21 @@ export class V2PresentationHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage?.service && presentationMessage?.service) {
       const recipientService = presentationMessage?.service
       const ourService = requestMessage?.service
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

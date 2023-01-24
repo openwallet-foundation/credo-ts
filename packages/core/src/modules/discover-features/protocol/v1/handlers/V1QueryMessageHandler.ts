@@ -1,10 +1,10 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { V1DiscoverFeaturesService } from '../V1DiscoverFeaturesService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1QueryMessage } from '../messages'
 
-export class V1QueryMessageHandler implements Handler {
+export class V1QueryMessageHandler implements MessageHandler {
   private discoverFeaturesService: V1DiscoverFeaturesService
   public supportedMessages = [V1QueryMessage]
 
@@ -12,13 +12,16 @@ export class V1QueryMessageHandler implements Handler {
     this.discoverFeaturesService = discoverFeaturesService
   }
 
-  public async handle(inboundMessage: HandlerInboundMessage<V1QueryMessageHandler>) {
+  public async handle(inboundMessage: MessageHandlerInboundMessage<V1QueryMessageHandler>) {
     const connection = inboundMessage.assertReadyConnection()
 
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)
 
     if (discloseMessage) {
-      return createOutboundMessage(connection, discloseMessage.message)
+      return new OutboundMessageContext(discloseMessage.message, {
+        agentContext: inboundMessage.agentContext,
+        connection,
+      })
     }
   }
 }

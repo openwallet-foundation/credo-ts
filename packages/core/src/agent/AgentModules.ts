@@ -1,8 +1,10 @@
-import type { Module, DependencyManager } from '../plugins'
-import type { Constructor } from '../utils/mixins'
 import type { AgentConfig } from './AgentConfig'
+import type { Module, DependencyManager, ApiModule } from '../plugins'
+import type { IsAny } from '../types'
+import type { Constructor } from '../utils/mixins'
 
 import { BasicMessagesModule } from '../modules/basic-messages'
+import { CacheModule } from '../modules/cache'
 import { ConnectionsModule } from '../modules/connections'
 import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
@@ -28,7 +30,16 @@ export type EmptyModuleMap = {}
  * Default modules can be optionally defined to provide custom configuration. This type makes it so that it is not
  * possible to use a different key for the default modules
  */
-export type AgentModulesInput = Partial<DefaultAgentModules> & ModulesMap
+export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
+
+/**
+ * Defines the input type for the default agent modules. This is overwritten as we
+ * want the input type to allow for generics to be passed in for the credentials module.
+ */
+export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials'> & {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  credentials: CredentialsModule<any>
+}
 
 /**
  * Type that represents the default agent modules. This is the {@link ModulesMap} variant for the default modules in the framework.
@@ -84,6 +95,23 @@ export type AgentApi<Modules extends ModulesMap> = {
 }
 
 /**
+ * Returns the `api` type from the CustomModuleType if the module is an ApiModule. If the module is not defined
+ * which is the case if you don't configure a default agent module (e.g. credentials module), it will use the default
+ * module type and use that for the typing. This will contain the default typing, and thus provide the correct agent api
+ * interface
+ */
+export type CustomOrDefaultApi<
+  CustomModuleType,
+  DefaultModuleType extends ApiModule
+> = IsAny<CustomModuleType> extends true
+  ? InstanceType<DefaultModuleType['api']>
+  : CustomModuleType extends ApiModule
+  ? InstanceType<CustomModuleType['api']>
+  : CustomModuleType extends Module
+  ? never
+  : InstanceType<DefaultModuleType['api']>
+
+/**
  * Method to get the default agent modules to be registered on any agent instance.
  *
  * @note This implementation is quite ugly and is meant to be temporary. It extracts the module specific config from the agent config
@@ -130,6 +158,7 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
     oob: () => new OutOfBandModule(),
     indy: () => new IndyModule(),
     w3cVc: () => new W3cVcModule(),
+    cache: () => new CacheModule(),
   } as const
 }
 

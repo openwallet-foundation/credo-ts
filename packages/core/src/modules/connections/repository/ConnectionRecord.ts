@@ -1,7 +1,7 @@
+import type { ConnectionMetadata } from './ConnectionMetadataTypes'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { HandshakeProtocol } from '../models'
 import type { ConnectionType } from '../models/ConnectionType'
-import type { ConnectionMetadata } from './ConnectionMetadataTypes'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -26,6 +26,7 @@ export interface ConnectionRecordProps {
   protocol?: HandshakeProtocol
   outOfBandId?: string
   invitationDid?: string
+  connectionTypes?: Array<ConnectionType | string>
 }
 
 export type CustomConnectionTags = TagsBase
@@ -38,7 +39,7 @@ export type DefaultConnectionTags = {
   theirDid?: string
   outOfBandId?: string
   invitationDid?: string
-  connectionType?: [ConnectionType | string]
+  connectionTypes?: Array<ConnectionType | string>
 }
 
 export class ConnectionRecord
@@ -64,6 +65,8 @@ export class ConnectionRecord
   public outOfBandId?: string
   public invitationDid?: string
 
+  public connectionTypes: string[] = []
+
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
 
@@ -88,10 +91,11 @@ export class ConnectionRecord
       this.errorMessage = props.errorMessage
       this.protocol = props.protocol
       this.outOfBandId = props.outOfBandId
+      this.connectionTypes = props.connectionTypes ?? []
     }
   }
 
-  public getTags() {
+  public getTags(): DefaultConnectionTags & CustomConnectionTags {
     return {
       ...this._tags,
       state: this.state,
@@ -102,6 +106,7 @@ export class ConnectionRecord
       theirDid: this.theirDid,
       outOfBandId: this.outOfBandId,
       invitationDid: this.invitationDid,
+      connectionTypes: this.connectionTypes,
     }
   }
 

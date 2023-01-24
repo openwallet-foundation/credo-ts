@@ -8,7 +8,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { parseMessageType, MessageSender, Dispatcher, AgentMessage, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
-import { createOutboundMessage } from '../src/agent/helpers'
+import { OutboundMessageContext } from '../src/agent/models'
 
 import { getAgentOptions } from './helpers'
 
@@ -47,7 +47,7 @@ describe('multi version protocols', () => {
 
     // Register the test handler with the v1.3 version of the message
     const dispatcher = aliceAgent.dependencyManager.resolve(Dispatcher)
-    dispatcher.registerHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
+    dispatcher.registerMessageHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
 
     await aliceAgent.initialize()
 
@@ -84,7 +84,9 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV11()))
+    await bobMessageSender.sendMessage(
+      new OutboundMessageContext(new TestMessageV11(), { agentContext: bobAgent.context, connection: bobConnection })
+    )
 
     // Wait for the agent message processed event to be called
     await agentMessageV11ProcessedPromise
@@ -99,7 +101,9 @@ describe('multi version protocols', () => {
       )
     )
 
-    await bobMessageSender.sendMessage(bobAgent.context, createOutboundMessage(bobConnection, new TestMessageV15()))
+    await bobMessageSender.sendMessage(
+      new OutboundMessageContext(new TestMessageV15(), { agentContext: bobAgent.context, connection: bobConnection })
+    )
     await agentMessageV15ProcessedPromise
 
     expect(mockHandle).toHaveBeenCalledTimes(2)

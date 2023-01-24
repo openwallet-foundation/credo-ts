@@ -18,7 +18,7 @@ import { describeSkipNode17And18 } from './util'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
 const walletConfig: WalletConfig = {
-  id: 'Wallet: IndyWalletTest',
+  id: 'Wallet: BBS Signing Provider',
   // generated using indy.generateWalletKey
   key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
   keyDerivationMethod: KeyDerivationMethod.Raw,

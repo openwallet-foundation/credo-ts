@@ -1,38 +1,25 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
-import type { Logger } from '../../../../../logger'
-import type { DidCommMessageRepository } from '../../../../../storage'
-import type { RoutingService } from '../../../../routing/services/RoutingService'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V1CredentialService } from '../V1CredentialService'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { DidCommMessageRole } from '../../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
+import { RoutingService } from '../../../../routing/services/RoutingService'
 import { V1OfferCredentialMessage } from '../messages'
 
-export class V1OfferCredentialHandler implements Handler {
-  private credentialService: V1CredentialService
-  private routingService: RoutingService
-  private didCommMessageRepository: DidCommMessageRepository
-  private logger: Logger
+export class V1OfferCredentialHandler implements MessageHandler {
+  private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1OfferCredentialMessage]
 
-  public constructor(
-    credentialService: V1CredentialService,
-    routingService: RoutingService,
-    didCommMessageRepository: DidCommMessageRepository,
-    logger: Logger
-  ) {
-    this.credentialService = credentialService
-    this.routingService = routingService
-    this.didCommMessageRepository = didCommMessageRepository
-    this.logger = logger
+  public constructor(credentialProtocol: V1CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1OfferCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processOffer(messageContext)
+  public async handle(messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>) {
+    const credentialRecord = await this.credentialProtocol.processOffer(messageContext)
 
-    const shouldAutoRespond = await this.credentialService.shouldAutoRespondToOffer(messageContext.agentContext, {
+    const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToOffer(messageContext.agentContext, {
       credentialRecord,
       offerMessage: messageContext.message,
     })
@@ -44,15 +31,20 @@ export class V1OfferCredentialHandler implements Handler {
 
   private async acceptOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1OfferCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>
   ) {
-    this.logger.info(`Automatically sending request with autoAccept`)
+    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
     if (messageContext.connection) {
-      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, { credentialRecord })
+      const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, { credentialRecord })
 
-      return createOutboundMessage(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: credentialRecord,
+      })
     } else if (messageContext.message.service) {
-      const routing = await this.routingService.getRouting(messageContext.agentContext)
+      const routingService = messageContext.agentContext.dependencyManager.resolve(RoutingService)
+      const routing = await routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
@@ -60,7 +52,7 @@ export class V1OfferCredentialHandler implements Handler {
       })
       const recipientService = messageContext.message.service
 
-      const { message } = await this.credentialService.acceptOffer(messageContext.agentContext, {
+      const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
         credentialRecord,
         credentialFormats: {
           indy: {
@@ -71,19 +63,23 @@ export class V1OfferCredentialHandler implements Handler {
 
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+
+      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         role: DidCommMessageRole.Sender,
         associatedRecordId: credentialRecord.id,
       })
 
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 
-    this.logger.error(`Could not automatically create credential request`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create credential request`)
   }
 }

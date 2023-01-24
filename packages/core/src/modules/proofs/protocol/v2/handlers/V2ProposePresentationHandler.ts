@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
 import type { ProofFormat } from '../../../formats/ProofFormat'
@@ -11,11 +11,11 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofService } from '../V2ProofService'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { V2ProposalPresentationMessage } from '../messages/V2ProposalPresentationMessage'
 
-export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements Handler {
+export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements MessageHandler {
   private proofService: V2ProofService
   private agentConfig: AgentConfig
   private didCommMessageRepository: DidCommMessageRepository
@@ -34,17 +34,22 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
     this.proofResponseCoordinator = proofResponseCoordinator
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V2ProposePresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>) {
     const proofRecord = await this.proofService.processProposal(messageContext)
 
-    if (this.proofResponseCoordinator.shouldAutoRespondToProposal(messageContext.agentContext, proofRecord)) {
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return this.createRequest(proofRecord, messageContext)
     }
   }
 
   private async createRequest(
     proofRecord: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V2ProposePresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V2ProposePresentationHandler>
   ) {
     this.agentConfig.logger.info(
       `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`
@@ -90,6 +95,10 @@ export class V2ProposePresentationHandler<PFs extends ProofFormat[] = ProofForma
 
     const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, options)
 
-    return createOutboundMessage(messageContext.connection, message)
+    return new OutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: proofRecord,
+    })
   }
 }

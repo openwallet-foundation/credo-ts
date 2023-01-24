@@ -1,9 +1,8 @@
-import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
-import type { OutboundMessage } from '../../types'
-import type { ConnectionRecord } from '../connections'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
 import type { GetRoutingOptions } from './services/RoutingService'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
+import type { ConnectionRecord } from '../connections'
 
 import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
@@ -13,14 +12,16 @@ import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId } from '../../agent/Events'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 import { TransportEventTypes } from '../../transport'
+import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
+import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
 
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -29,6 +30,7 @@ import { RoutingEventTypes } from './RoutingEvents'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
+import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
 import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
@@ -82,7 +84,7 @@ export class RecipientApi {
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = recipientModuleConfig
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -107,14 +109,14 @@ export class RecipientApi {
     }
   }
 
-  private async sendMessage(outboundMessage: OutboundMessage, pickupStrategy?: MediatorPickupStrategy) {
+  private async sendMessage(outboundMessageContext: OutboundMessageContext, pickupStrategy?: MediatorPickupStrategy) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
         ? { schemes: ['wss', 'ws'], restrictive: true }
         : undefined
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage, {
+    await this.messageSender.sendMessage(outboundMessageContext, {
       transportPriority,
       // TODO: add keepAlive: true to enforce through the public api
       // we need to keep the socket alive. It already works this way, but would
@@ -139,17 +141,20 @@ export class RecipientApi {
       throw new AriesFrameworkError('Cannot open websocket to connection without websocket service endpoint')
     }
 
-    await this.messageSender.sendMessage(this.agentContext, createOutboundMessage(connectionRecord, message), {
-      transportPriority: {
-        schemes: websocketSchemes,
-        restrictive: true,
-        // TODO: add keepAlive: true to enforce through the public api
-        // we need to keep the socket alive. It already works this way, but would
-        // be good to make more explicit from the public facing API.
-        // This would also make it easier to change the internal API later on.
-        // keepAlive: true,
-      },
-    })
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
+      {
+        transportPriority: {
+          schemes: websocketSchemes,
+          restrictive: true,
+          // TODO: add keepAlive: true to enforce through the public api
+          // we need to keep the socket alive. It already works this way, but would
+          // be good to make more explicit from the public facing API.
+          // This would also make it easier to change the internal API later on.
+          // keepAlive: true,
+        },
+      }
+    )
   }
 
   private async openWebSocketAndPickUp(mediator: MediationRecord, pickupStrategy: MediatorPickupStrategy) {
@@ -287,8 +292,10 @@ export class RecipientApi {
 
     const mediatorConnection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
     return this.messageSender.sendMessage(
-      this.agentContext,
-      createOutboundMessage(mediatorConnection, statusRequestMessage)
+      new OutboundMessageContext(statusRequestMessage, {
+        agentContext: this.agentContext,
+        connection: mediatorConnection,
+      })
     )
   }
 
@@ -341,8 +348,11 @@ export class RecipientApi {
       pickupStrategy === MediatorPickupStrategy.PickUpV2
         ? new StatusRequestMessage({})
         : new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessage = createOutboundMessage(mediatorConnection, pickupMessage)
-    await this.sendMessage(outboundMessage, pickupStrategy)
+    const outboundMessageContext = new OutboundMessageContext(pickupMessage, {
+      agentContext: this.agentContext,
+      connection: mediatorConnection,
+    })
+    await this.sendMessage(outboundMessageContext, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -354,16 +364,36 @@ export class RecipientApi {
       this.agentContext,
       connection
     )
-    const outboundMessage = createOutboundMessage(connection, message)
+    const outboundMessage = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connection,
+    })
 
     await this.sendMessage(outboundMessage)
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string) {
-    const message = this.mediationRecipientService.createKeylistUpdateMessage(verkey)
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.sendMessage(outboundMessage)
+  public async notifyKeylistUpdate(connection: ConnectionRecord, verkey: string, action?: KeylistUpdateAction) {
+    // Use our useDidKey configuration unless we know the key formatting other party is using
+    let useDidKey = this.agentContext.config.useDidKeyInProtocols
+
+    const useDidKeysConnectionMetadata = connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)
+    if (useDidKeysConnectionMetadata) {
+      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+    }
+
+    const message = this.mediationRecipientService.createKeylistUpdateMessage([
+      new KeylistUpdate({
+        action: action ?? KeylistUpdateAction.add,
+        recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
+      }),
+    ])
+
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+    })
+    await this.sendMessage(outboundMessageContext)
   }
 
   public async findByConnectionId(connectionId: string) {
@@ -415,8 +445,12 @@ export class RecipientApi {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.sendMessage(outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connection,
+      associatedRecord: mediationRecord,
+    })
+    await this.sendMessage(outboundMessageContext)
 
     const event = await firstValueFrom(subject)
     return event.payload.mediationRecord
@@ -450,12 +484,12 @@ export class RecipientApi {
   }
 
   // Register handlers for the several messages for the mediator.
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationGrantHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MediationDenyHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new StatusHandler(this.mediationRecipientService))
-    dispatcher.registerHandler(new MessageDeliveryHandler(this.mediationRecipientService))
-    //dispatcher.registerHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
+    dispatcher.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+    //dispatcher.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

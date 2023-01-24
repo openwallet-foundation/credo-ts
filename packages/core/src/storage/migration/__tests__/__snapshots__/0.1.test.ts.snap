@@ -1216,6 +1216,7 @@ Object {
   "7781341d-be29-441b-9b79-4a957d8c6d37": Object {
     "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3QxdHNwMTVjbkREN3dCQ0ZnZWhpUjJTeEhYMWFQeHQ0c3VlRTI0dHdIOUJkI3o2TWt0MXRzcDE1Y25ERDd3QkNGZ2VoaVIyU3hIWDFhUHh0NHN1ZUUyNHR3SDlCZCJdLCJyIjpbXX0",
       "invitationKey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
@@ -1231,6 +1232,7 @@ Object {
     "type": "ConnectionRecord",
     "value": Object {
       "autoAcceptConnection": false,
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.628Z",
       "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
@@ -1247,6 +1249,7 @@ Object {
   "8f4908ee-15ad-4058-9106-eda26eae735c": Object {
     "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
@@ -1262,6 +1265,7 @@ Object {
     "type": "ConnectionRecord",
     "value": Object {
       "alias": "connection alias",
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.577Z",
       "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
@@ -1278,6 +1282,7 @@ Object {
   "9383d8e5-c002-4aae-8300-4a21384c919e": Object {
     "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3RDWkFRTkd2V2I0V0hBandCcVB0WGhaZERZb3JiU0prR1c5dmoxdWh3MUhEI3o2TWt0Q1pBUU5HdldiNFdIQWp3QnFQdFhoWmREWW9yYlNKa0dXOXZqMXVodzFIRCJdLCJyIjpbXX0",
       "invitationKey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
@@ -1292,6 +1297,7 @@ Object {
     },
     "type": "ConnectionRecord",
     "value": Object {
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.608Z",
       "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
@@ -1319,6 +1325,7 @@ Object {
   "b65c2ccd-277c-4140-9d87-c8dd30e7a98c": Object {
     "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3VXVEVtSDFtVW82Vzk2elNXeUg2MTJoRkhvd1J6TkVzY1BZQkwyQ0NNeUMyI3o2TWt1V1RFbUgxbVVvNlc5NnpTV3lINjEyaEZIb3dSek5Fc2NQWUJMMkNDTXlDMiJdLCJyIjpbXX0",
       "invitationKey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
@@ -1333,6 +1340,7 @@ Object {
     "type": "ConnectionRecord",
     "value": Object {
       "autoAcceptConnection": true,
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.653Z",
       "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
@@ -1346,6 +1354,7 @@ Object {
   "da518433-0e55-4b74-a05b-aa75c1095a99": Object {
     "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa28zMURORTNncU1SWmoxSk5odjJCSGIxY2FRc2hjZDluamdLa0VRWHNnRlJwI3o2TWtvMzFETkUzZ3FNUlpqMUpOaHYyQkhiMWNhUXNoY2Q5bmpnS2tFUVhzZ0ZScCJdLCJyIjpbXX0",
       "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
@@ -1361,6 +1370,7 @@ Object {
     "type": "ConnectionRecord",
     "value": Object {
       "autoAcceptConnection": true,
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.646Z",
       "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
@@ -1377,8 +1387,10 @@ Object {
   "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT": Object {
     "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
     "tags": Object {
+      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "legacyUnqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "recipientKeyFingerprints": Array [
         "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
       ],
@@ -1392,6 +1404,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1447,8 +1460,10 @@ Object {
   "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56": Object {
     "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
     "tags": Object {
+      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "legacyUnqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "recipientKeyFingerprints": Array [
         "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
       ],
@@ -1462,6 +1477,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1517,8 +1533,10 @@ Object {
   "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ": Object {
     "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
     "tags": Object {
+      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "legacyUnqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "recipientKeyFingerprints": Array [
         "z6Mkw81EsWQioXYC9YJ7uKHCRh6LTN7sfD9sJbSPBGXmUpzC",
       ],
@@ -1532,6 +1550,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1587,8 +1606,10 @@ Object {
   "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb": Object {
     "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
     "tags": Object {
+      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "legacyUnqualifiedDid": "RtH4qxVPL1Dpmdv7GytjBv",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "recipientKeyFingerprints": Array [
         "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
       ],
@@ -1602,6 +1623,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1657,8 +1679,10 @@ Object {
   "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU": Object {
     "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
     "tags": Object {
+      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "legacyUnqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "recipientKeyFingerprints": Array [
         "z6Mkwc6efk75y4Y1agRx4NGpvtrpKxtKvMfgBEdQkHBwU8Xu",
       ],
@@ -1672,6 +1696,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1727,8 +1752,10 @@ Object {
   "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy": Object {
     "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
     "tags": Object {
+      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "legacyUnqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "recipientKeyFingerprints": Array [
         "z6MkvW9GxjjUdL9qpaj2qQW6YBhCjZY7Zkzrks3cgpJaRjxR",
       ],
@@ -1742,6 +1769,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-20T13:02:21.646Z",
+      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1797,8 +1825,10 @@ Object {
   "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf": Object {
     "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
     "tags": Object {
+      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "legacyUnqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "recipientKeyFingerprints": Array [
         "z6MktpVtPC5j91aycGPT5pceiu8EGKDzM5RLwqAZBuCgxw4V",
       ],
@@ -1812,6 +1842,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1867,8 +1898,10 @@ Object {
   "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga": Object {
     "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
     "tags": Object {
+      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "legacyUnqualifiedDid": "YKc7qhYN1TckZAMUf7jgwc",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "recipientKeyFingerprints": Array [
         "z6MkwXNXTehVH7YijDmN1PtaXaSaCniTyaVepmY1EJgS15xq",
       ],
@@ -1882,6 +1915,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -1937,8 +1971,10 @@ Object {
   "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ": Object {
     "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
     "tags": Object {
+      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "legacyUnqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "recipientKeyFingerprints": Array [
         "z6MkjmCrDWJVf8H2pCHcu11UDs4jb6FVu8nn5yQW24rrgez6",
       ],
@@ -1952,6 +1988,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2007,8 +2044,10 @@ Object {
   "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui": Object {
     "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
     "tags": Object {
+      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "legacyUnqualifiedDid": "9jTqUnV4k5ucxbyxumAaV7",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "recipientKeyFingerprints": Array [
         "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
       ],
@@ -2022,6 +2061,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2077,8 +2117,10 @@ Object {
   "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw": Object {
     "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
     "tags": Object {
+      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "legacyUnqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "recipientKeyFingerprints": Array [
         "z6MkvcgxQSsX5WA8vcBokLZ46znnhRBH6aKAGYnonEUfUnQV",
       ],
@@ -2092,6 +2134,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.635Z",
+      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2147,8 +2190,10 @@ Object {
   "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX": Object {
     "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
     "tags": Object {
+      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "recipientKeyFingerprints": Array [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -2162,6 +2207,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2217,8 +2263,10 @@ Object {
   "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv": Object {
     "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
     "tags": Object {
+      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "legacyUnqualifiedDid": "Ud6AWCk6WrwfYKZUw5tJmt",
       "method": "peer",
+      "methodSpecificIdentifier": "1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "recipientKeyFingerprints": Array [
         "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
       ],
@@ -2232,6 +2280,7 @@ Object {
         ],
       },
       "createdAt": "2022-04-30T13:02:21.653Z",
+      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
       "didDocument": Object {
         "@context": Array [
           "https://w3id.org/did/v1",
@@ -2287,6 +2336,7 @@ Object {
   "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199": Object {
     "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2pESkw0WDdZR29INmdqYW1oWlIyTnpvd1BacXRKZlg1a1B1TnVXaVZkak1yI3o2TWtqREpMNFg3WUdvSDZnamFtaFpSMk56b3dQWnF0SmZYNWtQdU51V2lWZGpNciJdLCJyIjpbXX0",
       "invitationKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
@@ -2302,6 +2352,7 @@ Object {
     "type": "ConnectionRecord",
     "value": Object {
       "autoAcceptConnection": false,
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.641Z",
       "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
       "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
@@ -2318,6 +2369,7 @@ Object {
   "ee88e2e1-e27e-46a6-a910-f87690109e32": Object {
     "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",
     "tags": Object {
+      "connectionTypes": Array [],
       "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa21vZDh2cDJuVVJWa3RWQzVjZVFleXIyVlV6MjZpdTJaQU5MTlZnOXBNYXdhI3o2TWttb2Q4dnAyblVSVmt0VkM1Y2VRZXlyMlZVejI2aXUyWkFOTE5WZzlwTWF3YSJdLCJyIjpbXX0",
       "invitationKey": "8MN6LZnM8t1HmzMNw5Sp8kUVfQkFK1nCUMRSfQBoSNAC",
@@ -2331,6 +2383,7 @@ Object {
     },
     "type": "ConnectionRecord",
     "value": Object {
+      "connectionTypes": Array [],
       "createdAt": "2022-04-30T13:02:21.635Z",
       "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
       "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",

@@ -152,49 +152,54 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
   const didRepository = agent.dependencyManager.resolve(DidRepository)
 
   const untypedConnectionRecord = connectionRecord as unknown as JsonObject
-  const oldDidDocJson = untypedConnectionRecord.didDoc as JsonObject | undefined
+  const oldOurDidDocJson = untypedConnectionRecord.didDoc as JsonObject | undefined
   const oldTheirDidDocJson = untypedConnectionRecord.theirDidDoc as JsonObject | undefined
 
-  if (oldDidDocJson) {
-    const oldDidDoc = JsonTransformer.fromJSON(oldDidDocJson, DidDoc)
+  if (oldOurDidDocJson) {
+    const oldOurDidDoc = JsonTransformer.fromJSON(oldOurDidDocJson, DidDoc)
 
     agent.config.logger.debug(
-      `Found a legacy did document for did ${oldDidDoc.id} in connection record didDoc. Converting it to a peer did document.`
+      `Found a legacy did document for did ${oldOurDidDoc.id} in connection record didDoc. Converting it to a peer did document.`
     )
 
-    const newDidDocument = convertToNewDidDocument(oldDidDoc)
+    const newOurDidDocument = convertToNewDidDocument(oldOurDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
-    let didRecord = await didRepository.findById(agent.context, newDidDocument.id)
+    // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. As this is the update from 0.1 to 0.2,
+    // the `id` property of the record is still the did here.
+    let ourDidRecord = await didRepository.findById(agent.context, newOurDidDocument.id)
 
-    if (!didRecord) {
-      agent.config.logger.debug(`Creating did record for did ${newDidDocument.id}`)
-      didRecord = new DidRecord({
-        id: newDidDocument.id,
+    if (!ourDidRecord) {
+      agent.config.logger.debug(`Creating did record for our did ${newOurDidDocument.id}`)
+      ourDidRecord = new DidRecord({
+        // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. Here we make the id and did property both the did.
+        // In the 0.3.0 update the `id` property will be updated to an uuid.
+        id: newOurDidDocument.id,
+        did: newOurDidDocument.id,
         role: DidDocumentRole.Created,
-        didDocument: newDidDocument,
+        didDocument: newOurDidDocument,
         createdAt: connectionRecord.createdAt,
         tags: {
-          recipientKeyFingerprints: newDidDocument.recipientKeys.map((key) => key.fingerprint),
+          recipientKeyFingerprints: newOurDidDocument.recipientKeys.map((key) => key.fingerprint),
         },
       })
 
-      didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
-        unqualifiedDid: oldDidDoc.id,
-        didDocumentString: JsonEncoder.toString(oldDidDocJson),
+      ourDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
+        unqualifiedDid: oldOurDidDoc.id,
+        didDocumentString: JsonEncoder.toString(oldOurDidDocJson),
       })
 
-      await didRepository.save(agent.context, didRecord)
+      await didRepository.save(agent.context, ourDidRecord)
 
-      agent.config.logger.debug(`Successfully saved did record for did ${newDidDocument.id}`)
+      agent.config.logger.debug(`Successfully saved did record for did ${newOurDidDocument.id}`)
     } else {
-      agent.config.logger.debug(`Found existing did record for did ${newDidDocument.id}, not creating did record.`)
+      agent.config.logger.debug(`Found existing did record for did ${newOurDidDocument.id}, not creating did record.`)
     }
 
     agent.config.logger.debug(`Deleting old did document from connection record and storing new did:peer did`)
     // Remove didDoc and assign the new did:peer did to did
     delete untypedConnectionRecord.didDoc
-    connectionRecord.did = newDidDocument.id
+    connectionRecord.did = newOurDidDocument.id
   } else {
     agent.config.logger.debug(
       `Did not find a did document in connection record didDoc. Not converting it to a peer did document.`
@@ -211,13 +216,18 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
     const newTheirDidDocument = convertToNewDidDocument(oldTheirDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
-    let didRecord = await didRepository.findById(agent.context, newTheirDidDocument.id)
+    // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. As this is the update from 0.1 to 0.2,
+    // the `id` property of the record is still the did here.
+    let theirDidRecord = await didRepository.findById(agent.context, newTheirDidDocument.id)
 
-    if (!didRecord) {
+    if (!theirDidRecord) {
       agent.config.logger.debug(`Creating did record for theirDid ${newTheirDidDocument.id}`)
 
-      didRecord = new DidRecord({
+      theirDidRecord = new DidRecord({
+        // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. Here we make the id and did property both the did.
+        // In the 0.3.0 update the `id` property will be updated to an uuid.
         id: newTheirDidDocument.id,
+        did: newTheirDidDocument.id,
         role: DidDocumentRole.Received,
         didDocument: newTheirDidDocument,
         createdAt: connectionRecord.createdAt,
@@ -226,12 +236,12 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
         },
       })
 
-      didRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
+      theirDidRecord.metadata.set(DidRecordMetadataKeys.LegacyDid, {
         unqualifiedDid: oldTheirDidDoc.id,
         didDocumentString: JsonEncoder.toString(oldTheirDidDocJson),
       })
 
-      await didRepository.save(agent.context, didRecord)
+      await didRepository.save(agent.context, theirDidRecord)
 
       agent.config.logger.debug(`Successfully saved did record for theirDid ${newTheirDidDocument.id}`)
     } else {
@@ -313,25 +323,24 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
 
     const outOfBandInvitation = convertToNewInvitation(oldInvitation)
 
-    // If both the recipientKeys and the @id match we assume the connection was created using the same invitation.
+    // If both the recipientKeys, the @id and the role match we assume the connection was created using the same invitation.
     const recipientKeyFingerprints = outOfBandInvitation
       .getInlineServices()
       .map((s) => s.recipientKeys)
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
 
+    const oobRole = connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
     const oobRecords = await oobRepository.findByQuery(agent.context, {
       invitationId: oldInvitation.id,
       recipientKeyFingerprints,
+      role: oobRole,
     })
 
     let oobRecord: OutOfBandRecord | undefined = oobRecords[0]
 
     if (!oobRecord) {
       agent.config.logger.debug(`Create out of band record.`)
-
-      const oobRole =
-        connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
 
       const connectionRole = connectionRecord.role as DidExchangeRole
       const connectionState = connectionRecord.state as DidExchangeState
@@ -368,7 +377,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       await oobRepository.update(agent.context, oobRecord)
       await connectionRepository.delete(agent.context, connectionRecord)
       agent.config.logger.debug(
-        `Set reusable=true for out of band record with invitation @id ${oobRecord.outOfBandInvitation.id}.`
+        `Set reusable=true for out of band record with invitation @id ${oobRecord.outOfBandInvitation.id} and role ${oobRole}.`
       )
 
       return

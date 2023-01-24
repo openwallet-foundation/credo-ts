@@ -1,7 +1,7 @@
+import type { IndyCredProposeOptions } from './models/IndyCredPropose'
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../models'
 import type { CredentialFormat } from '../CredentialFormat'
-import type { IndyCredProposeOptions } from './models/IndyCredPropose'
 import type { Cred, CredOffer, CredReq } from 'indy-sdk'
 
 /**

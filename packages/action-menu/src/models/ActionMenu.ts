@@ -5,12 +5,18 @@ import { IsInstance, IsString } from 'class-validator'
 
 import { ActionMenuOption } from './ActionMenuOption'
 
+/**
+ * @public
+ */
 export interface ActionMenuOptions {
   title: string
   description: string
   options: ActionMenuOptionOptions[]
 }
 
+/**
+ * @public
+ */
 export class ActionMenu {
   public constructor(options: ActionMenuOptions) {
     if (options) {

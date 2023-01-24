@@ -1,9 +1,12 @@
 import type { ActionMenuService } from '../services'
-import type { Handler, HandlerInboundMessage } from '@aries-framework/core'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
 import { ActionMenuProblemReportMessage } from '../messages'
 
-export class ActionMenuProblemReportHandler implements Handler {
+/**
+ * @internal
+ */
+export class ActionMenuProblemReportHandler implements MessageHandler {
   private actionMenuService: ActionMenuService
   public supportedMessages = [ActionMenuProblemReportMessage]
 
@@ -11,7 +14,7 @@ export class ActionMenuProblemReportHandler implements Handler {
     this.actionMenuService = actionMenuService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ActionMenuProblemReportHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<ActionMenuProblemReportHandler>) {
     await this.actionMenuService.processProblemReport(messageContext)
   }
 }

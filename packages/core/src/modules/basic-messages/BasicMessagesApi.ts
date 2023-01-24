@@ -1,10 +1,10 @@
-import type { Query } from '../../storage/StorageService'
 import type { BasicMessageRecord } from './repository/BasicMessageRecord'
+import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections'
 
@@ -29,7 +29,7 @@ export class BasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -49,10 +49,13 @@ export class BasicMessagesApi {
       message,
       connection
     )
-    const outboundMessage = createOutboundMessage(connection, basicMessage)
-    outboundMessage.associatedRecord = basicMessageRecord
+    const outboundMessageContext = new OutboundMessageContext(basicMessage, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: basicMessageRecord,
+    })
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
     return basicMessageRecord
   }
 
@@ -88,7 +91,7 @@ export class BasicMessagesApi {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new BasicMessageHandler(this.basicMessageService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }

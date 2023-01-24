@@ -1,5 +1,5 @@
-import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Wallet } from './Wallet'
+import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 
 import { AgentContext } from '../agent'
 import { InjectionSymbols } from '../constants'
@@ -43,7 +43,14 @@ export class WalletApi {
   }
 
   public async initialize(walletConfig: WalletConfig): Promise<void> {
-    this.logger.info(`Initializing wallet '${walletConfig.id}'`, walletConfig)
+    this.logger.info(`Initializing wallet '${walletConfig.id}'`, {
+      ...walletConfig,
+      key: walletConfig?.key ? '[*****]' : undefined,
+      storage: {
+        ...walletConfig?.storage,
+        credentials: walletConfig?.storage?.credentials ? '[*****]' : undefined,
+      },
+    })
 
     if (this.isInitialized) {
       throw new WalletError(

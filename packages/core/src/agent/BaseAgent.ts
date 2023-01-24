@@ -1,8 +1,9 @@
-import type { Logger } from '../logger'
-import type { DependencyManager } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
+import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
 import type { TransportSession } from './TransportService'
+import type { Logger } from '../logger'
+import type { CredentialsModule } from '../modules/credentials'
+import type { DependencyManager } from '../plugins'
 
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
@@ -42,7 +43,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   protected agentContext: AgentContext
 
   public readonly connections: ConnectionsApi
-  public readonly credentials: CredentialsApi
+  public readonly credentials: CustomOrDefaultApi<AgentModules['credentials'], CredentialsModule>
   public readonly proofs: ProofsApi
   public readonly mediator: MediatorApi
   public readonly mediationRecipient: RecipientApi
@@ -83,7 +84,10 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.agentContext = this.dependencyManager.resolve(AgentContext)
 
     this.connections = this.dependencyManager.resolve(ConnectionsApi)
-    this.credentials = this.dependencyManager.resolve(CredentialsApi) as CredentialsApi
+    this.credentials = this.dependencyManager.resolve(CredentialsApi) as CustomOrDefaultApi<
+      AgentModules['credentials'],
+      CredentialsModule
+    >
     this.proofs = this.dependencyManager.resolve(ProofsApi)
     this.mediator = this.dependencyManager.resolve(MediatorApi)
     this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
@@ -166,6 +170,12 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     }
   }
 
+  /**
+   * @deprecated The publicDid property has been deprecated in favour of the DidsModule, which can be used to
+   * create and resolve dids. Currently the global agent `publicDid` property is still used by the `LedgerModule`, but
+   * will be removed once the LedgerApi has been refactored. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public get publicDid() {
     return this.agentContext.wallet.publicDid
   }

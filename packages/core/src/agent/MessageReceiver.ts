@@ -1,10 +1,10 @@
-import type { ConnectionRecord } from '../modules/connections'
-import type { InboundTransport } from '../transport'
-import type { EncryptedMessage, PlaintextMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { ConnectionRecord } from '../modules/connections'
+import type { InboundTransport } from '../transport'
+import type { EncryptedMessage, PlaintextMessage } from '../types'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -18,11 +18,11 @@ import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMess
 
 import { Dispatcher } from './Dispatcher'
 import { EnvelopeService } from './EnvelopeService'
+import { MessageHandlerRegistry } from './MessageHandlerRegistry'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { AgentContextProvider } from './context'
-import { createOutboundMessage } from './helpers'
-import { InboundMessageContext } from './models/InboundMessageContext'
+import { InboundMessageContext, OutboundMessageContext } from './models'
 
 @injectable()
 export class MessageReceiver {
@@ -32,6 +32,7 @@ export class MessageReceiver {
   private dispatcher: Dispatcher
   private logger: Logger
   private connectionService: ConnectionService
+  private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
   public readonly inboundTransports: InboundTransport[] = []
 
@@ -41,6 +42,7 @@ export class MessageReceiver {
     messageSender: MessageSender,
     connectionService: ConnectionService,
     dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
@@ -49,6 +51,7 @@ export class MessageReceiver {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.dispatcher = dispatcher
+    this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
   }
@@ -228,7 +231,7 @@ export class MessageReceiver {
     replaceLegacyDidSovPrefixOnMessage(message)
 
     const messageType = message['@type']
-    const MessageClass = this.dispatcher.getMessageClassForType(messageType)
+    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType)
 
     if (!MessageClass) {
       throw new ProblemReportError(`No message class found for message type "${messageType}"`, {
@@ -266,7 +269,7 @@ export class MessageReceiver {
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
     if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: {message}`)
+      throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${message}`)
     }
     const problemReportMessage = new ProblemReportMessage({
       description: {
@@ -277,9 +280,9 @@ export class MessageReceiver {
     problemReportMessage.setThread({
       threadId: plaintextMessage['@id'],
     })
-    const outboundMessage = createOutboundMessage(connection, problemReportMessage)
-    if (outboundMessage) {
-      await this.messageSender.sendMessage(agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
+    if (outboundMessageContext) {
+      await this.messageSender.sendMessage(outboundMessageContext)
     }
   }
 }

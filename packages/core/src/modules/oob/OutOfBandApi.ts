@@ -1,21 +1,21 @@
+import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { Key } from '../../crypto'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
-import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { filterContextCorrelationId, AgentEventTypes } from '../../agent/Events'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
+import { Key } from '../../crypto'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
@@ -23,7 +23,7 @@ import { inject, injectable } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
@@ -75,6 +75,7 @@ export interface ReceiveOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
   routing?: Routing
+  acceptInvitationTimeoutMs?: number
 }
 
 @injectable()
@@ -83,7 +84,7 @@ export class OutOfBandApi {
   private routingService: RoutingService
   private connectionsApi: ConnectionsApi
   private didCommMessageRepository: DidCommMessageRepository
-  private dispatcher: Dispatcher
+  private messageHandlerRegistry: MessageHandlerRegistry
   private didCommDocumentService: DidCommDocumentService
   private messageSender: MessageSender
   private eventEmitter: EventEmitter
@@ -91,7 +92,7 @@ export class OutOfBandApi {
   private logger: Logger
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     didCommDocumentService: DidCommDocumentService,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
@@ -102,7 +103,7 @@ export class OutOfBandApi {
     @inject(InjectionSymbols.Logger) logger: Logger,
     agentContext: AgentContext
   ) {
-    this.dispatcher = dispatcher
+    this.messageHandlerRegistry = messageHandlerRegistry
     this.didCommDocumentService = didCommDocumentService
     this.agentContext = agentContext
     this.logger = logger
@@ -112,7 +113,7 @@ export class OutOfBandApi {
     this.didCommMessageRepository = didCommMessageRepository
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -281,7 +282,7 @@ export class OutOfBandApi {
    * @returns out-of-band record and connection record if one has been created
    */
   public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
-    const message = await this.parseInvitationShortUrl(invitationUrl)
+    const message = await this.parseInvitation(invitationUrl)
 
     return this.receiveInvitation(message, config)
   }
@@ -289,24 +290,14 @@ export class OutOfBandApi {
   /**
    * Parses URL containing encoded invitation and returns invitation message.
    *
-   * @param invitationUrl URL containing encoded invitation
-   *
-   * @returns OutOfBandInvitation
-   */
-  public parseInvitation(invitationUrl: string): OutOfBandInvitation {
-    return parseInvitationUrl(invitationUrl)
-  }
-
-  /**
-   * Parses URL containing encoded invitation and returns invitation message. Compatible with
-   * parsing shortened URLs
+   * Will fetch the url if the url does not contain a base64 encoded invitation.
    *
    * @param invitationUrl URL containing encoded invitation
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitationShortUrl(invitation: string): Promise<OutOfBandInvitation> {
-    return await parseInvitationShortUrl(invitation, this.agentContext.config.agentDependencies)
+  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
+    return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
   }
 
   /**
@@ -352,11 +343,14 @@ export class OutOfBandApi {
       )
     }
 
-    // Make sure we haven't processed this invitation before.
-    let outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
+    // Make sure we haven't received this invitation before. (it's fine if we created it, that means we're connecting with ourselves
+    let [outOfBandRecord] = await this.outOfBandService.findAllByQuery(this.agentContext, {
+      invitationId: outOfBandInvitation.id,
+      role: OutOfBandRole.Receiver,
+    })
     if (outOfBandRecord) {
       throw new AriesFrameworkError(
-        `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+        `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
       )
     }
 
@@ -398,6 +392,7 @@ export class OutOfBandApi {
         autoAcceptConnection,
         reuseConnection,
         routing,
+        timeoutMs: config.acceptInvitationTimeoutMs,
       })
     }
 
@@ -426,8 +421,8 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
-      mediatorId?: string
       routing?: Routing
+      timeoutMs?: number
     }
   ) {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
@@ -437,6 +432,7 @@ export class OutOfBandApi {
     const { handshakeProtocols } = outOfBandInvitation
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
+    const timeoutMs = config.timeoutMs ?? 20000
 
     const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
@@ -494,7 +490,7 @@ export class OutOfBandApi {
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
-            .returnWhenIsConnected(connectionRecord.id)
+            .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
             .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
@@ -521,12 +517,12 @@ export class OutOfBandApi {
     return { outOfBandRecord }
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandService.findByRecipientKey(this.agentContext, recipientKey)
+  public async findByReceivedInvitationId(receivedInvitationId: string) {
+    return this.outOfBandService.findByReceivedInvitationId(this.agentContext, receivedInvitationId)
   }
 
-  public async findByInvitationId(invitationId: string) {
-    return this.outOfBandService.findByInvitationId(this.agentContext, invitationId)
+  public async findByCreatedInvitationId(createdInvitationId: string) {
+    return this.outOfBandService.findByCreatedInvitationId(this.agentContext, createdInvitationId)
   }
 
   /**
@@ -575,6 +571,22 @@ export class OutOfBandApi {
    * @param outOfBandId the out of band record id
    */
   public async deleteById(outOfBandId: string) {
+    const outOfBandRecord = await this.getById(outOfBandId)
+
+    const relatedConnections = await this.connectionsApi.findAllByOutOfBandId(outOfBandId)
+
+    // If it uses mediation and there are no related connections, proceed to delete keys from mediator
+    // Note: if OOB Record is reusable, it is safe to delete it because every connection created from
+    // it will use its own recipient key
+    if (outOfBandRecord.mediatorId && (relatedConnections.length === 0 || outOfBandRecord.reusable)) {
+      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+
+      await this.routingService.removeRouting(this.agentContext, {
+        recipientKeys,
+        mediatorId: outOfBandRecord.mediatorId,
+      })
+    }
+
     return this.outOfBandService.deleteById(this.agentContext, outOfBandId)
   }
 
@@ -593,8 +605,10 @@ export class OutOfBandApi {
   }
 
   private getSupportedHandshakeProtocols(): HandshakeProtocol[] {
+    // TODO: update to featureRegistry
     const handshakeMessageFamilies = ['https://didcomm.org/didexchange', 'https://didcomm.org/connections']
-    const handshakeProtocols = this.dispatcher.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
+    const handshakeProtocols =
+      this.messageHandlerRegistry.filterSupportedProtocolsByMessageFamilies(handshakeMessageFamilies)
 
     if (handshakeProtocols.length === 0) {
       throw new AriesFrameworkError('There is no handshake protocol supported. Agent can not create a connection.')
@@ -641,7 +655,7 @@ export class OutOfBandApi {
   }
 
   private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
-    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
+    const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
@@ -668,7 +682,7 @@ export class OutOfBandApi {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
 
-    const supportedMessageTypes = this.dispatcher.supportedMessageTypes
+    const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
       return supportedMessageTypes.find((type) => supportsIncomingMessageType(parsedMessageType, type))
@@ -748,14 +762,18 @@ export class OutOfBandApi {
       )
     )
 
-    const outbound = createOutboundMessage(connectionRecord, reuseMessage)
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(reuseMessage, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return reuseAcceptedEventPromise
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new HandshakeReuseHandler(this.outOfBandService))
-    dispatcher.registerHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+  // TODO: we should probably move these to the out of band module and register the handler there
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

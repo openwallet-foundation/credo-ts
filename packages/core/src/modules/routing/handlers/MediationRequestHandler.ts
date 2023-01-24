@@ -1,11 +1,11 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { MediatorModuleConfig } from '../MediatorModuleConfig'
 import type { MediatorService } from '../services/MediatorService'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
-export class MediationRequestHandler implements Handler {
+export class MediationRequestHandler implements MessageHandler {
   private mediatorService: MediatorService
   private mediatorModuleConfig: MediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
@@ -15,7 +15,7 @@ export class MediationRequestHandler implements Handler {
     this.mediatorModuleConfig = mediatorModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<MediationRequestHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<MediationRequestHandler>) {
     const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)
@@ -25,7 +25,11 @@ export class MediationRequestHandler implements Handler {
         messageContext.agentContext,
         mediationRecord
       )
-      return createOutboundMessage(connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection,
+        associatedRecord: mediationRecord,
+      })
     }
   }
 }

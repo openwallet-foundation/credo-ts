@@ -1,18 +1,18 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidResolverService } from '../../dids'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import type { ConnectionService } from '../services'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../../../error'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { DidExchangeRole, HandshakeProtocol } from '../models'
 
-export class DidExchangeResponseHandler implements Handler {
+export class DidExchangeResponseHandler implements MessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
@@ -34,14 +34,18 @@ export class DidExchangeResponseHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<DidExchangeResponseHandler>) {
-    const { recipientKey, senderKey, message } = messageContext
+  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeResponseHandler>) {
+    const { agentContext, recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection response without sender key or recipient key')
     }
 
-    const connectionRecord = await this.connectionService.getByThreadId(messageContext.agentContext, message.threadId)
+    const connectionRecord = await this.connectionService.getByRoleAndThreadId(
+      agentContext,
+      DidExchangeRole.Requester,
+      message.threadId
+    )
     if (!connectionRecord) {
       throw new AriesFrameworkError(`Connection for thread ID ${message.threadId} not found!`)
     }
@@ -50,10 +54,7 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} has no 'did'`)
     }
 
-    const ourDidDocument = await this.didResolverService.resolveDidDocument(
-      messageContext.agentContext,
-      connectionRecord.did
-    )
+    const ourDidDocument = await this.didResolverService.resolveDidDocument(agentContext, connectionRecord.did)
     if (!ourDidDocument) {
       throw new AriesFrameworkError(`Did document for did ${connectionRecord.did} was not resolved`)
     }
@@ -77,10 +78,7 @@ export class DidExchangeResponseHandler implements Handler {
       throw new AriesFrameworkError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
     }
 
-    const outOfBandRecord = await this.outOfBandService.findById(
-      messageContext.agentContext,
-      connectionRecord.outOfBandId
-    )
+    const outOfBandRecord = await this.outOfBandService.findById(agentContext, connectionRecord.outOfBandId)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(
@@ -103,19 +101,15 @@ export class DidExchangeResponseHandler implements Handler {
     // In AATH we have a separate step to send the complete. So for now we'll only do it
     // if auto accept is enabled
     if (connection.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
-      const message = await this.didExchangeProtocol.createComplete(
-        messageContext.agentContext,
-        connection,
-        outOfBandRecord
-      )
+      const message = await this.didExchangeProtocol.createComplete(agentContext, connection, outOfBandRecord)
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
 
       if (!outOfBandRecord.reusable) {
-        await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
+        await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
       }
-      return createOutboundMessage(connection, message)
+      return new OutboundMessageContext(message, { agentContext, connection })
     }
   }
 }

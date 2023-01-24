@@ -1,4 +1,3 @@
-import type { Feature } from '../../agent/models'
 import type {
   DiscloseFeaturesOptions,
   QueryFeaturesOptions,
@@ -6,6 +5,7 @@ import type {
 } from './DiscoverFeaturesApiOptions'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
 import type { DiscoverFeaturesService } from './services'
+import type { Feature } from '../../agent/models'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
@@ -13,7 +13,7 @@ import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { inject, injectable } from '../../plugins'
@@ -80,7 +80,7 @@ export class DiscoverFeaturesApi<
       throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion]
+    return this.serviceMap[protocolVersion] as DiscoverFeaturesService
   }
 
   /**
@@ -103,7 +103,10 @@ export class DiscoverFeaturesApi<
       comment: options.comment,
     })
 
-    const outbound = createOutboundMessage(connection, queryMessage)
+    const outboundMessageContext = new OutboundMessageContext(queryMessage, {
+      agentContext: this.agentContext,
+      connection,
+    })
 
     const replaySubject = new ReplaySubject<Feature[]>(1)
     if (options.awaitDisclosures) {
@@ -125,7 +128,7 @@ export class DiscoverFeaturesApi<
         .subscribe(replaySubject)
     }
 
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return { features: options.awaitDisclosures ? await firstValueFrom(replaySubject) : undefined }
   }
@@ -151,7 +154,10 @@ export class DiscoverFeaturesApi<
       threadId: options.threadId,
     })
 
-    const outbound = createOutboundMessage(connection, disclosuresMessage)
-    await this.messageSender.sendMessage(this.agentContext, outbound)
+    const outboundMessageContext = new OutboundMessageContext(disclosuresMessage, {
+      agentContext: this.agentContext,
+      connection,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
   }
 }

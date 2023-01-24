@@ -1,10 +1,10 @@
+import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
+import type { OutOfBandRecord } from './repository'
 import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionRecord } from '../connections'
-import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
-import type { OutOfBandRecord } from './repository'
 
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'
@@ -36,7 +36,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByInvitationId(messageContext.agentContext, parentThreadId)
+    const outOfBandRecord = await this.findByCreatedInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse message')
     }
@@ -81,7 +81,7 @@ export class OutOfBandService {
       throw new AriesFrameworkError('handshake-reuse-accepted message must have a parent thread id')
     }
 
-    const outOfBandRecord = await this.findByInvitationId(messageContext.agentContext, parentThreadId)
+    const outOfBandRecord = await this.findByReceivedInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('No out of band record found for handshake-reuse-accepted message')
     }
@@ -165,13 +165,24 @@ export class OutOfBandService {
     return this.outOfBandRepository.getById(agentContext, outOfBandRecordId)
   }
 
-  public async findByInvitationId(agentContext: AgentContext, invitationId: string) {
-    return this.outOfBandRepository.findSingleByQuery(agentContext, { invitationId })
+  public async findByReceivedInvitationId(agentContext: AgentContext, receivedInvitationId: string) {
+    return this.outOfBandRepository.findSingleByQuery(agentContext, {
+      invitationId: receivedInvitationId,
+      role: OutOfBandRole.Receiver,
+    })
   }
 
-  public async findByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public async findByCreatedInvitationId(agentContext: AgentContext, createdInvitationId: string) {
+    return this.outOfBandRepository.findSingleByQuery(agentContext, {
+      invitationId: createdInvitationId,
+      role: OutOfBandRole.Sender,
+    })
+  }
+
+  public async findCreatedByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
+      role: OutOfBandRole.Sender,
     })
   }
 

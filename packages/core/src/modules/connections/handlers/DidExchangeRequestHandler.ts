@@ -1,16 +1,16 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
-import { createOutboundMessage } from '../../../agent/helpers'
+import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
 
-export class DidExchangeRequestHandler implements Handler {
+export class DidExchangeRequestHandler implements MessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
@@ -32,7 +32,7 @@ export class DidExchangeRequestHandler implements Handler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: HandlerInboundMessage<DidExchangeRequestHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
     const { recipientKey, senderKey, message, connection } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -42,7 +42,7 @@ export class DidExchangeRequestHandler implements Handler {
     if (!message.thread?.parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
-    const outOfBandRecord = await this.outOfBandService.findByInvitationId(
+    const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
       message.thread.parentThreadId
     )
@@ -57,9 +57,12 @@ export class DidExchangeRequestHandler implements Handler {
       )
     }
 
-    const didRecord = await this.didRepository.findByRecipientKey(messageContext.agentContext, senderKey)
-    if (didRecord) {
-      throw new AriesFrameworkError(`Did record for sender key ${senderKey.fingerprint} already exists.`)
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
+      messageContext.agentContext,
+      senderKey
+    )
+    if (receivedDidRecord) {
+      throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?
@@ -85,7 +88,11 @@ export class DidExchangeRequestHandler implements Handler {
         outOfBandRecord,
         routing
       )
-      return createOutboundMessage(connectionRecord, message, outOfBandRecord)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: connectionRecord,
+        outOfBand: outOfBandRecord,
+      })
     }
   }
 }

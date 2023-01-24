@@ -399,12 +399,17 @@ export class ConnectionService {
       throw new AriesFrameworkError('Unable to process connection problem report without recipientKey')
     }
 
-    let connectionRecord
-    const ourDidRecords = await this.didRepository.findAllByRecipientKey(messageContext.agentContext, recipientKey)
-    for (const ourDidRecord of ourDidRecords) {
-      connectionRecord = await this.findByOurDid(messageContext.agentContext, ourDidRecord.id)
+    const ourDidRecord = await this.didRepository.findCreatedDidByRecipientKey(
+      messageContext.agentContext,
+      recipientKey
+    )
+    if (!ourDidRecord) {
+      throw new AriesFrameworkError(
+        `Unable to process connection problem report: created did record for recipient key ${recipientKey.fingerprint} not found`
+      )
     }
 
+    const connectionRecord = await this.findByOurDid(messageContext.agentContext, ourDidRecord.did)
     if (!connectionRecord) {
       throw new AriesFrameworkError(
         `Unable to process connection problem report: connection for recipient key ${recipientKey.fingerprint} not found`
@@ -413,9 +418,9 @@ export class ConnectionService {
 
     const theirDidRecord =
       connectionRecord.theirDid &&
-      (await this.didRepository.findById(messageContext.agentContext, connectionRecord.theirDid))
+      (await this.didRepository.findReceivedDid(messageContext.agentContext, connectionRecord.theirDid))
     if (!theirDidRecord) {
-      throw new AriesFrameworkError(`Did record with id ${connectionRecord.theirDid} not found.`)
+      throw new AriesFrameworkError(`Received did record for did ${connectionRecord.theirDid} not found.`)
     }
 
     if (senderKey) {
@@ -589,6 +594,10 @@ export class ConnectionService {
     return this.connectionRepository.getByThreadId(agentContext, threadId)
   }
 
+  public async getByRoleAndThreadId(agentContext: AgentContext, role: DidExchangeRole, threadId: string) {
+    return this.connectionRepository.getByRoleAndThreadId(agentContext, role, threadId)
+  }
+
   public async findByTheirDid(agentContext: AgentContext, theirDid: string): Promise<ConnectionRecord | null> {
     return this.connectionRepository.findSingleByQuery(agentContext, { theirDid })
   }
@@ -601,8 +610,8 @@ export class ConnectionService {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findAllByConnectionType(agentContext: AgentContext, connectionType: [ConnectionType | string]) {
-    return this.connectionRepository.findByQuery(agentContext, { connectionType })
+  public async findAllByConnectionTypes(agentContext: AgentContext, connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionRepository.findByQuery(agentContext, { connectionTypes })
   }
 
   public async findByInvitationDid(agentContext: AgentContext, invitationDid: string) {
@@ -613,13 +622,13 @@ export class ConnectionService {
     agentContext: AgentContext,
     { senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }
   ) {
-    const theirDidRecord = await this.didRepository.findByRecipientKey(agentContext, senderKey)
+    const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (theirDidRecord) {
-      const ourDidRecord = await this.didRepository.findByRecipientKey(agentContext, recipientKey)
+      const ourDidRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, recipientKey)
       if (ourDidRecord) {
         const connectionRecord = await this.findByDids(agentContext, {
-          ourDid: ourDidRecord.id,
-          theirDid: theirDidRecord.id,
+          ourDid: ourDidRecord.did,
+          theirDid: theirDidRecord.did,
         })
         if (connectionRecord && connectionRecord.isReady) return connectionRecord
       }
@@ -642,6 +651,21 @@ export class ConnectionService {
     return connectionRecord
   }
 
+  public async addConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
+    const connectionTypes = connectionRecord.connectionTypes || []
+    connectionRecord.connectionTypes = [type, ...connectionTypes]
+    await this.update(agentContext, connectionRecord)
+  }
+
+  public async removeConnectionType(agentContext: AgentContext, connectionRecord: ConnectionRecord, type: string) {
+    connectionRecord.connectionTypes = connectionRecord.connectionTypes.filter((value) => value !== type)
+    await this.update(agentContext, connectionRecord)
+  }
+
+  public async getConnectionTypes(connectionRecord: ConnectionRecord) {
+    return connectionRecord.connectionTypes || []
+  }
+
   private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
     // Convert the legacy did doc to a new did document
     const didDocument = convertToNewDidDocument(didDoc)
@@ -649,7 +673,7 @@ export class ConnectionService {
     const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
     didDocument.id = peerDid
     const didRecord = new DidRecord({
-      id: peerDid,
+      did: peerDid,
       role,
       didDocument,
       tags: {
@@ -668,6 +692,7 @@ export class ConnectionService {
 
     this.logger.debug('Saving DID record', {
       id: didRecord.id,
+      did: didRecord.did,
       role: didRecord.role,
       tags: didRecord.getTags(),
       didDocument: 'omitted...',

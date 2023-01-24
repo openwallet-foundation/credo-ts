@@ -1,25 +1,22 @@
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
-import type { Logger } from '../../../../../logger'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V1CredentialService } from '../V1CredentialService'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { V1ProposeCredentialMessage } from '../messages'
 
-export class V1ProposeCredentialHandler implements Handler {
-  private credentialService: V1CredentialService
-  private logger: Logger
+export class V1ProposeCredentialHandler implements MessageHandler {
+  private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1ProposeCredentialMessage]
 
-  public constructor(credentialService: V1CredentialService, logger: Logger) {
-    this.credentialService = credentialService
-    this.logger = logger
+  public constructor(credentialProtocol: V1CredentialProtocol) {
+    this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>) {
-    const credentialRecord = await this.credentialService.processProposal(messageContext)
+  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>) {
+    const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
 
-    const shouldAutoAcceptProposal = await this.credentialService.shouldAutoRespondToProposal(
+    const shouldAutoAcceptProposal = await this.credentialProtocol.shouldAutoRespondToProposal(
       messageContext.agentContext,
       {
         credentialRecord,
@@ -34,19 +31,23 @@ export class V1ProposeCredentialHandler implements Handler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: HandlerInboundMessage<V1ProposeCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
-    this.logger.info(`Automatically sending offer with autoAccept`)
+    messageContext.agentContext.config.logger.info(`Automatically sending offer with autoAccept`)
 
     if (!messageContext.connection) {
-      this.logger.error('No connection on the messageContext, aborting auto accept')
+      messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')
       return
     }
 
-    const { message } = await this.credentialService.acceptProposal(messageContext.agentContext, {
+    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, {
       credentialRecord,
     })
 
-    return createOutboundMessage(messageContext.connection, message)
+    return new OutboundMessageContext(message, {
+      agentContext: messageContext.agentContext,
+      connection: messageContext.connection,
+      associatedRecord: credentialRecord,
+    })
   }
 }

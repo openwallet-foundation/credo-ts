@@ -1,3 +1,5 @@
+import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
+import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
@@ -20,8 +22,6 @@ import type {
   ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
-import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -31,11 +31,10 @@ import { Attachment, AttachmentData } from '../../../../decorators/attachment/At
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { ConsoleLogger, LogLevel } from '../../../../logger'
 import { DidCommMessageRepository } from '../../../../storage/didcomm/DidCommMessageRepository'
-import { checkProofRequestForDuplicates } from '../../../../utils'
+import { checkProofRequestForDuplicates, deepEquality } from '../../../../utils'
 import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
-import { objectEquals } from '../../../../utils/objectCheck'
 import { uuid } from '../../../../utils/uuid'
 import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { IndyCredential, IndyCredentialInfo } from '../../../credentials'
@@ -63,6 +62,7 @@ import {
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'
 import { RetrievedCredentials } from './models/RetrievedCredentials'
+import { sortRequestedCredentials } from './util/sortRequestedCredentials'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
@@ -121,7 +121,7 @@ export class IndyProofFormatService extends ProofFormatService {
     })
 
     const request = new ProofRequest(options.proofProposalOptions)
-    await MessageValidator.validateSync(request)
+    MessageValidator.validateSync(request)
 
     const attachment = new Attachment({
       id: options.id,
@@ -157,7 +157,7 @@ export class IndyProofFormatService extends ProofFormatService {
 
     const proposalMessage = JsonTransformer.fromJSON(proofProposalJson, ProofRequest)
 
-    await MessageValidator.validateSync(proposalMessage)
+    MessageValidator.validateSync(proposalMessage)
   }
 
   public async createRequestAsResponse(
@@ -213,7 +213,7 @@ export class IndyProofFormatService extends ProofFormatService {
         `Missing required base64 or json encoded attachment data for presentation request with thread id ${options.record?.threadId}`
       )
     }
-    await MessageValidator.validateSync(proofRequest)
+    MessageValidator.validateSync(proofRequest)
 
     // Assert attribute and predicate (group) names do not match
     checkProofRequestForDuplicates(proofRequest)
@@ -356,8 +356,8 @@ export class IndyProofFormatService extends ProofFormatService {
     const requestAttachmentData = JsonTransformer.fromJSON(requestAttachmentJson, ProofRequest)
 
     if (
-      objectEquals(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
-      objectEquals(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
+      deepEquality(proposalAttachmentData.requestedAttributes, requestAttachmentData.requestedAttributes) &&
+      deepEquality(proposalAttachmentData.requestedPredicates, requestAttachmentData.requestedPredicates)
     ) {
       return true
     }
@@ -425,22 +425,24 @@ export class IndyProofFormatService extends ProofFormatService {
         })
       }
 
-      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
-        credentialMatch.map(async (credential: IndyCredential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
-            proofRequest,
-            requestedItem: requestedAttribute,
-            credential,
-          })
+      retrievedCredentials.requestedAttributes[referent] = sortRequestedCredentials(
+        await Promise.all(
+          credentialMatch.map(async (credential: IndyCredential) => {
+            const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
+              proofRequest,
+              requestedItem: requestedAttribute,
+              credential,
+            })
 
-          return new RequestedAttribute({
-            credentialId: credential.credentialInfo.referent,
-            revealed: true,
-            credentialInfo: credential.credentialInfo,
-            timestamp: deltaTimestamp,
-            revoked,
+            return new RequestedAttribute({
+              credentialId: credential.credentialInfo.referent,
+              revealed: true,
+              credentialInfo: credential.credentialInfo,
+              timestamp: deltaTimestamp,
+              revoked,
+            })
           })
-        })
+        )
       )
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means
@@ -455,21 +457,23 @@ export class IndyProofFormatService extends ProofFormatService {
     for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(agentContext, proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
-        credentials.map(async (credential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
-            proofRequest,
-            requestedItem: requestedPredicate,
-            credential,
-          })
+      retrievedCredentials.requestedPredicates[referent] = sortRequestedCredentials(
+        await Promise.all(
+          credentials.map(async (credential) => {
+            const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
+              proofRequest,
+              requestedItem: requestedPredicate,
+              credential,
+            })
 
-          return new RequestedPredicate({
-            credentialId: credential.credentialInfo.referent,
-            credentialInfo: credential.credentialInfo,
-            timestamp: deltaTimestamp,
-            revoked,
+            return new RequestedPredicate({
+              credentialId: credential.credentialInfo.referent,
+              credentialInfo: credential.credentialInfo,
+              timestamp: deltaTimestamp,
+              revoked,
+            })
           })
-        })
+        )
       )
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means
@@ -606,7 +610,7 @@ export class IndyProofFormatService extends ProofFormatService {
     if (!proofRequest) {
       throw new AriesFrameworkError(`Missing required base64 or json encoded attachment data for presentation request.`)
     }
-    await MessageValidator.validateSync(proofRequest)
+    MessageValidator.validateSync(proofRequest)
 
     // Assert attribute and predicate (group) names do not match
     checkProofRequestForDuplicates(proofRequest)

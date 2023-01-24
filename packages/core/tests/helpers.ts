@@ -2,20 +2,24 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AcceptCredentialOfferOptions,
+  AgentDependencies,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
+  InjectionToken,
   ProofStateChangedEvent,
   SchemaTemplate,
   Wallet,
 } from '../src'
-import type { AgentModulesInput } from '../src/agent/AgentModules'
+import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { Awaited } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
@@ -29,6 +33,12 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
+  CredentialsModule,
+  IndyCredentialFormatService,
+  JsonLdCredentialFormatService,
+  V1CredentialProtocol,
+  V2CredentialProtocol,
+  W3cVcModule,
   Agent,
   AgentConfig,
   AgentContext,
@@ -37,6 +47,7 @@ import {
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  TrustPingEventTypes,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
@@ -62,6 +73,8 @@ import {
   PresentationPreviewAttribute,
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { KeyDerivationMethod } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -74,18 +87,21 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
+const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
+const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput>(
+export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
-) {
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -96,7 +112,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
         isProduction: false,
         genesisPath,
         indyNamespace: `pool:localtest`,
-        transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
       },
     ],
     // TODO: determine the log level based on an environment variable. This will make it
@@ -104,7 +120,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
-  return { config, modules, dependencies: agentDependencies } as const
+
+  return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -155,14 +172,24 @@ export function getAgentContext({
   wallet,
   agentConfig,
   contextCorrelationId = 'mock',
+  registerInstances = [],
 }: {
   dependencyManager?: DependencyManager
   wallet?: Wallet
   agentConfig?: AgentConfig
   contextCorrelationId?: string
+  // Must be an array of arrays as objects can't have injection tokens
+  // as keys (it must be number, string or symbol)
+  registerInstances?: Array<[InjectionToken, unknown]>
 } = {}) {
   if (wallet) dependencyManager.registerInstance(InjectionSymbols.Wallet, wallet)
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
+
+  // Register custom instances on the dependency manager
+  for (const [token, instance] of registerInstances.values()) {
+    dependencyManager.registerInstance(token, instance)
+  }
+
   return new AgentContext({ dependencyManager, contextCorrelationId })
 }
 
@@ -207,7 +234,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
+          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
   previousState: ${previousState},
   threadId: ${threadId},
   parentThreadId: ${parentThreadId},
@@ -220,13 +247,93 @@ export function waitForProofExchangeRecordSubject(
   )
 }
 
+export async function waitForTrustPingReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+
+  return waitForTrustPingReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingReceivedEventSubject(
+  subject: ReplaySubject<TrustPingReceivedEvent> | Observable<TrustPingReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
+export async function waitForTrustPingResponseReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
+    TrustPingEventTypes.TrustPingResponseReceivedEvent
+  )
+
+  return waitForTrustPingResponseReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingResponseReceivedEventSubject(
+  subject: ReplaySubject<TrustPingResponseReceivedEvent> | Observable<TrustPingResponseReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export function waitForCredentialRecordSubject(
   subject: ReplaySubject<CredentialStateChangedEvent> | Observable<CredentialStateChangedEvent>,
   {
     threadId,
     state,
     previousState,
-    timeoutMs = 15000, // sign and store credential in W3c credential service take several seconds
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
     state?: CredentialState
@@ -658,6 +765,8 @@ export function mockProperty<T extends {}, K extends keyof T>(object: T, propert
   Object.defineProperty(object, property, { get: () => value })
 }
 
+// Helper type to get the type of the agents (with the custom modules) for the credential tests
+export type CredentialTestsAgent = Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
 export async function setupCredentialTests(
   faberName: string,
   aliceName: string,
@@ -670,15 +779,32 @@ export async function setupCredentialTests(
     'rxjs:alice': aliceMessages,
   }
 
+  const indyCredentialFormat = new IndyCredentialFormatService()
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+
   // TODO remove the dependency on BbsModule
   const modules = {
     bbs: new BbsModule(),
+
+    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    // Register custom w3cVc module so we can define the test document loader
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
   }
   const faberAgentOptions = getAgentOptions(
     faberName,
     {
       endpoints: ['rxjs:faber'],
-      autoAcceptCredentials,
     },
     modules
   )
@@ -687,7 +813,6 @@ export async function setupCredentialTests(
     aliceName,
     {
       endpoints: ['rxjs:alice'],
-      autoAcceptCredentials,
     },
     modules
   )

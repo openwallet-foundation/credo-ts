@@ -1,5 +1,5 @@
 import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { Handler, HandlerInboundMessage } from '../../../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import type { MediationRecipientService, RoutingService } from '../../../../routing'
 import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
@@ -11,13 +11,13 @@ import type {
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1ProofService } from '../V1ProofService'
 
-import { createOutboundMessage, createOutboundServiceMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../../../../error'
 import { DidCommMessageRole } from '../../../../../storage'
 import { V1RequestPresentationMessage } from '../messages'
 
-export class V1RequestPresentationHandler implements Handler {
+export class V1RequestPresentationHandler implements MessageHandler {
   private proofService: V1ProofService
   private agentConfig: AgentConfig
   private proofResponseCoordinator: ProofResponseCoordinator
@@ -42,16 +42,22 @@ export class V1RequestPresentationHandler implements Handler {
     this.routingService = routingService
   }
 
-  public async handle(messageContext: HandlerInboundMessage<V1RequestPresentationHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>) {
     const proofRecord = await this.proofService.processRequest(messageContext)
-    if (this.proofResponseCoordinator.shouldAutoRespondToRequest(messageContext.agentContext, proofRecord)) {
+
+    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
+      messageContext.agentContext,
+      proofRecord
+    )
+
+    if (shouldAutoRespond) {
       return await this.createPresentation(proofRecord, messageContext)
     }
   }
 
   private async createPresentation(
     record: ProofExchangeRecord,
-    messageContext: HandlerInboundMessage<V1RequestPresentationHandler>
+    messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
     const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: record.id,
@@ -96,7 +102,11 @@ export class V1RequestPresentationHandler implements Handler {
     })
 
     if (messageContext.connection) {
-      return createOutboundMessage(messageContext.connection, message)
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        connection: messageContext.connection,
+        associatedRecord: proofRecord,
+      })
     } else if (requestMessage.service) {
       const routing = await this.routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({
@@ -111,10 +121,12 @@ export class V1RequestPresentationHandler implements Handler {
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
       })
-      return createOutboundServiceMessage({
-        payload: message,
-        service: recipientService.resolvedDidCommService,
-        senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+      return new OutboundMessageContext(message, {
+        agentContext: messageContext.agentContext,
+        serviceParams: {
+          service: recipientService.resolvedDidCommService,
+          senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+        },
       })
     }
 

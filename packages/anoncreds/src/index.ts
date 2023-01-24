@@ -1,0 +1,5 @@
+export * from './models'
+export * from './services'
+export * from './error'
+export { AnonCredsModule } from './AnonCredsModule'
+export { AnonCredsModuleConfig, AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'

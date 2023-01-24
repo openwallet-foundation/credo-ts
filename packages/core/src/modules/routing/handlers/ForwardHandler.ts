@@ -1,11 +1,11 @@
-import type { Handler, HandlerInboundMessage } from '../../../agent/Handler'
+import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
 import type { MessageSender } from '../../../agent/MessageSender'
 import type { ConnectionService } from '../../connections/services'
 import type { MediatorService } from '../services'
 
 import { ForwardMessage } from '../messages'
 
-export class ForwardHandler implements Handler {
+export class ForwardHandler implements MessageHandler {
   private mediatorService: MediatorService
   private connectionService: ConnectionService
   private messageSender: MessageSender
@@ -22,7 +22,7 @@ export class ForwardHandler implements Handler {
     this.messageSender = messageSender
   }
 
-  public async handle(messageContext: HandlerInboundMessage<ForwardHandler>) {
+  public async handle(messageContext: MessageHandlerInboundMessage<ForwardHandler>) {
     const { encryptedMessage, mediationRecord } = await this.mediatorService.processForwardMessage(messageContext)
 
     const connectionRecord = await this.connectionService.getById(

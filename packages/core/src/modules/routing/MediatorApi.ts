@@ -1,11 +1,11 @@
-import type { EncryptedMessage } from '../../types'
 import type { MediationRecord } from './repository'
+import type { EncryptedMessage } from '../../types'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { createOutboundMessage } from '../../agent/helpers'
+import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
@@ -46,7 +46,7 @@ export class MediatorApi {
     this.connectionService = connectionService
     this.agentContext = agentContext
     this.config = config
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   public async initialize() {
@@ -70,9 +70,13 @@ export class MediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessage = createOutboundMessage(connectionRecord, message)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+      associatedRecord: mediationRecord,
+    })
 
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return mediationRecord
   }
@@ -81,11 +85,13 @@ export class MediatorApi {
     return this.messagePickupService.queueMessage(connectionId, message)
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new KeylistUpdateHandler(this.mediatorService))
-    dispatcher.registerHandler(new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender))
-    dispatcher.registerHandler(new BatchPickupHandler(this.messagePickupService))
-    dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
-    dispatcher.registerHandler(new MediationRequestHandler(this.mediatorService, this.config))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new KeylistUpdateHandler(this.mediatorService))
+    dispatcher.registerMessageHandler(
+      new ForwardHandler(this.mediatorService, this.connectionService, this.messageSender)
+    )
+    dispatcher.registerMessageHandler(new BatchPickupHandler(this.messagePickupService))
+    dispatcher.registerMessageHandler(new BatchHandler(this.eventEmitter))
+    dispatcher.registerMessageHandler(new MediationRequestHandler(this.mediatorService, this.config))
   }
 }

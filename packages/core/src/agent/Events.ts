@@ -1,5 +1,6 @@
-import type { ConnectionRecord } from '../modules/connections'
 import type { AgentMessage } from './AgentMessage'
+import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
+import type { ConnectionRecord } from '../modules/connections'
 import type { Observable } from 'rxjs'
 
 import { filter } from 'rxjs'
@@ -13,6 +14,7 @@ export function filterContextCorrelationId(contextCorrelationId: string) {
 export enum AgentEventTypes {
   AgentMessageReceived = 'AgentMessageReceived',
   AgentMessageProcessed = 'AgentMessageProcessed',
+  AgentMessageSent = 'AgentMessageSent',
 }
 
 export interface EventMetadata {
@@ -39,5 +41,13 @@ export interface AgentMessageProcessedEvent extends BaseEvent {
   payload: {
     message: AgentMessage
     connection?: ConnectionRecord
+  }
+}
+
+export interface AgentMessageSentEvent extends BaseEvent {
+  type: typeof AgentEventTypes.AgentMessageSent
+  payload: {
+    message: OutboundMessageContext
+    status: OutboundMessageSendStatus
   }
 }

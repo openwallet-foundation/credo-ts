@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateOfferOptions } from '../src/modules/credentials'
-import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
+import type { CreateOfferOptions, DefaultCredentialProtocols } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -11,6 +10,15 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
+
+import {
+  AgentEventTypes,
+  AriesFrameworkError,
+  AutoAcceptCredential,
+  CredentialState,
+  V1CredentialPreview,
+} from '@aries-framework/core'
+
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -21,14 +29,6 @@ import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
-
-import {
-  AgentEventTypes,
-  AriesFrameworkError,
-  AutoAcceptCredential,
-  CredentialState,
-  V1CredentialPreview,
-} from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -58,7 +58,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<[IndyCredentialFormat]>
+  let credentialTemplate: CreateOfferOptions<DefaultCredentialProtocols>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -69,6 +69,7 @@ describe('out of band', () => {
     }
 
     faberAgent = new Agent(faberAgentOptions)
+
     faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
@@ -588,7 +589,7 @@ describe('out of band', () => {
       // Try to receive the invitation again
       await expect(aliceAgent.oob.receiveInvitation(outOfBandInvitation)).rejects.toThrow(
         new AriesFrameworkError(
-          `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
       )
     })

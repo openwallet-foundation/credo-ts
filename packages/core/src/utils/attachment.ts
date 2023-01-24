@@ -1,5 +1,5 @@
-import type { Attachment } from '../decorators/attachment/Attachment'
 import type { BaseName } from './MultiBaseEncoder'
+import type { Attachment } from '../decorators/attachment/Attachment'
 
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 

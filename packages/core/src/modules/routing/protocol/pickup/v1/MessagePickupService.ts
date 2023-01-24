@@ -1,10 +1,10 @@
+import type { BatchPickupMessage } from './messages'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../../../types'
-import type { BatchPickupMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { createOutboundMessage } from '../../../../../agent/helpers'
+import { OutboundMessageContext } from '../../../../../agent/models'
 import { InjectionSymbols } from '../../../../../constants'
 import { inject, injectable } from '../../../../../plugins'
 import { MessageRepository } from '../../../../../storage/MessageRepository'
@@ -27,7 +27,7 @@ export class MessagePickupService {
     this.dispatcher = dispatcher
     this.eventEmitter = eventEmitter
 
-    this.registerHandlers()
+    this.registerMessageHandlers()
   }
 
   public async batch(messageContext: InboundMessageContext<BatchPickupMessage>) {
@@ -50,15 +50,15 @@ export class MessagePickupService {
       messages: batchMessages,
     })
 
-    return createOutboundMessage(connection, batchMessage)
+    return new OutboundMessageContext(batchMessage, { agentContext: messageContext.agentContext, connection })
   }
 
   public async queueMessage(connectionId: string, message: EncryptedMessage) {
     await this.messageRepository.add(connectionId, message)
   }
 
-  protected registerHandlers() {
-    this.dispatcher.registerHandler(new BatchPickupHandler(this))
-    this.dispatcher.registerHandler(new BatchHandler(this.eventEmitter))
+  protected registerMessageHandlers() {
+    this.dispatcher.registerMessageHandler(new BatchPickupHandler(this))
+    this.dispatcher.registerMessageHandler(new BatchHandler(this.eventEmitter))
   }
 }

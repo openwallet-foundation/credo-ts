@@ -1,8 +1,9 @@
+import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type { LinkedAttachment } from '../../../../utils/LinkedAttachment'
 import type { CredentialPreviewAttributeOptions } from '../../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
+import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   FormatAcceptOfferOptions,
   FormatAcceptProposalOptions,
@@ -17,27 +18,28 @@ import type {
   FormatCreateProposalReturn,
   CredentialFormatCreateReturn,
   FormatProcessOptions,
+  FormatProcessCredentialOptions,
 } from '../CredentialFormatServiceOptions'
-import type { IndyCredentialFormat } from './IndyCredentialFormat'
 import type * as Indy from 'indy-sdk'
 
-import { InjectionSymbols } from '../../../../constants'
+import { KeyType } from '../../../../crypto'
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
-import { Logger } from '../../../../logger'
-import { inject, injectable } from '../../../../plugins'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { MessageValidator } from '../../../../utils/MessageValidator'
+import { TypedArrayEncoder } from '../../../../utils/TypedArrayEncoder'
 import { getIndyDidFromVerificationMethod } from '../../../../utils/did'
 import { uuid } from '../../../../utils/uuid'
 import { ConnectionService } from '../../../connections'
 import { DidResolverService, findVerificationMethodByKeyType } from '../../../dids'
-import { IndyHolderService, IndyIssuerService } from '../../../indy'
+import { IndyHolderService } from '../../../indy/services/IndyHolderService'
+import { IndyIssuerService } from '../../../indy/services/IndyIssuerService'
 import { IndyLedgerService } from '../../../ledger'
 import { CredentialProblemReportError, CredentialProblemReportReason } from '../../errors'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { CredentialPreviewAttribute } from '../../models/CredentialPreviewAttribute'
 import { CredentialMetadataKeys } from '../../repository/CredentialMetadataTypes'
-import { CredentialFormatService } from '../CredentialFormatService'
 
 import { IndyCredentialUtils } from './IndyCredentialUtils'
 import { IndyCredPropose } from './models/IndyCredPropose'
@@ -47,32 +49,7 @@ const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
 const INDY_CRED = 'hlindy/cred@v2.0'
 
-@injectable()
-export class IndyCredentialFormatService extends CredentialFormatService<IndyCredentialFormat> {
-  private indyIssuerService: IndyIssuerService
-  private indyLedgerService: IndyLedgerService
-  private indyHolderService: IndyHolderService
-  private connectionService: ConnectionService
-  private didResolver: DidResolverService
-  private logger: Logger
-
-  public constructor(
-    indyIssuerService: IndyIssuerService,
-    indyLedgerService: IndyLedgerService,
-    indyHolderService: IndyHolderService,
-    connectionService: ConnectionService,
-    didResolver: DidResolverService,
-    @inject(InjectionSymbols.Logger) logger: Logger
-  ) {
-    super()
-    this.indyIssuerService = indyIssuerService
-    this.indyLedgerService = indyLedgerService
-    this.indyHolderService = indyHolderService
-    this.connectionService = connectionService
-    this.didResolver = didResolver
-    this.logger = logger
-  }
-
+export class IndyCredentialFormatService implements CredentialFormatService<IndyCredentialFormat> {
   public readonly formatKey = 'indy' as const
   public readonly credentialRecordType = 'indy' as const
 
@@ -198,7 +175,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   public async processOffer(agentContext: AgentContext, { attachment, credentialRecord }: FormatProcessOptions) {
-    this.logger.debug(`Processing indy credential offer for credential record ${credentialRecord.id}`)
+    agentContext.config.logger.debug(`Processing indy credential offer for credential record ${credentialRecord.id}`)
 
     const credOffer = attachment.getDataAsJson<Indy.CredOffer>()
 
@@ -215,15 +192,18 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   ): Promise<CredentialFormatCreateReturn> {
     const indyFormat = credentialFormats?.indy
 
+    const indyLedgerService = agentContext.dependencyManager.resolve(IndyLedgerService)
+    const indyHolderService = agentContext.dependencyManager.resolve(IndyHolderService)
+
     const holderDid = indyFormat?.holderDid ?? (await this.getIndyHolderDid(agentContext, credentialRecord))
 
     const credentialOffer = offerAttachment.getDataAsJson<Indy.CredOffer>()
-    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(
+    const credentialDefinition = await indyLedgerService.getCredentialDefinition(
       agentContext,
       credentialOffer.cred_def_id
     )
 
-    const [credentialRequest, credentialRequestMetadata] = await this.indyHolderService.createCredentialRequest(
+    const [credentialRequest, credentialRequestMetadata] = await indyHolderService.createCredentialRequest(
       agentContext,
       {
         holderDid,
@@ -275,6 +255,8 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       )
     }
 
+    const indyIssuerService = agentContext.dependencyManager.resolve(IndyIssuerService)
+
     const credentialOffer = offerAttachment?.getDataAsJson<Indy.CredOffer>()
     const credentialRequest = requestAttachment.getDataAsJson<Indy.CredReq>()
 
@@ -282,7 +264,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       throw new AriesFrameworkError('Missing indy credential offer or credential request in createCredential')
     }
 
-    const [credential, credentialRevocationId] = await this.indyIssuerService.createCredential(agentContext, {
+    const [credential, credentialRevocationId] = await indyIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest,
       credentialValues: IndyCredentialUtils.convertAttributesToValues(credentialAttributes),
@@ -311,9 +293,12 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment }: FormatProcessOptions
+    { credentialRecord, attachment }: FormatProcessCredentialOptions
   ): Promise<void> {
     const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
+
+    const indyLedgerService = agentContext.dependencyManager.resolve(IndyLedgerService)
+    const indyHolderService = agentContext.dependencyManager.resolve(IndyHolderService)
 
     if (!credentialRequestMetadata) {
       throw new CredentialProblemReportError(
@@ -323,12 +308,12 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     const indyCredential = attachment.getDataAsJson<Indy.Cred>()
-    const credentialDefinition = await this.indyLedgerService.getCredentialDefinition(
+    const credentialDefinition = await indyLedgerService.getCredentialDefinition(
       agentContext,
       indyCredential.cred_def_id
     )
     const revocationRegistry = indyCredential.rev_reg_id
-      ? await this.indyLedgerService.getRevocationRegistryDefinition(agentContext, indyCredential.rev_reg_id)
+      ? await indyLedgerService.getRevocationRegistryDefinition(agentContext, indyCredential.rev_reg_id)
       : null
 
     if (!credentialRecord.credentialAttributes) {
@@ -341,7 +326,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     const recordCredentialValues = IndyCredentialUtils.convertAttributesToValues(credentialRecord.credentialAttributes)
     IndyCredentialUtils.assertValuesMatch(indyCredential.values, recordCredentialValues)
 
-    const credentialId = await this.indyHolderService.storeCredential(agentContext, {
+    const credentialId = await indyHolderService.storeCredential(agentContext, {
       credentialId: uuid(),
       credentialRequestMetadata,
       credential: indyCredential,
@@ -351,7 +336,7 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (indyCredential.rev_reg_id) {
-      const credential = await this.indyHolderService.getCredential(agentContext, credentialId)
+      const credential = await indyHolderService.getCredential(agentContext, credentialId)
 
       credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
         indyCredentialRevocationId: credential.cred_rev_id,
@@ -389,7 +374,9 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
   }
 
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
-    await this.indyHolderService.deleteCredential(agentContext, credentialRecordId)
+    const indyHolderService = agentContext.dependencyManager.resolve(IndyHolderService)
+
+    await indyHolderService.deleteCredential(agentContext, credentialRecordId)
   }
 
   public shouldAutoRespondToProposal(
@@ -466,13 +453,15 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
       linkedAttachments?: LinkedAttachment[]
     }
   ): Promise<FormatCreateOfferReturn> {
+    const indyIssuerService = agentContext.dependencyManager.resolve(IndyIssuerService)
+
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
       attachId: attachId,
       format: INDY_CRED_ABSTRACT,
     })
 
-    const offer = await this.indyIssuerService.createCredentialOffer(agentContext, credentialDefinitionId)
+    const offer = await indyIssuerService.createCredentialOffer(agentContext, credentialDefinitionId)
 
     const { previewAttributes } = this.getCredentialLinkedAttachments(attributes, linkedAttachments)
     if (!previewAttributes) {
@@ -496,19 +485,24 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     offer: Indy.CredOffer,
     attributes: CredentialPreviewAttribute[]
   ): Promise<void> {
-    const schema = await this.indyLedgerService.getSchema(agentContext, offer.schema_id)
+    const indyLedgerService = agentContext.dependencyManager.resolve(IndyLedgerService)
+
+    const schema = await indyLedgerService.getSchema(agentContext, offer.schema_id)
 
     IndyCredentialUtils.checkAttributesMatch(schema, attributes)
   }
 
   private async getIndyHolderDid(agentContext: AgentContext, credentialRecord: CredentialExchangeRecord) {
+    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+
     // If we have a connection id we try to extract the did from the connection did document.
     if (credentialRecord.connectionId) {
-      const connection = await this.connectionService.getById(agentContext, credentialRecord.connectionId)
+      const connection = await connectionService.getById(agentContext, credentialRecord.connectionId)
       if (!connection.did) {
         throw new AriesFrameworkError(`Connection record ${connection.id} has no 'did'`)
       }
-      const resolved = await this.didResolver.resolve(agentContext, connection.did)
+      const resolved = await didResolver.resolve(agentContext, connection.did)
 
       if (resolved.didDocument) {
         const verificationMethod = await findVerificationMethodByKeyType(
@@ -525,7 +519,8 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     // If it wasn't successful to extract the did from the connection, we'll create a new key (e.g. if using connection-less)
     // FIXME: we already create a did for the exchange when using connection-less, but this is on a higher level. We should look at
     // a way to reuse this key, but for now this is easier.
-    const { did } = await agentContext.wallet.createDid()
+    const key = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
+    const did = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
 
     return did
   }
@@ -559,5 +554,24 @@ export class IndyCredentialFormatService extends CredentialFormatService<IndyCre
     }
 
     return { attachments, previewAttributes }
+  }
+
+  /**
+   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  public getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(data),
+      }),
+    })
+
+    return attachment
   }
 }

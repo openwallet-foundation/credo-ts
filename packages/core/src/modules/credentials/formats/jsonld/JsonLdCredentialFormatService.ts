@@ -1,11 +1,15 @@
+import type {
+  JsonLdCredentialFormat,
+  JsonCredential,
+  JsonLdFormatDataCredentialDetail,
+  JsonLdFormatDataVerifiableCredential,
+} from './JsonLdCredentialFormat'
 import type { AgentContext } from '../../../../agent'
-import type { Attachment } from '../../../../decorators/attachment/Attachment'
-import type { LinkedDataProof } from '../../../vc/models/LinkedDataProof'
+import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   FormatAcceptOfferOptions,
   FormatAcceptProposalOptions,
   FormatAcceptRequestOptions,
-  FormatAutoRespondCredentialOptions,
   FormatAutoRespondOfferOptions,
   FormatAutoRespondProposalOptions,
   FormatAutoRespondRequestOptions,
@@ -17,39 +21,25 @@ import type {
   CredentialFormatCreateReturn,
   FormatProcessCredentialOptions,
   FormatProcessOptions,
+  FormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
-import type { JsonLdCredentialFormat, SignCredentialOptionsRFC0593 } from './JsonLdCredentialFormat'
-import type { JsonLdOptionsRFC0593 } from './JsonLdOptionsRFC0593'
 
-import { injectable } from 'tsyringe'
-
+import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
+import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { MessageValidator } from '../../../../utils/MessageValidator'
-import { deepEqual } from '../../../../utils/objEqual'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
 import { W3cCredentialService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
-import { CredentialFormatService } from '../CredentialFormatService'
 
-import { JsonLdCredentialDetail } from './JsonLdCredentialOptions'
+import { JsonLdCredentialDetail } from './JsonLdCredentialDetail'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@1.0'
 
-@injectable()
-export class JsonLdCredentialFormatService extends CredentialFormatService<JsonLdCredentialFormat> {
-  private w3cCredentialService: W3cCredentialService
-  private didResolver: DidResolverService
-
-  public constructor(w3cCredentialService: W3cCredentialService, didResolver: DidResolverService) {
-    super()
-    this.w3cCredentialService = w3cCredentialService
-    this.didResolver = didResolver
-  }
-
+export class JsonLdCredentialFormatService implements CredentialFormatService<JsonLdCredentialFormat> {
   public readonly formatKey = 'jsonld' as const
   public readonly credentialRecordType = 'w3c' as const
 
@@ -73,10 +63,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createProposal')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
-    MessageValidator.validateSync(jsonLdCredential)
+    // this does the validation
+    JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
-    // jsonLdFormat is now of type SignCredentialOptionsRFC0593
+    // jsonLdFormat is now of type JsonLdFormatDataCredentialDetail
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
     return { format, attachment }
   }
@@ -86,19 +76,19 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
    * @param options the options needed to accept the proposal
    */
   public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
-    const credProposalJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const credProposalJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credProposalJson) {
       throw new AriesFrameworkError('Missing jsonld credential proposal data payload')
     }
 
-    const messageToValidate = new JsonLdCredentialDetail(credProposalJson)
-    MessageValidator.validateSync(messageToValidate)
+    // validation is done in here
+    JsonTransformer.fromJSON(credProposalJson, JsonLdCredentialDetail)
   }
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { attachId, credentialFormats, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
+    { attachId, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
   ): Promise<FormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
@@ -106,18 +96,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC_DETAIL,
     })
 
-    const jsonLdFormat = credentialFormats?.jsonld
-    if (jsonLdFormat) {
-      // if there is an offer, validate
-      const jsonLdCredentialOffer = new JsonLdCredentialDetail(jsonLdFormat)
-      MessageValidator.validateSync(jsonLdCredentialOffer)
-    }
+    const credentialProposal = proposalAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
+    JsonTransformer.fromJSON(credentialProposal, JsonLdCredentialDetail)
 
-    const credentialProposal = proposalAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const jsonLdCredentialProposal = new JsonLdCredentialDetail(credentialProposal)
-    MessageValidator.validateSync(jsonLdCredentialProposal)
-
-    const offerData = jsonLdFormat ?? credentialProposal
+    const offerData = credentialProposal
 
     const attachment = this.getFormatData(offerData, format.attachId)
 
@@ -146,43 +128,39 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createOffer')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
+    // validate
+    JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
-    MessageValidator.validateSync(jsonLdCredential)
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
     return { format, attachment }
   }
 
   public async processOffer(agentContext: AgentContext, { attachment }: FormatProcessOptions) {
-    const credentialOfferJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const credentialOfferJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credentialOfferJson) {
       throw new AriesFrameworkError('Missing jsonld credential offer data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(credentialOfferJson)
-    MessageValidator.validateSync(jsonLdCredential)
+    JsonTransformer.fromJSON(credentialOfferJson, JsonLdCredentialDetail)
   }
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialFormats, attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
+    { attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const jsonLdFormat = credentialFormats?.jsonld
+    const credentialOffer = offerAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
-    const credentialOffer = offerAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const requestData = jsonLdFormat ?? credentialOffer
-
-    const jsonLdCredential = new JsonLdCredentialDetail(requestData)
-    MessageValidator.validateSync(jsonLdCredential)
+    // validate
+    JsonTransformer.fromJSON(credentialOffer, JsonLdCredentialDetail)
 
     const format = new CredentialFormatSpec({
       attachId,
       format: JSONLD_VC_DETAIL,
     })
 
-    const attachment = this.getFormatData(requestData, format.attachId)
+    const attachment = this.getFormatData(credentialOffer, format.attachId)
     return { format, attachment }
   }
 
@@ -207,8 +185,8 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       throw new AriesFrameworkError('Missing jsonld payload in createRequest')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(jsonLdFormat)
-    MessageValidator.validateSync(jsonLdCredential)
+    // this does the validation
+    JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
     const attachment = this.getFormatData(jsonLdFormat, format.attachId)
 
@@ -216,33 +194,29 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public async processRequest(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
-    const requestJson = attachment.getDataAsJson<SignCredentialOptionsRFC0593>()
+    const requestJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!requestJson) {
       throw new AriesFrameworkError('Missing jsonld credential request data payload')
     }
 
-    const jsonLdCredential = new JsonLdCredentialDetail(requestJson)
-    MessageValidator.validateSync(jsonLdCredential)
+    // validate
+    JsonTransformer.fromJSON(requestJson, JsonLdCredentialDetail)
   }
 
   public async acceptRequest(
     agentContext: AgentContext,
     { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const jsonLdFormat = credentialFormats?.jsonld
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
-    const credentialRequest = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-
-    const credentialData = jsonLdFormat ?? credentialRequest
-    const jsonLdCredential = new JsonLdCredentialDetail(credentialData)
-    MessageValidator.validateSync(jsonLdCredential)
+    const credentialRequest = requestAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     const verificationMethod =
       credentialFormats?.jsonld?.verificationMethod ??
-      (await this.deriveVerificationMethod(agentContext, credentialData.credential, credentialRequest))
+      (await this.deriveVerificationMethod(agentContext, credentialRequest.credential, credentialRequest))
 
     if (!verificationMethod) {
       throw new AriesFrameworkError('Missing verification method in credential data')
@@ -252,17 +226,23 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       format: JSONLD_VC,
     })
 
-    const options = credentialData.options
+    const options = credentialRequest.options
 
-    if (options.challenge || options.domain || options.credentialStatus) {
+    // Get a list of fields found in the options that are not supported at the moment
+    const unsupportedFields = ['challenge', 'domain', 'credentialStatus', 'created'] as const
+    const foundFields = unsupportedFields.filter((field) => options[field] !== undefined)
+
+    if (foundFields.length > 0) {
       throw new AriesFrameworkError(
-        'The fields challenge, domain and credentialStatus not currently supported in credential options '
+        `Some fields are not currently supported in credential options: ${foundFields.join(', ')}`
       )
     }
 
-    const verifiableCredential = await this.w3cCredentialService.signCredential(agentContext, {
-      credential: JsonTransformer.fromJSON(credentialData.credential, W3cCredential),
-      proofType: credentialData.options.proofType,
+    const credential = JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential)
+
+    const verifiableCredential = await w3cCredentialService.signCredential(agentContext, {
+      credential,
+      proofType: credentialRequest.options.proofType,
       verificationMethod: verificationMethod,
     })
 
@@ -272,14 +252,19 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   /**
    * Derive a verification method using the issuer from the given verifiable credential
-   * @param credential the verifiable credential we want to sign
+   * @param credentialAsJson the verifiable credential we want to sign
    * @return the verification method derived from this credential and its associated issuer did, keys etc.
    */
   private async deriveVerificationMethod(
     agentContext: AgentContext,
-    credential: W3cCredential,
-    credentialRequest: SignCredentialOptionsRFC0593
+    credentialAsJson: JsonCredential,
+    credentialRequest: JsonLdFormatDataCredentialDetail
   ): Promise<string> {
+    const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
+    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cCredential)
+
     // extract issuer from vc (can be string or Issuer)
     let issuerDid = credential.issuer
 
@@ -287,13 +272,13 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
       issuerDid = issuerDid.id
     }
     // this will throw an error if the issuer did is invalid
-    const issuerDidDocument = await this.didResolver.resolveDidDocument(agentContext, issuerDid)
+    const issuerDidDocument = await didResolver.resolveDidDocument(agentContext, issuerDid)
 
     // find first key which matches proof type
     const proofType = credentialRequest.options.proofType
 
     // actually gets the key type(s)
-    const keyType = this.w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
+    const keyType = w3cCredentialService.getVerificationMethodTypesByProofType(proofType)
 
     if (!keyType || keyType.length === 0) {
       throw new AriesFrameworkError(`No Key Type found for proofType ${proofType}`)
@@ -315,25 +300,22 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     agentContext: AgentContext,
     { credentialRecord, attachment, requestAttachment }: FormatProcessCredentialOptions
   ): Promise<void> {
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
-    MessageValidator.validateSync(credential)
+    const requestAsJson = requestAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
-    // compare stuff in the proof object of the credential and request...based on aca-py
+    // Verify the credential request matches the credential
+    this.verifyReceivedCredentialMatchesRequest(credential, requestAsJson)
 
-    const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-    const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
-
-    if (Array.isArray(credential.proof)) {
-      // question: what do we compare here, each element of the proof array with the request???
-      throw new AriesFrameworkError('Credential arrays are not supported')
-    } else {
-      // do checks here
-      this.compareCredentialSubject(credential, request.credential)
-      this.compareProofs(credential.proof, request.options)
+    // verify signatures of the credential
+    const result = await w3cCredentialService.verifyCredential(agentContext, { credential })
+    if (result && !result.verified) {
+      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
     }
 
-    const verifiableCredential = await this.w3cCredentialService.storeCredential(agentContext, {
+    const verifiableCredential = await w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
     })
 
@@ -343,32 +325,47 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
     })
   }
 
-  private compareCredentialSubject(credential: W3cVerifiableCredential, request: W3cCredential): void {
-    if (!deepEqual(credential.credentialSubject, request.credentialSubject)) {
-      throw new AriesFrameworkError('Received credential subject does not match subject from credential request')
-    }
-  }
+  private verifyReceivedCredentialMatchesRequest(
+    credential: W3cVerifiableCredential,
+    request: JsonLdFormatDataCredentialDetail
+  ): void {
+    const jsonCredential = JsonTransformer.toJSON(credential)
+    delete jsonCredential.proof
 
-  private compareProofs(credentialProof: LinkedDataProof, requestProof: JsonLdOptionsRFC0593): void {
-    if (credentialProof.domain !== requestProof.domain) {
+    if (Array.isArray(credential.proof)) {
+      throw new AriesFrameworkError('Credential proof arrays are not supported')
+    }
+
+    if (request.options.created && credential.proof.created !== request.options.created) {
+      throw new AriesFrameworkError('Received credential proof created does not match created from credential request')
+    }
+
+    if (credential.proof.domain !== request.options.domain) {
       throw new AriesFrameworkError('Received credential proof domain does not match domain from credential request')
     }
 
-    if (credentialProof.challenge !== requestProof.challenge) {
+    if (credential.proof.challenge !== request.options.challenge) {
       throw new AriesFrameworkError(
         'Received credential proof challenge does not match challenge from credential request'
       )
     }
 
-    if (credentialProof.type !== requestProof.proofType) {
+    if (credential.proof.type !== request.options.proofType) {
       throw new AriesFrameworkError('Received credential proof type does not match proof type from credential request')
     }
 
-    if (credentialProof.proofPurpose !== requestProof.proofPurpose) {
+    if (credential.proof.proofPurpose !== request.options.proofPurpose) {
       throw new AriesFrameworkError(
         'Received credential proof purpose does not match proof purpose from credential request'
       )
     }
+
+    // Check whether the received credential (minus the proof) matches the credential request
+    if (!areObjectsEqual(jsonCredential, request.credential)) {
+      throw new AriesFrameworkError('Received credential does not match credential request')
+    }
+
+    // TODO: add check for the credentialStatus once this is supported in AFJ
   }
 
   public supportsFormat(format: string): boolean {
@@ -382,11 +379,10 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
   }
 
   public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
-    // FIXME: this implementation doesn't make sense. We can't loop over stringified objects...
     const obj1 = message1.getDataAsJson()
     const obj2 = message2.getDataAsJson()
 
-    return deepEqual(obj1, obj2)
+    return areObjectsEqual(obj1, obj2)
   }
 
   public shouldAutoRespondToProposal(
@@ -412,24 +408,39 @@ export class JsonLdCredentialFormatService extends CredentialFormatService<JsonL
 
   public shouldAutoRespondToCredential(
     agentContext: AgentContext,
-    { credentialAttachment, requestAttachment }: FormatAutoRespondCredentialOptions
+    { requestAttachment, credentialAttachment }: FormatAutoRespondCredentialOptions
   ) {
-    const credentialAsJson = credentialAttachment.getDataAsJson<W3cVerifiableCredential>()
-    const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)
+    const credentialJson = credentialAttachment.getDataAsJson<JsonLdFormatDataVerifiableCredential>()
+    const w3cCredential = JsonTransformer.fromJSON(credentialJson, W3cVerifiableCredential)
+    const request = requestAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
-    if (Array.isArray(credential.proof)) {
-      throw new AriesFrameworkError('Credential arrays are not supported')
-    } else {
-      // do checks here
-      try {
-        const requestAsJson = requestAttachment.getDataAsJson<SignCredentialOptionsRFC0593>()
-        const request = JsonTransformer.fromJSON(requestAsJson, JsonLdCredentialDetail)
-        this.compareCredentialSubject(credential, request.credential)
-        this.compareProofs(credential.proof, request.options)
-        return true
-      } catch (error) {
-        return false
-      }
+    try {
+      // This check is also done in the processCredential method, but we do it here as well
+      // to be certain we don't skip the check
+      this.verifyReceivedCredentialMatchesRequest(w3cCredential, request)
+
+      return true
+    } catch (error) {
+      return false
     }
+  }
+
+  /**
+   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * It looks up the correct format identifier and encodes the data as a base64 attachment.
+   *
+   * @param data The data to include in the attach object
+   * @param id the attach id from the formats component of the message
+   */
+  public getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
+      id,
+      mimeType: 'application/json',
+      data: new AttachmentData({
+        base64: JsonEncoder.toBase64(data),
+      }),
+    })
+
+    return attachment
   }
 }

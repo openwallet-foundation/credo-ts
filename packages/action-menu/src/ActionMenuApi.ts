@@ -12,7 +12,7 @@ import {
   ConnectionService,
   Dispatcher,
   MessageSender,
-  createOutboundMessage,
+  OutboundMessageContext,
   injectable,
 } from '@aries-framework/core'
 
@@ -25,6 +25,9 @@ import {
 } from './handlers'
 import { ActionMenuService } from './services'
 
+/**
+ * @public
+ */
 @injectable()
 export class ActionMenuApi {
   private connectionService: ConnectionService
@@ -43,7 +46,7 @@ export class ActionMenuApi {
     this.messageSender = messageSender
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
-    this.registerHandlers(dispatcher)
+    this.registerMessageHandlers(dispatcher)
   }
 
   /**
@@ -59,8 +62,13 @@ export class ActionMenuApi {
       connection,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: record,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return record
   }
@@ -80,8 +88,13 @@ export class ActionMenuApi {
       menu: options.menu,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: record,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return record
   }
@@ -109,8 +122,13 @@ export class ActionMenuApi {
       performedAction: options.performedAction,
     })
 
-    const outboundMessage = createOutboundMessage(connection, message)
-    await this.messageSender.sendMessage(this.agentContext, outboundMessage)
+    const outboundMessageContext = new OutboundMessageContext(message, {
+      agentContext: this.agentContext,
+      connection,
+      associatedRecord: record,
+    })
+
+    await this.messageSender.sendMessage(outboundMessageContext)
 
     return record
   }
@@ -143,10 +161,10 @@ export class ActionMenuApi {
     return actionMenuRecord ? await this.actionMenuService.clearMenu(this.agentContext, { actionMenuRecord }) : null
   }
 
-  private registerHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
-    dispatcher.registerHandler(new MenuMessageHandler(this.actionMenuService))
-    dispatcher.registerHandler(new MenuRequestMessageHandler(this.actionMenuService))
-    dispatcher.registerHandler(new PerformMessageHandler(this.actionMenuService))
+  private registerMessageHandlers(dispatcher: Dispatcher) {
+    dispatcher.registerMessageHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new MenuMessageHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new MenuRequestMessageHandler(this.actionMenuService))
+    dispatcher.registerMessageHandler(new PerformMessageHandler(this.actionMenuService))
   }
 }

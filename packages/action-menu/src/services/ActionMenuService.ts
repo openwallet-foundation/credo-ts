@@ -1,5 +1,3 @@
-import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
-import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
   ClearMenuOptions,
   CreateMenuOptions,
@@ -7,6 +5,8 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
+import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import type { ActionMenuProblemReportMessage } from '../messages'
 import type { AgentContext, InboundMessageContext, Logger, Query } from '@aries-framework/core'
 
 import { AgentConfig, EventEmitter, AriesFrameworkError, injectable, JsonTransformer } from '@aries-framework/core'
@@ -20,6 +20,9 @@ import { PerformMessage, MenuMessage, MenuRequestMessage } from '../messages'
 import { ActionMenuSelection, ActionMenu } from '../models'
 import { ActionMenuRepository, ActionMenuRecord } from '../repository'
 
+/**
+ * @internal
+ */
 @injectable()
 export class ActionMenuService {
   private actionMenuRepository: ActionMenuRepository
@@ -39,7 +42,7 @@ export class ActionMenuService {
     // Create message
     const menuRequestMessage = new MenuRequestMessage({})
 
-    // Create record if not existant for connection/role
+    // Create record if not existent for connection/role
     let actionMenuRecord = await this.find(agentContext, {
       connectionId: options.connection.id,
       role: ActionMenuRole.Requester,

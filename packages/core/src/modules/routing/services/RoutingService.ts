@@ -1,9 +1,10 @@
 import type { AgentContext } from '../../../agent'
+import type { Key } from '../../../crypto'
 import type { Routing } from '../../connections'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { Key, KeyType } from '../../../crypto'
+import { KeyType } from '../../../crypto'
 import { injectable } from '../../../plugins'
 import { RoutingEventTypes } from '../RoutingEvents'
 
@@ -26,9 +27,7 @@ export class RoutingService {
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
   ): Promise<Routing> {
     // Create and store new key
-    const { verkey: publicKeyBase58 } = await agentContext.wallet.createDid()
-
-    const recipientKey = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+    const recipientKey = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
 
     let routing: Routing = {
       endpoints: agentContext.config.endpoints,
@@ -52,6 +51,10 @@ export class RoutingService {
 
     return routing
   }
+
+  public async removeRouting(agentContext: AgentContext, options: RemoveRoutingOptions) {
+    await this.mediationRecipientService.removeMediationRouting(agentContext, options)
+  }
 }
 
 export interface GetRoutingOptions {
@@ -65,4 +68,16 @@ export interface GetRoutingOptions {
    * @default true
    */
   useDefaultMediator?: boolean
+}
+
+export interface RemoveRoutingOptions {
+  /**
+   * Keys to remove routing from
+   */
+  recipientKeys: Key[]
+
+  /**
+   * Identifier of the mediator used when routing has been set up
+   */
+  mediatorId: string
 }

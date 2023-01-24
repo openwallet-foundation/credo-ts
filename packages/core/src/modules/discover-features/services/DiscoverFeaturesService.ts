@@ -32,15 +32,15 @@ export abstract class DiscoverFeaturesService {
     this.discoverFeaturesModuleConfig = discoverFeaturesModuleConfig
   }
 
-  abstract readonly version: string
+  public abstract readonly version: string
 
-  abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
-  abstract processQuery(
+  public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  public abstract processQuery(
     messageContext: InboundMessageContext<AgentMessage>
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
 
-  abstract createDisclosure(
+  public abstract createDisclosure(
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
-  abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>
+  public abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>
 }

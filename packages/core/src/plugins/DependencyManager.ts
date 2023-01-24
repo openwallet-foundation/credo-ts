@@ -1,10 +1,12 @@
 import type { ModulesMap } from '../agent/AgentModules'
+import type { MessageHandler } from '../agent/MessageHandler'
 import type { Constructor } from '../utils/mixins'
 import type { DependencyContainer } from 'tsyringe'
 
 import { container as rootContainer, InjectionToken, Lifecycle } from 'tsyringe'
 
 import { FeatureRegistry } from '../agent/FeatureRegistry'
+import { MessageHandlerRegistry } from '../agent/MessageHandlerRegistry'
 import { AriesFrameworkError } from '../error'
 
 export { InjectionToken }
@@ -33,6 +35,14 @@ export class DependencyManager {
 
       this.registeredModules[moduleKey] = module
       module.register(this, featureRegistry)
+    }
+  }
+
+  public registerMessageHandlers(messageHandlers: MessageHandler[]) {
+    const messageHandlerRegistry = this.resolve(MessageHandlerRegistry)
+
+    for (const messageHandler of messageHandlers) {
+      messageHandlerRegistry.registerMessageHandler(messageHandler)
     }
   }
 
