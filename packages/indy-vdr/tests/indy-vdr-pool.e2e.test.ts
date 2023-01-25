@@ -1,11 +1,4 @@
-
-import {
-  IndyWallet,
-  Key,
-  KeyType,
-  SigningProviderRegistry,
-  TypedArrayEncoder,
-} from '@aries-framework/core'
+import { IndyWallet, Key, KeyType, SigningProviderRegistry, TypedArrayEncoder } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from 'indy-vdr-test-shared'
 
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -103,13 +96,11 @@ describe('IndyVdrPoolService', () => {
     })
   })
 
-  xdescribe('CredentialDefinition', () => {})
-
   describe('Schemas & credential Definition', () => {
     test('can write a schema using the pool', async () => {
       const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
 
-      const dynamicVersion = `1.${Math.random() * 100}` // TODO Remove this before pushing
+      const dynamicVersion = `1.${Math.random() * 100}`
 
       const schemaRequest = new SchemaRequest({
         submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
@@ -117,7 +108,7 @@ describe('IndyVdrPoolService', () => {
           id: 'test-schema-id',
           name: 'test-schema',
           ver: '1.0',
-          version: dynamicVersion, // TODO remove this before pushing
+          version: dynamicVersion,
           attrNames: ['first_name', 'last_name', 'age'],
         },
       })
@@ -207,37 +198,6 @@ describe('IndyVdrPoolService', () => {
           },
         },
       })
-    })
-
-    test('fails writing a schema with existing verson number using the pool', async () => {
-      const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
-
-      const dynamicVersion = `1.${Math.random() * 100}` // TODO Remove this before pushing
-
-      const schemaRequest = new SchemaRequest({
-        submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
-        schema: {
-          id: 'test-schema-id',
-          name: 'test-schema',
-          ver: '1.0',
-          version: dynamicVersion,
-          attrNames: ['first_name', 'last_name', 'age'],
-        },
-      })
-
-      const schemaRequest2 = new SchemaRequest({
-        submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
-        schema: {
-          id: 'test-schema-id',
-          name: 'test-schema',
-          ver: '1.0',
-          version: dynamicVersion,
-          attrNames: ['first_name', 'last_name', 'age'],
-        },
-      })
-
-      const response = await pool.submitWriteRequest(agentContext, schemaRequest, signerKey)
-      expect(response).toBeDefined()
     })
   })
 })

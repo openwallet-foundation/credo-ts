@@ -2,18 +2,16 @@ import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from 'indy-vdr-test-shared'
 
-import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig} from '@aries-framework/core'
+import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
 import { GetNymRequest } from 'indy-vdr-test-shared'
 
-import { IndyVdrError, IndyVdrNotFoundError, IndyVdrConfiguredError } from '../error'
+import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
-import { DID_INDY_REGEX } from './DidIdentifier'
 import { IndyVdrPool } from './IndyVdrPool'
+import { DID_INDY_REGEX } from './didIdentifier'
 
-export const INDY_VDR_LEGACY_DID_POOL_CACHE_ID = 'INDY_VDR_LEGACY_DID_POOL_CACHE'
-export const DID_POOL_CACHE_LIMIT = 500
 export interface CachedDidResponse {
   nymResponse: {
     did: string
@@ -26,9 +24,8 @@ export class IndyVdrPoolService {
   public pools: IndyVdrPool[] = []
   private logger: Logger
 
-  public constructor( @inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
     this.logger = logger
-
   }
 
   public setPools(poolConfigs: IndyVdrPoolConfig[]) {
@@ -52,7 +49,7 @@ export class IndyVdrPoolService {
 
   /**
    * Get the most appropriate pool for the given did.
-   * If the did is a qualified indy did, the pool will be determined based on the namespace. 
+   * If the did is a qualified indy did, the pool will be determined based on the namespace.
    * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
    */
@@ -63,26 +60,21 @@ export class IndyVdrPoolService {
     if (match) {
       const [, namespace] = match
 
-      const pool = this.getPoolForNamespace(namespace);
+      const pool = this.getPoolForNamespace(namespace)
 
-      if (pool) return  pool 
+      if (pool) return pool
 
-      throw new IndyVdrNotFoundError('Pool not found')
+      throw new IndyVdrError(`Pool for indy namespace '${namespace}' not found`)
     } else {
       return await this.getPoolForLegacyDid(agentContext, did)
     }
-
-
   }
 
-  private async getPoolForLegacyDid(
-    agentContext: AgentContext,
-    did: string
-  ): Promise<IndyVdrPool > {
+  private async getPoolForLegacyDid(agentContext: AgentContext, did: string): Promise<IndyVdrPool> {
     const pools = this.pools
 
     if (pools.length === 0) {
-      throw new IndyVdrConfiguredError(
+      throw new IndyVdrNotConfiguredError(
         "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
       )
     }
@@ -95,7 +87,7 @@ export class IndyVdrPoolService {
     // If we have the nym response with associated pool in the cache, we'll use that
     if (cachedNymResponse && pool) {
       this.logger.trace(`Found ledger id '${pool.indyNamespace}' for did '${did}' in cache`)
-      return  pool 
+      return pool
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
@@ -143,7 +135,7 @@ export class IndyVdrPoolService {
       },
       indyNamespace: value.did.indyNamespace,
     })
-    return value.pool 
+    return value.pool
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyVdrPool[]) {
@@ -166,20 +158,15 @@ export class IndyVdrPoolService {
    */
   public getPoolForNamespace(indyNamespace: string) {
     if (this.pools.length === 0) {
-      throw new IndyVdrConfiguredError(
+      throw new IndyVdrNotConfiguredError(
         "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
       )
-    }
-
-    if (!indyNamespace) {
-      this.logger.warn('Not passing the indyNamespace is deprecated and will be removed in the future version.')
-      return this.pools[0]
     }
 
     const pool = this.pools.find((pool) => pool.indyNamespace === indyNamespace)
 
     if (!pool) {
-      throw new IndyVdrNotFoundError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
+      throw new IndyVdrError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
     }
 
     return pool
@@ -194,8 +181,7 @@ export class IndyVdrPoolService {
       const response = await pool.submitReadRequest(request)
 
       if (!response.result.data) {
-        // TODO: Set a descriptive message
-        throw new IndyVdrError(`Did ${did} not found on indy pool with namespace ${pool.indyNamespace}`)
+        throw new IndyVdrNotFoundError(`Did ${did} not found on indy pool with namespace ${pool.indyNamespace}`)
       }
 
       const result = JSON.parse(response.result.data)
