@@ -1,4 +1,6 @@
-import { IndyWallet, Key, KeyType, SigningProviderRegistry, TypedArrayEncoder } from '@aries-framework/core'
+import type { Key } from '@aries-framework/core'
+
+import { IndyWallet, KeyType, SigningProviderRegistry, TypedArrayEncoder } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from 'indy-vdr-test-shared'
 
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -26,7 +28,10 @@ describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
     await indyVdrPoolService.connectToPools()
 
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    if (agentConfig.walletConfig) {
+      await wallet.createAndOpen(agentConfig.walletConfig)
+    }
+
     signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
   })
 
@@ -93,6 +98,21 @@ describe('IndyVdrPoolService', () => {
       })
 
       const response = await pool.submitWriteRequest(agentContext, request, signerKey)
+
+      expect(response).toMatchObject({
+        op: 'REPLY',
+        result: {
+          txn: {
+            protocolVersion: 2,
+            metadata: expect.any(Object),
+            data: expect.any(Object),
+            type: '1',
+          },
+          ver: '1',
+          rootHash: expect.any(String),
+          txnMetadata: expect.any(Object),
+        },
+      })
     })
   })
 
