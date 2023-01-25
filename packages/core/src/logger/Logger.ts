@@ -21,6 +21,4 @@ export interface Logger {
   warn(message: string, data?: Record<string, any>): void
   error(message: string, data?: Record<string, any>): void
   fatal(message: string, data?: Record<string, any>): void
-
-  createScoped(scope: string): Logger
 }

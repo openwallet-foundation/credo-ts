@@ -1,7 +1,7 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
 import { BaseLogger } from './BaseLogger'
-import { Logger, LogLevel } from './Logger'
+import { LogLevel } from './Logger'
 import { replaceError } from './replaceError'
 
 export class ConsoleLogger extends BaseLogger {
@@ -60,10 +60,5 @@ export class ConsoleLogger extends BaseLogger {
 
   public fatal(message: string, data?: Record<string, any>): void {
     this.log(LogLevel.fatal, message, data)
-  }
-
-  public scoped(scope: string): Logger {
-    this.warn('warn: scoped() is being called, but ConsoleLogger does\'t support scoping')
-    return this
   }
 }
