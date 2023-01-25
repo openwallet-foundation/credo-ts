@@ -1,4 +1,4 @@
-import { isJSON, ValidationOptions } from 'class-validator'
+import type { ValidationOptions } from 'class-validator'
 
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 

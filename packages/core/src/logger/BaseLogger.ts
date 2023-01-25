@@ -21,6 +21,5 @@ export abstract class BaseLogger implements Logger {
   public abstract warn(message: string, data?: Record<string, any>): void
   public abstract error(message: string, data?: Record<string, any>): void
   public abstract fatal(message: string, data?: Record<string, any>): void
-  public abstract scoped(scope: string): Logger
   /* eslint-enable @typescript-eslint/no-explicit-any */
 }

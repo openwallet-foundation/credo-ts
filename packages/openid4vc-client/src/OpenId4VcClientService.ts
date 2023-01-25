@@ -1,12 +1,12 @@
+import type { AgentContext, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import type { Jwt } from '@sphereon/openid4vci-client'
+
 import {
   AgentConfig,
-  AgentContext,
   AriesFrameworkError,
   injectable,
   JsonEncoder,
   JsonTransformer,
-  Logger,
-  W3cCredentialRecord,
   W3cCredentialService,
   W3cVerifiableCredential,
 } from '@aries-framework/core'
@@ -14,14 +14,14 @@ import {
   Alg,
   AuthzFlowType,
   CredentialRequestClientBuilder,
-  Jwt,
   OpenID4VCIClient,
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
+
 import { JwsService } from '../../core/src/crypto/JwsService'
 import { didKeyToVerkey } from '../../core/src/modules/dids/helpers'
 
-interface PreAuthorizedOptions {
+export interface PreAuthorizedOptions {
   issuerUri: string
   kid: string
 }
@@ -35,13 +35,12 @@ export class OpenId4VcClientService {
   public constructor(agentConfig: AgentConfig, w3cCredentialService: W3cCredentialService, jwsService: JwsService) {
     this.w3cCredentialService = w3cCredentialService
     this.jwsService = jwsService
-    // @ts-ignore
     this.logger = agentConfig.logger
   }
 
   private signCallback(agentContext: AgentContext) {
     return async (jwt: Jwt, kid: string) => {
-      // TODO should we check if the did exists here, or juist let the wallet throw?
+      // TODO should we check if the did exists here, or just let the wallet throw?
 
       if (!jwt.header) {
         throw new AriesFrameworkError('No header present on JWT')
@@ -58,7 +57,7 @@ export class OpenId4VcClientService {
       const payload = JsonEncoder.toBuffer(jwt.payload)
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
-        verkey: verkey, // FIXME null check
+        verkey, // FIXME null check
         header: jwt.header as unknown as Record<string, unknown>,
         payload,
         protectedHeaderOptions: {
@@ -85,13 +84,20 @@ export class OpenId4VcClientService {
       flowType: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
       kid: options.kid,
       alg: Alg.EdDSA,
+      // The clientId is set to a dummy value for now as we don't have
+      // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
       clientId: 'test-clientId',
     })
 
+    // The clientId is set to a dummy value for now as we don't have
+    // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
     const accessToken = await client.acquireAccessToken({ clientId: 'test-clientId' })
 
     this.logger.info('Fetched server accessToken', accessToken)
 
+    // We currently need the ts-ignore because the type
+    // inside of OpenID4VCIClient needs to be updated.
+    // @ts-ignore
     if (!accessToken.scope) {
       throw new AriesFrameworkError(
         "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
@@ -108,7 +114,7 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Full server metadata', serverMetadata)
 
-    // proof of possesion
+    // proof of possession
     const callbacks = this.getSignCallback(agentContext)
 
     const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
@@ -116,6 +122,8 @@ export class OpenId4VcClientService {
       callbacks: callbacks,
     })
       .withEndpointMetadata(serverMetadata)
+      // The clientId is set to a dummy value for now as we don't have
+      // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
       .withClientId('test-clientId')
       .withKid(options.kid)
       .build()

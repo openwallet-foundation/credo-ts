@@ -10,9 +10,12 @@ import { CITIZENSHIP_V1 } from './contexts/citizenship_v1'
 import { CREDENTIALS_V1 } from './contexts/credentials_v1'
 import { DID_V1 } from './contexts/did_v1'
 import { ED25519_V1 } from './contexts/ed25519_v1'
+import { MATTR_VC_EXTENSION_V1 } from './contexts/mattr_vc_extension_v1'
+import { PURL_OB_V3P0 } from './contexts/purl_ob_v3po'
 import { SECURITY_V1 } from './contexts/security_v1'
 import { SECURITY_V2 } from './contexts/security_v2'
 import { SECURITY_V3_UNSTABLE } from './contexts/security_v3_unstable'
+import { VC_REVOCATION_LIST_2020 } from './contexts/vc_revocation_list_2020'
 import { DID_EXAMPLE_48939859 } from './dids/did_example_489398593'
 import { DID_SOV_QqEfJxe752NCmWqR5TssZ5 } from './dids/did_sov_QqEfJxe752NCmWqR5TssZ5'
 import { DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL } from './dids/did_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
@@ -26,9 +29,6 @@ import { DID_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB
 import { DID_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox } from './dids/did_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox'
 import { DID_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F } from './dids/did_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F'
 import { DID_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4 } from './dids/did_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4'
-import { MATTR_VC_EXTENSION_V1 } from './contexts/mattr_vc_extension_v1'
-import { PURL_OB_V3P0 } from './contexts/purl_ob_v3po'
-import { VC_REVOCATION_LIST_2020 } from './contexts/vc_revocation_list_2020'
 
 export const DOCUMENTS = {
   [DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL['id']]: DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL,

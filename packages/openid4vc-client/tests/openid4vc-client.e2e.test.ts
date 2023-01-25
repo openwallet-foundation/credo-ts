@@ -1,18 +1,15 @@
-import {
-  Agent,
-  ConsoleLogger,
-  KeyDidCreateOptions,
-  KeyType,
-  LogLevel,
-  W3cCredentialRecord,
-  W3cVcModule,
-} from '@aries-framework/core'
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
-import { getAgentOptions } from '../../core/tests/helpers'
-import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
+import type { KeyDidCreateOptions } from '@aries-framework/core'
+
+import { Agent, ConsoleLogger, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
 import nock from 'nock'
-import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
+
+import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
+import { getAgentOptions } from '../../core/tests/helpers'
+
+import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+
+import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
 const agentOptions = getAgentOptions(
   'OpenId4VcClient Agent',
@@ -79,9 +76,10 @@ describe('OpenId4VcClient', () => {
           seed: '96213c3d7fc8d4d6754c7a0fd969598e',
         },
       })
-
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
 
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
 
       const w3cCredentialRecord = await agent.modules.openId4VcClient.preAuthorized({

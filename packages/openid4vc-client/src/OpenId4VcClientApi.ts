@@ -1,4 +1,6 @@
-import { AgentContext, injectable, W3cCredentialRecord } from '@aries-framework/core'
+import type { W3cCredentialRecord } from '@aries-framework/core'
+
+import { AgentContext, injectable } from '@aries-framework/core'
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 

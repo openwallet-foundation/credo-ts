@@ -44,12 +44,16 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
   }
 
   public getTags() {
+    // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
+    // so we filter out the objects before setting the tags.
+    const stringContexts = this.credential.contexts.filter((ctx) => typeof ctx === 'string') as string[]
+
     return {
       ...this._tags,
       issuerId: this.credential.issuerId,
       subjectIds: this.credential.credentialSubjectIds,
       schemaIds: this.credential.credentialSchemaIds,
-      contexts: this.credential.contexts,
+      contexts: stringContexts,
       proofTypes: this.credential.proofTypes,
       givenId: this.credential.id,
     }
