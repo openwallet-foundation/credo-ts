@@ -1,15 +1,13 @@
-import { Agent, KeyDidCreateOptions, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from "@aries-framework/core";
+import { Agent, ConsoleLogger, KeyDidCreateOptions, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from "@aries-framework/core";
 import { OpenId4VcClientModule } from "@aries-framework/openid4vc-client";
 import { getAgentOptions } from "../../core/tests/helpers";
-import { FancyLogger } from '../../core/src/logger/FancyLogger'
-import fetch from 'node-fetch'
 import { didKeyToInstanceOfKey } from "../../core/src/modules/dids/helpers";
 import nock from 'nock'
 import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from "./fixtures";
 import { customDocumentLoader } from "../../core/src/modules/vc/__tests__/documentLoader";
 
 const agentOptions = getAgentOptions('OpenId4VcClient Agent', {
-    logger: new FancyLogger(LogLevel.debug)
+    logger: new ConsoleLogger(LogLevel.debug)
 }, {
     openId4VcClient: new OpenId4VcClientModule(),
     w3cVc: new W3cVcModule({
@@ -17,25 +15,11 @@ const agentOptions = getAgentOptions('OpenId4VcClient Agent', {
     })
 })
 
-const fetchIssuerUri = async () => {
-    const url = 'https://launchpad.mattrlabs.com/api/credential-offer'
-
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ "type": "OpenBadgeCredential", "userId": "622a9f65-21c0-4c0b-9a6a-f7574c2a1549", "userAuthenticationRequired": false })
-    })
-
-    const responseJson = await response.json()
-    console.log('Offer URL', responseJson.offerUrl)
-    return responseJson.offerUrl
-
-}
-
 describe('OpenId4VcClient', () => {
 
     let agent: Agent<{
-        openId4VcClient: OpenId4VcClientModule
+        openId4VcClient: OpenId4VcClientModule,
+        w3cVc: W3cVcModule
     }>
 
     beforeAll(async () => {
@@ -82,7 +66,6 @@ describe('OpenId4VcClient', () => {
         })
 
         it('Should successfully execute the pre-authorized flow', async () => {
-            // const issuerUri = await fetchIssuerUri()
 
             const did = await agent.dids.create<KeyDidCreateOptions>({
                 method: 'key',
@@ -93,8 +76,6 @@ describe('OpenId4VcClient', () => {
                     seed: '96213c3d7fc8d4d6754c7a0fd969598e',
                 },
             })
-
-            console.log(did)
 
             const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
 
@@ -115,8 +96,6 @@ describe('OpenId4VcClient', () => {
 
             // @ts-ignore
             expect(w3cCredentialRecord.credential.credentialSubject.id).toEqual(did.didState.did)
-
-
         })
 
     })
