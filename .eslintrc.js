@@ -22,6 +22,7 @@ module.exports = {
         alwaysTryTypes: true,
       },
     },
+    'import/core-modules': ['indy-vdr-test-nodejs'],
   },
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
