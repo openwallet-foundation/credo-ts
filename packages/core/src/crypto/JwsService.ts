@@ -20,14 +20,11 @@ export class JwsService {
 
   private async createJwsBase(
     agentContext: AgentContext,
-    options: {
-      verkey: string,
-      payload: Buffer,
-      header: Record<string, unknown>
-    }
+    options: CreateJwsOptions
   ) {
+
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
-    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.verkey))
+    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.verkey, options.protectedHeaderOptions))
     const key = Key.fromPublicKeyBase58(options.verkey, KeyType.Ed25519)
 
     const signature = TypedArrayEncoder.toBase64URL(
@@ -44,10 +41,9 @@ export class JwsService {
 
   public async createJws(
     agentContext: AgentContext,
-    { payload, verkey, header }: CreateJwsOptions
+    { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
-    const { base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, })
-
+    const { base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, protectedHeaderOptions})
 
     return {
       protected: base64Protected,
@@ -61,11 +57,10 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, verkey, header }: CreateJwsOptions
+    { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<string> {
-    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, })
+    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, protectedHeaderOptions})
     return `${base64Protected}.${base64Payload}.${signature}`
-
   }
 
 
@@ -129,22 +124,45 @@ export class JwsService {
    * @todo This currently only work with a single alg, key type and curve
    *    This needs to be extended with other formats in the future
    */
-  private buildProtected(verkey: string) {
+  private buildProtected(verkey: string, options: ProtectedHeaderOptions) {
+    if (!options.jwk && !options.kid) {
+      throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
+    }
+    if (options.jwk && options.kid) {
+      throw new AriesFrameworkError('Both JWK and kid are provided. Please only provide one of the two.')
+    }
+
+    if (options.jwk) {
+      options.jwk = {
+        ...options.jwk,
+        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey))
+      }
+    }
+
     return {
-      alg: 'EdDSA',
-      jwk: {
-        kty: 'OKP',
-        crv: 'Ed25519',
-        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
-      },
+      alg: options.alg,
+      ...(options.jwk && { jwk: options.jwk }),
+      ...(options.kid && { kid: options.kid })
     }
   }
 }
+
+// original options {
+//       alg: 'EdDSA',
+//       jwk: {
+//         kty: 'OKP',
+//         crv: 'Ed25519',
+//         x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
+//       },
+//     }
+
+
 
 export interface CreateJwsOptions {
   verkey: string
   payload: Buffer
   header: Record<string, unknown>
+  protectedHeaderOptions: ProtectedHeaderOptions
 }
 
 export interface VerifyJwsOptions {
@@ -155,4 +173,19 @@ export interface VerifyJwsOptions {
 export interface VerifyJwsResult {
   isValid: boolean
   signerVerkeys: string[]
+}
+
+
+export interface Jwk {
+  kty: string
+  crv: string
+  x: string
+}
+
+export type kid = string
+
+export interface ProtectedHeaderOptions {
+  alg: string
+  jwk?: Jwk
+  kid?: kid
 }

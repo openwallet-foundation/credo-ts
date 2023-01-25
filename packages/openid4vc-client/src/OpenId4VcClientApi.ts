@@ -1,4 +1,4 @@
-import { AgentContext, injectable } from '@aries-framework/core'
+import { AgentContext, injectable, W3cCredentialRecord } from '@aries-framework/core'
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 
@@ -7,7 +7,7 @@ import { OpenId4VcClientService } from './OpenId4VcClientService'
 
 interface PreAuthorizedOptions {
   issuerUri: string,
-  did: string,
+  kid: string,
 }
 
 
@@ -25,8 +25,8 @@ export class OpenId4VcClientApi {
   }
 
 
-  public async preAuthorized(options: PreAuthorizedOptions) {
-    await this.openId4VcClientService.preAuthorized(this.agentContext, options)
+  public async preAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
+    return this.openId4VcClientService.preAuthorized(this.agentContext, options)
 
   }
 
