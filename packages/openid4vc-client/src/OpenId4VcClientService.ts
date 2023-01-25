@@ -20,7 +20,7 @@ export class OpenId4VcClientService {
     this.w3cCredentialService = w3cCredentialService
     this.jwsService = jwsService
     // @ts-ignore
-    this.logger = agentConfig.logger.scoped('openid4vc-client: service')
+    this.logger = agentConfig.logger
   }
 
 
