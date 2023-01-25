@@ -484,7 +484,6 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
   ): IVerifiableCredential[] {
     const credentials: IVerifiableCredential[] = []
 
-    console.log("QUACK: json pex credentials = ", jsonPexCredentials)
     // extract all verifiable credentials for the given match (expressed as a jsonpath)
     // from the the full list of credentials
     if (match.from_nested) {
@@ -494,11 +493,7 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       }
     } else {
       for (const path of match.vc_path) {
-        console.log("QUACK: path = ", path)
         const result = query(jsonPexCredentials, path)
-
-        console.log("QUACK result = ", result)
-
         credentials.push(...result)
       }
     }
