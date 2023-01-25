@@ -26,7 +26,7 @@ export class OpenId4VcClientApi {
 
 
   public async preAuthorized(options: PreAuthorizedOptions) {
-    this.openId4VcClientService.preAuthorized(this.agentContext, options)
+    await this.openId4VcClientService.preAuthorized(this.agentContext, options)
 
   }
 
