@@ -2,14 +2,10 @@ import { AgentContext, injectable, W3cCredentialRecord } from '@aries-framework/
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 
-
-
-
 interface PreAuthorizedOptions {
-  issuerUri: string,
-  kid: string,
+  issuerUri: string
+  kid: string
 }
-
 
 /**
  * @public
@@ -24,10 +20,7 @@ export class OpenId4VcClientApi {
     this.openId4VcClientService = openId4VcClientService
   }
 
-
   public async preAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
     return this.openId4VcClientService.preAuthorized(this.agentContext, options)
-
   }
-
 }

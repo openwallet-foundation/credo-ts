@@ -1,11 +1,28 @@
-import { AgentConfig, AgentContext, AriesFrameworkError, injectable, JsonEncoder, JsonTransformer, Logger, W3cCredentialRecord, W3cCredentialService, W3cVerifiableCredential } from '@aries-framework/core'
-import { Alg, AuthzFlowType, CredentialRequestClientBuilder, Jwt, OpenID4VCIClient, ProofOfPossessionBuilder } from '@sphereon/openid4vci-client'
+import {
+  AgentConfig,
+  AgentContext,
+  AriesFrameworkError,
+  injectable,
+  JsonEncoder,
+  JsonTransformer,
+  Logger,
+  W3cCredentialRecord,
+  W3cCredentialService,
+  W3cVerifiableCredential,
+} from '@aries-framework/core'
+import {
+  Alg,
+  AuthzFlowType,
+  CredentialRequestClientBuilder,
+  Jwt,
+  OpenID4VCIClient,
+  ProofOfPossessionBuilder,
+} from '@sphereon/openid4vci-client'
 import { JwsService } from '../../core/src/crypto/JwsService'
 import { didKeyToVerkey } from '../../core/src/modules/dids/helpers'
 
-
 interface PreAuthorizedOptions {
-  issuerUri: string,
+  issuerUri: string
   kid: string
 }
 
@@ -15,7 +32,6 @@ export class OpenId4VcClientService {
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService
 
-
   public constructor(agentConfig: AgentConfig, w3cCredentialService: W3cCredentialService, jwsService: JwsService) {
     this.w3cCredentialService = w3cCredentialService
     this.jwsService = jwsService
@@ -23,10 +39,8 @@ export class OpenId4VcClientService {
     this.logger = agentConfig.logger
   }
 
-
   private signCallback(agentContext: AgentContext) {
     return async (jwt: Jwt, kid: string) => {
-
       // TODO should we check if the did exists here, or juist let the wallet throw?
 
       if (!jwt.header) {
@@ -37,14 +51,11 @@ export class OpenId4VcClientService {
         throw new AriesFrameworkError('No payload present on JWT')
       }
 
-
-
       const did = kid.split('#')[0]
 
       const verkey = didKeyToVerkey(did)
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
-
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
         verkey: verkey, // FIXME null check
@@ -52,8 +63,8 @@ export class OpenId4VcClientService {
         payload,
         protectedHeaderOptions: {
           alg: Alg.EdDSA,
-          kid
-        }
+          kid,
+        },
       })
 
       return jws
@@ -62,7 +73,7 @@ export class OpenId4VcClientService {
 
   private getSignCallback(agentContext: AgentContext) {
     return {
-      signCallback: this.signCallback(agentContext)
+      signCallback: this.signCallback(agentContext),
     }
   }
 
@@ -74,26 +85,25 @@ export class OpenId4VcClientService {
       flowType: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
       kid: options.kid,
       alg: Alg.EdDSA,
-      clientId: 'test-clientId'
+      clientId: 'test-clientId',
     })
-
-
 
     const accessToken = await client.acquireAccessToken({ clientId: 'test-clientId' })
 
     this.logger.info('Fetched server accessToken', accessToken)
 
     if (!accessToken.scope) {
-      throw new AriesFrameworkError("Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time.")
+      throw new AriesFrameworkError(
+        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
+      )
     }
-
 
     const serverMetadata = await client.retrieveServerMetadata()
 
     this.logger.info('Fetched server metadata', {
       issuer: serverMetadata.issuer,
       credentialEndpoint: serverMetadata.credential_endpoint,
-      tokenEndpoint: serverMetadata.token_endpoint
+      tokenEndpoint: serverMetadata.token_endpoint,
     })
 
     this.logger.debug('Full server metadata', serverMetadata)
@@ -103,7 +113,7 @@ export class OpenId4VcClientService {
 
     const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
       accessTokenResponse: accessToken,
-      callbacks: callbacks
+      callbacks: callbacks,
     })
       .withEndpointMetadata(serverMetadata)
       .withClientId('test-clientId')
@@ -112,15 +122,17 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Generated JWS', proofInput)
 
-    const credentialRequestClient = CredentialRequestClientBuilder
-      .fromIssuanceInitiationURI({ uri: options.issuerUri, metadata: serverMetadata })
+    const credentialRequestClient = CredentialRequestClientBuilder.fromIssuanceInitiationURI({
+      uri: options.issuerUri,
+      metadata: serverMetadata,
+    })
       .withTokenFromResponse(accessToken)
       .build()
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
       credentialType: accessToken.scope,
-      format: 'ldp_vc' // Allows us to override the format
+      format: 'ldp_vc', // Allows us to override the format
     })
 
     this.logger.debug('Credential request response', credentialResponse)
@@ -132,7 +144,7 @@ export class OpenId4VcClientService {
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
 
     const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
-      credential: credential
+      credential: credential,
     })
 
     this.logger.info(`Stored credential with id: ${storedCredential.id}`)

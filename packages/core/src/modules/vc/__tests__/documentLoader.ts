@@ -97,9 +97,7 @@ export const DOCUMENTS = {
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
   'https://mattr.global/contexts/vc-extensions/v1': MATTR_VC_EXTENSION_V1,
   'https://purl.imsglobal.org/spec/ob/v3p0/context.json': PURL_OB_V3P0,
-  'https://w3c-ccg.github.io/vc-status-rl-2020/contexts/vc-revocation-list-2020/v1.jsonld': VC_REVOCATION_LIST_2020
-
-
+  'https://w3c-ccg.github.io/vc-status-rl-2020/contexts/vc-revocation-list-2020/v1.jsonld': VC_REVOCATION_LIST_2020,
 }
 
 async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {

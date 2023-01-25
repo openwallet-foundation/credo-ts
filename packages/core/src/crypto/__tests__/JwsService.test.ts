@@ -52,7 +52,7 @@ describe('JwsService', () => {
             crv: 'Ed25519',
             x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(key.publicKeyBase58)),
           },
-        }
+        },
       })
 
       expect(jws).toEqual(didJwsz6Mkf.JWS_JSON)

@@ -17,19 +17,13 @@ const JWS_ALG = 'EdDSA'
 
 @injectable()
 export class JwsService {
-
-  private async createJwsBase(
-    agentContext: AgentContext,
-    options: CreateJwsOptions
-  ) {
-
+  private async createJwsBase(agentContext: AgentContext, options: CreateJwsOptions) {
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
     const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.verkey, options.protectedHeaderOptions))
     const key = Key.fromPublicKeyBase58(options.verkey, KeyType.Ed25519)
 
     const signature = TypedArrayEncoder.toBase64URL(
       await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
-
     )
 
     return {
@@ -43,7 +37,12 @@ export class JwsService {
     agentContext: AgentContext,
     { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
-    const { base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, protectedHeaderOptions})
+    const { base64Protected, signature } = await this.createJwsBase(agentContext, {
+      payload,
+      verkey,
+      header,
+      protectedHeaderOptions,
+    })
 
     return {
       protected: base64Protected,
@@ -59,10 +58,14 @@ export class JwsService {
     agentContext: AgentContext,
     { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<string> {
-    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, { payload, verkey, header, protectedHeaderOptions})
+    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, {
+      payload,
+      verkey,
+      header,
+      protectedHeaderOptions,
+    })
     return `${base64Protected}.${base64Payload}.${signature}`
   }
-
 
   /**
    * Verify a JWS
@@ -135,7 +138,7 @@ export class JwsService {
     return {
       alg: options.alg,
       ...(options.jwk && { jwk: options.jwk }),
-      ...(options.kid && { kid: options.kid })
+      ...(options.kid && { kid: options.kid }),
     }
   }
 }
@@ -156,7 +159,6 @@ export interface VerifyJwsResult {
   isValid: boolean
   signerVerkeys: string[]
 }
-
 
 export interface Jwk {
   kty: string
