@@ -38,6 +38,7 @@ import { DidExchangeRequestMessage } from './messages/DidExchangeRequestMessage'
 import { DidExchangeResponseMessage } from './messages/DidExchangeResponseMessage'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
+import { TypedArrayEncoder } from '../../utils'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -467,6 +468,14 @@ export class DidExchangeProtocol {
           verkey,
           header: {
             kid,
+          },
+          protectedHeaderOptions: {
+            alg: 'EdDSA',
+            jwk: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+              x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
+            },
           },
         })
         didDocAttach.addJws(jws)
