@@ -395,19 +395,19 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       uriList = [...uriList, ...inputDescriptor.schema.map((s) => s.uri)]
     }
 
-    const query: Array<Query<W3cCredentialRecord>> = []
+    const w3cquery: Array<Query<W3cCredentialRecord>> = []
     for (const inputDescriptor of presentationDefinition.input_descriptors) {
       for (const schema of inputDescriptor.schema) {
         const innerQuery: Query<W3cCredentialRecord> = {}
         innerQuery.$or = [{ expandedType: [schema.uri] }, { contexts: [schema.uri] }]
-        query.push(innerQuery)
+        w3cquery.push(innerQuery)
       }
     }
 
     // query the wallet ourselves first to avoid the need to query the pex library for all
     // credentials for every proof request
     const credentials = await this.w3cCredentialService.findCredentialRecordsByQuery(agentContext, {
-      $or: [...query],
+      $or: [...w3cquery],
     })
 
     const pexCredentials = credentials.map((c) => JsonTransformer.toJSON(c) as IVerifiableCredential)
@@ -493,7 +493,8 @@ export class PresentationExchangeProofFormatService extends ProofFormatService {
       }
     } else {
       for (const path of match.vc_path) {
-        credentials.push(...query(jsonPexCredentials, path))
+        const result = query(jsonPexCredentials, path)
+        credentials.push(...result)
       }
     }
     return credentials
