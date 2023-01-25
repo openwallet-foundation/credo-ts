@@ -7,7 +7,7 @@ import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataRespon
 import { customDocumentLoader } from "../../core/src/modules/vc/__tests__/documentLoader";
 
 const agentOptions = getAgentOptions('OpenId4VcClient Agent', {
-    logger: new ConsoleLogger(LogLevel.debug)
+    logger: new ConsoleLogger(LogLevel.info)
 }, {
     openId4VcClient: new OpenId4VcClientModule(),
     w3cVc: new W3cVcModule({
