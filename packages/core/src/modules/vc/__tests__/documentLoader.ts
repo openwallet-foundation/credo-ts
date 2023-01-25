@@ -26,6 +26,9 @@ import { DID_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB
 import { DID_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox } from './dids/did_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox'
 import { DID_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F } from './dids/did_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F'
 import { DID_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4 } from './dids/did_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4'
+import { MATTR_VC_EXTENSION_V1 } from './contexts/mattr_vc_extension_v1'
+import { PURL_OB_V3P0 } from './contexts/purl_ob_v3po'
+import { VC_REVOCATION_LIST_2020 } from './contexts/vc_revocation_list_2020'
 
 export const DOCUMENTS = {
   [DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL['id']]: DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL,
@@ -92,6 +95,11 @@ export const DOCUMENTS = {
   'https://www.w3.org/ns/odrl.jsonld': ODRL,
   'http://schema.org/': SCHEMA_ORG,
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
+  'https://mattr.global/contexts/vc-extensions/v1': MATTR_VC_EXTENSION_V1,
+  'https://purl.imsglobal.org/spec/ob/v3p0/context.json': PURL_OB_V3P0,
+  'https://w3c-ccg.github.io/vc-status-rl-2020/contexts/vc-revocation-list-2020/v1.jsonld': VC_REVOCATION_LIST_2020
+
+
 }
 
 async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {

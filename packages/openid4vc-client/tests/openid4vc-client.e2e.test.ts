@@ -1,16 +1,36 @@
-import { Agent, KeyDidCreateOptions, KeyType, LogLevel } from "@aries-framework/core";
+import { Agent, KeyDidCreateOptions, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from "@aries-framework/core";
 import { OpenId4VcClientModule } from "@aries-framework/openid4vc-client";
 import { getAgentOptions } from "../../core/tests/helpers";
 import { FancyLogger } from '../../core/src/logger/FancyLogger'
-import { ok } from "assert/strict";
-
-
+import fetch from 'node-fetch'
+import { didKeyToInstanceOfKey } from "../../core/src/modules/dids/helpers";
+import nock from 'nock'
+import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from "./fixtures";
+import { customDocumentLoader } from "../../core/src/modules/vc/__tests__/documentLoader";
 
 const agentOptions = getAgentOptions('OpenId4VcClient Agent', {
-    logger: new FancyLogger(LogLevel.debug),
+    logger: new FancyLogger(LogLevel.debug)
 }, {
-    openId4VcClient: new OpenId4VcClientModule()
+    openId4VcClient: new OpenId4VcClientModule(),
+    w3cVc: new W3cVcModule({
+        documentLoader: customDocumentLoader
+    })
 })
+
+const fetchIssuerUri = async () => {
+    const url = 'https://launchpad.mattrlabs.com/api/credential-offer'
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ "type": "OpenBadgeCredential", "userId": "622a9f65-21c0-4c0b-9a6a-f7574c2a1549", "userAuthenticationRequired": false })
+    })
+
+    const responseJson = await response.json()
+    console.log('Offer URL', responseJson.offerUrl)
+    return responseJson.offerUrl
+
+}
 
 describe('OpenId4VcClient', () => {
 
@@ -18,29 +38,85 @@ describe('OpenId4VcClient', () => {
         openId4VcClient: OpenId4VcClientModule
     }>
 
-    beforeEach(async () => {
+    beforeAll(async () => {
         agent = new Agent(agentOptions)
         await agent.initialize()
     })
 
+    afterAll(async () => {
+        await agent.shutdown()
+        await agent.wallet.delete()
+    })
 
-    it('Test', async () => {
 
-        // const issuerUri = 'openid-initiate-issuance://?issuer=https://localhost:3001&credential_type=AcademicAward&pre-authorized_code=igAGg3cz1t5XrNA5uTpCdsRRwzC6ggN2zaGvlUjn6UC'
-        const issuerUri = 'openid-initiate-issuance://?issuer=https://68f94666-7538-4c34-91c6-cb2af8384616.mock.pstmn.io&credential_type=OpenBadgeCredential&pre-authorized_code=hTcG9E_-cvSBRhQDxEfyPeAoVxRjXd5RFOeaMX4x0ng'
-        const did = await agent.dids.create<KeyDidCreateOptions>({
-            method: 'key',
-            options: {
-                keyType: KeyType.Ed25519,
-            },
-            secret: {
-                seed: '96213c3d7fc8d4d6754c7a0fd969598e',
-            },
+    describe('Pre-authorized flow', () => {
+
+        const issuerUri = 'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential&pre-authorized_code=krBcsBIlye2T-G4-rHHnRZUCah9uzDKwohJK6ABNvL-'
+        beforeAll(async () => {
+            /**
+             *  Below we're setting up some mock HTTP responses.
+             *  These responses are based on the openid-initiate-issuance URI above
+             * */
+
+            // setup temporary redirect mock
+            nock('https://launchpad.mattrlabs.com')
+                .get('/.well-known/openid-credential-issuer')
+                .reply(307, undefined, {
+                    'Location': 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer'
+                })
+
+            // setup server metadata response
+            const httpMock = nock('https://launchpad.vii.electron.mattrlabs.io')
+                .get('/.well-known/openid-credential-issuer')
+                .reply(200, getMetadataResponse)
+
+            // setup access token response
+            httpMock.post('/oidc/v1/auth/token')
+                .reply(200, aquireAccessTokenResponse)
+
+            // setup credential request response
+            httpMock.post('/oidc/v1/auth/credential')
+                .reply(200, credentialRequestResponse)
+
+
         })
 
-        await agent.modules.openId4VcClient.preAuthorized({
-            issuerUri,
-            did: did.didState.did!
+        it('Should successfully execute the pre-authorized flow', async () => {
+            // const issuerUri = await fetchIssuerUri()
+
+            const did = await agent.dids.create<KeyDidCreateOptions>({
+                method: 'key',
+                options: {
+                    keyType: KeyType.Ed25519,
+                },
+                secret: {
+                    seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+                },
+            })
+
+            console.log(did)
+
+            const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
+
+            const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
+
+            const w3cCredentialRecord = await agent.modules.openId4VcClient.preAuthorized({
+                issuerUri,
+                kid
+            })
+
+            expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
+
+            expect(w3cCredentialRecord.credential.type).toEqual([
+                'VerifiableCredential',
+                'VerifiableCredentialExtension',
+                'OpenBadgeCredential'
+            ])
+
+            // @ts-ignore
+            expect(w3cCredentialRecord.credential.credentialSubject.id).toEqual(did.didState.did)
+
+
         })
 
     })
