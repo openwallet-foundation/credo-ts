@@ -27,7 +27,6 @@ export type {
   WalletConfigRekey,
   WalletExportImportConfig,
 } from './types'
-export * from './cache'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem } from './storage/FileSystem'
 export * from './storage/BaseRecord'
