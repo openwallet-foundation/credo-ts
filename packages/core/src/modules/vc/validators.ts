@@ -1,4 +1,4 @@
-import type { ValidationOptions } from 'class-validator'
+import { isJSON, ValidationOptions } from 'class-validator'
 
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 
@@ -13,8 +13,16 @@ export function IsJsonLdContext(validationOptions?: ValidationOptions): Property
           // If value is an array, check if all items are strings, are URLs and that
           // the first entry is a verifiable credential context
           if (Array.isArray(value)) {
-            return value.every((v) => isString(v) && isURL(v)) && value[0] === CREDENTIALS_CONTEXT_V1_URL
+            if (value.every((v) => isString(v) && isURL(v)) && value[0] === CREDENTIALS_CONTEXT_V1_URL) {
+              return true
+            }
+
+            if (value.every((v) => isString(v) || typeof v === 'object')) {
+              // TODO add more validation on the properties of the JSON object
+              return true
+            }
           }
+
           // If value is not an array, check if it is an object (assuming it's a JSON-LD context definition)
           if (typeof value === 'object') {
             return true
