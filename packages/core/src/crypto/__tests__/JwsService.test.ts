@@ -3,7 +3,7 @@ import type { Wallet } from '@aries-framework/core'
 
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
-import { Buffer, JsonEncoder } from '../../utils'
+import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
@@ -45,6 +45,14 @@ describe('JwsService', () => {
         // FIXME: update to use key instance instead of verkey
         verkey: key.publicKeyBase58,
         header: { kid },
+        protectedHeaderOptions: {
+          alg: 'EdDSA',
+          jwk: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(key.publicKeyBase58)),
+          },
+        }
       })
 
       expect(jws).toEqual(didJwsz6Mkf.JWS_JSON)

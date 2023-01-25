@@ -132,13 +132,6 @@ export class JwsService {
       throw new AriesFrameworkError('Both JWK and kid are provided. Please only provide one of the two.')
     }
 
-    if (options.jwk) {
-      options.jwk = {
-        ...options.jwk,
-        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey))
-      }
-    }
-
     return {
       alg: options.alg,
       ...(options.jwk && { jwk: options.jwk }),
@@ -146,17 +139,6 @@ export class JwsService {
     }
   }
 }
-
-// original options {
-//       alg: 'EdDSA',
-//       jwk: {
-//         kty: 'OKP',
-//         crv: 'Ed25519',
-//         x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
-//       },
-//     }
-
-
 
 export interface CreateJwsOptions {
   verkey: string
