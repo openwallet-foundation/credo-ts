@@ -46,7 +46,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -119,7 +119,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
@@ -170,7 +170,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
