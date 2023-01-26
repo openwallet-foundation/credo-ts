@@ -171,7 +171,9 @@ export class IndyVdrPool {
 
     // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
     const authorAgreement = taaData as Omit<AuthorAgreement, 'acceptanceMechanisms'>
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
+
+    // FIME: remove cast when https://github.com/hyperledger/indy-vdr/pull/142 is released
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as unknown as AcceptanceMechanisms  
     this.authorAgreement = {
       ...authorAgreement,
       acceptanceMechanisms,
