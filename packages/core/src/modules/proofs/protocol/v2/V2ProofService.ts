@@ -429,28 +429,32 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     })
 
     const formats = []
+
     for (const key of Object.keys(options.proofFormats)) {
       const service = this.formatServiceMap[key]
 
       if (!service) {
         throw new AriesFrameworkError(`service ${service} not supported`)
       }
-      for (const attachmentFormat of proofRequest.getAttachmentFormats()) {
-        try {
-          formats.push(
-            await service.createPresentation(agentContext, {
-              attachment: proofRequest.getAttachmentByFormatIdentifier(attachmentFormat.format.format),
-              proofFormats: options.proofFormats,
-            })
-          )
-        } catch (e) {
-          if (e instanceof AriesFrameworkError) {
-            throw new V2PresentationProblemReportError(e.message, {
-              problemCode: PresentationProblemReportReason.Abandoned,
-            })
-          }
-          throw e
+
+      // get the right attachment for this service
+      const attachments: Attachment[] = proofRequest.getAttachmentFormats().map((af) => af.attachment)
+      const attachment = this.getAttachmentForService(service, proofRequest.formats, attachments)
+
+      try {
+        formats.push(
+          await service.createPresentation(agentContext, {
+            attachment,
+            proofFormats: options.proofFormats,
+          })
+        )
+      } catch (e) {
+        if (e instanceof AriesFrameworkError) {
+          throw new V2PresentationProblemReportError(e.message, {
+            problemCode: PresentationProblemReportReason.Abandoned,
+          })
         }
+        throw e
       }
     }
 
@@ -461,7 +465,6 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       lastPresentation: options.lastPresentation,
     })
     presentationMessage.setThread({ threadId: options.proofRecord.threadId })
-
     await this.didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: presentationMessage,
       associatedRecordId: options.proofRecord.id,
@@ -900,14 +903,18 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
       if (!service) {
         throw new AriesFrameworkError('No format service found for getting requested.')
       }
+      const r = await service.getRequestedCredentialsForProofRequest(agentContext, {
+        attachment: attachmentFormat.attachment,
+        presentationProposal: undefined,
+        config: options.config,
+      })
 
       result = {
         ...result,
-        ...(await service.getRequestedCredentialsForProofRequest(agentContext, {
-          attachment: attachmentFormat.attachment,
-          presentationProposal: undefined,
-          config: options.config,
-        })),
+        proofFormats: {
+          ...result.proofFormats,
+          ...r.proofFormats,
+        },
       }
     }
 
@@ -923,7 +930,13 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     for (const [id] of Object.entries(options.proofFormats)) {
       const formatService = this.formatServiceMap[id]
       const credentials = await formatService.autoSelectCredentialsForProofRequest(options)
-      returnValue = { ...returnValue, ...credentials }
+      returnValue = {
+        ...returnValue,
+        proofFormats: {
+          ...returnValue.proofFormats,
+          ...credentials.proofFormats,
+        },
+      }
     }
 
     return returnValue

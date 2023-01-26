@@ -1,10 +1,23 @@
 import type { Agent, ConnectionRecord } from '../src'
 import type { IVerifiablePresentation } from '@sphereon/ssi-types'
 
-import { V2PresentationMessage, AutoAcceptProof, ProofState } from '../src'
+import {
+  AttributeFilter,
+  PredicateType,
+  ProofAttributeInfo,
+  ProofPredicateInfo,
+  V2PresentationMessage,
+  AutoAcceptProof,
+  ProofState,
+} from '../src'
 import { DidCommMessageRepository } from '../src/storage/didcomm/DidCommMessageRepository'
 
-import { setupJsonLdProofsTest, setupJsonLdProofsTestMultipleCredentials, waitForProofExchangeRecord } from './helpers'
+import {
+  setupCombinedIndyAndJsonLdProofsTest,
+  setupJsonLdProofsTest,
+  setupJsonLdProofsTestMultipleCredentials,
+  waitForProofExchangeRecord,
+} from './helpers'
 import testLogger from './logger'
 
 const inputDescriptors = [
@@ -184,6 +197,84 @@ describe('Auto accept present proof', () => {
         threadId: faberProofExchangeRecord.threadId,
         state: ProofState.Done,
       })
+    })
+
+    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always` Indy and JsonLd Combined Formats', async () => {
+      const { faberAgent, aliceAgent, credDefId, faberConnection } = await setupCombinedIndyAndJsonLdProofsTest(
+        'Faber Auto Accept Always Proofs',
+        'Alice Auto Accept Always Proofs',
+        AutoAcceptProof.Always
+      )
+      testLogger.test('Faber sends presentation request to Alice')
+
+      const attributes = {
+        name: new ProofAttributeInfo({
+          name: 'name',
+          restrictions: [
+            new AttributeFilter({
+              credentialDefinitionId: credDefId,
+            }),
+          ],
+        }),
+      }
+      const predicates = {
+        age: new ProofPredicateInfo({
+          name: 'age',
+          predicateType: PredicateType.GreaterThanOrEqualTo,
+          predicateValue: 50,
+          restrictions: [
+            new AttributeFilter({
+              credentialDefinitionId: credDefId,
+            }),
+          ],
+        }),
+      }
+
+      const faberProofExchangeRecord = await faberAgent.proofs.requestProof({
+        protocolVersion: 'v2',
+        connectionId: faberConnection.id,
+        proofFormats: {
+          indy: {
+            name: 'proof-request',
+            version: '1.0',
+            nonce: '1298236324866',
+            requestedAttributes: attributes,
+            requestedPredicates: predicates,
+          },
+          presentationExchange: {
+            options: {
+              challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              domain: '',
+            },
+            presentationDefinition: {
+              id: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
+              input_descriptors: [inputDescriptorCitizenship],
+            },
+          },
+        },
+      })
+      testLogger.test('Faber waits for presentation from Alice')
+      await waitForProofExchangeRecord(faberAgent, {
+        threadId: faberProofExchangeRecord.threadId,
+        state: ProofState.Done,
+      })
+      // Alice waits till it receives presentation ack
+      await waitForProofExchangeRecord(aliceAgent, {
+        threadId: faberProofExchangeRecord.threadId,
+        state: ProofState.Done,
+      })
+
+      const didCommMessageRepository =
+        faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+
+      const presentation = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
+        associatedRecordId: faberProofExchangeRecord.id,
+        messageClass: V2PresentationMessage,
+      })
+
+      // 2 formats: indy and pex
+      expect(presentation?.formats.length).toBe(2)
+      expect(presentation?.presentationsAttach.length).toBe(2)
     })
 
     test('Submission Requirements', async () => {
