@@ -1,7 +1,7 @@
 import type { Logger, AgentContext, Key } from '@aries-framework/core'
 import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from 'indy-vdr-test-shared'
 
-import { TypedArrayEncoder, AriesFrameworkError } from '@aries-framework/core'
+import { TypedArrayEncoder } from '@aries-framework/core'
 import {
   GetTransactionAuthorAgreementRequest,
   GetAcceptanceMechanismsRequest,
@@ -38,7 +38,6 @@ export interface IndyVdrPoolConfig {
 }
 
 export class IndyVdrPool {
-  // indyVdr?: typeof IndyVdr
   private _pool?: indyVdrPool
   private logger: Logger
   private poolConfig: IndyVdrPoolConfig
@@ -69,8 +68,7 @@ export class IndyVdrPool {
 
   private get pool(): indyVdrPool {
     if (!this._pool) {
-      // TODO: create custom IndyVdrError
-      throw new AriesFrameworkError('Pool is not connected. Make sure to call .connect() first')
+      throw new IndyVdrError('Pool is not connected. Make sure to call .connect() first')
     }
 
     return this._pool
@@ -173,7 +171,9 @@ export class IndyVdrPool {
 
     // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
     const authorAgreement = taaData as Omit<AuthorAgreement, 'acceptanceMechanisms'>
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
+
+    // FIME: remove cast when https://github.com/hyperledger/indy-vdr/pull/142 is released
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as unknown as AcceptanceMechanisms
     this.authorAgreement = {
       ...authorAgreement,
       acceptanceMechanisms,
