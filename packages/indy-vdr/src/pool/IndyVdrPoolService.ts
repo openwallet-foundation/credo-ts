@@ -6,11 +6,10 @@ import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from 
 import { GetNymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
-import { isSelfCertifiedDid } from '../utils/did'
+import { isSelfCertifiedDid, DID_INDY_REGEX } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
 import { IndyVdrPool } from './IndyVdrPool'
-import { DID_INDY_REGEX } from './didIdentifier'
 
 export interface CachedDidResponse {
   nymResponse: {
