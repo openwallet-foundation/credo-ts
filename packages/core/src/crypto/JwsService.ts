@@ -172,4 +172,5 @@ export interface ProtectedHeaderOptions {
   alg: string
   jwk?: Jwk
   kid?: kid
+  [key: string]: any
 }
