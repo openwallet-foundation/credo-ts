@@ -909,6 +909,7 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
         config: options.config,
       })
 
+      // spread operator needs to specify proofFormats property otherwise this gets overwritten
       result = {
         ...result,
         proofFormats: {
@@ -930,6 +931,8 @@ export class V2ProofService<PFs extends ProofFormat[] = ProofFormat[]> extends P
     for (const [id] of Object.entries(options.proofFormats)) {
       const formatService = this.formatServiceMap[id]
       const credentials = await formatService.autoSelectCredentialsForProofRequest(options)
+
+      // spread operator needs to specify proofFormats property otherwise this gets overwritten
       returnValue = {
         ...returnValue,
         proofFormats: {
