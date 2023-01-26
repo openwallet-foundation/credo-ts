@@ -173,7 +173,7 @@ export class IndyVdrPool {
     const authorAgreement = taaData as Omit<AuthorAgreement, 'acceptanceMechanisms'>
 
     // FIME: remove cast when https://github.com/hyperledger/indy-vdr/pull/142 is released
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as unknown as AcceptanceMechanisms  
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as unknown as AcceptanceMechanisms
     this.authorAgreement = {
       ...authorAgreement,
       acceptanceMechanisms,
