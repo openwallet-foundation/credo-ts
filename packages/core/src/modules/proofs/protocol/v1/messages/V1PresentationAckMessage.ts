@@ -4,6 +4,8 @@ import { IsValidMessageType, parseMessageType } from '../../../../../utils/messa
 import { AckMessage } from '../../../../common'
 
 export class V1PresentationAckMessage extends AckMessage {
+  public readonly protocolUsesLegacyDidSovPrefix = true
+
   public constructor(options: AckMessageOptions) {
     super(options)
   }

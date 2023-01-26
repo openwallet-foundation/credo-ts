@@ -25,6 +25,8 @@ export interface V1OfferCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
 export class V1OfferCredentialMessage extends AgentMessage {
+  public readonly protocolUsesLegacyDidSovPrefix = true
+
   public constructor(options: V1OfferCredentialMessageOptions) {
     super()
 

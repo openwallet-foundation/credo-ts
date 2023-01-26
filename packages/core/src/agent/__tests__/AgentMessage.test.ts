@@ -10,16 +10,35 @@ class CustomProtocolMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
+class LegacyDidSovPrefixMessage extends AgentMessage {
+  public readonly protocolUsesLegacyDidSovPrefix = true
+
+  @IsValidMessageType(LegacyDidSovPrefixMessage.type)
+  public readonly type = LegacyDidSovPrefixMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/another-message')
+}
+
 describe('AgentMessage', () => {
   describe('toJSON', () => {
-    it('should only use did:sov message prefix if useLegacyDidSovPrefix is true', () => {
+    it('should only use did:sov message prefix if useLegacyDidSovPrefix and protocolUsesLegacyDidSovPrefix are both true', () => {
       const message = new TestMessage()
+      const legacyPrefixMessage = new LegacyDidSovPrefixMessage()
 
-      const jsonDidComm = message.toJSON()
-      expect(jsonDidComm['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+      // useLegacyDidSovPrefix & protocolUsesLegacyDidSovPrefix are both false
+      let testMessageJson = message.toJSON()
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
 
-      const jsonSov = message.toJSON({ useLegacyDidSovPrefix: true })
-      expect(jsonSov['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation')
+      // useLegacyDidSovPrefix is true, but protocolUsesLegacyDidSovPrefix is false
+      testMessageJson = message.toJSON({ useLegacyDidSovPrefix: true })
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+
+      // useLegacyDidSovPrefix is false, but protocolUsesLegacyDidSovPrefix is true
+      testMessageJson = legacyPrefixMessage.toJSON()
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/another-message')
+
+      // useLegacyDidSovPrefix & protocolUsesLegacyDidSovPrefix are both true
+      testMessageJson = legacyPrefixMessage.toJSON({ useLegacyDidSovPrefix: true })
+      expect(testMessageJson['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/fake-protocol/1.5/another-message')
     })
   })
 

@@ -1,6 +1,8 @@
 import type { ParsedMessageType } from '../utils/messageType'
 import type { Constructor } from '../utils/mixins'
 
+import { Exclude } from 'class-transformer'
+
 import { AckDecorated } from '../decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from '../decorators/attachment/AttachmentExtension'
 import { L10nDecorated } from '../decorators/l10n/L10nDecoratorExtension'
@@ -20,10 +22,16 @@ const Decorated = ThreadDecorated(
 )
 
 export class AgentMessage extends Decorated {
-  public toJSON({ useLegacyDidSovPrefix = false }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
+  // Only used internally
+  @Exclude()
+  public readonly protocolUsesLegacyDidSovPrefix: boolean = false
+
+  public toJSON({ useLegacyDidSovPrefix }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
     const json = JsonTransformer.toJSON(this)
 
-    if (useLegacyDidSovPrefix) {
+    // If the protocol historically uses the legacy did:sov prefix, and we have enabled using this legacy prefix, we
+    // only use it for protocol messages that historically used it.
+    if (this.protocolUsesLegacyDidSovPrefix && useLegacyDidSovPrefix) {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
     }
 

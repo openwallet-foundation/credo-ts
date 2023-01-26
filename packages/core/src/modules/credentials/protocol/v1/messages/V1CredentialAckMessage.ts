@@ -9,6 +9,8 @@ export type V1CredentialAckMessageOptions = AckMessageOptions
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
 export class V1CredentialAckMessage extends AckMessage {
+  public readonly protocolUsesLegacyDidSovPrefix = true
+
   /**
    * Create new CredentialAckMessage instance.
    * @param options
