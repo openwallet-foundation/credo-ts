@@ -66,7 +66,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
     try {
       agentContext.config.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.indyNamespace}'`)
 
-      const request = new GetAttribRequest({ targetDid: did })
+      const request = new GetAttribRequest({ targetDid: did, raw: 'endpoint' })
 
       agentContext.config.logger.debug(
         `Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.indyNamespace}'`
