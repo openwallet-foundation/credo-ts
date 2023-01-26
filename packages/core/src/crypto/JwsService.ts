@@ -161,9 +161,10 @@ export interface VerifyJwsResult {
 }
 
 export interface Jwk {
-  kty: string
-  crv: string
+  kty: "EC" | "OKP"
+  crv: "Ed25519" | "X25519" | "P-256" | "P-384" | "secp256k1"
   x: string
+  y?: string
 }
 
 export type kid = string
