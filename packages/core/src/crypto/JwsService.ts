@@ -9,6 +9,8 @@ import { WalletError } from '../wallet/error'
 
 import { Key } from './Key'
 import { KeyType } from './KeyType'
+import { supportedUpdates } from '../storage/migration/updates'
+import { Jwk } from './jwkUtil'
 
 // TODO: support more key types, more generic jws format
 const JWS_KEY_TYPE = 'OKP'
@@ -17,13 +19,24 @@ const JWS_ALG = 'EdDSA'
 
 @injectable()
 export class JwsService {
-  private async createJwsBase(agentContext: AgentContext, options: CreateJwsOptions) {
+
+  static supportedKeyTypes = [
+    KeyType.Ed25519
+  ]
+
+  private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
+
+
+    if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
+      throw new AriesFrameworkError('Only Ed25519 JWS is supported')
+    }
+
+
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
-    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.verkey, options.protectedHeaderOptions))
-    const key = Key.fromPublicKeyBase58(options.verkey, KeyType.Ed25519)
+    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.key, options.protectedHeaderOptions))
 
     const signature = TypedArrayEncoder.toBase64URL(
-      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
+      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key: options.key})
     )
 
     return {
@@ -35,12 +48,13 @@ export class JwsService {
 
   public async createJws(
     agentContext: AgentContext,
-    { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
+    { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
+
+
     const { base64Protected, signature } = await this.createJwsBase(agentContext, {
       payload,
-      verkey,
-      header,
+      key,
       protectedHeaderOptions,
     })
 
@@ -56,12 +70,11 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, verkey, header, protectedHeaderOptions }: CreateJwsOptions
+    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
   ): Promise<string> {
     const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, {
       payload,
-      verkey,
-      header,
+      key,
       protectedHeaderOptions,
     })
     return `${base64Protected}.${base64Payload}.${signature}`
@@ -127,7 +140,7 @@ export class JwsService {
    * @todo This currently only work with a single alg, key type and curve
    *    This needs to be extended with other formats in the future
    */
-  private buildProtected(verkey: string, options: ProtectedHeaderOptions) {
+  private buildProtected(verkey: Key, options: ProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
       throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
     }
@@ -144,11 +157,17 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  verkey: string
+  key: Key
   payload: Buffer
   header: Record<string, unknown>
   protectedHeaderOptions: ProtectedHeaderOptions
 }
+
+type CreateJwsBaseOptions = Omit<CreateJwsOptions, "header">
+
+type CreateCompactJwsOptions = Omit<CreateJwsOptions, "header">
+
+
 
 export interface VerifyJwsOptions {
   jws: Jws
@@ -160,12 +179,6 @@ export interface VerifyJwsResult {
   signerVerkeys: string[]
 }
 
-export interface Jwk {
-  kty: "EC" | "OKP"
-  crv: "Ed25519" | "X25519" | "P-256" | "P-384" | "secp256k1"
-  x: string
-  y?: string
-}
 
 export type kid = string
 

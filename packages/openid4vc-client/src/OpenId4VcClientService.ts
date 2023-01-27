@@ -19,7 +19,7 @@ import {
 } from '@sphereon/openid4vci-client'
 
 import { JwsService } from '../../core/src/crypto/JwsService'
-import { didKeyToVerkey } from '../../core/src/modules/dids/helpers'
+import { didKeyToInstanceOfKey, didKeyToVerkey } from '../../core/src/modules/dids/helpers'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
@@ -50,20 +50,21 @@ export class OpenId4VcClientService {
         throw new AriesFrameworkError('No payload present on JWT')
       }
 
+      console.log(jwt.header)
+
       const did = kid.split('#')[0]
 
-      const verkey = didKeyToVerkey(did)
+      const key = didKeyToInstanceOfKey(did)
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
-        verkey, // FIXME null check
-        header: jwt.header as unknown as Record<string, unknown>,
+        key, // FIXME null check
         payload,
         protectedHeaderOptions: {
-          alg: Alg.EdDSA,
-          kid,
-        },
+          alg: jwt.header.alg,
+          kid: jwt.header.kid
+        }
       })
 
       return jws
@@ -125,6 +126,7 @@ export class OpenId4VcClientService {
       // The clientId is set to a dummy value for now as we don't have
       // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
       .withClientId('test-clientId')
+      .withAlg(Alg.EdDSA)
       .withKid(options.kid)
       .build()
 

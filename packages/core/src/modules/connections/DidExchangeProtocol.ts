@@ -465,17 +465,13 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          verkey,
+          key,
           header: {
             kid,
           },
           protectedHeaderOptions: {
             alg: 'EdDSA',
-            jwk: {
-              kty: 'OKP',
-              crv: 'Ed25519',
-              x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
-            },
+            jwk: key.toJwk(),
           },
         })
         didDocAttach.addJws(jws)

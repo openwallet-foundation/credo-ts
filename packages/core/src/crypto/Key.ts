@@ -3,6 +3,9 @@ import type { KeyType } from './KeyType'
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
+import { createJwkFromKey, createKeyFromJwk, Jwk } from './jwkUtil'
+
+
 
 export class Key {
   public readonly publicKey: Buffer
@@ -49,5 +52,13 @@ export class Key {
 
   public get publicKeyBase58() {
     return TypedArrayEncoder.toBase58(this.publicKey)
+  }
+
+  public toJwk() {
+    return createJwkFromKey(this)
+  }
+
+  public static fromJwk(jwk: Jwk) {
+    return createKeyFromJwk(jwk)
   }
 }

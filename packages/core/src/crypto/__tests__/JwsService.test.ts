@@ -43,15 +43,11 @@ describe('JwsService', () => {
       const jws = await jwsService.createJws(agentContext, {
         payload,
         // FIXME: update to use key instance instead of verkey
-        verkey: key.publicKeyBase58,
+        key,
         header: { kid },
         protectedHeaderOptions: {
           alg: 'EdDSA',
-          jwk: {
-            kty: 'OKP',
-            crv: 'Ed25519',
-            x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(key.publicKeyBase58)),
-          },
+          jwk: key.toJwk()
         },
       })
 
