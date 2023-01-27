@@ -2,9 +2,7 @@ import type { Key } from '@aries-framework/core'
 
 import {
   CacheModuleConfig,
-  ConsoleLogger,
   InMemoryLruCache,
-  LogLevel,
   JsonTransformer,
   IndyWallet,
   KeyType,
@@ -13,13 +11,14 @@ import {
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { createDidOnLedger } from './helpers'
 
-const logger = new ConsoleLogger(LogLevel.trace)
+const logger = testLogger
 const indyVdrPoolService = new IndyVdrPoolService(logger)
 const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
