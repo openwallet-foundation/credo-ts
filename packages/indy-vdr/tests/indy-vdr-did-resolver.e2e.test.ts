@@ -19,18 +19,11 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { createDidOnLedger } from './helpers'
 
 const logger = testLogger
-const indyVdrPoolService = new IndyVdrPoolService(logger)
 const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })
-const agentContext = getAgentContext({
-  wallet,
-  agentConfig,
-  registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
-})
-
-const indyVdrSovDidResolver = new IndyVdrSovDidResolver(indyVdrPoolService)
+const indyVdrSovDidResolver = new IndyVdrSovDidResolver()
 
 const config = {
   isProduction: false,
@@ -41,6 +34,16 @@ const config = {
 
 let signerKey: Key
 
+const agentContext = getAgentContext({
+  wallet,
+  agentConfig,
+  registerInstances: [
+    [IndyVdrPoolService, new IndyVdrPoolService(logger)],
+    [CacheModuleConfig, new CacheModuleConfig({ cache })],
+  ],
+})
+
+const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 indyVdrPoolService.setPools([config])
 
 describe('IndyVdrSov', () => {

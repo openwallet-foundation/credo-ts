@@ -1,6 +1,4 @@
-export * from './dids'
-export * from './error'
-export * from './pool'
+export { IndyVdrSovDidResolver } from './dids'
 
 try {
   // eslint-disable-next-line import/no-extraneous-dependencies
