@@ -5,18 +5,12 @@ import { injectable } from '@aries-framework/core'
 import { GetAttribRequest, GetNymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
-import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
+import { IndyVdrPoolService } from '../pool'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovUtil'
 
 @injectable()
 export class IndyVdrSovDidResolver implements DidResolver {
-  private indyVdrPoolService: IndyVdrPoolService
-
-  public constructor(indyVdrPoolService: IndyVdrPoolService) {
-    this.indyVdrPoolService = indyVdrPoolService
-  }
-
   public readonly supportedMethods = ['sov']
 
   public async resolve(agentContext: AgentContext, did: string, parsed: ParsedDid): Promise<DidResolutionResult> {
@@ -48,7 +42,9 @@ export class IndyVdrSovDidResolver implements DidResolver {
   }
 
   private async getPublicDid(agentContext: AgentContext, did: string) {
-    const pool = await this.indyVdrPoolService.getPoolForDid(agentContext, did)
+    const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
     const request = new GetNymRequest({ dest: did })
 
@@ -61,7 +57,9 @@ export class IndyVdrSovDidResolver implements DidResolver {
   }
 
   private async getEndpointsForDid(agentContext: AgentContext, did: string) {
-    const pool = await this.indyVdrPoolService.getPoolForDid(agentContext, did)
+    const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
     try {
       agentContext.config.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.indyNamespace}'`)

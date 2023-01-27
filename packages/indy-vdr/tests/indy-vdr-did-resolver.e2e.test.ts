@@ -2,9 +2,7 @@ import type { Key } from '@aries-framework/core'
 
 import {
   CacheModuleConfig,
-  ConsoleLogger,
   InMemoryLruCache,
-  LogLevel,
   JsonTransformer,
   IndyWallet,
   KeyType,
@@ -13,25 +11,19 @@ import {
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { createDidOnLedger } from './helpers'
 
-const logger = new ConsoleLogger(LogLevel.trace)
-const indyVdrPoolService = new IndyVdrPoolService(logger)
+const logger = testLogger
 const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })
-const agentContext = getAgentContext({
-  wallet,
-  agentConfig,
-  registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
-})
-
-const indyVdrSovDidResolver = new IndyVdrSovDidResolver(indyVdrPoolService)
+const indyVdrSovDidResolver = new IndyVdrSovDidResolver()
 
 const config = {
   isProduction: false,
@@ -42,6 +34,16 @@ const config = {
 
 let signerKey: Key
 
+const agentContext = getAgentContext({
+  wallet,
+  agentConfig,
+  registerInstances: [
+    [IndyVdrPoolService, new IndyVdrPoolService(logger)],
+    [CacheModuleConfig, new CacheModuleConfig({ cache })],
+  ],
+})
+
+const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 indyVdrPoolService.setPools([config])
 
 describe('IndyVdrSov', () => {

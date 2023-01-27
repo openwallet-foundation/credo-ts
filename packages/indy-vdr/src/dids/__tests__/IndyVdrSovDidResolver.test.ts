@@ -1,12 +1,12 @@
 import { JsonTransformer } from '@aries-framework/core'
 
-import didSovR1xKJw17sUoXhejEpugMYJFixture from '../../../../core/src/modules/dids/__tests__/__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
-import didSovWJz9mHyW9BZksioQnRsrAoFixture from '../../../../core/src/modules/dids/__tests__/__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
-import { IndyVdrPool } from '../../pool'
-import { IndyVdrPoolService } from '../../pool/IndyVdrPoolService'
+import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
+import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrSovDidResolver } from '../IndyVdrSovDidResolver'
+
+import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
+import didSovWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
 
 jest.mock('../../pool/IndyVdrPoolService')
 const IndyVdrPoolServiceMock = IndyVdrPoolService as jest.Mock<IndyVdrPoolService>
@@ -15,8 +15,8 @@ const poolServiceMock = new IndyVdrPoolServiceMock()
 jest.mock('../../pool/IndyVdrPool')
 const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
-
-mockFunction(poolServiceMock.getPoolForDid).mockResolvedValue(poolMock)
+mockProperty(poolMock, 'indyNamespace', 'local')
+jest.spyOn(poolServiceMock, 'getPoolForDid').mockResolvedValue(poolMock)
 
 const agentConfig = getAgentConfig('IndyVdrSovDidResolver')
 
@@ -25,7 +25,7 @@ const agentContext = getAgentContext({
   registerInstances: [[IndyVdrPoolService, poolServiceMock]],
 })
 
-const resolver = new IndyVdrSovDidResolver(poolServiceMock)
+const resolver = new IndyVdrSovDidResolver()
 
 describe('DidResolver', () => {
   describe('IndyVdrSovDidResolver', () => {
