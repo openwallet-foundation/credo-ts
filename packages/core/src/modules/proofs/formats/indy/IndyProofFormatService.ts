@@ -1,3 +1,5 @@
+import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
+import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { AgentContext } from '../../../../agent'
 import type { Logger } from '../../../../logger'
 import type {
@@ -20,8 +22,6 @@ import type {
   ProcessRequestOptions,
   VerifyProofOptions,
 } from '../models/ProofFormatServiceOptions'
-import type { IndyProofFormat, IndyProposeProofFormat } from './IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './IndyProofFormatsServiceOptions'
 import type { CredDef, IndyProof, Schema } from 'indy-sdk'
 
 import { Lifecycle, scoped } from 'tsyringe'
@@ -62,6 +62,7 @@ import {
 import { ProofRequest } from './models/ProofRequest'
 import { RequestedCredentials } from './models/RequestedCredentials'
 import { RetrievedCredentials } from './models/RetrievedCredentials'
+import { sortRequestedCredentials } from './util/sortRequestedCredentials'
 
 @scoped(Lifecycle.ContainerScoped)
 export class IndyProofFormatService extends ProofFormatService {
@@ -424,22 +425,24 @@ export class IndyProofFormatService extends ProofFormatService {
         })
       }
 
-      retrievedCredentials.requestedAttributes[referent] = await Promise.all(
-        credentialMatch.map(async (credential: IndyCredential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
-            proofRequest,
-            requestedItem: requestedAttribute,
-            credential,
-          })
+      retrievedCredentials.requestedAttributes[referent] = sortRequestedCredentials(
+        await Promise.all(
+          credentialMatch.map(async (credential: IndyCredential) => {
+            const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
+              proofRequest,
+              requestedItem: requestedAttribute,
+              credential,
+            })
 
-          return new RequestedAttribute({
-            credentialId: credential.credentialInfo.referent,
-            revealed: true,
-            credentialInfo: credential.credentialInfo,
-            timestamp: deltaTimestamp,
-            revoked,
+            return new RequestedAttribute({
+              credentialId: credential.credentialInfo.referent,
+              revealed: true,
+              credentialInfo: credential.credentialInfo,
+              timestamp: deltaTimestamp,
+              revoked,
+            })
           })
-        })
+        )
       )
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means
@@ -454,21 +457,23 @@ export class IndyProofFormatService extends ProofFormatService {
     for (const [referent, requestedPredicate] of proofRequest.requestedPredicates.entries()) {
       const credentials = await this.getCredentialsForProofRequest(agentContext, proofRequest, referent)
 
-      retrievedCredentials.requestedPredicates[referent] = await Promise.all(
-        credentials.map(async (credential) => {
-          const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
-            proofRequest,
-            requestedItem: requestedPredicate,
-            credential,
-          })
+      retrievedCredentials.requestedPredicates[referent] = sortRequestedCredentials(
+        await Promise.all(
+          credentials.map(async (credential) => {
+            const { revoked, deltaTimestamp } = await this.getRevocationStatusForRequestedItem(agentContext, {
+              proofRequest,
+              requestedItem: requestedPredicate,
+              credential,
+            })
 
-          return new RequestedPredicate({
-            credentialId: credential.credentialInfo.referent,
-            credentialInfo: credential.credentialInfo,
-            timestamp: deltaTimestamp,
-            revoked,
+            return new RequestedPredicate({
+              credentialId: credential.credentialInfo.referent,
+              credentialInfo: credential.credentialInfo,
+              timestamp: deltaTimestamp,
+              revoked,
+            })
           })
-        })
+        )
       )
 
       // We only attach revoked state if non-revocation is requested. So if revoked is true it means

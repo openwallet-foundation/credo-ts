@@ -1,5 +1,5 @@
-import type { VerificationMethod } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
+import type { VerificationMethod } from '../verificationMethod'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 

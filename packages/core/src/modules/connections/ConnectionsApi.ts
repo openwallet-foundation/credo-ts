@@ -1,8 +1,8 @@
-import type { Query } from '../../storage/StorageService'
-import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
+import type { Query } from '../../storage/StorageService'
+import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
 import { Dispatcher } from '../../agent/Dispatcher'
@@ -31,6 +31,11 @@ import {
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
 import { TrustPingService } from './services/TrustPingService'
+
+export interface SendPingOptions {
+  responseRequested?: boolean
+  withReturnRouting?: boolean
+}
 
 @injectable()
 export class ConnectionsApi {
@@ -144,12 +149,17 @@ export class ConnectionsApi {
       throw new AriesFrameworkError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
+    // If the outOfBandRecord is reusable we need to use new routing keys for the connection, otherwise
+    // all connections will use the same routing keys
+    const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(this.agentContext) : undefined
+
     let outboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
       outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
@@ -159,7 +169,8 @@ export class ConnectionsApi {
       const { message } = await this.connectionService.createResponse(
         this.agentContext,
         connectionRecord,
-        outOfBandRecord
+        outOfBandRecord,
+        routing
       )
       outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
@@ -221,6 +232,41 @@ export class ConnectionsApi {
     return connectionRecord
   }
 
+  /**
+   * Send a trust ping to an established connection
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param responseRequested do we want a response to our ping
+   * @param withReturnRouting do we want a response at the time of posting
+   * @returns TurstPingMessage
+   */
+  public async sendPing(
+    connectionId: string,
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+  ) {
+    const connection = await this.getById(connectionId)
+
+    const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
+      responseRequested: responseRequested,
+    })
+
+    if (withReturnRouting === true) {
+      message.setReturnRouting(ReturnRouteTypes.all)
+    }
+
+    // Disable return routing as we don't want to receive a response for this message over the same channel
+    // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+    if (withReturnRouting === false) {
+      message.setReturnRouting(ReturnRouteTypes.none)
+    }
+
+    await this.messageSender.sendMessage(
+      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+    )
+
+    return message
+  }
+
   public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<ConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
@@ -245,7 +291,7 @@ export class ConnectionsApi {
 
   /**
    * Allows for the addition of connectionType to the record.
-   *  Either updates or creates an array of string conection types
+   *  Either updates or creates an array of string connection types
    * @param connectionId
    * @param type
    * @throws {RecordNotFoundError} If no record is found
@@ -289,8 +335,8 @@ export class ConnectionsApi {
    * @param connectionTypes An array of connection types to query for a match for
    * @returns a promise of ab array of connection records
    */
-  public async findAllByConnectionType(connectionTypes: Array<ConnectionType | string>) {
-    return this.connectionService.findAllByConnectionType(this.agentContext, connectionTypes)
+  public async findAllByConnectionTypes(connectionTypes: Array<ConnectionType | string>) {
+    return this.connectionService.findAllByConnectionTypes(this.agentContext, connectionTypes)
   }
 
   /**

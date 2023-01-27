@@ -1,11 +1,8 @@
-import type { Wallet } from '../../../wallet'
-
-import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import type { SovDidCreateOptions } from '../methods'
 
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { InjectionSymbols } from '../../../constants'
-import { Key, KeyType } from '../../../crypto'
+import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils'
 import { sleep } from '../../../utils/sleep'
 
@@ -23,21 +20,24 @@ describe('dids', () => {
   })
 
   it('should resolve a did:sov did', async () => {
-    const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    const { did: unqualifiedDid, verkey: publicKeyBase58 } = await wallet.createDid()
+    const publicDid = agent.publicDid?.did
 
-    await agent.ledger.registerPublicDid(unqualifiedDid, publicKeyBase58, 'Alias', 'TRUSTEE')
+    if (!publicDid) throw new Error('Agent has no public did')
+
+    const createResult = await agent.dids.create<SovDidCreateOptions>({
+      method: 'sov',
+      options: {
+        submitterDid: `did:sov:${publicDid}`,
+        alias: 'Alias',
+        role: 'TRUSTEE',
+      },
+    })
 
     // Terrible, but the did can't be immediately resolved, so we need to wait a bit
     await sleep(1000)
 
-    const did = `did:sov:${unqualifiedDid}`
-    const didResult = await agent.dids.resolve(did)
-
-    const x25519PublicKey = convertPublicKeyToX25519(
-      Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519).publicKey
-    )
-    const x25519PublicKeyBase58 = Key.fromPublicKey(x25519PublicKey, KeyType.X25519).publicKeyBase58
+    if (!createResult.didState.did) throw new AriesFrameworkError('Unable to register did')
+    const didResult = await agent.dids.resolve(createResult.didState.did)
 
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
@@ -46,28 +46,28 @@ describe('dids', () => {
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
-        id: did,
+        id: createResult.didState.did,
         alsoKnownAs: undefined,
         controller: undefined,
         verificationMethod: [
           {
             type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#key-1`,
-            publicKeyBase58,
+            controller: createResult.didState.did,
+            id: `${createResult.didState.did}#key-1`,
+            publicKeyBase58: expect.any(String),
           },
           {
-            controller: did,
+            controller: createResult.didState.did,
             type: 'X25519KeyAgreementKey2019',
-            id: `${did}#key-agreement-1`,
-            publicKeyBase58: x25519PublicKeyBase58,
+            id: `${createResult.didState.did}#key-agreement-1`,
+            publicKeyBase58: expect.any(String),
           },
         ],
         capabilityDelegation: undefined,
         capabilityInvocation: undefined,
-        authentication: [`${did}#key-1`],
-        assertionMethod: [`${did}#key-1`],
-        keyAgreement: [`${did}#key-agreement-1`],
+        authentication: [`${createResult.didState.did}#key-1`],
+        assertionMethod: [`${createResult.didState.did}#key-1`],
+        keyAgreement: [`${createResult.didState.did}#key-agreement-1`],
         service: undefined,
       },
       didDocumentMetadata: {},

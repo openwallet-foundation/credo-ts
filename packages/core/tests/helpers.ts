@@ -2,6 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AcceptCredentialOfferOptions,
+  AgentDependencies,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
@@ -13,13 +14,16 @@ import type {
   SchemaTemplate,
   Wallet,
 } from '../src'
-import type { AgentModulesInput } from '../src/agent/AgentModules'
+import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
 import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { Awaited } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
+import { readFileSync } from 'fs'
 import path from 'path'
 import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
@@ -43,6 +47,7 @@ import {
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  TrustPingEventTypes,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
@@ -69,6 +74,7 @@ import {
   PresentationPreviewPredicate,
 } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { KeyDerivationMethod } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -78,21 +84,24 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
+export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
+
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
 const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput>(
+export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
-) {
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -111,7 +120,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }
-  return { config, modules, dependencies: agentDependencies } as const
+
+  return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -224,7 +234,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
+          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
   previousState: ${previousState},
   threadId: ${threadId},
   parentThreadId: ${parentThreadId},
@@ -233,6 +243,86 @@ export function waitForProofExchangeRecordSubject(
         )
       }),
       map((e) => e.payload.proofRecord)
+    )
+  )
+}
+
+export async function waitForTrustPingReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+
+  return waitForTrustPingReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingReceivedEventSubject(
+  subject: ReplaySubject<TrustPingReceivedEvent> | Observable<TrustPingReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
+export async function waitForTrustPingResponseReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
+    TrustPingEventTypes.TrustPingResponseReceivedEvent
+  )
+
+  return waitForTrustPingResponseReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingResponseReceivedEventSubject(
+  subject: ReplaySubject<TrustPingResponseReceivedEvent> | Observable<TrustPingResponseReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
     )
   )
 }
@@ -675,6 +765,8 @@ export function mockProperty<T extends {}, K extends keyof T>(object: T, propert
   Object.defineProperty(object, property, { get: () => value })
 }
 
+// Helper type to get the type of the agents (with the custom modules) for the credential tests
+export type CredentialTestsAgent = Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
 export async function setupCredentialTests(
   faberName: string,
   aliceName: string,

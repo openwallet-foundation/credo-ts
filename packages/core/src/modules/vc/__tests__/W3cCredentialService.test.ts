@@ -2,7 +2,6 @@ import type { AgentContext } from '../../../agent'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
-import { Key } from '../../../crypto/Key'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
@@ -116,9 +115,8 @@ describe('W3cCredentialService', () => {
     let issuerDidKey: DidKey
     let verificationMethod: string
     beforeAll(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const issuerDidInfo = await wallet.createDid({ seed })
-      const issuerKey = Key.fromPublicKeyBase58(issuerDidInfo.verkey, KeyType.Ed25519)
+      // TODO: update to use did registrar
+      const issuerKey = await wallet.createKey({ keyType: KeyType.Ed25519, seed })
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
@@ -312,7 +310,7 @@ describe('W3cCredentialService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<typeof w3cCredentialRepository['delete']>
+    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(typeof w3cCredentialRepository)['delete']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(

@@ -1,11 +1,12 @@
 import type { Awaited } from '../../../../../types'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
-import type { JsonCredential, JsonLdSignCredentialFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
 
 import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
+import { KeyType } from '../../../../../crypto'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CredentialState } from '../../../models'
@@ -53,7 +54,7 @@ describe('credentials', () => {
     },
   }
 
-  let signCredentialOptions: JsonLdSignCredentialFormat
+  let signCredentialOptions: JsonLdCredentialDetailFormat
 
   let wallet
   const seed = 'testseed000000000000000000000001'
@@ -64,8 +65,8 @@ describe('credentials', () => {
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
-    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
+    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
     signCredentialOptions = {
       credential: inputDocAsJson,
       options: {
@@ -311,7 +312,6 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-    // didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
     didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
@@ -319,7 +319,7 @@ describe('credentials', () => {
       messageClass: V2OfferCredentialMessage,
     })
 
-    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<JsonLdSignCredentialFormat>()
+    const credOfferJson = offerMessage?.offerAttachments[1].getDataAsJson<JsonLdCredentialDetailFormat>()
 
     expect(credOfferJson).toMatchObject({
       credential: {

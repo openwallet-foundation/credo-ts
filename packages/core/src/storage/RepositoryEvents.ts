@@ -1,5 +1,5 @@
-import type { BaseEvent } from '../agent/Events'
 import type { BaseRecord } from './BaseRecord'
+import type { BaseEvent } from '../agent/Events'
 
 export enum RepositoryEventTypes {
   RecordSaved = 'RecordSaved',

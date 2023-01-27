@@ -11,7 +11,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   private agent!: Agent
   private stop$!: Subject<boolean>
 
-  public supportedSchemes = ['rxjs']
+  public supportedSchemes = ['rxjs', 'wss']
 
   public constructor(subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }) {
     this.subjectMap = subjectMap
@@ -29,7 +29,7 @@ export class SubjectOutboundTransport implements OutboundTransport {
   }
 
   public async sendMessage(outboundPackage: OutboundPackage) {
-    const messageReceiver = this.agent.injectionContainer.resolve(MessageReceiver)
+    const messageReceiver = this.agent.dependencyManager.resolve(MessageReceiver)
     this.logger.debug(`Sending outbound message to endpoint ${outboundPackage.endpoint}`, {
       endpoint: outboundPackage.endpoint,
     })

@@ -20,7 +20,7 @@ const walletConfig = {
   key: `Key: 0.2 Update`,
 }
 
-describe('UpdateAssistant | v0.2 - v0.3', () => {
+describe('UpdateAssistant | v0.2 - v0.3.1', () => {
   it(`should correctly update proof records and create didcomm records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
@@ -46,7 +46,7 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -65,6 +65,11 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
       {
         fromVersion: '0.2',
         toVersion: '0.3',
+        doUpdate: expect.any(Function),
+      },
+      {
+        fromVersion: '0.3',
+        toVersion: '0.3.1',
         doUpdate: expect.any(Function),
       },
     ])
@@ -114,7 +119,7 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
@@ -130,6 +135,58 @@ describe('UpdateAssistant | v0.2 - v0.3', () => {
 
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
+    expect(storageService.records).toMatchSnapshot()
+
+    // Need to remove backupFiles after each run so we don't get IOErrors
+    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    unlinkSync(backupPath)
+
+    await agent.shutdown()
+    await agent.wallet.delete()
+
+    uuidSpy.mockReset()
+  })
+
+  it(`should correctly update the did records`, async () => {
+    // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
+    let uuidCounter = 1
+    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+
+    const aliceDidRecordsString = readFileSync(path.join(__dirname, '__fixtures__/alice-8-dids-0.2.json'), 'utf8')
+
+    const dependencyManager = new DependencyManager()
+    const storageService = new InMemoryStorageService()
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+
+    const agent = new Agent(
+      {
+        config: {
+          label: 'Test Agent',
+          walletConfig,
+          autoUpdateStorageOnStartup: true,
+        },
+        dependencies: agentDependencies,
+      },
+      dependencyManager
+    )
+
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+
+    // We need to manually initialize the wallet as we're using the in memory wallet service
+    // When we call agent.initialize() it will create the wallet and store the current framework
+    // version in the in memory storage service. We need to manually set the records between initializing
+    // the wallet and calling agent.initialize()
+    await agent.wallet.initialize(walletConfig)
+
+    // Set storage after initialization. This mimics as if this wallet
+    // is opened as an existing wallet instead of a new wallet
+    storageService.records = JSON.parse(aliceDidRecordsString)
+
+    await agent.initialize()
+
+    // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
+    delete storageService.records.MEDIATOR_ROUTING_RECORD
+
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors

@@ -176,7 +176,6 @@ export interface JsonObject {
   [property: string]: JsonValue
 }
 
-// Flatten an array of arrays
 /**
  * Flatten an array of arrays
  * @example
@@ -193,3 +192,8 @@ export type FlatArray<Arr> = Arr extends ReadonlyArray<infer InnerArr> ? FlatArr
  * Get the awaited (resolved promise) type of Promise type.
  */
 export type Awaited<T> = T extends Promise<infer U> ? U : never
+
+/**
+ * Type util that returns `true` or `false` based on whether the input type `T` is of type `any`
+ */
+export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : true) : false

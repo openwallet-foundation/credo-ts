@@ -1,15 +1,14 @@
-import type { InboundTransport } from '../transport/InboundTransport'
-import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
+import type { InboundTransport } from '../transport/InboundTransport'
+import type { OutboundTransport } from '../transport/OutboundTransport'
+import type { InitConfig } from '../types'
 import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
-import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
@@ -59,7 +58,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(EnvelopeService)
     dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
@@ -216,7 +214,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   protected async getMediationConnection(mediatorInvitationUrl: string) {
     const outOfBandInvitation = await this.oob.parseInvitation(mediatorInvitationUrl)
-    const outOfBandRecord = await this.oob.findByInvitationId(outOfBandInvitation.id)
+    const outOfBandRecord = await this.oob.findByReceivedInvitationId(outOfBandInvitation.id)
     const [connection] = outOfBandRecord ? await this.connections.findAllByOutOfBandId(outOfBandRecord.id) : []
 
     if (!connection) {

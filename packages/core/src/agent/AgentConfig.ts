@@ -1,6 +1,6 @@
+import type { AgentDependencies } from './AgentDependencies'
 import type { Logger } from '../logger'
 import type { InitConfig } from '../types'
-import type { AgentDependencies } from './AgentDependencies'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -39,7 +39,10 @@ export class AgentConfig {
   }
 
   /**
-   * @todo remove once did registrar module is available
+   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
+   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
+   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
    */
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed

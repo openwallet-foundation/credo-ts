@@ -1,4 +1,3 @@
-import type { Feature } from '../../agent/models'
 import type {
   DiscloseFeaturesOptions,
   QueryFeaturesOptions,
@@ -6,6 +5,7 @@ import type {
 } from './DiscoverFeaturesApiOptions'
 import type { DiscoverFeaturesDisclosureReceivedEvent } from './DiscoverFeaturesEvents'
 import type { DiscoverFeaturesService } from './services'
+import type { Feature } from '../../agent/models'
 
 import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
@@ -80,7 +80,7 @@ export class DiscoverFeaturesApi<
       throw new AriesFrameworkError(`No discover features service registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion]
+    return this.serviceMap[protocolVersion] as DiscoverFeaturesService
   }
 
   /**

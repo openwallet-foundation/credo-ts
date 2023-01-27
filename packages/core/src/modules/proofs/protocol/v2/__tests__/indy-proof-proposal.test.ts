@@ -59,7 +59,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberPresentationRecord = await faberPresentationRecordPromise
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberPresentationRecord.id,

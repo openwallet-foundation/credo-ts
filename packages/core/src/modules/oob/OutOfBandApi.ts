@@ -1,10 +1,10 @@
+import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Query } from '../../storage/StorageService'
 import type { PlaintextMessage } from '../../types'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
-import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
@@ -343,11 +343,14 @@ export class OutOfBandApi {
       )
     }
 
-    // Make sure we haven't processed this invitation before.
-    let outOfBandRecord = await this.findByInvitationId(outOfBandInvitation.id)
+    // Make sure we haven't received this invitation before. (it's fine if we created it, that means we're connecting with ourselves
+    let [outOfBandRecord] = await this.outOfBandService.findAllByQuery(this.agentContext, {
+      invitationId: outOfBandInvitation.id,
+      role: OutOfBandRole.Receiver,
+    })
     if (outOfBandRecord) {
       throw new AriesFrameworkError(
-        `An out of band record with invitation ${outOfBandInvitation.id} already exists. Invitations should have a unique id.`
+        `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
       )
     }
 
@@ -514,12 +517,12 @@ export class OutOfBandApi {
     return { outOfBandRecord }
   }
 
-  public async findByRecipientKey(recipientKey: Key) {
-    return this.outOfBandService.findByRecipientKey(this.agentContext, recipientKey)
+  public async findByReceivedInvitationId(receivedInvitationId: string) {
+    return this.outOfBandService.findByReceivedInvitationId(this.agentContext, receivedInvitationId)
   }
 
-  public async findByInvitationId(invitationId: string) {
-    return this.outOfBandService.findByInvitationId(this.agentContext, invitationId)
+  public async findByCreatedInvitationId(createdInvitationId: string) {
+    return this.outOfBandService.findByCreatedInvitationId(this.agentContext, createdInvitationId)
   }
 
   /**

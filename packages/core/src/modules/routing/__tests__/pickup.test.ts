@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
+import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -16,7 +16,7 @@ const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {
 })
 const mediatorOptions = getAgentOptions('Mediation: Mediator Pickup', {
   autoAcceptConnections: true,
-  endpoints: ['rxjs:mediator'],
+  endpoints: ['wss://mediator'],
   indyLedgers: [],
 })
 
@@ -25,17 +25,17 @@ describe('E2E Pick Up protocol', () => {
   let mediatorAgent: Agent
 
   afterEach(async () => {
-    await recipientAgent?.shutdown()
-    await recipientAgent?.wallet.delete()
-    await mediatorAgent?.shutdown()
-    await mediatorAgent?.wallet.delete()
+    await recipientAgent.shutdown()
+    await recipientAgent.wallet.delete()
+    await mediatorAgent.shutdown()
+    await mediatorAgent.wallet.delete()
   })
 
   test('E2E Pick Up V1 protocol', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
     const subjectMap = {
-      'rxjs:mediator': mediatorMessages,
+      'wss://mediator': mediatorMessages,
     }
 
     // Initialize mediatorReceived message
@@ -74,7 +74,7 @@ describe('E2E Pick Up protocol', () => {
     const message = 'hello pickup V1'
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    await recipientAgent.mediationRecipient.pickupMessages(recipientMediatorConnection)
+    await recipientAgent.mediationRecipient.pickupMessages(recipientMediatorConnection, MediatorPickupStrategy.PickUpV1)
 
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
@@ -86,8 +86,12 @@ describe('E2E Pick Up protocol', () => {
   test('E2E Pick Up V2 protocol', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
 
+    // FIXME: we harcoded that pickup of messages MUST be using ws(s) scheme when doing implicit pickup
+    // For liver delivery we need a duplex transport. however that means we can't test it with the subject transport. Using wss here to 'hack' this. We should
+    // extend the API to allow custom schemes (or maybe add a `supportsDuplex` transport / `supportMultiReturnMessages`)
+    // For pickup v2 pickup message (which we're testing here) we could just as well use `http` as it is just request/response.
     const subjectMap = {
-      'rxjs:mediator': mediatorMessages,
+      'wss://mediator': mediatorMessages,
     }
 
     // Initialize mediatorReceived message
@@ -124,14 +128,20 @@ describe('E2E Pick Up protocol', () => {
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 
     const message = 'hello pickup V2'
+
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
-    await recipientAgent.mediationRecipient.pickupMessages(recipientMediatorConnection, MediatorPickupStrategy.PickUpV2)
-
-    const basicMessage = await waitForBasicMessage(recipientAgent, {
+    const basicMessagePromise = waitForBasicMessage(recipientAgent, {
       content: message,
     })
+    const trustPingPromise = waitForTrustPingReceivedEvent(mediatorAgent, {})
+    await recipientAgent.mediationRecipient.pickupMessages(recipientMediatorConnection, MediatorPickupStrategy.PickUpV2)
 
+    const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
+
+    // Wait for trust ping to be received and stop message pickup
+    await trustPingPromise
+    await recipientAgent.mediationRecipient.stopMessagePickup()
   })
 })

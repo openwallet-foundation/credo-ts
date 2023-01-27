@@ -18,7 +18,7 @@ import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
-import { getAgentOptions } from './helpers'
+import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 
 describe('connections', () => {
   let faberAgent: Agent
@@ -85,6 +85,25 @@ describe('connections', () => {
     await mediatorAgent.wallet.delete()
   })
 
+  it('one agent should be able to send and receive a ping', async () => {
+    const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+      multiUseInvitation: true,
+    })
+
+    const invitation = faberOutOfBandRecord.outOfBandInvitation
+    const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
+
+    // Receive invitation with alice agent
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+    const ping = await aliceAgent.connections.sendPing(aliceFaberConnection.id, {})
+
+    await waitForTrustPingResponseReceivedEvent(aliceAgent, { threadId: ping.threadId })
+  })
+
   it('one should be able to make multiple connections using a multi use invite', async () => {
     const faberOutOfBandRecord = await faberAgent.oob.createInvitation({
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -140,23 +159,23 @@ describe('connections', () => {
     aliceFaberConnection = await aliceAgent.connections.addConnectionType(aliceFaberConnection.id, 'alice-faber-3')
 
     // Now search for them
-    let connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-4'])
+    let connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-4'])
     expect(connectionsFound).toEqual([])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-2'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-2'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-3'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-3'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-3'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1', 'alice-faber-3'])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType([
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes([
       'alice-faber-1',
       'alice-faber-2',
       'alice-faber-3',
     ])
     expect(connectionsFound.map((item) => item.id)).toMatchObject([aliceFaberConnection.id])
-    connectionsFound = await aliceAgent.connections.findAllByConnectionType(['alice-faber-1', 'alice-faber-4'])
+    connectionsFound = await aliceAgent.connections.findAllByConnectionTypes(['alice-faber-1', 'alice-faber-4'])
     expect(connectionsFound).toEqual([])
   })
 

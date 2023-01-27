@@ -1,5 +1,3 @@
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
 import type { ProofService } from './ProofService'
 import type {
   AcceptProofPresentationOptions,
@@ -33,6 +31,8 @@ import type {
   CreateProposalAsResponseOptions,
 } from './models/ProofServiceOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 
 import { inject, injectable } from 'tsyringe'
 
@@ -158,7 +158,7 @@ export class ProofsApi<
       throw new AriesFrameworkError(`No proof service registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion]
+    return this.serviceMap[protocolVersion] as ProofService<PFs>
   }
 
   /**
@@ -728,19 +728,19 @@ export class ProofsApi<
   public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-    return service.findProposalMessage(this.agentContext, proofRecordId)
+    return service.findProposalMessage(this.agentContext, proofRecordId) as FindProofProposalMessageReturn<PSs>
   }
 
   public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-    return service.findRequestMessage(this.agentContext, proofRecordId)
+    return service.findRequestMessage(this.agentContext, proofRecordId) as FindProofRequestMessageReturn<PSs>
   }
 
   public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>> {
     const record = await this.getById(proofRecordId)
     const service = this.getService(record.protocolVersion)
-    return service.findPresentationMessage(this.agentContext, proofRecordId)
+    return service.findPresentationMessage(this.agentContext, proofRecordId) as FindProofPresentationMessageReturn<PSs>
   }
 
   private registerMessageHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {

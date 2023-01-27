@@ -1,5 +1,5 @@
-import type { Query } from '../../storage/StorageService'
 import type { GenericRecord, SaveGenericRecordOption } from './repository/GenericRecord'
+import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'

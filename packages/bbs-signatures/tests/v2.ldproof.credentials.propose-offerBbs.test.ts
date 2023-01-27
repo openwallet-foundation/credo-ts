@@ -1,7 +1,7 @@
-import type { Agent } from '../../core/src/agent/Agent'
 import type { ConnectionRecord } from '../../core/src/modules/connections'
-import type { JsonCredential, JsonLdSignCredentialFormat } from '../../core/src/modules/credentials/formats/jsonld'
+import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../core/src/modules/credentials/formats/jsonld'
 import type { Wallet } from '../../core/src/wallet'
+import type { CredentialTestsAgent } from '../../core/tests/helpers'
 
 import { InjectionSymbols } from '../../core/src/constants'
 import { KeyType } from '../../core/src/crypto'
@@ -18,8 +18,8 @@ import testLogger from '../../core/tests/logger'
 
 import { describeSkipNode17And18 } from './util'
 
-let faberAgent: Agent
-let aliceAgent: Agent
+let faberAgent: CredentialTestsAgent
+let aliceAgent: CredentialTestsAgent
 let aliceConnection: ConnectionRecord
 let aliceCredentialRecord: CredentialExchangeRecord
 let faberCredentialRecord: CredentialExchangeRecord
@@ -28,15 +28,15 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
   let wallet
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
-  let signCredentialOptions: JsonLdSignCredentialFormat
+  let signCredentialOptions: JsonLdCredentialDetailFormat
   const seed = 'testseed000000000000000000000001'
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
     ))
-    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createDid({ seed })
+    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
+    await wallet.createKey({ keyType: KeyType.Ed25519, seed })
     const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
     issuerDidKey = new DidKey(key)

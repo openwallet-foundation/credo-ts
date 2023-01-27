@@ -1,9 +1,9 @@
-import type { Logger } from '../logger'
-import type { CredentialsModule } from '../modules/credentials'
-import type { DependencyManager } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
 import type { TransportSession } from './TransportService'
+import type { Logger } from '../logger'
+import type { CredentialsModule } from '../modules/credentials'
+import type { DependencyManager } from '../plugins'
 
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
@@ -170,6 +170,12 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     }
   }
 
+  /**
+   * @deprecated The publicDid property has been deprecated in favour of the DidsModule, which can be used to
+   * create and resolve dids. Currently the global agent `publicDid` property is still used by the `LedgerModule`, but
+   * will be removed once the LedgerApi has been refactored. Do not use this property for new functionality, but rather
+   * use the `DidsModule`.
+   */
   public get publicDid() {
     return this.agentContext.wallet.publicDid
   }
@@ -188,6 +194,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     })
   }
 
+  /**
+   * @deprecated The injectionContainer property has been deprecated in favour of the dependencyManager property.
+   */
   public get injectionContainer() {
     return this.dependencyManager.container
   }

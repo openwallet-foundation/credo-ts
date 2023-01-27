@@ -1,5 +1,5 @@
-import type { LinkedDataProofOptions } from '../LinkedDataProof'
 import type { W3cPresentationOptions } from './W3cPresentation'
+import type { LinkedDataProofOptions } from '../LinkedDataProof'
 
 import { SingleOrArray } from '../../../../utils/type'
 import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'

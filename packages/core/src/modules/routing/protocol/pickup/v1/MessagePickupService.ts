@@ -1,6 +1,6 @@
+import type { BatchPickupMessage } from './messages'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../../../types'
-import type { BatchPickupMessage } from './messages'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
