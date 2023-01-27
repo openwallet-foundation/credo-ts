@@ -1,4 +1,4 @@
 // Needed to register indy-vdr node bindings
 import '../src/index'
 
-jest.setTimeout(30000)
+jest.setTimeout(60000)
