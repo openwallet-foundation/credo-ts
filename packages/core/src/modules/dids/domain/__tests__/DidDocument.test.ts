@@ -1,6 +1,8 @@
 import { ClassValidationError } from '../../../../error/ClassValidationError'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import didExample123Fixture from '../../__tests__/__fixtures__/didExample123.json'
+import didExample123Base from '../../__tests__/__fixtures__/didExample123base.json'
+import didExample123Extra from '../../__tests__/__fixtures__/didExample123extracontent.json'
 import didExample456Invalid from '../../__tests__/__fixtures__/didExample456Invalid.json'
 import { DidDocument, findVerificationMethodByKeyType } from '../DidDocument'
 import { DidDocumentService, IndyAgentService, DidCommV1Service } from '../service'
@@ -181,6 +183,16 @@ describe('Did | DidDocument', () => {
 
     expect(didDocumentJson).toMatchObject(didExample123Fixture)
   })
+
+  describe('combine', () => {
+    it('should correctly combine a base DIDDoc with extra contents from a JSON object', async () => {
+      const didDocument = JsonTransformer.fromJSON(didExample123Base, DidDocument)
+
+      expect(didDocument.combine(didExample123Extra).toJSON()).toEqual(didExample123Fixture)
+    })
+  })
+
+
 
   describe('getServicesByType', () => {
     it('returns all services with specified type', async () => {

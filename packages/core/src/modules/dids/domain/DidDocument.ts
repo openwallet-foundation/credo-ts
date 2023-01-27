@@ -2,6 +2,7 @@ import type { DidDocumentService } from './service'
 
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { mergeWith } from 'lodash'
 
 import { KeyType, Key } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -198,6 +199,23 @@ export class DidDocument {
     }
 
     return recipientKeys
+  }
+
+  /**
+   * Combine a JSON content with the contents of this one
+   * @param json object containing extra DIDDoc contents
+   *
+   * @returns a DidDocument object resulting from the combination of both
+   */
+  public combine(json: Record<string, unknown>) {
+    const didDocJson = this.toJSON()
+    const combinedJson = mergeWith(didDocJson, json, (objValue: unknown, srcValue: unknown) => {
+      if (Array.isArray(objValue) && Array.isArray(srcValue)) {
+        return [...new Set([...objValue, ...srcValue])]
+      }
+    })
+
+    return JsonTransformer.fromJSON(combinedJson, DidDocument)
   }
 
   public toJSON() {

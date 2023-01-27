@@ -18,6 +18,8 @@ export interface GetNymResponseData {
   did: string
   verkey: string
   role: string
+  alias?: string
+  diddocContent?: string
 }
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
@@ -77,6 +79,24 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
     .addAuthentication(verificationMethodId)
     .addAssertionMethod(verificationMethodId)
     .addKeyAgreement(keyAgreementId)
+
+  return builder
+}
+
+// Create a base DIDDoc template according to https://hyperledger.github.io/indy-did-method/#base-diddoc-template
+export function indyDidDocumentFromDid(fullDid: string, verkey: string) {
+  const verificationMethodId = `${fullDid}#key-1`
+
+  const publicKeyBase58 = getFullVerkey(fullDid, verkey)
+
+  const builder = new DidDocumentBuilder(fullDid)
+    .addVerificationMethod({
+      controller: fullDid,
+      id: verificationMethodId,
+      publicKeyBase58: publicKeyBase58,
+      type: 'Ed25519VerificationKey2018',
+    })
+    .addAuthentication(verificationMethodId)
 
   return builder
 }
