@@ -9,21 +9,20 @@ import {
   IndyWallet,
   KeyType,
   SigningProviderRegistry,
-  TypedArrayEncoder,
 } from '@aries-framework/core'
-import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
+
 import { createDidOnLedger } from './helpers'
 
 const logger = new ConsoleLogger(LogLevel.trace)
 const indyVdrPoolService = new IndyVdrPoolService(logger)
 const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
-const agentConfig = getAgentConfig('IndyVdrPoolService', { logger })
+const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })
 const agentContext = getAgentContext({
@@ -49,7 +48,10 @@ describe('IndyVdrSov', () => {
   beforeAll(async () => {
     await indyVdrPoolService.connectToPools()
 
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    if (agentConfig.walletConfig) {
+      await wallet.createAndOpen(agentConfig.walletConfig)
+    }
+
     signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
   })
 

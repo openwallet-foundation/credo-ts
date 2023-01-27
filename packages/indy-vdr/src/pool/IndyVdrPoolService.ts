@@ -47,7 +47,7 @@ export class IndyVdrPoolService {
   }
 
   /**
-   * Get the most appropriatez pool for the given did.
+   * Get the most appropriate pool for the given did.
    * If the did is a qualified indy did, the pool will be determined based on the namespace.
    * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
@@ -188,7 +188,7 @@ export class IndyVdrPoolService {
       this.logger.trace(`Retrieved did '${did}' from ledger '${pool.indyNamespace}'`, result)
 
       return {
-        did: result,
+        did: { nymResponse: { did: result.dest, verkey: result.verkey }, indyNamespace: pool.indyNamespace },
         pool,
         response,
       }
