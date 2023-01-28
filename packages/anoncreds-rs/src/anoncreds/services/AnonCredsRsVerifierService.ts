@@ -1,86 +1,66 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs } from 'indy-sdk'
 
-import { inject } from '@aries-framework/core'
-
-import { IndySdkError, isIndyError } from '../../error'
-import { IndySdk, IndySdkSymbol } from '../../types'
-import { getIndySeqNoFromUnqualifiedCredentialDefinitionId } from '../utils/identifiers'
 import {
-  indySdkCredentialDefinitionFromAnonCreds,
-  indySdkRevocationRegistryDefinitionFromAnonCreds,
-  indySdkRevocationRegistryFromAnonCreds,
-  indySdkSchemaFromAnonCreds,
-} from '../utils/transform'
+  CredentialDefinition,
+  Presentation,
+  PresentationRequest,
+  RevocationRegistryDefinition,
+  Schema,
+} from '@hyperledger/anoncreds-shared'
+// FIXME: import from '@hyperledger/anoncreds-shared
+import { RevocationStatusList } from '@hyperledger/anoncreds-shared/build/api/RevocationStatusList'
+
+import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
 
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
-  private indySdk: IndySdk
-
-  public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
-    this.indySdk = indySdk
-  }
-
   public async verifyProof(options: VerifyProofOptions): Promise<boolean> {
+    const { credentialDefinitions, proof, proofRequest, revocationStates, schemas } = options
+
     try {
-      // The AnonCredsSchema doesn't contain the seqNo anymore. However, the indy credential definition id
-      // does contain the seqNo, so we can extract it from the credential definition id.
-      const seqNoMap: { [schemaId: string]: number } = {}
+      const presentation = Presentation.load(JSON.stringify(proof))
 
-      // Convert AnonCreds credential definitions to Indy credential definitions
-      const indyCredentialDefinitions: CredentialDefs = {}
-      for (const credentialDefinitionId in options.credentialDefinitions) {
-        const credentialDefinition = options.credentialDefinitions[credentialDefinitionId]
-
-        indyCredentialDefinitions[credentialDefinitionId] = indySdkCredentialDefinitionFromAnonCreds(
-          credentialDefinitionId,
-          credentialDefinition
-        )
-
-        // Get the seqNo for the schemas so we can use it when transforming the schemas
-        const schemaSeqNo = getIndySeqNoFromUnqualifiedCredentialDefinitionId(credentialDefinitionId)
-        seqNoMap[credentialDefinition.schemaId] = schemaSeqNo
+      const rsCredentialDefinitions: Record<string, CredentialDefinition> = {}
+      for (const credDefId in credentialDefinitions) {
+        rsCredentialDefinitions[credDefId] = CredentialDefinition.load(JSON.stringify(credentialDefinitions[credDefId]))
       }
 
-      // Convert AnonCreds schemas to Indy schemas
-      const indySchemas: Schemas = {}
-      for (const schemaId in options.schemas) {
-        const schema = options.schemas[schemaId]
-        indySchemas[schemaId] = indySdkSchemaFromAnonCreds(schemaId, schema, seqNoMap[schemaId])
+      const rsSchemas: Record<string, Schema> = {}
+      for (const schemaId in schemas) {
+        rsSchemas[schemaId] = Schema.load(JSON.stringify(schemas[schemaId]))
       }
 
-      // Convert AnonCreds revocation definitions to Indy revocation definitions
-      const indyRevocationDefinitions: RevocRegDefs = {}
-      const indyRevocationRegistries: RevRegs = {}
+      const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
+      const revocationStatusLists = []
 
-      for (const revocationRegistryDefinitionId in options.revocationStates) {
+      for (const revocationRegistryDefinitionId in revocationStates) {
         const { definition, revocationLists } = options.revocationStates[revocationRegistryDefinitionId]
-        indyRevocationDefinitions[revocationRegistryDefinitionId] = indySdkRevocationRegistryDefinitionFromAnonCreds(
-          revocationRegistryDefinitionId,
-          definition
-        )
 
-        // Initialize empty object for this revocation registry
-        indyRevocationRegistries[revocationRegistryDefinitionId] = {}
+        revocationRegistryDefinitions[revocationRegistryDefinitionId] =
+          // TODO: remove as unknown once it is fixed in anoncreds-shared
+          RevocationRegistryDefinition.load(JSON.stringify(definition)) as unknown as RevocationRegistryDefinition
 
-        // Also transform the revocation lists for the specified timestamps into the revocation registry
-        // format Indy expects
         for (const timestamp in revocationLists) {
-          const revocationList = revocationLists[timestamp]
-          indyRevocationRegistries[revocationRegistryDefinitionId][timestamp] =
-            indySdkRevocationRegistryFromAnonCreds(revocationList)
+          revocationStatusLists.push(
+            RevocationStatusList.create({
+              issuanceByDefault: true,
+              revocationRegistryDefinition: revocationRegistryDefinitions[revocationRegistryDefinitionId],
+              revocationRegistryDefinitionId,
+              timestamp: Number(timestamp),
+            })
+          )
         }
       }
 
-      return await this.indySdk.verifierVerifyProof(
-        options.proofRequest,
-        options.proof,
-        indySchemas,
-        indyCredentialDefinitions,
-        indyRevocationDefinitions,
-        indyRevocationRegistries
-      )
+      return presentation.verify({
+        presentation: presentation, // FIXME: remove as soon as it is removed from anoncreds API
+        presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
+        credentialDefinitions: rsCredentialDefinitions,
+        schemas: rsSchemas,
+        revocationRegistryDefinitions,
+        revocationStatusLists,
+      })
     } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
     }
   }
 }

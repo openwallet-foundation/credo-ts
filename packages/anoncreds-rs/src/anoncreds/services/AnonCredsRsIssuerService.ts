@@ -1,5 +1,3 @@
-import type { CreateCredentialDefinitionMetadata } from './IndySdkIssuerServiceMetadata'
-import type { AnonCredsRsUtilitiesService } from './AnonCredsRsUtilitiesService'
 import type {
   AnonCredsIssuerService,
   CreateCredentialDefinitionOptions,
@@ -12,73 +10,58 @@ import type {
   AnonCredsCredentialDefinition,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
+import type { KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
-import { AriesFrameworkError, inject } from '@aries-framework/core'
+import { AriesFrameworkError } from '@aries-framework/core'
+import {
+  Credential,
+  CredentialDefinition,
+  CredentialOffer,
+  Schema,
+  CredentialRequest,
+} from '@hyperledger/anoncreds-shared'
 
-import { IndySdkError, isIndyError } from '../../error'
-import { Anoncreds, IndySdk, IndySdkSymbol } from '../../types'
-import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
-import { indySdkSchemaFromAnonCreds } from '../utils/transform'
+import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
 
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
-  private indySdk: Anoncreds
-  private IndySdkUtilitiesService: AnonCredsRsUtilitiesService
-
-  public constructor(IndySdkUtilitiesService: AnonCredsRsUtilitiesService, @inject(IndySdkSymbol) indySdk: IndySdk) {
-    this.indySdk = indySdk
-    this.IndySdkUtilitiesService = IndySdkUtilitiesService
-  }
-
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
-    const { issuerId, name, version, attrNames } = options
-    assertIndySdkWallet(agentContext.wallet)
+    const { issuerId, name, version, attrNames: attributeNames } = options
 
     try {
-      const [, schema] = await this.indySdk.issuerCreateSchema(issuerId, name, version, attrNames)
-
-      return {
+      const schema = Schema.create({
         issuerId,
-        attrNames: schema.attrNames,
-        name: schema.name,
-        version: schema.version,
-      }
+        name,
+        version,
+        attributeNames,
+      })
+
+      return JSON.parse(schema.toJson()) as AnonCredsSchema
     } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+      throw new AnonCredsRsError('Error creating schema', { cause: error })
     }
   }
 
   public async createCredentialDefinition(
     agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions,
-    metadata?: CreateCredentialDefinitionMetadata
+    //metadata?: CreateCredentialDefinitionMetadata
   ): Promise<AnonCredsCredentialDefinition> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
-    if (!metadata)
-      throw new AriesFrameworkError('The metadata parameter is required when using Indy, but received undefined.')
-
     try {
-      assertIndySdkWallet(agentContext.wallet)
-      const [, credentialDefinition] = await this.indySdk.issuerCreateAndStoreCredentialDef(
-        agentContext.wallet.handle,
+      // TODO: Where to store credentialDefinitionPrivate and keyCorrectnessProof?
+      const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } = CredentialDefinition.create({
+        schema: Schema.load(JSON.stringify(schema)),
         issuerId,
-        indySdkSchemaFromAnonCreds(schemaId, schema, metadata.indyLedgerSchemaSeqNo),
+        schemaId,
         tag,
-        'CL',
-        {
-          support_revocation: supportRevocation,
-        }
-      )
+        supportRevocation,
+        signatureType: 'CL',
+      })
 
-      return {
-        issuerId,
-        tag: credentialDefinition.tag,
-        schemaId: credentialDefinition.schemaId,
-        type: 'CL',
-        value: credentialDefinition.value,
-      }
+      return JSON.parse(credentialDefinition.toJson()) as AnonCredsCredentialDefinition
     } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+      throw new AnonCredsRsError('Error creating credential definition', { cause: error })
     }
   }
 
@@ -86,11 +69,21 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateCredentialOfferOptions
   ): Promise<AnonCredsCredentialOffer> {
-    assertIndySdkWallet(agentContext.wallet)
+    const { credentialDefinitionId } = options
+
     try {
-      return await this.indySdk.issuerCreateCredentialOffer(agentContext.wallet.handle, options.credentialDefinitionId)
+      // TODO: retrieve schemaId and keyCorrectnessProof
+      // could be done by using AnonCredsCredentialDefinitionRepository.findById().schemaId and
+      // store private part/create other kind of record for KCP
+      const credentialOffer = CredentialOffer.create({
+        credentialDefinitionId,
+        keyCorrectnessProof: {} as KeyCorrectnessProof, // FIXME
+        schemaId: '', // FIXME
+      })
+
+      return JSON.parse(credentialOffer.toJson()) as AnonCredsCredentialOffer
     } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
     }
   }
 
@@ -100,30 +93,36 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   ): Promise<CreateCredentialReturn> {
     const { tailsFilePath, credentialOffer, credentialRequest, credentialValues, revocationRegistryId } = options
 
-    assertIndySdkWallet(agentContext.wallet)
     try {
-      // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-      const tailsReaderHandle = tailsFilePath ? await this.IndySdkUtilitiesService.createTailsReader(tailsFilePath) : 0
-
       if (revocationRegistryId || tailsFilePath) {
         throw new AriesFrameworkError('Revocation not supported yet')
       }
 
-      const [credential, credentialRevocationId] = await this.indySdk.issuerCreateCredential(
-        agentContext.wallet.handle,
-        credentialOffer,
-        credentialRequest,
-        credentialValues,
-        revocationRegistryId ?? null,
-        tailsReaderHandle
-      )
+      const attributeRawValues: Record<string, string> = {}
+      const attributeEncodedValues: Record<string, string> = {}
+
+      Object.keys(credentialValues).forEach((key) => {
+        attributeRawValues[key] = credentialValues[key].encoded
+        attributeEncodedValues[key] = credentialValues[key].raw
+      })
+
+      const credential = Credential.create({
+        credentialDefinition, // TODO: Get from repository?
+        credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
+        credentialRequest: CredentialRequest.load(JSON.stringify(credentialRequest)),
+        revocationRegistryId,
+        attributeEncodedValues,
+        attributeRawValues,
+        credentialDefinitionPrivate, // TODO: Get from repository?
+        //TODO: revocationConfiguration,
+      })
 
       return {
-        credential,
-        credentialRevocationId,
+        credential: JSON.parse(credential.toJson()),
+        // TODO: credentialRevocationId
       }
     } catch (error) {
-      throw isIndyError(error) ? new IndySdkError(error) : error
+      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
     }
   }
 }
