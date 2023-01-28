@@ -9,7 +9,6 @@ import { WalletError } from '../wallet/error'
 
 import { Key } from './Key'
 import { KeyType } from './KeyType'
-import { supportedUpdates } from '../storage/migration/updates'
 import { Jwk } from './jwkUtil'
 
 // TODO: support more key types, more generic jws format
@@ -24,24 +23,20 @@ export class JwsService {
     KeyType.Ed25519
   ]
 
-  private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
-
-
+  private async createJwsBase(agentContext: AgentContext, options: Omit<CreateJwsOptions, "header">) {
     if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
       throw new AriesFrameworkError('Only Ed25519 JWS is supported')
     }
-
-
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
-    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(options.key, options.protectedHeaderOptions))
+    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.key, options.protectedHeaderOptions))
 
     const signature = TypedArrayEncoder.toBase64URL(
-      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key: options.key})
+      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`), key: options.key })
     )
 
     return {
       base64Payload,
-      base64Protected,
+      base64UrlProtectedHeader,
       signature,
     }
   }
@@ -50,16 +45,14 @@ export class JwsService {
     agentContext: AgentContext,
     { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
-
-
-    const { base64Protected, signature } = await this.createJwsBase(agentContext, {
+    const { base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
       payload,
       key,
       protectedHeaderOptions,
     })
 
     return {
-      protected: base64Protected,
+      protected: base64UrlProtectedHeader,
       signature,
       header,
     }
@@ -70,14 +63,14 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
+    { payload, key, protectedHeaderOptions }: Omit<CreateJwsOptions, "header">
   ): Promise<string> {
-    const { base64Payload, base64Protected, signature } = await this.createJwsBase(agentContext, {
+    const { base64Payload, base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
       payload,
       key,
       protectedHeaderOptions,
     })
-    return `${base64Protected}.${base64Payload}.${signature}`
+    return `${base64UrlProtectedHeader}.${base64Payload}.${signature}`
   }
 
   /**
