@@ -129,10 +129,6 @@ export class JwsService {
     return { isValid: true, signerVerkeys }
   }
 
-  /**
-   * @todo This currently only work with a single alg, key type and curve
-   *    This needs to be extended with other formats in the future
-   */
   private buildProtected(verkey: Key, options: ProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
       throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
