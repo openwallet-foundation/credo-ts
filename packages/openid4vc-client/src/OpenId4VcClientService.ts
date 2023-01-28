@@ -1,4 +1,4 @@
-import type { AgentContext, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import { AgentContext, DidsApi, getKeyDidMappingByVerificationMethod, Logger, W3cCredentialRecord } from '@aries-framework/core'
 import type { Jwt } from '@sphereon/openid4vci-client'
 
 import {
@@ -49,10 +49,37 @@ export class OpenId4VcClientService {
       if (!jwt.payload) {
         throw new AriesFrameworkError('No payload present on JWT')
       }
+      if (!kid.startsWith('did:')) {
+        throw new AriesFrameworkError(`kid '${kid}' is not a valid did. Only dids are supported as kid.`)
+      }
+
+      if (!kid.includes('#')) {
+        throw new AriesFrameworkError(
+          `kid '${kid}' does not include a reference to the verificationMethod. The kid must specify a specific verificationMethod within the did document .`
+        )
+      }
 
       const did = kid.split('#')[0]
 
-      const key = didKeyToInstanceOfKey(did)
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const [didRecord] = await didsApi.getCreatedDids({ did })
+
+      if (!didRecord) {
+        throw new AriesFrameworkError(`No did record found for did ${did}. Is the did created by this agent?`)
+      }
+
+      const didResult = await didsApi.resolve(did)
+
+      if (!didResult.didDocument) {
+        throw new AriesFrameworkError(
+          `No did document found for did ${did}. ${didResult.didResolutionMetadata.error} - ${didResult.didResolutionMetadata.message}`
+        )
+      }
+
+      // TODO: which purposes are allowed?
+      const verificationMethod = didResult.didDocument.dereferenceKey(kid, ['authentication'])
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
 
