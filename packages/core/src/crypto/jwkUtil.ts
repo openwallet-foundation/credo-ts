@@ -13,7 +13,7 @@ export const createJwkFromKey = (key: Key): Jwk => {
     return {
         kty: 'OKP',
         crv: 'Ed25519',
-        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(key.publicKeyBase58)),
+        x: TypedArrayEncoder.toBase64URL(key.publicKey),
     }
 }
 
