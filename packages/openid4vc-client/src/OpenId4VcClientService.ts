@@ -187,7 +187,7 @@ export class OpenId4VcClientService {
     }
 
     const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
-      credential: credential,
+      credential
     })
 
     this.logger.info(`Stored credential with id: ${storedCredential.id}`)
