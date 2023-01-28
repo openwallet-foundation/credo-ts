@@ -1,4 +1,4 @@
-import type { IndyEndpointAttrib } from './didSovUtil'
+import type { CommEndpointType, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
@@ -7,27 +7,29 @@ import type {
   DidCreateResult,
   DidDeactivateResult,
   DidUpdateResult,
+  DidDocument,
 } from '@aries-framework/core'
 
-import { Key, KeyType, injectable, DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
+import {
+  TypedArrayEncoder,
+  Key,
+  KeyType,
+  injectable,
+  DidDocumentRole,
+  DidRecord,
+  DidRepository,
+} from '@aries-framework/core'
 import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
 
-import { parseDid } from 'packages/core/src/modules/dids/domain/parse'
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
+import { DID_INDY_REGEX } from '../utils/did'
 
-import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovUtil'
+import { createKeyAgreementKey, indyDidDocumentFromDid } from './didIndyUtil'
+import { addServicesFromEndpointsAttrib } from './didSovUtil'
 
-@injectable()
 export class IndyVdrSovDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['indy']
-  private didRepository: DidRepository
-  private indyVdrPoolService: IndyVdrPoolService
-
-  public constructor(didRepository: DidRepository, indyVdrPoolService: IndyVdrPoolService) {
-    this.didRepository = didRepository
-    this.indyVdrPoolService = indyVdrPoolService
-  }
 
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<DidCreateResult> {
     const { alias, role, submitterDid } = options.options
@@ -44,9 +46,8 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
       }
     }
 
-    const DID_REGEX = 'did:([a-z0-9]+):([a-z0-9]+):([a-z0-9]+)'
-    const [, method, namespace, unqualifiedSubmitterDid] = DID_REGEX.match(submitterDid)
-    if (!(method === 'indy')) {
+    const match = submitterDid.match(DID_INDY_REGEX)
+    if (!match) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -57,58 +58,76 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
       }
     }
 
+    const [, , namespace, submitterId] = match
+
     try {
       const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
-      const unqualifiedIndyDid = key.publicKeyBase58
-      const verkey = key.fingerprint
+      const buffer = key.publicKey
+      const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
 
-      // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
-      // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
-      await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, pool, role)
+      const did = `did:indy:${namespace}:${id}`
+      const verkey = key.publicKeyBase58
+
+      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
+      await this.registerPublicDid(agentContext, submitterId, id, verkey, pool, alias, role)
 
       // Create did document
-      const didDocumentBuilder = sovDidDocumentFromDid(qualifiedSovDid, verkey)
+      const didDocumentBuilder = indyDidDocumentFromDid(did, verkey)
 
       // Add services if endpoints object was passed.
       if (options.options.endpoints) {
-        await this.setEndpointsForDid(agentContext, unqualifiedIndyDid, options.options.endpoints, pool)
-        addServicesFromEndpointsAttrib(
-          didDocumentBuilder,
-          qualifiedSovDid,
-          options.options.endpoints,
-          `${qualifiedSovDid}#key-agreement-1`
-        )
+        // For legacy indy-nodes not supporting diddocContent
+        if (options.options.useEndpointAttrib) {
+          await this.setEndpointsForDid(agentContext, id, options.options.endpoints, pool)
+
+          // TODO: Move this logic to didIndyUtil, as it is common to Resolver and Registrar for legacy networks
+          // If there is at least a didcomm endpoint, generate and a key agreement key
+          const keyAgreementId = `${did}#key-agreement-1`
+          const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+          if (commTypes.some((type) => options.options.endpoints?.types?.includes(type))) {
+            didDocumentBuilder
+              .addVerificationMethod({
+                controller: did,
+                id: keyAgreementId,
+                publicKeyBase58: createKeyAgreementKey(did, verkey),
+                type: 'X25519KeyAgreementKey2019',
+              })
+              .addKeyAgreement(keyAgreementId)
+          }
+          addServicesFromEndpointsAttrib(didDocumentBuilder, did, options.options.endpoints, keyAgreementId)
+        } else {
+          // TODO: create diddocContent parameter
+        }
       }
 
-      // Build did document.
+      // Build did document
       const didDocument = didDocumentBuilder.build()
-
-      const didIndyNamespace = pool.config.indyNamespace
-      const qualifiedIndyDid = `did:indy:${didIndyNamespace}:${unqualifiedIndyDid}`
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: qualifiedSovDid,
-        did: qualifiedSovDid,
+        id: did,
+        did,
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key: Key) => key.fingerprint),
-          qualifiedIndyDid,
+          did,
         },
       })
-      await this.didRepository.save(agentContext, didRecord)
+
+      const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+      await didRepository.save(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {
-          qualifiedIndyDid,
+          did,
         },
         didRegistrationMetadata: {
-          didIndyNamespace,
+          namespace,
         },
         didState: {
           state: 'finished',
-          did: qualifiedSovDid,
+          did,
           didDocument,
           secret: {
             // FIXME: the uni-registrar creates the seed in the registrar method
@@ -159,14 +178,12 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
     submitterDid: string,
     targetDid: string,
     verkey: string,
-    alias: string,
     pool: IndyVdrPool,
+    alias?: string,
     role?: string
   ) {
     try {
       agentContext.config.logger.debug(`Register public did '${targetDid}' on ledger '${pool}'`)
-
-      await agentContext.wallet.createKey({ keyType: KeyType.Ed25519, seed: targetDid })
 
       const request = new NymRequest({ submitterDid, dest: targetDid, verkey, alias })
 
@@ -234,15 +251,14 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
 }
 
 export interface IndyVdrDidCreateOptions extends DidCreateOptions {
-  method: 'sov'
+  method: 'indy'
   did?: undefined
-  // As did:sov is so limited, we require everything needed to construct the did document to be passed
-  // through the options object. Once we support did:indy we can allow the didDocument property.
-  didDocument?: never
+  didDocument?: DidDocument
   options: {
-    alias: string
+    alias?: string
     role?: string
     endpoints?: IndyEndpointAttrib
+    useEndpointAttrib?: boolean
     indyNamespace?: string
     submitterDid: string
   }
@@ -251,6 +267,6 @@ export interface IndyVdrDidCreateOptions extends DidCreateOptions {
   }
 }
 
-// Update and Deactivate not supported for did:sov
-export type IndyVdrSovDidUpdateOptions = never
-export type IndyVdrSovDidDeactivateOptions = never
+// TODO: Add Update and Deactivate
+export type IndyVdrIndyDidUpdateOptions = never
+export type IndyVdrIndyDidDeactivateOptions = never
