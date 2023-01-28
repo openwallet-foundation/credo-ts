@@ -92,7 +92,7 @@ describe('OpenId4VcClient', () => {
             const w3cCredentialRecord = await agent.modules.openId4VcClient.preAuthorized({
                 issuerUri,
                 kid,
-            })
+            }, false)
 
             expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
 

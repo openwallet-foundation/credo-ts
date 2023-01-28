@@ -22,7 +22,7 @@ export class OpenId4VcClientApi {
     this.openId4VcClientService = openId4VcClientService
   }
 
-  public async preAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
-    return this.openId4VcClientService.preAuthorized(this.agentContext, options)
+  public async preAuthorized(options: PreAuthorizedOptions, checkRevocationState = true): Promise<W3cCredentialRecord> {
+    return this.openId4VcClientService.preAuthorized(this.agentContext, options, checkRevocationState)
   }
 }

@@ -29,6 +29,8 @@ import { DID_zUC76qMTDAaupy19pEk8JKH5LJwPwmscNQn24SYpqrgqEoYWPFgCSm4CnTfupADRfbB
 import { DID_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox } from './dids/did_zUC7DMETzdZM6woUjvs2fieEyFTbHABXwBvLYPBs4NDWKut4H41h8V3KTqGNRUziXLYqa1sFYYw9Zjpt6pFUf7hra4Q1zXMA9JjXcXxDpxuDNpUKEpiDPSYYUztVchUJHQJJhox'
 import { DID_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F } from './dids/did_zUC7F9Jt6YzVW9fGhwYjVrjdS8Xzg7oQc2CeDcVNgEcEAaJXAtPz3eXu2sewq4xtwRK3DAhQRYwwoYiT3nNzLCPsrKoP72UGZKhh4cNuZD7RkmwzAa1Bye4C5a9DcyYBGKZrE5F'
 import { DID_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4 } from './dids/did_zUC7H7TxvhWmvfptpu2zSwo5EZ1kr3MPNsjovaD2ipbuzj6zi1vk4FHTiunCJrFvUYV77Mk3QcWUUAHojPZdU8oG476cvMK2ozP1gVq63x5ovj6e4oQ9qg9eF4YjPhWJs6FPuT4'
+import { DID_WEB_LAUNCHPAD } from './dids/did_web_launchpad'
+
 
 export const DOCUMENTS = {
   [DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL['id']]: DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL,
@@ -75,6 +77,7 @@ export const DOCUMENTS = {
   ]]:
     DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN,
   [DID_SOV_QqEfJxe752NCmWqR5TssZ5['id']]: DID_SOV_QqEfJxe752NCmWqR5TssZ5,
+  [DID_WEB_LAUNCHPAD['id']]: DID_WEB_LAUNCHPAD,
   SECURITY_CONTEXT_V1_URL: SECURITY_V1,
   SECURITY_CONTEXT_V2_URL: SECURITY_V2,
   SECURITY_CONTEXT_V3_URL: SECURITY_V3_UNSTABLE,
@@ -91,6 +94,7 @@ export const DOCUMENTS = {
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
   'https://w3id.org/did/v1': DID_V1,
   'https://www.w3.org/ns/did/v1': DID_V1,
+  'https://w3.org/ns/did/v1': DID_V1,
   'https://w3id.org/citizenship/v1': CITIZENSHIP_V1,
   'https://www.w3.org/ns/odrl.jsonld': ODRL,
   'http://schema.org/': SCHEMA_ORG,
