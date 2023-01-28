@@ -19,7 +19,7 @@ import {
 } from '@sphereon/openid4vci-client'
 
 import { JwsService } from '../../core/src/crypto/JwsService'
-import { didKeyToInstanceOfKey, didKeyToVerkey } from '../../core/src/modules/dids/helpers'
+import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
