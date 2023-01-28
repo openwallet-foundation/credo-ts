@@ -148,7 +148,13 @@ export class OpenId4VcClientService {
       throw new AriesFrameworkError('Did not receive a successful credential response')
     }
 
+
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
+
+
+    // verify the signature
+    const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential  })
+
 
     const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
       credential: credential,
