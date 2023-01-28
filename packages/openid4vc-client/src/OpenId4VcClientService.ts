@@ -50,8 +50,6 @@ export class OpenId4VcClientService {
         throw new AriesFrameworkError('No payload present on JWT')
       }
 
-      console.log(jwt.header)
-
       const did = kid.split('#')[0]
 
       const key = didKeyToInstanceOfKey(did)
@@ -80,19 +78,19 @@ export class OpenId4VcClientService {
   public async preAuthorized(agentContext: AgentContext, options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
 
+    // The clientId is set to a dummy value for now as we don't have
+    // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
+    const clientId = 'some-client'
+
     const client = await OpenID4VCIClient.initiateFromURI({
       issuanceInitiationURI: options.issuerUri,
       flowType: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
       kid: options.kid,
       alg: Alg.EdDSA,
-      // The clientId is set to a dummy value for now as we don't have
-      // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
-      clientId: 'test-clientId',
+      clientId: clientId,
     })
 
-    // The clientId is set to a dummy value for now as we don't have
-    // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
-    const accessToken = await client.acquireAccessToken({ clientId: 'test-clientId' })
+    const accessToken = await client.acquireAccessToken({ clientId: clientId })
 
     this.logger.info('Fetched server accessToken', accessToken)
 
@@ -123,9 +121,7 @@ export class OpenId4VcClientService {
       callbacks: callbacks,
     })
       .withEndpointMetadata(serverMetadata)
-      // The clientId is set to a dummy value for now as we don't have
-      // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
-      .withClientId('test-clientId')
+      .withClientId(clientId)
       .withAlg(Alg.EdDSA)
       .withKid(options.kid)
       .build()
