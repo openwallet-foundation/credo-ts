@@ -81,7 +81,7 @@ describe('UpdateAssistant | Backup', () => {
     // Expect an update is needed
     expect(await updateAssistant.isUpToDate()).toBe(false)
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     // Backup should not exist before update
     expect(await fileSystem.exists(backupPath)).toBe(false)
 
@@ -128,7 +128,7 @@ describe('UpdateAssistant | Backup', () => {
       },
     ])
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     // Backup should not exist before update
     expect(await fileSystem.exists(backupPath)).toBe(false)
 

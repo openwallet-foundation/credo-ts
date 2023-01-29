@@ -104,7 +104,7 @@ describe('credentials', () => {
     aliceAgent.events
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
-    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
 
     await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
