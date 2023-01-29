@@ -1,4 +1,4 @@
-import type { Jwk } from './jwkUtil'
+import type { Jwk } from './JwkTypes'
 
 import { AriesFrameworkError } from '../error'
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
