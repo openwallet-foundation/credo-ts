@@ -53,7 +53,7 @@ export class Key {
     return TypedArrayEncoder.toBase58(this.publicKey)
   }
 
-  public toJwk() {
+  public toJwk(): Jwk {
     if (this.keyType !== KeyType.Ed25519) {
       throw new AriesFrameworkError(`JWK creation is only supported for Ed25519 key types. Received ${this.keyType}`)
     }
