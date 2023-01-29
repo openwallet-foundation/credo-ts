@@ -13,7 +13,7 @@ import { AnonCredsError } from '../../error'
  */
 @injectable()
 export class AnonCredsRegistryService {
-  public async getRegistryForIdentifier(agentContext: AgentContext, identifier: string): Promise<AnonCredsRegistry> {
+  public getRegistryForIdentifier(agentContext: AgentContext, identifier: string): AnonCredsRegistry {
     const registries = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).registries
 
     // TODO: should we check if multiple are registered?
