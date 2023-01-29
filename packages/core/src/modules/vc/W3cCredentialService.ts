@@ -104,7 +104,7 @@ export class W3cCredentialService {
   public async verifyCredential(
     agentContext: AgentContext,
     options: VerifyCredentialOptions,
-    verifyRevocationState: boolean = true
+    verifyRevocationState = true
   ): Promise<W3cVerifyCredentialResult> {
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
@@ -118,17 +118,15 @@ export class W3cCredentialService {
       documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
       checkStatus: (input: Record<string, unknown>) => {
         return {
-            verified: true
+          verified: true,
         }
-      }
+      },
     }
 
     // this is a hack because vcjs throws if purpose is passed as undefined or null
     if (options.proofPurpose) {
       verifyOptions['purpose'] = options.proofPurpose
     }
-
-
 
     const result = await vc.verifyCredential(verifyOptions)
 

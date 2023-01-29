@@ -1,7 +1,9 @@
-import { AgentContext, DidsApi, getKeyDidMappingByVerificationMethod, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import type { AgentContext, Logger, W3cCredentialRecord } from '@aries-framework/core'
 import type { Jwt } from '@sphereon/openid4vci-client'
 
 import {
+  DidsApi,
+  getKeyDidMappingByVerificationMethod,
   AgentConfig,
   AriesFrameworkError,
   injectable,
@@ -19,7 +21,6 @@ import {
 } from '@sphereon/openid4vci-client'
 
 import { JwsService } from '../../core/src/crypto/JwsService'
-import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
@@ -88,8 +89,8 @@ export class OpenId4VcClientService {
         payload,
         protectedHeaderOptions: {
           alg: jwt.header.alg,
-          kid: jwt.header.kid
-        }
+          kid: jwt.header.kid,
+        },
       })
 
       return jws
@@ -102,7 +103,11 @@ export class OpenId4VcClientService {
     }
   }
 
-  public async preAuthorized(agentContext: AgentContext, options: PreAuthorizedOptions, checkRevocationState: boolean = true): Promise<W3cCredentialRecord> {
+  public async preAuthorized(
+    agentContext: AgentContext,
+    options: PreAuthorizedOptions,
+    checkRevocationState = true
+  ): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
 
     // The clientId is set to a dummy value for now as we don't have
@@ -175,9 +180,7 @@ export class OpenId4VcClientService {
       throw new AriesFrameworkError('Did not receive a successful credential response')
     }
 
-
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
-
 
     // verify the signature
     const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential }, checkRevocationState)
@@ -187,7 +190,7 @@ export class OpenId4VcClientService {
     }
 
     const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
-      credential
+      credential,
     })
 
     this.logger.info(`Stored credential with id: ${storedCredential.id}`)

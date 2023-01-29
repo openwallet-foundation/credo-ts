@@ -47,7 +47,7 @@ describe('JwsService', () => {
         header: { kid },
         protectedHeaderOptions: {
           alg: 'EdDSA',
-          jwk: key.toJwk()
+          jwk: key.toJwk(),
         },
       })
 

@@ -57,11 +57,11 @@ export class DidRepository extends Repository<DidRecord> {
     return this.findSingleByQuery(agentContext, { did: createdDid, role: DidDocumentRole.Created })
   }
 
-  public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string, did?: string }) {
+  public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
     return this.findByQuery(agentContext, {
       role: DidDocumentRole.Created,
       method,
-      did
+      did,
     })
   }
 }
