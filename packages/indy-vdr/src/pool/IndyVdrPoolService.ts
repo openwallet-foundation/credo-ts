@@ -188,7 +188,7 @@ export class IndyVdrPoolService {
       this.logger.trace(`Retrieved did '${did}' from ledger '${pool.indyNamespace}'`, result)
 
       return {
-        did: result,
+        did: { nymResponse: { did: result.dest, verkey: result.verkey }, indyNamespace: pool.indyNamespace },
         pool,
         response,
       }
