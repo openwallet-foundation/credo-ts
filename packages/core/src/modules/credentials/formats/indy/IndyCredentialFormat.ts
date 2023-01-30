@@ -36,11 +36,6 @@ export interface IndyOfferCredentialFormat {
   linkedAttachments?: LinkedAttachment[]
 }
 
-export interface IndyIssueCredentialFormat {
-  credentialDefinitionId?: string
-  attributes?: CredentialPreviewAttributeOptions[]
-}
-
 export interface IndyCredentialFormat extends CredentialFormat {
   formatKey: 'indy'
   credentialRecordType: 'indy'

@@ -1,5 +1,5 @@
-export interface CredentialInfo {
-  referent: string
+export interface AnonCredsCredentialInfo {
+  credentialId: string
   attributes: {
     [key: string]: string
   }
@@ -9,23 +9,32 @@ export interface CredentialInfo {
   credentialRevocationId?: string | undefined
 }
 
-export interface RequestedAttribute {
+export interface AnonCredsRequestedAttribute {
   credentialId: string
   timestamp?: number
   revealed: boolean
-  credentialInfo: CredentialInfo
+  credentialInfo: AnonCredsCredentialInfo
   revoked?: boolean
 }
 
-export interface RequestedPredicate {
+export interface AnonCredsRequestedPredicate {
   credentialId: string
   timestamp?: number
-  credentialInfo: CredentialInfo
+  credentialInfo: AnonCredsCredentialInfo
   revoked?: boolean
 }
 
-export interface RequestedCredentials {
-  requestedAttributes?: Record<string, RequestedAttribute>
-  requestedPredicates?: Record<string, RequestedPredicate>
+export interface AnonCredsRequestedCredentials {
+  requestedAttributes?: Record<string, AnonCredsRequestedAttribute>
+  requestedPredicates?: Record<string, AnonCredsRequestedPredicate>
   selfAttestedAttributes: Record<string, string>
+}
+
+export interface AnonCredsCredentialRequestMetadata {
+  master_secret_blinding_data: {
+    v_prime: string
+    vr_prime: string | null
+  }
+  master_secret_name: string
+  nonce: string
 }
