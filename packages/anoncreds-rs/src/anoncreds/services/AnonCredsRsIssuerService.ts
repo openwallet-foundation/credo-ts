@@ -8,12 +8,18 @@ import type {
   AnonCredsCredentialOffer,
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
+  CreateCredentialDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
+import {
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRepository,
+} from '@aries-framework/anoncreds'
 import { AriesFrameworkError } from '@aries-framework/core'
 import {
+  CredentialDefinitionPrivate,
   Credential,
   CredentialDefinition,
   CredentialOffer,
@@ -43,13 +49,12 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
   public async createCredentialDefinition(
     agentContext: AgentContext,
-    options: CreateCredentialDefinitionOptions,
+    options: CreateCredentialDefinitionOptions
     //metadata?: CreateCredentialDefinitionMetadata
-  ): Promise<AnonCredsCredentialDefinition> {
+  ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
     try {
-      // TODO: Where to store credentialDefinitionPrivate and keyCorrectnessProof?
       const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } = CredentialDefinition.create({
         schema: Schema.load(JSON.stringify(schema)),
         issuerId,
@@ -59,7 +64,11 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         signatureType: 'CL',
       })
 
-      return JSON.parse(credentialDefinition.toJson()) as AnonCredsCredentialDefinition
+      return {
+        credentialDefinition: JSON.parse(credentialDefinition.toJson()) as AnonCredsCredentialDefinition,
+        credentialDefinitionPrivate: JSON.parse(credentialDefinitionPrivate.toJson()),
+        keyCorrectnessProof: JSON.parse(keyCorrectnessProof.toJson()),
+      }
     } catch (error) {
       throw new AnonCredsRsError('Error creating credential definition', { cause: error })
     }
@@ -72,18 +81,23 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     const { credentialDefinitionId } = options
 
     try {
-      // TODO: retrieve schemaId and keyCorrectnessProof
-      // could be done by using AnonCredsCredentialDefinitionRepository.findById().schemaId and
-      // store private part/create other kind of record for KCP
+      const credentialDefinitionRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .findByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
+
+      if (!credentialDefinitionRecord) {
+        throw new AnonCredsRsError(`Credential Definition ${credentialDefinitionId} not found`)
+      }
+
       const credentialOffer = CredentialOffer.create({
         credentialDefinitionId,
         keyCorrectnessProof: {} as KeyCorrectnessProof, // FIXME
-        schemaId: '', // FIXME
+        schemaId: credentialDefinitionRecord.getTags().schemaId, // TODO: Shouldn't it be a property for schemaId in AnonCredsCredentialDefinitionRecord?
       })
 
       return JSON.parse(credentialOffer.toJson()) as AnonCredsCredentialOffer
     } catch (error) {
-      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
+      throw new AnonCredsRsError(`Error creating credential offer: ${error}`, { cause: error })
     }
   }
 
@@ -106,14 +120,26 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         attributeEncodedValues[key] = credentialValues[key].raw
       })
 
+      const credentialDefinitionRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
+
+      const credentialDefinitionPrivateRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionPrivateRepository)
+        .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
+
       const credential = Credential.create({
-        credentialDefinition, // TODO: Get from repository?
+        credentialDefinition: CredentialDefinition.load(
+          JSON.stringify(credentialDefinitionRecord.credentialDefinition)
+        ),
         credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
         credentialRequest: CredentialRequest.load(JSON.stringify(credentialRequest)),
         revocationRegistryId,
         attributeEncodedValues,
         attributeRawValues,
-        credentialDefinitionPrivate, // TODO: Get from repository?
+        credentialDefinitionPrivate: CredentialDefinitionPrivate.load(
+          JSON.stringify(credentialDefinitionPrivateRecord)
+        ),
         //TODO: revocationConfiguration,
       })
 

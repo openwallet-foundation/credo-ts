@@ -1,7 +1,15 @@
-import type { Module } from '@aries-framework/core'
+import type { DependencyManager, Module } from '@aries-framework/core'
+
+import {
+  AnonCredsHolderServiceSymbol,
+  AnonCredsIssuerServiceSymbol,
+  AnonCredsVerifierServiceSymbol,
+} from '@aries-framework/anoncreds'
+
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds'
 
 export class AnonCredsRsModule implements Module {
-  public register() {
+  public register(dependencyManager: DependencyManager) {
     try {
       // eslint-disable-next-line import/no-extraneous-dependencies
       require('@hyperledger/anoncreds-nodejs')
@@ -12,5 +20,10 @@ export class AnonCredsRsModule implements Module {
         throw new Error('Could not load anoncreds bindings')
       }
     }
+
+    // Register services
+    dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, AnonCredsRsHolderService)
+    dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
+    dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
   }
 }

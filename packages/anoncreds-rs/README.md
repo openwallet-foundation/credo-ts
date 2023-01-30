@@ -19,10 +19,10 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/askar"
+    <a href="https://www.npmjs.com/package/@aries-framework/anoncreds-rs"
     ><img
-      alt="@aries-framework/askar version"
-      src="https://img.shields.io/npm/v/@aries-framework/askar"
+      alt="@aries-framework/anoncreds-rs version"
+      src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"
   /></a>
 
 </p>
