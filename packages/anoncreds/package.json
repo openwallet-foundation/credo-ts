@@ -2,7 +2,7 @@
   "name": "@aries-framework/anoncreds",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "files": [
     "build"
   ],
@@ -25,8 +25,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.3.2",
-    "@aries-framework/node": "^0.3.2",
+    "@aries-framework/core": "0.3.3",
+    "@aries-framework/node": "^0.3.3",
     "bn.js": "^5.2.1"
   },
   "devDependencies": {

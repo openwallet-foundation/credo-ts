@@ -1,5 +1,5 @@
-import type { AnonCredsSchema } from '../models'
 import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
+import type { AnonCredsSchema } from '../models'
 import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'

@@ -3,6 +3,11 @@ import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
+import {
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsMasterSecretRepository,
+} from './repository'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
@@ -27,5 +32,8 @@ export class AnonCredsModule implements Module {
     // Repositories
     dependencyManager.registerSingleton(AnonCredsSchemaRepository)
     dependencyManager.registerSingleton(AnonCredsCredentialDefinitionRepository)
+    dependencyManager.registerSingleton(AnonCredsCredentialDefinitionPrivateRepository)
+    dependencyManager.registerSingleton(AnonCredsKeyCorrectnessProofRepository)
+    dependencyManager.registerSingleton(AnonCredsMasterSecretRepository)
   }
 }
