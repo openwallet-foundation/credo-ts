@@ -42,7 +42,6 @@ describe('JwsService', () => {
 
       const jws = await jwsService.createJws(agentContext, {
         payload,
-        // FIXME: update to use key instance instead of verkey
         key,
         header: { kid },
         protectedHeaderOptions: {
