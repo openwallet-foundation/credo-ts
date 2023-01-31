@@ -8,7 +8,7 @@ import type {
 import type { AnonCredsCredentialDefinition } from '../../models/registry'
 
 export interface GetCredentialDefinitionReturn {
-  credentialDefinition: AnonCredsCredentialDefinition | null
+  credentialDefinition?: AnonCredsCredentialDefinition
   credentialDefinitionId: string
   resolutionMetadata: AnonCredsResolutionMetadata
   credentialDefinitionMetadata: Extensible
@@ -20,7 +20,7 @@ export interface RegisterCredentialDefinitionOptions {
 }
 
 export interface RegisterCredentialDefinitionReturnStateFailed extends AnonCredsOperationStateFailed {
-  credentialDefinition: AnonCredsCredentialDefinition
+  credentialDefinition?: AnonCredsCredentialDefinition
   credentialDefinitionId?: string
 }
 
@@ -30,7 +30,7 @@ export interface RegisterCredentialDefinitionReturnStateFinished extends AnonCre
 }
 
 export interface RegisterCredentialDefinitionReturnState extends AnonCredsOperationState {
-  credentialDefinition: AnonCredsCredentialDefinition
+  credentialDefinition?: AnonCredsCredentialDefinition
   credentialDefinitionId?: string
 }
 
