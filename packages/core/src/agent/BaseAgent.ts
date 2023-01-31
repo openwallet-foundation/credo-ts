@@ -194,6 +194,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     })
   }
 
+  /**
+   * @deprecated The injectionContainer property has been deprecated in favour of the dependencyManager property.
+   */
   public get injectionContainer() {
     return this.dependencyManager.container
   }

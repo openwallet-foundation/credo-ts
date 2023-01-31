@@ -2,7 +2,7 @@ import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
   AnonCredsCredentialRequest,
-  CredValue,
+  AnonCredsCredentialValues,
 } from '../models/exchange'
 import type { AnonCredsSchema } from '../models/registry'
 
@@ -29,7 +29,7 @@ export interface CreateCredentialOfferOptions {
 export interface CreateCredentialOptions {
   credentialOffer: AnonCredsCredentialOffer
   credentialRequest: AnonCredsCredentialRequest
-  credentialValues: Record<string, CredValue>
+  credentialValues: AnonCredsCredentialValues
   revocationRegistryId?: string
   // TODO: should this just be the tails file instead of a path?
   tailsFilePath?: string

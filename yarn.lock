@@ -6162,6 +6162,23 @@ indy-sdk@^1.16.0-dev-1636:
     nan "^2.11.1"
     node-gyp "^8.0.0"
 
+indy-vdr-test-nodejs@^0.1.3:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/indy-vdr-test-nodejs/-/indy-vdr-test-nodejs-0.1.3.tgz#97eaf38b1035bfabcd772a8399f23d766dfd493e"
+  integrity sha512-E6r86QGbswa+hBgMJKVWJycqvvmOgepFMDaAvuZQtxQK1Z2gghco6m/9EOAPYaJRs0MMEEhzUGhvtSpCzeZ6sg==
+  dependencies:
+    "@mapbox/node-pre-gyp" "^1.0.10"
+    ffi-napi "^4.0.3"
+    indy-vdr-test-shared "0.1.3"
+    ref-array-di "^1.2.2"
+    ref-napi "^3.0.3"
+    ref-struct-di "^1.1.1"
+
+indy-vdr-test-shared@0.1.3, indy-vdr-test-shared@^0.1.3:
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/indy-vdr-test-shared/-/indy-vdr-test-shared-0.1.3.tgz#3b5ee9492ebc3367a027670aa9686c493de5929c"
+  integrity sha512-fdgV388zi3dglu49kqrV+i40w+18uJkv96Tk4nziLdP280SLnZKKnIRAiq11Hj8aHpnZmwMloyQCsIyQZDZk2g==
+
 infer-owner@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/infer-owner/-/infer-owner-1.0.4.tgz#c4cefcaa8e51051c2a40ba2ce8a3d27295af9467"

@@ -177,7 +177,7 @@ describe('dids', () => {
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
     const indyDid = indyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
 
-    const wallet = agent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    const wallet = agent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
     // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
     const submitterDid = `did:sov:${wallet.publicDid?.did!}`
 
