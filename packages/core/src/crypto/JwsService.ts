@@ -22,7 +22,7 @@ export class JwsService {
 
   private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
     if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
-      throw new AriesFrameworkError('Only Ed25519 JWS is supported')
+      throw new AriesFrameworkError(`Only ${JwsService.supportedKeyTypes.join(',')} key type(s) supported for creating JWS`)
     }
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
     const base64UrlProtectedHeader = JsonEncoder.toBase64URL(
