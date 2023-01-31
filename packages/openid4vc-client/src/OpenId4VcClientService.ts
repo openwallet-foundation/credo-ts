@@ -11,6 +11,7 @@ import {
   JsonTransformer,
   W3cCredentialService,
   W3cVerifiableCredential,
+  JwsService,
 } from '@aries-framework/core'
 import {
   Alg,
@@ -19,8 +20,6 @@ import {
   OpenID4VCIClient,
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
-
-import { JwsService } from '../../core/src/crypto/JwsService'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
