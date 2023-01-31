@@ -2,7 +2,7 @@ import type { AnonCredsResolutionMetadata, Extensible } from './base'
 import type { AnonCredsRevocationRegistryDefinition } from '../../models/registry'
 
 export interface GetRevocationRegistryDefinitionReturn {
-  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition | null
+  revocationRegistryDefinition?: AnonCredsRevocationRegistryDefinition
   revocationRegistryDefinitionId: string
   resolutionMetadata: AnonCredsResolutionMetadata
   revocationRegistryDefinitionMetadata: Extensible
