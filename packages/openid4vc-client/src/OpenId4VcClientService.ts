@@ -109,19 +109,14 @@ export class OpenId4VcClientService {
   ): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
 
-    // The clientId is set to a dummy value for now as we don't have
-    // one in the pre-auth flow, but it's currently required by OpenID4VCIClient.
-    const clientId = 'some-client'
-
     const client = await OpenID4VCIClient.initiateFromURI({
       issuanceInitiationURI: options.issuerUri,
       flowType: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
       kid: options.kid,
       alg: Alg.EdDSA,
-      clientId: clientId,
     })
 
-    const accessToken = await client.acquireAccessToken({ clientId: clientId })
+    const accessToken = await client.acquireAccessToken({})
 
     this.logger.info('Fetched server accessToken', accessToken)
 
@@ -152,7 +147,6 @@ export class OpenId4VcClientService {
       callbacks: callbacks,
     })
       .withEndpointMetadata(serverMetadata)
-      .withClientId(clientId)
       .withAlg(Alg.EdDSA)
       .withKid(options.kid)
       .build()
