@@ -31,6 +31,7 @@
 Open ID Connect For Verifiable Credentials Client Module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript).
 
 ### Installation
+
 Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository.
 
 ```sh
@@ -47,7 +48,7 @@ Before a credential can be requested, you need the issuer URI. This URI starts w
 
 In order to get this module to work, we need to inject it into the agent. This makes the module's functionality accesable through the agent's `modules` api.
 
-``` ts
+```ts
 import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const agent = new Agent({
@@ -68,14 +69,14 @@ How the module is injected and the agent has been initialized, you can access th
 
 #### Preparing a DID
 
-In order to request a credential, you'll need to provide a DID that the issuer will use for setting the credential subject. In the following snippet we create one for the sake of the example, but this can be any DID that has a *authentication verification method* with key type `Ed25519`.
+In order to request a credential, you'll need to provide a DID that the issuer will use for setting the credential subject. In the following snippet we create one for the sake of the example, but this can be any DID that has a _authentication verification method_ with key type `Ed25519`.
 
-``` ts
+```ts
 const did = await agent.dids.create<KeyDidCreateOptions>({
-    method: 'key',
-    options: {
-      keyType: KeyType.Ed25519,
-    }
+  method: 'key',
+  options: {
+    keyType: KeyType.Ed25519,
+  },
 })
 
 const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
@@ -84,9 +85,9 @@ const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
 
 #### Requesting the credential (Pre-Authorized)
 
-Now a credential issuance can be requested as follows. 
+Now a credential issuance can be requested as follows.
 
-``` ts
+```ts
 const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialPreAuthorized({
   issuerUri,
   kid,
