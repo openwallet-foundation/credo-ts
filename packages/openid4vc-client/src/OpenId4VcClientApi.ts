@@ -29,8 +29,7 @@ export class OpenId4VcClientApi {
 
     return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, {
       ...options,
-      checkRevocationState: checkRevocationState
+      checkRevocationState: checkRevocationState,
     })
-
   }
 }
