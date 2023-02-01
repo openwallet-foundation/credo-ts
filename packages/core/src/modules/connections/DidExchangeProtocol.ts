@@ -14,7 +14,6 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-import { TypedArrayEncoder } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import {
