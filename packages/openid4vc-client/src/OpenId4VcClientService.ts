@@ -93,7 +93,7 @@ export class OpenId4VcClientService {
 
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
-        key, // FIXME null check
+        key,
         payload,
         protectedHeaderOptions: {
           alg: jwt.header.alg,
