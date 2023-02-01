@@ -86,7 +86,7 @@ export class JwsService {
       throw new AriesFrameworkError('Unable to verify JWS: No entries in JWS signatures array.')
     }
 
-    const signerVerkeys = []
+    const signerKeys: Key[] = []
     for (const jws of signatures) {
       const protectedJson = JsonEncoder.fromBase64(jws.protected)
 
@@ -101,9 +101,9 @@ export class JwsService {
       const data = TypedArrayEncoder.fromString(`${jws.protected}.${base64Payload}`)
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
 
-      const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
-      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-      signerVerkeys.push(verkey)
+      const publicKey = TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x)
+      const key = Key.fromPublicKey(publicKey, KeyType.Ed25519)
+      signerKeys.push(key)
 
       try {
         const isValid = await agentContext.wallet.verify({ key, data, signature })
@@ -111,7 +111,7 @@ export class JwsService {
         if (!isValid) {
           return {
             isValid: false,
-            signerVerkeys: [],
+            signerKeys: [],
           }
         }
       } catch (error) {
@@ -120,7 +120,7 @@ export class JwsService {
         if (error instanceof WalletError) {
           return {
             isValid: false,
-            signerVerkeys: [],
+            signerKeys: [],
           }
         }
 
@@ -128,7 +128,7 @@ export class JwsService {
       }
     }
 
-    return { isValid: true, signerVerkeys }
+    return { isValid: true, signerKeys: signerKeys }
   }
 
   private buildProtected(key: Key, options: ProtectedHeaderOptions) {
@@ -165,7 +165,7 @@ export interface VerifyJwsOptions {
 
 export interface VerifyJwsResult {
   isValid: boolean
-  signerVerkeys: string[]
+  signerKeys: Key[]
 }
 
 export type kid = string
