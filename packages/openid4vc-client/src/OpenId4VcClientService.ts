@@ -1,4 +1,4 @@
-import type { AgentContext, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import { AgentContext, isJwtAlgorithm, Logger, W3cCredentialRecord } from '@aries-framework/core'
 import type { Jwt } from '@sphereon/openid4vci-client'
 
 import {
@@ -12,6 +12,8 @@ import {
   W3cCredentialService,
   W3cVerifiableCredential,
   JwsService,
+  jwtKeyAlgMapping,
+  JwtAlgorithm
 } from '@aries-framework/core'
 import {
   Alg,
@@ -82,6 +84,16 @@ export class OpenId4VcClientService {
       const key = getKeyFromVerificationMethod(verificationMethod)
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
+
+
+      if (!isJwtAlgorithm(jwt.header.alg)) {
+        throw new AriesFrameworkError(`Unknown JWT algorithm: ${jwt.header.alg}`)
+      }
+
+      if (jwtKeyAlgMapping[jwt.header.alg].includes(key.keyType)) {
+        throw new AriesFrameworkError(`The retreived key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`)
+      }
+
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
         key, // FIXME null check
