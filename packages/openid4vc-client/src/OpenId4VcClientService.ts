@@ -1,5 +1,5 @@
 import { AgentContext, inject, InjectionSymbols, isJwtAlgorithm, Logger, W3cCredentialRecord } from '@aries-framework/core'
-import type { Jwt } from '@sphereon/openid4vci-client'
+import type { EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
   DidsApi,
@@ -111,11 +111,28 @@ export class OpenId4VcClientService {
     }
   }
 
+  private assertCredentialHasFormat(format: string, scope: string, metadata: EndpointMetadata) {
+
+    if (!metadata.openid4vci_metadata) {
+      throw new AriesFrameworkError(`Server metadata doesn't include OpenID4VCI metadata. Unable to verify if the issuer supports the requested credential format: ${format}`)
+    }
+
+    const supportedFomats = Object.keys(metadata.openid4vci_metadata?.credentials_supported[scope].formats)
+
+    if (!supportedFomats.includes(format)) {
+      throw new AriesFrameworkError(`Issuer doesn't support the requested credential format '${format}'' for requested credential type '${scope}'. Supported formats are: ${supportedFomats}`)
+    }
+
+  }
+
   public async requestCredentialPreAuthorized(
     agentContext: AgentContext,
     options: PreAuthorizedOptions,
   ): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
+
+    // this value is hardcoded as it's the only supported format at this point
+    const credentialFormat = 'ldp_vc'
 
     const client = await OpenID4VCIClient.initiateFromURI({
       issuanceInitiationURI: options.issuerUri,
@@ -138,6 +155,9 @@ export class OpenId4VcClientService {
     }
 
     const serverMetadata = await client.retrieveServerMetadata()
+
+    // @ts-ignore
+    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
     this.logger.info('Fetched server metadata', {
       issuer: serverMetadata.issuer,
@@ -167,6 +187,8 @@ export class OpenId4VcClientService {
     })
       .withTokenFromResponse(accessToken)
       .build()
+
+
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
