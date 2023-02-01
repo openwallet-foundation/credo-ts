@@ -93,8 +93,8 @@ describe('OpenId4VcClient', () => {
         {
           issuerUri,
           kid,
-        },
-        false
+          checkRevocationState: false
+        }
       )
 
       expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
