@@ -131,7 +131,7 @@ export class JwsService {
     return { isValid: true, signerVerkeys }
   }
 
-  private buildProtected(verkey: Key, options: ProtectedHeaderOptions) {
+  private buildProtected(key: Key, options: ProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
       throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
     }
