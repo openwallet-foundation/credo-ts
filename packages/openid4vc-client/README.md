@@ -72,15 +72,24 @@ How the module is injected and the agent has been initialized, you can access th
 In order to request a credential, you'll need to provide a DID that the issuer will use for setting the credential subject. In the following snippet we create one for the sake of the example, but this can be any DID that has a _authentication verification method_ with key type `Ed25519`.
 
 ```ts
+
+// first we create the DID
 const did = await agent.dids.create<KeyDidCreateOptions>({
-  method: 'key',
-  options: {
-    keyType: KeyType.Ed25519,
-  },
+    method: 'key',
+    options: {
+      keyType: KeyType.Ed25519,
+    }
 })
 
-const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
-const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
+// next we do some assertions and extract the key identifier (kid)
+
+if (!did.didState.didDocument || !did.didState.didDocument.authentication
+|| did.didState.didDocument.authentication.length === 0) {
+  throw new Error("Error creating did document, or did document has no 'authentication' verificationMethods")
+}
+
+const [verificationMethod] = did.didState.didDocument.authentication
+const kid = typeof verificationMethod === 'string' ? verificationMethod : verificationMethod.id
 ```
 
 #### Requesting the credential (Pre-Authorized)
@@ -95,4 +104,68 @@ const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentia
 })
 
 console.log(w3cCredentialRecord)
+```
+
+
+#### Full example
+
+``` ts
+import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+import { agentDependencies } from '@aries-framework/node' // use @aries-framework/react-native for React Native
+import { Agent, KeyDidCreateOptions } from '@aries-framework/core'
+
+
+const run = async () => {
+  const issuerUri = '' // The obtained issuer URI
+
+  // Create the Agent
+  const agent = new Agent({
+    config: {
+      /* config */
+    },
+    dependencies: agentDependencies,
+    modules: {
+      openId4VcClient: new OpenId4VcClientModule(),
+      /* other custom modules */
+    },
+  })
+
+  // Initialize the Agent
+  await agent.initialize()
+
+  // Create a DID
+  const did = await agent.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: {
+        keyType: KeyType.Ed25519,
+      }
+  })
+
+  // Assert DIDDocument is valid
+  if (!did.didState.didDocument || !did.didState.didDocument.authentication || did.didState.didDocument.authentication.length === 0) {
+    throw new Error("Error creating did document, or did document has no 'authentication' verificationMethods")
+  }
+
+  // Extract key identified (kid) for authentication verification method
+  const [verificationMethod] = did.didState.didDocument.authentication
+  const kid = typeof verificationMethod === 'string' ? verificationMethod : verificationMethod.id
+
+  // Request the credential
+  const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialPreAuthorized({
+    issuerUri,
+    kid,
+    checkRevocationState: false,
+  })
+
+  // Log the received credential
+  console.log(w3cCredentialRecord)
+}
+
+
+
+
+
+
+
+
 ```
