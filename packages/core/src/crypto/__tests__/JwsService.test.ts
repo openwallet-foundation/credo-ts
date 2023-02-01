@@ -58,37 +58,37 @@ describe('JwsService', () => {
     it('returns true if the jws signature matches the payload', async () => {
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: didJwsz6Mkf.JWS_JSON,
       })
 
       expect(isValid).toBe(true)
-      expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY])
+      expect(signerKeys).toEqual([didJwsz6Mkf.VERKEY])
     })
 
     it('returns all verkeys that signed the jws', async () => {
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
       })
 
       expect(isValid).toBe(true)
-      expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY, didJwsz6Mkv.VERKEY])
+      expect(signerKeys).toEqual([didJwsz6Mkf.VERKEY, didJwsz6Mkv.VERKEY])
     })
 
     it('returns false if the jws signature does not match the payload', async () => {
       const payload = JsonEncoder.toBuffer({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' })
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: didJwsz6Mkf.JWS_JSON,
       })
 
       expect(isValid).toBe(false)
-      expect(signerVerkeys).toMatchObject([])
+      expect(signerKeys).toMatchObject([])
     })
 
     it('throws an error if the jws signatures array does not contain a JWS', async () => {
