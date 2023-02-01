@@ -41,8 +41,6 @@ export class OpenId4VcClientService {
 
   private signCallback(agentContext: AgentContext) {
     return async (jwt: Jwt, kid: string) => {
-      // TODO should we check if the did exists here, or just let the wallet throw?
-
       if (!jwt.header) {
         throw new AriesFrameworkError('No header present on JWT')
       }
