@@ -114,7 +114,7 @@ export class OpenId4VcClientService {
     }
   }
 
-  public async preAuthorized(
+  public async requestCredentialPreAuthorized(
     agentContext: AgentContext,
     options: PreAuthorizedOptions,
     checkRevocationState = true

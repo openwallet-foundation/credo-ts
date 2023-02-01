@@ -89,7 +89,7 @@ describe('OpenId4VcClient', () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
 
-      const w3cCredentialRecord = await agent.modules.openId4VcClient.preAuthorized(
+      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialPreAuthorized(
         {
           issuerUri,
           kid,
