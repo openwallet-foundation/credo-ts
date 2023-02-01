@@ -2,7 +2,7 @@ import type { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import type { AgentContext, Key } from '@aries-framework/core'
 
 import { KeyType } from '@aries-framework/core'
-import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
+import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 

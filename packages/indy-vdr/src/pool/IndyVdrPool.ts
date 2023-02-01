@@ -1,5 +1,5 @@
 import type { Logger, AgentContext, Key } from '@aries-framework/core'
-import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from 'indy-vdr-test-shared'
+import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { TypedArrayEncoder } from '@aries-framework/core'
 import {
@@ -7,7 +7,7 @@ import {
   GetAcceptanceMechanismsRequest,
   PoolCreate,
   indyVdr,
-} from 'indy-vdr-test-shared'
+} from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 
