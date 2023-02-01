@@ -1,10 +1,9 @@
-import { AgentContext, isJwtAlgorithm, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import { AgentContext, inject, InjectionSymbols, isJwtAlgorithm, Logger, W3cCredentialRecord } from '@aries-framework/core'
 import type { Jwt } from '@sphereon/openid4vci-client'
 
 import {
   DidsApi,
   getKeyDidMappingByVerificationMethod,
-  AgentConfig,
   AriesFrameworkError,
   injectable,
   JsonEncoder,
@@ -13,7 +12,6 @@ import {
   W3cVerifiableCredential,
   JwsService,
   jwtKeyAlgMapping,
-  JwtAlgorithm
 } from '@aries-framework/core'
 import {
   Alg,
@@ -35,10 +33,10 @@ export class OpenId4VcClientService {
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService
 
-  public constructor(agentConfig: AgentConfig, w3cCredentialService: W3cCredentialService, jwsService: JwsService) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService, jwsService: JwsService) {
     this.w3cCredentialService = w3cCredentialService
     this.jwsService = jwsService
-    this.logger = agentConfig.logger
+    this.logger = logger
   }
 
   private signCallback(agentContext: AgentContext) {
