@@ -141,8 +141,8 @@ export class JwsService {
 
     return {
       alg: options.alg,
-      ...(options.jwk && { jwk: options.jwk }),
-      ...(options.kid && { kid: options.kid }),
+      jwk: options.jwk,
+      kid: options.kid
     }
   }
 }
