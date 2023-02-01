@@ -21,7 +21,7 @@ export interface GetNymResponseData {
   verkey: string
   role: string
   alias?: string
-  diddocContent?: string
+  diddocContent?: Record<string, unknown>
 }
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
@@ -142,6 +142,7 @@ export function addServicesFromEndpointsAttrib(
       )
 
       // If 'DIDComm' included in types, add DIDComm v2 entry
+      // TODO: should it be DIDComm or DIDCommMessaging? (see https://github.com/sovrin-foundation/sovrin/issues/343)
       if (processedTypes.includes('DIDComm')) {
         builder
           .addService(

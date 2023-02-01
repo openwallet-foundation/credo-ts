@@ -1,4 +1,11 @@
-import { convertPublicKeyToX25519, DidDocumentBuilder, TypedArrayEncoder } from '@aries-framework/core'
+import {
+  AriesFrameworkError,
+  convertPublicKeyToX25519,
+  DidDocumentBuilder,
+  TypedArrayEncoder,
+} from '@aries-framework/core'
+
+import { DID_INDY_REGEX } from '../utils/did'
 
 import { getFullVerkey } from './didSovUtil'
 
@@ -27,4 +34,14 @@ export function createKeyAgreementKey(fullDid: string, verkey: string) {
   )
 
   return publicKeyX25519
+}
+
+export function parseIndyDid(did: string) {
+  const match = did.match(DID_INDY_REGEX)
+  if (match) {
+    const [, namespace, id] = match
+    return { namespace, id }
+  } else {
+    throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
+  }
 }

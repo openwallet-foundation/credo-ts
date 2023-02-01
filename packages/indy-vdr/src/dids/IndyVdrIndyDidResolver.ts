@@ -4,10 +4,9 @@ import type { DidResolutionResult, DidResolver, AgentContext } from '@aries-fram
 import { GetAttribRequest, GetNymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
-import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-import { DID_INDY_REGEX } from '../utils/did'
+import { IndyVdrPoolService } from '../pool'
 
-import { createKeyAgreementKey, indyDidDocumentFromDid } from './didIndyUtil'
+import { createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
 import { addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndyVdrIndyDidResolver implements DidResolver {
@@ -16,23 +15,15 @@ export class IndyVdrIndyDidResolver implements DidResolver {
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
     try {
-      const match = did.match(DID_INDY_REGEX)
+      const nym = await this.getPublicDid(agentContext, did)
 
-      if (match) {
-        const [, namespace, id] = match
+      // Get DID Document from Get NYM response
+      const didDocument = await this.buildDidDocument(agentContext, nym, did)
 
-        const nym = await this.getPublicDid(agentContext, namespace, id)
-
-        // Get DID Document from Get NYM response
-        const didDocument = await this.buildDidDocument(agentContext, nym, did)
-
-        return {
-          didDocument,
-          didDocumentMetadata,
-          didResolutionMetadata: { contentType: 'application/did+ld+json' },
-        }
-      } else {
-        throw new IndyVdrError(`${did} is not a did:indy DID`)
+      return {
+        didDocument,
+        didDocumentMetadata,
+        didResolutionMetadata: { contentType: 'application/did+ld+json' },
       }
     } catch (error) {
       return {
@@ -57,30 +48,34 @@ export class IndyVdrIndyDidResolver implements DidResolver {
 
       const endpoints = await this.getEndpointsForDid(agentContext, did)
 
-      // If there is at least a didcomm endpoint, generate and a key agreement key
-      const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
-      if (commTypes.some((type) => endpoints.types?.includes(type))) {
-        builder
-          .addVerificationMethod({
-            controller: did,
-            id: keyAgreementId,
-            publicKeyBase58: createKeyAgreementKey(did, getNymResponseData.verkey),
-            type: 'X25519KeyAgreementKey2019',
-          })
-          .addKeyAgreement(keyAgreementId)
-      }
+      if (endpoints) {
+        // If there is at least a didcomm endpoint, generate and a key agreement key
+        const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+        if (commTypes.some((type) => endpoints.types?.includes(type))) {
+          builder
+            .addVerificationMethod({
+              controller: did,
+              id: keyAgreementId,
+              publicKeyBase58: createKeyAgreementKey(did, getNymResponseData.verkey),
+              type: 'X25519KeyAgreementKey2019',
+            })
+            .addKeyAgreement(keyAgreementId)
+        }
 
-      // Process endpoint attrib following the same rules as for did:sov
-      addServicesFromEndpointsAttrib(builder, did, endpoints, keyAgreementId)
+        // Process endpoint attrib following the same rules as for did:sov
+        addServicesFromEndpointsAttrib(builder, did, endpoints, keyAgreementId)
+      }
       return builder.build()
     } else {
-      // Combine it with didDoc
-      return builder.build().combine(JSON.parse(getNymResponseData.diddocContent))
+      // Combine it with didDoc (TODO: Check if diddocContent is returned as a JSON object or a string)
+      return builder.build().combine(getNymResponseData.diddocContent)
     }
   }
 
-  private async getPublicDid(agentContext: AgentContext, namespace: string, id: string) {
+  private async getPublicDid(agentContext: AgentContext, did: string) {
     const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    const { namespace, id } = parseIndyDid(did)
 
     const pool = indyVdrPoolService.getPoolForNamespace(namespace)
 
@@ -97,19 +92,23 @@ export class IndyVdrIndyDidResolver implements DidResolver {
   private async getEndpointsForDid(agentContext: AgentContext, did: string) {
     const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-    const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
+    const { namespace, id } = parseIndyDid(did)
+
+    const pool = indyVdrPoolService.getPoolForNamespace(namespace)
 
     try {
-      agentContext.config.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.indyNamespace}'`)
+      agentContext.config.logger.debug(`Get endpoints for did '${id}' from ledger '${pool.indyNamespace}'`)
 
-      const request = new GetAttribRequest({ targetDid: did, raw: 'endpoint' })
+      const request = new GetAttribRequest({ targetDid: id, raw: 'endpoint' })
 
       agentContext.config.logger.debug(
-        `Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.indyNamespace}'`
+        `Submitting get endpoint ATTRIB request for did '${id}' to ledger '${pool.indyNamespace}'`
       )
       const response = await pool.submitReadRequest(request)
 
-      if (!response.result.data) return {}
+      if (!response.result.data) {
+        return
+      }
 
       const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
       agentContext.config.logger.debug(
@@ -120,7 +119,7 @@ export class IndyVdrIndyDidResolver implements DidResolver {
         }
       )
 
-      return endpoints ?? {}
+      return endpoints
     } catch (error) {
       agentContext.config.logger.error(
         `Error retrieving endpoints for did '${did}' from ledger '${pool.indyNamespace}'`,

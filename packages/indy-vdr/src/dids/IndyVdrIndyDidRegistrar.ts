@@ -10,15 +10,7 @@ import type {
   DidDocument,
 } from '@aries-framework/core'
 
-import {
-  TypedArrayEncoder,
-  Key,
-  KeyType,
-  injectable,
-  DidDocumentRole,
-  DidRecord,
-  DidRepository,
-} from '@aries-framework/core'
+import { TypedArrayEncoder, Key, KeyType, DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
 import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError } from '../error'
