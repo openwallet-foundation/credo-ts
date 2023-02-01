@@ -7,6 +7,7 @@ import { OpenId4VcClientService } from './OpenId4VcClientService'
 interface PreAuthorizedOptions {
   issuerUri: string
   kid: string
+  checkRevocationState?: boolean // default = true
 }
 
 /**
@@ -22,7 +23,10 @@ export class OpenId4VcClientApi {
     this.openId4VcClientService = openId4VcClientService
   }
 
-  public async requestCredentialPreAuthorized(options: PreAuthorizedOptions, checkRevocationState = true): Promise<W3cCredentialRecord> {
-    return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, options, checkRevocationState)
+  public async requestCredentialPreAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
+    // set defaults
+    options.checkRevocationState = options.checkRevocationState ?? true;
+
+    return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, options)
   }
 }

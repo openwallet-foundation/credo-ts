@@ -26,6 +26,7 @@ import {
 export interface PreAuthorizedOptions {
   issuerUri: string
   kid: string
+  checkRevocationState: boolean
 }
 
 @injectable()
@@ -117,7 +118,6 @@ export class OpenId4VcClientService {
   public async requestCredentialPreAuthorized(
     agentContext: AgentContext,
     options: PreAuthorizedOptions,
-    checkRevocationState = true
   ): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
 
@@ -188,7 +188,7 @@ export class OpenId4VcClientService {
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
 
     // verify the signature
-    const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential }, checkRevocationState)
+    const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential }, options.checkRevocationState)
 
     if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
