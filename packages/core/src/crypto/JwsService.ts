@@ -26,7 +26,7 @@ export class JwsService {
     }
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
     const base64UrlProtectedHeader = JsonEncoder.toBase64URL(
-      this.buildProtected(options.key, options.protectedHeaderOptions)
+      this.buildProtected(options.protectedHeaderOptions)
     )
 
     const signature = TypedArrayEncoder.toBase64URL(
@@ -131,7 +131,7 @@ export class JwsService {
     return { isValid: true, signerKeys: signerKeys }
   }
 
-  private buildProtected(key: Key, options: ProtectedHeaderOptions) {
+  private buildProtected(options: ProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
       throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
     }
