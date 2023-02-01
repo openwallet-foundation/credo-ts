@@ -3,7 +3,7 @@ import type { Wallet } from '@aries-framework/core'
 
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
-import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
+import { Buffer, JsonEncoder } from '../../utils'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
