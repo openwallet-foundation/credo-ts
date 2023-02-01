@@ -25,8 +25,12 @@ export class OpenId4VcClientApi {
 
   public async requestCredentialPreAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
     // set defaults
-    options.checkRevocationState = options.checkRevocationState ?? true
+    const checkRevocationState = options.checkRevocationState ?? true
 
-    return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, options)
+    return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, {
+      ...options,
+      checkRevocationState: checkRevocationState
+    })
+
   }
 }
