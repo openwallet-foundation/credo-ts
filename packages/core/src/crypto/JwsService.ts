@@ -22,12 +22,12 @@ export class JwsService {
 
   private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
     if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
-      throw new AriesFrameworkError(`Only ${JwsService.supportedKeyTypes.join(',')} key type(s) supported for creating JWS`)
+      throw new AriesFrameworkError(
+        `Only ${JwsService.supportedKeyTypes.join(',')} key type(s) supported for creating JWS`
+      )
     }
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
-    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(
-      this.buildProtected(options.protectedHeaderOptions)
-    )
+    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
 
     const signature = TypedArrayEncoder.toBase64URL(
       await agentContext.wallet.sign({
@@ -142,7 +142,7 @@ export class JwsService {
     return {
       alg: options.alg,
       jwk: options.jwk,
-      kid: options.kid
+      kid: options.kid,
     }
   }
 }

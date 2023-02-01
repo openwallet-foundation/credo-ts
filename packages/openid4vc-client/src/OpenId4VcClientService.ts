@@ -1,7 +1,11 @@
-import { AgentContext, inject, InjectionSymbols, isJwtAlgorithm, Logger, W3cCredentialRecord } from '@aries-framework/core'
+import type { AgentContext, W3cCredentialRecord } from '@aries-framework/core'
 import type { EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
+  inject,
+  InjectionSymbols,
+  isJwtAlgorithm,
+  Logger,
   DidsApi,
   getKeyDidMappingByVerificationMethod,
   AriesFrameworkError,
@@ -33,7 +37,11 @@ export class OpenId4VcClientService {
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService, jwsService: JwsService) {
+  public constructor(
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    w3cCredentialService: W3cCredentialService,
+    jwsService: JwsService
+  ) {
     this.w3cCredentialService = w3cCredentialService
     this.jwsService = jwsService
     this.logger = logger
@@ -82,15 +90,15 @@ export class OpenId4VcClientService {
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
 
-
       if (!isJwtAlgorithm(jwt.header.alg)) {
         throw new AriesFrameworkError(`Unknown JWT algorithm: ${jwt.header.alg}`)
       }
 
       if (jwtKeyAlgMapping[jwt.header.alg].includes(key.keyType)) {
-        throw new AriesFrameworkError(`The retreived key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`)
+        throw new AriesFrameworkError(
+          `The retreived key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`
+        )
       }
-
 
       const jws = await this.jwsService.createJwsCompact(agentContext, {
         key,
@@ -112,22 +120,24 @@ export class OpenId4VcClientService {
   }
 
   private assertCredentialHasFormat(format: string, scope: string, metadata: EndpointMetadata) {
-
     if (!metadata.openid4vci_metadata) {
-      throw new AriesFrameworkError(`Server metadata doesn't include OpenID4VCI metadata. Unable to verify if the issuer supports the requested credential format: ${format}`)
+      throw new AriesFrameworkError(
+        `Server metadata doesn't include OpenID4VCI metadata. Unable to verify if the issuer supports the requested credential format: ${format}`
+      )
     }
 
     const supportedFomats = Object.keys(metadata.openid4vci_metadata?.credentials_supported[scope].formats)
 
     if (!supportedFomats.includes(format)) {
-      throw new AriesFrameworkError(`Issuer doesn't support the requested credential format '${format}'' for requested credential type '${scope}'. Supported formats are: ${supportedFomats}`)
+      throw new AriesFrameworkError(
+        `Issuer doesn't support the requested credential format '${format}'' for requested credential type '${scope}'. Supported formats are: ${supportedFomats}`
+      )
     }
-
   }
 
   public async requestCredentialPreAuthorized(
     agentContext: AgentContext,
-    options: PreAuthorizedOptions,
+    options: PreAuthorizedOptions
   ): Promise<W3cCredentialRecord> {
     this.logger.debug('Running pre-authorized flow with options', options)
 
@@ -188,8 +198,6 @@ export class OpenId4VcClientService {
       .withTokenFromResponse(accessToken)
       .build()
 
-
-
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
       // @ts-ignore
@@ -206,7 +214,11 @@ export class OpenId4VcClientService {
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
 
     // verify the signature
-    const result = await this.w3cCredentialService.verifyCredential(agentContext, { credential }, options.checkRevocationState)
+    const result = await this.w3cCredentialService.verifyCredential(
+      agentContext,
+      { credential },
+      options.checkRevocationState
+    )
 
     if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)

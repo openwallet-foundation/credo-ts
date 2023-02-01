@@ -108,7 +108,6 @@ export class W3cCredentialService {
   ): Promise<W3cVerifyCredentialResult> {
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
-
     const verifyOptions: Record<string, unknown> = {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,

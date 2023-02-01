@@ -16,7 +16,7 @@ export function IsJsonLdContext(validationOptions?: ValidationOptions): Property
           // the first entry is a verifiable credential context
           if (Array.isArray(value)) {
             return value.every(
-              (v) => (isString(v) && isURL(v)) || (isJsonObject(v)) && value[0] === CREDENTIALS_CONTEXT_V1_URL
+              (v) => (isString(v) && isURL(v)) || (isJsonObject(v) && value[0] === CREDENTIALS_CONTEXT_V1_URL)
             )
           }
 
