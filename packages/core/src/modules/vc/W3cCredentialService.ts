@@ -113,7 +113,7 @@ export class W3cCredentialService {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
       documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
-      checkStatus: (_input: Record<string, unknown>) => {
+      checkStatus: () => {
         if (verifyRevocationState) {
           throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
         }
