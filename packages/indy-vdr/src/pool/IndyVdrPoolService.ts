@@ -1,9 +1,9 @@
 import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
-import type { GetNymResponse } from 'indy-vdr-test-shared'
+import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
 import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
-import { GetNymRequest } from 'indy-vdr-test-shared'
+import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
 import { isSelfCertifiedDid, DID_INDY_REGEX } from '../utils/did'

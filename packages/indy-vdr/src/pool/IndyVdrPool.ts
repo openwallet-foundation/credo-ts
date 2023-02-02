@@ -1,5 +1,5 @@
 import type { Logger, AgentContext, Key } from '@aries-framework/core'
-import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from 'indy-vdr-test-shared'
+import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { TypedArrayEncoder } from '@aries-framework/core'
 import {
@@ -7,7 +7,7 @@ import {
   GetAcceptanceMechanismsRequest,
   PoolCreate,
   indyVdr,
-} from 'indy-vdr-test-shared'
+} from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 
@@ -146,7 +146,9 @@ export class IndyVdrPool {
       acceptanceMechanismType: poolTaa.acceptanceMechanism,
     })
 
-    request.setTransactionAuthorAgreementAcceptance({ acceptance })
+    request.setTransactionAuthorAgreementAcceptance({
+      acceptance: JSON.parse(acceptance),
+    })
   }
 
   private async getTransactionAuthorAgreement(): Promise<AuthorAgreement | null> {
@@ -172,8 +174,7 @@ export class IndyVdrPool {
     // If TAA is not null, we can be sure AcceptanceMechanisms is also not null
     const authorAgreement = taaData as Omit<AuthorAgreement, 'acceptanceMechanisms'>
 
-    // FIME: remove cast when https://github.com/hyperledger/indy-vdr/pull/142 is released
-    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as unknown as AcceptanceMechanisms
+    const acceptanceMechanisms = acceptanceMechanismResponse.result.data as AcceptanceMechanisms
     this.authorAgreement = {
       ...authorAgreement,
       acceptanceMechanisms,
