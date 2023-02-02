@@ -858,22 +858,22 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/indy-vdr-nodejs@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.3.tgz#9d46c5e2b5abb1b1ed4e2e959de9cd0f3999349e"
-  integrity sha512-1dknOWW5GsjmpVzZSvMOnAgRw3IM56SAsVJ5uCIeK+PAkkvqdTkjbPt9f0q1YT9hqm+AZODZv+/cxbn6fjqa5w==
+"@hyperledger/indy-vdr-nodejs@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.4.tgz#b5d2090b30c4a51e4e4f15a024054aada0d3550e"
+  integrity sha512-SwvcoOONhxD9LaX7vunNi1KFKmDb8wmutkBI+Hl6JMX3R+0QgpyQx5M3cfp+V34fBS8pqzKbq9lQmo+pDu3IWg==
   dependencies:
-    "@hyperledger/indy-vdr-shared" "0.1.0-dev.3"
+    "@hyperledger/indy-vdr-shared" "0.1.0-dev.4"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "^4.0.3"
     ref-array-di "^1.2.2"
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/indy-vdr-shared@0.1.0-dev.3", "@hyperledger/indy-vdr-shared@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.1.0-dev.3.tgz#ae08b28b57301cc25e431a9a92c7b4dd32046c17"
-  integrity sha512-E8agkHOn4g6mlGXxWjJ+nqkntmrty507ba0RLkWnuJU1Gk0bJoOn3Huqksqv9dDSt41xhBtVLUN7LC9I90I4iw==
+"@hyperledger/indy-vdr-shared@0.1.0-dev.4", "@hyperledger/indy-vdr-shared@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.1.0-dev.4.tgz#ad9ff18ea285cf3c8ba0b4a5bff03c02f57898e4"
+  integrity sha512-M6AnLQNryEqcWiH8oNNI/ovkFOykFg7zlO4oM+1xMbHbNzAe6ShBYQDB189zTQAG4RUkuA8yiLHt90g/q6N8dg==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
