@@ -6,7 +6,7 @@ import { IsValidMessageType, parseMessageType } from '../../../utils/messageType
 import { DateParser } from '../../../utils/transformers'
 
 export class BasicMessage extends AgentMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   /**
    * Create new BasicMessage instance.

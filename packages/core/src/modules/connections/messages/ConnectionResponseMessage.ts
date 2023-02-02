@@ -17,7 +17,7 @@ export interface ConnectionResponseMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#2-connection-response
  */
 export class ConnectionResponseMessage extends AgentMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   /**
    * Create new ConnectionResponseMessage instance.

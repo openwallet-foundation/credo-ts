@@ -22,16 +22,22 @@ const Decorated = ThreadDecorated(
 )
 
 export class AgentMessage extends Decorated {
-  // Only used internally
+  /**
+   * Whether the protocol RFC was initially written using the legacy did:prefix instead of the
+   * new https://didcomm.org message type prefix.
+   *
+   * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
+   */
   @Exclude()
-  public readonly protocolUsesLegacyDidSovPrefix: boolean = false
+  public readonly allowDidSovPrefix: boolean = false
 
   public toJSON({ useLegacyDidSovPrefix }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
     const json = JsonTransformer.toJSON(this)
 
-    // If the protocol historically uses the legacy did:sov prefix, and we have enabled using this legacy prefix, we
-    // only use it for protocol messages that historically used it.
-    if (this.protocolUsesLegacyDidSovPrefix && useLegacyDidSovPrefix) {
+    // If we have `useLegacyDidSovPrefix` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
+    // However, we only do this if the protocol RFC was initially written with the did:sov message type prefix
+    // See https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
+    if (this.allowDidSovPrefix && useLegacyDidSovPrefix) {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
     }
 

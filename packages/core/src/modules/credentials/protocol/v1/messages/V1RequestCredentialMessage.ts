@@ -17,7 +17,7 @@ export interface V1RequestCredentialMessageOptions {
 }
 
 export class V1RequestCredentialMessage extends AgentMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   public constructor(options: V1RequestCredentialMessageOptions) {
     super()

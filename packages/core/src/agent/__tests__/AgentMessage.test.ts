@@ -11,7 +11,7 @@ class CustomProtocolMessage extends AgentMessage {
 }
 
 class LegacyDidSovPrefixMessage extends AgentMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   @IsValidMessageType(LegacyDidSovPrefixMessage.type)
   public readonly type = LegacyDidSovPrefixMessage.type.messageTypeUri
@@ -20,23 +20,23 @@ class LegacyDidSovPrefixMessage extends AgentMessage {
 
 describe('AgentMessage', () => {
   describe('toJSON', () => {
-    it('should only use did:sov message prefix if useLegacyDidSovPrefix and protocolUsesLegacyDidSovPrefix are both true', () => {
+    it('should only use did:sov message prefix if useLegacyDidSovPrefix and allowDidSovPrefix are both true', () => {
       const message = new TestMessage()
       const legacyPrefixMessage = new LegacyDidSovPrefixMessage()
 
-      // useLegacyDidSovPrefix & protocolUsesLegacyDidSovPrefix are both false
+      // useLegacyDidSovPrefix & allowDidSovPrefix are both false
       let testMessageJson = message.toJSON()
       expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
 
-      // useLegacyDidSovPrefix is true, but protocolUsesLegacyDidSovPrefix is false
+      // useLegacyDidSovPrefix is true, but allowDidSovPrefix is false
       testMessageJson = message.toJSON({ useLegacyDidSovPrefix: true })
       expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
 
-      // useLegacyDidSovPrefix is false, but protocolUsesLegacyDidSovPrefix is true
+      // useLegacyDidSovPrefix is false, but allowDidSovPrefix is true
       testMessageJson = legacyPrefixMessage.toJSON()
       expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/another-message')
 
-      // useLegacyDidSovPrefix & protocolUsesLegacyDidSovPrefix are both true
+      // useLegacyDidSovPrefix & allowDidSovPrefix are both true
       testMessageJson = legacyPrefixMessage.toJSON({ useLegacyDidSovPrefix: true })
       expect(testMessageJson['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/fake-protocol/1.5/another-message')
     })

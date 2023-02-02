@@ -9,7 +9,7 @@ export type V1PresentationProblemReportMessageOptions = ProblemReportMessageOpti
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
 export class V1PresentationProblemReportMessage extends ProblemReportMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   /**
    * Create new PresentationProblemReportMessage instance.

@@ -18,7 +18,7 @@ export interface ProposePresentationMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#propose-presentation
  */
 export class V1ProposePresentationMessage extends AgentMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   public constructor(options: ProposePresentationMessageOptions) {
     super()

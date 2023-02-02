@@ -9,7 +9,7 @@ export type ConnectionProblemReportMessageOptions = ProblemReportMessageOptions
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
 export class ConnectionProblemReportMessage extends ProblemReportMessage {
-  public readonly protocolUsesLegacyDidSovPrefix = true
+  public readonly allowDidSovPrefix = true
 
   /**
    * Create new ConnectionProblemReportMessage instance.
