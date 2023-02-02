@@ -1,8 +1,9 @@
 {
-  "@context": ["https://w3id.org/did/v1", 
-  "https://w3id.org/security/suites/ed25519-2018/v1",
-  "https://w3id.org/security/suites/x25519-2019/v1"
-],
+  "@context": [
+    "https://w3id.org/did/v1",
+    "https://w3id.org/security/suites/ed25519-2018/v1",
+    "https://w3id.org/security/suites/x25519-2019/v1"
+  ],
   "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL",
   "alsoKnownAs": ["did:indy:ns2:R1xKJw17sUoXhejEpugMYJ"],
   "controller": ["did:indy:ns2:R1xKJw17sUoXhejEpugMYJ"],
@@ -10,7 +11,7 @@
     {
       "type": "Ed25519VerificationKey2018",
       "controller": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL",
-      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#verkey",
       "publicKeyBase58": "E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"
     },
     {
@@ -18,7 +19,7 @@
       "type": "RsaVerificationKey2018",
       "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
       "publicKeyPem": "-----BEGIN PUBLIC X..."
-    },    
+    },
     {
       "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-3",
       "type": "Ed25519VerificationKey2018",
@@ -56,7 +57,7 @@
     }
   ],
   "authentication": [
-    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#verkey",
     {
       "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#authentication-1",
       "type": "RsaVerificationKey2018",

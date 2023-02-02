@@ -5,6 +5,7 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   convertPublicKeyToX25519,
+  AriesFrameworkError,
 } from '@aries-framework/core'
 
 export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
@@ -104,6 +105,35 @@ function processEndpointTypes(types?: string[]) {
 
   // Return provided types
   return types
+}
+
+export function endpointsAttribFromServices(services: DidDocumentService[]) {
+  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+  const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
+
+  const attrib: IndyEndpointAttrib = { endpoint: services[0].serviceEndpoint, types: [], routingKeys: [] }
+
+  // Check that all services use the same endpoint, as only one is accepted
+  if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
+    throw new AriesFrameworkError('serviceEndpoint for all services must match')
+  }
+
+  for (const commService of commServices) {
+    const commServiceType = commService.type as CommEndpointType
+    if (attrib.types?.includes(commServiceType)) {
+      throw new AriesFrameworkError('Only a single communication service per type is supported')
+    } else {
+      attrib.types?.push(commServiceType)
+    }
+
+    if (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) {
+      if (commService.routingKeys) {
+        attrib.routingKeys?.push()
+      }
+    }
+  }
+
+  return attrib
 }
 
 export function addServicesFromEndpointsAttrib(

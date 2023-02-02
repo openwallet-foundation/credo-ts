@@ -2,10 +2,11 @@
   "id": "did:example:123",
   "verificationMethod": [
     {
-      "id": "did:example:123#key-1",
+      "id": "did:example:123#verkey",
       "type": "RsaVerificationKey2018",
       "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
       "publicKeyPem": "-----BEGIN PUBLIC X..."
     }
-  ]
+  ],
+  "authentication": ["did:example:123#verkey"]
 }

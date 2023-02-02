@@ -40,7 +40,6 @@
     }
   ],
   "authentication": [
-    "did:example:123#key-1",
     {
       "id": "did:example:123#authentication-1",
       "type": "RsaVerificationKey2018",
@@ -49,7 +48,7 @@
     }
   ],
   "assertionMethod": [
-    "did:example:123#key-1",
+    "did:example:123#verkey",
     {
       "id": "did:example:123#assertionMethod-1",
       "type": "RsaVerificationKey2018",
@@ -58,7 +57,7 @@
     }
   ],
   "capabilityDelegation": [
-    "did:example:123#key-1",
+    "did:example:123#verkey",
     {
       "id": "did:example:123#capabilityDelegation-1",
       "type": "RsaVerificationKey2018",
@@ -67,7 +66,7 @@
     }
   ],
   "capabilityInvocation": [
-    "did:example:123#key-1",
+    "did:example:123#verkey",
     {
       "id": "did:example:123#capabilityInvocation-1",
       "type": "RsaVerificationKey2018",
@@ -76,7 +75,7 @@
     }
   ],
   "keyAgreement": [
-    "did:example:123#key-1",
+    "did:example:123#verkey",
     {
       "id": "did:example:123#keyAgreement-1",
       "type": "RsaVerificationKey2018",

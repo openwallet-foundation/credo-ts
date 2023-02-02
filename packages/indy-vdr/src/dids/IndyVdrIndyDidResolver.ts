@@ -6,7 +6,7 @@ import { GetAttribRequest, GetNymRequest } from 'indy-vdr-test-shared'
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import { IndyVdrPoolService } from '../pool'
 
-import { createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
+import { combineDidDocumentWithJson, createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
 import { addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndyVdrIndyDidResolver implements DidResolver {
@@ -56,7 +56,7 @@ export class IndyVdrIndyDidResolver implements DidResolver {
             .addVerificationMethod({
               controller: did,
               id: keyAgreementId,
-              publicKeyBase58: createKeyAgreementKey(did, getNymResponseData.verkey),
+              publicKeyBase58: createKeyAgreementKey(getNymResponseData.verkey),
               type: 'X25519KeyAgreementKey2019',
             })
             .addKeyAgreement(keyAgreementId)
@@ -68,7 +68,7 @@ export class IndyVdrIndyDidResolver implements DidResolver {
       return builder.build()
     } else {
       // Combine it with didDoc (TODO: Check if diddocContent is returned as a JSON object or a string)
-      return builder.build().combine(getNymResponseData.diddocContent)
+      return combineDidDocumentWithJson(builder.build(), getNymResponseData.diddocContent)
     }
   }
 

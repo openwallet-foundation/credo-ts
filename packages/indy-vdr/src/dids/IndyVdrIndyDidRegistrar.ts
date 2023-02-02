@@ -8,25 +8,31 @@ import type {
   DidDeactivateResult,
   DidUpdateResult,
   DidDocument,
+  DidDocumentService,
 } from '@aries-framework/core'
 
-import { TypedArrayEncoder, Key, KeyType, DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
+import {
+  Hasher,
+  TypedArrayEncoder,
+  Key,
+  KeyType,
+  DidDocumentRole,
+  DidRecord,
+  DidRepository,
+} from '@aries-framework/core'
 import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-import { DID_INDY_REGEX } from '../utils/did'
 
-import { createKeyAgreementKey, indyDidDocumentFromDid } from './didIndyUtil'
-import { addServicesFromEndpointsAttrib } from './didSovUtil'
+import { createKeyAgreementKey, deepObjectDiff, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
+import { endpointsAttribFromServices } from './didSovUtil'
 
-export class IndyVdrSovDidRegistrar implements DidRegistrar {
+export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['indy']
 
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<DidCreateResult> {
-    const { alias, role, submitterDid } = options.options
     const seed = options.secret?.seed
-
     if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
       return {
         didDocumentMetadata: {},
@@ -38,63 +44,96 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
       }
     }
 
-    const match = submitterDid.match(DID_INDY_REGEX)
-    if (!match) {
+    const { alias, role, submitterDid, services, useEndpointAttrib } = options.options
+    let verkey = options.options.verkey
+    let did = options.did
+    let id
+
+    if (seed && did) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Submitter did must be a valid did:indy did',
+          reason: `Only one of 'seed' and 'did' must be provided`,
         },
       }
     }
 
-    const [, , namespace, submitterId] = match
-
     try {
-      const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+      const { namespace, id: submitterId } = parseIndyDid(submitterDid)
 
-      const buffer = key.publicKey
-      const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-
-      const did = `did:indy:${namespace}:${id}`
-      const verkey = key.publicKeyBase58
-
-      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
-      await this.registerPublicDid(agentContext, submitterId, id, verkey, pool, alias, role)
-
-      // Create did document
-      const didDocumentBuilder = indyDidDocumentFromDid(did, verkey)
-
-      // Add services if endpoints object was passed.
-      if (options.options.endpoints) {
-        // For legacy indy-nodes not supporting diddocContent
-        if (options.options.useEndpointAttrib) {
-          await this.setEndpointsForDid(agentContext, id, options.options.endpoints, pool)
-
-          // TODO: Move this logic to didIndyUtil, as it is common to Resolver and Registrar for legacy networks
-          // If there is at least a didcomm endpoint, generate and a key agreement key
-          const keyAgreementId = `${did}#key-agreement-1`
-          const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
-          if (commTypes.some((type) => options.options.endpoints?.types?.includes(type))) {
-            didDocumentBuilder
-              .addVerificationMethod({
-                controller: did,
-                id: keyAgreementId,
-                publicKeyBase58: createKeyAgreementKey(did, verkey),
-                type: 'X25519KeyAgreementKey2019',
-              })
-              .addKeyAgreement(keyAgreementId)
+      if (did) {
+        id = parseIndyDid(did).id
+        if (!verkey) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: 'If a did is defined, a matching verkey must be provided',
+            },
           }
-          addServicesFromEndpointsAttrib(didDocumentBuilder, did, options.options.endpoints, keyAgreementId)
-        } else {
-          // TODO: create diddocContent parameter
+        }
+        // TODO: Validate that specified did matches to verkey
+      } else {
+        // Create a new key and calculate did according to the rules for indy did method
+        const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+        const buffer = Hasher.hash(key.publicKey, 'sha2-256')
+
+        id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+        verkey = key.publicKeyBase58
+        did = `did:indy:${namespace}:${id}`
+      }
+
+      // Create base did document
+      const didDocumentBuilder = indyDidDocumentFromDid(did, verkey)
+      let diddocContent = {}
+
+      // Add services if object was passed
+      if (services) {
+        services.forEach(didDocumentBuilder.addService)
+
+        const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+        const serviceTypes = new Set(services.map((item) => item.type))
+
+        const keyAgreementId = `${did}#key-agreement-1`
+
+        // If there is at least a communication service, add the key agreement key
+        if (commTypes.some((type) => serviceTypes.has(type))) {
+          didDocumentBuilder
+            .addVerificationMethod({
+              controller: did,
+              id: keyAgreementId,
+              publicKeyBase58: createKeyAgreementKey(verkey),
+              type: 'X25519KeyAgreementKey2019',
+            })
+            .addKeyAgreement(keyAgreementId)
+        }
+
+        if (!useEndpointAttrib) {
+          // create diddocContent parameter based on the diff between the base and the resulting DID Document
+          diddocContent = deepObjectDiff(
+            didDocumentBuilder.build().toJSON(),
+            indyDidDocumentFromDid(did, verkey).build().toJSON()
+          )
         }
       }
 
       // Build did document
       const didDocument = didDocumentBuilder.build()
+
+      // If there are services and we are using legacy indy endpoint attrib, make sure they are suitable before registering the DID
+      if (services && useEndpointAttrib) {
+        endpointsAttribFromServices(services)
+      }
+
+      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
+      await this.registerPublicDid(agentContext, pool, submitterId, id, verkey, alias, role, diddocContent)
+
+      if (services && useEndpointAttrib) {
+        await this.setEndpointsForDid(agentContext, pool, id, endpointsAttribFromServices(services))
+      }
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
@@ -149,7 +188,7 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: updating did:sov not implemented yet`,
+        reason: `notImplemented: updating did:indy not implemented yet`,
       },
     }
   }
@@ -160,22 +199,28 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `notImplemented: deactivating did:sov not implemented yet`,
+        reason: `notImplemented: deactivating did:indy not implemented yet`,
       },
     }
   }
 
   public async registerPublicDid(
     agentContext: AgentContext,
+    pool: IndyVdrPool,
     submitterDid: string,
     targetDid: string,
     verkey: string,
-    pool: IndyVdrPool,
     alias?: string,
-    role?: string
+    role?: string,
+    diddocContent?: Record<string, unknown>
   ) {
     try {
       agentContext.config.logger.debug(`Register public did '${targetDid}' on ledger '${pool}'`)
+
+      // FIXME: Add diddocContent when supported by indy-vdr
+      if (diddocContent) {
+        throw new IndyVdrError('diddocContent is not yet supported')
+      }
 
       const request = new NymRequest({ submitterDid, dest: targetDid, verkey, alias })
 
@@ -208,9 +253,9 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
 
   public async setEndpointsForDid(
     agentContext: AgentContext,
+    pool: IndyVdrPool,
     did: string,
-    endpoints: IndyEndpointAttrib,
-    pool: IndyVdrPool
+    endpoints: IndyEndpointAttrib
   ): Promise<void> {
     try {
       agentContext.config.logger.debug(`Set endpoints for did '${did}' on ledger '${pool.indyNamespace}'`, endpoints)
@@ -244,15 +289,15 @@ export class IndyVdrSovDidRegistrar implements DidRegistrar {
 
 export interface IndyVdrDidCreateOptions extends DidCreateOptions {
   method: 'indy'
-  did?: undefined
-  didDocument?: DidDocument
+  did?: string
+  didDocument?: never // Not yet supported
   options: {
     alias?: string
     role?: string
-    endpoints?: IndyEndpointAttrib
+    services?: DidDocumentService[]
     useEndpointAttrib?: boolean
-    indyNamespace?: string
     submitterDid: string
+    verkey?: string
   }
   secret?: {
     seed?: string
