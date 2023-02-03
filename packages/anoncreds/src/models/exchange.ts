@@ -1,8 +1,19 @@
-// TODO: Maybe we can make this a bit more specific?
-export type WalletQuery = Record<string, unknown>
+export interface AnonCredsProofRequestRestriction {
+  schema_id?: string
+  schema_issuer_id?: string
+  schema_name?: string
+  schema_version?: string
+  issuer_id?: string
+  cred_def_id?: string
+  rev_reg_id?: string
 
-export interface ReferentWalletQuery {
-  [key: string]: WalletQuery
+  // Deprecated, but kept for backwards compatibility with legacy indy anoncreds implementations
+  schema_issuer_did?: string
+  issuer_did?: string
+
+  // the following keys can be used for every `attribute name` in credential.
+  [key: `attr::${string}::marker`]: '1' | '0'
+  [key: `attr::${string}::value`]: string
 }
 
 export interface AnonCredsNonRevokedInterval {
@@ -91,7 +102,7 @@ export interface AnonCredsProofRequest {
     {
       name?: string
       names?: string[]
-      restrictions?: WalletQuery[]
+      restrictions?: AnonCredsProofRequestRestriction[]
       non_revoked?: AnonCredsNonRevokedInterval
     }
   >
@@ -101,7 +112,7 @@ export interface AnonCredsProofRequest {
       name: string
       p_type: '>=' | '>' | '<=' | '<'
       p_value: number
-      restrictions?: WalletQuery[]
+      restrictions?: AnonCredsProofRequestRestriction[]
       non_revoked?: AnonCredsNonRevokedInterval
     }
   >

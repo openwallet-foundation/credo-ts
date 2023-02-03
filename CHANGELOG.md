@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.3](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.2...v0.3.3) (2023-01-18)
+
+### Bug Fixes
+
+- fix typing issues with typescript 4.9 ([#1214](https://github.com/hyperledger/aries-framework-javascript/issues/1214)) ([087980f](https://github.com/hyperledger/aries-framework-javascript/commit/087980f1adf3ee0bc434ca9782243a62c6124444))
+- **openid4vc-client:** set package to private ([#1210](https://github.com/hyperledger/aries-framework-javascript/issues/1210)) ([c697716](https://github.com/hyperledger/aries-framework-javascript/commit/c697716bf1837b9fef307f60ff97f01d3d926728))
+
+### Features
+
+- add anoncreds package ([#1118](https://github.com/hyperledger/aries-framework-javascript/issues/1118)) ([adba83d](https://github.com/hyperledger/aries-framework-javascript/commit/adba83d8df176288083969f2c3f975bbfc1acd9c))
+- add minimal oidc-client package ([#1197](https://github.com/hyperledger/aries-framework-javascript/issues/1197)) ([b6f89f9](https://github.com/hyperledger/aries-framework-javascript/commit/b6f89f943dc4417626f868ac9f43a3d890ab62c6))
+- adding trust ping events and trust ping command ([#1182](https://github.com/hyperledger/aries-framework-javascript/issues/1182)) ([fd006f2](https://github.com/hyperledger/aries-framework-javascript/commit/fd006f262a91f901e7f8a9c6e6882ea178230005))
+- **anoncreds:** add anoncreds registry service ([#1204](https://github.com/hyperledger/aries-framework-javascript/issues/1204)) ([86647e7](https://github.com/hyperledger/aries-framework-javascript/commit/86647e7f55c9a362f6ab500538c4de2112e42206))
+- **indy-sdk:** add indy-sdk package ([#1200](https://github.com/hyperledger/aries-framework-javascript/issues/1200)) ([9933b35](https://github.com/hyperledger/aries-framework-javascript/commit/9933b35a6aa4524caef8a885e71b742cd0d7186b))
+
 ## [0.3.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.1...v0.3.2) (2023-01-04)
 
 ### Bug Fixes

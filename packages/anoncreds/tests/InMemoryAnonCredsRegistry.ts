@@ -9,10 +9,10 @@ import type {
   RegisterCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
-  AnonCredsSchema,
-  AnonCredsCredentialDefinition,
   AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
+  AnonCredsSchema,
+  AnonCredsCredentialDefinition,
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 

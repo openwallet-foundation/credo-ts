@@ -2,6 +2,7 @@ import type { Module } from '../../plugins'
 
 import { getAgentConfig } from '../../../tests/helpers'
 import { BasicMessagesModule } from '../../modules/basic-messages'
+import { CacheModule } from '../../modules/cache'
 import { ConnectionsModule } from '../../modules/connections'
 import { CredentialsModule } from '../../modules/credentials'
 import { DidsModule } from '../../modules/dids'
@@ -72,6 +73,7 @@ describe('AgentModules', () => {
         oob: expect.any(OutOfBandModule),
         indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
+        cache: expect.any(CacheModule),
       })
     })
 
@@ -96,6 +98,7 @@ describe('AgentModules', () => {
         oob: expect.any(OutOfBandModule),
         indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
+        cache: expect.any(CacheModule),
         myModule,
       })
     })
@@ -123,6 +126,7 @@ describe('AgentModules', () => {
         oob: expect.any(OutOfBandModule),
         indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
+        cache: expect.any(CacheModule),
         myModule,
       })
     })

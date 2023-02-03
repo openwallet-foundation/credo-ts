@@ -22,6 +22,7 @@ import type {
   Schemas,
   IndyCredential as IndySdkCredential,
   CredReqMetadata,
+  IndyProofRequest,
 } from 'indy-sdk'
 
 import { injectable, inject, utils } from '@aries-framework/core'
@@ -115,7 +116,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
 
       const indyProof = await this.indySdk.proverCreateProof(
         agentContext.wallet.handle,
-        proofRequest,
+        proofRequest as IndyProofRequest,
         this.parseRequestedCredentials(requestedCredentials),
         agentContext.wallet.masterSecretId,
         indySchemas,
@@ -256,7 +257,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       // Open indy credential search
       const searchHandle = await this.indySdk.proverSearchCredentialsForProofReq(
         agentContext.wallet.handle,
-        options.proofRequest,
+        options.proofRequest as IndyProofRequest,
         options.extraQuery ?? null
       )
 

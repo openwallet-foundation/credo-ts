@@ -5,7 +5,7 @@ import type {
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
 } from '../models'
-import type { AnonCredsIssuerService, AnonCredsHolderService } from '../services'
+import type { AnonCredsIssuerService, AnonCredsHolderService, GetRevocationRegistryDefinitionReturn } from '../services'
 import type { AnonCredsCredentialMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
@@ -62,7 +62,13 @@ const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
 const INDY_CRED = 'hlindy/cred@v2.0'
 
 export class LegacyIndyCredentialFormatService implements CredentialFormatService<LegacyIndyCredentialFormat> {
+  /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.indy */
   public readonly formatKey = 'indy' as const
+
+  /**
+   * credentialRecordType is the type of record that stores the credential. It is stored in the credential
+   * record binding in the credential exchange record.
+   */
   public readonly credentialRecordType = 'anoncreds' as const
 
   /**
@@ -86,6 +92,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       throw new AriesFrameworkError('Missing indy payload in createProposal')
     }
 
+    // We want all properties except for `attributes` and `linkedAttachments` attributes.
+    // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attributes, linkedAttachments, ...indyCredentialProposal } = indyFormat
 
@@ -136,7 +144,6 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const credentialDefinitionId = indyFormat?.credentialDefinitionId ?? credentialProposal.credentialDefinitionId
 
-    // TODO: we may want to extract the
     const attributes = indyFormat?.attributes ?? credentialRecord.credentialAttributes
 
     if (!credentialDefinitionId) {
@@ -282,11 +289,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
 
     const credentialOffer = offerAttachment?.getDataAsJson<AnonCredsCredentialOffer>()
-    const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
+    if (!credentialOffer) throw new AriesFrameworkError('Missing indy credential offer in createCredential')
 
-    if (!credentialOffer || !credentialRequest) {
-      throw new AriesFrameworkError('Missing indy credential offer or credential request in createCredential')
-    }
+    const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
+    if (!credentialRequest) throw new AriesFrameworkError('Missing indy credential request in createCredential')
 
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
@@ -334,34 +340,35 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       )
     }
 
+    if (!credentialRecord.credentialAttributes) {
+      throw new AriesFrameworkError(
+        'Missing credential attributes on credential record. Unable to check credential attributes'
+      )
+    }
+
     const anonCredsCredential = attachment.getDataAsJson<AnonCredsCredential>()
 
-    // We can use the same registry for the credential definition and revocation registry as they MUST have the same issuerId
-    const registry = registryService.getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
-
-    const credentialDefinitionResult = await registry.getCredentialDefinition(
-      agentContext,
-      anonCredsCredential.cred_def_id
-    )
+    const credentialDefinitionResult = await registryService
+      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
+      .getCredentialDefinition(agentContext, anonCredsCredential.cred_def_id)
     if (!credentialDefinitionResult.credentialDefinition) {
       throw new AriesFrameworkError(
         `Unable to resolve credential definition ${anonCredsCredential.cred_def_id}: ${credentialDefinitionResult.resolutionMetadata.error} ${credentialDefinitionResult.resolutionMetadata.message}`
       )
     }
 
-    const revocationRegistryResult = anonCredsCredential.rev_reg_id
-      ? await registry.getRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
-      : null
-    if (revocationRegistryResult && !revocationRegistryResult.revocationRegistryDefinition) {
-      throw new AriesFrameworkError(
-        `Unable to resolve revocation registry definition ${anonCredsCredential.cred_def_id}: ${credentialDefinitionResult.resolutionMetadata.error} ${credentialDefinitionResult.resolutionMetadata.message}`
-      )
-    }
+    // Resolve revocation registry if credential is revocable
+    let revocationRegistryResult: null | GetRevocationRegistryDefinitionReturn = null
+    if (anonCredsCredential.rev_reg_id) {
+      revocationRegistryResult = await registryService
+        .getRegistryForIdentifier(agentContext, anonCredsCredential.rev_reg_id)
+        .getRevocationRegistryDefinition(agentContext, anonCredsCredential.rev_reg_id)
 
-    if (!credentialRecord.credentialAttributes) {
-      throw new AriesFrameworkError(
-        'Missing credential attributes on credential record. Unable to check credential attributes'
-      )
+      if (!revocationRegistryResult.revocationRegistryDefinition) {
+        throw new AriesFrameworkError(
+          `Unable to resolve revocation registry definition ${anonCredsCredential.rev_reg_id}: ${revocationRegistryResult.resolutionMetadata.error} ${revocationRegistryResult.resolutionMetadata.message}`
+        )
+      }
     }
 
     // assert the credential values match the offer values
@@ -414,11 +421,9 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
-    const supportedAttachments = messageAttachments.filter((attachment) =>
-      supportedAttachmentIds.includes(attachment.id)
-    )
+    const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
-    return supportedAttachments[0]
+    return supportedAttachment
   }
 
   public async deleteCredentialById(agentContext: AgentContext, credentialRecordId: string): Promise<void> {
