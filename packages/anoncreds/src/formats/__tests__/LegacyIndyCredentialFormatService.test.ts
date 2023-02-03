@@ -77,7 +77,7 @@ describe('LegacyIndyCredentialFormatService', () => {
       options: {},
     })
 
-    const credentialDefinition = await anonCredsIssuerService.createCredentialDefinition(
+    const { credentialDefinition } = await anonCredsIssuerService.createCredentialDefinition(
       agentContext,
       {
         issuerId: indyDid,

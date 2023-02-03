@@ -6,7 +6,7 @@ import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
-  AnonCredsMasterSecretRepository,
+  AnonCredsLinkSecretRepository,
 } from './repository'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
@@ -34,6 +34,6 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsCredentialDefinitionRepository)
     dependencyManager.registerSingleton(AnonCredsCredentialDefinitionPrivateRepository)
     dependencyManager.registerSingleton(AnonCredsKeyCorrectnessProofRepository)
-    dependencyManager.registerSingleton(AnonCredsMasterSecretRepository)
+    dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
   }
 }

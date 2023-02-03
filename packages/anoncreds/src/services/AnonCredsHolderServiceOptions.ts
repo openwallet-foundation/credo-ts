@@ -13,7 +13,7 @@ import type {
 } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '../models/registry'
@@ -37,8 +37,8 @@ export interface CreateProofOptions {
       // tails file MUST already be downloaded on a higher level and stored
       tailsFilePath: string
       definition: AnonCredsRevocationRegistryDefinition
-      revocationLists: {
-        [timestamp: string]: AnonCredsRevocationList
+      revocationStatusLists: {
+        [timestamp: string]: AnonCredsRevocationStatusList
       }
     }
   }
@@ -84,11 +84,11 @@ export interface CreateCredentialRequestReturn {
   credentialRequestMetadata: AnonCredsCredentialRequestMetadata
 }
 
-export interface CreateMasterSecretOptions {
-  masterSecretId?: string
+export interface CreateLinkSecretOptions {
+  linkSecretId?: string
 }
 
-export interface CreateMasterSecretReturn {
-  masterSecretId: string
-  masterSecretValue?: string
+export interface CreateLinkSecretReturn {
+  linkSecretId: string
+  linkSecretValue?: string
 }

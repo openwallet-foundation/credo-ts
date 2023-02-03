@@ -32,7 +32,7 @@ export interface AnonCredsRevocationRegistryDefinition {
   tailsHash: string
 }
 
-export interface AnonCredsRevocationList {
+export interface AnonCredsRevocationStatusList {
   issuerId: string
   revRegId: string
   revocationList: number[]

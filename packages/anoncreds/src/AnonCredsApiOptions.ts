@@ -1,4 +1,4 @@
-export interface AnonCredsCreateMasterSecretOptions {
-  masterSecretId?: string
+export interface AnonCredsCreateLinkSecretOptions {
+  linkSecretId?: string
   setAsDefault?: boolean
 }
