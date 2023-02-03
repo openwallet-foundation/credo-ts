@@ -57,7 +57,7 @@ export interface InitConfig {
   logger?: Logger
   didCommMimeType?: DidCommMimeType
   useDidKeyInProtocols?: boolean
-  useLegacyDidSovPrefix?: boolean
+  useDidSovPrefixWhereAllowed?: boolean
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
 

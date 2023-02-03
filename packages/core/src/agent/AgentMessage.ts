@@ -31,13 +31,16 @@ export class AgentMessage extends Decorated {
   @Exclude()
   public readonly allowDidSovPrefix: boolean = false
 
-  public toJSON({ useLegacyDidSovPrefix }: { useLegacyDidSovPrefix?: boolean } = {}): Record<string, unknown> {
+  public toJSON({ useDidSovPrefixWhereAllowed }: { useDidSovPrefixWhereAllowed?: boolean } = {}): Record<
+    string,
+    unknown
+  > {
     const json = JsonTransformer.toJSON(this)
 
-    // If we have `useLegacyDidSovPrefix` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
+    // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
     // However, we only do this if the protocol RFC was initially written with the did:sov message type prefix
     // See https://github.com/hyperledger/aries-rfcs/blob/main/features/0348-transition-msg-type-to-https/README.md
-    if (this.allowDidSovPrefix && useLegacyDidSovPrefix) {
+    if (this.allowDidSovPrefix && useDidSovPrefixWhereAllowed) {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
     }
 
