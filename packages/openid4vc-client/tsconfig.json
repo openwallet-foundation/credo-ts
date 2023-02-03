@@ -2,6 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["jest"],
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }
