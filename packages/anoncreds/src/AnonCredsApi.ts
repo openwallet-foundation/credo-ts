@@ -116,30 +116,28 @@ export class AnonCredsApi {
    * with the {@link schemaId}
    */
   public async getSchema(schemaId: string): Promise<GetSchemaReturn> {
+    const failedReturnBase = {
+      resolutionMetadata: {
+        error: 'error',
+        message: `Unable to resolve schema ${schemaId}`,
+      },
+      schemaId,
+      schemaMetadata: {},
+    }
+
     const registry = this.findRegistryForIdentifier(schemaId)
     if (!registry) {
-      return {
-        resolutionMetadata: {
-          error: 'unsupportedAnonCredsMethod',
-          message: `Unable to resolve schema ${schemaId}: No registry found for identifier ${schemaId}`,
-        },
-        schemaId,
-        schemaMetadata: {},
-      }
+      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve schema ${schemaId}: No registry found for identifier ${schemaId}`
+      return failedReturnBase
     }
 
     try {
       const result = await registry.getSchema(this.agentContext, schemaId)
       return result
     } catch (error) {
-      return {
-        resolutionMetadata: {
-          error: 'error',
-          message: `Unable to resolve schema ${schemaId}: ${error.message}`,
-        },
-        schemaId,
-        schemaMetadata: {},
-      }
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve schema ${schemaId}: ${error.message}`
+      return failedReturnBase
     }
   }
 
@@ -156,18 +154,7 @@ export class AnonCredsApi {
 
     const registry = this.findRegistryForIdentifier(options.schema.issuerId)
     if (!registry) {
-      return {
-        schemaState: {
-          state: 'failed',
-          reason: `Unable to register schema. No registry found for issuerId ${options.schema.issuerId}`,
-        },
-        registrationMetadata: {},
-        schemaMetadata: {},
-      }
-    }
-
-    if (!registry) {
-      failedReturnBase.schemaState.reason = `Could not find a registry for issuerId ${options.schema.issuerId}`
+      failedReturnBase.schemaState.reason = `Unable to register schema. No registry found for issuerId ${options.schema.issuerId}`
       return failedReturnBase
     }
 
@@ -194,21 +181,29 @@ export class AnonCredsApi {
    * with the {@link credentialDefinitionId}
    */
   public async getCredentialDefinition(credentialDefinitionId: string): Promise<GetCredentialDefinitionReturn> {
-    const registry = this.findRegistryForIdentifier(credentialDefinitionId)
-
-    if (!registry) {
-      return {
-        resolutionMetadata: {
-          error: 'unsupportedAnonCredsMethod',
-          message: `Unable to resolve credential definition ${credentialDefinitionId}: No registry found for identifier ${credentialDefinitionId}`,
-        },
-        credentialDefinitionId,
-        credentialDefinitionMetadata: {},
-      }
+    const failedReturnBase = {
+      resolutionMetadata: {
+        error: 'error',
+        message: `Unable to resolve credential definition ${credentialDefinitionId}`,
+      },
+      credentialDefinitionId,
+      credentialDefinitionMetadata: {},
     }
 
-    const result = await registry.getCredentialDefinition(this.agentContext, credentialDefinitionId)
-    return result
+    const registry = this.findRegistryForIdentifier(credentialDefinitionId)
+    if (!registry) {
+      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve credential definition ${credentialDefinitionId}: No registry found for identifier ${credentialDefinitionId}`
+      return failedReturnBase
+    }
+
+    try {
+      const result = await registry.getCredentialDefinition(this.agentContext, credentialDefinitionId)
+      return result
+    } catch (error) {
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve credential definition ${credentialDefinitionId}: ${error.message}`
+      return failedReturnBase
+    }
   }
 
   public async registerCredentialDefinition(options: {
@@ -216,66 +211,70 @@ export class AnonCredsApi {
     // TODO: options should support supportsRevocation at some points
     options: Extensible
   }): Promise<RegisterCredentialDefinitionReturn> {
+    const failedReturnBase = {
+      credentialDefinitionState: {
+        state: 'failed' as const,
+        reason: `Error registering credential definition for issuerId ${options.credentialDefinition.issuerId}`,
+      },
+      registrationMetadata: {},
+      credentialDefinitionMetadata: {},
+    }
+
     const registry = this.findRegistryForIdentifier(options.credentialDefinition.issuerId)
     if (!registry) {
-      return {
-        credentialDefinitionState: {
-          state: 'failed',
-          reason: `Unable to register credential definition. No registry found for issuerId ${options.credentialDefinition.issuerId}`,
-        },
-        registrationMetadata: {},
-        credentialDefinitionMetadata: {},
-      }
+      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for issuerId ${options.credentialDefinition.issuerId}`
+      return failedReturnBase
     }
 
     const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
     if (!schemaRegistry) {
-      return {
-        credentialDefinitionState: {
-          state: 'failed',
-          reason: `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`,
-        },
-        registrationMetadata: {},
-        credentialDefinitionMetadata: {},
-      }
-    }
-    const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
-
-    if (!schemaResult.schema) {
-      return {
-        credentialDefinitionMetadata: {},
-        credentialDefinitionState: {
-          reason: `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`,
-          state: 'failed',
-        },
-        registrationMetadata: {},
-      }
+      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
+      return failedReturnBase
     }
 
-    const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
-      await this.anonCredsIssuerService.createCredentialDefinition(
-        this.agentContext,
-        {
-          issuerId: options.credentialDefinition.issuerId,
-          schemaId: options.credentialDefinition.schemaId,
-          tag: options.credentialDefinition.tag,
-          supportRevocation: false,
-          schema: schemaResult.schema,
-        },
-        // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
-        {
-          indyLedgerSchemaSeqNo: schemaResult.schemaMetadata.indyLedgerSeqNo,
-        }
-      )
+    try {
+      const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
 
-    const result = await registry.registerCredentialDefinition(this.agentContext, {
-      credentialDefinition,
-      options: options.options,
-    })
+      if (!schemaResult.schema) {
+        failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
+        return failedReturnBase
+      }
 
-    await this.storeCredentialDefinitionRecord(result, credentialDefinitionPrivate, keyCorrectnessProof)
+      const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
+        await this.anonCredsIssuerService.createCredentialDefinition(
+          this.agentContext,
+          {
+            issuerId: options.credentialDefinition.issuerId,
+            schemaId: options.credentialDefinition.schemaId,
+            tag: options.credentialDefinition.tag,
+            supportRevocation: false,
+            schema: schemaResult.schema,
+          },
+          // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
+          {
+            indyLedgerSchemaSeqNo: schemaResult.schemaMetadata.indyLedgerSeqNo,
+          }
+        )
 
-    return result
+      const result = await registry.registerCredentialDefinition(this.agentContext, {
+        credentialDefinition,
+        options: options.options,
+      })
+
+      await this.storeCredentialDefinitionRecord(result, credentialDefinitionPrivate, keyCorrectnessProof)
+
+      return result
+    } catch (error) {
+      // Storage failed
+      if (error instanceof AnonCredsStoreRecordError) {
+        failedReturnBase.credentialDefinitionState.reason = `Error storing credential definition records: ${error.message}`
+        return failedReturnBase
+      }
+
+      // In theory registerCredentialDefinition SHOULD NOT throw, but we can't know for sure
+      failedReturnBase.credentialDefinitionState.reason = `Error registering credential definition: ${error.message}`
+      return failedReturnBase
+    }
   }
 
   /**
@@ -285,21 +284,29 @@ export class AnonCredsApi {
   public async getRevocationRegistryDefinition(
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
-    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
-
-    if (!registry) {
-      return {
-        resolutionMetadata: {
-          error: 'unsupportedAnonCredsMethod',
-          message: `Unable to resolve revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`,
-        },
-        revocationRegistryDefinitionId,
-        revocationRegistryDefinitionMetadata: {},
-      }
+    const failedReturnBase = {
+      resolutionMetadata: {
+        error: 'error',
+        message: `Unable to resolve revocation registry ${revocationRegistryDefinitionId}`,
+      },
+      revocationRegistryDefinitionId,
+      revocationRegistryDefinitionMetadata: {},
     }
 
-    const result = await registry.getRevocationRegistryDefinition(this.agentContext, revocationRegistryDefinitionId)
-    return result
+    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
+    if (!registry) {
+      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`
+      return failedReturnBase
+    }
+
+    try {
+      const result = await registry.getRevocationRegistryDefinition(this.agentContext, revocationRegistryDefinitionId)
+      return result
+    } catch (error) {
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
+      return failedReturnBase
+    }
   }
 
   /**
@@ -310,20 +317,32 @@ export class AnonCredsApi {
     revocationRegistryDefinitionId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
-    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
-
-    if (!registry) {
-      return {
-        resolutionMetadata: {
-          error: 'unsupportedAnonCredsMethod',
-          message: `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`,
-        },
-        revocationStatusListMetadata: {},
-      }
+    const failedReturnBase = {
+      resolutionMetadata: {
+        error: 'error',
+        message: `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}`,
+      },
+      revocationStatusListMetadata: {},
     }
 
-    const result = await registry.getRevocationStatusList(this.agentContext, revocationRegistryDefinitionId, timestamp)
-    return result
+    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
+    if (!registry) {
+      failedReturnBase.resolutionMetadata.error = 'unsupportedAnonCredsMethod'
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: No registry found for identifier ${revocationRegistryDefinitionId}`
+      return failedReturnBase
+    }
+
+    try {
+      const result = await registry.getRevocationStatusList(
+        this.agentContext,
+        revocationRegistryDefinitionId,
+        timestamp
+      )
+      return result
+    } catch (error) {
+      failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
+      return failedReturnBase
+    }
   }
 
   private async storeCredentialDefinitionRecord(
@@ -331,50 +350,54 @@ export class AnonCredsApi {
     credentialDefinitionPrivate?: Record<string, unknown>,
     keyCorrectnessProof?: Record<string, unknown>
   ): Promise<void> {
-    // If we have both the credentialDefinition and the credentialDefinitionId we will store a copy of the credential definition. We may need to handle an
-    // edge case in the future where we e.g. don't have the id yet, and it is registered through a different channel
-    if (
-      result.credentialDefinitionState.credentialDefinition &&
-      result.credentialDefinitionState.credentialDefinitionId
-    ) {
-      const credentialDefinitionRecord = new AnonCredsCredentialDefinitionRecord({
-        credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-        credentialDefinition: result.credentialDefinitionState.credentialDefinition,
-      })
-
-      // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
-      // the indyLedgerSeqNo and the didIndyNamespace, but it can get quite big if complete transactions
-      // are stored in the metadata
-      credentialDefinitionRecord.metadata.set(
-        AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
-        result.credentialDefinitionMetadata
-      )
-      credentialDefinitionRecord.metadata.set(
-        AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionRegistrationMetadata,
-        result.registrationMetadata
-      )
-
-      await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, credentialDefinitionRecord)
-
-      // Store Credential Definition private data (if provided by issuer service)
-      if (credentialDefinitionPrivate) {
-        const credentialDefinitionPrivateRecord = new AnonCredsCredentialDefinitionPrivateRecord({
+    try {
+      // If we have both the credentialDefinition and the credentialDefinitionId we will store a copy of the credential definition. We may need to handle an
+      // edge case in the future where we e.g. don't have the id yet, and it is registered through a different channel
+      if (
+        result.credentialDefinitionState.credentialDefinition &&
+        result.credentialDefinitionState.credentialDefinitionId
+      ) {
+        const credentialDefinitionRecord = new AnonCredsCredentialDefinitionRecord({
           credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-          value: credentialDefinitionPrivate,
+          credentialDefinition: result.credentialDefinitionState.credentialDefinition,
         })
-        await this.anonCredsCredentialDefinitionPrivateRepository.save(
-          this.agentContext,
-          credentialDefinitionPrivateRecord
+
+        // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
+        // the indyLedgerSeqNo and the didIndyNamespace, but it can get quite big if complete transactions
+        // are stored in the metadata
+        credentialDefinitionRecord.metadata.set(
+          AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
+          result.credentialDefinitionMetadata
         )
-      }
+        credentialDefinitionRecord.metadata.set(
+          AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionRegistrationMetadata,
+          result.registrationMetadata
+        )
 
-      if (keyCorrectnessProof) {
-        const keyCorrectnessProofRecord = new AnonCredsKeyCorrectnessProofRecord({
-          credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-          value: keyCorrectnessProof,
-        })
-        await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
+        await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, credentialDefinitionRecord)
+
+        // Store Credential Definition private data (if provided by issuer service)
+        if (credentialDefinitionPrivate) {
+          const credentialDefinitionPrivateRecord = new AnonCredsCredentialDefinitionPrivateRecord({
+            credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+            value: credentialDefinitionPrivate,
+          })
+          await this.anonCredsCredentialDefinitionPrivateRepository.save(
+            this.agentContext,
+            credentialDefinitionPrivateRecord
+          )
+        }
+
+        if (keyCorrectnessProof) {
+          const keyCorrectnessProofRecord = new AnonCredsKeyCorrectnessProofRecord({
+            credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+            value: keyCorrectnessProof,
+          })
+          await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
+        }
       }
+    } catch (error) {
+      throw new AnonCredsStoreRecordError(`Error storing credential definition records`, { cause: error })
     }
   }
 
