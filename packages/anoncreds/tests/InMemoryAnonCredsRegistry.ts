@@ -31,7 +31,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   private schemas: Record<string, AnonCredsSchema>
   private credentialDefinitions: Record<string, AnonCredsCredentialDefinition>
   private revocationRegistryDefinitions: Record<string, AnonCredsRevocationRegistryDefinition>
-  // { revocationRegistryDefinitionId: { timestamp: revocationStatusList }
   private revocationStatusLists: Record<string, Record<string, AnonCredsRevocationStatusList>>
 
   public constructor({
