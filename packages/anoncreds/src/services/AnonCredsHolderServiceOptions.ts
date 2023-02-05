@@ -81,7 +81,7 @@ export type GetCredentialsForProofRequestReturn = Array<{
 export interface CreateCredentialRequestOptions {
   credentialOffer: AnonCredsCredentialOffer
   credentialDefinition: AnonCredsCredentialDefinition
-  masterSecretId?: string
+  linkSecretId?: string
 }
 
 export interface CreateCredentialRequestReturn {
