@@ -1,7 +1,7 @@
 import type { Key } from '@aries-framework/core'
 
 import { IndyWallet, KeyType, SigningProviderRegistry, TypedArrayEncoder } from '@aries-framework/core'
-import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from 'indy-vdr-test-shared'
+import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
