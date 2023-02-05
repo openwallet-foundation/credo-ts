@@ -858,12 +858,12 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/anoncreds-nodejs@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.3.tgz#e0b80feef81d61fc1b2df80f94755b4faf32de65"
-  integrity sha512-94Xe4bHvgZKQtJkfR4huP62+D5MROEgZ50BELDtAVi29rdRH34/RAd+Me/o91g2g737nGanp+aEA83tBap3McA==
+"@hyperledger/anoncreds-nodejs@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.4.tgz#cbea9d2d815e76162dad4e276837285b7faffaed"
+  integrity sha512-ia3X2ZSAfFYZ2H8AkzifgkYy2d46x2a+M7mbBf+Kelle/x3LZSxi+oQPK800vFmaMpup3ZvkvP2DuS+Ea+nWXQ==
   dependencies:
-    "@hyperledger/anoncreds-shared" "0.1.0-dev.3"
+    "@hyperledger/anoncreds-shared" "0.1.0-dev.4"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "4.0.3"
     node-cache "5.1.2"
@@ -871,10 +871,10 @@
     ref-napi "3.0.3"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.1.0-dev.3", "@hyperledger/anoncreds-shared@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.3.tgz#5fd9e190667c683b92c76e826bce6d3a693b8a19"
-  integrity sha512-I+EV6nSkW1yQ/mIRvnItooqbcMee7OHYcWf4KCbrwZ7WrEz7S+EdNWVK6RYpaj0MaEE6RvnAXiXDNaSNHdZ+yg==
+"@hyperledger/anoncreds-shared@0.1.0-dev.4", "@hyperledger/anoncreds-shared@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.4.tgz#9df23f7d02c3010a746c33c2f41879bc707439ac"
+  integrity sha512-USB/arrVmdGDcfSlptCRwr12eG/Yqb2A7uESwAIYlMBWf1DtZKQGCRIZmRnHZP/mr4oMylXGfjUOqTRRVzGHXA==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"

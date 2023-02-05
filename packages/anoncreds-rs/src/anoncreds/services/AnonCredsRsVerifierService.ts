@@ -35,9 +35,9 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       for (const revocationRegistryDefinitionId in revocationStates) {
         const { definition, revocationLists } = options.revocationStates[revocationRegistryDefinitionId]
 
-        revocationRegistryDefinitions[revocationRegistryDefinitionId] =
-          // TODO: remove as unknown once it is fixed in anoncreds-shared
-          RevocationRegistryDefinition.load(JSON.stringify(definition)) as unknown as RevocationRegistryDefinition
+        revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.load(
+          JSON.stringify(definition)
+        )
 
         for (const timestamp in revocationLists) {
           revocationStatusLists.push(
@@ -52,7 +52,6 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       }
 
       return presentation.verify({
-        presentation: presentation, // FIXME: remove as soon as it is removed from anoncreds API
         presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,

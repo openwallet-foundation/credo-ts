@@ -13,20 +13,26 @@ import type {
   CreateMasterSecretReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
+import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsMasterSecretRepository } from '@aries-framework/anoncreds'
 import {
+  Credential,
   CredentialDefinition,
   CredentialOffer,
   CredentialRequest,
+  CredentialRevocationState,
   MasterSecret,
   Presentation,
   PresentationRequest,
+  RevocationRegistryDefinition,
+  RevocationStatusList,
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
 import { uuid } from '../../../../core/src/utils/uuid'
 import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
+import { AnonCredsCredentialRepository } from '../repository/AnonCredsCredentialRepository'
 
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
   public async createMasterSecret(
@@ -60,17 +66,104 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         rsSchemas[schemaId] = Schema.load(JSON.stringify(schemas[schemaId]))
       }
 
-      // TODO: Get all requested credentials and take masterSecret. If it's not the same for every credential, throw error
-      const masterSecret = 'masterSecret'
+      const credentialIds = new Set<string>()
+      const credentialsProve: CredentialProve[] = []
+
+      let entryIndex = 0
+      for (const referent in requestedCredentials.requestedAttributes) {
+        const attribute = requestedCredentials.requestedAttributes[referent]
+        credentialIds.add(attribute.credentialId)
+        credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
+        entryIndex = entryIndex + 1
+      }
+
+      for (const referent in requestedCredentials.requestedPredicates) {
+        const predicate = requestedCredentials.requestedPredicates[referent]
+        credentialIds.add(predicate.credentialId)
+        credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
+        entryIndex = entryIndex + 1
+      }
+
+      const credentials: CredentialEntry[] = []
+
+      const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+
+      // Get all requested credentials and take masterSecret. If it's not the same for every credential, throw error
+      let masterSecretId
+      for (const credentialId of credentialIds) {
+        const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
+
+        const credential = Credential.load(JSON.stringify(credentialRecord.credential))
+        const revocationRegistryDefinitionId = credential.revocationRegistryId
+
+        if (!masterSecretId) {
+          masterSecretId = credentialRecord.masterSecretId
+        } else {
+          if (masterSecretId !== credentialRecord.masterSecretId) {
+            throw new AnonCredsRsError(
+              'All credentials in a Proof should have been issued using the same Master Secret'
+            )
+          }
+        }
+
+        const revocationRegistryIndex = credential.revocationRegistryIndex ?? 0 // FIXME: case where revocationRegistryIndex is not defined
+
+        if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
+          throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
+        }
+
+        const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
+
+        const { revocationRegistryDefinition } = RevocationRegistryDefinition.create({
+          credentialDefinition: rsCredentialDefinitions[definition.credDefId],
+          credentialDefinitionId: definition.credDefId,
+          issuerId: definition.issuerId,
+          maximumCredentialNumber: definition.value.maxCredNum,
+          originDid: 'origin:uri', // FIXME: Remove from API
+          revocationRegistryType: definition.revocDefType,
+          tag: definition.tag,
+          //tailsDirectoryPath: TODO
+        })
+
+        const revocationState = CredentialRevocationState.create({
+          revocationRegistryIndex,
+          revocationRegistryDefinition,
+          tailsPath: tailsFilePath,
+          revocationRegistryStatusList: RevocationStatusList.create({
+            issuanceByDefault: true,
+            revocationRegistryDefinition,
+            revocationRegistryDefinitionId,
+            timestamp: new Date().getTime() / 1000, //TODO: Should be set?
+          }),
+        })
+
+        credentials.push({
+          credential,
+          revocationState,
+          timestamp: new Date().getTime() / 1000, // TODO: set proper timestamp value
+        })
+      }
+
+      if (!masterSecretId) {
+        throw new AnonCredsRsError('Master Secret not defined')
+      }
+
+      const masterSecretRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsMasterSecretRepository)
+        .getByMasterSecretId(agentContext, masterSecretId)
+
+      if (!masterSecretRecord.value) {
+        throw new AnonCredsRsError('Master Secret value not stored')
+      }
 
       const presentation = Presentation.create({
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,
         presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
-        credentials: [], //this.parseRequestedCredentials(requestedCredentials), // TODO
-        credentialsProve: [], //TODO,
-        selfAttest: {}, //TODO
-        masterSecret: MasterSecret.load(JSON.parse(masterSecret)),
+        credentials,
+        credentialsProve,
+        selfAttest: requestedCredentials.selfAttestedAttributes,
+        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: masterSecretRecord.value } })),
       })
 
       return JSON.parse(presentation.toJson())
@@ -105,7 +198,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
         credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
         credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
-        proverDid: '', //FIXME: Remove as soon as it is fixed in anoncreds-rs
         masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: masterSecretRecord.value } })),
         masterSecretId: masterSecretRecord.id,
       })
@@ -128,13 +220,28 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialOptions
   ): Promise<AnonCredsCredentialInfo> {
-    // TODO
-    throw new AnonCredsRsError('Not implemented yet')
+    const credentialRecord = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .getByCredentialId(agentContext, options.credentialId)
+
+    const attributes: { [key: string]: string } = {}
+    for (const attribute in credentialRecord.credential.values) {
+      attributes[attribute] = credentialRecord.credential.values[attribute].raw
+    }
+    return {
+      attributes,
+      credentialDefinitionId: credentialRecord.credential.cred_def_id,
+      credentialId: credentialRecord.credentialId,
+      schemaId: credentialRecord.credential.schema_id,
+      // TODO: credentialRevocationId
+      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+    }
   }
 
   public async deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void> {
-    // TODO
-    throw new AnonCredsRsError('Not implemented yet')
+    const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+    const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
+    await credentialRepository.delete(agentContext, credentialRecord)
   }
 
   public async getCredentialsForProofRequest(
