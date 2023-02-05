@@ -107,8 +107,11 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+
       - name: Run tests
-        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail --max-workers ${{ steps.cpu-cores.outputs.count }}
 
       - uses: codecov/codecov-action@v1
         if: always()
