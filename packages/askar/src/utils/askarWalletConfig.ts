@@ -2,7 +2,7 @@ import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPost
 import type { WalletConfig } from '@aries-framework/core'
 
 import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
-import { StoreKeyMethod } from 'aries-askar-test-shared'
+import { StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod?: KeyDerivationMethod) => {
   if (!keyDerivationMethod) {

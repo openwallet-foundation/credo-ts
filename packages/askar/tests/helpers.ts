@@ -2,7 +2,6 @@ import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import type { InitConfig } from '@aries-framework/core'
 
 import { LogLevel } from '@aries-framework/core'
-import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import path from 'path'
 
 import { TestLogger } from '../../core/tests/logger'
@@ -45,6 +44,6 @@ export function getPostgresAgentOptions(
   return {
     config,
     dependencies: agentDependencies,
-    modules: { askar: new AskarModule({ askar: new NodeJSAriesAskar() }) },
+    modules: { askar: new AskarModule() },
   } as const
 }

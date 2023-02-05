@@ -27,9 +27,6 @@
     "run-mediator": "ts-node ./samples/mediator.ts",
     "next-version-bump": "ts-node ./scripts/get-next-bump.ts"
   },
-  "dependencies": {
-    "aries-askar-test-nodejs": "^0.1.0-dev.6"
-  },
   "devDependencies": {
     "@types/cors": "^2.8.10",
     "@types/eslint": "^7.2.13",

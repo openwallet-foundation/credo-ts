@@ -1,5 +1,5 @@
 import type { BaseRecord, BaseRecordConstructor, Query, TagsBase } from '@aries-framework/core'
-import type { EntryObject } from 'aries-askar-test-shared'
+import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { JsonTransformer } from '@aries-framework/core'
 

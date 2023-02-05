@@ -858,6 +858,26 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
+"@hyperledger/aries-askar-nodejs@^0.1.0-dev.1":
+  version "0.1.0-dev.1"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.1.tgz#b384d422de48f0ce5918e1612d2ca32ebd160520"
+  integrity sha512-XrRskQ0PaNAerItvfxKkS8YaVg+iuImguoqfyQ4ZSaePKZQnTqZpkxo6faKS+GlsaubRXz/6yz3YndVRIxPO+w==
+  dependencies:
+    "@hyperledger/aries-askar-shared" "0.1.0-dev.1"
+    "@mapbox/node-pre-gyp" "^1.0.10"
+    ffi-napi "^4.0.3"
+    node-cache "^5.1.2"
+    ref-array-di "^1.2.2"
+    ref-napi "^3.0.3"
+    ref-struct-di "^1.1.1"
+
+"@hyperledger/aries-askar-shared@0.1.0-dev.1", "@hyperledger/aries-askar-shared@^0.1.0-dev.1":
+  version "0.1.0-dev.1"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.1.tgz#4e4e494c3a44c7c82f7b95ad4f06149f2a3a9b6c"
+  integrity sha512-Pt525M6CvnE3N6jxMpSqLy7RpOsc4oqa2Q+hc2UdCHuSYwmM/aeqt6wiA5dpghvl8g/78lCi1Dz74pzp7Dmm3w==
+  dependencies:
+    fast-text-encoding "^1.0.3"
+
 "@hyperledger/indy-vdr-nodejs@^0.1.0-dev.4":
   version "0.1.0-dev.4"
   resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.4.tgz#b5d2090b30c4a51e4e4f15a024054aada0d3550e"
@@ -3062,26 +3082,6 @@ argparse@^1.0.7:
   integrity sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==
   dependencies:
     sprintf-js "~1.0.2"
-
-aries-askar-test-nodejs@^0.1.0-dev.6:
-  version "0.1.0-dev.6"
-  resolved "https://registry.yarnpkg.com/aries-askar-test-nodejs/-/aries-askar-test-nodejs-0.1.0-dev.6.tgz#ad63f37a5c7ff7c2c77e063d3113e48a56a71c78"
-  integrity sha512-SMF34Ntd20XeL0gFqMLFRRLp+Wsk0U6kTYcZNJQ5FYJR7H2qAIbPp9t3TyyTT2cpRk98bNqcG0xHrXjTnAbtcQ==
-  dependencies:
-    "@mapbox/node-pre-gyp" "^1.0.10"
-    aries-askar-test-shared "0.1.0-dev.6"
-    ffi-napi "^4.0.3"
-    node-cache "^5.1.2"
-    ref-array-di "^1.2.2"
-    ref-napi "^3.0.3"
-    ref-struct-di "^1.1.1"
-
-aries-askar-test-shared@0.1.0-dev.6, aries-askar-test-shared@^0.1.0-dev.6:
-  version "0.1.0-dev.6"
-  resolved "https://registry.yarnpkg.com/aries-askar-test-shared/-/aries-askar-test-shared-0.1.0-dev.6.tgz#409d60067b8772b154f4b549261d317979b05a39"
-  integrity sha512-PKAUqxaqDTAgYxvORZr2ugulmu8KRJ2PKRb45fwjWvNRUgkfWXSEnGCogTZ8Y1Xs4c2gpypnilVbMmUy5fhDhQ==
-  dependencies:
-    fast-text-encoding "^1.0.3"
 
 arr-diff@^4.0.0:
   version "4.0.0"

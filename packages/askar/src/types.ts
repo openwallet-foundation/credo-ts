@@ -1,4 +1,3 @@
-import type { AriesAskar } from 'aries-askar-test-shared'
+import type { AriesAskar } from '@hyperledger/aries-askar-shared'
 
-export const AskarSymbol = Symbol('Askar')
 export type { AriesAskar }

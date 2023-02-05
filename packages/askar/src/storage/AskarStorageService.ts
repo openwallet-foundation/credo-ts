@@ -7,7 +7,7 @@ import {
   injectable,
   JsonTransformer,
 } from '@aries-framework/core'
-import { Scan } from 'aries-askar-test-shared'
+import { Scan } from '@hyperledger/aries-askar-shared'
 
 import { askarErrors, isAskarError } from '../utils/askarError'
 import { assertAskarWallet } from '../utils/assertAskarWallet'

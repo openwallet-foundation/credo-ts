@@ -7,8 +7,6 @@ import {
   SigningProviderRegistry,
   KeyDerivationMethod,
 } from '@aries-framework/core'
-import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
-import { registerAriesAskar } from 'aries-askar-test-shared'
 
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
@@ -26,7 +24,6 @@ describe('askarWallet packing', () => {
   let askarWallet: AskarWallet
 
   beforeEach(async () => {
-    registerAriesAskar({ askar: new NodeJSAriesAskar() })
     askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     await askarWallet.createAndOpen(walletConfig)
   })

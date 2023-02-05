@@ -1,11 +1,10 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
-import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
 import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../packages/core/tests/helpers'
 
-import { AskarModule, AskarStorageService, AskarWallet } from '@aries-framework/askar'
+import { AskarModule } from '@aries-framework/askar'
 import { Agent, DependencyManager, InjectionSymbols } from '@aries-framework/core'
 import { IndySdkModule, IndySdkStorageService, IndySdkWallet } from '@aries-framework/indy-sdk'
 
@@ -15,10 +14,8 @@ import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-// FIXME: Remove when Askar JS Wrapper performance issues are solved
-jest.setTimeout(180000)
-
-describe('E2E Askar-Indy SDK Wallet Subject tests', () => {
+// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
+describe.skip('E2E Askar-Indy SDK Wallet Subject tests', () => {
   let recipientAgent: Agent
   let senderAgent: Agent
 
@@ -48,44 +45,26 @@ describe('E2E Askar-Indy SDK Wallet Subject tests', () => {
     )
 
     // Recipient is an Agent using Askar Wallet
-    const recipientDependencyManager = new DependencyManager()
-    recipientDependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
-    recipientDependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
-    recipientAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
-        modules: { askar: new AskarModule({ askar: new NodeJSAriesAskar() }) },
-      },
-      recipientDependencyManager
-    )
+    recipientAgent = new Agent({
+      ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
+      modules: { askar: new AskarModule() },
+    })
 
     await e2eWalletTest(senderAgent, recipientAgent)
   })
 
   test('Wallet Subject flow - Askar Sender / Askar Recipient ', async () => {
-    // Sender is an Agent using Indy SDK Wallet
-    const senderDependencyManager = new DependencyManager()
-    senderDependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
-    senderDependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
-    senderAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Sender Askar', { endpoints: ['rxjs:sender'] }),
-        modules: { askar: new AskarModule({ askar: new NodeJSAriesAskar() }) },
-      },
-      senderDependencyManager
-    )
+    // Sender is an Agent using Askar Wallet
+    senderAgent = new Agent({
+      ...getAgentOptions('E2E Wallet Subject Sender Askar', { endpoints: ['rxjs:sender'] }),
+      modules: { askar: new AskarModule() },
+    })
 
     // Recipient is an Agent using Askar Wallet
-    const recipientDependencyManager = new DependencyManager()
-    recipientDependencyManager.registerContextScoped(InjectionSymbols.Wallet, AskarWallet)
-    recipientDependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
-    recipientAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
-        modules: { askar: new AskarModule({ askar: new NodeJSAriesAskar() }) },
-      },
-      recipientDependencyManager
-    )
+    recipientAgent = new Agent({
+      ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
+      modules: { askar: new AskarModule() },
+    })
 
     await e2eWalletTest(senderAgent, recipientAgent)
   })

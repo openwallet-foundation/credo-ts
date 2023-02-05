@@ -6,8 +6,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@aries-framework/core'
-import { NodeJSAriesAskar } from 'aries-askar-test-nodejs'
-import { registerAriesAskar } from 'aries-askar-test-shared'
+import { ariesAskar } from '@hyperledger/aries-askar-shared'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -19,11 +18,9 @@ describe('AskarStorageService', () => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
   let agentContext: AgentContext
-  const askar = new NodeJSAriesAskar()
 
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
-    registerAriesAskar({ askar })
 
     wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     agentContext = getAgentContext({
@@ -65,7 +62,7 @@ describe('AskarStorageService', () => {
         },
       })
 
-      const retrieveRecord = await askar.sessionFetch({
+      const retrieveRecord = await ariesAskar.sessionFetch({
         category: record.type,
         name: record.id,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -85,7 +82,7 @@ describe('AskarStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await askar.sessionUpdate({
+      await ariesAskar.sessionUpdate({
         category: TestRecord.type,
         name: 'some-id',
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

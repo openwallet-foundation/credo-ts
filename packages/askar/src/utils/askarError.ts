@@ -1,4 +1,4 @@
-import { AriesAskarError } from 'aries-askar-test-shared'
+import { AriesAskarError } from '@hyperledger/aries-askar-shared'
 
 export enum askarErrors {
   Success = 0,

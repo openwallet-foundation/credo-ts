@@ -13,7 +13,7 @@ import type {
   KeyPair,
   KeyDerivationMethod,
 } from '@aries-framework/core'
-import type { Session } from 'aries-askar-test-shared'
+import type { Session } from '@hyperledger/aries-askar-shared'
 
 import {
   JsonTransformer,
@@ -35,7 +35,14 @@ import {
   WalletNotFoundError,
 } from '@aries-framework/core'
 // eslint-disable-next-line import/order
-import { StoreKeyMethod, KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from 'aries-askar-test-shared'
+import {
+  StoreKeyMethod,
+  KeyAlgs,
+  CryptoBox,
+  Store,
+  Key as AskarKey,
+  keyAlgFromString,
+} from '@hyperledger/aries-askar-shared'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
