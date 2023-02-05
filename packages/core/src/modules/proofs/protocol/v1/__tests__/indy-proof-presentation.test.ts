@@ -60,7 +60,7 @@ describe('Present Proof', () => {
 
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofExchangeRecord.id,
@@ -118,7 +118,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    didCommMessageRepository = faberAgent.injectionContainer.resolve<DidCommMessageRepository>(DidCommMessageRepository)
+    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
 
     const request = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberProofExchangeRecord.id,

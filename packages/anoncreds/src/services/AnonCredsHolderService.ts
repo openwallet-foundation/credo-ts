@@ -7,9 +7,11 @@ import type {
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
 } from './AnonCredsHolderServiceOptions'
-import type { CredentialInfo } from '../models'
+import type { AnonCredsCredentialInfo } from '../models'
 import type { AnonCredsProof } from '../models/exchange'
 import type { AgentContext } from '@aries-framework/core'
+
+export const AnonCredsHolderServiceSymbol = Symbol('AnonCredsHolderService')
 
 export interface AnonCredsHolderService {
   createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof>
@@ -19,8 +21,10 @@ export interface AnonCredsHolderService {
     metadata?: Record<string, unknown>
   ): Promise<string>
 
-  // TODO: indy has different return types for the credential
-  getCredential(agentContext: AgentContext, options: GetCredentialOptions): Promise<CredentialInfo>
+  // TODO: this doesn't actually return the credential, as the indy-sdk doesn't support that
+  // We could come up with a hack (as we've received the credential at one point), but for
+  // now I think it's not that much of an issue
+  getCredential(agentContext: AgentContext, options: GetCredentialOptions): Promise<AnonCredsCredentialInfo>
 
   createCredentialRequest(
     agentContext: AgentContext,

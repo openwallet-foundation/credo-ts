@@ -58,7 +58,7 @@ export class WsInboundTransport implements InboundTransport {
   }
 
   private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
-    const messageReceiver = agent.injectionContainer.resolve(MessageReceiver)
+    const messageReceiver = agent.dependencyManager.resolve(MessageReceiver)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.addEventListener('message', async (event: any) => {

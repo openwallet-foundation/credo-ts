@@ -43,7 +43,7 @@ describe('credentials', () => {
         AutoAcceptCredential.Always
       ))
 
-      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
@@ -142,7 +142,7 @@ describe('credentials', () => {
         'alice agent: content-approved v2 jsonld',
         AutoAcceptCredential.ContentApproved
       ))
-      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
