@@ -108,7 +108,7 @@ describe('transform', () => {
   test.todo(
     'indySdkRevocationRegistryDefinitionFromAnonCreds should return a valid indy sdk revocation registry definition'
   )
-  test.todo('anonCredsRevocationListFromIndySdk should return a valid anoncreds revocation list')
+  test.todo('anonCredsRevocationStatusListFromIndySdk should return a valid anoncreds revocation list')
   test.todo('indySdkRevocationRegistryFromAnonCreds should return a valid indy sdk revocation registry')
   test.todo('indySdkRevocationDeltaFromAnonCreds should return a valid indy sdk revocation delta')
 })
