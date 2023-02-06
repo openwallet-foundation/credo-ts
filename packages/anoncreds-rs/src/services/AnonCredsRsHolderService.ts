@@ -36,11 +36,11 @@ import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
   public async createLinkSecret(
     agentContext: AgentContext,
-    options: CreateLinkSecretOptions
+    options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
     try {
       return {
-        linkSecretId: options.linkSecretId ?? uuid(),
+        linkSecretId: options?.linkSecretId ?? uuid(),
         linkSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
       }
     } catch (error) {

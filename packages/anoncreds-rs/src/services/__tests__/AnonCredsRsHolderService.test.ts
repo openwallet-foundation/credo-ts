@@ -84,7 +84,7 @@ describe('AnonCredsRsHolderService', () => {
     expect(linkSecret.linkSecretId).toBe('linkSecretId')
     expect(linkSecret.linkSecretValue).toBeDefined()
 
-    linkSecret = await anonCredsHolderService.createLinkSecret(agentContext, {}) // FIXME: use optional 'options'
+    linkSecret = await anonCredsHolderService.createLinkSecret(agentContext)
 
     expect(linkSecret.linkSecretId).toBeDefined()
     expect(linkSecret.linkSecretValue).toBeDefined()
