@@ -8,11 +8,11 @@ import type {
   CreateSchemaOptions,
   AnonCredsCredentialOffer,
   AnonCredsSchema,
-  AnonCredsCredentialDefinition,
+  CreateCredentialDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { AriesFrameworkError, inject } from '@aries-framework/core'
+import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
@@ -21,6 +21,7 @@ import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
+@injectable()
 export class IndySdkIssuerService implements AnonCredsIssuerService {
   private indySdk: IndySdk
 
@@ -50,7 +51,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions,
     metadata?: CreateCredentialDefinitionMetadata
-  ): Promise<AnonCredsCredentialDefinition> {
+  ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
     if (!metadata)
@@ -70,11 +71,13 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
       )
 
       return {
-        issuerId,
-        tag: credentialDefinition.tag,
-        schemaId,
-        type: 'CL',
-        value: credentialDefinition.value,
+        credentialDefinition: {
+          issuerId,
+          tag: credentialDefinition.tag,
+          schemaId,
+          type: 'CL',
+          value: credentialDefinition.value,
+        },
       }
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error

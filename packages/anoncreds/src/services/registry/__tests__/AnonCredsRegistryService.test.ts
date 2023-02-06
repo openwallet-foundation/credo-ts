@@ -32,7 +32,7 @@ describe('AnonCredsRegistryService', () => {
     expect(anonCredsRegistryService.getRegistryForIdentifier(agentContext, 'b')).toEqual(registryTwo)
   })
 
-  test('throws AnonCredsError if no registry is found for the given identifier', () => {
+  test('throws AnonCredsError if no registry is found for the given identifier', async () => {
     expect(() => anonCredsRegistryService.getRegistryForIdentifier(agentContext, 'c')).toThrow(AnonCredsError)
   })
 })
