@@ -40,7 +40,7 @@ export class W3cCredential {
 
   @Expose({ name: '@context' })
   @IsJsonLdContext()
-  public context!: Array<string> | JsonObject
+  public context!: Array<string | JsonObject> | JsonObject
 
   @IsOptional()
   @IsUri()
@@ -91,7 +91,7 @@ export class W3cCredential {
     return [this.credentialSubject.id]
   }
 
-  public get contexts(): Array<string> {
+  public get contexts(): Array<string | JsonObject> {
     if (Array.isArray(this.context)) {
       return this.context.filter((x) => typeof x === 'string')
     }
