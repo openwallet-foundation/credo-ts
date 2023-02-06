@@ -20,7 +20,7 @@ export class AnonCredsRegistryService {
     const registry = registries.find((registry) => registry.supportedIdentifier.test(identifier))
 
     if (!registry) {
-      throw new AnonCredsError(`No AnonCredsRegistry registered for identifier '${registry}'`)
+      throw new AnonCredsError(`No AnonCredsRegistry registered for identifier '${identifier}'`)
     }
 
     return registry

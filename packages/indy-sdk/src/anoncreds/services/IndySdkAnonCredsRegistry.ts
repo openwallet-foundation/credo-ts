@@ -2,7 +2,7 @@ import type { IndySdk } from '../../types'
 import type {
   AnonCredsRegistry,
   GetCredentialDefinitionReturn,
-  GetRevocationListReturn,
+  GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
   GetSchemaReturn,
   RegisterCredentialDefinitionOptions,
@@ -25,7 +25,7 @@ import {
   indySdkAnonCredsRegistryIdentifierRegex,
 } from '../utils/identifiers'
 import {
-  anonCredsRevocationListFromIndySdk,
+  anonCredsRevocationStatusListFromIndySdk,
   anonCredsRevocationRegistryDefinitionFromIndySdk,
 } from '../utils/transform'
 
@@ -417,11 +417,11 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async getRevocationList(
+  public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
-  ): Promise<GetRevocationListReturn> {
+  ): Promise<GetRevocationStatusListReturn> {
     try {
       const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
       const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
@@ -470,7 +470,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           resolutionMetadata: {
             error: `error resolving revocation registry definition with id ${revocationRegistryId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
           },
-          revocationListMetadata: {
+          revocationStatusListMetadata: {
             didIndyNamespace: pool.didIndyNamespace,
           },
         }
@@ -480,14 +480,14 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       return {
         resolutionMetadata: {},
-        revocationList: anonCredsRevocationListFromIndySdk(
+        revocationStatusList: anonCredsRevocationStatusListFromIndySdk(
           revocationRegistryId,
           revocationRegistryDefinition,
           revocationRegistryDelta,
           deltaTimestamp,
           isIssuanceByDefault
         ),
-        revocationListMetadata: {
+        revocationStatusListMetadata: {
           didIndyNamespace: pool.didIndyNamespace,
         },
       }
@@ -505,7 +505,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           error: 'notFound',
           message: `Error retrieving revocation registry delta '${revocationRegistryId}' from ledger, potentially revocation interval ends before revocation registry creation: ${error.message}`,
         },
-        revocationListMetadata: {},
+        revocationStatusListMetadata: {},
       }
     }
   }

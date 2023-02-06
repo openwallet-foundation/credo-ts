@@ -10,11 +10,15 @@ import { CITIZENSHIP_V1 } from './contexts/citizenship_v1'
 import { CREDENTIALS_V1 } from './contexts/credentials_v1'
 import { DID_V1 } from './contexts/did_v1'
 import { ED25519_V1 } from './contexts/ed25519_v1'
+import { MATTR_VC_EXTENSION_V1 } from './contexts/mattr_vc_extension_v1'
+import { PURL_OB_V3P0 } from './contexts/purl_ob_v3po'
 import { SECURITY_V1 } from './contexts/security_v1'
 import { SECURITY_V2 } from './contexts/security_v2'
 import { SECURITY_V3_UNSTABLE } from './contexts/security_v3_unstable'
+import { VC_REVOCATION_LIST_2020 } from './contexts/vc_revocation_list_2020'
 import { DID_EXAMPLE_48939859 } from './dids/did_example_489398593'
 import { DID_SOV_QqEfJxe752NCmWqR5TssZ5 } from './dids/did_sov_QqEfJxe752NCmWqR5TssZ5'
+import { DID_WEB_LAUNCHPAD } from './dids/did_web_launchpad'
 import { DID_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL } from './dids/did_z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL'
 import { DID_z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV } from './dids/did_z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV'
 import { DID_zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa } from './dids/did_zUC72Q7XD4PE4CrMiDVXuvZng3sBvMmaGgNeTUJuzavH2BS7ThbHL9FhsZM9QYY5fqAQ4MB8M9oudz3tfuaX36Ajr97QRW7LBt6WWmrtESe6Bs5NYzFtLWEmeVtvRYVAgjFcJSa'
@@ -72,6 +76,7 @@ export const DOCUMENTS = {
   ]]:
     DID_zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN,
   [DID_SOV_QqEfJxe752NCmWqR5TssZ5['id']]: DID_SOV_QqEfJxe752NCmWqR5TssZ5,
+  [DID_WEB_LAUNCHPAD['id']]: DID_WEB_LAUNCHPAD,
   SECURITY_CONTEXT_V1_URL: SECURITY_V1,
   SECURITY_CONTEXT_V2_URL: SECURITY_V2,
   SECURITY_CONTEXT_V3_URL: SECURITY_V3_UNSTABLE,
@@ -88,10 +93,14 @@ export const DOCUMENTS = {
   'https://www.w3.org/2018/credentials/v1': CREDENTIALS_V1,
   'https://w3id.org/did/v1': DID_V1,
   'https://www.w3.org/ns/did/v1': DID_V1,
+  'https://w3.org/ns/did/v1': DID_V1,
   'https://w3id.org/citizenship/v1': CITIZENSHIP_V1,
   'https://www.w3.org/ns/odrl.jsonld': ODRL,
   'http://schema.org/': SCHEMA_ORG,
   'https://w3id.org/vaccination/v1': VACCINATION_V1,
+  'https://mattr.global/contexts/vc-extensions/v1': MATTR_VC_EXTENSION_V1,
+  'https://purl.imsglobal.org/spec/ob/v3p0/context.json': PURL_OB_V3P0,
+  'https://w3c-ccg.github.io/vc-status-rl-2020/contexts/vc-revocation-list-2020/v1.jsonld': VC_REVOCATION_LIST_2020,
 }
 
 async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult> {

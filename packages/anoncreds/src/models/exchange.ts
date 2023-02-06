@@ -1,4 +1,4 @@
-interface AnonCredsProofRequestRestriction {
+export interface AnonCredsProofRequestRestriction {
   schema_id?: string
   schema_issuer_id?: string
   schema_name?: string

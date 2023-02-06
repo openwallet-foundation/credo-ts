@@ -11,6 +11,8 @@ import type {
   GetCredentialsForProofRequestReturn,
   AnonCredsRequestedCredentials,
   AnonCredsCredentialRequestMetadata,
+  CreateLinkSecretOptions,
+  CreateLinkSecretReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
@@ -23,7 +25,7 @@ import type {
   IndyProofRequest,
 } from 'indy-sdk'
 
-import { inject } from '@aries-framework/core'
+import { injectable, inject, utils } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
@@ -38,6 +40,7 @@ import {
 
 import { IndySdkRevocationService } from './IndySdkRevocationService'
 
+@injectable()
 export class IndySdkHolderService implements AnonCredsHolderService {
   private indySdk: IndySdk
   private indyRevocationService: IndySdkRevocationService
@@ -45,6 +48,31 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   public constructor(indyRevocationService: IndySdkRevocationService, @inject(IndySdkSymbol) indySdk: IndySdk) {
     this.indySdk = indySdk
     this.indyRevocationService = indyRevocationService
+  }
+
+  public async createLinkSecret(
+    agentContext: AgentContext,
+    options: CreateLinkSecretOptions
+  ): Promise<CreateLinkSecretReturn> {
+    assertIndySdkWallet(agentContext.wallet)
+
+    const linkSecretId = options.linkSecretId ?? utils.uuid()
+
+    try {
+      await this.indySdk.proverCreateMasterSecret(agentContext.wallet.handle, linkSecretId)
+
+      // We don't have the value for the link secret when using the indy-sdk so we can't return it.
+      return {
+        linkSecretId,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(`Error creating link secret`, {
+        error,
+        linkSecretId,
+      })
+
+      throw isIndyError(error) ? new IndySdkError(error) : error
+    }
   }
 
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {
