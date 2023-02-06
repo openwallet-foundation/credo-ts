@@ -1,0 +1,11 @@
+node_modules
+build
+.vscode
+yarn-error.log
+.idea
+aries-framework-*.tgz
+coverage
+.DS_Store
+logs.txt
+logs/
+lerna-debug.log
