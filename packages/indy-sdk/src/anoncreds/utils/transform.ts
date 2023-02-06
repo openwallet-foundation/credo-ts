@@ -1,6 +1,6 @@
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '@aries-framework/anoncreds'
@@ -92,13 +92,13 @@ export function indySdkRevocationRegistryDefinitionFromAnonCreds(
   }
 }
 
-export function anonCredsRevocationListFromIndySdk(
+export function anonCredsRevocationStatusListFromIndySdk(
   revocationRegistryDefinitionId: string,
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition,
   delta: RevocRegDelta,
   timestamp: number,
   isIssuanceByDefault: boolean
-): AnonCredsRevocationList {
+): AnonCredsRevocationStatusList {
   // 0 means unrevoked, 1 means revoked
   const defaultState = isIssuanceByDefault ? 0 : 1
 
@@ -124,25 +124,27 @@ export function anonCredsRevocationListFromIndySdk(
   }
 }
 
-export function indySdkRevocationRegistryFromAnonCreds(revocationList: AnonCredsRevocationList): RevocReg {
+export function indySdkRevocationRegistryFromAnonCreds(revocationStatusList: AnonCredsRevocationStatusList): RevocReg {
   return {
     ver: '1.0',
     value: {
-      accum: revocationList.currentAccumulator,
+      accum: revocationStatusList.currentAccumulator,
     },
   }
 }
 
-export function indySdkRevocationDeltaFromAnonCreds(revocationList: AnonCredsRevocationList): RevocRegDelta {
-  // Get all indices from the revocationList that are revoked (so have value '1')
-  const revokedIndices = revocationList.revocationList.reduce<number[]>(
+export function indySdkRevocationDeltaFromAnonCreds(
+  revocationStatusList: AnonCredsRevocationStatusList
+): RevocRegDelta {
+  // Get all indices from the revocationStatusList that are revoked (so have value '1')
+  const revokedIndices = revocationStatusList.revocationList.reduce<number[]>(
     (revoked, current, index) => (current === 1 ? [...revoked, index] : revoked),
     []
   )
 
   return {
     value: {
-      accum: revocationList.currentAccumulator,
+      accum: revocationStatusList.currentAccumulator,
       issued: [],
       revoked: revokedIndices,
       // NOTE: I don't think this is used?

@@ -1,10 +1,10 @@
 import type { AnonCredsResolutionMetadata, Extensible } from './base'
-import type { AnonCredsRevocationList } from '../../models/registry'
+import type { AnonCredsRevocationStatusList } from '../../models/registry'
 
-export interface GetRevocationListReturn {
-  revocationList?: AnonCredsRevocationList
+export interface GetRevocationStatusListReturn {
+  revocationStatusList?: AnonCredsRevocationStatusList
   resolutionMetadata: AnonCredsResolutionMetadata
-  revocationListMetadata: Extensible
+  revocationStatusListMetadata: Extensible
 }
 
 // TODO: Support for issuance of revocable credentials

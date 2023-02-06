@@ -1,6 +1,6 @@
 import type {
   AnonCredsRevocationRegistryDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsProofRequest,
   AnonCredsRequestedCredentials,
   AnonCredsCredentialInfo,
@@ -50,8 +50,8 @@ export class IndySdkRevocationService {
         // Tails is already downloaded
         tailsFilePath: string
         definition: AnonCredsRevocationRegistryDefinition
-        revocationLists: {
-          [timestamp: string]: AnonCredsRevocationList
+        revocationStatusLists: {
+          [timestamp: string]: AnonCredsRevocationStatusList
         }
       }
     }
@@ -106,18 +106,18 @@ export class IndySdkRevocationService {
 
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const { definition, revocationLists, tailsFilePath } = revocationRegistries[revocationRegistryId]
-          // NOTE: we assume that the revocationLists have been added based on timestamps of the `to` query. On a higher level it means we'll find the
-          // most accurate revocation list for a given timestamp. It doesn't have to be that the revocationList is from the `to` timestamp however.
-          const revocationList = revocationLists[requestRevocationInterval.to]
+          const { definition, revocationStatusLists, tailsFilePath } = revocationRegistries[revocationRegistryId]
+          // NOTE: we assume that the revocationStatusLists have been added based on timestamps of the `to` query. On a higher level it means we'll find the
+          // most accurate revocation list for a given timestamp. It doesn't have to be that the revocationStatusList is from the `to` timestamp however.
+          const revocationStatusList = revocationStatusLists[requestRevocationInterval.to]
 
           const tails = await createTailsReader(agentContext, tailsFilePath)
 
           const revocationState = await this.indySdk.createRevocationState(
             tails,
             indySdkRevocationRegistryDefinitionFromAnonCreds(revocationRegistryId, definition),
-            indySdkRevocationDeltaFromAnonCreds(revocationList),
-            revocationList.timestamp,
+            indySdkRevocationDeltaFromAnonCreds(revocationStatusList),
+            revocationStatusList.timestamp,
             credentialRevocationId
           )
           const timestamp = revocationState.timestamp
