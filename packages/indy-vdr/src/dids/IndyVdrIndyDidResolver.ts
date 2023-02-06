@@ -107,7 +107,7 @@ export class IndyVdrIndyDidResolver implements DidResolver {
       const response = await pool.submitReadRequest(request)
 
       if (!response.result.data) {
-        return
+        return null
       }
 
       const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib

@@ -74,7 +74,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
       const response = await pool.submitReadRequest(request)
 
       if (!response.result.data) {
-        return
+        return null
       }
 
       const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
@@ -86,7 +86,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
         }
       )
 
-      return endpoints ?? {}
+      return endpoints ?? null
     } catch (error) {
       agentContext.config.logger.error(
         `Error retrieving endpoints for did '${did}' from ledger '${pool.indyNamespace}'`,
