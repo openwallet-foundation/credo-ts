@@ -4,9 +4,10 @@ import type {
   CreateCredentialOfferOptions,
   CreateCredentialReturn,
   CreateCredentialOptions,
+  CreateCredentialDefinitionReturn,
 } from './AnonCredsIssuerServiceOptions'
 import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/registry'
+import type { AnonCredsSchema } from '../models/registry'
 import type { AgentContext } from '@aries-framework/core'
 
 export const AnonCredsIssuerServiceSymbol = Symbol('AnonCredsIssuerService')
@@ -20,7 +21,7 @@ export interface AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions,
     metadata?: Record<string, unknown>
-  ): Promise<AnonCredsCredentialDefinition>
+  ): Promise<CreateCredentialDefinitionReturn>
 
   createCredentialOffer(
     agentContext: AgentContext,

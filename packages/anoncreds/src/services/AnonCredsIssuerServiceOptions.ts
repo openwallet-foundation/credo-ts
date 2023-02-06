@@ -4,7 +4,7 @@ import type {
   AnonCredsCredentialRequest,
   AnonCredsCredentialValues,
 } from '../models/exchange'
-import type { AnonCredsSchema } from '../models/registry'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from '../models/registry'
 
 export interface CreateSchemaOptions {
   issuerId: string
@@ -38,4 +38,10 @@ export interface CreateCredentialOptions {
 export interface CreateCredentialReturn {
   credential: AnonCredsCredential
   credentialRevocationId?: string
+}
+
+export interface CreateCredentialDefinitionReturn {
+  credentialDefinition: AnonCredsCredentialDefinition
+  credentialDefinitionPrivate?: Record<string, unknown>
+  keyCorrectnessProof?: Record<string, unknown>
 }

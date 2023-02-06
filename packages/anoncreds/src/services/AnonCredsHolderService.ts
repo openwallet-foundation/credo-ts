@@ -6,6 +6,8 @@ import type {
   StoreCredentialOptions,
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
+  CreateLinkSecretReturn,
+  CreateLinkSecretOptions,
 } from './AnonCredsHolderServiceOptions'
 import type { AnonCredsCredentialInfo } from '../models'
 import type { AnonCredsProof } from '../models/exchange'
@@ -14,6 +16,8 @@ import type { AgentContext } from '@aries-framework/core'
 export const AnonCredsHolderServiceSymbol = Symbol('AnonCredsHolderService')
 
 export interface AnonCredsHolderService {
+  createLinkSecret(agentContext: AgentContext, options: CreateLinkSecretOptions): Promise<CreateLinkSecretReturn>
+
   createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof>
   storeCredential(
     agentContext: AgentContext,
