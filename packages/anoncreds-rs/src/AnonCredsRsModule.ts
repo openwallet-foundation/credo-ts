@@ -6,7 +6,7 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '@aries-framework/anoncreds'
 
-import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './anoncreds'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from './services'
 
 export class AnonCredsRsModule implements Module {
   public register(dependencyManager: DependencyManager) {

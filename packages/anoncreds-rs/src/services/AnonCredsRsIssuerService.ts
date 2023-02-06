@@ -27,7 +27,7 @@ import {
   CredentialRequest,
 } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
+import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {

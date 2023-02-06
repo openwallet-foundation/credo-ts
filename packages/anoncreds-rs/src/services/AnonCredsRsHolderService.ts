@@ -9,13 +9,13 @@ import type {
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
   AnonCredsCredentialInfo,
-  CreateMasterSecretOptions,
-  CreateMasterSecretReturn,
+  CreateLinkSecretOptions,
+  CreateLinkSecretReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsMasterSecretRepository } from '@aries-framework/anoncreds'
+import { AnonCredsLinkSecretRepository, AnonCredsCredentialRepository } from '@aries-framework/anoncreds'
 import {
   Credential,
   CredentialDefinition,
@@ -30,25 +30,24 @@ import {
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
-import { uuid } from '../../../../core/src/utils/uuid'
-import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
-import { AnonCredsCredentialRepository } from '../repository/AnonCredsCredentialRepository'
+import { uuid } from '../../../core/src/utils/uuid'
+import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
-  public async createMasterSecret(
+  public async createLinkSecret(
     agentContext: AgentContext,
-    options: CreateMasterSecretOptions
-  ): Promise<CreateMasterSecretReturn> {
+    options: CreateLinkSecretOptions
+  ): Promise<CreateLinkSecretReturn> {
     try {
       return {
-        masterSecretId: options.masterSecretId ?? uuid(),
-        masterSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
+        linkSecretId: options.linkSecretId ?? uuid(),
+        linkSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
       }
     } catch (error) {
-      agentContext.config.logger.error(`Error creating Master Secret`, {
+      agentContext.config.logger.error(`Error creating Link Secret`, {
         error,
       })
-      throw new AnonCredsRsError('Error creating Master Secret', { cause: error })
+      throw new AnonCredsRsError('Error creating Link Secret', { cause: error })
     }
   }
 
@@ -88,21 +87,19 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
 
-      // Get all requested credentials and take masterSecret. If it's not the same for every credential, throw error
-      let masterSecretId
+      // Get all requested credentials and take linkSecret. If it's not the same for every credential, throw error
+      let linkSecretId
       for (const credentialId of credentialIds) {
         const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
 
         const credential = Credential.load(JSON.stringify(credentialRecord.credential))
         const revocationRegistryDefinitionId = credential.revocationRegistryId
 
-        if (!masterSecretId) {
-          masterSecretId = credentialRecord.masterSecretId
+        if (!linkSecretId) {
+          linkSecretId = credentialRecord.linkSecretId
         } else {
-          if (masterSecretId !== credentialRecord.masterSecretId) {
-            throw new AnonCredsRsError(
-              'All credentials in a Proof should have been issued using the same Master Secret'
-            )
+          if (linkSecretId !== credentialRecord.linkSecretId) {
+            throw new AnonCredsRsError('All credentials in a Proof should have been issued using the same Link Secret')
           }
         }
 
@@ -144,16 +141,16 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         })
       }
 
-      if (!masterSecretId) {
-        throw new AnonCredsRsError('Master Secret not defined')
+      if (!linkSecretId) {
+        throw new AnonCredsRsError('Link Secret not defined')
       }
 
-      const masterSecretRecord = await agentContext.dependencyManager
-        .resolve(AnonCredsMasterSecretRepository)
-        .getByMasterSecretId(agentContext, masterSecretId)
+      const linkSecretRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsLinkSecretRepository)
+        .getByLinkSecretId(agentContext, linkSecretId)
 
-      if (!masterSecretRecord.value) {
-        throw new AnonCredsRsError('Master Secret value not stored')
+      if (!linkSecretRecord.value) {
+        throw new AnonCredsRsError('Link Secret value not stored')
       }
 
       const presentation = Presentation.create({
@@ -163,7 +160,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentials,
         credentialsProve,
         selfAttest: requestedCredentials.selfAttestedAttributes,
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: masterSecretRecord.value } })),
+        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
       })
 
       return JSON.parse(presentation.toJson())
@@ -183,23 +180,23 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   ): Promise<CreateCredentialRequestReturn> {
     const { credentialDefinition, credentialOffer } = options
     try {
-      const masterSecretRepository = agentContext.dependencyManager.resolve(AnonCredsMasterSecretRepository)
+      const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 
-      // If a master secret is specified, use it. Otherwise, attempt to use default master secret
-      const masterSecretRecord = options.masterSecretId
-        ? await masterSecretRepository.getByMasterSecretId(agentContext, options.masterSecretId)
-        : await masterSecretRepository.findDefault(agentContext)
+      // If a link secret is specified, use it. Otherwise, attempt to use default link secret
+      const linkSecretRecord = options.linkSecretId
+        ? await linkSecretRepository.getByLinkSecretId(agentContext, options.linkSecretId)
+        : await linkSecretRepository.findDefault(agentContext)
 
-      if (!masterSecretRecord) {
-        // No default master secret: TODO: shall we create a new one?
-        throw new AnonCredsRsError('Master Secret not found')
+      if (!linkSecretRecord) {
+        // No default link secret: TODO: shall we create a new one?
+        throw new AnonCredsRsError('Link Secret not found')
       }
 
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
         credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
         credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: masterSecretRecord.value } })),
-        masterSecretId: masterSecretRecord.id,
+        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+        masterSecretId: linkSecretRecord.id,
       })
 
       return {

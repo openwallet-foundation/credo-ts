@@ -5,12 +5,11 @@ import {
   Presentation,
   PresentationRequest,
   RevocationRegistryDefinition,
+  RevocationStatusList,
   Schema,
 } from '@hyperledger/anoncreds-shared'
-// FIXME: import from '@hyperledger/anoncreds-shared
-import { RevocationStatusList } from '@hyperledger/anoncreds-shared/build/api/RevocationStatusList'
 
-import { AnonCredsRsError } from '../../errors/AnonCredsRsError'
+import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
   public async verifyProof(options: VerifyProofOptions): Promise<boolean> {
@@ -30,17 +29,17 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       }
 
       const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
-      const revocationStatusLists = []
+      const lists = []
 
       for (const revocationRegistryDefinitionId in revocationStates) {
-        const { definition, revocationLists } = options.revocationStates[revocationRegistryDefinitionId]
+        const { definition, revocationStatusLists } = options.revocationStates[revocationRegistryDefinitionId]
 
         revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.load(
           JSON.stringify(definition)
         )
 
-        for (const timestamp in revocationLists) {
-          revocationStatusLists.push(
+        for (const timestamp in revocationStatusLists) {
+          lists.push(
             RevocationStatusList.create({
               issuanceByDefault: true,
               revocationRegistryDefinition: revocationRegistryDefinitions[revocationRegistryDefinitionId],
@@ -56,7 +55,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,
         revocationRegistryDefinitions,
-        revocationStatusLists,
+        revocationStatusLists: lists,
       })
     } catch (error) {
       throw new AnonCredsRsError('Error creating credential offer', { cause: error })

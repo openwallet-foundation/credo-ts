@@ -2,51 +2,52 @@ import type {
   AnonCredsCredentialDefinition,
   AnonCredsProofRequest,
   AnonCredsRequestedCredentials,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
 } from '@aries-framework/anoncreds'
 
-import { AnonCredsHolderServiceSymbol, AnonCredsMasterSecretRecord } from '@aries-framework/anoncreds'
-import { anoncreds, registerAnoncreds } from '@hyperledger/anoncreds-nodejs'
+import {
+  AnonCredsHolderServiceSymbol,
+  AnonCredsLinkSecretRecord,
+  AnonCredsCredentialRecord,
+  AnonCredsCredentialRepository,
+} from '@aries-framework/anoncreds'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { nativeAnoncreds } from '@hyperledger/anoncreds-nodejs/build/library'
 
-import { AnonCredsCredentialDefinitionRepository } from '../../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
-import { AnonCredsMasterSecretRepository } from '../../../../../anoncreds/src/repository/AnonCredsMasterSecretRepository'
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { AnonCredsCredentialRecord } from '../../repository/AnonCredsCredentialRecord'
-import { AnonCredsCredentialRepository } from '../../repository/AnonCredsCredentialRepository'
+import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
+import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
 import {
   createCredentialDefinition,
   createCredentialForHolder,
   createCredentialOffer,
-  createMasterSecret,
+  createLinkSecret,
 } from './helpers'
 
-registerAnoncreds({ lib: anoncreds })
 nativeAnoncreds.anoncreds_set_default_logger()
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
 
-jest.mock('../../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
+jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
 const CredentialDefinitionRepositoryMock =
   AnonCredsCredentialDefinitionRepository as jest.Mock<AnonCredsCredentialDefinitionRepository>
 const credentialDefinitionRepositoryMock = new CredentialDefinitionRepositoryMock()
 
-jest.mock('../../../../../anoncreds/src/repository/AnonCredsMasterSecretRepository')
-const AnonCredsMasterSecretRepositoryMock =
-  AnonCredsMasterSecretRepository as jest.Mock<AnonCredsMasterSecretRepository>
-const anoncredsMasterSecretRepositoryMock = new AnonCredsMasterSecretRepositoryMock()
+jest.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
+const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
+const anoncredsLinkSecretRepositoryMock = new AnonCredsLinkSecretRepositoryMock()
 
-jest.mock('../../repository/AnonCredsCredentialRepository')
+jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
 const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
 const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
 
 const agentContext = getAgentContext({
   registerInstances: [
     [AnonCredsCredentialDefinitionRepository, credentialDefinitionRepositoryMock],
-    [AnonCredsMasterSecretRepository, anoncredsMasterSecretRepositoryMock],
+    [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
     [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
   ],
@@ -55,8 +56,8 @@ const agentContext = getAgentContext({
 
 describe('AnonCredsRsHolderService', () => {
   it('createCredentialRequest', async () => {
-    mockFunction(anoncredsMasterSecretRepositoryMock.getByMasterSecretId).mockResolvedValue(
-      new AnonCredsMasterSecretRecord({ masterSecretId: 'masterSecretId', value: createMasterSecret() })
+    mockFunction(anoncredsLinkSecretRepositoryMock.getByLinkSecretId).mockResolvedValue(
+      new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: createLinkSecret() })
     )
 
     const { credentialDefinition, keyCorrectnessProof } = createCredentialDefinition({
@@ -68,25 +69,25 @@ describe('AnonCredsRsHolderService', () => {
     const { credentialRequest } = await anonCredsHolderService.createCredentialRequest(agentContext, {
       credentialDefinition,
       credentialOffer,
-      masterSecretId: 'masterSecretId',
+      linkSecretId: 'linkSecretId',
     })
 
     expect(credentialRequest.cred_def_id).toBe('creddef:uri')
     expect(credentialRequest.prover_did).toBeUndefined()
   })
 
-  it('createMasterSecret', async () => {
-    let masterSecret = await anonCredsHolderService.createMasterSecret(agentContext, {
-      masterSecretId: 'masterSecretId',
+  it('createLinkSecret', async () => {
+    let linkSecret = await anonCredsHolderService.createLinkSecret(agentContext, {
+      linkSecretId: 'linkSecretId',
     })
 
-    expect(masterSecret.masterSecretId).toBe('masterSecretId')
-    expect(masterSecret.masterSecretValue).toBeDefined()
+    expect(linkSecret.linkSecretId).toBe('linkSecretId')
+    expect(linkSecret.linkSecretValue).toBeDefined()
 
-    masterSecret = await anonCredsHolderService.createMasterSecret(agentContext, {}) // FIXME: use optional 'options'
+    linkSecret = await anonCredsHolderService.createLinkSecret(agentContext, {}) // FIXME: use optional 'options'
 
-    expect(masterSecret.masterSecretId).toBeDefined()
-    expect(masterSecret.masterSecretValue).toBeDefined()
+    expect(linkSecret.linkSecretId).toBeDefined()
+    expect(linkSecret.linkSecretValue).toBeDefined()
   })
 
   it('createProof', async () => {
@@ -138,9 +139,9 @@ describe('AnonCredsRsHolderService', () => {
       //non_revoked: { from: 10, to: 200 },
     }
 
-    const masterSecret = createMasterSecret()
-    mockFunction(anoncredsMasterSecretRepositoryMock.getByMasterSecretId).mockResolvedValue(
-      new AnonCredsMasterSecretRecord({ masterSecretId: 'masterSecretId', value: masterSecret })
+    const linkSecret = createLinkSecret()
+    mockFunction(anoncredsLinkSecretRepositoryMock.getByLinkSecretId).mockResolvedValue(
+      new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: linkSecret })
     )
 
     const {
@@ -160,8 +161,8 @@ describe('AnonCredsRsHolderService', () => {
       credentialDefinitionId: 'personcreddef:uri',
       credentialDefinitionPrivate: personCredentialDefinitionPrivate,
       keyCorrectnessProof: personKeyCorrectnessProof,
-      masterSecret,
-      masterSecretId: 'masterSecretId',
+      linkSecret,
+      linkSecretId: 'linkSecretId',
       credentialId: 'personCredId',
       revocationRegistryDefinitionId: 'personrevregid:uri',
     })
@@ -173,15 +174,15 @@ describe('AnonCredsRsHolderService', () => {
       tailsPath: phoneTailsPath,
     } = createCredentialForHolder({
       attributes: {
-        phoneNumber: 'masterSecretId56',
+        phoneNumber: 'linkSecretId56',
       },
       credentialDefinition: phoneCredentialDefinition,
       schemaId: 'phoneschema:uri',
       credentialDefinitionId: 'phonecreddef:uri',
       credentialDefinitionPrivate: phoneCredentialDefinitionPrivate,
       keyCorrectnessProof: phoneKeyCorrectnessProof,
-      masterSecret,
-      masterSecretId: 'masterSecretId',
+      linkSecret,
+      linkSecretId: 'linkSecretId',
       credentialId: 'phoneCredId',
       revocationRegistryDefinitionId: 'phonerevregid:uri',
     })
@@ -203,14 +204,14 @@ describe('AnonCredsRsHolderService', () => {
       new AnonCredsCredentialRecord({
         credential: personCredential,
         credentialId: 'personCredId',
-        masterSecretId: 'masterSecretId',
+        linkSecretId: 'linkSecretId',
       })
     )
     mockFunction(anoncredsCredentialRepositoryMock.getByCredentialId).mockResolvedValueOnce(
       new AnonCredsCredentialRecord({
         credential: phoneCredential,
         credentialId: 'phoneCredId',
-        masterSecretId: 'masterSecretId',
+        linkSecretId: 'linkSecretId',
       })
     )
 
@@ -218,12 +219,12 @@ describe('AnonCredsRsHolderService', () => {
       'personrevregid:uri': {
         tailsFilePath: personTailsPath,
         definition: JSON.parse(anoncreds.getJson({ objectHandle: personRevRegDef })),
-        revocationLists: { '1': {} as AnonCredsRevocationList },
+        revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
       'phonerevregid:uri': {
         tailsFilePath: phoneTailsPath,
         definition: JSON.parse(anoncreds.getJson({ objectHandle: phoneRevRegDef })),
-        revocationLists: { '1': {} as AnonCredsRevocationList },
+        revocationStatusLists: { '1': {} as AnonCredsRevocationStatusList },
       },
     }
 

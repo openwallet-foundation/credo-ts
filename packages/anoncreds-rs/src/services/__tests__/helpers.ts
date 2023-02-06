@@ -55,9 +55,9 @@ export function createCredentialOffer(kcp: Record<string, unknown>) {
 
 /**
  *
- * @returns Creates a valid master secret value for anoncreds-rs
+ * @returns Creates a valid link secret value for anoncreds-rs
  */
-export function createMasterSecret() {
+export function createLinkSecret() {
   return JSON.parse(MasterSecret.create().toJson()).value.ms as string
 }
 
@@ -68,8 +68,8 @@ export function createCredentialForHolder(options: {
   schemaId: string
   credentialDefinitionId: string
   attributes: Record<string, string>
-  masterSecret: string
-  masterSecretId: string
+  linkSecret: string
+  linkSecretId: string
   credentialId: string
   revocationRegistryDefinitionId: string
 }) {
@@ -80,8 +80,8 @@ export function createCredentialForHolder(options: {
     schemaId,
     credentialDefinitionId,
     attributes,
-    masterSecret,
-    masterSecretId,
+    linkSecret,
+    linkSecretId,
     credentialId,
     revocationRegistryDefinitionId,
   } = options
@@ -95,8 +95,8 @@ export function createCredentialForHolder(options: {
   const { credentialRequest } = CredentialRequest.create({
     credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
     credentialOffer,
-    masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: masterSecret } })),
-    masterSecretId,
+    masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecret } })),
+    masterSecretId: linkSecretId,
   })
 
   // FIXME: Revocation config should not be mandatory but current anoncreds-rs is requiring it

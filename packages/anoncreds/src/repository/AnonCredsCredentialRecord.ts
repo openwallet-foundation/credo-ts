@@ -7,12 +7,12 @@ export interface AnonCredsCredentialRecordProps {
   id?: string
   credential: AnonCredsCredential
   credentialId: string
-  masterSecretId: string
+  linkSecretId: string
 }
 
 export type DefaultAnonCredsCredentialTags = {
   credentialId: string
-  masterSecretId: string
+  linkSecretId: string
   credentialDefinitionId: string
 }
 
@@ -21,7 +21,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCreden
   public readonly type = AnonCredsCredentialRecord.type
 
   public readonly credentialId!: string
-  public readonly masterSecretId!: string
+  public readonly linkSecretId!: string
   public readonly credential!: AnonCredsCredential
 
   public constructor(props: AnonCredsCredentialRecordProps) {
@@ -31,7 +31,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCreden
       this.id = props.id ?? utils.uuid()
       this.credentialId = props.credentialId
       this.credential = props.credential
-      this.masterSecretId = props.masterSecretId
+      this.linkSecretId = props.linkSecretId
     }
   }
 
@@ -40,7 +40,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCreden
       ...this._tags,
       credentialDefinitionId: this.credential.cred_def_id,
       credentialId: this.credentialId,
-      masterSecretId: this.masterSecretId,
+      linkSecretId: this.linkSecretId,
     }
   }
 }
