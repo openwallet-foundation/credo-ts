@@ -8,4 +8,4 @@ try {
 }
 
 // FIXME: Remove when Askar JS Wrapper performance issues are solved
-jest.setTimeout(60000)
+jest.setTimeout(180000)
