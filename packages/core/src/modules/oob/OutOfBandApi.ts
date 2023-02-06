@@ -250,7 +250,7 @@ export class OutOfBandApi {
     routing?: Routing
   }): Promise<{ message: Message; invitationUrl: string }> {
     // Create keys (and optionally register them at the mediator)
-    const routing = config.routing ?? await this.routingService.getRouting(this.agentContext)
+    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext))
 
     // Set the service on the message
     config.message.service = new ServiceDecorator({
