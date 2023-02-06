@@ -2300,9 +2300,9 @@
     uint8arrays "^3.1.1"
 
 "@sphereon/ssi-types@^0.8.1-next.123":
-  version "0.8.1-unstable.145"
-  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.1-unstable.145.tgz#418cf00ebb077ccb9644e652bc4e7fb0eb23b645"
-  integrity sha512-ixT8z5bwDWKJaMQTsUeRs7vMg5fz68BRJhxn10Tkeg68nJUEUHck44QJOhog0MmjNJKw2k6U/IqIS0oOdxTSHQ==
+  version "0.8.1-unstable.179"
+  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.1-unstable.179.tgz#9583ea0e1011d03876a9108eb863dce83502ada3"
+  integrity sha512-Se8n7sh3UEO+LGfUcO946TaQaGJf7ozY5tRo9V3Ssax0Rg5MMSOdlf+YE0tgZ7X84WZOrFTdzUVxpN2tpoYRlQ==
   dependencies:
     jwt-decode "^3.1.2"
 
@@ -7599,7 +7599,7 @@ lodash.truncate@^4.4.2:
   resolved "https://registry.yarnpkg.com/lodash.truncate/-/lodash.truncate-4.4.2.tgz#5a350da0b1113b837ecfffd5812cbe58d6eae193"
   integrity sha512-jttmRe7bRse52OsWIMDLaXxWqRAmtIUccAQ3garviCqJjafXOfNMO0yMfNpdD6zbGaTU0P5Nz7e7gAT6cKmJRw==
 
-lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.7.0:
+lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.21, lodash@^4.7.0:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -8401,6 +8401,16 @@ nocache@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/nocache/-/nocache-2.1.0.tgz#120c9ffec43b5729b1d5de88cd71aa75a0ba491f"
   integrity sha512-0L9FvHG3nfnnmaEQPjT9xhfN4ISk0A8/2j4M37Np4mcDesJjHgEUfgPhdCyZuFI954tjokaIj/A3NdpFNdEh4Q==
+
+nock@^13.3.0:
+  version "13.3.0"
+  resolved "https://registry.yarnpkg.com/nock/-/nock-13.3.0.tgz#b13069c1a03f1ad63120f994b04bfd2556925768"
+  integrity sha512-HHqYQ6mBeiMc+N038w8LkMpDCRquCHWeNmN3v6645P3NhN2+qXOBqvPqo7Rt1VyCMzKhJ733wZqw5B7cQVFNPg==
+  dependencies:
+    debug "^4.1.0"
+    json-stringify-safe "^5.0.1"
+    lodash "^4.17.21"
+    propagate "^2.0.0"
 
 node-addon-api@^3.0.0:
   version "3.2.1"
@@ -9320,6 +9330,11 @@ prop-types@^15.7.2:
     loose-envify "^1.4.0"
     object-assign "^4.1.1"
     react-is "^16.13.1"
+
+propagate@^2.0.0:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/propagate/-/propagate-2.0.1.tgz#40cdedab18085c792334e64f0ac17256d38f9a45"
+  integrity sha512-vGrhOavPSTz4QVNuBNdcNXePNdNMaO1xj9yBeH1ScQPjk/rhg9sSlCXPhMkFuaNNW/syTvYqsnbIJxMBfRbbag==
 
 proto-list@~1.2.1:
   version "1.2.4"
