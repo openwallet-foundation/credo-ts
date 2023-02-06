@@ -1,7 +1,7 @@
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '@aries-framework/core'
 
-import { GetAttribRequest, GetNymRequest } from 'indy-vdr-test-shared'
+import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import { IndyVdrPoolService } from '../pool'

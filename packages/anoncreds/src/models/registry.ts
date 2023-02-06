@@ -34,7 +34,7 @@ export interface AnonCredsRevocationRegistryDefinition {
   }
 }
 
-export interface AnonCredsRevocationList {
+export interface AnonCredsRevocationStatusList {
   issuerId: string
   revRegId: string
   revocationList: number[]
