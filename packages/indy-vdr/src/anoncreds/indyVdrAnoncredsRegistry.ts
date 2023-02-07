@@ -6,7 +6,7 @@ import type {
   RegisterCredentialDefinitionOptions,
   RegisterSchemaReturn,
   RegisterCredentialDefinitionReturn,
-  GetRevocationListReturn,
+  GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
@@ -387,17 +387,17 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async getRevocationList(
+  public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
-  ): Promise<GetRevocationListReturn> {
+  ): Promise<GetRevocationStatusListReturn> {
     return {
       resolutionMetadata: {
         error: 'Not Implemented',
         message: `Revocation list not yet implemented `,
       },
-      revocationListMetadata: {},
+      revocationStatusListMetadata: {},
     }
   }
 
