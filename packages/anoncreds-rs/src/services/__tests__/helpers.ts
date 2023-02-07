@@ -92,7 +92,7 @@ export function createCredentialForHolder(options: {
     schemaId,
   })
 
-  const { credentialRequest } = CredentialRequest.create({
+  const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
     credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
     credentialOffer,
     masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecret } })),
@@ -139,7 +139,13 @@ export function createCredentialForHolder(options: {
     credentialId,
     schemaId,
   }
-  return { credential: JSON.parse(credential), credentialInfo, revocationRegistryDefinition, tailsPath }
+  return {
+    credential: JSON.parse(credential),
+    credentialInfo,
+    revocationRegistryDefinition,
+    tailsPath,
+    credentialRequestMetadata,
+  }
 }
 
 export function createRevocationRegistryDefinition(options: {

@@ -58,7 +58,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
         revocationStatusLists: lists,
       })
     } catch (error) {
-      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
+      throw new AnonCredsRsError('Error verifying proof', { cause: error })
     }
   }
 }

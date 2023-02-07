@@ -11,20 +11,21 @@ import type {
   CreateCredentialDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
-import type { KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
 import {
+  AnonCredsKeyCorrectnessProofRepository,
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError } from '@aries-framework/core'
 import {
-  CredentialDefinitionPrivate,
   Credential,
   CredentialDefinition,
-  CredentialOffer,
-  Schema,
+  CredentialDefinitionPrivate,
   CredentialRequest,
+  CredentialOffer,
+  KeyCorrectnessProof,
+  Schema,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
@@ -50,7 +51,6 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   public async createCredentialDefinition(
     agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions
-    //metadata?: CreateCredentialDefinitionMetadata
   ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
@@ -83,7 +83,11 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     try {
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)
-        .findByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
+        .getByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
+
+      const keyCorrectnessProofRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsKeyCorrectnessProofRepository)
+        .getByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
 
       if (!credentialDefinitionRecord) {
         throw new AnonCredsRsError(`Credential Definition ${credentialDefinitionId} not found`)
@@ -91,8 +95,8 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
       const credentialOffer = CredentialOffer.create({
         credentialDefinitionId,
-        keyCorrectnessProof: {} as KeyCorrectnessProof, // FIXME
-        schemaId: credentialDefinitionRecord.getTags().schemaId, // TODO: Shouldn't it be a property for schemaId in AnonCredsCredentialDefinitionRecord?
+        keyCorrectnessProof: KeyCorrectnessProof.load(JSON.stringify(keyCorrectnessProofRecord?.value)),
+        schemaId: credentialDefinitionRecord.credentialDefinition.schemaId,
       })
 
       return JSON.parse(credentialOffer.toJson()) as AnonCredsCredentialOffer
@@ -145,10 +149,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
       return {
         credential: JSON.parse(credential.toJson()),
-        // TODO: credentialRevocationId
+        credentialRevocationId: credential.revocationRegistryIndex?.toString(),
       }
     } catch (error) {
-      throw new AnonCredsRsError('Error creating credential offer', { cause: error })
+      throw new AnonCredsRsError('Error creating credential', { cause: error })
     }
   }
 }
