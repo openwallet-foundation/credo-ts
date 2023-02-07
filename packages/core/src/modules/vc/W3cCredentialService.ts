@@ -103,7 +103,8 @@ export class W3cCredentialService {
    */
   public async verifyCredential(
     agentContext: AgentContext,
-    options: VerifyCredentialOptions
+    options: VerifyCredentialOptions,
+    verifyRevocationState = true
   ): Promise<W3cVerifyCredentialResult> {
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
@@ -111,6 +112,14 @@ export class W3cCredentialService {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
       documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      checkStatus: () => {
+        if (verifyRevocationState) {
+          throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
+        }
+        return {
+          verified: true,
+        }
+      },
     }
 
     // this is a hack because vcjs throws if purpose is passed as undefined or null
