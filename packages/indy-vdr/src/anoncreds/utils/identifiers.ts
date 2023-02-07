@@ -6,31 +6,31 @@ export const legacyIndyVdrRevocationRegistryIdRegex =
   /^[a-zA-Z0-9]{21,22}:4:[a-zA-Z0-9]{21,22}:3:CL:(([1-9][0-9]*)|([a-zA-Z0-9]{21,22}:2:.+:[0-9.]+))(:.+)?:CL_ACCUM:(.+$)/
 
 export const indyVdrAnonCredsRegistryIdentifierRegex = new RegExp(
-    `${legacyIndyVdrIssuerIdRegex.source}|${legacyIndyVdrSchemaIdRegex.source}|${legacyIndyVdrCredentialDefinitionIdRegex.source}|${legacyIndyVdrRevocationRegistryIdRegex.source}`
-  )
+  `${legacyIndyVdrIssuerIdRegex.source}|${legacyIndyVdrSchemaIdRegex.source}|${legacyIndyVdrCredentialDefinitionIdRegex.source}|${legacyIndyVdrRevocationRegistryIdRegex.source}`
+)
 
 export function getLegacySchemaId(unqualifiedDid: string, name: string, version: string) {
-    return `${unqualifiedDid}:2:${name}:${version}`
-  }
-  
-  export function getLegacyCredentialDefinitionId(unqualifiedDid: string, seqNo: number, tag: string) {
-    return `${unqualifiedDid}:3:CL:${seqNo}:${tag}`
-  }
+  return `${unqualifiedDid}:2:${name}:${version}`
+}
 
-  /**
+export function getLegacyCredentialDefinitionId(unqualifiedDid: string, seqNo: number, tag: string) {
+  return `${unqualifiedDid}:3:CL:${seqNo}:${tag}`
+}
+
+/**
  * Extract did from schema id
  */
 export function didFromSchemaId(schemaId: string) {
-    const [did] = schemaId.split(':')
-  
-    return did
-  }
-  
-  /**
-   * Extract did from credential definition id
-   */
-  export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
-    const [did] = credentialDefinitionId.split(':')
-  
-    return did
-  }
+  const [did] = schemaId.split(':')
+
+  return did
+}
+
+/**
+ * Extract did from credential definition id
+ */
+export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
+  const [did] = credentialDefinitionId.split(':')
+
+  return did
+}
