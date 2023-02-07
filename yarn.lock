@@ -876,6 +876,26 @@
   resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.4.tgz#9df23f7d02c3010a746c33c2f41879bc707439ac"
   integrity sha512-USB/arrVmdGDcfSlptCRwr12eG/Yqb2A7uESwAIYlMBWf1DtZKQGCRIZmRnHZP/mr4oMylXGfjUOqTRRVzGHXA==
 
+"@hyperledger/aries-askar-nodejs@^0.1.0-dev.1":
+  version "0.1.0-dev.1"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.1.tgz#b384d422de48f0ce5918e1612d2ca32ebd160520"
+  integrity sha512-XrRskQ0PaNAerItvfxKkS8YaVg+iuImguoqfyQ4ZSaePKZQnTqZpkxo6faKS+GlsaubRXz/6yz3YndVRIxPO+w==
+  dependencies:
+    "@hyperledger/aries-askar-shared" "0.1.0-dev.1"
+    "@mapbox/node-pre-gyp" "^1.0.10"
+    ffi-napi "^4.0.3"
+    node-cache "^5.1.2"
+    ref-array-di "^1.2.2"
+    ref-napi "^3.0.3"
+    ref-struct-di "^1.1.1"
+
+"@hyperledger/aries-askar-shared@0.1.0-dev.1", "@hyperledger/aries-askar-shared@^0.1.0-dev.1":
+  version "0.1.0-dev.1"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.1.tgz#4e4e494c3a44c7c82f7b95ad4f06149f2a3a9b6c"
+  integrity sha512-Pt525M6CvnE3N6jxMpSqLy7RpOsc4oqa2Q+hc2UdCHuSYwmM/aeqt6wiA5dpghvl8g/78lCi1Dz74pzp7Dmm3w==
+  dependencies:
+    fast-text-encoding "^1.0.3"
+
 "@hyperledger/indy-vdr-nodejs@^0.1.0-dev.4":
   version "0.1.0-dev.4"
   resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.4.tgz#b5d2090b30c4a51e4e4f15a024054aada0d3550e"
@@ -8415,7 +8435,7 @@ node-addon-api@^3.0.0:
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.2.1.tgz#81325e0a2117789c0128dab65e7e38f07ceba161"
   integrity sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==
 
-node-cache@5.1.2:
+node-cache@5.1.2, node-cache@^5.1.2:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/node-cache/-/node-cache-5.1.2.tgz#f264dc2ccad0a780e76253a694e9fd0ed19c398d"
   integrity sha512-t1QzWwnk4sjLWaQAS8CHgOJ+RAfmHpxFWmc36IWTiWHQfs0w5JDMBS1b1ZxQteo0vVVuWJvIUKHDkkeK7vIGCg==
