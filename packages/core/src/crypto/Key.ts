@@ -1,7 +1,9 @@
-import type { KeyType } from './KeyType'
+import type { Jwk } from './JwkTypes'
 
+import { AriesFrameworkError } from '../error'
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
+import { KeyType } from './KeyType'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
 
 export class Key {
@@ -49,5 +51,24 @@ export class Key {
 
   public get publicKeyBase58() {
     return TypedArrayEncoder.toBase58(this.publicKey)
+  }
+
+  public toJwk(): Jwk {
+    if (this.keyType !== KeyType.Ed25519) {
+      throw new AriesFrameworkError(`JWK creation is only supported for Ed25519 key types. Received ${this.keyType}`)
+    }
+
+    return {
+      kty: 'OKP',
+      crv: 'Ed25519',
+      x: TypedArrayEncoder.toBase64URL(this.publicKey),
+    }
+  }
+
+  public static fromJwk(jwk: Jwk) {
+    if (jwk.crv !== 'Ed25519') {
+      throw new AriesFrameworkError('Only JWKs with Ed25519 key type is supported.')
+    }
+    return Key.fromPublicKeyBase58(TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(jwk.x)), KeyType.Ed25519)
   }
 }
