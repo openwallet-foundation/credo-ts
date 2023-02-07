@@ -1,5 +1,4 @@
 import type { AnonCredsCredential } from '@aries-framework/anoncreds'
-import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
@@ -8,15 +7,31 @@ export interface AnonCredsCredentialRecordProps {
   credential: AnonCredsCredential
   credentialId: string
   linkSecretId: string
+  schemaName: string
+  schemaVersion: string
+  schemaIssuerDid: string
+  issuerDid: string
 }
 
 export type DefaultAnonCredsCredentialTags = {
   credentialId: string
   linkSecretId: string
   credentialDefinitionId: string
+  schemaId: string
+  attributes: string[]
 }
 
-export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCredentialTags, TagsBase> {
+export type CustomAnonCredsCredentialTags = {
+  schemaName: string
+  schemaVersion: string
+  schemaIssuerDid: string
+  issuerDid: string
+}
+
+export class AnonCredsCredentialRecord extends BaseRecord<
+  DefaultAnonCredsCredentialTags,
+  CustomAnonCredsCredentialTags
+> {
   public static readonly type = 'AnonCredsCredentialRecord'
   public readonly type = AnonCredsCredentialRecord.type
 
@@ -32,6 +47,12 @@ export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCreden
       this.credentialId = props.credentialId
       this.credential = props.credential
       this.linkSecretId = props.linkSecretId
+      this.setTags({
+        issuerDid: props.issuerDid,
+        schemaIssuerDid: props.schemaIssuerDid,
+        schemaName: props.schemaName,
+        schemaVersion: props.schemaVersion,
+      })
     }
   }
 
@@ -39,8 +60,10 @@ export class AnonCredsCredentialRecord extends BaseRecord<DefaultAnonCredsCreden
     return {
       ...this._tags,
       credentialDefinitionId: this.credential.cred_def_id,
+      schemaId: this.credential.schema_id,
       credentialId: this.credentialId,
       linkSecretId: this.linkSecretId,
+      attributes: Object.keys(this.credential.values),
     }
   }
 }

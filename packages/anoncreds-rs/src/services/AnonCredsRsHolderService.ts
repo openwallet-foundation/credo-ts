@@ -1,3 +1,4 @@
+import type { SimpleQuery } from '../../../core/src/storage/StorageService' // TODO: expose in core package
 import type {
   AnonCredsHolderService,
   AnonCredsProof,
@@ -12,11 +13,17 @@ import type {
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
 } from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext, Query } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsLinkSecretRepository, AnonCredsCredentialRepository } from '@aries-framework/anoncreds'
 import {
+  AnonCredsSchemaRepository,
+  AnonCredsCredentialRecord,
+  AnonCredsLinkSecretRepository,
+  AnonCredsCredentialRepository,
+} from '@aries-framework/anoncreds'
+import {
+  CredentialRequestMetadata,
   Credential,
   CredentialDefinition,
   CredentialOffer,
@@ -209,8 +216,46 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   }
 
   public async storeCredential(agentContext: AgentContext, options: StoreCredentialOptions): Promise<string> {
-    // TODO
-    throw new AnonCredsRsError('Not implemented yet')
+    const linkSecretRecord = await agentContext.dependencyManager
+      .resolve(AnonCredsLinkSecretRepository)
+      .getByLinkSecretId(agentContext, options.credentialRequestMetadata.master_secret_name)
+
+    // TODO: In order to support all tags from AnonCreds spec (section 9.1.1 about Restrictions), we need to tag
+    // the credential records with some properties of the schema it is based on. This means that Schema should have been
+    // previously retrieved and present in the storage. Can we assume that at this point it will be stored?
+    const schemaRecord = await agentContext.dependencyManager
+      .resolve(AnonCredsSchemaRepository)
+      .getBySchemaId(agentContext, options.credential.schema_id)
+
+    const revocationRegistryDefinition = options.revocationRegistry?.definition
+      ? RevocationRegistryDefinition.load(JSON.stringify(options.revocationRegistry.definition))
+      : undefined
+
+    const credentialId = options.credentialId ?? uuid()
+
+    Credential.load(JSON.stringify(options.credential)).process({
+      credentialDefinition: CredentialDefinition.load(JSON.stringify(options.credentialDefinition)),
+      credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(options.credentialRequestMetadata)),
+      masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+      revocationRegistryDefinition,
+    })
+
+    const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+
+    await credentialRepository.save(
+      agentContext,
+      new AnonCredsCredentialRecord({
+        credential: options.credential,
+        credentialId,
+        linkSecretId: linkSecretRecord.linkSecretId,
+        issuerDid: options.credentialDefinition.issuerId,
+        schemaName: schemaRecord.schema.name,
+        schemaIssuerDid: schemaRecord.schema.issuerId,
+        schemaVersion: schemaRecord.schema.version,
+      })
+    )
+
+    return credentialId
   }
 
   public async getCredential(
@@ -245,7 +290,73 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: GetCredentialsForProofRequestOptions
   ): Promise<GetCredentialsForProofRequestReturn> {
-    // TODO
-    throw new AnonCredsRsError('Not implemented yet')
+    const proofRequest = options.proofRequest
+    const referent = options.attributeReferent
+
+    const requestedAttribute = proofRequest.requested_attributes[referent]
+
+    const attributeNames = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
+
+    const query: Query<AnonCredsCredentialRecord>[] = []
+
+    if (!requestedAttribute.restrictions) {
+      throw new AnonCredsRsError('No restrictions')
+    }
+
+    for (const restriction of requestedAttribute.restrictions) {
+      const queryElements: SimpleQuery<AnonCredsCredentialRecord>[] = []
+
+      if (restriction.cred_def_id) {
+        queryElements.push({ credentialDefinitionId: restriction.cred_def_id })
+      }
+
+      if (restriction.issuer_id || restriction.issuer_did) {
+        queryElements.push({ issuerId: restriction.issuer_id ?? restriction.issuer_id })
+      }
+      // TODO queryElement.revocationRegistryId = restriction.rev_reg_id
+
+      if (restriction.schema_id) {
+        queryElements.push({ schemaId: restriction.schema_id })
+      }
+
+      if (restriction.schema_issuer_id || restriction.schema_issuer_did) {
+        queryElements.push({ schemaIssuerDid: restriction.schema_issuer_did ?? restriction.schema_issuer_id })
+      }
+
+      if (restriction.schema_name) {
+        queryElements.push({ schemaName: restriction.schema_name })
+      }
+
+      if (restriction.schema_version) {
+        queryElements.push({ schemaVersion: restriction.schema_version })
+      }
+
+      query.push({ $or: queryElements })
+    }
+
+    const credentials = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, {
+        attributes: attributeNames,
+        $and: query,
+      })
+
+    return credentials.map((credentialRecord) => {
+      const attributes: { [key: string]: string } = {}
+      for (const attribute in credentialRecord.credential.values) {
+        attributes[attribute] = credentialRecord.credential.values[attribute].raw
+      }
+      return {
+        credentialInfo: {
+          attributes,
+          credentialDefinitionId: credentialRecord.credential.cred_def_id,
+          credentialId: credentialRecord.credentialId,
+          schemaId: credentialRecord.credential.schema_id,
+          // TODO: credentialRevocationId
+          revocationRegistryId: credentialRecord.credential.rev_reg_id,
+        },
+        // TODO: interval
+      }
+    })
   }
 }

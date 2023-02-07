@@ -205,6 +205,10 @@ describe('AnonCredsRsHolderService', () => {
         credential: personCredential,
         credentialId: 'personCredId',
         linkSecretId: 'linkSecretId',
+        issuerDid: 'issuerDid',
+        schemaIssuerDid: 'schemaIssuerDid',
+        schemaName: 'schemaName',
+        schemaVersion: 'schemaVersion',
       })
     )
     mockFunction(anoncredsCredentialRepositoryMock.getByCredentialId).mockResolvedValueOnce(
@@ -212,6 +216,10 @@ describe('AnonCredsRsHolderService', () => {
         credential: phoneCredential,
         credentialId: 'phoneCredId',
         linkSecretId: 'linkSecretId',
+        issuerDid: 'issuerDid',
+        schemaIssuerDid: 'schemaIssuerDid',
+        schemaName: 'schemaName',
+        schemaVersion: 'schemaVersion',
       })
     )
 
