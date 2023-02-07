@@ -12,6 +12,7 @@ import type {
   AnonCredsCredentialInfo,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
+  AnonCredsProofRequestRestriction,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
@@ -293,17 +294,47 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const proofRequest = options.proofRequest
     const referent = options.attributeReferent
 
-    const requestedAttribute = proofRequest.requested_attributes[referent]
+    const requestedAttribute =
+      proofRequest.requested_attributes[referent] ?? proofRequest.requested_predicates[referent]
+    const attributes = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
 
-    const attributeNames = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
+    const restrictionQuery = requestedAttribute.restrictions
+      ? this.queryFromRestrictions(requestedAttribute.restrictions)
+      : undefined
 
-    const query: Query<AnonCredsCredentialRecord>[] = []
-
-    if (!requestedAttribute.restrictions) {
-      throw new AnonCredsRsError('No restrictions')
+    const query: Query<AnonCredsCredentialRecord> = {
+      attributes,
+      $and: restrictionQuery,
+      ...options.extraQuery,
     }
 
-    for (const restriction of requestedAttribute.restrictions) {
+    const credentials = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, query)
+
+    return credentials.map((credentialRecord) => {
+      const attributes: { [key: string]: string } = {}
+      for (const attribute in credentialRecord.credential.values) {
+        attributes[attribute] = credentialRecord.credential.values[attribute].raw
+      }
+      return {
+        credentialInfo: {
+          attributes,
+          credentialDefinitionId: credentialRecord.credential.cred_def_id,
+          credentialId: credentialRecord.credentialId,
+          schemaId: credentialRecord.credential.schema_id,
+          // TODO: credentialRevocationId
+          revocationRegistryId: credentialRecord.credential.rev_reg_id,
+        },
+        interval: proofRequest.non_revoked,
+      }
+    })
+  }
+
+  private queryFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
+    const query: Query<AnonCredsCredentialRecord>[] = []
+
+    for (const restriction of restrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord>[] = []
 
       if (restriction.cred_def_id) {
@@ -334,29 +365,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       query.push({ $or: queryElements })
     }
 
-    const credentials = await agentContext.dependencyManager
-      .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, {
-        attributes: attributeNames,
-        $and: query,
-      })
-
-    return credentials.map((credentialRecord) => {
-      const attributes: { [key: string]: string } = {}
-      for (const attribute in credentialRecord.credential.values) {
-        attributes[attribute] = credentialRecord.credential.values[attribute].raw
-      }
-      return {
-        credentialInfo: {
-          attributes,
-          credentialDefinitionId: credentialRecord.credential.cred_def_id,
-          credentialId: credentialRecord.credentialId,
-          schemaId: credentialRecord.credential.schema_id,
-          // TODO: credentialRevocationId
-          revocationRegistryId: credentialRecord.credential.rev_reg_id,
-        },
-        // TODO: interval
-      }
-    })
+    return query
   }
 }
