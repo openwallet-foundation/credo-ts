@@ -120,8 +120,8 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       const attributeEncodedValues: Record<string, string> = {}
 
       Object.keys(credentialValues).forEach((key) => {
-        attributeRawValues[key] = credentialValues[key].encoded
-        attributeEncodedValues[key] = credentialValues[key].raw
+        attributeRawValues[key] = credentialValues[key].raw
+        attributeEncodedValues[key] = credentialValues[key].encoded
       })
 
       const credentialDefinitionRecord = await agentContext.dependencyManager
@@ -142,9 +142,8 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         attributeEncodedValues,
         attributeRawValues,
         credentialDefinitionPrivate: CredentialDefinitionPrivate.load(
-          JSON.stringify(credentialDefinitionPrivateRecord)
+          JSON.stringify(credentialDefinitionPrivateRecord.value)
         ),
-        //TODO: revocationConfiguration,
       })
 
       return {
@@ -152,7 +151,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         credentialRevocationId: credential.revocationRegistryIndex?.toString(),
       }
     } catch (error) {
-      throw new AnonCredsRsError('Error creating credential', { cause: error })
+      throw new AnonCredsRsError(`Error creating credential: ${error}`, { cause: error })
     }
   }
 }

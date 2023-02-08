@@ -38,6 +38,7 @@ export function createCredentialDefinition(options: { attributeNames: string[]; 
     credentialDefinition: JSON.parse(credentialDefinition.toJson()),
     credentialDefinitionPrivate: JSON.parse(credentialDefinitionPrivate.toJson()),
     keyCorrectnessProof: JSON.parse(keyCorrectnessProof.toJson()),
+    schema: JSON.parse(schema.toJson()),
   }
 }
 
@@ -153,14 +154,15 @@ export function createRevocationRegistryDefinition(options: {
   credentialDefinition: Record<string, unknown>
 }) {
   const { credentialDefinitionId, credentialDefinition } = options
-  const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } = anoncreds.createRevocationRegistryDef({
-    credentialDefinitionId,
-    credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)).handle,
-    issuerId: 'mock:uri',
-    tag: 'some_tag',
-    revocationRegistryType: 'CL_ACCUM',
-    maximumCredentialNumber: 10,
-  })
+  const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
+    anoncreds.createRevocationRegistryDefinition({
+      credentialDefinitionId,
+      credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)).handle,
+      issuerId: 'mock:uri',
+      tag: 'some_tag',
+      revocationRegistryType: 'CL_ACCUM',
+      maximumCredentialNumber: 10,
+    })
 
   const tailsPath = anoncreds.revocationRegistryDefinitionGetAttribute({
     objectHandle: revocationRegistryDefinition,

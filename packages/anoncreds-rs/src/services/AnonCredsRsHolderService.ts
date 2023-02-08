@@ -111,7 +111,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
               revocationRegistryIndex,
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
-              revocationRegistryStatusList: RevocationStatusList.create({
+              revocationStatusList: RevocationStatusList.create({
                 issuanceByDefault: true,
                 revocationRegistryDefinition,
                 revocationRegistryDefinitionId,
@@ -207,7 +207,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
         credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
         masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
-        masterSecretId: linkSecretRecord.id,
+        masterSecretId: linkSecretRecord.linkSecretId,
       })
 
       return {
@@ -215,7 +215,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentialRequestMetadata: JSON.parse(credentialRequestMetadata.toJson()),
       }
     } catch (error) {
-      throw new AnonCredsRsError('Error creating credential request', { cause: error })
+      throw new AnonCredsRsError(`Error creating credential request: ${error}`, { cause: error })
     }
   }
 
