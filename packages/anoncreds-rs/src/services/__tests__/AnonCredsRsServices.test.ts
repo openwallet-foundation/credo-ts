@@ -20,13 +20,13 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { nativeAnoncreds } from '@hyperledger/anoncreds-nodejs/build/library'
 import { Subject } from 'rxjs'
 
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { encode } from '../../anoncreds/src/utils/credential'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
-import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
-import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { encode } from '../../../../anoncreds/src/utils/credential'
+import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
+import { AnonCredsRsIssuerService } from '../AnonCredsRsIssuerService'
+import { AnonCredsRsVerifierService } from '../AnonCredsRsVerifierService'
 
 const agentConfig = getAgentConfig('AnonCredsCredentialFormatServiceTest')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()

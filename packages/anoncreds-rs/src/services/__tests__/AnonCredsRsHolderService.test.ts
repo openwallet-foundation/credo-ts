@@ -1,9 +1,9 @@
 import type {
-  AnonCredsCredential,
   AnonCredsCredentialDefinition,
   AnonCredsProofRequest,
   AnonCredsRequestedCredentials,
   AnonCredsRevocationStatusList,
+  AnonCredsCredential,
 } from '@aries-framework/anoncreds'
 
 import {
@@ -493,7 +493,7 @@ describe('AnonCredsRsHolderService', () => {
     expect(saveCredentialMock).toHaveBeenCalledWith(
       agentContext,
       expect.objectContaining({
-        credential,
+        // The stored credential is different from the one received originally
         credentialId: 'personCredId',
         linkSecretId: 'linkSecretId',
         _tags: expect.objectContaining({

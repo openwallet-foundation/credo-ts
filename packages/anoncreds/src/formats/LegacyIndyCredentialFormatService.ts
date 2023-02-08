@@ -209,7 +209,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialRecord, attachId, offerAttachment }: FormatAcceptOfferOptions<LegacyIndyCredentialFormat>
+    {
+      credentialRecord,
+      attachId,
+      offerAttachment,
+      credentialFormats,
+    }: FormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
@@ -232,6 +237,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const { credentialRequest, credentialRequestMetadata } = await holderService.createCredentialRequest(agentContext, {
       credentialOffer,
       credentialDefinition,
+      linkSecretId: credentialFormats?.indy?.linkSecretId,
     })
 
     credentialRecord.metadata.set<AnonCredsCredentialRequestMetadata>(
