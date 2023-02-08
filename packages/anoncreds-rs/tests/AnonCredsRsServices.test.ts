@@ -204,7 +204,7 @@ describe('AnonCredsRsServices', () => {
           attr2_referent: { credentialId, credentialInfo, revealed: true },
         },
         requestedPredicates: {
-          predicate1_referent: { credentialId, credentialInfo }
+          predicate1_referent: { credentialId, credentialInfo },
         },
         selfAttestedAttributes: {},
       },
