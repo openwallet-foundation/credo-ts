@@ -14,6 +14,7 @@ import type {
   AnonCredsProofRequestRestriction,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
+  AnonCredsCredential,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
@@ -124,9 +125,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           linkSecretId: credentialRecord.linkSecretId,
           credentialEntry: {
             credential,
-            //@ts-ignore // FIXME: remove when anoncreds-rs is fixed
             revocationState,
-            //@ts-ignore // FIXME: remove when anoncreds-rs is fixed
             timestamp,
           },
         }
@@ -237,7 +236,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const credentialId = options.credentialId ?? uuid()
 
-    Credential.load(JSON.stringify(options.credential)).process({
+    const processedCredential = Credential.load(JSON.stringify(options.credential)).process({
       credentialDefinition: CredentialDefinition.load(JSON.stringify(options.credentialDefinition)),
       credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(options.credentialRequestMetadata)),
       masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
@@ -249,7 +248,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     await credentialRepository.save(
       agentContext,
       new AnonCredsCredentialRecord({
-        credential: options.credential,
+        credential: JSON.parse(processedCredential.toJson()) as AnonCredsCredential,
         credentialId,
         linkSecretId: linkSecretRecord.linkSecretId,
         issuerId: options.credentialDefinition.issuerId,
