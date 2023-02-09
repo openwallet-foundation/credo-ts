@@ -34,3 +34,9 @@ export function didFromCredentialDefinitionId(credentialDefinitionId: string) {
 
   return did
 }
+
+export function didFromRevocationRegistryDefinitionId(revocationRegistryId: string) {
+  const [did] = revocationRegistryId.split(':')
+
+  return did
+}
