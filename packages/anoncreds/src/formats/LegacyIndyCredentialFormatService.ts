@@ -363,6 +363,15 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       )
     }
 
+    const schemaResult = await registryService
+      .getRegistryForIdentifier(agentContext, anonCredsCredential.cred_def_id)
+      .getSchema(agentContext, anonCredsCredential.schema_id)
+    if (!schemaResult.schema) {
+      throw new AriesFrameworkError(
+        `Unable to resolve schema ${anonCredsCredential.schema_id}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
+      )
+    }
+
     // Resolve revocation registry if credential is revocable
     let revocationRegistryResult: null | GetRevocationRegistryDefinitionReturn = null
     if (anonCredsCredential.rev_reg_id) {
@@ -387,6 +396,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credential: anonCredsCredential,
       credentialDefinitionId: credentialDefinitionResult.credentialDefinitionId,
       credentialDefinition: credentialDefinitionResult.credentialDefinition,
+      schema: schemaResult.schema,
       revocationRegistry: revocationRegistryResult?.revocationRegistryDefinition
         ? {
             definition: revocationRegistryResult.revocationRegistryDefinition,

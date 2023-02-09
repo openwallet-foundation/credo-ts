@@ -17,7 +17,6 @@ import {
 } from '@aries-framework/anoncreds'
 import { InjectionSymbols } from '@aries-framework/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { nativeAnoncreds } from '@hyperledger/anoncreds-nodejs/build/library'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
@@ -47,7 +46,6 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-nativeAnoncreds.anoncreds_set_default_logger()
 describe('AnonCredsRsServices', () => {
   test('issuance flow without revocation', async () => {
     const issuerId = 'issuer:uri'
@@ -155,6 +153,7 @@ describe('AnonCredsRsServices', () => {
     const storedId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
       credentialDefinition,
+      schema,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       credentialRequestMetadata: credentialRequestState.credentialRequestMetadata,
       credentialId,

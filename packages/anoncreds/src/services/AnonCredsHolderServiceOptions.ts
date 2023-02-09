@@ -47,6 +47,7 @@ export interface StoreCredentialOptions {
   credentialRequestMetadata: AnonCredsCredentialRequestMetadata
   credential: AnonCredsCredential
   credentialDefinition: AnonCredsCredentialDefinition
+  schema: AnonCredsSchema
   credentialDefinitionId: string
   credentialId?: string
   revocationRegistry?: {

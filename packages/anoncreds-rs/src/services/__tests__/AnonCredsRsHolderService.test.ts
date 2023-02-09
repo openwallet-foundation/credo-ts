@@ -4,21 +4,19 @@ import type {
   AnonCredsRequestedCredentials,
   AnonCredsRevocationStatusList,
   AnonCredsCredential,
+  AnonCredsSchema,
 } from '@aries-framework/anoncreds'
 
 import {
-  AnonCredsSchemaRecord,
   AnonCredsHolderServiceSymbol,
   AnonCredsLinkSecretRecord,
   AnonCredsCredentialRecord,
 } from '@aries-framework/anoncreds'
 import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
-import { nativeAnoncreds } from '@hyperledger/anoncreds-nodejs/build/library'
 
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsCredentialRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
-import { AnonCredsSchemaRepository } from '../../../../anoncreds/src/repository/AnonCredsSchemaRepository'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
@@ -28,8 +26,6 @@ import {
   createCredentialOffer,
   createLinkSecret,
 } from './helpers'
-
-nativeAnoncreds.anoncreds_set_default_logger()
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
@@ -47,16 +43,11 @@ jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
 const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
 const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsSchemaRepository')
-const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<AnonCredsSchemaRepository>
-const anonCredsSchemaRepositoryMock = new AnonCredsSchemaRepositoryMock()
-
 const agentContext = getAgentContext({
   registerInstances: [
     [AnonCredsCredentialDefinitionRepository, credentialDefinitionRepositoryMock],
     [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
     [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
-    [AnonCredsSchemaRepository, anonCredsSchemaRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
   ],
   agentConfig,
@@ -448,12 +439,12 @@ describe('AnonCredsRsHolderService', () => {
       new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: linkSecret })
     )
 
-    mockFunction(anonCredsSchemaRepositoryMock.getBySchemaId).mockResolvedValue(
-      new AnonCredsSchemaRecord({
-        schema: { attrNames: ['name', 'sex', 'height', 'age'], issuerId: 'issuerId', name: 'schemaName', version: '1' },
-        schemaId: 'schemaid:uri',
-      })
-    )
+    const schema: AnonCredsSchema = {
+      attrNames: ['name', 'sex', 'height', 'age'],
+      issuerId: 'issuerId',
+      name: 'schemaName',
+      version: '1',
+    }
 
     const { credential, revocationRegistryDefinition, credentialRequestMetadata } = createCredentialForHolder({
       attributes: {
@@ -480,6 +471,7 @@ describe('AnonCredsRsHolderService', () => {
     const credentialId = await anonCredsHolderService.storeCredential(agentContext, {
       credential,
       credentialDefinition,
+      schema,
       credentialDefinitionId: 'personcreddefid:uri',
       credentialRequestMetadata: JSON.parse(credentialRequestMetadata.toJson()),
       credentialId: 'personCredId',

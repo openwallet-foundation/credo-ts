@@ -19,6 +19,7 @@ export type DefaultAnonCredsCredentialTags = {
   linkSecretId: string
   credentialDefinitionId: string
   credentialRevocationId?: string
+  revocationRegistryId?: string
   schemaId: string
   attributes: string[]
 }
@@ -67,6 +68,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       schemaId: this.credential.schema_id,
       credentialId: this.credentialId,
       credentialRevocationId: this.credentialRevocationId,
+      revocationRegistryId: this.credential.rev_reg_id,
       linkSecretId: this.linkSecretId,
       attributes: Object.keys(this.credential.values),
     }

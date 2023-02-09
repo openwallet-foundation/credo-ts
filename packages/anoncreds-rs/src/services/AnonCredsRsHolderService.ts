@@ -20,7 +20,6 @@ import type { AgentContext, Query } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
 
 import {
-  AnonCredsSchemaRepository,
   AnonCredsCredentialRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
@@ -200,8 +199,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         : await linkSecretRepository.findDefault(agentContext)
 
       if (!linkSecretRecord) {
-        // No default link secret: TODO: shall we create a new one?
-        throw new AnonCredsRsError('Link Secret not found')
+        // No default link secret
+        throw new AnonCredsRsError('No default link secret has been found')
       }
 
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
@@ -221,26 +220,20 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   }
 
   public async storeCredential(agentContext: AgentContext, options: StoreCredentialOptions): Promise<string> {
+    const { credential, credentialDefinition, credentialRequestMetadata, revocationRegistry, schema } = options
+
     const linkSecretRecord = await agentContext.dependencyManager
       .resolve(AnonCredsLinkSecretRepository)
-      .getByLinkSecretId(agentContext, options.credentialRequestMetadata.master_secret_name)
+      .getByLinkSecretId(agentContext, credentialRequestMetadata.master_secret_name)
 
-    // TODO: In order to support all tags from AnonCreds spec (section 9.1.1 about Restrictions), we need to tag
-    // the credential records with some properties of the schema it is based on. This means that Schema should have been
-    // previously retrieved and present in the storage. Can we assume that at this point it will be stored?
-    const schemaRecord = await agentContext.dependencyManager
-      .resolve(AnonCredsSchemaRepository)
-      .getBySchemaId(agentContext, options.credential.schema_id)
-
-    const revocationRegistryDefinition = options.revocationRegistry?.definition
-      ? RevocationRegistryDefinition.load(JSON.stringify(options.revocationRegistry.definition))
+    const revocationRegistryDefinition = revocationRegistry?.definition
+      ? RevocationRegistryDefinition.load(JSON.stringify(revocationRegistry.definition))
       : undefined
 
     const credentialId = options.credentialId ?? uuid()
-
-    const processedCredential = Credential.load(JSON.stringify(options.credential)).process({
-      credentialDefinition: CredentialDefinition.load(JSON.stringify(options.credentialDefinition)),
-      credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(options.credentialRequestMetadata)),
+    const processedCredential = Credential.load(JSON.stringify(credential)).process({
+      credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
+      credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(credentialRequestMetadata)),
       masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
       revocationRegistryDefinition,
     })
@@ -254,9 +247,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentialId,
         linkSecretId: linkSecretRecord.linkSecretId,
         issuerId: options.credentialDefinition.issuerId,
-        schemaName: schemaRecord.schema.name,
-        schemaIssuerId: schemaRecord.schema.issuerId,
-        schemaVersion: schemaRecord.schema.version,
+        schemaName: schema.name,
+        schemaIssuerId: schema.issuerId,
+        schemaVersion: schema.version,
       })
     )
 
@@ -352,7 +345,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       if (restriction.issuer_id || restriction.issuer_did) {
         queryElements.push({ issuerId: restriction.issuer_id ?? restriction.issuer_did })
       }
-      // TODO queryElement.revocationRegistryId = restriction.rev_reg_id
+
+      if (restriction.rev_reg_id) {
+        queryElements.push({ revocationRegistryId: restriction.rev_reg_id })
+      }
 
       if (restriction.schema_id) {
         queryElements.push({ schemaId: restriction.schema_id })
