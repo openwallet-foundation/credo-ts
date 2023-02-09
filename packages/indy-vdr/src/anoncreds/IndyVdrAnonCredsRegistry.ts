@@ -17,8 +17,6 @@ import {
   SchemaRequest,
   GetCredentialDefinitionRequest,
   CredentialDefinitionRequest,
-  GetRevocationRegistryDefinitionRequest,
-  GetRevocationRegistryDeltaRequest,
 } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrPoolService } from '../pool'
@@ -29,7 +27,6 @@ import {
   getLegacySchemaId,
   getLegacyCredentialDefinitionId,
   indyVdrAnonCredsRegistryIdentifierRegex,
-  didFromRevocationRegistryDefinitionId,
 } from './utils/identifiers'
 
 export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
@@ -136,8 +133,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
       // from the ledger to know which key is associated with the did
-      // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
-      // from the ledger to know which key is associated with the did
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
       const didResult = await didsApi.resolve(`did:sov:${options.schema.issuerId}`)
 
@@ -148,7 +143,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           schemaState: {
             schema: options.schema,
             state: 'failed',
-            reason: `didNotFound: unable to resolve did did:sov${options.schema.issuerId}: ${didResult.didResolutionMetadata.message}`,
+            reason: `didNotFound: unable to resolve did did:sov:${options.schema.issuerId}: ${didResult.didResolutionMetadata.message}`,
           },
         }
       }
@@ -309,7 +304,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const credentialDefinitionId = getLegacyCredentialDefinitionId(
-        options.options.didIndyNamespace,
+        options.credentialDefinition.issuerId,
         schemaMetadata.indyLedgerSeqNo,
         options.credentialDefinition.tag
       )
@@ -319,7 +314,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinition: {
           ver: '1.0',
           id: credentialDefinitionId,
-          schemaId: options.credentialDefinition.schemaId,
+          schemaId: `${schemaMetadata.indyLedgerSeqNo}`,
           type: 'CL',
           tag: options.credentialDefinition.tag,
           value: {
@@ -328,6 +323,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         },
       })
 
+      // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
+      // from the ledger to know which key is associated with the did
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
       const didResult = await didsApi.resolve(`did:sov:${options.credentialDefinition.issuerId}`)
 
@@ -342,7 +339,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           },
         }
       }
-      const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.credentialDefinition.issuerId}#key-1`)
+
+      const verificationMethod = didResult.didDocument.dereferenceKey(
+        `did:sov:${options.credentialDefinition.issuerId}#key-1`
+      )
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
 
