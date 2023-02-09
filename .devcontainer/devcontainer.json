@@ -1,0 +1,9 @@
+{
+  "build": { 
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts": [8088, 8089],
+  "runArgs": [
+    "--network=bridge"
+  ]
+}
