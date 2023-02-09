@@ -11,14 +11,14 @@ import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
   private initConfig: InitConfig
-  private initConfigEndpoints: string[] | undefined
+  private initConfigEndpoints: string[]
   public label: string
   public logger: Logger
   public readonly agentDependencies: AgentDependencies
 
   public constructor(initConfig: InitConfig, agentDependencies: AgentDependencies) {
     this.initConfig = initConfig
-    this.initConfigEndpoints = initConfig.endpoints
+    this.initConfigEndpoints = initConfig.endpoints ?? [DID_COMM_TRANSPORT_QUEUE]
     this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
@@ -134,17 +134,10 @@ export class AgentConfig {
   }
 
   public get endpoints(): [string, ...string[]] {
-    // if endpoints is not set, return queue endpoint
-    // https://github.com/hyperledger/aries-rfcs/issues/405#issuecomment-582612875
-    if (!this.initConfigEndpoints || this.initConfigEndpoints.length === 0) {
-      return [DID_COMM_TRANSPORT_QUEUE]
-    }
-
     return this.initConfigEndpoints as [string, ...string[]]
   }
 
   public set endpoints(endpoints: string[]) {
-    // if endpoints is not set, return queue endpoint
     this.initConfigEndpoints = endpoints
   }
 
