@@ -13,14 +13,16 @@ export enum KeyDerivationMethod {
   Raw = 'RAW',
 }
 
+export interface WalletStorageConfig {
+  type: string
+  [key: string]: unknown
+}
+
 export interface WalletConfig {
   id: string
   key: string
   keyDerivationMethod?: KeyDerivationMethod
-  storage?: {
-    type: string
-    [key: string]: unknown
-  }
+  storage?: WalletStorageConfig
   masterSecretId?: string
 }
 
