@@ -141,6 +141,11 @@ export class AgentConfig {
     return this.initConfig.endpoints as [string, ...string[]]
   }
 
+  public set endpoints(endpoints: string[]) {
+    // if endpoints is not set, return queue endpoint
+    this.initConfig.endpoints = endpoints
+  }
+
   /**
    * @deprecated use mediatorInvitationUrl from the `RecipientModuleConfig` class
    */
