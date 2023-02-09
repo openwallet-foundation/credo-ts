@@ -6,7 +6,7 @@ import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../models'
 
-export interface V2IssueCredentialMessageProps {
+export interface V2IssueCredentialMessageOptions {
   id?: string
   comment?: string
   formats: CredentialFormatSpec[]
@@ -14,7 +14,7 @@ export interface V2IssueCredentialMessageProps {
 }
 
 export class V2IssueCredentialMessage extends AgentMessage {
-  public constructor(options: V2IssueCredentialMessageProps) {
+  public constructor(options: V2IssueCredentialMessageOptions) {
     super()
 
     if (options) {

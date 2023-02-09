@@ -1,107 +1,44 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type { IndyProofRequestFromProposalOptions } from '../../../formats/indy/IndyProofFormatsServiceOptions'
-import type { ProofRequestFromProposalOptions } from '../../../models/ProofServiceOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V1ProofService } from '../V1ProofService'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
-import { AriesFrameworkError } from '../../../../../error'
 import { V1ProposePresentationMessage } from '../messages'
 
 export class V1ProposePresentationHandler implements MessageHandler {
-  private proofService: V1ProofService
-  private agentConfig: AgentConfig
-  private didCommMessageRepository: DidCommMessageRepository
-  private proofResponseCoordinator: ProofResponseCoordinator
+  private proofProtocol: V1ProofProtocol
   public supportedMessages = [V1ProposePresentationMessage]
 
-  public constructor(
-    proofService: V1ProofService,
-    agentConfig: AgentConfig,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    didCommMessageRepository: DidCommMessageRepository
-  ) {
-    this.proofService = proofService
-    this.agentConfig = agentConfig
-    this.proofResponseCoordinator = proofResponseCoordinator
-    this.didCommMessageRepository = didCommMessageRepository
+  public constructor(proofProtocol: V1ProofProtocol) {
+    this.proofProtocol = proofProtocol
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>) {
-    const proofRecord = await this.proofService.processProposal(messageContext)
+    const proofRecord = await this.proofProtocol.processProposal(messageContext)
 
-    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToProposal(
-      messageContext.agentContext,
-      proofRecord
-    )
+    const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
+      proofRecord,
+      proposalMessage: messageContext.message,
+    })
 
     if (shouldAutoRespond) {
-      return await this.createRequest(proofRecord, messageContext)
+      return await this.acceptProposal(proofRecord, messageContext)
     }
   }
 
-  private async createRequest(
+  private async acceptProposal(
     proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
-    this.agentConfig.logger.info(
-      `Automatically sending request with autoAccept on ${this.agentConfig.autoAcceptProofs}`
-    )
+    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
 
     if (!messageContext.connection) {
-      this.agentConfig.logger.error('No connection on the messageContext')
-      throw new AriesFrameworkError('No connection on the messageContext')
+      messageContext.agentContext.config.logger.error('No connection on the messageContext, aborting auto accept')
+      return
     }
 
-    const proposalMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
-    })
-
-    if (!proposalMessage) {
-      this.agentConfig.logger.error(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
-      throw new AriesFrameworkError(`Proof record with id ${proofRecord.id} is missing required credential proposal`)
-    }
-
-    const proofRequestFromProposalOptions: IndyProofRequestFromProposalOptions = {
-      name: 'proof-request',
-      version: '1.0',
-      nonce: await messageContext.agentContext.wallet.generateNonce(),
+    const { message } = await this.proofProtocol.acceptProposal(messageContext.agentContext, {
       proofRecord,
-    }
-
-    const proofRequest: ProofRequestFromProposalOptions<[IndyProofFormat]> =
-      await this.proofService.createProofRequestFromProposal(
-        messageContext.agentContext,
-        proofRequestFromProposalOptions
-      )
-
-    const indyProofRequest = proofRequest.proofFormats
-
-    if (!indyProofRequest || !indyProofRequest.indy) {
-      this.agentConfig.logger.error(`No Indy proof request was found`)
-      throw new AriesFrameworkError('No Indy proof request was found')
-    }
-
-    const { message } = await this.proofService.createRequestAsResponse(messageContext.agentContext, {
-      proofFormats: {
-        indy: {
-          name: indyProofRequest.indy?.name,
-          version: indyProofRequest.indy?.version,
-          nonRevoked: indyProofRequest.indy?.nonRevoked,
-          requestedAttributes: indyProofRequest.indy?.requestedAttributes,
-          requestedPredicates: indyProofRequest.indy?.requestedPredicates,
-          ver: indyProofRequest.indy?.ver,
-          nonce: indyProofRequest.indy?.nonce,
-        },
-      },
-      proofRecord: proofRecord,
-      autoAcceptProof: proofRecord.autoAcceptProof,
-      willConfirm: true,
     })
 
     return new OutboundMessageContext(message, {

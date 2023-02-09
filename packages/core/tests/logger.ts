@@ -14,7 +14,7 @@ function logToTransport(logObject: ILogObject) {
 }
 
 export class TestLogger extends BaseLogger {
-  private logger: Logger
+  public readonly logger: Logger
 
   // Map our log levels to tslog levels
   private tsLogLevelMap = {
@@ -27,29 +27,40 @@ export class TestLogger extends BaseLogger {
     [LogLevel.fatal]: 'fatal',
   } as const
 
-  public constructor(logLevel: LogLevel, name?: string) {
+  public static fromLogger(logger: TestLogger, name?: string) {
+    return new TestLogger(logger.logLevel, name, logger.logger)
+  }
+
+  public constructor(logLevel: LogLevel, name?: string, logger?: Logger) {
     super(logLevel)
 
-    this.logger = new Logger({
-      name,
-      minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
-      ignoreStackLevels: 5,
-      attachedTransports: [
-        {
-          transportLogger: {
-            silly: logToTransport,
-            debug: logToTransport,
-            trace: logToTransport,
-            info: logToTransport,
-            warn: logToTransport,
-            error: logToTransport,
-            fatal: logToTransport,
+    if (logger) {
+      this.logger = logger.getChildLogger({
+        name,
+        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
+      })
+    } else {
+      this.logger = new Logger({
+        name,
+        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelMap[this.logLevel],
+        ignoreStackLevels: 5,
+        attachedTransports: [
+          {
+            transportLogger: {
+              silly: logToTransport,
+              debug: logToTransport,
+              trace: logToTransport,
+              info: logToTransport,
+              warn: logToTransport,
+              error: logToTransport,
+              fatal: logToTransport,
+            },
+            // always log to file
+            minLevel: 'silly',
           },
-          // always log to file
-          minLevel: 'silly',
-        },
-      ],
-    })
+        ],
+      })
+    }
   }
 
   private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
@@ -93,6 +104,6 @@ export class TestLogger extends BaseLogger {
   }
 }
 
-const testLogger = new TestLogger(LogLevel.error)
+const testLogger = new TestLogger(LogLevel.off)
 
 export default testLogger

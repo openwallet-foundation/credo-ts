@@ -1,5 +1,5 @@
 import type { Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
-import type { PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import type { V1PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import {
@@ -21,7 +21,7 @@ describe('Present Proof Subprotocol', () => {
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceProofExchangeRecord: ProofExchangeRecord
-  let presentationPreview: PresentationPreview
+  let presentationPreview: V1PresentationPreview
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
@@ -57,7 +57,6 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: '947121108704767252195126',
           attributes: presentationPreview.attributes,
           predicates: presentationPreview.predicates,
         },
@@ -87,11 +86,8 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
@@ -107,7 +103,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
+    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -161,7 +157,6 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },
@@ -181,11 +176,8 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
@@ -202,7 +194,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
+    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')
@@ -232,7 +224,6 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          nonce: '947121108704767252195126',
           attributes: presentationPreview.attributes,
           predicates: presentationPreview.predicates,
         },
@@ -262,11 +253,8 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
@@ -282,7 +270,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
+    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
@@ -336,7 +324,6 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: attributes,
           requestedPredicates: predicates,
         },
@@ -356,11 +343,8 @@ describe('Present Proof Subprotocol', () => {
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
@@ -377,7 +361,7 @@ describe('Present Proof Subprotocol', () => {
 
     // Faber accepts the presentation
     testLogger.test('Faber accept the presentation from Alice')
-    await faberAgent.proofs.acceptPresentation(faberProofExchangeRecord.id)
+    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she receives a presentation acknowledgement
     testLogger.test('Alice waits for acceptance by Faber')

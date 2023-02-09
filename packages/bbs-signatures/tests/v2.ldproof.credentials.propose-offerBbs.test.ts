@@ -87,7 +87,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
 
     testLogger.test('Alice sends (v2, Indy) credential proposal to Faber')
 
-    const credentialExchangeRecord: CredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
       connectionId: aliceConnection.id,
       protocolVersion: 'v2',
       credentialFormats: {

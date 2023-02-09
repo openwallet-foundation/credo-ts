@@ -568,6 +568,6 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
     if (!format) throw new AriesFrameworkError(`No attachment found for service ${credentialFormatService.formatKey}`)
 
-    return format.attachId
+    return format.attachmentId
   }
 }

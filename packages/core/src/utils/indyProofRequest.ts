@@ -25,7 +25,7 @@ function assertNoDuplicates(predicates: string[], attributeNames: string[]) {
 }
 
 // TODO: This is still not ideal. The requested groups can specify different credentials using restrictions.
-export function checkProofRequestForDuplicates(proofRequest: ProofRequest) {
+export function assertNoDuplicateGroupsNamesInProofRequest(proofRequest: ProofRequest) {
   const attributes = attributeNamesToArray(proofRequest)
   const predicates = predicateNamesToArray(proofRequest)
   assertNoDuplicates(predicates, attributes)

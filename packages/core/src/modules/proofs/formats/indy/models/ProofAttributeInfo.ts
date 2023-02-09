@@ -5,13 +5,15 @@ import { IndyRevocationInterval } from '../../../../credentials'
 
 import { AttributeFilter } from './AttributeFilter'
 
+export type ProofAttributeInfoOptions = ProofAttributeInfo
+
 export class ProofAttributeInfo {
-  public constructor(options: ProofAttributeInfo) {
+  public constructor(options: ProofAttributeInfoOptions) {
     if (options) {
       this.name = options.name
       this.names = options.names
-      this.nonRevoked = options.nonRevoked
-      this.restrictions = options.restrictions
+      this.nonRevoked = options.nonRevoked ? new IndyRevocationInterval(options.nonRevoked) : undefined
+      this.restrictions = options.restrictions?.map((r) => new AttributeFilter(r))
     }
   }
 

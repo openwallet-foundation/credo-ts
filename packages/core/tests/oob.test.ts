@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateOfferOptions, DefaultCredentialProtocols } from '../src/modules/credentials'
+import type { CreateCredentialOfferOptions, DefaultCredentialProtocols } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -58,7 +58,7 @@ describe('out of band', () => {
 
   let faberAgent: Agent
   let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<DefaultCredentialProtocols>
+  let credentialTemplate: CreateCredentialOfferOptions<DefaultCredentialProtocols>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
