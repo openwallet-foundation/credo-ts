@@ -83,6 +83,7 @@ export interface InitConfig {
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
   backupBeforeStorageUpdate?: boolean
+  processMessagesConcurrently?: boolean
 }
 
 export type ProtocolVersion = `${number}.${number}`
