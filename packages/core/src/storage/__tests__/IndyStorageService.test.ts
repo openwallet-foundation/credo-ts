@@ -11,6 +11,8 @@ import { IndyStorageService } from '../IndyStorageService'
 
 import { TestRecord } from './TestRecord'
 
+const startDate = Date.now()
+
 describe('IndyStorageService', () => {
   let wallet: IndyWallet
   let indy: typeof Indy
@@ -116,8 +118,7 @@ describe('IndyStorageService', () => {
     })
 
     it('After a save the record should have update the updatedAt property', async () => {
-      const time = new Date().getTime()
-      await sleep(1000)
+      const time = startDate
       const record = await insertRecord({ id: 'test-updatedAt' })
       expect(record.updatedAt?.getTime()).toBeGreaterThan(time)
     })
@@ -161,8 +162,7 @@ describe('IndyStorageService', () => {
     })
 
     it('After a record has been updated it should have updated the updatedAT property', async () => {
-      const time = new Date()
-      await sleep(1000)
+      const time = startDate
       const record = await insertRecord({ id: 'test-id' })
 
       record.replaceTags({ ...record.getTags(), foo: 'bar' })
@@ -170,7 +170,7 @@ describe('IndyStorageService', () => {
       await storageService.update(agentContext, record)
 
       const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
-      expect(retrievedRecord.createdAt.getTime()).toBeGreaterThan(time.getTime())
+      expect(retrievedRecord.createdAt.getTime()).toBeGreaterThan(time)
     })
   })
 
