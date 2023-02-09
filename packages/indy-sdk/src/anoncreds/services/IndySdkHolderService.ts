@@ -9,7 +9,7 @@ import type {
   StoreCredentialOptions,
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
-  AnonCredsRequestedCredentials,
+  AnonCredsSelectedCredentials,
   AnonCredsCredentialRequestMetadata,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
@@ -76,7 +76,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   }
 
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {
-    const { credentialDefinitions, proofRequest, requestedCredentials, schemas } = options
+    const { credentialDefinitions, proofRequest, selectedCredentials, schemas } = options
 
     assertIndySdkWallet(agentContext.wallet)
 
@@ -85,7 +85,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       const indyRevocationStates: RevStates = await this.indyRevocationService.createRevocationState(
         agentContext,
         proofRequest,
-        requestedCredentials,
+        selectedCredentials,
         options.revocationRegistries
       )
 
@@ -117,7 +117,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       const indyProof = await this.indySdk.proverCreateProof(
         agentContext.wallet.handle,
         proofRequest as IndyProofRequest,
-        this.parseRequestedCredentials(requestedCredentials),
+        this.parseSelectedCredentials(selectedCredentials),
         agentContext.wallet.masterSecretId,
         indySchemas,
         indyCredentialDefinitions,
@@ -133,7 +133,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       agentContext.config.logger.error(`Error creating Indy Proof`, {
         error,
         proofRequest,
-        requestedCredentials,
+        selectedCredentials,
       })
 
       throw isIndyError(error) ? new IndySdkError(error) : error
@@ -338,27 +338,27 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   }
 
   /**
-   * Converts a public api form of {@link RequestedCredentials} interface into a format {@link Indy.IndyRequestedCredentials} that Indy SDK expects.
+   * Converts a public api form of {@link AnonCredsSelectedCredentials} interface into a format {@link Indy.IndyRequestedCredentials} that Indy SDK expects.
    **/
-  private parseRequestedCredentials(requestedCredentials: AnonCredsRequestedCredentials): IndyRequestedCredentials {
+  private parseSelectedCredentials(selectedCredentials: AnonCredsSelectedCredentials): IndyRequestedCredentials {
     const indyRequestedCredentials: IndyRequestedCredentials = {
       requested_attributes: {},
       requested_predicates: {},
       self_attested_attributes: {},
     }
 
-    for (const groupName in requestedCredentials.requestedAttributes) {
+    for (const groupName in selectedCredentials.attributes) {
       indyRequestedCredentials.requested_attributes[groupName] = {
-        cred_id: requestedCredentials.requestedAttributes[groupName].credentialId,
-        revealed: requestedCredentials.requestedAttributes[groupName].revealed,
-        timestamp: requestedCredentials.requestedAttributes[groupName].timestamp,
+        cred_id: selectedCredentials.attributes[groupName].credentialId,
+        revealed: selectedCredentials.attributes[groupName].revealed,
+        timestamp: selectedCredentials.attributes[groupName].timestamp,
       }
     }
 
-    for (const groupName in requestedCredentials.requestedPredicates) {
+    for (const groupName in selectedCredentials.predicates) {
       indyRequestedCredentials.requested_predicates[groupName] = {
-        cred_id: requestedCredentials.requestedPredicates[groupName].credentialId,
-        timestamp: requestedCredentials.requestedPredicates[groupName].timestamp,
+        cred_id: selectedCredentials.predicates[groupName].credentialId,
+        timestamp: selectedCredentials.predicates[groupName].timestamp,
       }
     }
 
