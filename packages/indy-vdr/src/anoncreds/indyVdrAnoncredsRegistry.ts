@@ -153,7 +153,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const verificationMethod = didResult.didDocument.dereferenceKey('did:sov:${issuerId}#key-1')
+      const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.schema.issuerId}#key-1`)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
 
@@ -342,8 +342,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           },
         }
       }
-
-      const verificationMethod = didResult.didDocument.dereferenceKey('did:sov:${issuerId}#key-1')
+      const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.credentialDefinition.issuerId}#key-1`)
       const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
 
