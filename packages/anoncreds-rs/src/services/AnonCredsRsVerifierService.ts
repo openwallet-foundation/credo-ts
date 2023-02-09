@@ -1,5 +1,6 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
 
+import { injectable } from '@aries-framework/core'
 import {
   CredentialDefinition,
   Presentation,
@@ -11,6 +12,7 @@ import {
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
+@injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
   public async verifyProof(options: VerifyProofOptions): Promise<boolean> {
     const { credentialDefinitions, proof, proofRequest, revocationStates, schemas } = options

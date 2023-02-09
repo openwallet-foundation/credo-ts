@@ -25,6 +25,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
 } from '@aries-framework/anoncreds'
+import { injectable } from '@aries-framework/core'
 import {
   CredentialRequestMetadata,
   Credential,
@@ -43,6 +44,7 @@ import {
 import { uuid } from '../../../core/src/utils/uuid'
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
+@injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
   public async createLinkSecret(
     agentContext: AgentContext,

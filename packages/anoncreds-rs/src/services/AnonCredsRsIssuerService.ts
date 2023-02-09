@@ -17,7 +17,7 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
 } from '@aries-framework/anoncreds'
-import { AriesFrameworkError } from '@aries-framework/core'
+import { injectable, AriesFrameworkError } from '@aries-framework/core'
 import {
   Credential,
   CredentialDefinition,
@@ -30,6 +30,7 @@ import {
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
+@injectable()
 export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
     const { issuerId, name, version, attrNames: attributeNames } = options

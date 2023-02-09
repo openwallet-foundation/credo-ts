@@ -22,8 +22,8 @@ export class AnonCredsRsModule implements Module {
     }
 
     // Register services
-    dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, AnonCredsRsHolderService)
-    dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
-    dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
+    dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, AnonCredsRsHolderService)
+    dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, AnonCredsRsIssuerService)
+    dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, AnonCredsRsVerifierService)
   }
 }
