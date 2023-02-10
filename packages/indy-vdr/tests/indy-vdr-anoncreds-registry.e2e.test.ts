@@ -1,21 +1,15 @@
 import { Agent } from '@aries-framework/core'
 
-import { agentDependencies, genesisTransactions, getAgentConfig } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { IndyVdrPoolService } from '../src/pool'
+
+import { indyVdrModuleConfig } from './helpers'
 
 const agentConfig = getAgentConfig('IndyVdrAnonCredsRegistry')
 
 // TODO: update to module once available
-const indyVdrPoolService = new IndyVdrPoolService(agentConfig.logger)
-indyVdrPoolService.setPools([
-  {
-    genesisTransactions,
-    indyNamespace: 'local:test',
-    isProduction: false,
-    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
-  },
-])
+const indyVdrPoolService = new IndyVdrPoolService(agentConfig.logger, indyVdrModuleConfig)
 
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 

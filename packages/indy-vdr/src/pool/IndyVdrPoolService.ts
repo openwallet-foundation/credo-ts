@@ -1,4 +1,3 @@
-import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
