@@ -12,6 +12,7 @@ env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
   LIB_INDY_STRG_POSTGRES: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
+  NODE_OPTIONS: --max_old_space_size=4096
 
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
 # Ideally we only add this to the 'release' job so it doesn't limit PR runs, but github can't guarantee the job order in that case:
