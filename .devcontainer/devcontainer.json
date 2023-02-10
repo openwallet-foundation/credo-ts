@@ -1,9 +1,11 @@
 {
   "build": { 
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile" 
   },
-  "forwardPorts": [8088, 8089],
   "runArgs": [
-    "--network=bridge"
-  ]
+    "--env-file",
+    ".devcontainer/devcontainer.env"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
+  "workspaceFolder": "/work"
 }

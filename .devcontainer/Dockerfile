@@ -1,43 +1,20 @@
-FROM ubuntu:21.10
+# arm + amd compatible Dockerfile
+FROM ghcr.io/findy-network/findy-base:indy-1.16.ubuntu-18.04 AS indy-base
 
-ENV TZ=UTC
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
-    echo $TZ > /etc/timezone
+FROM ubuntu:18.04
 
-RUN apt-get update && \
-    apt-get install -y tzdata curl gnupg git \
-    software-properties-common iproute2
+# install indy deps and files from base
+RUN apt-get update && apt-get install -y libsodium23 libssl1.1 libzmq5 git zsh
 
-RUN apt-get install -y \
-    build-essential \
-    pkg-config \
-    cmake \
-    libssl-dev \
-    libsqlite3-dev \
-    libzmq3-dev \
-    libncursesw5-dev
+COPY --from=indy-base /usr/include/indy /usr/include/indy
+COPY --from=indy-base /usr/lib/libindy.a /usr/lib/libindy.a
+COPY --from=indy-base /usr/lib/libindy.so /usr/lib/libindy.so
 
-RUN curl -Ls https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz | \
-    tar -zx -C / && \
-    cd /libsodium-1.0.18 && \
-    ./configure --disable-sharedmake && \
-    make && \
-    make check && \
-    make install && \
-    cd - && \
-    rm -rf /libsodium-1.0.18
+RUN apt-get install -y curl python3 build-essential ca-certificates && \
+  curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash && \
+  export NVM_DIR="$HOME/.nvm" && \
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+  nvm install v16 && \
+  npm install yarn -g
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-RUN git clone https://github.com/hyperledger/indy-sdk.git && \
-    cd ./indy-sdk/libindy && \
-    /root/.cargo/bin/cargo build && \
-    echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/indy-sdk/libindy/target/debug" >> ~/.bashrc && \
-    ldconfig && \
-    . ~/.bashrc
-
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && \
-    . ~/.bashrc && \
-    nvm install v12.22.1 && \
-    nvm install-latest-npm && \
-    npm install --global yarn
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
