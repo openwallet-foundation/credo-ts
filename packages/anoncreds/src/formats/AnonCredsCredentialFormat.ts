@@ -35,7 +35,9 @@ export interface AnonCredsAcceptProposalFormat {
  * This defines the module payload for calling CredentialsApi.acceptOffer. No options are available for this
  * method, so it's an empty object
  */
-export type AnonCredsAcceptOfferFormat = Record<string, never>
+export interface AnonCredsAcceptOfferFormat {
+  linkSecretId?: string
+}
 
 /**
  * This defines the module payload for calling CredentialsApi.offerCredential

@@ -5,10 +5,13 @@ import type * as Indy from 'indy-sdk'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { RecordDuplicateError, RecordNotFoundError } from '../../error'
+import { sleep } from '../../utils/sleep'
 import { IndyWallet } from '../../wallet/IndyWallet'
 import { IndyStorageService } from '../IndyStorageService'
 
 import { TestRecord } from './TestRecord'
+
+const startDate = Date.now()
 
 describe('IndyStorageService', () => {
   let wallet: IndyWallet
@@ -113,6 +116,12 @@ describe('IndyStorageService', () => {
 
       expect(record).toEqual(found)
     })
+
+    it('After a save the record should have update the updatedAt property', async () => {
+      const time = startDate
+      const record = await insertRecord({ id: 'test-updatedAt' })
+      expect(record.updatedAt?.getTime()).toBeGreaterThan(time)
+    })
   })
 
   describe('getById()', () => {
@@ -150,6 +159,18 @@ describe('IndyStorageService', () => {
 
       const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
       expect(retrievedRecord).toEqual(record)
+    })
+
+    it('After a record has been updated it should have updated the updatedAT property', async () => {
+      const time = startDate
+      const record = await insertRecord({ id: 'test-id' })
+
+      record.replaceTags({ ...record.getTags(), foo: 'bar' })
+      record.foo = 'foobaz'
+      await storageService.update(agentContext, record)
+
+      const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
+      expect(retrievedRecord.createdAt.getTime()).toBeGreaterThan(time)
     })
   })
 
