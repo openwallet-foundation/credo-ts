@@ -10,7 +10,6 @@ import { Attachment } from '../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
-import { IndyCredentialView } from '../formats/indy/models/IndyCredentialView'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
 
 import { CredentialMetadataKeys } from './CredentialMetadataTypes'
@@ -104,24 +103,6 @@ export class CredentialExchangeRecord extends BaseRecord<
       indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
       indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
-  }
-
-  public getCredentialInfo(): IndyCredentialView | null {
-    if (!this.credentialAttributes) return null
-
-    const claims = this.credentialAttributes.reduce(
-      (accumulator, current) => ({
-        ...accumulator,
-        [current.name]: current.value,
-      }),
-      {}
-    )
-
-    return new IndyCredentialView({
-      claims,
-      attachments: this.linkedAttachments,
-      metadata: this.metadata.data,
-    })
   }
 
   public assertProtocolVersion(version: string) {

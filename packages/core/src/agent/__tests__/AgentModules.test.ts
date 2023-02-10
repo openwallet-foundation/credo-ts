@@ -8,8 +8,6 @@ import { CredentialsModule } from '../../modules/credentials'
 import { DidsModule } from '../../modules/dids'
 import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
-import { IndyModule } from '../../modules/indy'
-import { LedgerModule } from '../../modules/ledger'
 import { OutOfBandModule } from '../../modules/oob'
 import { ProofsModule } from '../../modules/proofs'
 import { MediatorModule, RecipientModule } from '../../modules/routing'
@@ -66,12 +64,10 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
-        ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
         cache: expect.any(CacheModule),
       })
@@ -91,12 +87,10 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
-        ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
         cache: expect.any(CacheModule),
         myModule,
@@ -119,12 +113,10 @@ describe('AgentModules', () => {
         mediationRecipient: expect.any(RecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
-        ledger: expect.any(LedgerModule),
         discovery: expect.any(DiscoverFeaturesModule),
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        indy: expect.any(IndyModule),
         w3cVc: expect.any(W3cVcModule),
         cache: expect.any(CacheModule),
         myModule,

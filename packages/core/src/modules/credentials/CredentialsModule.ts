@@ -9,7 +9,6 @@ import { Protocol } from '../../agent/models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
-import { IndyCredentialFormatService } from './formats/indy'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
 import { V1CredentialProtocol } from './protocol/v1'
 import { V2CredentialProtocol } from './protocol/v2'
@@ -18,7 +17,7 @@ import { CredentialRepository } from './repository'
 /**
  * Default credentialProtocols that will be registered if the `credentialProtocols` property is not configured.
  */
-export type DefaultCredentialProtocols = [V1CredentialProtocol, V2CredentialProtocol<IndyCredentialFormatService[]>]
+export type DefaultCredentialProtocols = [V1CredentialProtocol, V2CredentialProtocol<[]>]
 
 // CredentialsModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
 export type CredentialsModuleOptions<CredentialProtocols extends CredentialProtocol[]> = Optional<
@@ -39,24 +38,9 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
       ...config,
       // NOTE: the credentialProtocols defaults are set in the CredentialsModule rather than the CredentialsModuleConfig to
       // avoid dependency cycles.
-      credentialProtocols: config?.credentialProtocols ?? this.getDefaultCredentialProtocols(),
+      // TODO: default credential protocol
+      credentialProtocols: config?.credentialProtocols ?? [],
     }) as CredentialsModuleConfig<CredentialProtocols>
-  }
-
-  /**
-   * Get the default credential protocols that will be registered if the `credentialProtocols` property is not configured.
-   */
-  private getDefaultCredentialProtocols(): DefaultCredentialProtocols {
-    // Instantiate credential formats
-    const indyCredentialFormat = new IndyCredentialFormatService()
-
-    // Instantiate credential protocols
-    const v1CredentialProtocol = new V1CredentialProtocol({ indyCredentialFormat })
-    const v2CredentialProtocol = new V2CredentialProtocol({
-      credentialFormats: [indyCredentialFormat],
-    })
-
-    return [v1CredentialProtocol, v2CredentialProtocol]
   }
 
   /**

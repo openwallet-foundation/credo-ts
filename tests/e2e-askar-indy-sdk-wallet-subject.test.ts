@@ -9,8 +9,7 @@ import { Agent, DependencyManager, InjectionSymbols } from '@aries-framework/cor
 import { IndySdkModule, IndySdkStorageService, IndySdkWallet } from '@aries-framework/indy-sdk'
 
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
-
-import { agentDependencies } from '@aries-framework/node'
+import indySdk from 'indy-sdk'
 
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
@@ -37,34 +36,40 @@ describe.skip('E2E Askar-Indy SDK Wallet Subject tests', () => {
     senderDependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
     senderDependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
     senderAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Sender Indy', { endpoints: ['rxjs:sender'] }),
-        modules: { indySdk: new IndySdkModule({ indySdk: agentDependencies.indy }) },
-      },
+      getAgentOptions(
+        'E2E Wallet Subject Sender Indy',
+        { endpoints: ['rxjs:sender'] },
+        { indySdk: new IndySdkModule({ indySdk }) }
+      ),
       senderDependencyManager
     )
 
     // Recipient is an Agent using Askar Wallet
-    recipientAgent = new Agent({
-      ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
-      modules: { askar: new AskarModule() },
-    })
+    recipientAgent = new Agent(
+      getAgentOptions(
+        'E2E Wallet Subject Recipient Askar',
+        { endpoints: ['rxjs:recipient'] },
+        { askar: new AskarModule() }
+      )
+    )
 
     await e2eWalletTest(senderAgent, recipientAgent)
   })
 
   test('Wallet Subject flow - Askar Sender / Askar Recipient ', async () => {
     // Sender is an Agent using Askar Wallet
-    senderAgent = new Agent({
-      ...getAgentOptions('E2E Wallet Subject Sender Askar', { endpoints: ['rxjs:sender'] }),
-      modules: { askar: new AskarModule() },
-    })
+    senderAgent = new Agent(
+      getAgentOptions('E2E Wallet Subject Sender Askar', { endpoints: ['rxjs:sender'] }, { askar: new AskarModule() })
+    )
 
     // Recipient is an Agent using Askar Wallet
-    recipientAgent = new Agent({
-      ...getAgentOptions('E2E Wallet Subject Recipient Askar', { endpoints: ['rxjs:recipient'] }),
-      modules: { askar: new AskarModule() },
-    })
+    recipientAgent = new Agent(
+      getAgentOptions(
+        'E2E Wallet Subject Recipient Askar',
+        { endpoints: ['rxjs:recipient'] },
+        { askar: new AskarModule() }
+      )
+    )
 
     await e2eWalletTest(senderAgent, recipientAgent)
   })
@@ -75,10 +80,11 @@ describe.skip('E2E Askar-Indy SDK Wallet Subject tests', () => {
     senderDependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
     senderDependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
     senderAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Sender Indy', { endpoints: ['rxjs:sender'] }),
-        modules: { indySdk: new IndySdkModule({ indySdk: agentDependencies.indy }) },
-      },
+      getAgentOptions(
+        'E2E Wallet Subject Sender Indy',
+        { endpoints: ['rxjs:sender'] },
+        { indySdk: new IndySdkModule({ indySdk }) }
+      ),
       senderDependencyManager
     )
 
@@ -87,10 +93,11 @@ describe.skip('E2E Askar-Indy SDK Wallet Subject tests', () => {
     recipientDependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
     recipientDependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
     recipientAgent = new Agent(
-      {
-        ...getAgentOptions('E2E Wallet Subject Recipient Indy', { endpoints: ['rxjs:recipient'] }),
-        modules: { indySdk: new IndySdkModule({ indySdk: agentDependencies.indy }) },
-      },
+      getAgentOptions(
+        'E2E Wallet Subject Recipient Indy',
+        { endpoints: ['rxjs:recipient'] },
+        { indySdk: new IndySdkModule({ indySdk }) }
+      ),
       recipientDependencyManager
     )
 

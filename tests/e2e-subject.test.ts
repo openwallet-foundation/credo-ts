@@ -10,26 +10,41 @@ import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
+import { AnonCredsTestsAgent, getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-const recipientAgentOptions = getAgentOptions('E2E Subject Recipient', {
+const modules = getLegacyAnonCredsModules({
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
-const mediatorAgentOptions = getAgentOptions('E2E Subject Mediator', {
-  endpoints: ['rxjs:mediator'],
-  autoAcceptMediationRequests: true,
-})
-const senderAgentOptions = getAgentOptions('E2E Subject Sender', {
-  endpoints: ['rxjs:sender'],
-  mediatorPollingInterval: 1000,
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-})
+
+const recipientAgentOptions = getAgentOptions(
+  'E2E Subject Recipient',
+  {
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+  },
+  modules
+)
+const mediatorAgentOptions = getAgentOptions(
+  'E2E Subject Mediator',
+  {
+    endpoints: ['rxjs:mediator'],
+    autoAcceptMediationRequests: true,
+  },
+  modules
+)
+const senderAgentOptions = getAgentOptions(
+  'E2E Subject Sender',
+  {
+    endpoints: ['rxjs:sender'],
+    mediatorPollingInterval: 1000,
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+  },
+  modules
+)
 
 describe('E2E Subject tests', () => {
-  let recipientAgent: Agent
-  let mediatorAgent: Agent
-  let senderAgent: Agent
+  let recipientAgent: AnonCredsTestsAgent
+  let mediatorAgent: AnonCredsTestsAgent
+  let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
     recipientAgent = new Agent(recipientAgentOptions)

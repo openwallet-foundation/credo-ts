@@ -1,5 +1,5 @@
 import type { IndySdkModuleConfigOptions } from './IndySdkModuleConfig'
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
 
 import {
   AnonCredsHolderServiceSymbol,
@@ -10,6 +10,7 @@ import { InjectionSymbols } from '@aries-framework/core'
 
 import { IndySdkModuleConfig } from './IndySdkModuleConfig'
 import { IndySdkHolderService, IndySdkIssuerService, IndySdkVerifierService } from './anoncreds'
+import { IndySdkPoolService } from './ledger'
 import { IndySdkStorageService } from './storage'
 import { IndySdkSymbol } from './types'
 import { IndySdkWallet } from './wallet'
@@ -31,5 +32,15 @@ export class IndySdkModule implements Module {
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, IndySdkIssuerService)
     dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, IndySdkHolderService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, IndySdkVerifierService)
+  }
+
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
+
+    for (const pool of indySdkPoolService.pools) {
+      if (pool.config.connectOnStartup) {
+        await pool.connect()
+      }
+    }
   }
 }

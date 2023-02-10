@@ -2,7 +2,6 @@ import type { AgentContext } from '../../../../agent'
 import type { Attachment } from '../../../../decorators/attachment/Attachment'
 import type {
   ExtractProofFormats,
-  IndyProofFormat,
   ProofFormatCredentialForRequestPayload,
   ProofFormatPayload,
   ProofFormatService,

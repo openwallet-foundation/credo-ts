@@ -1,19 +1,29 @@
-import type { Agent } from '@aries-framework/core'
+import type { Agent, BaseEvent, CredentialStateChangedEvent, ProofStateChangedEvent } from '@aries-framework/core'
 
 import { sleep } from '../packages/core/src/utils/sleep'
-import { issueCredential, makeConnection, prepareForIssuance, presentProof } from '../packages/core/tests/helpers'
+import {
+  issueLegacyAnonCredsCredential,
+  presentLegacyAnonCredsProof,
+  prepareForAnonCredsIssuance,
+  AnonCredsTestsAgent,
+} from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { makeConnection } from '../packages/core/tests/helpers'
 
 import { V1CredentialPreview, CredentialState, MediationState, ProofState } from '@aries-framework/core'
+import { ReplaySubject } from 'rxjs'
 
 export async function e2eTest({
   mediatorAgent,
   recipientAgent,
   senderAgent,
 }: {
-  mediatorAgent: Agent
-  recipientAgent: Agent
-  senderAgent: Agent
+  mediatorAgent: AnonCredsTestsAgent
+  recipientAgent: AnonCredsTestsAgent
+  senderAgent: AnonCredsTestsAgent
 }) {
+  const senderReplay = new ReplaySubject<BaseEvent>()
+  const recipientReplay = new ReplaySubject<BaseEvent>()
+
   // Make connection between mediator and recipient
   const [mediatorRecipientConnection, recipientMediatorConnection] = await makeConnection(mediatorAgent, recipientAgent)
   expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
@@ -33,13 +43,20 @@ export async function e2eTest({
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
   // Issue credential from sender to recipient
-  const { definition } = await prepareForIssuance(senderAgent, ['name', 'age', 'dateOfBirth'])
-  const { holderCredential, issuerCredential } = await issueCredential({
+  const { credentialDefinition } = await prepareForAnonCredsIssuance(senderAgent, {
+    attributeNames: ['name', 'age', 'dateOfBirth'],
+    // TODO: update to dynamic created did
+    issuerId: senderAgent.publicDid?.did as string,
+  })
+  const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
     issuerAgent: senderAgent,
+    issuerReplay: senderReplay,
     holderAgent: recipientAgent,
-    issuerConnectionId: senderRecipientConnection.id,
-    credentialTemplate: {
-      credentialDefinitionId: definition.id,
+    holderReplay: recipientReplay,
+
+    issuerHolderConnectionId: senderRecipientConnection.id,
+    offer: {
+      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
       attributes: V1CredentialPreview.fromRecord({
         name: 'John',
         age: '25',
@@ -49,39 +66,46 @@ export async function e2eTest({
     },
   })
 
-  expect(holderCredential.state).toBe(CredentialState.Done)
-  expect(issuerCredential.state).toBe(CredentialState.Done)
+  expect(holderCredentialExchangeRecord.state).toBe(CredentialState.Done)
+  expect(issuerCredentialExchangeRecord.state).toBe(CredentialState.Done)
 
   // Present Proof from recipient to sender
-  const definitionRestriction = [
-    {
-      credentialDefinitionId: definition.id,
-    },
-  ]
-  const { holderProof, verifierProof } = await presentProof({
+  const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentLegacyAnonCredsProof({
     verifierAgent: senderAgent,
+    verifierReplay: senderReplay,
+
     holderAgent: recipientAgent,
-    verifierConnectionId: senderRecipientConnection.id,
-    presentationTemplate: {
+    holderReplay: recipientReplay,
+
+    verifierHolderConnectionId: senderRecipientConnection.id,
+    request: {
       attributes: {
         name: {
           name: 'name',
-          restrictions: definitionRestriction,
+          restrictions: [
+            {
+              cred_def_id: credentialDefinition.credentialDefinitionId,
+            },
+          ],
         },
       },
       predicates: {
         olderThan21: {
           name: 'age',
-          restrictions: definitionRestriction,
-          predicateType: '<=',
-          predicateValue: 20000712,
+          restrictions: [
+            {
+              cred_def_id: credentialDefinition.credentialDefinitionId,
+            },
+          ],
+          p_type: '<=',
+          p_value: 20000712,
         },
       },
     },
   })
 
-  expect(holderProof.state).toBe(ProofState.Done)
-  expect(verifierProof.state).toBe(ProofState.Done)
+  expect(holderProofExchangeRecord.state).toBe(ProofState.Done)
+  expect(verifierProofExchangeRecord.state).toBe(ProofState.Done)
 
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.mediationRecipient.stopMessagePickup()

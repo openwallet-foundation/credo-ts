@@ -4,30 +4,45 @@ import { e2eTest } from './e2e-test'
 
 import { HttpOutboundTransport, Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { HttpInboundTransport } from '@aries-framework/node'
+import { AnonCredsTestsAgent, getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-const recipientAgentOptions = getAgentOptions('E2E HTTP Recipient', {
+const modules = getLegacyAnonCredsModules({
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
 })
+
+const recipientAgentOptions = getAgentOptions(
+  'E2E HTTP Recipient',
+  {
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+  },
+  modules
+)
 
 const mediatorPort = 3000
-const mediatorAgentOptions = getAgentOptions('E2E HTTP Mediator', {
-  endpoints: [`http://localhost:${mediatorPort}`],
-  autoAcceptMediationRequests: true,
-})
+const mediatorAgentOptions = getAgentOptions(
+  'E2E HTTP Mediator',
+  {
+    endpoints: [`http://localhost:${mediatorPort}`],
+    autoAcceptMediationRequests: true,
+  },
+  modules
+)
 
 const senderPort = 3001
-const senderAgentOptions = getAgentOptions('E2E HTTP Sender', {
-  endpoints: [`http://localhost:${senderPort}`],
-  mediatorPollingInterval: 1000,
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-})
+const senderAgentOptions = getAgentOptions(
+  'E2E HTTP Sender',
+  {
+    endpoints: [`http://localhost:${senderPort}`],
+    mediatorPollingInterval: 1000,
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+  },
+  modules
+)
 
 describe('E2E HTTP tests', () => {
-  let recipientAgent: Agent
-  let mediatorAgent: Agent
-  let senderAgent: Agent
+  let recipientAgent: AnonCredsTestsAgent
+  let mediatorAgent: AnonCredsTestsAgent
+  let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
     recipientAgent = new Agent(recipientAgentOptions)

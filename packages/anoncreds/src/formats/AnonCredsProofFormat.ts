@@ -43,6 +43,7 @@ export interface AnonCredsRequestProofFormat {
   name: string
   version: string
   nonRevoked?: AnonCredsNonRevokedInterval
+  // FIXME: inconsistency in casing
   requestedAttributes?: Record<string, AnonCredsRequestedAttribute>
   requestedPredicates?: Record<string, AnonCredsRequestedPredicate>
 }

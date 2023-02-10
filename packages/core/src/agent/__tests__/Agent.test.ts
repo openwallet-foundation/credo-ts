@@ -12,12 +12,8 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { IndyLedgerService } from '../../modules/ledger'
-import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
-import { V1ProofProtocol } from '../../modules/proofs/protocol/v1'
-import { V2ProofProtocol } from '../../modules/proofs/protocol/v2'
 import {
   MediationRecipientService,
   MediationRepository,
@@ -27,7 +23,6 @@ import {
   RecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
-import { IndyStorageService } from '../../storage/IndyStorageService'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -177,13 +172,9 @@ describe('Agent', () => {
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
       expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
 
-      expect(container.resolve(LedgerApi)).toBeInstanceOf(LedgerApi)
-      expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
-
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
-      expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -217,9 +208,6 @@ describe('Agent', () => {
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
       expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
-
-      expect(container.resolve(LedgerApi)).toBe(container.resolve(LedgerApi))
-      expect(container.resolve(IndyLedgerService)).toBe(container.resolve(IndyLedgerService))
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))

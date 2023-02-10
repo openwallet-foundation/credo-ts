@@ -5,7 +5,7 @@ import { UpdateAssistant } from '../src/storage/migration/UpdateAssistant'
 
 import { getAgentOptions } from './helpers'
 
-const agentOptions = getAgentOptions('Migration', { publicDidSeed: undefined, indyLedgers: [] })
+const agentOptions = getAgentOptions('Migration', { publicDidSeed: undefined })
 
 describe('migration', () => {
   test('manually initiating the update assistant to perform an update', async () => {

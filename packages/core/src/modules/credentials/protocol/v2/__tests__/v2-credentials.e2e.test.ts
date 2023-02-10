@@ -1,11 +1,8 @@
-import type { Agent } from '../../../../../agent/Agent'
+import type { ReplaySubject } from 'rxjs'
 import type { ConnectionRecord } from '../../../../connections'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { IndyCredPropose } from '../../../formats/indy/models/IndyCredPropose'
-import type { ReplaySubject } from 'rxjs'
 
 import {
-  issueCredential,
   setupCredentialTests,
   waitForCredentialRecord,
   waitForCredentialRecordSubject,
@@ -13,16 +10,24 @@ import {
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
-import { IndyHolderService } from '../../../../indy/services/IndyHolderService'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import {
+  V2CredentialPreview,
   V2IssueCredentialMessage,
+  V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
-  V2CredentialPreview,
-  V2OfferCredentialMessage,
 } from '../messages'
+
+import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
+import {
+  AnonCredsAgent,
+  issueLegacyAnonCredsCredential,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+
+// TODO: what to export from anoncreds root package?
+import { LegacyIndyProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyCredentialFormat'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -32,8 +37,8 @@ const credentialPreview = V2CredentialPreview.fromRecord({
 })
 
 describe('v2 credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: AnonCredsAgent
+  let aliceAgent: AnonCredsAgent
   let credDefId: string
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
@@ -42,7 +47,7 @@ describe('v2 credentials', () => {
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
 
-  let credPropose: IndyCredPropose
+  let credPropose: LegacyIndyProposeCredentialFormat
 
   const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
@@ -216,7 +221,7 @@ describe('v2 credentials', () => {
   })
 
   test('Faber issues credential which is then deleted from Alice`s wallet', async () => {
-    const { holderCredential } = await issueCredential({
+    const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerConnectionId: faberConnection.id,
       holderAgent: aliceAgent,
@@ -227,23 +232,23 @@ describe('v2 credentials', () => {
     })
 
     // test that delete credential removes from both repository and wallet
-    // latter is tested by spying on holder service (Indy) to
+    // latter is tested by spying on holder service to
     // see if deleteCredential is called
-    const holderService = aliceAgent.dependencyManager.resolve(IndyHolderService)
+    const holderService = aliceAgent.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
-    await aliceAgent.credentials.deleteById(holderCredential.id, {
+    await aliceAgent.credentials.deleteById(holderCredentialExchangeRecord.id, {
       deleteAssociatedCredentials: true,
       deleteAssociatedDidCommMessages: true,
     })
     expect(deleteCredentialSpy).toHaveBeenNthCalledWith(
       1,
       aliceAgent.context,
-      holderCredential.credentials[0].credentialRecordId
+      holderCredentialExchangeRecord.credentials[0].credentialRecordId
     )
 
-    return expect(aliceAgent.credentials.getById(holderCredential.id)).rejects.toThrowError(
-      `CredentialRecord: record with id ${holderCredential.id} not found.`
+    return expect(aliceAgent.credentials.getById(holderCredentialExchangeRecord.id)).rejects.toThrowError(
+      `CredentialRecord: record with id ${holderCredentialExchangeRecord.id} not found.`
     )
   })
 

@@ -16,8 +16,6 @@ import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
-import { IndyStorageService } from '../storage/IndyStorageService'
-import { IndyWallet } from '../wallet/IndyWallet'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
@@ -79,13 +77,17 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
+      throw new AriesFrameworkError(
+        "Missing required dependency: 'Wallet'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+      )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
       dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+      throw new AriesFrameworkError(
+        "Missing required dependency: 'StorageService'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+      )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
       dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
@@ -158,15 +160,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public async initialize() {
     await super.initialize()
-
-    // set the pools on the ledger.
-    this.ledger.setPools(this.ledger.config.indyLedgers)
-    // As long as value isn't false we will async connect to all genesis pools on startup
-    if (this.ledger.config.connectToIndyLedgersOnStartup) {
-      this.ledger.connectToPools().catch((error) => {
-        this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
-      })
-    }
 
     for (const transport of this.inboundTransports) {
       await transport.start(this)

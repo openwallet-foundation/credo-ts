@@ -8,7 +8,11 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
+import {
+  getAgentOptions,
+  prepareForIndyIssuance,
+  waitForCredentialRecordSubject,
+} from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
@@ -93,7 +97,7 @@ describe('credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    await prepareForIssuance(faberAgent, ['name', 'age'])
+    await prepareForIndyIssuance(faberAgent, ['name', 'age'])
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
     aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()

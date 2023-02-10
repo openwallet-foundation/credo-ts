@@ -12,12 +12,10 @@ import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 
 const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {
   autoAcceptConnections: true,
-  indyLedgers: [],
 })
 const mediatorOptions = getAgentOptions('Mediation: Mediator Pickup', {
   autoAcceptConnections: true,
   endpoints: ['wss://mediator'],
-  indyLedgers: [],
 })
 
 describe('E2E Pick Up protocol', () => {

@@ -6,7 +6,11 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { prepareForIssuance, waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
+import {
+  prepareForIndyIssuance,
+  waitForCredentialRecordSubject,
+  getAgentOptions,
+} from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -53,7 +57,7 @@ describe('V2 Connectionless Credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
+    const { definition } = await prepareForIndyIssuance(faberAgent, ['name', 'age'])
     credentialDefinitionId = definition.id
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()

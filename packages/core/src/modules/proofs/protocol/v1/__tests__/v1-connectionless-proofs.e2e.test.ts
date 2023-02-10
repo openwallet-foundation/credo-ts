@@ -9,9 +9,9 @@ import {
   setupProofsTest,
   waitForProofExchangeRecordSubject,
   getAgentOptions,
-  prepareForIssuance,
+  prepareForIndyIssuance,
   makeConnection,
-  issueCredential,
+  issueLegacyAnonCredsCredential,
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
@@ -265,13 +265,13 @@ describe('Present Proof', () => {
 
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+    const { definition } = await prepareForIndyIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(faberConnection.isReady).toBe(true)
     expect(aliceConnection.isReady).toBe(true)
 
-    await issueCredential({
+    await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerConnectionId: faberConnection.id,
       holderAgent: aliceAgent,

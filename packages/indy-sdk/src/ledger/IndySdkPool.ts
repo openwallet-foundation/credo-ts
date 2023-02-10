@@ -18,10 +18,10 @@ export interface TransactionAuthorAgreement {
 export interface IndySdkPoolConfig {
   genesisPath?: string
   genesisTransactions?: string
-  id: string
   isProduction: boolean
   indyNamespace: string
   transactionAuthorAgreement?: TransactionAuthorAgreement
+  connectOnStartup?: boolean
 }
 
 export class IndySdkPool {
@@ -57,10 +57,6 @@ export class IndySdkPool {
     return this.didIndyNamespace
   }
 
-  public get id() {
-    return this.poolConfig.id
-  }
-
   public get config() {
     return this.poolConfig
   }
@@ -84,7 +80,7 @@ export class IndySdkPool {
       await this.close()
     }
 
-    await this.indySdk.deletePoolLedgerConfig(this.poolConfig.id)
+    await this.indySdk.deletePoolLedgerConfig(this.poolConfig.indyNamespace)
   }
 
   public async connect() {
@@ -103,7 +99,7 @@ export class IndySdkPool {
   }
 
   private async connectToLedger() {
-    const poolName = this.poolConfig.id
+    const poolName = this.poolConfig.indyNamespace
     const genesisPath = await this.getGenesisPath()
 
     if (!genesisPath) {
@@ -142,7 +138,9 @@ export class IndySdkPool {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
-      throw new IndySdkPoolError(`Ledger '${this.id}' rejected read transaction request: ${response.reason}`)
+      throw new IndySdkPoolError(
+        `Ledger '${this.didIndyNamespace}' rejected read transaction request: ${response.reason}`
+      )
     }
 
     return response as LedgerReadReplyResponse
@@ -152,7 +150,9 @@ export class IndySdkPool {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
-      throw new IndySdkPoolError(`Ledger '${this.id}' rejected write transaction request: ${response.reason}`)
+      throw new IndySdkPoolError(
+        `Ledger '${this.didIndyNamespace}' rejected write transaction request: ${response.reason}`
+      )
     }
 
     return response as LedgerWriteReplyResponse
@@ -180,7 +180,7 @@ export class IndySdkPool {
     if (this.poolConfig.genesisPath) return this.poolConfig.genesisPath
 
     // Determine the genesisPath
-    const genesisPath = this.fileSystem.basePath + `/afj/genesis-${this.poolConfig.id}.txn`
+    const genesisPath = this.fileSystem.basePath + `/afj/genesis-${this.poolConfig.indyNamespace}.txn`
     // Store genesis data if provided
     if (this.poolConfig.genesisTransactions) {
       await this.fileSystem.write(genesisPath, this.poolConfig.genesisTransactions)

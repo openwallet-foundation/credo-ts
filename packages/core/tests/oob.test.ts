@@ -28,7 +28,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
 import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, prepareForIndyIssuance, waitForCredentialRecord } from './helpers'
 
 const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
   endpoints: ['rxjs:faber'],
@@ -79,7 +79,7 @@ describe('out of band', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+    const { definition } = await prepareForIndyIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
 
     credentialTemplate = {
       protocolVersion: 'v1',

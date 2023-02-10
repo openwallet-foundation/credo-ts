@@ -4,31 +4,47 @@ import { e2eTest } from './e2e-test'
 
 import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
+import { AnonCredsTestsAgent, getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-const recipientOptions = getAgentOptions('E2E WS Pickup V2 Recipient ', {
+const modules = getLegacyAnonCredsModules({
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
 })
+
+const recipientOptions = getAgentOptions(
+  'E2E WS Pickup V2 Recipient ',
+  {
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
+  },
+  modules
+)
 
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
 const mediatorPort = 4100
-const mediatorOptions = getAgentOptions('E2E WS Pickup V2 Mediator', {
-  endpoints: [`ws://localhost:${mediatorPort}`],
-  autoAcceptMediationRequests: true,
-})
+const mediatorOptions = getAgentOptions(
+  'E2E WS Pickup V2 Mediator',
+  {
+    endpoints: [`ws://localhost:${mediatorPort}`],
+    autoAcceptMediationRequests: true,
+  },
+  modules
+)
 
 const senderPort = 4101
-const senderOptions = getAgentOptions('E2E WS Pickup V2 Sender', {
-  endpoints: [`ws://localhost:${senderPort}`],
-  mediatorPollingInterval: 1000,
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
-})
+const senderOptions = getAgentOptions(
+  'E2E WS Pickup V2 Sender',
+  {
+    endpoints: [`ws://localhost:${senderPort}`],
+    mediatorPollingInterval: 1000,
+
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
+  },
+  modules
+)
 
 describe('E2E WS Pickup V2 tests', () => {
-  let recipientAgent: Agent
-  let mediatorAgent: Agent
-  let senderAgent: Agent
+  let recipientAgent: AnonCredsTestsAgent
+  let mediatorAgent: AnonCredsTestsAgent
+  let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
     recipientAgent = new Agent(recipientOptions)
