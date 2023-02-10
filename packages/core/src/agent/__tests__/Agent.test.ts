@@ -16,8 +16,6 @@ import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
-import { V1ProofProtocol } from '../../modules/proofs/protocol/v1'
-import { V2ProofProtocol } from '../../modules/proofs/protocol/v2'
 import {
   MediationRecipientService,
   MediationRepository,
