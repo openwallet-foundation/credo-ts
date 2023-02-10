@@ -26,7 +26,7 @@ jobs:
   # validation scripts. To still be able to run the CI we can manually trigger it by adding the 'ci-test'
   # label to the pull request
   ci-trigger:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       triggered: ${{ steps.check.outputs.triggered }}
     steps:
@@ -45,13 +45,16 @@ jobs:
           echo "::set-output name=triggered::${SHOULD_RUN}"
 
   validate:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Validate
     steps:
       - name: Checkout aries-framework-javascript
         uses: actions/checkout@v2
 
       # setup dependencies
+      - name: Setup Libssl
+        uses: ./.github/actions/setup-libssl
+
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
 
@@ -76,7 +79,7 @@ jobs:
         run: yarn build
 
   integration-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Integration Tests
 
     strategy:
@@ -88,6 +91,9 @@ jobs:
         uses: actions/checkout@v2
 
       # setup dependencies
+      - name: Setup Libssl
+        uses: ./.github/actions/setup-libssl
+
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
       - name: Setup Indy Pool
@@ -115,7 +121,7 @@ jobs:
         if: always()
 
   version-stable:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     name: Release stable
     needs: [integration-test, validate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
@@ -127,6 +133,9 @@ jobs:
           fetch-depth: 0
 
       # setup dependencies
+      - name: Setup Libssl
+        uses: ./.github/actions/setup-libssl
+
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
 

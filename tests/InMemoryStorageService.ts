@@ -131,6 +131,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
     }
 
     const records = Object.values(this.records)
+      .filter((record) => record.type === recordClass.type)
       .filter((record) => {
         const tags = record.tags as TagsBase
 
