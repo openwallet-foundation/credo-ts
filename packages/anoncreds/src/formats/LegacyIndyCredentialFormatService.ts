@@ -224,7 +224,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       attachmentId,
       offerAttachment,
       credentialFormats,
-    }: FormatAcceptOfferOptions<LegacyIndyCredentialFormat>
+    }: CredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
