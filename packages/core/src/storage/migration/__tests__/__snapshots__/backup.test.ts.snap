@@ -39,6 +39,7 @@ Array [
     "protocolVersion": "v1",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+    "updatedAt": "2022-03-21T22:50:20.522Z",
   },
   Object {
     "_tags": Object {
@@ -94,6 +95,7 @@ Array [
     "protocolVersion": "v1",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+    "updatedAt": "2022-03-21T22:50:20.522Z",
   },
   Object {
     "_tags": Object {
@@ -132,6 +134,7 @@ Array [
     "protocolVersion": "v1",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+    "updatedAt": "2022-03-21T22:50:20.522Z",
   },
   Object {
     "_tags": Object {
@@ -187,6 +190,7 @@ Array [
     "protocolVersion": "v1",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+    "updatedAt": "2022-03-21T22:50:20.522Z",
   },
 ]
 `;
