@@ -56,6 +56,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "10-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -112,6 +113,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "11-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -151,6 +153,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "12-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -191,6 +194,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -230,6 +234,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -270,6 +275,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -326,6 +332,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -365,6 +372,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a": Object {
@@ -410,6 +418,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a": Object {
@@ -471,6 +480,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -511,6 +521,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -567,6 +578,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "8-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -606,6 +618,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "9-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -646,6 +659,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -657,6 +671,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7": Object {
@@ -702,6 +717,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c": Object {
@@ -763,6 +779,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -832,6 +849,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -896,6 +914,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "done",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -960,6 +979,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "done",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1024,6 +1044,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1088,6 +1109,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "receiver",
       "state": "done",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1147,6 +1169,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "await-response",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -1211,6 +1234,7 @@ Object {
       "reuseConnectionId": undefined,
       "role": "sender",
       "state": "await-response",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7781341d-be29-441b-9b79-4a957d8c6d37": Object {
@@ -1244,6 +1268,7 @@ Object {
       "theirDid": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "8f4908ee-15ad-4058-9106-eda26eae735c": Object {
@@ -1277,6 +1302,7 @@ Object {
       "theirDid": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "9383d8e5-c002-4aae-8300-4a21384c919e": Object {
@@ -1309,6 +1335,7 @@ Object {
       "theirDid": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -1320,6 +1347,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "b65c2ccd-277c-4140-9d87-c8dd30e7a98c": Object {
@@ -1349,6 +1377,7 @@ Object {
       "outOfBandId": "7-4e4f-41d9-94c4-f49351b811f1",
       "role": "responder",
       "state": "invitation-sent",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "da518433-0e55-4b74-a05b-aa75c1095a99": Object {
@@ -1382,6 +1411,7 @@ Object {
       "theirDid": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT": Object {
@@ -1455,6 +1485,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56": Object {
@@ -1528,6 +1559,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ": Object {
@@ -1601,6 +1633,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb": Object {
@@ -1674,6 +1707,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU": Object {
@@ -1747,6 +1781,7 @@ Object {
         },
       },
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy": Object {
@@ -1820,6 +1855,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf": Object {
@@ -1893,6 +1929,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga": Object {
@@ -1966,6 +2003,7 @@ Object {
         },
       },
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ": Object {
@@ -2039,6 +2077,7 @@ Object {
         },
       },
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui": Object {
@@ -2112,6 +2151,7 @@ Object {
         },
       },
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw": Object {
@@ -2185,6 +2225,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX": Object {
@@ -2258,6 +2299,7 @@ Object {
         },
       },
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv": Object {
@@ -2331,6 +2373,7 @@ Object {
         },
       },
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199": Object {
@@ -2364,6 +2407,7 @@ Object {
       "theirDid": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "ee88e2e1-e27e-46a6-a910-f87690109e32": Object {
@@ -2393,6 +2437,7 @@ Object {
       "role": "requester",
       "state": "request-sent",
       "theirLabel": "Agent: PopulateWallet2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -2454,6 +2499,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "10-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2510,6 +2556,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "11-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2549,6 +2596,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "12-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2589,6 +2637,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2628,6 +2677,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2668,6 +2718,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2724,6 +2775,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2763,6 +2815,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "574b2a37-1db1-4af1-a3bf-35c6cb9e1d7a": Object {
@@ -2808,6 +2861,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5f2b7bc7-edfd-47e7-a1d4-aae050df2c4a": Object {
@@ -2869,6 +2923,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2909,6 +2964,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -2965,6 +3021,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "8-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -3004,6 +3061,7 @@ Object {
       },
       "metadata": Object {},
       "role": "sender",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "9-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -3044,6 +3102,7 @@ Object {
       },
       "metadata": Object {},
       "role": "receiver",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -3055,6 +3114,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "ad644d8a-48a2-4c55-b46d-7a7f1a9278c7": Object {
@@ -3100,6 +3160,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "c7e0a752-7f1c-41c0-b0ae-a68c2d97ca8c": Object {
@@ -3161,6 +3222,7 @@ Object {
       "protocolVersion": "v1",
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -3191,6 +3253,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
@@ -3216,6 +3279,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "802ef124-36b7-490f-b152-e9d090ddf073": Object {
@@ -3238,6 +3302,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -3249,6 +3314,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
@@ -3271,6 +3337,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -3301,6 +3368,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
@@ -3326,6 +3394,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "802ef124-36b7-490f-b152-e9d090ddf073": Object {
@@ -3348,6 +3417,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -3359,6 +3429,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
@@ -3381,6 +3452,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -3411,6 +3483,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
@@ -3436,6 +3509,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "802ef124-36b7-490f-b152-e9d090ddf073": Object {
@@ -3458,6 +3532,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -3469,6 +3544,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
@@ -3491,6 +3567,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -3521,6 +3598,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7f14c1ec-514c-49b2-a00b-04af7e600060": Object {
@@ -3546,6 +3624,7 @@ Object {
       ],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "802ef124-36b7-490f-b152-e9d090ddf073": Object {
@@ -3568,6 +3647,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "e9aeea8f-2c7a-4fd0-9353-f8b5b76094e7",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -3579,6 +3659,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.2",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "a29b39fb-f030-41ac-b6e1-ed7f3f6a05cd": Object {
@@ -3601,6 +3682,7 @@ Object {
       "routingKeys": Array [],
       "state": "granted",
       "threadId": "a401880b-8129-4ed9-bcaa-57d0e38026cd",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
