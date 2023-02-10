@@ -48,7 +48,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         dependencyManager
       )
 
-      const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+      const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
@@ -110,7 +110,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -174,7 +174,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -242,7 +242,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {

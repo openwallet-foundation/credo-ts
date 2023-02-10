@@ -1,27 +1,30 @@
-import type { CredentialInfo, RequestedCredentials } from '../models'
+import type {
+  AnonCredsCredentialInfo,
+  AnonCredsCredentialRequestMetadata,
+  AnonCredsRequestedCredentials,
+} from '../models'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
   AnonCredsCredentialRequest,
   AnonCredsProofRequest,
-  NonRevokedInterval,
-  ReferentWalletQuery,
+  AnonCredsNonRevokedInterval,
 } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '../models/registry'
 
-export interface AttributeInfo {
+export interface AnonCredsAttributeInfo {
   name?: string
   names?: string[]
 }
 
 export interface CreateProofOptions {
   proofRequest: AnonCredsProofRequest
-  requestedCredentials: RequestedCredentials
+  requestedCredentials: AnonCredsRequestedCredentials
   schemas: {
     [schemaId: string]: AnonCredsSchema
   }
@@ -33,16 +36,15 @@ export interface CreateProofOptions {
       // tails file MUST already be downloaded on a higher level and stored
       tailsFilePath: string
       definition: AnonCredsRevocationRegistryDefinition
-      revocationLists: {
-        [timestamp: string]: AnonCredsRevocationList
+      revocationStatusLists: {
+        [timestamp: string]: AnonCredsRevocationStatusList
       }
     }
   }
 }
 
 export interface StoreCredentialOptions {
-  // TODO: what is in credential request metadata?
-  credentialRequestMetadata: Record<string, unknown>
+  credentialRequestMetadata: AnonCredsCredentialRequestMetadata
   credential: AnonCredsCredential
   credentialDefinition: AnonCredsCredentialDefinition
   credentialDefinitionId: string
@@ -57,6 +59,12 @@ export interface GetCredentialOptions {
   credentialId: string
 }
 
+// TODO: Maybe we can make this a bit more specific?
+export type WalletQuery = Record<string, unknown>
+export interface ReferentWalletQuery {
+  [referent: string]: WalletQuery
+}
+
 export interface GetCredentialsForProofRequestOptions {
   proofRequest: AnonCredsProofRequest
   attributeReferent: string
@@ -66,19 +74,26 @@ export interface GetCredentialsForProofRequestOptions {
 }
 
 export type GetCredentialsForProofRequestReturn = Array<{
-  credentialInfo: CredentialInfo
-  interval?: NonRevokedInterval
+  credentialInfo: AnonCredsCredentialInfo
+  interval?: AnonCredsNonRevokedInterval
 }>
 
 export interface CreateCredentialRequestOptions {
-  // TODO: Why is this needed? It is just used as context in Ursa, can be any string. Should we remove it?
-  // Should we not make it did related? (related to comment in AnonCredsCredentialRequest)
-  holderDid: string
   credentialOffer: AnonCredsCredentialOffer
   credentialDefinition: AnonCredsCredentialDefinition
+  linkSecretId?: string
 }
 
 export interface CreateCredentialRequestReturn {
   credentialRequest: AnonCredsCredentialRequest
-  credentialRequestMetadata: Record<string, unknown>
+  credentialRequestMetadata: AnonCredsCredentialRequestMetadata
+}
+
+export interface CreateLinkSecretOptions {
+  linkSecretId?: string
+}
+
+export interface CreateLinkSecretReturn {
+  linkSecretId: string
+  linkSecretValue?: string
 }

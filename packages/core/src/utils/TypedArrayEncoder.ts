@@ -17,7 +17,7 @@ export class TypedArrayEncoder {
    *
    * @param buffer the buffer to encode into base64url string
    */
-  public static toBase64URL(buffer: Buffer) {
+  public static toBase64URL(buffer: Buffer | Uint8Array) {
     return base64ToBase64URL(TypedArrayEncoder.toBase64(buffer))
   }
 

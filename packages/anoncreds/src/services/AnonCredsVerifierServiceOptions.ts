@@ -1,7 +1,7 @@
 import type { AnonCredsProof, AnonCredsProofRequest } from '../models/exchange'
 import type {
   AnonCredsCredentialDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '../models/registry'
@@ -23,8 +23,8 @@ export interface VerifyProofOptions {
       // as a verifier. This is just following the data models from the AnonCreds spec, but for e.g. indy
       // this means we need to retrieve _ALL_ deltas from the ledger to verify a proof. While currently we
       // only need to fetch the registry.
-      revocationLists: {
-        [timestamp: number]: AnonCredsRevocationList
+      revocationStatusLists: {
+        [timestamp: number]: AnonCredsRevocationStatusList
       }
     }
   }

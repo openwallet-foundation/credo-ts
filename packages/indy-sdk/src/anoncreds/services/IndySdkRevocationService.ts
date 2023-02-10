@@ -1,10 +1,10 @@
 import type {
   AnonCredsRevocationRegistryDefinition,
-  AnonCredsRevocationList,
+  AnonCredsRevocationStatusList,
   AnonCredsProofRequest,
-  RequestedCredentials,
-  CredentialInfo,
-  NonRevokedInterval,
+  AnonCredsRequestedCredentials,
+  AnonCredsCredentialInfo,
+  AnonCredsNonRevokedInterval,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { RevStates } from 'indy-sdk'
@@ -13,12 +13,11 @@ import { AriesFrameworkError, inject, injectable } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
+import { createTailsReader } from '../utils/tails'
 import {
   indySdkRevocationDeltaFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
 } from '../utils/transform'
-
-import { IndySdkUtilitiesService } from './IndySdkUtilitiesService'
 
 enum RequestReferentType {
   Attribute = 'attribute',
@@ -34,11 +33,9 @@ enum RequestReferentType {
 @injectable()
 export class IndySdkRevocationService {
   private indySdk: IndySdk
-  private indySdkUtilitiesService: IndySdkUtilitiesService
 
-  public constructor(indyUtilitiesService: IndySdkUtilitiesService, @inject(IndySdkSymbol) indySdk: IndySdk) {
+  public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
     this.indySdk = indySdk
-    this.indySdkUtilitiesService = indyUtilitiesService
   }
 
   /**
@@ -47,14 +44,14 @@ export class IndySdkRevocationService {
   public async createRevocationState(
     agentContext: AgentContext,
     proofRequest: AnonCredsProofRequest,
-    requestedCredentials: RequestedCredentials,
+    requestedCredentials: AnonCredsRequestedCredentials,
     revocationRegistries: {
       [revocationRegistryDefinitionId: string]: {
         // Tails is already downloaded
         tailsFilePath: string
         definition: AnonCredsRevocationRegistryDefinition
-        revocationLists: {
-          [timestamp: string]: AnonCredsRevocationList
+        revocationStatusLists: {
+          [timestamp: string]: AnonCredsRevocationStatusList
         }
       }
     }
@@ -68,8 +65,8 @@ export class IndySdkRevocationService {
       const referentCredentials: Array<{
         type: RequestReferentType
         referent: string
-        credentialInfo: CredentialInfo
-        referentRevocationInterval: NonRevokedInterval | undefined
+        credentialInfo: AnonCredsCredentialInfo
+        referentRevocationInterval: AnonCredsNonRevokedInterval | undefined
       }> = []
 
       //Retrieve information for referents and push to single array
@@ -109,18 +106,18 @@ export class IndySdkRevocationService {
 
           this.assertRevocationInterval(requestRevocationInterval)
 
-          const { definition, revocationLists, tailsFilePath } = revocationRegistries[revocationRegistryId]
-          // NOTE: we assume that the revocationLists have been added based on timestamps of the `to` query. On a higher level it means we'll find the
-          // most accurate revocation list for a given timestamp. It doesn't have to be that the revocationList is from the `to` timestamp however.
-          const revocationList = revocationLists[requestRevocationInterval.to]
+          const { definition, revocationStatusLists, tailsFilePath } = revocationRegistries[revocationRegistryId]
+          // NOTE: we assume that the revocationStatusLists have been added based on timestamps of the `to` query. On a higher level it means we'll find the
+          // most accurate revocation list for a given timestamp. It doesn't have to be that the revocationStatusList is from the `to` timestamp however.
+          const revocationStatusList = revocationStatusLists[requestRevocationInterval.to]
 
-          const tails = await this.indySdkUtilitiesService.createTailsReader(tailsFilePath)
+          const tails = await createTailsReader(agentContext, tailsFilePath)
 
           const revocationState = await this.indySdk.createRevocationState(
             tails,
             indySdkRevocationRegistryDefinitionFromAnonCreds(revocationRegistryId, definition),
-            indySdkRevocationDeltaFromAnonCreds(revocationList),
-            revocationList.timestamp,
+            indySdkRevocationDeltaFromAnonCreds(revocationStatusList),
+            revocationStatusList.timestamp,
             credentialRevocationId
           )
           const timestamp = revocationState.timestamp
@@ -152,7 +149,7 @@ export class IndySdkRevocationService {
   // TODO: we should do this verification on a higher level I think?
   // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
   private assertRevocationInterval(
-    revocationInterval: NonRevokedInterval
+    revocationInterval: AnonCredsNonRevokedInterval
   ): asserts revocationInterval is BestPracticeNonRevokedInterval {
     if (!revocationInterval.to) {
       throw new AriesFrameworkError(`Presentation requests proof of non-revocation with no 'to' value specified`)

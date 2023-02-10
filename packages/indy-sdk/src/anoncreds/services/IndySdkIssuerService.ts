@@ -1,5 +1,4 @@
 import type { CreateCredentialDefinitionMetadata } from './IndySdkIssuerServiceMetadata'
-import type { IndySdkUtilitiesService } from './IndySdkUtilitiesService'
 import type {
   AnonCredsIssuerService,
   CreateCredentialDefinitionOptions,
@@ -9,24 +8,25 @@ import type {
   CreateSchemaOptions,
   AnonCredsCredentialOffer,
   AnonCredsSchema,
-  AnonCredsCredentialDefinition,
+  CreateCredentialDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { AriesFrameworkError, inject } from '@aries-framework/core'
+import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
+import { generateLegacyProverDidLikeString } from '../utils/proverDid'
+import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
+@injectable()
 export class IndySdkIssuerService implements AnonCredsIssuerService {
   private indySdk: IndySdk
-  private IndySdkUtilitiesService: IndySdkUtilitiesService
 
-  public constructor(IndySdkUtilitiesService: IndySdkUtilitiesService, @inject(IndySdkSymbol) indySdk: IndySdk) {
+  public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
     this.indySdk = indySdk
-    this.IndySdkUtilitiesService = IndySdkUtilitiesService
   }
 
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
@@ -51,7 +51,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateCredentialDefinitionOptions,
     metadata?: CreateCredentialDefinitionMetadata
-  ): Promise<AnonCredsCredentialDefinition> {
+  ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
     if (!metadata)
@@ -71,11 +71,13 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
       )
 
       return {
-        issuerId,
-        tag: credentialDefinition.tag,
-        schemaId: credentialDefinition.schemaId,
-        type: 'CL',
-        value: credentialDefinition.value,
+        credentialDefinition: {
+          issuerId,
+          tag: credentialDefinition.tag,
+          schemaId,
+          type: 'CL',
+          value: credentialDefinition.value,
+        },
       }
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
@@ -103,16 +105,19 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     assertIndySdkWallet(agentContext.wallet)
     try {
       // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
-      const tailsReaderHandle = tailsFilePath ? await this.IndySdkUtilitiesService.createTailsReader(tailsFilePath) : 0
+      const tailsReaderHandle = tailsFilePath ? await createTailsReader(agentContext, tailsFilePath) : 0
 
       if (revocationRegistryId || tailsFilePath) {
         throw new AriesFrameworkError('Revocation not supported yet')
       }
 
+      // prover_did is deprecated and thus if not provided we generate something on our side, as it's still required by the indy sdk
+      const proverDid = credentialRequest.prover_did ?? generateLegacyProverDidLikeString()
+
       const [credential, credentialRevocationId] = await this.indySdk.issuerCreateCredential(
         agentContext.wallet.handle,
         credentialOffer,
-        credentialRequest,
+        { ...credentialRequest, prover_did: proverDid },
         credentialValues,
         revocationRegistryId ?? null,
         tailsReaderHandle

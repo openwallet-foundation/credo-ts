@@ -9,7 +9,6 @@ import type { Subscription } from 'rxjs'
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
-import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
@@ -59,7 +58,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(EnvelopeService)
     dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
@@ -76,6 +74,9 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
     dependencyManager.registerInstance(InjectionSymbols.FileSystem, new agentConfig.agentDependencies.FileSystem())
 
+    // Register all modules. This will also include the default modules
+    dependencyManager.registerModules(modulesWithDefaultModules)
+
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
@@ -89,9 +90,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
       dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
     }
-
-    // Register all modules. This will also include the default modules
-    dependencyManager.registerModules(modulesWithDefaultModules)
 
     // TODO: contextCorrelationId for base wallet
     // Bind the default agent context to the container for use in modules etc.

@@ -13,14 +13,14 @@ import { AnonCredsError } from '../../error'
  */
 @injectable()
 export class AnonCredsRegistryService {
-  public async getRegistryForIdentifier(agentContext: AgentContext, identifier: string): Promise<AnonCredsRegistry> {
+  public getRegistryForIdentifier(agentContext: AgentContext, identifier: string): AnonCredsRegistry {
     const registries = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).registries
 
     // TODO: should we check if multiple are registered?
     const registry = registries.find((registry) => registry.supportedIdentifier.test(identifier))
 
     if (!registry) {
-      throw new AnonCredsError(`No AnonCredsRegistry registered for identifier '${registry}'`)
+      throw new AnonCredsError(`No AnonCredsRegistry registered for identifier '${identifier}'`)
     }
 
     return registry
