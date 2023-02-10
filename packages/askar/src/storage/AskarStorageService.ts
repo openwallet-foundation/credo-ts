@@ -21,6 +21,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     assertAskarWallet(agentContext.wallet)
     const session = agentContext.wallet.session
 
+    record.updatedAt = new Date()
+
     const value = JsonTransformer.serialize(record)
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
@@ -39,6 +41,8 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     assertAskarWallet(agentContext.wallet)
     const session = agentContext.wallet.session
+
+    record.updatedAt = new Date()
 
     const value = JsonTransformer.serialize(record)
     const tags = transformFromRecordTagValues(record.getTags()) as Record<string, string>
