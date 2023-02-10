@@ -28,8 +28,6 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
         registry-url: 'https://registry.npmjs.org/'
-      env:
-        NODE_OPTIONS: --max_old_space_size=4096
 
 branding:
   icon: scissors
