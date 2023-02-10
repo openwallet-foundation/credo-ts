@@ -29,11 +29,7 @@ export class IndyVdrPoolService {
     this.logger = logger
     this.indyVdrModuleConfig = indyVdrModuleConfig
 
-    this.setPools(this.indyVdrModuleConfig.networks)
-  }
-
-  public setPools(poolConfigs: IndyVdrPoolConfig[]) {
-    this.pools = poolConfigs.map((poolConfig) => new IndyVdrPool(poolConfig, this.logger))
+    this.pools = this.indyVdrModuleConfig.networks.map((poolConfig) => new IndyVdrPool(poolConfig, this.logger))
   }
 
   /**
