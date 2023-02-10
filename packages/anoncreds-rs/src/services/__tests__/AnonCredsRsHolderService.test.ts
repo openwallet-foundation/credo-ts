@@ -340,7 +340,7 @@ describe('AnonCredsRsHolderService', () => {
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         attributes: ['age'],
-        $and: [{ $or: [{ schemaId: 'schemaid:uri' }, { schemaName: 'schemaName' }] }, { schemaVersion: '1.0' }],
+        $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
       })
     })
 
@@ -352,7 +352,8 @@ describe('AnonCredsRsHolderService', () => {
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         attributes: ['name', 'height'],
-        $or: [{ credentialDefinitionId: 'crededefid:uri' }, { issuerId: 'issuerid:uri' }],
+        credentialDefinitionId: 'crededefid:uri',
+        issuerId: 'issuerid:uri',
       })
     })
 

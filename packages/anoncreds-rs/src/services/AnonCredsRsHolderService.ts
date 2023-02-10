@@ -16,7 +16,7 @@ import type {
   AnonCredsRequestedPredicate,
   AnonCredsCredential,
 } from '@aries-framework/anoncreds'
-import type { AgentContext, Query } from '@aries-framework/core'
+import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
 
 import {
@@ -336,41 +336,39 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const query: Query<AnonCredsCredentialRecord>[] = []
 
     for (const restriction of restrictions) {
-      const queryElements: Query<AnonCredsCredentialRecord>[] = []
+      const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
       if (restriction.cred_def_id) {
-        queryElements.push({ credentialDefinitionId: restriction.cred_def_id })
+        queryElements.credentialDefinitionId = restriction.cred_def_id
       }
 
       if (restriction.issuer_id || restriction.issuer_did) {
-        queryElements.push({ issuerId: restriction.issuer_id ?? restriction.issuer_did })
+        queryElements.issuerId = restriction.issuer_id ?? restriction.issuer_did
       }
 
       if (restriction.rev_reg_id) {
-        queryElements.push({ revocationRegistryId: restriction.rev_reg_id })
+        queryElements.revocationRegistryId = restriction.rev_reg_id
       }
 
       if (restriction.schema_id) {
-        queryElements.push({ schemaId: restriction.schema_id })
+        queryElements.schemaId = restriction.schema_id
       }
 
       if (restriction.schema_issuer_id || restriction.schema_issuer_did) {
-        queryElements.push({ schemaIssuerId: restriction.schema_issuer_id ?? restriction.schema_issuer_did })
+        queryElements.schemaIssuerId = restriction.schema_issuer_id ?? restriction.schema_issuer_did
       }
 
       if (restriction.schema_name) {
-        queryElements.push({ schemaName: restriction.schema_name })
+        queryElements.schemaName = restriction.schema_name
       }
 
       if (restriction.schema_version) {
-        queryElements.push({ schemaVersion: restriction.schema_version })
+        queryElements.schemaVersion = restriction.schema_version
       }
 
-      if (queryElements.length > 0) {
-        query.push(queryElements.length === 1 ? queryElements[0] : { $or: queryElements })
-      }
+      query.push(queryElements)
     }
 
-    return query.length === 1 ? query[0] : { $and: query }
+    return query.length === 1 ? query[0] : { $or: query }
   }
 }
