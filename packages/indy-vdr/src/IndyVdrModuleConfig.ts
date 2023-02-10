@@ -1,11 +1,25 @@
-export interface IndyVdrNetworkConfig {
-  indyNamespace: string
-  genesisTransaction: string
-  isProduction: boolean
-}
+import type { IndyVdrPoolConfig } from './pool'
 
 export interface IndyVdrModuleConfigOptions {
-  networks: IndyVdrNetworkConfig[]
+  /**
+   * Array of indy networks to connect to.
+   *
+   * [@default](https://github.com/default) []
+   *
+   * @example
+   * ```
+   * {
+   *   isProduction: false,
+   *   genesisTransactions: 'xxx',
+   *   indyNamespace: 'localhost:test',
+   *   transactionAuthorAgreement: {
+   *     version: '1',
+   *     acceptanceMechanism: 'accept'
+   *   }
+   * }
+   * ```
+   */
+  networks: [IndyVdrPoolConfig, ...IndyVdrPoolConfig[]]
 }
 
 export class IndyVdrModuleConfig {
@@ -15,7 +29,7 @@ export class IndyVdrModuleConfig {
     this.options = options
   }
 
-  public get networkConfigs() {
+  public get networks() {
     return this.options.networks
   }
 }

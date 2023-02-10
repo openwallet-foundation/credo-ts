@@ -1,15 +1,15 @@
-import type { IndyVdrNetworkConfig } from '../IndyVdrModuleConfig'
+import type { IndyVdrPoolConfig } from '../pool'
 
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 
 describe('IndyVdrModuleConfig', () => {
   test('sets values', () => {
-    const networkConfig = {} as IndyVdrNetworkConfig
+    const networkConfig = {} as IndyVdrPoolConfig
 
     const config = new IndyVdrModuleConfig({
       networks: [networkConfig],
     })
 
-    expect(config.networkConfigs).toEqual([networkConfig])
+    expect(config.networks).toEqual([networkConfig])
   })
 })

@@ -12,7 +12,17 @@ const dependencyManager = {
 describe('IndyVdrModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const indyVdrModule = new IndyVdrModule({
-      networks: [],
+      networks: [
+        {
+          isProduction: false,
+          genesisTransactions: 'xxx',
+          indyNamespace: 'localhost:test',
+          transactionAuthorAgreement: {
+            version: '1',
+            acceptanceMechanism: 'accept',
+          },
+        },
+      ],
     })
 
     indyVdrModule.register(dependencyManager)
