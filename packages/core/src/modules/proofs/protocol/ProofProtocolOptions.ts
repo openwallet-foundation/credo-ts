@@ -20,7 +20,7 @@ import type { ProofExchangeRecord } from '../repository'
  * @example
  * ```
  *
- * type RequestFormatData = FormatDataMessagePayload<[IndyProofFormat, PresentationExchangeProofFormat], 'createRequest'>
+ * type RequestFormatData = ProofFormatDataMessagePayload<[IndyProofFormat, PresentationExchangeProofFormat], 'createRequest'>
  *
  * // equal to
  * type RequestFormatData = {
