@@ -35,7 +35,6 @@
   },
   "devDependencies": {
     "@hyperledger/anoncreds-nodejs": "^0.1.0-dev.5",
-    "@aries-framework/node": "0.3.3",
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4"
   }
