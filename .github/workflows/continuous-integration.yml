@@ -108,7 +108,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
 
       - uses: codecov/codecov-action@v1
         if: always()

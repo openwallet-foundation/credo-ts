@@ -25,13 +25,14 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aries-framework/anoncreds": "0.3.3",
     "@aries-framework/core": "0.3.3",
-    "indy-vdr-test-shared": "^0.1.3",
+    "@hyperledger/indy-vdr-shared": "^0.1.0-dev.4",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "indy-vdr-test-nodejs": "^0.1.3",
-    "rimraf": "~4.0.7",
+    "@hyperledger/indy-vdr-nodejs": "^0.1.0-dev.4",
+    "rimraf": "^4.0.7",
     "typescript": "~4.9.4"
   }
 }

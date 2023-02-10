@@ -464,9 +464,13 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          verkey,
+          key,
           header: {
             kid,
+          },
+          protectedHeaderOptions: {
+            alg: 'EdDSA',
+            jwk: key.toJwk(),
           },
         })
         didDocAttach.addJws(jws)
@@ -510,7 +514,7 @@ export class DidExchangeProtocol {
     this.logger.trace('DidDocument JSON', json)
 
     const payload = JsonEncoder.toBuffer(json)
-    const { isValid, signerVerkeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
+    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication
@@ -525,9 +529,9 @@ export class DidExchangeProtocol {
       })
       .concat(invitationKeysBase58)
 
-    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeysBase58 })
+    this.logger.trace('JWS verification result', { isValid, signerKeys, didDocumentKeysBase58 })
 
-    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58?.includes(verkey))) {
+    if (!isValid || !signerKeys.every((key) => didDocumentKeysBase58?.includes(key.publicKeyBase58))) {
       const problemCode =
         message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
