@@ -1,4 +1,4 @@
-import type { AnonCredsRequestedAttributeMatch, AnonCredsRequestedPredicateMatch } from '../../models'
+import type { AnonCredsRequestedAttributeMatch, AnonCredsRequestedPredicateMatch } from '../models'
 
 /**
  * Sort requested attributes and predicates by `revoked` status. The order is:

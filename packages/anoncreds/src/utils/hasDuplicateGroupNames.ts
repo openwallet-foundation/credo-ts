@@ -1,4 +1,4 @@
-import type { AnonCredsProofRequest } from '../../models'
+import type { AnonCredsProofRequest } from '../models'
 
 function attributeNamesToArray(proofRequest: AnonCredsProofRequest) {
   // Attributes can contain either a `name` string value or an `names` string array. We reduce it to a single array

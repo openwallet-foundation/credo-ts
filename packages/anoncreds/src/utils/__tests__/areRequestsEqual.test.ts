@@ -1,4 +1,4 @@
-import type { AnonCredsProofRequest } from '../../../models'
+import type { AnonCredsProofRequest } from '../../models'
 
 import { areAnonCredsProofRequestsEqual } from '../areRequestsEqual'
 

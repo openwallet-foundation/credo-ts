@@ -1,8 +1,8 @@
-import type { AnonCredsProofRequest } from '../../models'
 import type {
   AnonCredsPresentationPreviewAttribute,
   AnonCredsPresentationPreviewPredicate,
-} from '../AnonCredsProofFormat'
+} from '../formats/AnonCredsProofFormat'
+import type { AnonCredsProofRequest } from '../models'
 
 import { utils } from '@aries-framework/core'
 

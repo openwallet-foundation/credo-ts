@@ -2,7 +2,7 @@ import type { CredentialFormat, CredentialFormatPayload } from './CredentialForm
 import type { CredentialFormatService } from './CredentialFormatService'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
+import type { CredentialPreviewAttributeOptions } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 
 /**
@@ -72,7 +72,7 @@ export interface CredentialFormatAcceptProposalOptions<CF extends CredentialForm
 }
 
 export interface CredentialFormatCreateProposalReturn extends CredentialFormatCreateReturn {
-  previewAttributes?: CredentialPreviewAttribute[]
+  previewAttributes?: CredentialPreviewAttributeOptions[]
 }
 
 export interface CredentialFormatCreateOfferOptions<CF extends CredentialFormat> {
@@ -90,7 +90,7 @@ export interface CredentialFormatAcceptOfferOptions<CF extends CredentialFormat>
 }
 
 export interface CredentialFormatCreateOfferReturn extends CredentialFormatCreateReturn {
-  previewAttributes?: CredentialPreviewAttribute[]
+  previewAttributes?: CredentialPreviewAttributeOptions[]
 }
 
 export interface CredentialFormatCreateRequestOptions<CF extends CredentialFormat> {

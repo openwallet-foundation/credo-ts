@@ -1,4 +1,5 @@
-export type AnonCredsPredicateType = '>=' | '>' | '<=' | '<'
+export const anonCredsPredicateType = ['>=', '>', '<=', '<'] as const
+export type AnonCredsPredicateType = (typeof anonCredsPredicateType)[number]
 
 export interface AnonCredsProofRequestRestriction {
   schema_id?: string

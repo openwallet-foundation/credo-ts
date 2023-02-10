@@ -1,4 +1,4 @@
-import type { AnonCredsCredentialInfo, AnonCredsRequestedAttributeMatch } from '../../../models'
+import type { AnonCredsCredentialInfo, AnonCredsRequestedAttributeMatch } from '../../models'
 
 import { sortRequestedCredentialsMatches } from '../sortRequestedCredentialsMatches'
 

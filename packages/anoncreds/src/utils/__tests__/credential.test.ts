@@ -1,6 +1,10 @@
 import { CredentialPreviewAttribute } from '@aries-framework/core'
 
-import { assertCredentialValuesMatch, checkValidEncoding, convertAttributesToCredentialValues } from '../credential'
+import {
+  assertCredentialValuesMatch,
+  checkValidCredentialValueEncoding,
+  convertAttributesToCredentialValues,
+} from '../credential'
 
 /**
  * Sample test cases for encoding/decoding of verifiable credential claims - Aries RFCs 0036 and 0037
@@ -219,7 +223,7 @@ describe('Utils | Credentials', () => {
     )
 
     test.each(testEntries)('returns true for valid encoding %s', (_, raw, encoded) => {
-      expect(checkValidEncoding(raw, encoded)).toEqual(true)
+      expect(checkValidCredentialValueEncoding(raw, encoded)).toEqual(true)
     })
   })
 })

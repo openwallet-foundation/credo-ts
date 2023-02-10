@@ -1,4 +1,4 @@
-import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest, AnonCredsProofRequestRestriction } from '../../models'
+import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest, AnonCredsProofRequestRestriction } from '../models'
 
 // Copied from the core package so we don't have to export these silly utils. We should probably move these to a separate package.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

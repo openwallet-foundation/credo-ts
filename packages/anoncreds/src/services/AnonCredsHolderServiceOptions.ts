@@ -37,7 +37,7 @@ export interface CreateProofOptions {
       tailsFilePath: string
       definition: AnonCredsRevocationRegistryDefinition
       revocationStatusLists: {
-        [timestamp: string]: AnonCredsRevocationStatusList
+        [timestamp: number]: AnonCredsRevocationStatusList
       }
     }
   }
