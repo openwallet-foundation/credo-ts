@@ -12,11 +12,11 @@ RUN apt-get update -y && apt-get install -y \
     libzmq3-dev libsodium-dev pkg-config
 
 # libssl1.1 (required by libindy)
-RUN curl http://launchpadlibrarian.net/650099131/libssl1.1_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl1.1.deb
+RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl1.1.deb
 RUN dpkg -i libssl1.1.deb
 
 # libssl-dev1.1 (required to compile libindy with posgres plugin)
-RUN curl http://launchpadlibrarian.net/650099126/libssl-dev_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl-dev1.1.deb
+RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl-dev1.1.deb
 RUN dpkg -i libssl-dev1.1.deb
 
 # libindy
