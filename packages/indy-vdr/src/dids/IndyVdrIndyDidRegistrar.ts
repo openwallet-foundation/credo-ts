@@ -7,7 +7,6 @@ import type {
   DidCreateResult,
   DidDeactivateResult,
   DidUpdateResult,
-  DidDocument,
   DidDocumentService,
 } from '@aries-framework/core'
 
@@ -20,7 +19,7 @@ import {
   DidRecord,
   DidRepository,
 } from '@aries-framework/core'
-import { AttribRequest, NymRequest } from 'indy-vdr-test-shared'
+import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
@@ -142,7 +141,6 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key: Key) => key.fingerprint),
-          did,
         },
       })
 
