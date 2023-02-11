@@ -12,7 +12,7 @@ export const indyVdrModuleConfig = new IndyVdrModuleConfig({
   networks: [
     {
       genesisTransactions,
-      indyNamespace: 'local:test',
+      indyNamespace: 'pool:localtest',
       isProduction: false,
       transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
     },

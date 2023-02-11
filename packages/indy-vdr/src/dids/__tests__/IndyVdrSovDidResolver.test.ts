@@ -2,7 +2,8 @@ import { JsonTransformer } from '@aries-framework/core'
 
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
-import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
+import { IndyVdrPool } from '../../pool/IndyVdrPool'
+import { IndyVdrPoolService } from '../../pool/IndyVdrPoolService'
 import { IndyVdrSovDidResolver } from '../IndyVdrSovDidResolver'
 
 import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
