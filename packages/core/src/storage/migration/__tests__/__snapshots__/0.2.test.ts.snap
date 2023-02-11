@@ -122,6 +122,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.3.1",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "ea840186-3c77-45f4-a2e6-349811ad8994": Object {
@@ -302,6 +303,7 @@ Object {
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -364,6 +366,7 @@ Object {
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -426,6 +429,7 @@ Object {
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -490,6 +494,7 @@ Object {
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -552,6 +557,7 @@ Object {
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -614,6 +620,7 @@ Object {
       "id": "6-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -676,6 +683,7 @@ Object {
       "id": "7-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "8-4e4f-41d9-94c4-f49351b811f1": Object {
@@ -738,6 +746,7 @@ Object {
       "id": "8-4e4f-41d9-94c4-f49351b811f1",
       "metadata": Object {},
       "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "STORAGE_VERSION_RECORD_ID": Object {
@@ -749,6 +758,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.3.1",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
 }
@@ -876,6 +886,7 @@ Object {
       "id": "STORAGE_VERSION_RECORD_ID",
       "metadata": Object {},
       "storageVersion": "0.3.1",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
   "ea840186-3c77-45f4-a2e6-349811ad8994": Object {
