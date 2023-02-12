@@ -17,7 +17,6 @@ export class IndySdkToAskarMigrationApi {
   /**
    * Start the migration process from a legacy indy-sdk based
    * storage to the new Aries Askar based storage
-   *
    */
   public async migrate() {
     try {
