@@ -10,7 +10,7 @@ import { IndySdkToAskarMigrationError } from '../errors/IndySdkToAskarMigrationE
 @injectable()
 export class IndySdkToAskarMigrationService {
   private logger: Logger
-  private masterPass: string
+  private masterPassword: string
   private walletPath: string
 
   public constructor(agentConfig: AgentConfig) {
@@ -19,7 +19,7 @@ export class IndySdkToAskarMigrationService {
     }
 
     this.logger = agentConfig.logger
-    this.masterPass = agentConfig.walletConfig.key
+    this.masterPassword = agentConfig.walletConfig.key
   }
 
   public async migrate() {
