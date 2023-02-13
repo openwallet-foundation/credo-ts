@@ -38,7 +38,6 @@ import type {
   ProofFormatSelectCredentialsForRequestReturn,
   ProofFormatAutoRespondProposalOptions,
   ProofFormatAutoRespondRequestOptions,
-  IndyGetCredentialsForProofRequestOptions,
 } from '@aries-framework/core'
 
 import {
@@ -333,7 +332,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
   private async _getCredentialsForRequest(
     agentContext: AgentContext,
     proofRequest: AnonCredsProofRequest,
-    options: IndyGetCredentialsForProofRequestOptions
+    options: AnonCredsGetCredentialsForProofRequestOptions
   ): Promise<AnonCredsCredentialsForProofRequest> {
     const credentialsForProofRequest: AnonCredsCredentialsForProofRequest = {
       attributes: {},
@@ -688,7 +687,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
               )
             }
 
-            const { tailsLocation, tailsHash } = revocationRegistryDefinition
+            const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
             const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
 
             // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)

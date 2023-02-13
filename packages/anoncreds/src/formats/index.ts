@@ -1,7 +1,7 @@
 export * from './AnonCredsCredentialFormat'
 export * from './LegacyIndyCredentialFormat'
-export * from './LegacyIndyCredentialFormatService'
+export { LegacyIndyCredentialFormatService } from './LegacyIndyCredentialFormatService'
 
 export * from './AnonCredsProofFormat'
 export * from './LegacyIndyProofFormat'
-export * from './LegacyIndyProofFormatService'
+export { LegacyIndyProofFormatService } from './LegacyIndyProofFormatService'

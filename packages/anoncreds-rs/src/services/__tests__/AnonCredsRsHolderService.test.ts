@@ -1,10 +1,10 @@
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsProofRequest,
-  AnonCredsRequestedCredentials,
   AnonCredsRevocationStatusList,
   AnonCredsCredential,
   AnonCredsSchema,
+  AnonCredsSelectedCredentials,
 } from '@aries-framework/anoncreds'
 
 import {
@@ -191,15 +191,15 @@ describe('AnonCredsRsHolderService', () => {
       revocationRegistryDefinitionId: 'phonerevregid:uri',
     })
 
-    const requestedCredentials: AnonCredsRequestedCredentials = {
+    const selectedCredentials: AnonCredsSelectedCredentials = {
       selfAttestedAttributes: { attr5_referent: 'football' },
-      requestedAttributes: {
+      attributes: {
         attr1_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
         attr2_referent: { credentialId: 'phoneCredId', credentialInfo: phoneCredentialInfo, revealed: true },
         attr3_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
         attr4_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo, revealed: true },
       },
-      requestedPredicates: {
+      predicates: {
         predicate1_referent: { credentialId: 'personCredId', credentialInfo: personCredentialInfo },
       },
     }
@@ -246,7 +246,7 @@ describe('AnonCredsRsHolderService', () => {
         'phonecreddef:uri': phoneCredentialDefinition as AnonCredsCredentialDefinition,
       },
       proofRequest,
-      requestedCredentials,
+      selectedCredentials,
       schemas: {
         'phoneschema:uri': { attrNames: ['phoneNumber'], issuerId: 'issuer:uri', name: 'phoneschema', version: '1' },
         'personschema:uri': {

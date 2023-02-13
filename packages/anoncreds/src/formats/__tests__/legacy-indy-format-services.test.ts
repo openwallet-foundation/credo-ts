@@ -34,7 +34,7 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
 
-const agentConfig = getAgentConfig('LegacyIndyCredentialFormatServiceTest')
+const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
 const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
 const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
 const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
@@ -67,7 +67,7 @@ describe('Legacy indy format services', () => {
   })
 
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
-    // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
+    // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
     const indyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
 
