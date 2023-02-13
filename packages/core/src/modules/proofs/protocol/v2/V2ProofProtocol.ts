@@ -202,7 +202,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       // Assert
       connectionService.assertConnectionOrServiceDecorator(messageContext)
 
-      // No credential record exists with thread id
+      // No proof record exists with thread id
       proofRecord = new ProofExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,

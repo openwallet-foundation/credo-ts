@@ -4,7 +4,7 @@ import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
-import { IndyVdrPoolService } from '../pool'
+import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovUtil'
 

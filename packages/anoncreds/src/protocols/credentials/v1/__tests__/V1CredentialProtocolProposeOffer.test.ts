@@ -17,7 +17,6 @@ import {
   InboundMessageContext,
   EventEmitter,
 } from '@aries-framework/core'
-import { CredentialProtocolOptions } from '@aries-framework/core'
 import { CreateCredentialProposalOptions } from '@aries-framework/core/src/modules/credentials/protocol/CredentialProtocolOptions'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@aries-framework/core/tests/helpers'
 import { Subject } from 'rxjs'

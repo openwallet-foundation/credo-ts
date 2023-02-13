@@ -1,4 +1,5 @@
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
+import type { V2ProofProtocol, V1ProofProtocol } from './protocol'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
@@ -7,7 +8,6 @@ import type { Constructor } from '../../utils/mixins'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
-import { V2ProofProtocol, V1ProofProtocol } from './protocol'
 import { ProofRepository } from './repository'
 
 /**

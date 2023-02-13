@@ -6,6 +6,6 @@ import { AutoAcceptProof } from '../models'
  *	- Otherwise the agent config
  *	- Otherwise {@link AutoAcceptProof.Never} is returned
  */
-export function composeAutoAccept(recordConfig: AutoAcceptProof | undefined, agentConfig: AutoAcceptProof | undefined) {
+export function composeAutoAccept(recordConfig?: AutoAcceptProof, agentConfig?: AutoAcceptProof) {
   return recordConfig ?? agentConfig ?? AutoAcceptProof.Never
 }

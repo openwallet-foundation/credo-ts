@@ -34,7 +34,7 @@ export { DidCommMessageRecord, DidCommMessageRole, DidCommMessageRepository } fr
 export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export { StorageService, Query, BaseRecordConstructor } from './storage/StorageService'
+export { StorageService, Query, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
 export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'

@@ -1,4 +1,4 @@
-import type { Agent, BaseEvent, CredentialStateChangedEvent, ProofStateChangedEvent } from '@aries-framework/core'
+import type { BaseEvent } from '@aries-framework/core'
 
 import { sleep } from '../packages/core/src/utils/sleep'
 import {
@@ -9,8 +9,9 @@ import {
 } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { makeConnection } from '../packages/core/tests/helpers'
 
-import { V1CredentialPreview, CredentialState, MediationState, ProofState } from '@aries-framework/core'
+import { CredentialState, MediationState, ProofState } from '@aries-framework/core'
 import { ReplaySubject } from 'rxjs'
+import { V1CredentialPreview } from '../packages/anoncreds/src/protocols/credentials/v1'
 
 export async function e2eTest({
   mediatorAgent,

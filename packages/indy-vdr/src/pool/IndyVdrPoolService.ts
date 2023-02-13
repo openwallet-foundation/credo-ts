@@ -1,10 +1,10 @@
-import type { IndyVdrPoolConfig } from './IndyVdrPool'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
 import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
 import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
+import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
 import { isSelfCertifiedDid, DID_INDY_REGEX } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
@@ -22,13 +22,13 @@ export interface CachedDidResponse {
 export class IndyVdrPoolService {
   public pools: IndyVdrPool[] = []
   private logger: Logger
+  private indyVdrModuleConfig: IndyVdrModuleConfig
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, indyVdrModuleConfig: IndyVdrModuleConfig) {
     this.logger = logger
-  }
+    this.indyVdrModuleConfig = indyVdrModuleConfig
 
-  public setPools(poolConfigs: IndyVdrPoolConfig[]) {
-    this.pools = poolConfigs.map((poolConfig) => new IndyVdrPool(poolConfig, this.logger))
+    this.pools = this.indyVdrModuleConfig.networks.map((poolConfig) => new IndyVdrPool(poolConfig, this.logger))
   }
 
   /**
