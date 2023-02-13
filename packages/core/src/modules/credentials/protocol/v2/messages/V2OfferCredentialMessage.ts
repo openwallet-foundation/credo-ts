@@ -64,6 +64,6 @@ export class V2OfferCredentialMessage extends AgentMessage {
   public replacementId?: string
 
   public getOfferAttachmentById(id: string): Attachment | undefined {
-    return this.offerAttachments.find((attachment) => attachment.id == id)
+    return this.offerAttachments.find((attachment) => attachment.id === id)
   }
 }

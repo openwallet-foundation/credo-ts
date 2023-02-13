@@ -496,7 +496,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
-    return credentialOfferJson.cred_def_id == credentialRequestJson.cred_def_id
+    return credentialOfferJson.cred_def_id === credentialRequestJson.cred_def_id
   }
 
   public async shouldAutoRespondToCredential(

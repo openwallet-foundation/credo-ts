@@ -56,7 +56,7 @@ export function createRequestFromPreview({
   // Transform attributes by referent to requested attributes
   for (const [referent, proposedAttributes] of Object.entries(attributesByReferent)) {
     // Either attributeName or attributeNames will be undefined
-    const attributeName = proposedAttributes.length == 1 ? proposedAttributes[0].name : undefined
+    const attributeName = proposedAttributes.length === 1 ? proposedAttributes[0].name : undefined
     const attributeNames = proposedAttributes.length > 1 ? proposedAttributes.map((a) => a.name) : undefined
 
     const requestedAttribute = new ProofAttributeInfo({
@@ -94,17 +94,31 @@ export function createRequestFromPreview({
 /**
  * Checks whether two `names` arrays are equal. The order of the names doesn't matter.
  */
-function areNamesEqual(namesA: string[] | undefined, namesB: string[] | undefined) {
-  if (namesA === undefined) return namesB === undefined || namesB.length === 0
-  if (namesB === undefined) return namesA.length === 0
+function areNamesEqual({
+  nameA,
+  namesA,
+  nameB,
+  namesB,
+}: {
+  namesA?: string[]
+  nameA?: string
+  namesB?: string[]
+  nameB?: string
+}) {
+  const namesACombined = nameA ? [nameA] : namesA
+  const namesBCombined = nameB ? [nameB] : namesB
+
+  // Filter out case where both are not set (invalid)
+  if (!namesACombined || !namesBCombined) return false
 
   // Check if there are any duplicates
-  if (new Set(namesA).size !== namesA.length || new Set(namesB).size !== namesB.length) return false
+  if (new Set(namesACombined).size !== namesACombined.length || new Set(namesBCombined).size !== namesBCombined.length)
+    return false
 
   // Check if the number of names is equal between A & B
-  if (namesA.length !== namesB.length) return false
+  if (namesACombined.length !== namesBCombined.length) return false
 
-  return namesA.every((a) => namesB.includes(a))
+  return namesACombined.every((a) => namesBCombined.includes(a))
 }
 
 /**
@@ -121,13 +135,23 @@ export function areIndyProofRequestsEqual(requestA: Indy.IndyProofRequest, reque
   // Check if the number of attribute groups is equal in both requests
   if (attributeAList.length !== attributeBList.length) return false
 
+  const predicatesA = Object.values(requestA.requested_predicates)
+  const predicatesB = Object.values(requestB.requested_predicates)
+
+  if (predicatesA.length !== predicatesB.length) return false
+
   // Check if all attribute groups in A are also in B
   const attributesMatch = attributeAList.every((a) => {
     // find an attribute in B that matches this attribute
     const bIndex = attributeBList.findIndex((b) => {
       return (
-        b.name === a.name &&
-        areNamesEqual(a.names, b.names) &&
+        // Check if name and names are equal
+        areNamesEqual({
+          nameB: b.name,
+          namesB: b.names,
+          nameA: a.name,
+          namesA: a.names,
+        }) &&
         isNonRevokedEqual(a.non_revoked, b.non_revoked) &&
         areRestrictionsEqual(a.restrictions, b.restrictions)
       )
@@ -145,10 +169,6 @@ export function areIndyProofRequestsEqual(requestA: Indy.IndyProofRequest, reque
 
   if (!attributesMatch) return false
 
-  const predicatesA = Object.values(requestA.requested_predicates)
-  const predicatesB = Object.values(requestB.requested_predicates)
-
-  if (predicatesA.length !== predicatesB.length) return false
   const predicatesMatch = predicatesA.every((a) => {
     // find a predicate in B that matches this predicate
     const bIndex = predicatesB.findIndex((b) => {
@@ -181,10 +201,7 @@ export function areIndyProofRequestsEqual(requestA: Indy.IndyProofRequest, reque
  * - One if undefined and the other is an empty object
  * - Both have the same from and to values
  */
-function isNonRevokedEqual(
-  nonRevokedA: Indy.NonRevokedInterval | undefined,
-  nonRevokedB: Indy.NonRevokedInterval | undefined
-) {
+function isNonRevokedEqual(nonRevokedA?: Indy.NonRevokedInterval, nonRevokedB?: Indy.NonRevokedInterval) {
   // Having an empty non-revoked object is the same as not having one
   if (nonRevokedA === undefined)
     return nonRevokedB === undefined || (nonRevokedB.from === undefined && nonRevokedB.to === undefined)
@@ -196,10 +213,7 @@ function isNonRevokedEqual(
 /**
  * Check if two restriction lists are equal. The order of the restrictions does not matter.
  */
-function areRestrictionsEqual(
-  restrictionsA: Indy.WalletQuery[] | undefined,
-  restrictionsB: Indy.WalletQuery[] | undefined
-) {
+function areRestrictionsEqual(restrictionsA?: Indy.WalletQuery[], restrictionsB?: Indy.WalletQuery[]) {
   // Having an undefined restrictions property or an empty array is the same
   if (restrictionsA === undefined) return restrictionsB === undefined || restrictionsB.length === 0
   if (restrictionsB === undefined) return restrictionsA.length === 0

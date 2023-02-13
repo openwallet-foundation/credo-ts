@@ -65,6 +65,6 @@ export class V2PresentationMessage extends AgentMessage {
   public presentationAttachments!: Attachment[]
 
   public getPresentationAttachmentById(id: string): Attachment | undefined {
-    return this.presentationAttachments.find((attachment) => attachment.id == id)
+    return this.presentationAttachments.find((attachment) => attachment.id === id)
   }
 }

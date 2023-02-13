@@ -433,7 +433,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     const credentialOfferJson = offerAttachment.getDataAsJson<Indy.CredOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<Indy.CredReq>()
 
-    return credentialOfferJson.cred_def_id == credentialRequestJson.cred_def_id
+    return credentialOfferJson.cred_def_id === credentialRequestJson.cred_def_id
   }
 
   public async shouldAutoRespondToCredential(
