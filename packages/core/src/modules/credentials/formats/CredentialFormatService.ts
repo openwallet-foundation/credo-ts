@@ -1,23 +1,22 @@
 import type { CredentialFormat } from './CredentialFormat'
 import type {
-  FormatCreateProposalOptions,
-  FormatCreateProposalReturn,
-  FormatProcessOptions,
-  FormatCreateOfferOptions,
-  FormatCreateOfferReturn,
-  FormatCreateRequestOptions,
+  CredentialFormatCreateProposalOptions,
+  CredentialFormatCreateProposalReturn,
+  CredentialFormatProcessOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
+  CredentialFormatCreateRequestOptions,
   CredentialFormatCreateReturn,
-  FormatAcceptRequestOptions,
-  FormatAcceptOfferOptions,
-  FormatAcceptProposalOptions,
-  FormatAutoRespondCredentialOptions,
-  FormatAutoRespondOfferOptions,
-  FormatAutoRespondProposalOptions,
-  FormatAutoRespondRequestOptions,
-  FormatProcessCredentialOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatProcessCredentialOptions,
 } from './CredentialFormatServiceOptions'
 import type { AgentContext } from '../../../agent'
-import type { Attachment } from '../../../decorators/attachment/Attachment'
 
 export interface CredentialFormatService<CF extends CredentialFormat = CredentialFormat> {
   formatKey: CF['formatKey']
@@ -26,39 +25,58 @@ export interface CredentialFormatService<CF extends CredentialFormat = Credentia
   // proposal methods
   createProposal(
     agentContext: AgentContext,
-    options: FormatCreateProposalOptions<CF>
-  ): Promise<FormatCreateProposalReturn>
-  processProposal(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
-  acceptProposal(agentContext: AgentContext, options: FormatAcceptProposalOptions<CF>): Promise<FormatCreateOfferReturn>
+    options: CredentialFormatCreateProposalOptions<CF>
+  ): Promise<CredentialFormatCreateProposalReturn>
+  processProposal(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
+  acceptProposal(
+    agentContext: AgentContext,
+    options: CredentialFormatAcceptProposalOptions<CF>
+  ): Promise<CredentialFormatCreateOfferReturn>
 
   // offer methods
-  createOffer(agentContext: AgentContext, options: FormatCreateOfferOptions<CF>): Promise<FormatCreateOfferReturn>
-  processOffer(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
-  acceptOffer(agentContext: AgentContext, options: FormatAcceptOfferOptions<CF>): Promise<CredentialFormatCreateReturn>
+  createOffer(
+    agentContext: AgentContext,
+    options: CredentialFormatCreateOfferOptions<CF>
+  ): Promise<CredentialFormatCreateOfferReturn>
+  processOffer(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
+  acceptOffer(
+    agentContext: AgentContext,
+    options: CredentialFormatAcceptOfferOptions<CF>
+  ): Promise<CredentialFormatCreateReturn>
 
   // request methods
   createRequest(
     agentContext: AgentContext,
-    options: FormatCreateRequestOptions<CF>
+    options: CredentialFormatCreateRequestOptions<CF>
   ): Promise<CredentialFormatCreateReturn>
-  processRequest(agentContext: AgentContext, options: FormatProcessOptions): Promise<void>
+  processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
   acceptRequest(
     agentContext: AgentContext,
-    options: FormatAcceptRequestOptions<CF>
+    options: CredentialFormatAcceptRequestOptions<CF>
   ): Promise<CredentialFormatCreateReturn>
 
   // credential methods
-  processCredential(agentContext: AgentContext, options: FormatProcessCredentialOptions): Promise<void>
+  processCredential(agentContext: AgentContext, options: CredentialFormatProcessCredentialOptions): Promise<void>
 
   // auto accept methods
-  shouldAutoRespondToProposal(agentContext: AgentContext, options: FormatAutoRespondProposalOptions): boolean
-  shouldAutoRespondToOffer(agentContext: AgentContext, options: FormatAutoRespondOfferOptions): boolean
-  shouldAutoRespondToRequest(agentContext: AgentContext, options: FormatAutoRespondRequestOptions): boolean
-  shouldAutoRespondToCredential(agentContext: AgentContext, options: FormatAutoRespondCredentialOptions): boolean
+  shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    options: CredentialFormatAutoRespondProposalOptions
+  ): Promise<boolean>
+  shouldAutoRespondToOffer(
+    agentContext: AgentContext,
+    options: CredentialFormatAutoRespondOfferOptions
+  ): Promise<boolean>
+  shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    options: CredentialFormatAutoRespondRequestOptions
+  ): Promise<boolean>
+  shouldAutoRespondToCredential(
+    agentContext: AgentContext,
+    options: CredentialFormatAutoRespondCredentialOptions
+  ): Promise<boolean>
 
   deleteCredentialById(agentContext: AgentContext, credentialId: string): Promise<void>
 
-  supportsFormat(format: string): boolean
-
-  getFormatData(data: unknown, id: string): Attachment
+  supportsFormat(formatIdentifier: string): boolean
 }

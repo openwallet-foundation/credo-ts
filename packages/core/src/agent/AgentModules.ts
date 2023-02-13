@@ -36,9 +36,11 @@ export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
  * Defines the input type for the default agent modules. This is overwritten as we
  * want the input type to allow for generics to be passed in for the credentials module.
  */
-export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials'> & {
+export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials' | 'proofs'> & {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   credentials: CredentialsModule<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  proofs: ProofsModule<any>
 }
 
 /**

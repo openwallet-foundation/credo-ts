@@ -16,7 +16,7 @@ import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../../utils/messageType'
 import { PredicateType } from '../../../formats/indy/models/PredicateType'
 
-export interface PresentationPreviewAttributeOptions {
+export interface V1PresentationPreviewAttributeOptions {
   name: string
   credentialDefinitionId?: string
   mimeType?: string
@@ -24,8 +24,8 @@ export interface PresentationPreviewAttributeOptions {
   referent?: string
 }
 
-export class PresentationPreviewAttribute {
-  public constructor(options: PresentationPreviewAttributeOptions) {
+export class V1PresentationPreviewAttribute {
+  public constructor(options: V1PresentationPreviewAttributeOptions) {
     if (options) {
       this.name = options.name
       this.credentialDefinitionId = options.credentialDefinitionId
@@ -39,7 +39,7 @@ export class PresentationPreviewAttribute {
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
-  @ValidateIf((o: PresentationPreviewAttribute) => o.referent !== undefined)
+  @ValidateIf((o: V1PresentationPreviewAttribute) => o.referent !== undefined)
   @Matches(credDefIdRegex)
   public credentialDefinitionId?: string
 
@@ -61,15 +61,15 @@ export class PresentationPreviewAttribute {
   }
 }
 
-export interface PresentationPreviewPredicateOptions {
+export interface V1PresentationPreviewPredicateOptions {
   name: string
   credentialDefinitionId: string
   predicate: PredicateType
   threshold: number
 }
 
-export class PresentationPreviewPredicate {
-  public constructor(options: PresentationPreviewPredicateOptions) {
+export class V1PresentationPreviewPredicate {
+  public constructor(options: V1PresentationPreviewPredicateOptions) {
     if (options) {
       this.name = options.name
       this.credentialDefinitionId = options.credentialDefinitionId
@@ -97,9 +97,9 @@ export class PresentationPreviewPredicate {
   }
 }
 
-export interface PresentationPreviewOptions {
-  attributes?: PresentationPreviewAttribute[]
-  predicates?: PresentationPreviewPredicate[]
+export interface V1PresentationPreviewOptions {
+  attributes?: V1PresentationPreviewAttributeOptions[]
+  predicates?: V1PresentationPreviewPredicateOptions[]
 }
 
 /**
@@ -109,31 +109,31 @@ export interface PresentationPreviewOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation-preview
  */
-export class PresentationPreview {
-  public constructor(options: PresentationPreviewOptions) {
+export class V1PresentationPreview {
+  public constructor(options: V1PresentationPreviewOptions) {
     if (options) {
-      this.attributes = options.attributes ?? []
-      this.predicates = options.predicates ?? []
+      this.attributes = options.attributes?.map((a) => new V1PresentationPreviewAttribute(a)) ?? []
+      this.predicates = options.predicates?.map((p) => new V1PresentationPreviewPredicate(p)) ?? []
     }
   }
 
   @Expose({ name: '@type' })
-  @IsValidMessageType(PresentationPreview.type)
+  @IsValidMessageType(V1PresentationPreview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
-  public readonly type = PresentationPreview.type.messageTypeUri
+  public readonly type = V1PresentationPreview.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
 
-  @Type(() => PresentationPreviewAttribute)
+  @Type(() => V1PresentationPreviewAttribute)
   @ValidateNested({ each: true })
-  @IsInstance(PresentationPreviewAttribute, { each: true })
-  public attributes!: PresentationPreviewAttribute[]
+  @IsInstance(V1PresentationPreviewAttribute, { each: true })
+  public attributes!: V1PresentationPreviewAttribute[]
 
-  @Type(() => PresentationPreviewPredicate)
+  @Type(() => V1PresentationPreviewPredicate)
   @ValidateNested({ each: true })
-  @IsInstance(PresentationPreviewPredicate, { each: true })
-  public predicates!: PresentationPreviewPredicate[]
+  @IsInstance(V1PresentationPreviewPredicate, { each: true })
+  public predicates!: V1PresentationPreviewPredicate[]
 
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)

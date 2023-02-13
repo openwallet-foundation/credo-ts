@@ -447,8 +447,8 @@ export class ConnectionService {
       previousSentMessage,
       previousReceivedMessage,
     }: {
-      previousSentMessage?: AgentMessage
-      previousReceivedMessage?: AgentMessage
+      previousSentMessage?: AgentMessage | null
+      previousReceivedMessage?: AgentMessage | null
     } = {}
   ) {
     const { connection, message } = messageContext

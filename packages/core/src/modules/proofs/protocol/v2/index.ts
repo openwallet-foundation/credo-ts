@@ -1,3 +1,3 @@
 export * from './errors'
 export * from './messages'
-export * from './V2ProofService'
+export * from './V2ProofProtocol'

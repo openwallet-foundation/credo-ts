@@ -1,6 +1,6 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
-import { Agent, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
+import { Agent, KeyType, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
@@ -9,9 +9,7 @@ import { getAgentOptions } from '../../core/tests/helpers'
 
 import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
-import { TestLogger } from '../../core/tests/logger'
-
-import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
+import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
 describe('OpenId4VcClient', () => {
   let agent: Agent<{
@@ -22,9 +20,7 @@ describe('OpenId4VcClient', () => {
   beforeEach(async () => {
     const agentOptions = getAgentOptions(
       'OpenId4VcClient Agent',
-      {
-        logger: new TestLogger(LogLevel.test),
-      },
+      {},
       {
         openId4VcClient: new OpenId4VcClientModule(),
         w3cVc: new W3cVcModule({
@@ -62,7 +58,7 @@ describe('OpenId4VcClient', () => {
         .reply(200, getMetadataResponse)
 
       // setup access token response
-      httpMock.post('/oidc/v1/auth/token').reply(200, aquireAccessTokenResponse)
+      httpMock.post('/oidc/v1/auth/token').reply(200, acquireAccessTokenResponse)
 
       // setup credential request response
       httpMock.post('/oidc/v1/auth/credential').reply(200, credentialRequestResponse)

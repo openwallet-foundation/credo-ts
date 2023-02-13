@@ -25,7 +25,7 @@ export interface AttachmentOptions {
   mimeType?: string
   lastmodTime?: Date
   byteCount?: number
-  data: AttachmentData
+  data: AttachmentDataOptions
 }
 
 export interface AttachmentDataOptions {
@@ -97,7 +97,7 @@ export class Attachment {
       this.mimeType = options.mimeType
       this.lastmodTime = options.lastmodTime
       this.byteCount = options.byteCount
-      this.data = options.data
+      this.data = new AttachmentData(options.data)
     }
   }
 

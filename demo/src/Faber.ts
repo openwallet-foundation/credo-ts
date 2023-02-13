@@ -2,13 +2,7 @@ import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-frame
 import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import {
-  AttributeFilter,
-  ProofAttributeInfo,
-  utils,
-  V1CredentialPreview,
-  ConnectionEventTypes,
-} from '@aries-framework/core'
+import { utils, V1CredentialPreview, ConnectionEventTypes } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -171,15 +165,16 @@ export class Faber extends BaseAgent {
   private async newProofAttribute() {
     await this.printProofFlow(greenText(`Creating new proof attribute for 'name' ...\n`))
     const proofAttribute = {
-      name: new ProofAttributeInfo({
+      name: {
         name: 'name',
         restrictions: [
-          new AttributeFilter({
+          {
             credentialDefinitionId: this.credentialDefinition?.id,
-          }),
+          },
         ],
-      }),
+      },
     }
+
     return proofAttribute
   }
 
@@ -195,7 +190,6 @@ export class Faber extends BaseAgent {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          nonce: '1298236324864',
           requestedAttributes: proofAttribute,
         },
       },

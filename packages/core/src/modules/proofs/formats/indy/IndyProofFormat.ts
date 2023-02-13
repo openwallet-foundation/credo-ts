@@ -1,46 +1,75 @@
-import type { RequestedAttribute } from './models/RequestedAttribute'
-import type { IndyRequestedCredentialsOptions } from './models/RequestedCredentials'
-import type { RequestedPredicate } from './models/RequestedPredicate'
-import type { PresentationPreviewAttribute, PresentationPreviewPredicate } from '../../protocol/v1'
+import type { ProofAttributeInfoOptions, ProofPredicateInfoOptions } from './models'
+import type { RequestedAttributeOptions } from './models/RequestedAttribute'
+import type { RequestedPredicateOptions } from './models/RequestedPredicate'
+import type { V1PresentationPreviewAttributeOptions, V1PresentationPreviewPredicateOptions } from '../../protocol/v1'
 import type { ProofFormat } from '../ProofFormat'
-import type { IndyRequestProofFormat } from '../indy/IndyProofFormatsServiceOptions'
 import type { IndyProof, IndyProofRequest } from 'indy-sdk'
 
+/**
+ * Interface for creating an indy proof proposal.
+ */
 export interface IndyProposeProofFormat {
-  attributes?: PresentationPreviewAttribute[]
-  predicates?: PresentationPreviewPredicate[]
-  nonce?: string
   name?: string
   version?: string
+  attributes?: V1PresentationPreviewAttributeOptions[]
+  predicates?: V1PresentationPreviewPredicateOptions[]
 }
 
-export interface IndyRequestedCredentialsFormat {
-  requestedAttributes: Record<string, RequestedAttribute>
-  requestedPredicates: Record<string, RequestedPredicate>
+/**
+ * Interface for creating an indy proof request.
+ */
+export interface IndyRequestProofFormat {
+  name: string
+  version: string
+  // TODO: update to AnonCredsNonRevokedInterval when moving to AnonCreds package
+  nonRevoked?: { from?: number; to?: number }
+  requestedAttributes?: Record<string, ProofAttributeInfoOptions>
+  requestedPredicates?: Record<string, ProofPredicateInfoOptions>
+}
+
+/**
+ * Interface for accepting an indy proof request.
+ */
+export type IndyAcceptProofRequestFormat = Partial<IndySelectedCredentialsForProofRequest>
+
+export interface IndySelectedCredentialsForProofRequest {
+  requestedAttributes: Record<string, RequestedAttributeOptions>
+  requestedPredicates: Record<string, RequestedPredicateOptions>
   selfAttestedAttributes: Record<string, string>
 }
 
-export interface IndyRetrievedCredentialsFormat {
-  requestedAttributes: Record<string, RequestedAttribute[]>
-  requestedPredicates: Record<string, RequestedPredicate[]>
+/**
+ * Interface for getting credentials for an indy proof request.
+ */
+export interface IndyCredentialsForProofRequest {
+  attributes: Record<string, RequestedAttributeOptions[]>
+  predicates: Record<string, RequestedPredicateOptions[]>
+}
+
+export interface IndyGetCredentialsForProofRequestOptions {
+  filterByNonRevocationRequirements?: boolean
 }
 
 export interface IndyProofFormat extends ProofFormat {
   formatKey: 'indy'
-  proofRecordType: 'indy'
+
   proofFormats: {
     createProposal: IndyProposeProofFormat
-    acceptProposal: unknown
+    acceptProposal: {
+      name?: string
+      version?: string
+    }
     createRequest: IndyRequestProofFormat
-    acceptRequest: unknown
-    createPresentation: IndyRequestedCredentialsOptions
-    acceptPresentation: unknown
-    createProposalAsResponse: IndyProposeProofFormat
-    createOutOfBandRequest: unknown
-    createRequestAsResponse: IndyRequestProofFormat
-    createProofRequestFromProposal: IndyRequestProofFormat
-    requestCredentials: IndyRequestedCredentialsFormat
-    retrieveCredentials: IndyRetrievedCredentialsFormat
+    acceptRequest: IndyAcceptProofRequestFormat
+
+    getCredentialsForRequest: {
+      input: IndyGetCredentialsForProofRequestOptions
+      output: IndyCredentialsForProofRequest
+    }
+    selectCredentialsForRequest: {
+      input: IndyGetCredentialsForProofRequestOptions
+      output: IndySelectedCredentialsForProofRequest
+    }
   }
 
   formatData: {
