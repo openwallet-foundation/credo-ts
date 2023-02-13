@@ -149,9 +149,9 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       name: indyFormat.name,
       version: indyFormat.version,
       nonce: await agentContext.wallet.generateNonce(),
-      requested_attributes: indyFormat.requestedAttributes ?? {},
-      requested_predicates: indyFormat.requestedPredicates ?? {},
-      non_revoked: indyFormat.nonRevoked,
+      requested_attributes: indyFormat.requested_attributes ?? {},
+      requested_predicates: indyFormat.requested_predicates ?? {},
+      non_revoked: indyFormat.non_revoked,
     } satisfies AnonCredsProofRequest
 
     // Validate to make sure user provided correct input
