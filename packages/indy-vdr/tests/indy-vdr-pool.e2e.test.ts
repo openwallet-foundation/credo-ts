@@ -9,7 +9,9 @@ import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
-const indyVdrPoolService = new IndyVdrPoolService(testLogger)
+import { indyVdrModuleConfig } from './helpers'
+
+const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
 const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
@@ -22,8 +24,6 @@ const config = {
 } as const
 
 let signerKey: Key
-
-indyVdrPoolService.setPools([config])
 
 describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
