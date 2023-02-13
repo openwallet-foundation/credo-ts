@@ -688,7 +688,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
               )
             }
 
-            const { tailsLocation, tailsHash } = revocationRegistryDefinition
+            const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
             const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
 
             // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
