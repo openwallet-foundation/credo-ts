@@ -34,44 +34,33 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
-      const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-      const did = didFromSchemaId(schemaId)
+      const {schema, indyNamespace} = await this.fetchIndySchema(agentContext, schemaId);
 
-      const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
-      agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.indyNamespace}'`)
-      const request = new GetSchemaRequest({ submitterDid: did, schemaId })
+      if (schema) {
+        agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${indyNamespace}'`, {'schema:': schema})
 
-      agentContext.config.logger.trace(
-        `Submitting get schema request for schema '${schemaId}' to ledger '${pool.indyNamespace}'`
-      )
-      const response = await pool.submitReadRequest(request)
-
-      agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.indyNamespace}'`, {
-        response,
-      })
-
-      const issuerId = didFromSchemaId(schemaId)
-
-      if ('attr_names' in response.result.data) {
         return {
           schema: {
-            attrNames: response.result.data.attr_names,
-            name: response.result.data.name,
-            version: response.result.data.version,
-            issuerId,
+            attrNames: schema.attrNames,
+            name: schema.name,
+            version: schema.version,
+            issuerId: schema.issuerId,
           },
-          schemaId: schemaId,
+          schemaId: schema.id,
           resolutionMetadata: {},
           schemaMetadata: {
-            didIndyNamespace: pool.indyNamespace,
+            didIndyNamespace: indyNamespace,
             // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
             // For this reason we return it in the metadata.
-            indyLedgerSeqNo: response.result.seqNo,
+            indyLedgerSeqNo: schema.seqNo,
           },
         }
       }
+
+
+    
 
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`)
 
@@ -414,6 +403,44 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       },
       revocationRegistryDefinitionId,
       revocationRegistryDefinitionMetadata: {},
+    }
+  }
+
+  private async fetchIndySchema(agentContext: AgentContext, schemaId: string) {
+    const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    const did = didFromSchemaId(schemaId)
+
+    const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
+
+    agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.indyNamespace}'`)
+    const request = new GetSchemaRequest({ schemaId })
+
+    agentContext.config.logger.trace(
+      `Submitting get schema request for schema '${schemaId}' to ledger '${pool.indyNamespace}'`
+    )
+    const response = await pool.submitReadRequest(request)
+
+    if ('attr_names' in response.result.data) {
+      const schemaID = getLegacySchemaId(did, response.result.data.name, response.result.data.version)
+
+      return {
+        schema: {
+          id: schemaID,
+          seqNo: response.result.seqNo,
+          attrNames: response.result.data.attr_names,
+          name: response.result.data.name,
+          version: response.result.data.version,
+          issuerId: did,
+        },
+        indyNamespace: pool.indyNamespace,
+      }
+    }
+
+    agentContext.config.logger.error(`Error retrieving schema with ID: ${schemaId}`)
+
+    return {
+      indyNamespace: pool.indyNamespace,
     }
   }
 }

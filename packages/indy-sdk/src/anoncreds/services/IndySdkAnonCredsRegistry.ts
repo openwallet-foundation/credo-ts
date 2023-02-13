@@ -1,3 +1,4 @@
+
 import type { IndySdk } from '../../types'
 import type {
   AnonCredsRegistry,
@@ -42,42 +43,19 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
-      const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
-      const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
-
-      const did = didFromSchemaId(schemaId)
-      const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
-      agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`)
-
-      const request = await indySdk.buildGetSchemaRequest(null, schemaId)
-
-      agentContext.config.logger.trace(
-        `Submitting get schema request for schema '${schemaId}' to ledger '${pool.didIndyNamespace}'`
-      )
-      const response = await indySdkPoolService.submitReadRequest(pool, request)
-
-      agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
-        response,
-      })
-
-      const [, schema] = await indySdk.parseGetSchemaResponse(response)
-      agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
-        schema,
-      })
-
-      const issuerId = didFromSchemaId(schema.id)
+      const { schema, indyNamespace } = await this.fetchIndySchema(agentContext, schemaId)
 
       return {
         schema: {
           attrNames: schema.attrNames,
           name: schema.name,
           version: schema.version,
-          issuerId: issuerId,
+          issuerId: schema.issuerId,
         },
         schemaId: schema.id,
         resolutionMetadata: {},
         schemaMetadata: {
-          didIndyNamespace: pool.didIndyNamespace,
+          didIndyNamespace: indyNamespace,
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
           indyLedgerSeqNo: schema.seqNo,
@@ -219,11 +197,13 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         }
       )
 
+      const { schema } = await this.fetchIndySchema(agentContext, credentialDefinition.schemaId)
+
       return {
         credentialDefinitionId: credentialDefinition.id,
         credentialDefinition: {
           issuerId: didFromCredentialDefinitionId(credentialDefinition.id),
-          schemaId: credentialDefinition.schemaId,
+          schemaId: schema.id,
           tag: credentialDefinition.tag,
           type: 'CL',
           value: credentialDefinition.value,
@@ -507,6 +487,45 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         },
         revocationStatusListMetadata: {},
       }
+    }
+  }
+
+  private async fetchIndySchema(agentContext: AgentContext, schemaId: string) {
+    const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
+    const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
+
+    const did = didFromSchemaId(schemaId)
+    const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
+    agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`)
+
+    const request = await indySdk.buildGetSchemaRequest(null, schemaId)
+
+    agentContext.config.logger.trace(
+      `Submitting get schema request for schema '${schemaId}' to ledger '${pool.didIndyNamespace}'`
+    )
+    const response = await indySdkPoolService.submitReadRequest(pool, request)
+
+    agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
+      response,
+    })
+
+    const [, schema] = await indySdk.parseGetSchemaResponse(response)
+    agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
+      schema,
+    })
+
+    const issuerId = didFromSchemaId(schema.id)
+
+    return {
+      schema: {
+        id: schema.id,
+        seqNo: schema.seqNo,
+        attrNames: schema.attrNames,
+        name: schema.name,
+        version: schema.version,
+        issuerId: issuerId,
+      },
+      indyNamespace: pool.didIndyNamespace,
     }
   }
 }
