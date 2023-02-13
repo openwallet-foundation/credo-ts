@@ -34,7 +34,6 @@ import {
   FileSystem,
   WalletNotFoundError,
 } from '@aries-framework/core'
-// eslint-disable-next-line import/order
 import {
   StoreKeyMethod,
   KeyAlgs,
@@ -43,6 +42,8 @@ import {
   Key as AskarKey,
   keyAlgFromString,
 } from '@hyperledger/aries-askar-shared'
+// eslint-disable-next-line import/order
+import BigNumber from 'bn.js'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
@@ -669,7 +670,9 @@ export class AskarWallet implements Wallet {
 
   public async generateNonce(): Promise<string> {
     try {
-      return TypedArrayEncoder.toUtf8String(CryptoBox.randomNonce())
+      // generate an 80-bit nonce suitable for AnonCreds proofs
+      const nonce = CryptoBox.randomNonce().slice(0, 10)
+      return new BigNumber(nonce).toString()
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
