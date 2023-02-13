@@ -129,7 +129,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
         )
       }
 
-      if (neededUpdates.length == 0) {
+      if (neededUpdates.length === 0) {
         this.agent.config.logger.info('No update needed. Agent storage is up to date.')
         return
       }

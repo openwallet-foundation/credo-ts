@@ -5,8 +5,17 @@ import { IsOptional, IsString } from 'class-validator'
 
 import { JsonTransformer } from '../../../../../utils'
 
+export interface IndyCredentialInfoOptions {
+  referent: string
+  attributes: Record<string, string>
+  schemaId: string
+  credentialDefinitionId: string
+  revocationRegistryId?: string
+  credentialRevocationId?: string
+}
+
 export class IndyCredentialInfo {
-  public constructor(options: IndyCredentialInfo) {
+  public constructor(options: IndyCredentialInfoOptions) {
     if (options) {
       this.referent = options.referent
       this.attributes = options.attributes

@@ -3,16 +3,7 @@ import type { Agent } from '@aries-framework/core'
 import { sleep } from '../packages/core/src/utils/sleep'
 import { issueCredential, makeConnection, prepareForIssuance, presentProof } from '../packages/core/tests/helpers'
 
-import {
-  V1CredentialPreview,
-  AttributeFilter,
-  CredentialState,
-  MediationState,
-  PredicateType,
-  ProofAttributeInfo,
-  ProofPredicateInfo,
-  ProofState,
-} from '@aries-framework/core'
+import { V1CredentialPreview, CredentialState, MediationState, ProofState } from '@aries-framework/core'
 
 export async function e2eTest({
   mediatorAgent,
@@ -63,9 +54,9 @@ export async function e2eTest({
 
   // Present Proof from recipient to sender
   const definitionRestriction = [
-    new AttributeFilter({
+    {
       credentialDefinitionId: definition.id,
-    }),
+    },
   ]
   const { holderProof, verifierProof } = await presentProof({
     verifierAgent: senderAgent,
@@ -73,18 +64,18 @@ export async function e2eTest({
     verifierConnectionId: senderRecipientConnection.id,
     presentationTemplate: {
       attributes: {
-        name: new ProofAttributeInfo({
+        name: {
           name: 'name',
           restrictions: definitionRestriction,
-        }),
+        },
       },
       predicates: {
-        olderThan21: new ProofPredicateInfo({
+        olderThan21: {
           name: 'age',
           restrictions: definitionRestriction,
-          predicateType: PredicateType.LessThan,
+          predicateType: '<=',
           predicateValue: 20000712,
-        }),
+        },
       },
     },
   })

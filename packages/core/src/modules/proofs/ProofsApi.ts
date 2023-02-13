@@ -1,93 +1,77 @@
-import type { ProofService } from './ProofService'
 import type {
-  AcceptProofPresentationOptions,
+  AcceptProofOptions,
   AcceptProofProposalOptions,
+  AcceptProofRequestOptions,
   CreateProofRequestOptions,
+  DeleteProofOptions,
   FindProofPresentationMessageReturn,
   FindProofProposalMessageReturn,
   FindProofRequestMessageReturn,
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
+  GetProofFormatDataReturn,
+  NegotiateProofProposalOptions,
+  NegotiateProofRequestOptions,
   ProposeProofOptions,
   RequestProofOptions,
-  ProofServiceMap,
-  NegotiateRequestOptions,
-  NegotiateProposalOptions,
+  SelectCredentialsForProofRequestOptions,
+  SelectCredentialsForProofRequestReturn,
+  SendProofProblemReportOptions,
 } from './ProofsApiOptions'
-import type { ProofFormat } from './formats/ProofFormat'
-import type { IndyProofFormat } from './formats/indy/IndyProofFormat'
-import type {
-  AutoSelectCredentialsForProofRequestOptions,
-  GetRequestedCredentialsForProofRequest,
-} from './models/ModuleOptions'
-import type {
-  CreatePresentationOptions,
-  CreateProposalOptions,
-  CreateRequestOptions,
-  CreateRequestAsResponseOptions,
-  CreateProofRequestFromProposalOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-  DeleteProofOptions,
-  GetFormatDataReturn,
-  CreateProposalAsResponseOptions,
-} from './models/ProofServiceOptions'
+import type { ProofProtocol } from './protocol/ProofProtocol'
+import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 import type { AgentMessage } from '../../agent/AgentMessage'
 import type { Query } from '../../storage/StorageService'
 
-import { inject, injectable } from 'tsyringe'
+import { injectable } from 'tsyringe'
 
-import { AgentConfig } from '../../agent/AgentConfig'
-import { Dispatcher } from '../../agent/Dispatcher'
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
 import { OutboundMessageContext } from '../../agent/models'
-import { InjectionSymbols } from '../../constants'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
-import { Logger } from '../../logger'
+import { DidCommMessageRepository } from '../../storage'
 import { DidCommMessageRole } from '../../storage/didcomm/DidCommMessageRole'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 import { RoutingService } from '../routing/services/RoutingService'
 
-import { ProofResponseCoordinator } from './ProofResponseCoordinator'
+import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'
-import { V1ProofService } from './protocol/v1/V1ProofService'
-import { V2ProofService } from './protocol/v2/V2ProofService'
 import { ProofRepository } from './repository/ProofRepository'
 
-export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<PFs>[]> {
+export interface ProofsApi<PPs extends ProofProtocol[]> {
   // Proposal methods
-  proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
-  acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord>
-  negotiateProposal(options: NegotiateProposalOptions<PFs>): Promise<ProofExchangeRecord>
+  proposeProof(options: ProposeProofOptions<PPs>): Promise<ProofExchangeRecord>
+  acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<ProofExchangeRecord>
+  negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<ProofExchangeRecord>
 
   // Request methods
-  requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord>
-  acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord>
+  requestProof(options: RequestProofOptions<PPs>): Promise<ProofExchangeRecord>
+  acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
   declineRequest(proofRecordId: string): Promise<ProofExchangeRecord>
-  negotiateRequest(options: NegotiateRequestOptions<PFs>): Promise<ProofExchangeRecord>
+  negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
 
   // Present
-  acceptPresentation(proofRecordId: string): Promise<ProofExchangeRecord>
+  acceptPresentation(options: AcceptProofOptions): Promise<ProofExchangeRecord>
 
   // out of band
-  createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
+  createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
     message: AgentMessage
     proofRecord: ProofExchangeRecord
   }>
 
   // Auto Select
-  autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRequestedCredentialReturn<PFs>>
+  selectCredentialsForRequest(
+    options: SelectCredentialsForProofRequestOptions<PPs>
+  ): Promise<SelectCredentialsForProofRequestReturn<PPs>>
 
-  // Get Requested Credentials
-  getRequestedCredentialsForProofRequest(
-    options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRetrievedCredentialOptions<PFs>>
+  // Get credentials for request
+  getCredentialsForRequest(
+    options: GetCredentialsForProofRequestOptions<PPs>
+  ): Promise<GetCredentialsForProofRequestReturn<PPs>>
 
-  sendProblemReport(proofRecordId: string, message: string): Promise<ProofExchangeRecord>
+  sendProblemReport(options: SendProofProblemReportOptions): Promise<ProofExchangeRecord>
 
   // Record Methods
   getAll(): Promise<ProofExchangeRecord[]>
@@ -96,107 +80,87 @@ export interface ProofsApi<PFs extends ProofFormat[], PSs extends ProofService<P
   findById(proofRecordId: string): Promise<ProofExchangeRecord | null>
   deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
   update(proofRecord: ProofExchangeRecord): Promise<void>
-  getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>>
+  getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>>
 
   // DidComm Message Records
-  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>>
-  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>>
-  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>>
+  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PPs>>
+  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PPs>>
+  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PPs>>
 }
 
 @injectable()
-export class ProofsApi<
-  PFs extends ProofFormat[] = [IndyProofFormat],
-  PSs extends ProofService<PFs>[] = [V1ProofService, V2ProofService<PFs>]
-> implements ProofsApi<PFs, PSs>
-{
+export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
+  /**
+   * Configuration for the proofs module
+   */
+  public readonly config: ProofsModuleConfig<PPs>
+
   private connectionService: ConnectionService
   private messageSender: MessageSender
   private routingService: RoutingService
   private proofRepository: ProofRepository
+  private didCommMessageRepository: DidCommMessageRepository
   private agentContext: AgentContext
-  private agentConfig: AgentConfig
-  private logger: Logger
-  private serviceMap: ProofServiceMap<PFs, PSs>
 
   public constructor(
-    dispatcher: Dispatcher,
-    mediationRecipientService: MediationRecipientService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext,
-    agentConfig: AgentConfig,
-    routingService: RoutingService,
-    @inject(InjectionSymbols.Logger) logger: Logger,
     proofRepository: ProofRepository,
-    v1Service: V1ProofService,
-    v2Service: V2ProofService<PFs>
+    routingService: RoutingService,
+    didCommMessageRepository: DidCommMessageRepository,
+    config: ProofsModuleConfig<PPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.proofRepository = proofRepository
     this.agentContext = agentContext
-    this.agentConfig = agentConfig
     this.routingService = routingService
-    this.logger = logger
-    // Dynamically build service map. This will be extracted once services are registered dynamically
-    this.serviceMap = [v1Service, v2Service].reduce(
-      (serviceMap, service) => ({
-        ...serviceMap,
-        [service.version]: service,
-      }),
-      {}
-    ) as ProofServiceMap<PFs, PSs>
-
-    this.logger.debug(`Initializing Proofs Module for agent ${this.agentContext.config.label}`)
-
-    this.registerMessageHandlers(dispatcher, mediationRecipientService)
+    this.didCommMessageRepository = didCommMessageRepository
+    this.config = config
   }
 
-  public getService<PVT extends ProofService['version']>(protocolVersion: PVT): ProofService<PFs> {
-    if (!this.serviceMap[protocolVersion]) {
-      throw new AriesFrameworkError(`No proof service registered for protocol version ${protocolVersion}`)
+  private getProtocol<PVT extends PPs[number]['version']>(protocolVersion: PVT): ProofProtocol {
+    const proofProtocol = this.config.proofProtocols.find((protocol) => protocol.version === protocolVersion)
+
+    if (!proofProtocol) {
+      throw new AriesFrameworkError(`No proof protocol registered for protocol version ${protocolVersion}`)
     }
 
-    return this.serviceMap[protocolVersion] as ProofService<PFs>
+    return proofProtocol
   }
 
   /**
    * Initiate a new presentation exchange as prover by sending a presentation proposal message
    * to the connection with the specified connection id.
    *
-   * @param options multiple properties like protocol version, connection id, proof format (indy/ presentation exchange)
-   * to include in the message
-   * @returns Proof record associated with the sent proposal message
+   * @param options configuration to use for the proposal
+   * @returns Proof exchange record associated with the sent proposal message
    */
-  public async proposeProof(options: ProposeProofOptions<PFs, PSs>): Promise<ProofExchangeRecord> {
-    const service = this.getService(options.protocolVersion)
+  public async proposeProof(options: ProposeProofOptions<PPs>): Promise<ProofExchangeRecord> {
+    const protocol = this.getProtocol(options.protocolVersion)
 
-    const { connectionId } = options
-
-    const connection = await this.connectionService.getById(this.agentContext, connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const proposalOptions: CreateProposalOptions<PFs> = {
-      connectionRecord: connection,
+    const { message, proofRecord } = await protocol.createProposal(this.agentContext, {
+      connectionRecord,
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
       comment: options.comment,
       parentThreadId: options.parentThreadId,
-    }
-
-    const { message, proofRecord } = await service.createProposal(this.agentContext, proposalOptions)
+    })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionRecord,
       associatedRecord: proofRecord,
     })
-    await this.messageSender.sendMessage(outboundMessageContext)
 
+    await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
   }
 
@@ -204,53 +168,42 @@ export class ProofsApi<
    * Accept a presentation proposal as verifier (by sending a presentation request message) to the connection
    * associated with the proof record.
    *
-   * @param options multiple properties like proof record id, additional configuration for creating the request
-   * @returns Proof record associated with the presentation request
+   * @param options config object for accepting the proposal
+   * @returns Proof exchange record associated with the presentation request
    */
-  public async acceptProposal(options: AcceptProofProposalOptions): Promise<ProofExchangeRecord> {
-    const { proofRecordId } = options
-
-    const proofRecord = await this.getById(proofRecordId)
-
-    const service = this.getService(proofRecord.protocolVersion)
+  public async acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support presentation proposal or negotiation.`
       )
     }
 
-    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    // with version we can get the protocol
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const proofRequestFromProposalOptions: CreateProofRequestFromProposalOptions = {
+    const { message } = await protocol.acceptProposal(this.agentContext, {
       proofRecord,
-    }
-
-    const proofRequest = await service.createProofRequestFromProposal(
-      this.agentContext,
-      proofRequestFromProposalOptions
-    )
-
-    const requestOptions: CreateRequestAsResponseOptions<PFs> = {
-      proofRecord: proofRecord,
-      proofFormats: proofRequest.proofFormats,
+      proofFormats: options.proofFormats,
       goalCode: options.goalCode,
-      willConfirm: options.willConfirm ?? true,
+      willConfirm: options.willConfirm,
       comment: options.comment,
-    }
+      autoAcceptProof: options.autoAcceptProof,
+    })
 
-    const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
-
+    // send the message
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionRecord,
       associatedRecord: proofRecord,
     })
-    await this.messageSender.sendMessage(outboundMessageContext)
 
+    await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
   }
 
@@ -262,35 +215,33 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent request message
    */
-  public async negotiateProposal(options: NegotiateProposalOptions<PFs>): Promise<ProofExchangeRecord> {
-    const { proofRecordId } = options
-
-    const proofRecord = await this.getById(proofRecordId)
-
-    const service = this.getService(proofRecord.protocolVersion)
+  public async negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support negotiation.`
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support negotiation.`
       )
     }
 
-    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const requestOptions: CreateRequestAsResponseOptions<PFs> = {
+    const { message } = await protocol.negotiateProposal(this.agentContext, {
       proofRecord,
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
-    }
-    const { message } = await service.createRequestAsResponse(this.agentContext, requestOptions)
+      goalCode: options.goalCode,
+      willConfirm: options.willConfirm,
+    })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionRecord,
       associatedRecord: proofRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -305,30 +256,30 @@ export class ProofsApi<
    * @param options multiple properties like connection id, protocol version, proof Formats to build the proof request
    * @returns Proof record associated with the sent request message
    */
-  public async requestProof(options: RequestProofOptions<PFs, PSs>): Promise<ProofExchangeRecord> {
-    const service = this.getService(options.protocolVersion)
-
-    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+  public async requestProof(options: RequestProofOptions<PPs>): Promise<ProofExchangeRecord> {
+    const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    const protocol = this.getProtocol(options.protocolVersion)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const createProofRequest: CreateRequestOptions<PFs> = {
-      connectionRecord: connection,
+    const { message, proofRecord } = await protocol.createRequest(this.agentContext, {
+      connectionRecord,
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       parentThreadId: options.parentThreadId,
       comment: options.comment,
-    }
-    const { message, proofRecord } = await service.createRequest(this.agentContext, createProofRequest)
+      goalCode: options.goalCode,
+      willConfirm: options.willConfirm,
+    })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionRecord,
       associatedRecord: proofRecord,
     })
-    await this.messageSender.sendMessage(outboundMessageContext)
 
+    await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
   }
 
@@ -340,32 +291,31 @@ export class ProofsApi<
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptProofPresentationOptions<PFs>): Promise<ProofExchangeRecord> {
-    const { proofRecordId, proofFormats, comment } = options
+  public async acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
 
-    const record = await this.getById(proofRecordId)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
 
-    const service = this.getService(record.protocolVersion)
-
-    const presentationOptions: CreatePresentationOptions<PFs> = {
-      proofFormats,
-      proofRecord: record,
-      comment,
-    }
-    const { message, proofRecord } = await service.createPresentation(this.agentContext, presentationOptions)
-
-    const requestMessage = await service.findRequestMessage(this.agentContext, proofRecord.id)
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
 
     // Use connection if present
     if (proofRecord.connectionId) {
-      const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
       // Assert
-      connection.assertReady()
+      connectionRecord.assertReady()
+
+      const { message } = await protocol.acceptRequest(this.agentContext, {
+        proofFormats: options.proofFormats,
+        proofRecord,
+        comment: options.comment,
+        autoAcceptProof: options.autoAcceptProof,
+        goalCode: options.goalCode,
+      })
 
       const outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
-        connection,
+        connection: connectionRecord,
         associatedRecord: proofRecord,
       })
       await this.messageSender.sendMessage(outboundMessageContext)
@@ -377,20 +327,27 @@ export class ProofsApi<
     else if (requestMessage?.service) {
       // Create ~service decorator
       const routing = await this.routingService.getRouting(this.agentContext)
-      message.service = new ServiceDecorator({
+      const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-
       const recipientService = requestMessage.service
 
-      // Set and save ~service decorator to record (to remember our verkey)
+      const { message } = await protocol.acceptRequest(this.agentContext, {
+        proofFormats: options.proofFormats,
+        proofRecord,
+        comment: options.comment,
+        autoAcceptProof: options.autoAcceptProof,
+        goalCode: options.goalCode,
+      })
 
-      await service.saveOrUpdatePresentationMessage(this.agentContext, {
-        proofRecord: proofRecord,
-        message: message,
+      // Set and save ~service decorator to record (to remember our verkey)
+      message.service = ourService
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
+        agentMessage: message,
         role: DidCommMessageRole.Sender,
+        associatedRecordId: proofRecord.id,
       })
 
       await this.messageSender.sendMessageToService(
@@ -398,7 +355,7 @@ export class ProofsApi<
           agentContext: this.agentContext,
           serviceParams: {
             service: recipientService.resolvedDidCommService,
-            senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
             returnRoute: true,
           },
         })
@@ -414,36 +371,12 @@ export class ProofsApi<
     }
   }
 
-  /**
-   * Initiate a new presentation exchange as verifier by sending an out of band presentation
-   * request message
-   *
-   * @param options multiple properties like protocol version, proof Formats to build the proof request
-   * @returns the message itself and the proof record associated with the sent request message
-   */
-  public async createRequest(options: CreateProofRequestOptions<PFs, PSs>): Promise<{
-    message: AgentMessage
-    proofRecord: ProofExchangeRecord
-  }> {
-    const service = this.getService(options.protocolVersion)
-
-    const createProofRequest: CreateRequestOptions<PFs> = {
-      proofFormats: options.proofFormats,
-      autoAcceptProof: options.autoAcceptProof,
-      comment: options.comment,
-      parentThreadId: options.parentThreadId,
-    }
-
-    return await service.createRequest(this.agentContext, createProofRequest)
-  }
-
   public async declineRequest(proofRecordId: string): Promise<ProofExchangeRecord> {
     const proofRecord = await this.getById(proofRecordId)
-    const service = this.getService(proofRecord.protocolVersion)
-
     proofRecord.assertState(ProofState.RequestReceived)
 
-    await service.updateState(this.agentContext, proofRecord, ProofState.Declined)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
 
     return proofRecord
   }
@@ -456,41 +389,60 @@ export class ProofsApi<
    * to include in the message
    * @returns Proof record associated with the sent proposal message
    */
-  public async negotiateRequest(options: NegotiateRequestOptions<PFs>): Promise<ProofExchangeRecord> {
-    const { proofRecordId } = options
-    const proofRecord = await this.getById(proofRecordId)
-
-    const service = this.getService(proofRecord.protocolVersion)
+  public async negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
       throw new AriesFrameworkError(
-        `No connectionId found for proof record '${proofRecord.id}'. Connection-less issuance does not support presentation proposal or negotiation.`
+        `No connectionId found for proof record '${proofRecord.id}'. Connection-less verification does not support presentation proposal or negotiation.`
       )
     }
 
-    const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const proposalOptions: CreateProposalAsResponseOptions<PFs> = {
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    const { message } = await protocol.negotiateRequest(this.agentContext, {
       proofRecord,
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       goalCode: options.goalCode,
       comment: options.comment,
-    }
-
-    const { message } = await service.createProposalAsResponse(this.agentContext, proposalOptions)
+    })
 
     const outboundMessageContext = new OutboundMessageContext(message, {
       agentContext: this.agentContext,
-      connection,
+      connection: connectionRecord,
       associatedRecord: proofRecord,
     })
-    await this.messageSender.sendMessage(outboundMessageContext)
 
+    await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
+  }
+
+  /**
+   * Initiate a new presentation exchange as verifier by sending an out of band presentation
+   * request message
+   *
+   * @param options multiple properties like protocol version, proof Formats to build the proof request
+   * @returns the message itself and the proof record associated with the sent request message
+   */
+  public async createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
+    message: AgentMessage
+    proofRecord: ProofExchangeRecord
+  }> {
+    const protocol = this.getProtocol(options.protocolVersion)
+
+    return await protocol.createRequest(this.agentContext, {
+      proofFormats: options.proofFormats,
+      autoAcceptProof: options.autoAcceptProof,
+      comment: options.comment,
+      parentThreadId: options.parentThreadId,
+      goalCode: options.goalCode,
+      willConfirm: options.willConfirm,
+    })
   }
 
   /**
@@ -501,36 +453,41 @@ export class ProofsApi<
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
-  public async acceptPresentation(proofRecordId: string): Promise<ProofExchangeRecord> {
-    const record = await this.getById(proofRecordId)
-    const service = this.getService(record.protocolVersion)
+  public async acceptPresentation(options: AcceptProofOptions): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
 
-    const { message, proofRecord } = await service.createAck(this.agentContext, {
-      proofRecord: record,
-    })
-
-    const requestMessage = await service.findRequestMessage(this.agentContext, record.id)
-
-    const presentationMessage = await service.findPresentationMessage(this.agentContext, record.id)
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
+    const presentationMessage = await protocol.findPresentationMessage(this.agentContext, proofRecord.id)
 
     // Use connection if present
     if (proofRecord.connectionId) {
-      const connection = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
       // Assert
-      connection.assertReady()
+      connectionRecord.assertReady()
+
+      const { message } = await protocol.acceptPresentation(this.agentContext, {
+        proofRecord,
+      })
 
       const outboundMessageContext = new OutboundMessageContext(message, {
         agentContext: this.agentContext,
-        connection,
+        connection: connectionRecord,
         associatedRecord: proofRecord,
       })
       await this.messageSender.sendMessage(outboundMessageContext)
+
+      return proofRecord
     }
     // Use ~service decorator otherwise
     else if (requestMessage?.service && presentationMessage?.service) {
-      const recipientService = presentationMessage?.service
+      const recipientService = presentationMessage.service
       const ourService = requestMessage.service
+
+      const { message } = await protocol.acceptPresentation(this.agentContext, {
+        proofRecord,
+      })
 
       await this.messageSender.sendMessageToService(
         new OutboundMessageContext(message, {
@@ -542,6 +499,8 @@ export class ProofsApi<
           },
         })
       )
+
+      return proofRecord
     }
     // Cannot send message without credentialId or ~service decorator
     else {
@@ -549,8 +508,6 @@ export class ProofsApi<
         `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
       )
     }
-
-    return record
   }
 
   /**
@@ -561,39 +518,34 @@ export class ProofsApi<
    * @param options multiple properties like proof record id and optional configuration
    * @returns RequestedCredentials
    */
-  public async autoSelectCredentialsForProofRequest(
-    options: AutoSelectCredentialsForProofRequestOptions
-  ): Promise<FormatRequestedCredentialReturn<PFs>> {
+  public async selectCredentialsForRequest(
+    options: SelectCredentialsForProofRequestOptions<PPs>
+  ): Promise<SelectCredentialsForProofRequestReturn<PPs>> {
     const proofRecord = await this.getById(options.proofRecordId)
 
-    const service = this.getService(proofRecord.protocolVersion)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
 
-    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
-      await service.getRequestedCredentialsForProofRequest(this.agentContext, {
-        proofRecord: proofRecord,
-        config: options.config,
-      })
-    return await service.autoSelectCredentialsForProofRequest(retrievedCredentials)
+    return protocol.selectCredentialsForRequest(this.agentContext, {
+      proofFormats: options.proofFormats,
+      proofRecord,
+    })
   }
 
   /**
-   * Create a {@link RetrievedCredentials} object. Given input proof request and presentation proposal,
-   * use credentials in the wallet to build indy requested credentials object for input to proof creation.
-   *
-   * If restrictions allow, self attested attributes will be used.
+   * Get credentials in the wallet for a received proof request.
    *
    * @param options multiple properties like proof record id and optional configuration
-   * @returns RetrievedCredentials object
    */
-  public async getRequestedCredentialsForProofRequest(
-    options: GetRequestedCredentialsForProofRequest
-  ): Promise<FormatRetrievedCredentialOptions<PFs>> {
-    const record = await this.getById(options.proofRecordId)
-    const service = this.getService(record.protocolVersion)
+  public async getCredentialsForRequest(
+    options: GetCredentialsForProofRequestOptions<PPs>
+  ): Promise<GetCredentialsForProofRequestReturn<PPs>> {
+    const proofRecord = await this.getById(options.proofRecordId)
 
-    return await service.getRequestedCredentialsForProofRequest(this.agentContext, {
-      proofRecord: record,
-      config: options.config,
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+
+    return protocol.getCredentialsForRequest(this.agentContext, {
+      proofRecord,
+      proofFormats: options.proofFormats,
     })
   }
 
@@ -604,37 +556,38 @@ export class ProofsApi<
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(proofRecordId: string, message: string): Promise<ProofExchangeRecord> {
-    const record = await this.getById(proofRecordId)
-    const service = this.getService(record.protocolVersion)
-    if (!record.connectionId) {
-      throw new AriesFrameworkError(`No connectionId found for proof record '${record.id}'.`)
+  public async sendProblemReport(options: SendProofProblemReportOptions): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
+    if (!proofRecord.connectionId) {
+      throw new AriesFrameworkError(`No connectionId found for proof record '${proofRecord.id}'.`)
     }
-    const connection = await this.connectionService.getById(this.agentContext, record.connectionId)
+
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
     // Assert
-    connection.assertReady()
+    connectionRecord.assertReady()
 
-    const { message: problemReport } = await service.createProblemReport(this.agentContext, {
-      proofRecord: record,
-      description: message,
+    const { message: problemReport } = await protocol.createProblemReport(this.agentContext, {
+      proofRecord,
+      description: options.description,
     })
 
     const outboundMessageContext = new OutboundMessageContext(problemReport, {
       agentContext: this.agentContext,
-      connection,
-      associatedRecord: record,
+      connection: connectionRecord,
+      associatedRecord: proofRecord,
     })
-    await this.messageSender.sendMessage(outboundMessageContext)
 
-    return record
+    await this.messageSender.sendMessage(outboundMessageContext)
+    return proofRecord
   }
 
-  public async getFormatData(proofRecordId: string): Promise<GetFormatDataReturn<PFs>> {
+  public async getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>> {
     const proofRecord = await this.getById(proofRecordId)
-    const service = this.getService(proofRecord.protocolVersion)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
 
-    return service.getFormatData(this.agentContext, proofRecordId)
+    return protocol.getFormatData(this.agentContext, proofRecordId)
   }
 
   /**
@@ -685,8 +638,8 @@ export class ProofsApi<
    */
   public async deleteById(proofId: string, options?: DeleteProofOptions) {
     const proofRecord = await this.getById(proofId)
-    const service = this.getService(proofRecord.protocolVersion)
-    return service.delete(this.agentContext, proofRecord, options)
+    const protocol = this.getProtocol(proofRecord.protocolVersion)
+    return protocol.delete(this.agentContext, proofRecord, options)
   }
 
   /**
@@ -725,34 +678,21 @@ export class ProofsApi<
     await this.proofRepository.update(this.agentContext, proofRecord)
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PSs>> {
+  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PPs>> {
     const record = await this.getById(proofRecordId)
-    const service = this.getService(record.protocolVersion)
-    return service.findProposalMessage(this.agentContext, proofRecordId) as FindProofProposalMessageReturn<PSs>
+    const protocol = this.getProtocol(record.protocolVersion)
+    return protocol.findProposalMessage(this.agentContext, proofRecordId) as FindProofProposalMessageReturn<PPs>
   }
 
-  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PSs>> {
+  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PPs>> {
     const record = await this.getById(proofRecordId)
-    const service = this.getService(record.protocolVersion)
-    return service.findRequestMessage(this.agentContext, proofRecordId) as FindProofRequestMessageReturn<PSs>
+    const protocol = this.getProtocol(record.protocolVersion)
+    return protocol.findRequestMessage(this.agentContext, proofRecordId) as FindProofRequestMessageReturn<PPs>
   }
 
-  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PSs>> {
+  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PPs>> {
     const record = await this.getById(proofRecordId)
-    const service = this.getService(record.protocolVersion)
-    return service.findPresentationMessage(this.agentContext, proofRecordId) as FindProofPresentationMessageReturn<PSs>
-  }
-
-  private registerMessageHandlers(dispatcher: Dispatcher, mediationRecipientService: MediationRecipientService) {
-    for (const service of Object.values(this.serviceMap)) {
-      const proofService = service as ProofService
-      proofService.registerMessageHandlers(
-        dispatcher,
-        this.agentConfig,
-        new ProofResponseCoordinator(proofService),
-        mediationRecipientService,
-        this.routingService
-      )
-    }
+    const protocol = this.getProtocol(record.protocolVersion)
+    return protocol.findPresentationMessage(this.agentContext, proofRecordId) as FindProofPresentationMessageReturn<PPs>
   }
 }

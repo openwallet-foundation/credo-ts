@@ -1,8 +1,8 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { AcceptProofProposalOptions, NegotiateProposalOptions } from '../../../ProofsApiOptions'
+import type { AcceptProofProposalOptions, NegotiateProofProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { PresentationPreview } from '../models/V1PresentationPreview'
+import type { V1PresentationPreview } from '../models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
@@ -20,7 +20,7 @@ describe('Present Proof', () => {
   let aliceAgent: Agent
   let credDefId: CredDefId
   let aliceConnection: ConnectionRecord
-  let presentationPreview: PresentationPreview
+  let presentationPreview: V1PresentationPreview
   let faberProofExchangeRecord: ProofExchangeRecord
   let aliceProofExchangeRecord: ProofExchangeRecord
   let didCommMessageRepository: DidCommMessageRepository
@@ -54,7 +54,6 @@ describe('Present Proof', () => {
       proofFormats: {
         indy: {
           name: 'proof-request',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
           version: '1.0',
           attributes: presentationPreview.attributes.filter((attribute) => attribute.name !== 'name'),
           predicates: presentationPreview.predicates,
@@ -135,7 +134,7 @@ describe('Present Proof', () => {
       }),
     }
 
-    const requestProofAsResponseOptions: NegotiateProposalOptions = {
+    const requestProofAsResponseOptions: NegotiateProofProposalOptions = {
       proofRecordId: faberProofExchangeRecord.id,
       proofFormats: {
         indy: {
@@ -169,7 +168,7 @@ describe('Present Proof', () => {
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/request-presentation',
       id: expect.any(String),
-      requestPresentationAttachments: [
+      requestAttachments: [
         {
           id: 'libindy-request-presentation-0',
           mimeType: 'application/json',
@@ -200,7 +199,6 @@ describe('Present Proof', () => {
       proofFormats: {
         indy: {
           name: 'proof-request',
-          nonce: '58d223e5-fc4d-4448-b74c-5eb11c6b558f',
           version: '1.0',
           attributes: presentationPreview.attributes.filter((attribute) => attribute.name === 'name'),
           predicates: presentationPreview.predicates,
@@ -276,7 +274,7 @@ describe('Present Proof', () => {
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/request-presentation',
       id: expect.any(String),
-      requestPresentationAttachments: [
+      requestAttachments: [
         {
           id: 'libindy-request-presentation-0',
           mimeType: 'application/json',
@@ -296,9 +294,8 @@ describe('Present Proof', () => {
       protocolVersion: 'v1',
     })
 
-    const presentationProposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofExchangeRecord.id)
-
-    expect(presentationProposalMessage).toMatchObject({
+    const proposalMessage = await aliceAgent.proofs.findProposalMessage(aliceProofExchangeRecord.id)
+    expect(proposalMessage).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
       id: expect.any(String),
       comment: 'V1 propose proof test 2',
@@ -327,29 +324,31 @@ describe('Present Proof', () => {
       aliceProofExchangeRecord.id
     )) as V1RequestPresentationMessage
 
-    const predicateKey = proofRequestMessage.indyProofRequest?.requestedPredicates?.keys().next().value
-    const predicate = Object.values(predicates)[0]
-
+    const predicateKey = Object.keys(proofRequestMessage.indyProofRequest?.requested_predicates ?? {})[0]
     expect(proofRequestMessage.indyProofRequest).toMatchObject({
       name: 'Proof Request',
       version: '1.0',
-      requestedAttributes: new Map<string, ProofAttributeInfo>(
-        Object.entries({
-          '0': new ProofAttributeInfo({
-            name: 'name',
-            restrictions: [
-              new AttributeFilter({
-                credentialDefinitionId: credDefId,
-              }),
-            ],
-          }),
-        })
-      ),
-      requestedPredicates: new Map<string, ProofPredicateInfo>(
-        Object.entries({
-          [predicateKey]: predicate,
-        })
-      ),
+      requested_attributes: {
+        '0': {
+          name: 'name',
+          restrictions: [
+            {
+              cred_def_id: credDefId,
+            },
+          ],
+        },
+      },
+      requested_predicates: {
+        [predicateKey]: {
+          p_type: '>=',
+          p_value: 50,
+          restrictions: [
+            {
+              cred_def_id: credDefId,
+            },
+          ],
+        },
+      },
     })
   })
 })

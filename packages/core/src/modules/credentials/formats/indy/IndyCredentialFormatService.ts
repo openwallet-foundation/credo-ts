@@ -5,20 +5,20 @@ import type { CredentialPreviewAttributeOptions } from '../../models/CredentialP
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
-  FormatAcceptOfferOptions,
-  FormatAcceptProposalOptions,
-  FormatAcceptRequestOptions,
-  FormatAutoRespondCredentialOptions,
-  FormatAutoRespondOfferOptions,
-  FormatAutoRespondProposalOptions,
-  FormatAutoRespondRequestOptions,
-  FormatCreateOfferOptions,
-  FormatCreateOfferReturn,
-  FormatCreateProposalOptions,
-  FormatCreateProposalReturn,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
+  CredentialFormatCreateProposalOptions,
+  CredentialFormatCreateProposalReturn,
   CredentialFormatCreateReturn,
-  FormatProcessOptions,
-  FormatProcessCredentialOptions,
+  CredentialFormatProcessOptions,
+  CredentialFormatProcessCredentialOptions,
 } from '../CredentialFormatServiceOptions'
 import type * as Indy from 'indy-sdk'
 
@@ -62,10 +62,11 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    */
   public async createProposal(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord }: FormatCreateProposalOptions<IndyCredentialFormat>
-  ): Promise<FormatCreateProposalReturn> {
+    { credentialFormats, credentialRecord, attachmentId }: CredentialFormatCreateProposalOptions<IndyCredentialFormat>
+  ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
       format: INDY_CRED_FILTER,
+      attachmentId,
     })
 
     const indyFormat = credentialFormats.indy
@@ -86,7 +87,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     }
 
     const proposalJson = JsonTransformer.toJSON(proposal)
-    const attachment = this.getFormatData(proposalJson, format.attachId)
+    const attachment = this.getFormatData(proposalJson, format.attachmentId)
 
     const { previewAttributes } = this.getCredentialLinkedAttachments(
       indyFormat.attributes,
@@ -102,7 +103,10 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     return { format, attachment, previewAttributes }
   }
 
-  public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
+  public async processProposal(
+    agentContext: AgentContext,
+    { attachment }: CredentialFormatProcessOptions
+  ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
 
     // fromJSON also validates
@@ -112,12 +116,12 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
   public async acceptProposal(
     agentContext: AgentContext,
     {
-      attachId,
+      attachmentId,
       credentialFormats,
       credentialRecord,
       proposalAttachment,
-    }: FormatAcceptProposalOptions<IndyCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    }: CredentialFormatAcceptProposalOptions<IndyCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats?.indy
 
     const credentialProposal = JsonTransformer.fromJSON(proposalAttachment.getDataAsJson(), IndyCredPropose)
@@ -137,7 +141,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
       credentialRecord,
-      attachId,
+      attachmentId,
       attributes,
       credentialDefinitionId: credentialDefinitionId,
       linkedAttachments: indyFormat?.linkedAttachments,
@@ -155,8 +159,8 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord, attachId }: FormatCreateOfferOptions<IndyCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    { credentialFormats, credentialRecord, attachmentId }: CredentialFormatCreateOfferOptions<IndyCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
@@ -165,7 +169,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
       credentialRecord,
-      attachId,
+      attachmentId,
       attributes: indyFormat.attributes,
       credentialDefinitionId: indyFormat.credentialDefinitionId,
       linkedAttachments: indyFormat.linkedAttachments,
@@ -174,7 +178,10 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     return { format, attachment, previewAttributes }
   }
 
-  public async processOffer(agentContext: AgentContext, { attachment, credentialRecord }: FormatProcessOptions) {
+  public async processOffer(
+    agentContext: AgentContext,
+    { attachment, credentialRecord }: CredentialFormatProcessOptions
+  ) {
     agentContext.config.logger.debug(`Processing indy credential offer for credential record ${credentialRecord.id}`)
 
     const credOffer = attachment.getDataAsJson<Indy.CredOffer>()
@@ -188,7 +195,12 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord, attachId, offerAttachment }: FormatAcceptOfferOptions<IndyCredentialFormat>
+    {
+      credentialFormats,
+      credentialRecord,
+      attachmentId,
+      offerAttachment,
+    }: CredentialFormatAcceptOfferOptions<IndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const indyFormat = credentialFormats?.indy
 
@@ -219,11 +231,11 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     })
 
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: INDY_CRED_REQUEST,
     })
 
-    const attachment = this.getFormatData(credentialRequest, format.attachId)
+    const attachment = this.getFormatData(credentialRequest, format.attachmentId)
     return { format, attachment }
   }
 
@@ -238,13 +250,18 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: FormatProcessOptions): Promise<void> {
+  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for Indy
   }
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { credentialRecord, attachId, offerAttachment, requestAttachment }: FormatAcceptRequestOptions<IndyCredentialFormat>
+    {
+      credentialRecord,
+      attachmentId,
+      offerAttachment,
+      requestAttachment,
+    }: CredentialFormatAcceptRequestOptions<IndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
@@ -278,11 +295,11 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     }
 
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: INDY_CRED,
     })
 
-    const attachment = this.getFormatData(credential, format.attachId)
+    const attachment = this.getFormatData(credential, format.attachmentId)
     return { format, attachment }
   }
 
@@ -293,7 +310,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment }: FormatProcessCredentialOptions
+    { credentialRecord, attachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialRequestMetadata = credentialRecord.metadata.get(CredentialMetadataKeys.IndyRequest)
 
@@ -357,15 +374,15 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
   }
 
   /**
-   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
+   * Gets the attachment object for a given attachmentId. We need to get out the correct attachmentId for
    * indy and then find the corresponding attachment (if there is one)
-   * @param formats the formats object containing the attachId
+   * @param formats the formats object containing the attachmentId
    * @param messageAttachments the attachments containing the payload
    * @returns The Attachment if found or undefined
    *
    */
   public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
-    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
+    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachments = messageAttachments.filter((attachment) =>
       supportedAttachmentIds.includes(attachment.id)
     )
@@ -379,9 +396,9 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     await indyHolderService.deleteCredential(agentContext, credentialRecordId)
   }
 
-  public shouldAutoRespondToProposal(
+  public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     const credentialProposalJson = proposalAttachment.getDataAsJson()
     const credentialProposal = JsonTransformer.fromJSON(credentialProposalJson, IndyCredPropose)
@@ -394,9 +411,9 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     return credentialProposal.credentialDefinitionId === credentialOfferJson.cred_def_id
   }
 
-  public shouldAutoRespondToOffer(
+  public async shouldAutoRespondToOffer(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     const credentialProposalJson = proposalAttachment.getDataAsJson()
     const credentialProposal = JsonTransformer.fromJSON(credentialProposalJson, IndyCredPropose)
@@ -409,19 +426,19 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     return credentialProposal.credentialDefinitionId === credentialOfferJson.cred_def_id
   }
 
-  public shouldAutoRespondToRequest(
+  public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<Indy.CredOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<Indy.CredReq>()
 
-    return credentialOfferJson.cred_def_id == credentialRequestJson.cred_def_id
+    return credentialOfferJson.cred_def_id === credentialRequestJson.cred_def_id
   }
 
-  public shouldAutoRespondToCredential(
+  public async shouldAutoRespondToCredential(
     agentContext: AgentContext,
-    { credentialRecord, requestAttachment, credentialAttachment }: FormatAutoRespondCredentialOptions
+    { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<Indy.Cred>()
     const credentialRequestJson = requestAttachment.getDataAsJson<Indy.CredReq>()
@@ -441,23 +458,23 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
     agentContext: AgentContext,
     {
       credentialRecord,
-      attachId,
+      attachmentId,
       credentialDefinitionId,
       attributes,
       linkedAttachments,
     }: {
       credentialDefinitionId: string
       credentialRecord: CredentialExchangeRecord
-      attachId?: string
+      attachmentId?: string
       attributes: CredentialPreviewAttributeOptions[]
       linkedAttachments?: LinkedAttachment[]
     }
-  ): Promise<FormatCreateOfferReturn> {
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const indyIssuerService = agentContext.dependencyManager.resolve(IndyIssuerService)
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
-      attachId: attachId,
+      attachmentId,
       format: INDY_CRED_ABSTRACT,
     })
 
@@ -475,7 +492,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
       credentialDefinitionId: offer.cred_def_id,
     })
 
-    const attachment = this.getFormatData(offer, format.attachId)
+    const attachment = this.getFormatData(offer, format.attachmentId)
 
     return { format, attachment, previewAttributes }
   }
@@ -563,7 +580,7 @@ export class IndyCredentialFormatService implements CredentialFormatService<Indy
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
+  private getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({
       id,
       mimeType: 'application/json',

@@ -4,25 +4,25 @@ import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
 import type { ProblemReportMessage } from '../../../problem-reports'
+import type { GetCredentialFormatDataReturn } from '../../CredentialsApiOptions'
+import type { CredentialFormatService, ExtractCredentialFormats, IndyCredentialFormat } from '../../formats'
+import type { CredentialProtocol } from '../CredentialProtocol'
 import type {
   AcceptCredentialOptions,
-  AcceptOfferOptions,
-  AcceptProposalOptions,
-  AcceptRequestOptions,
-  CreateOfferOptions,
-  CreateProblemReportOptions,
-  CreateProposalOptions,
+  AcceptCredentialOfferOptions,
+  AcceptCredentialProposalOptions,
+  AcceptCredentialRequestOptions,
+  CreateCredentialOfferOptions,
+  CreateCredentialProblemReportOptions,
+  CreateCredentialProposalOptions,
   CredentialProtocolMsgReturnType,
-  NegotiateOfferOptions,
-  NegotiateProposalOptions,
-} from '../../CredentialProtocolOptions'
-import type { GetFormatDataReturn } from '../../CredentialsApiOptions'
-import type { CredentialFormatService, ExtractCredentialFormats, IndyCredentialFormat } from '../../formats'
+  NegotiateCredentialOfferOptions,
+  NegotiateCredentialProposalOptions,
+} from '../CredentialProtocolOptions'
 
 import { Protocol } from '../../../../agent/models/features'
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
-import { injectable } from '../../../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 import { JsonTransformer } from '../../../../utils'
 import { isLinkedAttachment } from '../../../../utils/attachment'
@@ -60,15 +60,19 @@ import {
 } from './messages'
 import { V1CredentialPreview } from './messages/V1CredentialPreview'
 
+type IndyCredentialFormatServiceLike = CredentialFormatService<IndyCredentialFormat>
+
 export interface V1CredentialProtocolConfig {
   // indyCredentialFormat must be a service that implements the `IndyCredentialFormat` interface, however it doesn't
   // have to be the IndyCredentialFormatService implementation per se.
-  indyCredentialFormat: CredentialFormatService<IndyCredentialFormat>
+  indyCredentialFormat: IndyCredentialFormatServiceLike
 }
 
-@injectable()
-export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialFormatService<IndyCredentialFormat>]> {
-  private indyCredentialFormat: CredentialFormatService<IndyCredentialFormat>
+export class V1CredentialProtocol
+  extends BaseCredentialProtocol<[IndyCredentialFormatServiceLike]>
+  implements CredentialProtocol<[IndyCredentialFormatServiceLike]>
+{
+  private indyCredentialFormat: IndyCredentialFormatServiceLike
 
   public constructor({ indyCredentialFormat }: V1CredentialProtocolConfig) {
     super()
@@ -77,7 +81,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
   }
 
   /**
-   * The version of the issue credential protocol this service supports
+   * The version of the issue credential protocol this protocol supports
    */
   public readonly version = 'v1'
 
@@ -115,11 +119,11 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
   public async createProposal(
     agentContext: AgentContext,
     {
-      connection,
+      connectionRecord,
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: CreateProposalOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: CreateCredentialProposalOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
     this.assertOnlyIndyFormat(credentialFormats)
 
@@ -136,11 +140,11 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
 
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
-      connectionId: connection.id,
+      connectionId: connectionRecord.id,
       threadId: uuid(),
       state: CredentialState.ProposalSent,
       linkedAttachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
-      autoAcceptCredential: autoAcceptCredential,
+      autoAcceptCredential,
       protocolVersion: 'v1',
     })
 
@@ -218,18 +222,18 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.OfferSent)
 
-      const proposalCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
       })
-      const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
       })
 
       connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalCredentialMessage ?? undefined,
-        previousSentMessage: offerCredentialMessage ?? undefined,
+        previousReceivedMessage,
+        previousSentMessage,
       })
 
       await this.indyCredentialFormat.processProposal(messageContext.agentContext, {
@@ -287,7 +291,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: AcceptProposalOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: AcceptCredentialProposalOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
@@ -307,7 +311,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     const { attachment, previewAttributes } = await this.indyCredentialFormat.acceptProposal(agentContext, {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
       proposalAttachment: new Attachment({
@@ -349,7 +353,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
    * Negotiate a credential proposal as issuer (by sending a credential offer message) to the connection
    * associated with the credential record.
    *
-   * @param options configuration for the offer see {@link NegotiateProposalOptions}
+   * @param options configuration for the offer see {@link NegotiateCredentialProposalOptions}
    * @returns Credential record associated with the credential offer and the corresponding new offer message
    *
    */
@@ -360,17 +364,17 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialRecord,
       comment,
       autoAcceptCredential,
-    }: NegotiateProposalOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: NegotiateCredentialProposalOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.ProposalReceived)
-    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
+    this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const { attachment, previewAttributes } = await this.indyCredentialFormat.createOffer(agentContext, {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
     })
@@ -416,11 +420,11 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialFormats,
       autoAcceptCredential,
       comment,
-      connection,
-    }: CreateOfferOptions<[CredentialFormatService<IndyCredentialFormat>]>
+      connectionRecord,
+    }: CreateCredentialOfferOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
-    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
+    this.assertOnlyIndyFormat(credentialFormats)
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -431,7 +435,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
 
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
-      connectionId: connection?.id,
+      connectionId: connectionRecord?.id,
       threadId: uuid(),
       linkedAttachments: credentialFormats.indy.linkedAttachments?.map(
         (linkedAttachments) => linkedAttachments.attachment
@@ -442,7 +446,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     })
 
     const { attachment, previewAttributes } = await this.indyCredentialFormat.createOffer(agentContext, {
-      attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+      attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
     })
@@ -499,11 +503,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
 
     agentContext.config.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(
-      messageContext.agentContext,
-      offerMessage.threadId,
-      connection?.id
-    )
+    let credentialRecord = await this.findByThreadAndConnectionId(agentContext, offerMessage.threadId, connection?.id)
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
     if (!offerAttachment) {
@@ -513,11 +513,11 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     }
 
     if (credentialRecord) {
-      const proposalCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
       })
-      const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
       })
@@ -526,8 +526,8 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.ProposalSent)
       connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: offerCredentialMessage ?? undefined,
-        previousSentMessage: proposalCredentialMessage ?? undefined,
+        previousReceivedMessage,
+        previousSentMessage,
       })
 
       await this.indyCredentialFormat.processOffer(messageContext.agentContext, {
@@ -587,7 +587,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: AcceptOfferOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: AcceptCredentialOfferOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
     credentialRecord.assertProtocolVersion('v1')
@@ -610,7 +610,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     const { attachment } = await this.indyCredentialFormat.acceptOffer(agentContext, {
       credentialRecord,
       credentialFormats,
-      attachId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+      attachmentId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
       offerAttachment,
     })
 
@@ -654,7 +654,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialRecord,
       autoAcceptCredential,
       comment,
-    }: NegotiateOfferOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: NegotiateCredentialOfferOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
@@ -670,7 +670,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     }
 
     if (!credentialFormats.indy) {
-      throw new AriesFrameworkError('Missing indy credential format in v1 create proposal call.')
+      throw new AriesFrameworkError('Missing indy credential format in v1 negotiate proposal call.')
     }
 
     const { linkedAttachments } = credentialFormats.indy
@@ -808,11 +808,12 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: AcceptRequestOptions<[CredentialFormatService<IndyCredentialFormat>]>
+    }: AcceptCredentialRequestOptions<[IndyCredentialFormatServiceLike]>
   ): Promise<CredentialProtocolMsgReturnType<V1IssueCredentialMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.RequestReceived)
+    if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -834,17 +835,17 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
       )
     }
 
-    const { attachment: credentialsAttach } = await this.indyCredentialFormat.acceptRequest(agentContext, {
+    const { attachment } = await this.indyCredentialFormat.acceptRequest(agentContext, {
       credentialRecord,
       requestAttachment,
       offerAttachment,
-      attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+      attachmentId: INDY_CREDENTIAL_ATTACHMENT_ID,
       credentialFormats,
     })
 
     const issueMessage = new V1IssueCredentialMessage({
       comment,
-      credentialAttachments: [credentialsAttach],
+      credentialAttachments: [attachment],
       attachments: credentialRecord.linkedAttachments,
     })
 
@@ -902,8 +903,8 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.RequestSent)
     connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: offerCredentialMessage ?? undefined,
-      previousSentMessage: requestCredentialMessage ?? undefined,
+      previousReceivedMessage: offerCredentialMessage,
+      previousSentMessage: requestCredentialMessage,
     })
 
     const issueAttachment = issueMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
@@ -1014,13 +1015,18 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
    * @returns a {@link V1CredentialProblemReportMessage}
    *
    */
-  public createProblemReport(agentContext: AgentContext, options: CreateProblemReportOptions): ProblemReportMessage {
-    return new V1CredentialProblemReportMessage({
+  public async createProblemReport(
+    agentContext: AgentContext,
+    { credentialRecord, description }: CreateCredentialProblemReportOptions
+  ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>> {
+    const message = new V1CredentialProblemReportMessage({
       description: {
-        en: options.message,
+        en: description,
         code: CredentialProblemReportReason.IssuanceAbandoned,
       },
     })
+
+    return { message, credentialRecord }
   }
 
   // AUTO RESPOND METHODS
@@ -1215,7 +1221,7 @@ export class V1CredentialProtocol extends BaseCredentialProtocol<[CredentialForm
   public async getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<[CredentialFormatService<IndyCredentialFormat>]>>> {
+  ): Promise<GetCredentialFormatDataReturn<ExtractCredentialFormats<[IndyCredentialFormatServiceLike]>>> {
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, offerMessage, requestMessage, credentialMessage] = await Promise.all([
       this.findProposalMessage(agentContext, credentialExchangeId),
