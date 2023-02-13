@@ -25,15 +25,15 @@ import {
   CredentialProblemReportReason,
   CredentialsModuleConfig,
   AutoAcceptCredential,
+  utils,
+  DidCommMessageRepository,
+  DidCommMessageRole,
+  BaseCredentialProtocol,
+  isLinkedAttachment,
 } from '@aries-framework/core'
-import { BaseCredentialProtocol } from '@aries-framework/core/src/modules/credentials/protocol/BaseCredentialProtocol'
-import { composeAutoAccept } from '@aries-framework/core/src/modules/credentials/util/composeAutoAccept'
-import { arePreviewAttributesEqual } from '@aries-framework/core/src/modules/credentials/util/previewAttributes'
-import { DidCommMessageRepository, DidCommMessageRole } from '@aries-framework/core/src/storage'
-import { isLinkedAttachment } from '@aries-framework/core/src/utils/attachment'
-import { uuid } from '@aries-framework/core/src/utils/uuid'
 
 import { AnonCredsCredentialProposal } from '../../../models/AnonCredsCredentialProposal'
+import { composeCredentialAutoAccept, areCredentialPreviewAttributesEqual } from '../../../utils'
 
 import {
   V1ProposeCredentialHandler,
@@ -135,7 +135,7 @@ export class V1CredentialProtocol
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
       connectionId: connectionRecord.id,
-      threadId: uuid(),
+      threadId: utils.uuid(),
       state: CredentialState.ProposalSent,
       linkedAttachments: linkedAttachments?.map((linkedAttachment) => linkedAttachment.attachment),
       autoAcceptCredential,
@@ -430,7 +430,7 @@ export class V1CredentialProtocol
     // Create record
     const credentialRecord = new CredentialExchangeRecord({
       connectionId: connectionRecord?.id,
-      threadId: uuid(),
+      threadId: utils.uuid(),
       linkedAttachments: credentialFormats.indy.linkedAttachments?.map(
         (linkedAttachments) => linkedAttachments.attachment
       ),
@@ -1037,7 +1037,7 @@ export class V1CredentialProtocol
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(CredentialsModuleConfig)
 
-    const autoAccept = composeAutoAccept(
+    const autoAccept = composeCredentialAutoAccept(
       credentialRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
@@ -1059,7 +1059,7 @@ export class V1CredentialProtocol
     if (credentialOfferJson.cred_def_id !== proposalMessage.credentialDefinitionId) return false
 
     // Check if preview values match
-    return arePreviewAttributesEqual(
+    return areCredentialPreviewAttributesEqual(
       proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
@@ -1076,7 +1076,7 @@ export class V1CredentialProtocol
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(CredentialsModuleConfig)
 
-    const autoAccept = composeAutoAccept(
+    const autoAccept = composeCredentialAutoAccept(
       credentialRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
@@ -1098,7 +1098,7 @@ export class V1CredentialProtocol
     if (credentialOfferJson.cred_def_id !== proposalMessage.credentialDefinitionId) return false
 
     // Check if preview values match
-    return arePreviewAttributesEqual(
+    return areCredentialPreviewAttributesEqual(
       proposalMessage.credentialPreview.attributes,
       offerMessage.credentialPreview.attributes
     )
@@ -1115,7 +1115,7 @@ export class V1CredentialProtocol
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(CredentialsModuleConfig)
 
-    const autoAccept = composeAutoAccept(
+    const autoAccept = composeCredentialAutoAccept(
       credentialRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
@@ -1150,7 +1150,7 @@ export class V1CredentialProtocol
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(CredentialsModuleConfig)
 
-    const autoAccept = composeAutoAccept(
+    const autoAccept = composeCredentialAutoAccept(
       credentialRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )

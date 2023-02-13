@@ -1,27 +1,27 @@
+import type { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
+import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@aries-framework/core'
+
 import {
   CredentialRepository,
   DidCommMessageRepository,
   RoutingService,
   ConnectionService,
   Dispatcher,
+  EventEmitter,
   DidExchangeState,
   Attachment,
   AttachmentData,
   CredentialState,
   CredentialFormatSpec,
   CredentialExchangeRecord,
-  CredentialStateChangedEvent,
   CredentialEventTypes,
-  CreateCredentialOfferOptions,
   JsonTransformer,
   InboundMessageContext,
-  EventEmitter,
 } from '@aries-framework/core'
-import { CreateCredentialProposalOptions } from '@aries-framework/core/src/modules/credentials/protocol/CredentialProtocolOptions'
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '@aries-framework/core/tests/helpers'
-import { Subject } from 'rxjs'
-import { V1CredentialPreview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
+
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { V1CredentialProtocol } from '../V1CredentialProtocol'
+import { V1CredentialPreview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
@@ -115,7 +115,9 @@ describe('V1CredentialProtocolProposeOffer', () => {
   })
 
   describe('createProposal', () => {
-    const proposeOptions: CreateCredentialProposalOptions<[IndyCredentialFormatService]> = {
+    const proposeOptions: CredentialProtocolOptions.CreateCredentialProposalOptions<
+      [LegacyIndyCredentialFormatService]
+    > = {
       connectionRecord: connectionRecord,
       credentialFormats: {
         indy: {
@@ -228,7 +230,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
   })
 
   describe('createOffer', () => {
-    const offerOptions: CreateCredentialOfferOptions<[IndyCredentialFormatService]> = {
+    const offerOptions: CredentialProtocolOptions.CreateCredentialOfferOptions<[LegacyIndyCredentialFormatService]> = {
       comment: 'some comment',
       connectionRecord,
       credentialFormats: {

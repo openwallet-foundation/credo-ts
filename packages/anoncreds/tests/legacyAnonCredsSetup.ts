@@ -307,7 +307,7 @@ export async function setupAnonCredsTests({
   verifierAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await verifierAgent.initialize()
 
-  const { credentialDefinition } = await prepareForAnonCredsIssuance(issuerAgent, {
+  const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
     // TODO: replace with more dynamic / generic value We should create a did using the dids module
     // and use that probably
@@ -346,6 +346,7 @@ export async function setupAnonCredsTests({
     verifierReplay,
 
     credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+    schemaId: schema.schemaId,
 
     issuerHolderConnectionId: issuerHolderConnection.id,
     holderIssuerConnectionId: holderIssuerConnection.id,

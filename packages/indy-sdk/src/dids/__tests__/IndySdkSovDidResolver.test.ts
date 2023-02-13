@@ -2,7 +2,7 @@ import type { IndySdkPool } from '../../ledger'
 import type { IndyEndpointAttrib } from '../didSovUtil'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { IndyPoolService, SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
+import { SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
 import { parseDid } from '@aries-framework/core/src/modules/dids/domain/parse'
 import { mockFunction, getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
 import indySdk from 'indy-sdk'
@@ -17,10 +17,10 @@ import didSovWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didSovWJz9mHyW9B
 
 jest.mock('../../ledger/IndySdkPoolService')
 const IndySdkPoolServiceMock = IndySdkPoolService as jest.Mock<IndySdkPoolService>
-const indyPoolServiceMock = new IndySdkPoolServiceMock()
+const indySdkPoolServiceMock = new IndySdkPoolServiceMock()
 
-mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
-  config: { id: 'pool1', indyNamespace: 'pool1' },
+mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue({
+  config: { indyNamespace: 'pool1' },
 } as IndySdkPool)
 
 const agentConfig = getAgentConfig('IndySdkSovDidResolver')
@@ -31,7 +31,7 @@ const agentContext = getAgentContext({
   wallet,
   agentConfig,
   registerInstances: [
-    [IndyPoolService, indyPoolServiceMock],
+    [IndySdkPoolService, indySdkPoolServiceMock],
     [IndySdkSymbol, indySdk],
   ],
 })

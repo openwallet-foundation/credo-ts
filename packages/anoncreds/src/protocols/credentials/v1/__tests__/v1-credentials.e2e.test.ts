@@ -1,12 +1,15 @@
-import type { Agent } from '../../../../../agent/Agent'
-import type { ConnectionRecord } from '../../../../connections'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { setupCredentialTests, waitForCredentialRecord } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { DidCommMessageRepository } from '../../../../../storage'
-import { JsonTransformer } from '../../../../../utils'
-import { CredentialState } from '../../../models/CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import {
+  CredentialExchangeRecord,
+  CredentialState,
+  DidCommMessageRepository,
+  JsonTransformer,
+} from '@aries-framework/core/src'
+import { waitForCredentialRecord } from '@aries-framework/core/tests/helpers'
+import testLogger from '@aries-framework/core/tests/logger'
+
+import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import {
   V1ProposeCredentialMessage,
   V1RequestCredentialMessage,
@@ -15,19 +18,24 @@ import {
   V1CredentialPreview,
 } from '../messages'
 
-describe('v1 credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let credDefId: string
-  let aliceConnection: ConnectionRecord
-  let aliceCredentialRecord: CredentialExchangeRecord
-  let faberCredentialRecord: CredentialExchangeRecord
+describe('V1 Credentials', () => {
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
+  let credentialDefinitionId: string
+  let aliceConnectionId: string
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, aliceConnection } = await setupCredentialTests(
-      'Faber Agent Credentials v1',
-      'Alice Agent Credentials v1'
-    ))
+    ;({
+      issuerAgent: faberAgent,
+      holderAgent: aliceAgent,
+      credentialDefinitionId,
+      holderIssuerConnectionId: aliceConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber Agent Credentials V1',
+      holderName: 'Alice Agent Credentials V1',
+      // Not needed for this test
+      verifierName: 'Verifier Agent Credentials V1',
+    }))
   })
 
   afterAll(async () => {
@@ -48,7 +56,7 @@ describe('v1 credentials', () => {
     testLogger.test('Alice sends (v1) credential proposal to Faber')
 
     const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       credentialFormats: {
         indy: {
@@ -65,14 +73,14 @@ describe('v1 credentials', () => {
     })
 
     expect(credentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       state: CredentialState.ProposalSent,
       threadId: expect.any(String),
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
-    faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
+    let faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
@@ -83,14 +91,14 @@ describe('v1 credentials', () => {
       comment: 'V1 Indy Proposal',
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
       },
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
-    aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+    let aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
@@ -152,7 +160,7 @@ describe('v1 credentials', () => {
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       state: CredentialState.RequestSent,
       threadId: expect.any(String),

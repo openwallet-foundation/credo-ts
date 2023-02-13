@@ -3,7 +3,6 @@ import type { Wallet, DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
   DidRepository,
-  IndyPoolService,
   SigningProviderRegistry,
   JsonTransformer,
   DidDocumentRole,
@@ -22,10 +21,10 @@ import { IndySdkSovDidRegistrar } from '../IndySdkSovDidRegistrar'
 
 jest.mock('../../ledger/IndySdkPoolService')
 const IndySdkPoolServiceMock = IndySdkPoolService as jest.Mock<IndySdkPoolService>
-const indyPoolServiceMock = new IndySdkPoolServiceMock()
+const indySdkPoolServiceMock = new IndySdkPoolServiceMock()
 
-mockFunction(indyPoolServiceMock.getPoolForNamespace).mockReturnValue({
-  config: { id: 'pool1', indyNamespace: 'pool1' },
+mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue({
+  config: { indyNamespace: 'pool1' },
 } as IndySdkPool)
 
 const agentConfig = getAgentConfig('IndySdkSovDidRegistrar')
@@ -39,7 +38,7 @@ const agentContext = getAgentContext({
   wallet,
   registerInstances: [
     [DidRepository, didRepository],
-    [IndyPoolService, indyPoolServiceMock],
+    [IndySdkPoolService, indySdkPoolServiceMock],
     [IndySdkSymbol, indySdk],
   ],
   agentConfig,

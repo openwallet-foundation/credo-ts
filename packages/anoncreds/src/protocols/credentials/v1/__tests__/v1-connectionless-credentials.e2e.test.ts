@@ -1,23 +1,22 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../CredentialsApiOptions'
-
+import {
+  AcceptCredentialOfferOptions,
+  AcceptCredentialRequestOptions,
+  Agent,
+  AutoAcceptCredential,
+  CredentialEventTypes,
+  CredentialExchangeRecord,
+  CredentialState,
+  CredentialStateChangedEvent,
+} from '@aries-framework/core'
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import {
-  prepareForIndyIssuance,
-  waitForCredentialRecordSubject,
-  getAgentOptions,
-} from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { Agent } from '../../../../../agent/Agent'
-import { CredentialEventTypes } from '../../../CredentialEvents'
-import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
-import { CredentialState } from '../../../models/CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V1CredentialPreview } from '../messages/V1CredentialPreview'
+import { SubjectInboundTransport, SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
+
+import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
+import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../core/tests/helpers'
+import testLogger from '../../../../../../core/tests/logger'
+import { prepareForAnonCredsIssuance } from '../../../../../tests/legacyAnonCredsSetup'
+import { V1CredentialPreview } from '../messages'
 
 const faberAgentOptions = getAgentOptions('Faber connection-less Credentials V1', {
   endpoints: ['rxjs:faber'],
@@ -57,8 +56,11 @@ describe('V1 Connectionless Credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIndyIssuance(faberAgent, ['name', 'age'])
-    credentialDefinitionId = definition.id
+    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+      attributeNames: ['name', 'age'],
+      issuerId: faberAgent.publicDid?.did as string,
+    })
+    credentialDefinitionId = credentialDefinition.credentialDefinitionId
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
     aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()

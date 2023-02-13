@@ -10,14 +10,13 @@ import { Protocol } from '../../agent/models'
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
-import { V1CredentialProtocol } from './protocol/v1'
 import { V2CredentialProtocol } from './protocol/v2'
 import { CredentialRepository } from './repository'
 
 /**
  * Default credentialProtocols that will be registered if the `credentialProtocols` property is not configured.
  */
-export type DefaultCredentialProtocols = [V1CredentialProtocol, V2CredentialProtocol<[]>]
+export type DefaultCredentialProtocols = [V2CredentialProtocol<[]>]
 
 // CredentialsModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
 export type CredentialsModuleOptions<CredentialProtocols extends CredentialProtocol[]> = Optional<
