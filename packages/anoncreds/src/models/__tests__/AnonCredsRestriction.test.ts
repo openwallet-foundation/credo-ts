@@ -70,9 +70,9 @@ describe('AnonCredsRestriction', () => {
       restrictions: [
         {
           'attr::test_prop::value': 'test_value',
-          //   'attr::test_prop2::value': 'test_value2',
-          //   'attr::test_prop::marker': '1',
-          //   'attr::test_prop2::marker': '1',
+          'attr::test_prop2::value': 'test_value2',
+          'attr::test_prop::marker': '1',
+          'attr::test_prop2::marker': '1',
         },
       ],
     })
