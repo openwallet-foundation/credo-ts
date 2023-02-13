@@ -22,7 +22,7 @@ export class IndyVdrModule implements Module {
       try {
         require('@hyperledger/indy-vdr-react-native')
       } catch (error) {
-        throw new Error('Error registering nodejs bindings for Indy VDR')
+        throw new Error('Error registering bindings for Indy VDR')
       }
     }
 
