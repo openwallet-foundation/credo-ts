@@ -1,3 +1,4 @@
+import type { AnonCredsRequestedAttributeOptions } from './AnonCredsRequestedAttribute'
 import type { AnonCredsRequestedPredicateOptions } from './AnonCredsRequestedPredicate'
 
 import { IndyRevocationInterval } from '@aries-framework/core'
@@ -16,7 +17,7 @@ export interface AnonCredsProofRequestOptions {
   nonce: string
   nonRevoked?: AnonCredsRevocationInterval
   ver?: '1.0' | '2.0'
-  requestedAttributes?: Record<string, AnonCredsRequestedAttribute>
+  requestedAttributes?: Record<string, AnonCredsRequestedAttributeOptions>
   requestedPredicates?: Record<string, AnonCredsRequestedPredicateOptions>
 }
 

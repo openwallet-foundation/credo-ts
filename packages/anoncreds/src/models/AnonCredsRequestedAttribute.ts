@@ -1,11 +1,20 @@
+import type { AnonCredsRestrictionOptions } from './AnonCredsRestriction'
+
 import { Expose, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator'
 
 import { AnonCredsRestriction, AnonCredsRestrictionTransformer } from './AnonCredsRestriction'
 import { AnonCredsRevocationInterval } from './AnonCredsRevocationInterval'
 
+export interface AnonCredsRequestedAttributeOptions {
+  name?: string
+  names?: string[]
+  nonRevoked?: AnonCredsRevocationInterval
+  restrictions?: AnonCredsRestrictionOptions[]
+}
+
 export class AnonCredsRequestedAttribute {
-  public constructor(options: AnonCredsRequestedAttribute) {
+  public constructor(options: AnonCredsRequestedAttributeOptions) {
     if (options) {
       this.name = options.name
       this.names = options.names
