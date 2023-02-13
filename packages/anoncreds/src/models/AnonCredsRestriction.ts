@@ -1,8 +1,21 @@
 import { Exclude, Expose, Transform, TransformationType } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
+export interface AnonCredsRestrictionOptions {
+  schemaId?: string
+  schemaIssuerDid?: string
+  schemaIssuerId?: string
+  schemaName?: string
+  schemaVersion?: string
+  issuerDid?: string
+  issuerId?: string
+  credentialDefinitionId?: string
+  attributeMarkers?: Record<string, true>
+  attributeValues?: Record<string, string>
+}
+
 export class AnonCredsRestriction {
-  public constructor(options: AnonCredsRestriction) {
+  public constructor(options: AnonCredsRestrictionOptions) {
     if (options) {
       this.schemaId = options.schemaId
       this.schemaIssuerDid = options.schemaIssuerDid
@@ -12,8 +25,8 @@ export class AnonCredsRestriction {
       this.issuerDid = options.issuerDid
       this.issuerId = options.issuerId
       this.credentialDefinitionId = options.credentialDefinitionId
-      this.attributeMarkers = options.attributeMarkers
-      this.attributeValues = options.attributeValues
+      this.attributeMarkers = options.attributeMarkers ?? {}
+      this.attributeValues = options.attributeValues ?? {}
     }
   }
 

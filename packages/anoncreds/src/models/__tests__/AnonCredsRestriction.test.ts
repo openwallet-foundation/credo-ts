@@ -77,4 +77,69 @@ describe('AnonCredsRestriction', () => {
       ],
     })
   })
+
+  test('transforms properties from and to json with correct casing', () => {
+    const restrictions = new Wrapper({
+      restrictions: [
+        new AnonCredsRestriction({
+          credentialDefinitionId: 'credentialDefinitionId',
+          issuerDid: 'issuerDid',
+          issuerId: 'issuerId',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          schemaId: 'schemaId',
+          schemaIssuerDid: 'schemaIssuerDid',
+          schemaIssuerId: 'schemaIssuerId',
+        }),
+      ],
+    })
+
+    expect(JsonTransformer.toJSON(restrictions)).toMatchObject({
+      restrictions: [
+        {
+          cred_def_id: 'credentialDefinitionId',
+          issuer_did: 'issuerDid',
+          issuer_id: 'issuerId',
+          schema_name: 'schemaName',
+          schema_version: 'schemaVersion',
+          schema_id: 'schemaId',
+          schema_issuer_did: 'schemaIssuerDid',
+          schema_issuer_id: 'schemaIssuerId',
+        },
+      ],
+    })
+
+    expect(
+      JsonTransformer.fromJSON(
+        {
+          restrictions: [
+            {
+              cred_def_id: 'credentialDefinitionId',
+              issuer_did: 'issuerDid',
+              issuer_id: 'issuerId',
+              schema_name: 'schemaName',
+              schema_version: 'schemaVersion',
+              schema_id: 'schemaId',
+              schema_issuer_did: 'schemaIssuerDid',
+              schema_issuer_id: 'schemaIssuerId',
+            },
+          ],
+        },
+        Wrapper
+      )
+    ).toMatchObject({
+      restrictions: [
+        {
+          credentialDefinitionId: 'credentialDefinitionId',
+          issuerDid: 'issuerDid',
+          issuerId: 'issuerId',
+          schemaName: 'schemaName',
+          schemaVersion: 'schemaVersion',
+          schemaId: 'schemaId',
+          schemaIssuerDid: 'schemaIssuerDid',
+          schemaIssuerId: 'schemaIssuerId',
+        },
+      ],
+    })
+  })
 })

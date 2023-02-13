@@ -1,3 +1,5 @@
+import type { AnonCredsRestrictionOptions } from './AnonCredsRestriction'
+
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsIn, IsInstance, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -12,7 +14,7 @@ export interface AnonCredsRequestedPredicateOptions {
   predicateType: AnonCredsPredicateType
   predicateValue: number
   nonRevoked?: AnonCredsRevocationInterval
-  restrictions?: AnonCredsRestriction[]
+  restrictions?: AnonCredsRestrictionOptions[]
 }
 
 export class AnonCredsRequestedPredicate {
