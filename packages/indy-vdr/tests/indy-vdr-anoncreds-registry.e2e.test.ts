@@ -1,21 +1,15 @@
 import { Agent } from '@aries-framework/core'
 
-import { agentDependencies, genesisTransactions, getAgentConfig } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { IndyVdrPoolService } from '../src/pool'
+
+import { indyVdrModuleConfig } from './helpers'
 
 const agentConfig = getAgentConfig('IndyVdrAnonCredsRegistry')
 
 // TODO: update to module once available
-const indyVdrPoolService = new IndyVdrPoolService(agentConfig.logger)
-indyVdrPoolService.setPools([
-  {
-    genesisTransactions,
-    indyNamespace: 'local:test',
-    isProduction: false,
-    transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
-  },
-])
+const indyVdrPoolService = new IndyVdrPoolService(agentConfig.logger, indyVdrModuleConfig)
 
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 
@@ -47,7 +41,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
 
     const schemaResult = await indyVdrAnonCredsRegistry.registerSchema(agent.context, {
       options: {
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
       },
       schema: {
         attrNames: ['age'],
@@ -71,7 +65,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
       schemaMetadata: {
         indyLedgerSeqNo: expect.any(Number),
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
       },
     })
 
@@ -89,7 +83,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
       resolutionMetadata: {},
       schemaMetadata: {
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
         indyLedgerSeqNo: expect.any(Number),
       },
     })
@@ -116,13 +110,13 @@ describe('IndyVdrAnonCredsRegistry', () => {
         },
       },
       options: {
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
       },
     })
 
     expect(credentialDefinitionResult).toMatchObject({
       credentialDefinitionMetadata: {
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
       },
       credentialDefinitionState: {
         credentialDefinition: {
@@ -182,7 +176,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
         },
       },
       credentialDefinitionMetadata: {
-        didIndyNamespace: 'local:test',
+        didIndyNamespace: 'pool:localtest',
       },
       resolutionMetadata: {},
     })

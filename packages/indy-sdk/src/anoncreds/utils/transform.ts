@@ -63,12 +63,14 @@ export function anonCredsRevocationRegistryDefinitionFromIndySdk(
   return {
     issuerId,
     credDefId: revocationRegistryDefinition.credDefId,
-    maxCredNum: revocationRegistryDefinition.value.maxCredNum,
-    publicKeys: revocationRegistryDefinition.value.publicKeys,
+    value: {
+      maxCredNum: revocationRegistryDefinition.value.maxCredNum,
+      publicKeys: revocationRegistryDefinition.value.publicKeys,
+      tailsHash: revocationRegistryDefinition.value.tailsHash,
+      tailsLocation: revocationRegistryDefinition.value.tailsLocation,
+    },
     tag: revocationRegistryDefinition.tag,
-    tailsHash: revocationRegistryDefinition.value.tailsHash,
-    tailsLocation: revocationRegistryDefinition.value.tailsLocation,
-    type: 'CL_ACCUM',
+    revocDefType: 'CL_ACCUM',
   }
 }
 
@@ -79,14 +81,14 @@ export function indySdkRevocationRegistryDefinitionFromAnonCreds(
   return {
     id: revocationRegistryDefinitionId,
     credDefId: revocationRegistryDefinition.credDefId,
-    revocDefType: revocationRegistryDefinition.type,
+    revocDefType: revocationRegistryDefinition.revocDefType,
     tag: revocationRegistryDefinition.tag,
     value: {
       issuanceType: 'ISSUANCE_BY_DEFAULT', // NOTE: we always use ISSUANCE_BY_DEFAULT when passing to the indy-sdk. It doesn't matter, as we have the revocation List with the full state
-      maxCredNum: revocationRegistryDefinition.maxCredNum,
-      publicKeys: revocationRegistryDefinition.publicKeys,
-      tailsHash: revocationRegistryDefinition.tailsHash,
-      tailsLocation: revocationRegistryDefinition.tailsLocation,
+      maxCredNum: revocationRegistryDefinition.value.maxCredNum,
+      publicKeys: revocationRegistryDefinition.value.publicKeys,
+      tailsHash: revocationRegistryDefinition.value.tailsHash,
+      tailsLocation: revocationRegistryDefinition.value.tailsLocation,
     },
     ver: '1.0',
   }
@@ -103,7 +105,7 @@ export function anonCredsRevocationStatusListFromIndySdk(
   const defaultState = isIssuanceByDefault ? 0 : 1
 
   // Fill with default value
-  const revocationList = new Array(revocationRegistryDefinition.maxCredNum).fill(defaultState)
+  const revocationList = new Array(revocationRegistryDefinition.value.maxCredNum).fill(defaultState)
 
   // Set all `issuer` indexes to 0 (not revoked)
   for (const issued of delta.value.issued ?? []) {

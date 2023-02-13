@@ -2,27 +2,23 @@ import { JsonTransformer } from '@aries-framework/core'
 
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
-import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
+import { IndyVdrPool } from '../../pool/IndyVdrPool'
+import { IndyVdrPoolService } from '../../pool/IndyVdrPoolService'
 import { IndyVdrSovDidResolver } from '../IndyVdrSovDidResolver'
 
 import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
 import didSovWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
 
-jest.mock('../../pool/IndyVdrPoolService')
-const IndyVdrPoolServiceMock = IndyVdrPoolService as jest.Mock<IndyVdrPoolService>
-const poolServiceMock = new IndyVdrPoolServiceMock()
-
 jest.mock('../../pool/IndyVdrPool')
 const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'local')
-jest.spyOn(poolServiceMock, 'getPoolForDid').mockResolvedValue(poolMock)
 
 const agentConfig = getAgentConfig('IndyVdrSovDidResolver')
 
 const agentContext = getAgentContext({
   agentConfig,
-  registerInstances: [[IndyVdrPoolService, poolServiceMock]],
+  registerInstances: [[IndyVdrPoolService, { getPoolForDid: jest.fn().mockReturnValue(poolMock) }]],
 })
 
 const resolver = new IndyVdrSovDidResolver()
