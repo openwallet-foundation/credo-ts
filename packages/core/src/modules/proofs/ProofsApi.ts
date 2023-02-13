@@ -91,7 +91,7 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
 @injectable()
 export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
   /**
-   * Configuration for the credentials module
+   * Configuration for the proofs module
    */
   public readonly config: ProofsModuleConfig<PPs>
 

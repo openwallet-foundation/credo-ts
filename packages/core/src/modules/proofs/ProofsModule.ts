@@ -8,7 +8,7 @@ import type { Constructor } from '../../utils/mixins'
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
-import { V2ProofProtocol, V1ProofProtocol } from './protocol'
+import { V1ProofProtocol, V2ProofProtocol } from './protocol'
 import { ProofRepository } from './repository'
 
 /**

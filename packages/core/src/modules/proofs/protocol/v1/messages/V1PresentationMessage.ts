@@ -67,6 +67,6 @@ export class V1PresentationMessage extends AgentMessage {
   }
 
   public getPresentationAttachmentById(id: string): Attachment | undefined {
-    return this.presentationAttachments.find((attachment) => attachment.id == id)
+    return this.presentationAttachments.find((attachment) => attachment.id === id)
   }
 }

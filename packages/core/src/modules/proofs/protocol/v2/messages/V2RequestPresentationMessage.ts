@@ -70,6 +70,6 @@ export class V2RequestPresentationMessage extends AgentMessage {
   public requestAttachments!: Attachment[]
 
   public getRequestAttachmentById(id: string): Attachment | undefined {
-    return this.requestAttachments.find((attachment) => attachment.id == id)
+    return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

@@ -332,6 +332,54 @@ describe('IndyProofFormat | util', () => {
       ).toBe(false)
     })
 
+    test('allows names with one value to be same as name property', () => {
+      expect(
+        areIndyProofRequestsEqual(
+          {
+            ...proofRequest,
+            requested_attributes: {
+              a: {
+                ...proofRequest.requested_attributes.a,
+                name: 'name1',
+              },
+            },
+          },
+          {
+            ...proofRequest,
+            requested_attributes: {
+              a: {
+                ...proofRequest.requested_attributes.a,
+                names: ['name1'],
+              },
+            },
+          }
+        )
+      ).toBe(true)
+
+      expect(
+        areIndyProofRequestsEqual(
+          {
+            ...proofRequest,
+            requested_attributes: {
+              a: {
+                ...proofRequest.requested_attributes.a,
+                name: 'name1',
+              },
+            },
+          },
+          {
+            ...proofRequest,
+            requested_attributes: {
+              a: {
+                ...proofRequest.requested_attributes.a,
+                names: ['name2'],
+              },
+            },
+          }
+        )
+      ).toBe(false)
+    })
+
     test('ignores predicate group name differences', () => {
       expect(
         areIndyProofRequestsEqual(proofRequest, {

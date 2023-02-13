@@ -1,6 +1,6 @@
 import type { Agent } from '../../../../../agent/Agent'
 import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { AcceptProofProposalOptions, NegotiateProofProposalOptions } from '../../../ProofsApiOptions'
+import type { AcceptProofProposalOptions } from '../../../ProofsApiOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V1PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'

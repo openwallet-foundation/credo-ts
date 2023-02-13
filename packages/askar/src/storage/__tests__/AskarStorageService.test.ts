@@ -14,6 +14,8 @@ import { AskarWallet } from '../../wallet/AskarWallet'
 import { AskarStorageService } from '../AskarStorageService'
 import { askarQueryFromSearchQuery } from '../utils'
 
+const startDate = Date.now()
+
 describe('AskarStorageService', () => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
@@ -127,6 +129,11 @@ describe('AskarStorageService', () => {
 
       expect(record).toEqual(found)
     })
+
+    it('updatedAt should have a new value after a save', async () => {
+      const record = await insertRecord({ id: 'test-id' })
+      expect(record.updatedAt?.getTime()).toBeGreaterThan(startDate)
+    })
   })
 
   describe('getById()', () => {
@@ -164,6 +171,11 @@ describe('AskarStorageService', () => {
 
       const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
       expect(retrievedRecord).toEqual(record)
+    })
+
+    it('updatedAt should have a new value after an update', async () => {
+      const record = await insertRecord({ id: 'test-id' })
+      expect(record.updatedAt?.getTime()).toBeGreaterThan(startDate)
     })
   })
 

@@ -18,6 +18,18 @@ describe('AgentConfig', () => {
 
       expect(agentConfig.endpoints).toStrictEqual(['didcomm:transport/queue'])
     })
+
+    it('should return the new config endpoint after setter is called', () => {
+      const endpoint = 'https://local-url.com'
+      const newEndpoint = 'https://new-local-url.com'
+
+      const agentConfig = getAgentConfig('AgentConfig Test', {
+        endpoints: [endpoint],
+      })
+
+      agentConfig.endpoints = [newEndpoint]
+      expect(agentConfig.endpoints).toEqual([newEndpoint])
+    })
   })
 
   describe('label', () => {

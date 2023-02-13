@@ -1,0 +1,41 @@
+{
+  "name": "@aries-framework/anoncreds-rs",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.3.3",
+  "private": true,
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/anoncreds-rs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/anoncreds-rs"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "0.3.3",
+    "@aries-framework/anoncreds": "0.3.3",
+    "@hyperledger/anoncreds-shared": "^0.1.0-dev.5",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "rxjs": "^7.2.0",
+    "tsyringe": "^4.7.0"
+  },
+  "devDependencies": {
+    "@hyperledger/anoncreds-nodejs": "^0.1.0-dev.5",
+    "rimraf": "^4.0.7",
+    "typescript": "~4.9.4"
+  }
+}

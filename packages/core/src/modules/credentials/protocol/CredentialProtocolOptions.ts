@@ -20,7 +20,7 @@ import type { CredentialExchangeRecord } from '../repository/CredentialExchangeR
  * @example
  * ```
  *
- * type OfferFormatData = FormatDataMessagePayload<[IndyCredentialFormat, JsonLdCredentialFormat], 'createOffer'>
+ * type OfferFormatData = CredentialFormatDataMessagePayload<[IndyCredentialFormat, JsonLdCredentialFormat], 'createOffer'>
  *
  * // equal to
  * type OfferFormatData = {
