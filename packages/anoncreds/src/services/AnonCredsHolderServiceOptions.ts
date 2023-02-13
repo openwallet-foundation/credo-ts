@@ -1,7 +1,7 @@
 import type {
   AnonCredsCredentialInfo,
   AnonCredsCredentialRequestMetadata,
-  AnonCredsRequestedCredentials,
+  AnonCredsSelectedCredentials,
 } from '../models'
 import type {
   AnonCredsCredential,
@@ -24,7 +24,7 @@ export interface AnonCredsAttributeInfo {
 
 export interface CreateProofOptions {
   proofRequest: AnonCredsProofRequest
-  requestedCredentials: AnonCredsRequestedCredentials
+  selectedCredentials: AnonCredsSelectedCredentials
   schemas: {
     [schemaId: string]: AnonCredsSchema
   }
@@ -37,7 +37,7 @@ export interface CreateProofOptions {
       tailsFilePath: string
       definition: AnonCredsRevocationRegistryDefinition
       revocationStatusLists: {
-        [timestamp: string]: AnonCredsRevocationStatusList
+        [timestamp: number]: AnonCredsRevocationStatusList
       }
     }
   }

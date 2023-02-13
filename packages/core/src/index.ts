@@ -28,7 +28,7 @@ export type {
   WalletExportImportConfig,
 } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
-export type { FileSystem } from './storage/FileSystem'
+export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'

@@ -17,7 +17,7 @@ import { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAtt
 export class V2CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
     if (options) {
-      this.attributes = options.attributes
+      this.attributes = options.attributes.map((a) => new CredentialPreviewAttribute(a))
     }
   }
 

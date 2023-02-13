@@ -1,5 +1,6 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
-import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs, IndyProofRequest } from 'indy-sdk'
+import type { AgentContext } from '@aries-framework/core'
+import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs, IndyProofRequest, IndyProof } from 'indy-sdk'
 
 import { inject, injectable } from '@aries-framework/core'
 
@@ -21,7 +22,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
     this.indySdk = indySdk
   }
 
-  public async verifyProof(options: VerifyProofOptions): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
     try {
       // The AnonCredsSchema doesn't contain the seqNo anymore. However, the indy credential definition id
       // does contain the seqNo, so we can extract it from the credential definition id.
@@ -53,8 +54,8 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
       const indyRevocationDefinitions: RevocRegDefs = {}
       const indyRevocationRegistries: RevRegs = {}
 
-      for (const revocationRegistryDefinitionId in options.revocationStates) {
-        const { definition, revocationStatusLists } = options.revocationStates[revocationRegistryDefinitionId]
+      for (const revocationRegistryDefinitionId in options.revocationRegistries) {
+        const { definition, revocationStatusLists } = options.revocationRegistries[revocationRegistryDefinitionId]
         indyRevocationDefinitions[revocationRegistryDefinitionId] = indySdkRevocationRegistryDefinitionFromAnonCreds(
           revocationRegistryDefinitionId,
           definition
@@ -74,7 +75,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
 
       return await this.indySdk.verifierVerifyProof(
         options.proofRequest as IndyProofRequest,
-        options.proof,
+        options.proof as IndyProof,
         indySchemas,
         indyCredentialDefinitions,
         indyRevocationDefinitions,

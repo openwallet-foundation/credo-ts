@@ -177,7 +177,7 @@ export class V1CredentialProtocol
       associatedRecordId: credentialRecord.id,
     })
 
-    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.credentialAttributes = credentialProposal?.attributes
     await credentialRepository.save(agentContext, credentialRecord)
     this.emitStateChangedEvent(agentContext, credentialRecord, null)
 
@@ -336,7 +336,7 @@ export class V1CredentialProtocol
 
     message.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.credentialAttributes = message.credentialPreview.attributes
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialRecord, CredentialState.OfferSent)
 
@@ -393,7 +393,7 @@ export class V1CredentialProtocol
     })
     message.setThread({ threadId: credentialRecord.threadId })
 
-    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.credentialAttributes = message.credentialPreview.attributes
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialRecord, CredentialState.OfferSent)
 
@@ -472,7 +472,7 @@ export class V1CredentialProtocol
       role: DidCommMessageRole.Sender,
     })
 
-    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.credentialAttributes = message.credentialPreview.attributes
     await credentialRepository.save(agentContext, credentialRecord)
     this.emitStateChangedEvent(agentContext, credentialRecord, null)
 
@@ -707,7 +707,7 @@ export class V1CredentialProtocol
     })
 
     // Update record
-    credentialRecord.credentialAttributes = previewAttributes
+    credentialRecord.credentialAttributes = message.credentialPreview?.attributes
     credentialRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialRecord, CredentialState.ProposalSent)

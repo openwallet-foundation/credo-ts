@@ -1,3 +1,6 @@
+export const anonCredsPredicateType = ['>=', '>', '<=', '<'] as const
+export type AnonCredsPredicateType = (typeof anonCredsPredicateType)[number]
+
 export interface AnonCredsProofRequestRestriction {
   schema_id?: string
   schema_issuer_id?: string
@@ -62,7 +65,8 @@ export interface AnonCredsProof {
         encoded: string
       }
     >
-    revealed_attr_groups: Record<
+    // revealed_attr_groups is only defined if there's a requested attribute using `names`
+    revealed_attr_groups?: Record<
       string,
       {
         sub_proof_index: number
@@ -93,29 +97,27 @@ export interface AnonCredsProof {
   }>
 }
 
+export interface AnonCredsRequestedAttribute {
+  name?: string
+  names?: string[]
+  restrictions?: AnonCredsProofRequestRestriction[]
+  non_revoked?: AnonCredsNonRevokedInterval
+}
+
+export interface AnonCredsRequestedPredicate {
+  name: string
+  p_type: AnonCredsPredicateType
+  p_value: number
+  restrictions?: AnonCredsProofRequestRestriction[]
+  non_revoked?: AnonCredsNonRevokedInterval
+}
+
 export interface AnonCredsProofRequest {
   name: string
   version: string
   nonce: string
-  requested_attributes: Record<
-    string,
-    {
-      name?: string
-      names?: string[]
-      restrictions?: AnonCredsProofRequestRestriction[]
-      non_revoked?: AnonCredsNonRevokedInterval
-    }
-  >
-  requested_predicates: Record<
-    string,
-    {
-      name: string
-      p_type: '>=' | '>' | '<=' | '<'
-      p_value: number
-      restrictions?: AnonCredsProofRequestRestriction[]
-      non_revoked?: AnonCredsNonRevokedInterval
-    }
-  >
+  requested_attributes: Record<string, AnonCredsRequestedAttribute>
+  requested_predicates: Record<string, AnonCredsRequestedPredicate>
   non_revoked?: AnonCredsNonRevokedInterval
   ver?: '1.0' | '2.0'
 }

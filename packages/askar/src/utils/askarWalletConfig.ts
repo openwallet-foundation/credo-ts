@@ -9,13 +9,13 @@ export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod?: KeyDer
     return undefined
   }
 
-  const correspondanceTable = {
+  const correspondenceTable = {
     [KeyDerivationMethod.Raw]: StoreKeyMethod.Raw,
     [KeyDerivationMethod.Argon2IInt]: `${StoreKeyMethod.Kdf}:argon2i:int`,
     [KeyDerivationMethod.Argon2IMod]: `${StoreKeyMethod.Kdf}:argon2i:mod`,
   }
 
-  return correspondanceTable[keyDerivationMethod] as StoreKeyMethod
+  return correspondenceTable[keyDerivationMethod] as StoreKeyMethod
 }
 
 export const uriFromWalletConfig = (walletConfig: WalletConfig, basePath: string): { uri: string; path?: string } => {

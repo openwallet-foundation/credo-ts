@@ -4,6 +4,8 @@ import {
   SigningProviderRegistry,
   KeyType,
   CredentialPreviewAttribute,
+  ProofExchangeRecord,
+  ProofState,
 } from '@aries-framework/core'
 import * as indySdk from 'indy-sdk'
 
@@ -25,13 +27,14 @@ import {
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
 import { LegacyIndyCredentialFormatService } from '../LegacyIndyCredentialFormatService'
+import { LegacyIndyProofFormatService } from '../LegacyIndyProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
 
-const agentConfig = getAgentConfig('LegacyIndyCredentialFormatServiceTest')
+const agentConfig = getAgentConfig('LegacyIndyProofFormatServiceTest')
 const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
 const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
 const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
@@ -50,8 +53,11 @@ const agentContext = getAgentContext({
 })
 
 const indyCredentialFormatService = new LegacyIndyCredentialFormatService()
+const indyProofFormatService = new LegacyIndyProofFormatService()
 
-describe('LegacyIndyCredentialFormatService', () => {
+// We can split up these tests when we can use AnonCredsRS as a backend, but currently
+// we need to have the link secrets etc in the wallet which is not so easy to do with Indy
+describe('Legacy indy format services', () => {
   beforeEach(async () => {
     await wallet.createAndOpen(agentConfig.walletConfig)
   })
@@ -60,8 +66,8 @@ describe('LegacyIndyCredentialFormatService', () => {
     await wallet.delete()
   })
 
-  test('issuance flow starting from proposal without negotiation and without revocation', async () => {
-    // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
+  test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
+    // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
     const indyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
 
@@ -220,5 +226,71 @@ describe('LegacyIndyCredentialFormatService', () => {
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
     })
+
+    const holderProofRecord = new ProofExchangeRecord({
+      protocolVersion: 'v1',
+      state: ProofState.ProposalSent,
+      threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    })
+    const verifierProofRecord = new ProofExchangeRecord({
+      protocolVersion: 'v1',
+      state: ProofState.ProposalReceived,
+      threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    })
+
+    const { attachment: proofProposalAttachment } = await indyProofFormatService.createProposal(agentContext, {
+      proofFormats: {
+        indy: {
+          attributes: [
+            {
+              name: 'name',
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              value: 'John',
+              referent: '1',
+            },
+          ],
+          predicates: [
+            {
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              name: 'age',
+              predicate: '>=',
+              threshold: 18,
+            },
+          ],
+          name: 'Proof Request',
+          version: '1.0',
+        },
+      },
+      proofRecord: holderProofRecord,
+    })
+
+    await indyProofFormatService.processProposal(agentContext, {
+      attachment: proofProposalAttachment,
+      proofRecord: verifierProofRecord,
+    })
+
+    const { attachment: proofRequestAttachment } = await indyProofFormatService.acceptProposal(agentContext, {
+      proofRecord: verifierProofRecord,
+      proposalAttachment: proofProposalAttachment,
+    })
+
+    await indyProofFormatService.processRequest(agentContext, {
+      attachment: proofRequestAttachment,
+      proofRecord: holderProofRecord,
+    })
+
+    const { attachment: proofAttachment } = await indyProofFormatService.acceptRequest(agentContext, {
+      proofRecord: holderProofRecord,
+      requestAttachment: proofRequestAttachment,
+      proposalAttachment: proofProposalAttachment,
+    })
+
+    const isValid = await indyProofFormatService.processPresentation(agentContext, {
+      attachment: proofAttachment,
+      proofRecord: verifierProofRecord,
+      requestAttachment: proofRequestAttachment,
+    })
+
+    expect(isValid).toBe(true)
   })
 })
