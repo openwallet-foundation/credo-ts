@@ -5,6 +5,8 @@ import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecor
 import type { V1PresentationPreview } from '../../v1/models/V1PresentationPreview'
 import type { CredDefId } from 'indy-sdk'
 
+import { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
+import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage/didcomm'
@@ -29,10 +31,11 @@ describe('Present Proof', () => {
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
-    ))
+    ;({ faberAgent, aliceAgent, credDefId, aliceConnection, presentationPreview } = await setupAnonCredsTests({
+      issuerName: 'Faber agent',
+      holderName: 'Alice agent',
+      attributeNames: ['name', 'image_0'],
+    }))
   })
 
   afterAll(async () => {
@@ -407,11 +410,11 @@ describe('Present Proof', () => {
 
     const proofRequest = JsonTransformer.fromJSON(
       proofRequestMessage.requestAttachments[0].getDataAsJson(),
-      ProofRequest
+      AnonCredsProofRequest
     )
     const predicateKey = proofRequest.requestedPredicates?.keys().next().value
 
-    expect(proofRequest.toJSON()).toMatchObject({
+    expect(JsonTransformer.toJSON(proofRequest)).toMatchObject({
       name: 'proof-request',
       nonce: expect.any(String),
       version: '1.0',

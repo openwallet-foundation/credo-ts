@@ -305,7 +305,8 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const request = await indySdk.buildCredDefRequest(options.credentialDefinition.issuerId, {
         id: credentialDefinitionId,
-        schemaId: options.credentialDefinition.schemaId,
+        // Indy ledger requires the credential schemaId to be a string of the schema seqNo.
+        schemaId: schemaMetadata.indyLedgerSeqNo.toString(),
         tag: options.credentialDefinition.tag,
         type: options.credentialDefinition.type,
         value: options.credentialDefinition.value,

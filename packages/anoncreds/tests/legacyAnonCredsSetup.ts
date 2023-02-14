@@ -17,6 +17,8 @@ import type {
 } from '@aries-framework/core'
 
 import {
+  CacheModule,
+  InMemoryLruCache,
   Agent,
   AriesFrameworkError,
   AutoAcceptCredential,
@@ -30,7 +32,6 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
-import testLogger from '@aries-framework/core/tests/logger'
 import { randomUUID } from 'crypto'
 import indySdk from 'indy-sdk'
 import { ReplaySubject, Subject } from 'rxjs'
@@ -46,6 +47,7 @@ import {
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import {
   IndySdkAnonCredsRegistry,
   IndySdkModule,
@@ -103,10 +105,14 @@ export const getLegacyAnonCredsModules = ({
         {
           isProduction: false,
           genesisPath,
+          id: randomUUID(),
           indyNamespace: `pool:localtest`,
           transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
         },
       ],
+    }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 100 }),
     }),
   } as const
 
@@ -248,10 +254,10 @@ export async function issueLegacyAnonCredsCredential({
 
 interface SetupAnonCredsTestReturn<VerifierName extends string | undefined> {
   issuerAgent: AnonCredsTestsAgent
-  issuerReplay: ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
+  issuerReplay: ReplaySubject<BaseEvent>
 
   holderAgent: AnonCredsTestsAgent
-  holderReplay: ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
+  holderReplay: ReplaySubject<BaseEvent>
 
   issuerHolderConnectionId: string
   holderIssuerConnectionId: string
@@ -260,9 +266,7 @@ interface SetupAnonCredsTestReturn<VerifierName extends string | undefined> {
   holderVerifierConnectionId: VerifierName extends string ? string : undefined
 
   verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
-  verifierReplay: VerifierName extends string
-    ? ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
-    : undefined
+  verifierReplay: VerifierName extends string ? ReplaySubject<BaseEvent> : undefined
 
   credentialDefinitionId: string
 }
@@ -353,12 +357,9 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
     ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
   }
 
-  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
-  const holderReplay = new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
-
-  const verifierReplay = verifierAgent
-    ? new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
-    : undefined
+  const issuerReplay = new ReplaySubject<BaseEvent>()
+  const holderReplay = new ReplaySubject<BaseEvent>()
+  const verifierReplay = verifierAgent ? new ReplaySubject<BaseEvent>() : undefined
 
   issuerAgent.events
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
@@ -425,17 +426,19 @@ async function registerSchema(
   agent: AnonCredsTestsAgent,
   schema: AnonCredsSchema
 ): Promise<RegisterSchemaReturnStateFinished> {
-  const { schemaState, registrationMetadata } = await agent.modules.anoncreds.registerSchema({
+  const { schemaState } = await agent.modules.anoncreds.registerSchema({
     schema,
     options: {
-      didIndyNamespace: 'local:test',
+      didIndyNamespace: 'pool:localtest',
     },
   })
 
   testLogger.test(`created schema with id ${schemaState.schemaId}`, schema)
 
   if (schemaState.state !== 'finished') {
-    throw new AriesFrameworkError(`Schema not created: ${registrationMetadata.error}`)
+    throw new AriesFrameworkError(
+      `Schema not created: ${schemaState.state === 'failed' ? schemaState.reason : 'Not finished'}`
+    )
   }
 
   return schemaState
@@ -445,16 +448,19 @@ async function registerCredentialDefinition(
   agent: AnonCredsTestsAgent,
   credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
-  const { registrationMetadata, credentialDefinitionState } =
-    await agent.modules.anoncreds.registerCredentialDefinition({
-      credentialDefinition,
-      options: {
-        didIndyNamespace: 'local:test',
-      },
-    })
+  const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
+    credentialDefinition,
+    options: {
+      didIndyNamespace: 'pool:localtest',
+    },
+  })
 
   if (credentialDefinitionState.state !== 'finished') {
-    throw new AriesFrameworkError(`Credential definition not created: ${registrationMetadata.error}`)
+    throw new AriesFrameworkError(
+      `Credential definition not created: ${
+        credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not finished'
+      }`
+    )
   }
 
   return credentialDefinitionState

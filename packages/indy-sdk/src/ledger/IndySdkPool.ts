@@ -3,7 +3,7 @@ import type { FileSystem, Logger } from '@aries-framework/core'
 import type { LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError, utils } from '@aries-framework/core'
 
 import { isIndyError, IndySdkError } from '../error'
 
@@ -16,8 +16,15 @@ export interface TransactionAuthorAgreement {
 }
 
 export interface IndySdkPoolConfig {
+  /**
+   * Optional id that influences the pool config that is created by the indy-sdk.
+   * Uses the indyNamespace as the pool identifier if not provided.
+   */
+  id?: string
+
   genesisPath?: string
   genesisTransactions?: string
+
   isProduction: boolean
   indyNamespace: string
   transactionAuthorAgreement?: TransactionAuthorAgreement
@@ -99,7 +106,7 @@ export class IndySdkPool {
   }
 
   private async connectToLedger() {
-    const poolName = this.poolConfig.indyNamespace
+    const poolName = `${this.poolConfig.indyNamespace}-${utils.uuid()}`
     const genesisPath = await this.getGenesisPath()
 
     if (!genesisPath) {

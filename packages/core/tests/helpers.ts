@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { Observable } from 'rxjs'
 import type {
   AgentDependencies,
   BaseEvent,
@@ -11,10 +10,14 @@ import type {
   InjectionToken,
   ProofStateChangedEvent,
   Wallet,
+  Agent,
+  CredentialState,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
+import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
+import type { Observable } from 'rxjs'
 
 import { readFileSync } from 'fs'
 import path from 'path'
@@ -23,13 +26,11 @@ import { catchError, filter, map, timeout } from 'rxjs/operators'
 
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
-  Agent,
   AgentConfig,
   AgentContext,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
-  CredentialState,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
@@ -45,7 +46,6 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
-import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { KeyDerivationMethod } from '../src/types'
 
 import testLogger, { TestLogger } from './logger'
@@ -60,6 +60,8 @@ export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '00000000
 export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
 export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
+
+export type EventReplaySubject = ReplaySubject<BaseEvent>
 
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,

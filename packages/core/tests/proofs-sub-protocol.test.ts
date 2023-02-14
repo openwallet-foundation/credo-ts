@@ -1,8 +1,7 @@
-import type { V1PresentationPreview } from '../../anoncreds/src'
+import type { EventReplaySubject } from './helpers'
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import type { ProofExchangeRecord } from '../src'
 
-import { setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { uuid } from '../src/utils/uuid'
 
@@ -11,25 +10,49 @@ import testLogger from './logger'
 
 describe('Present Proof Subprotocol', () => {
   let faberAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
+  let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
   let faberConnectionId: string
   let aliceConnectionId: string
-  let aliceProofExchangeRecord: ProofExchangeRecord
-  let presentationPreview: V1PresentationPreview
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({
       issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
       holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
       credentialDefinitionId,
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
       issuerName: 'Faber agent',
       holderName: 'Alice agent',
+      attributeNames: ['name', 'age'],
     }))
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '50',
+          },
+        ],
+        credentialDefinitionId,
+      },
+    })
   })
 
   afterAll(async () => {
@@ -51,7 +74,7 @@ describe('Present Proof Subprotocol', () => {
       state: ProofState.ProposalReceived,
     })
 
-    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+    const aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       parentThreadId,
@@ -59,8 +82,21 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+          attributes: [
+            {
+              name: 'name',
+              credentialDefinitionId,
+              value: 'Alice',
+            },
+          ],
+          predicates: [
+            {
+              credentialDefinitionId,
+              name: 'age',
+              predicate: '>=',
+              threshold: 40,
+            },
+          ],
         },
       },
     })
@@ -214,7 +250,7 @@ describe('Present Proof Subprotocol', () => {
       state: ProofState.ProposalReceived,
     })
 
-    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+    const aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       parentThreadId,
@@ -222,8 +258,21 @@ describe('Present Proof Subprotocol', () => {
         indy: {
           name: 'abc',
           version: '1.0',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+          attributes: [
+            {
+              name: 'name',
+              credentialDefinitionId,
+              value: 'Alice',
+            },
+          ],
+          predicates: [
+            {
+              credentialDefinitionId,
+              name: 'age',
+              predicate: '>=',
+              threshold: 40,
+            },
+          ],
         },
       },
     })
