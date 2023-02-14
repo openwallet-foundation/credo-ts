@@ -347,7 +347,8 @@ export class AskarWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
-   * @param seed string The seed for creating a key
+   * @param secretKey string Optional secret for creating a key
+   * @param seed string Optional seed for creating a key
    * @param keyType KeyType the type of key that should be created
    *
    * @returns a Key instance with a publicKeyBase58
@@ -360,7 +361,11 @@ export class AskarWallet implements Wallet {
       if (keyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
-        // Create key from seed
+        if (seed && secretKey) {
+          throw new AriesFrameworkError('Only one of seed and secretKey can be set')
+        }
+
+        // Create key
         const key = secretKey
           ? AskarKey.fromSecretBytes({ secretKey, algorithm })
           : seed
@@ -374,6 +379,10 @@ export class AskarWallet implements Wallet {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
           const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
+
+          if (secretKey) {
+            throw new AriesFrameworkError('Cannot create key from secret for types not supported by Askar')
+          }
 
           const keyPair = await signingKeyProvider.createKeyPair({ seed })
           await this.storeKeyPair(keyPair)

@@ -62,12 +62,33 @@ describe('AskarWallet basic operations', () => {
     expect(nonce).toMatch(/[0-9]+/)
   })
 
-  test('Create ed25519 keypair', async () => {
+  test('Create ed25519 keypair from seed', async () => {
     await expect(
       askarWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
     ).resolves.toMatchObject({
       keyType: KeyType.Ed25519,
     })
+  })
+
+  test('Create ed25519 keypair from secret bytes', async () => {
+    await expect(
+      askarWallet.createKey({
+        secretKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+        keyType: KeyType.Ed25519,
+      })
+    ).resolves.toMatchObject({
+      keyType: KeyType.Ed25519,
+    })
+  })
+
+  test('Attempt to create ed25519 keypair from both seed and secret bytes', async () => {
+    await expect(
+      askarWallet.createKey({
+        secretKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+        seed: '2103de41b4ae37e8e28586d84a342b67',
+        keyType: KeyType.Ed25519,
+      })
+    ).rejects.toThrowError()
   })
 
   test('Create x25519 keypair', async () => {
