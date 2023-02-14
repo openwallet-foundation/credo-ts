@@ -7,12 +7,12 @@ import {
   KeyType,
   SigningProviderRegistry,
 } from '@aries-framework/core'
-import indySdk from 'indy-sdk'
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'

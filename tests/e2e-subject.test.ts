@@ -1,16 +1,17 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
 import { Subject } from 'rxjs'
 
+import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
-import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 
 import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
+import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
-import { AnonCredsTestsAgent, getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
 const modules = getLegacyAnonCredsModules({
   autoAcceptCredentials: AutoAcceptCredential.ContentApproved,

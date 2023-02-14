@@ -1,13 +1,16 @@
-import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import type { Attachment } from '@aries-framework/core'
 
+import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+
 import {
   legacyIndyCredentialDefinitionIdRegex,
   legacyIndyDidRegex,
   legacyIndySchemaIdRegex,
   legacyIndySchemaVersionRegex,
 } from '../../../../utils'
+
 import { V1CredentialPreview } from './V1CredentialPreview'
 
 export interface V1ProposeCredentialMessageOptions {

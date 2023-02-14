@@ -1,5 +1,6 @@
 import type { SubjectMessage } from './transport/SubjectInboundTransport'
 
+import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../packages/core/tests/helpers'
@@ -9,8 +10,6 @@ import { Agent, DependencyManager, InjectionSymbols } from '@aries-framework/cor
 import { IndySdkModule, IndySdkStorageService, IndySdkWallet } from '@aries-framework/indy-sdk'
 
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
-import indySdk from 'indy-sdk'
-
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 // FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved

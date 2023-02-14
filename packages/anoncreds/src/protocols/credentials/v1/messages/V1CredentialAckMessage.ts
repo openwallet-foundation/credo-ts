@@ -1,4 +1,6 @@
-import { AckMessageOptions, AckMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import type { AckMessageOptions } from '@aries-framework/core'
+
+import { AckMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export type V1CredentialAckMessageOptions = AckMessageOptions
 

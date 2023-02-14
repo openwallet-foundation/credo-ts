@@ -4,6 +4,8 @@ import indySdk from 'indy-sdk'
 import { genesisPath, taaVersion, taaAcceptanceMechanism } from '../../core/tests/helpers'
 import { IndySdkModule, IndySdkSovDidRegistrar, IndySdkSovDidResolver } from '../src'
 
+export { indySdk }
+
 export const getIndySdkModules = ({
   indyNamespace = `localhost-${utils.uuid()}`,
 }: { indyNamespace?: string } = {}) => ({

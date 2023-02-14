@@ -1,7 +1,8 @@
+import type { AnonCredsCredential } from '../../../../models'
+
 import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsString, IsOptional, IsArray, ValidateNested, IsInstance } from 'class-validator'
-import { AnonCredsCredential } from '../../../../models'
 
 export const INDY_CREDENTIAL_ATTACHMENT_ID = 'libindy-cred-0'
 

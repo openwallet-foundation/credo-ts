@@ -2,11 +2,11 @@ import type { Key } from '@aries-framework/core'
 
 import { KeyType, SigningProviderRegistry } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
-import indySdk from 'indy-sdk'
 
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'

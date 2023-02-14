@@ -171,8 +171,6 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
-const isBasicMessageStateChangedEvent = (e: BaseEvent): e is BasicMessageStateChangedEvent =>
-  e.type === BasicMessageEventTypes.BasicMessageStateChanged
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,

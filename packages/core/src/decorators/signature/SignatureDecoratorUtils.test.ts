@@ -1,8 +1,7 @@
 import type { Wallet } from '../../wallet'
 
-import indySdk from 'indy-sdk'
-
 import { IndySdkWallet } from '../../../../indy-sdk/src'
+import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'

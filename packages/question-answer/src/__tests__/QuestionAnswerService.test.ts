@@ -3,11 +3,11 @@ import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@aries-fram
 
 import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchangeState } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
 import { IndySdkWallet } from '../../../indy-sdk/src'
+import { indySdk } from '../../../indy-sdk/tests/setupIndySdkModule'
 
 import {
   QuestionAnswerRecord,

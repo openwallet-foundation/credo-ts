@@ -3,10 +3,10 @@ import type { Wallet } from '../../../wallet/Wallet'
 import type { DidDocument } from '../../dids'
 import type { Routing } from '../services/ConnectionService'
 
-import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
   getAgentConfig,
   getAgentContext,

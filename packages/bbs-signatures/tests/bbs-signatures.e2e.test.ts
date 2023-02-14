@@ -19,13 +19,13 @@ import {
   W3cVerifiablePresentation,
   Ed25519Signature2018,
 } from '@aries-framework/core'
-import indySdk from 'indy-sdk'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
 import { W3cVcModuleConfig } from '../../core/src/modules/vc/W3cVcModuleConfig'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'

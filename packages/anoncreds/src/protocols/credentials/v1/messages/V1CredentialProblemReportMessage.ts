@@ -1,9 +1,6 @@
-import {
-  ProblemReportMessageOptions,
-  ProblemReportMessage,
-  IsValidMessageType,
-  parseMessageType,
-} from '@aries-framework/core'
+import type { ProblemReportMessageOptions } from '@aries-framework/core'
+
+import { ProblemReportMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOptions
 

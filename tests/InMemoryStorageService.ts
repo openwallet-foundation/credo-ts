@@ -18,6 +18,7 @@ interface StorageRecord {
 }
 
 @injectable()
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {

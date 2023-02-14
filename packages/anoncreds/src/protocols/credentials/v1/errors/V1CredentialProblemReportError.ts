@@ -1,4 +1,7 @@
-import { ProblemReportErrorOptions, CredentialProblemReportReason, ProblemReportError } from '@aries-framework/core'
+import type { ProblemReportErrorOptions, CredentialProblemReportReason } from '@aries-framework/core'
+
+import { ProblemReportError } from '@aries-framework/core'
+
 import { V1CredentialProblemReportMessage } from '../messages'
 
 export interface V1CredentialProblemReportErrorOptions extends ProblemReportErrorOptions {

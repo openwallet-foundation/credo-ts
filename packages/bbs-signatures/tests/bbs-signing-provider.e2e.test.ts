@@ -8,10 +8,10 @@ import {
   SigningProviderRegistry,
 } from '@aries-framework/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
-import indySdk from 'indy-sdk'
 
 import testLogger from '../../core/tests/logger'
 import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'

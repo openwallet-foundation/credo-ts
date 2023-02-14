@@ -1,5 +1,6 @@
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
+import type { V2CredentialProtocol } from './protocol/v2'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Constructor } from '../../utils/mixins'
@@ -10,7 +11,6 @@ import { Protocol } from '../../agent/models'
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
-import { V2CredentialProtocol } from './protocol/v2'
 import { CredentialRepository } from './repository'
 
 /**
