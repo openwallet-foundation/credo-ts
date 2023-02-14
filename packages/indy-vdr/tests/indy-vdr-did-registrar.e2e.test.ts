@@ -1,4 +1,3 @@
-import { AskarStorageService, AskarWallet } from '@aries-framework/askar'
 import {
   Key,
   InjectionSymbols,
@@ -11,26 +10,24 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentService,
+  IndyWallet,
 } from '@aries-framework/core'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 import { Subject } from 'rxjs'
 
+import { IndyStorageService } from '../../core/src/storage/IndyStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
-// eslint-disable-next-line import/order
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
-
-import '@hyperledger/aries-askar-nodejs'
-
 import { DID_INDY_REGEX } from '../src/utils/did'
 
 import { indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
-const wallet = new AskarWallet(logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar E2E', { logger })
 
@@ -46,7 +43,7 @@ const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
-    [InjectionSymbols.StorageService, new AskarStorageService()],
+    [InjectionSymbols.StorageService, new IndyStorageService(agentDependencies)],
     [IndyVdrPoolService, new IndyVdrPoolService(logger, indyVdrModuleConfig)],
     [CacheModuleConfig, new CacheModuleConfig({ cache })],
   ],
@@ -63,7 +60,7 @@ describe('Indy VDR registrar E2E', () => {
     }
 
     signerKey = await wallet.createKey({
-      secretKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+      seed: '000000000000000000000000Trustee9',
       keyType: KeyType.Ed25519,
     })
   })
@@ -172,6 +169,7 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
+    console.log(`${JSON.stringify(didRegistrationResult)}`)
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {
         qualifiedIndyDid: did,
