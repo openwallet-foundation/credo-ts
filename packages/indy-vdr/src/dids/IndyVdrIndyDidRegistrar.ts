@@ -23,9 +23,15 @@ import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-import { isSelfCertifiedDid } from '../utils/did'
+import {} from '../utils/did'
 
-import { createKeyAgreementKey, deepObjectDiff, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
+import {
+  createKeyAgreementKey,
+  deepObjectDiff,
+  indyDidDocumentFromDid,
+  parseIndyDid,
+  isSelfCertifiedIndyDid,
+} from './didIndyUtil'
 import { endpointsAttribFromServices } from './didSovUtil'
 
 export class IndyVdrIndyDidRegistrar implements DidRegistrar {
@@ -75,7 +81,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             },
           }
         }
-        if (!isSelfCertifiedDid) {
+        if (!isSelfCertifiedIndyDid(did, verkey)) {
           throw new Error(`Initial verkey ${verkey} does not match did ˇ${did}`)
         }
       } else {
