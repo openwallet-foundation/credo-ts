@@ -355,13 +355,17 @@ export class AskarWallet implements Wallet {
    * @throws {WalletError} When an unsupported keytype is requested
    * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, secretKey, keyType }: AskarWalletCreateKeyOptions): Promise<Key> {
     try {
       if (keyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key from seed
-        const key = seed ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm }) : AskarKey.generate(algorithm)
+        const key = secretKey
+          ? AskarKey.fromSecretBytes({ secretKey, algorithm })
+          : seed
+          ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm })
+          : AskarKey.generate(algorithm)
 
         // Store key
         await this.session.insertKey({ key, name: encodeToBase58(key.publicBytes) })
@@ -399,7 +403,6 @@ export class AskarWallet implements Wallet {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting signing of multiple messages`)
         }
-
         const keyEntry = await this.session.fetchKey({ name: key.publicKeyBase58 })
 
         if (!keyEntry) {
@@ -748,4 +751,8 @@ export class AskarWallet implements Wallet {
       throw new WalletError('Error saving KeyPair record', { cause: error })
     }
   }
+}
+
+export interface AskarWalletCreateKeyOptions extends WalletCreateKeyOptions {
+  secretKey?: Uint8Array
 }
