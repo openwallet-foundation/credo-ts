@@ -42,9 +42,9 @@ export interface AnonCredsProposeProofFormat {
 export interface AnonCredsRequestProofFormat {
   name: string
   version: string
-  nonRevoked?: AnonCredsNonRevokedInterval
-  requestedAttributes?: Record<string, AnonCredsRequestedAttribute>
-  requestedPredicates?: Record<string, AnonCredsRequestedPredicate>
+  non_revoked?: AnonCredsNonRevokedInterval
+  requested_attributes?: Record<string, AnonCredsRequestedAttribute>
+  requested_predicates?: Record<string, AnonCredsRequestedPredicate>
 }
 
 /**
