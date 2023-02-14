@@ -1,4 +1,4 @@
-import type { CommEndpointType, IndyEndpointAttrib } from './didSovUtil'
+import type { IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
@@ -11,6 +11,9 @@ import type {
 } from '@aries-framework/core'
 
 import {
+  IndyAgentService,
+  DidCommV1Service,
+  DidCommV2Service,
   Hasher,
   TypedArrayEncoder,
   Key,
@@ -26,7 +29,7 @@ import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
 
 import {
   createKeyAgreementKey,
-  deepObjectDiff,
+  didDocDiff,
   indyDidDocumentFromDid,
   parseIndyDid,
   isSelfCertifiedIndyDid,
@@ -101,7 +104,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       if (services) {
         services.forEach((item) => didDocumentBuilder.addService(item))
 
-        const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+        const commTypes = [IndyAgentService.type, DidCommV1Service.type, DidCommV2Service.type]
         const serviceTypes = new Set(services.map((item) => item.type))
 
         const keyAgreementId = `${did}#key-agreement-1`
@@ -118,9 +121,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             .addKeyAgreement(keyAgreementId)
         }
 
+        // If there is a DIDComm V2 service, add context
+        if (serviceTypes.has(DidCommV2Service.type)) {
+          didDocumentBuilder.addContext('https://didcomm.org/messaging/contexts/v2')
+        }
+
         if (!useEndpointAttrib) {
           // create diddocContent parameter based on the diff between the base and the resulting DID Document
-          diddocContent = deepObjectDiff(
+          diddocContent = didDocDiff(
             didDocumentBuilder.build().toJSON(),
             indyDidDocumentFromDid(did, verkey).build().toJSON()
           )
@@ -130,35 +138,34 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       // Build did document
       const didDocument = didDocumentBuilder.build()
 
+      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
+
       // If there are services and we are using legacy indy endpoint attrib, make sure they are suitable before registering the DID
       if (services && useEndpointAttrib) {
-        endpointsAttribFromServices(services)
-      }
-
-      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
-      await this.registerPublicDid(
-        agentContext,
-        pool,
-        submitterId,
-        submitterVerkey,
-        id,
-        verkey,
-        alias,
-        role,
-        diddocContent
-      )
-
-      if (services && useEndpointAttrib) {
-        await this.setEndpointsForDid(agentContext, pool, verkey, id, endpointsAttribFromServices(services))
+        const endpoints = endpointsAttribFromServices(services)
+        await this.registerPublicDid(agentContext, pool, submitterId, submitterVerkey, id, verkey, alias, role)
+        await this.setEndpointsForDid(agentContext, pool, verkey, id, endpoints)
+      } else {
+        await this.registerPublicDid(
+          agentContext,
+          pool,
+          submitterId,
+          submitterVerkey,
+          id,
+          verkey,
+          alias,
+          role,
+          diddocContent
+        )
       }
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: did,
         did,
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key: Key) => key.fingerprint),
+          qualifiedIndyDid: did,
         },
       })
 
@@ -167,10 +174,10 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       return {
         didDocumentMetadata: {
-          did,
+          qualifiedIndyDid: did,
         },
         didRegistrationMetadata: {
-          namespace,
+          didIndyNamespace: namespace,
         },
         didState: {
           state: 'finished',

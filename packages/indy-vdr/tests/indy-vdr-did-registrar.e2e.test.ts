@@ -20,9 +20,12 @@ import testLogger from '../../core/tests/logger'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
+// eslint-disable-next-line import/order
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 
 import '@hyperledger/aries-askar-nodejs'
+
+import { DID_INDY_REGEX } from '../src/utils/did'
 
 import { indyVdrModuleConfig } from './helpers'
 
@@ -74,7 +77,7 @@ describe('Indy VDR registrar E2E', () => {
   })
 
   test('can register a did:indy without services', async () => {
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
+    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       options: {
         submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
@@ -82,14 +85,44 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    const did = result.didState.did
+    expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
+      didDocumentMetadata: {
+        qualifiedIndyDid: expect.stringMatching(DID_INDY_REGEX),
+      },
+      didRegistrationMetadata: {
+        didIndyNamespace: 'pool:localtest',
+      },
+      didState: {
+        state: 'finished',
+        did: expect.stringMatching(DID_INDY_REGEX),
+        didDocument: {
+          '@context': ['https://w3id.org/did/v1'],
+          id: expect.stringMatching(DID_INDY_REGEX),
+          alsoKnownAs: undefined,
+          controller: undefined,
+          verificationMethod: [
+            {
+              type: 'Ed25519VerificationKey2018',
+              controller: expect.stringMatching(DID_INDY_REGEX),
+              id: expect.stringContaining('#verkey'),
+              publicKeyBase58: expect.any(String),
+            },
+          ],
+          capabilityDelegation: undefined,
+          capabilityInvocation: undefined,
+          authentication: [expect.stringContaining('#verkey')],
+          service: undefined,
+        },
+      },
+    })
 
+    const did = didRegistrationResult.didState.did
     if (!did) {
       throw Error('did not defined')
     }
 
-    const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
-    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
+    const didResolutionResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
       didDocument: {
         '@context': ['https://w3id.org/did/v1'],
         id: did,
@@ -129,7 +162,7 @@ describe('Indy VDR registrar E2E', () => {
       'pool:localtest',
       Key.fromPublicKey(keyPair.publicKey, KeyType.Ed25519)
     )
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
+    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       did,
       options: {
@@ -139,11 +172,36 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    const receivedDid = result.didState.did
-
-    if (!receivedDid) {
-      throw Error('did not defined')
-    }
+    expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
+      didDocumentMetadata: {
+        qualifiedIndyDid: did,
+      },
+      didRegistrationMetadata: {
+        didIndyNamespace: 'pool:localtest',
+      },
+      didState: {
+        state: 'finished',
+        did,
+        didDocument: {
+          '@context': ['https://w3id.org/did/v1'],
+          id: did,
+          alsoKnownAs: undefined,
+          controller: undefined,
+          verificationMethod: [
+            {
+              type: 'Ed25519VerificationKey2018',
+              controller: did,
+              id: `${did}#verkey`,
+              publicKeyBase58: ed25519PublicKeyBase58,
+            },
+          ],
+          capabilityDelegation: undefined,
+          capabilityInvocation: undefined,
+          authentication: [`${did}#verkey`],
+          service: undefined,
+        },
+      },
+    })
 
     const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
@@ -188,7 +246,7 @@ describe('Indy VDR registrar E2E', () => {
       Key.fromPublicKey(key.publicKey, KeyType.Ed25519)
     )
 
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
+    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       did,
       options: {
@@ -208,6 +266,7 @@ describe('Indy VDR registrar E2E', () => {
             recipientKeys: [`${did}#key-agreement-1`],
             routingKeys: ['a-routing-key'],
             serviceEndpoint: 'https://example.com/endpoint',
+            accept: ['didcomm/aip2;env=rfc19'],
           }),
           new DidCommV2Service({
             accept: ['didcomm/v2'],
@@ -219,62 +278,70 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    const services = [
-      {
-        id: `${did}#endpoint`,
-        serviceEndpoint: 'https://example.com/endpoint',
-        type: 'endpoint',
-      },
-      {
-        accept: ['didcomm/aip2;env=rfc19'],
-        id: `${did}#did-communication`,
-        priority: 0,
-        recipientKeys: [`${did}#key-agreement-1`],
-        routingKeys: ['a-routing-key'],
-        serviceEndpoint: 'https://example.com/endpoint',
-        type: 'did-communication',
-      },
-      {
-        accept: ['didcomm/v2'],
-        id: `${did}#didcomm-1`,
-        routingKeys: ['a-routing-key'],
-        serviceEndpoint: 'https://example.com/endpoint',
-        type: 'DIDComm',
-      },
-    ]
-
-    const receivedDid = result.didState.did
-
-    if (!receivedDid) {
-      throw Error('did not defined')
+    const expectedDidDocument = {
+      '@context': ['https://w3id.org/did/v1', 'https://didcomm.org/messaging/contexts/v2'],
+      id: did,
+      alsoKnownAs: undefined,
+      controller: undefined,
+      verificationMethod: [
+        {
+          type: 'Ed25519VerificationKey2018',
+          controller: did,
+          id: `${did}#verkey`,
+          publicKeyBase58: ed25519PublicKeyBase58,
+        },
+        {
+          type: 'X25519KeyAgreementKey2019',
+          controller: did,
+          id: `${did}#key-agreement-1`,
+          publicKeyBase58: x25519PublicKeyBase58,
+        },
+      ],
+      capabilityDelegation: undefined,
+      capabilityInvocation: undefined,
+      authentication: [`${did}#verkey`],
+      service: [
+        {
+          id: `${did}#endpoint`,
+          serviceEndpoint: 'https://example.com/endpoint',
+          type: 'endpoint',
+        },
+        {
+          accept: ['didcomm/aip2;env=rfc19'],
+          id: `${did}#did-communication`,
+          priority: 0,
+          recipientKeys: [`${did}#key-agreement-1`],
+          routingKeys: ['a-routing-key'],
+          serviceEndpoint: 'https://example.com/endpoint',
+          type: 'did-communication',
+        },
+        {
+          accept: ['didcomm/v2'],
+          id: `${did}#didcomm-1`,
+          routingKeys: ['a-routing-key'],
+          serviceEndpoint: 'https://example.com/endpoint',
+          type: 'DIDComm',
+        },
+      ],
     }
+
+    expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
+      didDocumentMetadata: {
+        qualifiedIndyDid: did,
+      },
+      didRegistrationMetadata: {
+        didIndyNamespace: 'pool:localtest',
+      },
+      didState: {
+        state: 'finished',
+        did,
+        didDocument: expectedDidDocument,
+      },
+    })
 
     const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
-      didDocument: {
-        '@context': ['https://w3id.org/did/v1', 'https://didcomm.org/messaging/contexts/v2'],
-        id: did,
-        alsoKnownAs: undefined,
-        controller: undefined,
-        verificationMethod: [
-          {
-            type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#verkey`,
-            publicKeyBase58: ed25519PublicKeyBase58,
-          },
-          {
-            type: 'X25519KeyAgreementKey2019',
-            controller: did,
-            id: `${did}#key-agreement-1`,
-            publicKeyBase58: x25519PublicKeyBase58,
-          },
-        ],
-        capabilityDelegation: undefined,
-        capabilityInvocation: undefined,
-        authentication: [`${did}#verkey`],
-        service: services,
-      },
+      didDocument: expectedDidDocument,
       didDocumentMetadata: {},
       didResolutionMetadata: {
         contentType: 'application/did+ld+json',

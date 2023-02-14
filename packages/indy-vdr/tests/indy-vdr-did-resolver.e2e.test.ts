@@ -1,8 +1,7 @@
 import type { Key } from '@aries-framework/core'
 
-import { AskarWallet } from '@aries-framework/askar'
 import {
-  TypedArrayEncoder,
+  IndyWallet,
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,
@@ -19,10 +18,8 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
-import '@hyperledger/aries-askar-nodejs'
-
 const logger = testLogger
-const wallet = new AskarWallet(logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })
@@ -50,7 +47,7 @@ describe('indy-vdr DID Resolver E2E', () => {
     }
 
     signerKey = await wallet.createKey({
-      secretKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+      seed: '000000000000000000000000Trustee9',
       keyType: KeyType.Ed25519,
     })
   })

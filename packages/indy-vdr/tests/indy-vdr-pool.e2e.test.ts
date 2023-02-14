@@ -1,7 +1,6 @@
 import type { Key } from '@aries-framework/core'
 
-import { AskarWallet } from '@aries-framework/askar'
-import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { IndyWallet, KeyType, SigningProviderRegistry } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
 import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -14,7 +13,7 @@ import { indyVdrModuleConfig } from './helpers'
 import '@hyperledger/aries-askar-nodejs'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
-const wallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
 
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
@@ -37,7 +36,7 @@ describe('IndyVdrPoolService', () => {
     }
 
     signerKey = await wallet.createKey({
-      secretKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+      seed: '000000000000000000000000Trustee9',
       keyType: KeyType.Ed25519,
     })
   })

@@ -1,6 +1,6 @@
 import { DidDocument, JsonTransformer } from '@aries-framework/core'
 
-import { combineDidDocumentWithJson, deepObjectDiff } from '../didIndyUtil'
+import { combineDidDocumentWithJson, didDocDiff } from '../didIndyUtil'
 
 import didExample123Fixture from './__fixtures__/didExample123.json'
 import didExample123Base from './__fixtures__/didExample123base.json'
@@ -17,7 +17,7 @@ describe('didIndyUtil', () => {
 
   describe('deepObjectDiff', () => {
     it('should correctly show the diff between a base DidDocument and a full DidDocument', async () => {
-      expect(deepObjectDiff(didExample123Fixture, didExample123Base)).toMatchObject(didExample123Extra)
+      expect(didDocDiff(didExample123Fixture, didExample123Base)).toMatchObject(didExample123Extra)
     })
   })
 })
