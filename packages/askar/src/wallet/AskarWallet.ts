@@ -33,7 +33,6 @@ import {
   TypedArrayEncoder,
   FileSystem,
   WalletNotFoundError,
-  utils,
 } from '@aries-framework/core'
 import {
   StoreKeyMethod,
@@ -364,7 +363,7 @@ export class AskarWallet implements Wallet {
         const key = seed ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm }) : AskarKey.generate(algorithm)
 
         // Store key
-        await this.session.insertKey({ key, name: utils.encodeToBase58(key.publicBytes) })
+        await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(key.publicBytes) })
         return Key.fromPublicKey(key.publicBytes, keyType)
       } else {
         // Check if there is a signing key provider for the specified key type.
@@ -633,7 +632,7 @@ export class AskarWallet implements Wallet {
           )
           const sender_x = AskarKey.fromPublicBytes({
             algorithm: KeyAlgs.Ed25519,
-            publicKey: utils.decodeFromBase58(senderKey),
+            publicKey: TypedArrayEncoder.fromBase58(senderKey),
           }).convertkey({ algorithm: KeyAlgs.X25519 })
 
           payloadKey = CryptoBox.open({

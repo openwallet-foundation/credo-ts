@@ -72,15 +72,12 @@ export { encodeAttachment } from './utils/attachment'
 export { Hasher } from './utils/Hasher'
 export { MessageValidator } from './utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
-import { encodeToBase58, decodeFromBase58 } from './utils/base58'
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
 
 const utils = {
   uuid,
   parseInvitationUrl,
-  encodeToBase58,
-  decodeFromBase58,
 }
 
 export { utils }
