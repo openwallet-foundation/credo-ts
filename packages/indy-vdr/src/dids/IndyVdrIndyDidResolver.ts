@@ -7,7 +7,7 @@ import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import { IndyVdrPoolService } from '../pool'
 
 import { combineDidDocumentWithJson, createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
-import { addServicesFromEndpointsAttrib } from './didSovUtil'
+import { getFullVerkey, addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndyVdrIndyDidResolver implements DidResolver {
   public readonly supportedMethods = ['indy']
@@ -39,8 +39,12 @@ export class IndyVdrIndyDidResolver implements DidResolver {
 
   private async buildDidDocument(agentContext: AgentContext, getNymResponseData: GetNymResponseData, did: string) {
     // Create base Did Document
-    // We assume that verkey from GET_NYM is always a full verkey in base58
-    const builder = indyDidDocumentFromDid(did, getNymResponseData.verkey)
+
+    // For modern did:indy DIDs, we assume that GET_NYM is always a full verkey in base58.
+    // For backwards compatibility, we accept a shortened verkey and convert it using previous convention
+    const verkey = getFullVerkey(did, getNymResponseData.verkey)
+
+    const builder = indyDidDocumentFromDid(did, verkey)
 
     // If GET_NYM does not return any diddocContent, fallback to legacy GET_ATTRIB endpoint
     if (!getNymResponseData.diddocContent) {

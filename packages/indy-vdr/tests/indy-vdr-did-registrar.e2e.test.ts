@@ -169,7 +169,6 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    console.log(`${JSON.stringify(didRegistrationResult)}`)
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {
         qualifiedIndyDid: did,

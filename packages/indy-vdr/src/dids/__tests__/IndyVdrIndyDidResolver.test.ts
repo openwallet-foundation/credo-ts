@@ -119,9 +119,6 @@ describe('IndyVdrIndyDidResolver', () => {
 
       const result = await resolver.resolve(agentContext, did)
 
-      // TODO: Check DIDDocument context, as currently we are forcing it to have at least https://w3id.org/did/v1,
-      // while did:indy method spec does not enforce any context
-
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didIndyWJz9mHyW9BZksioQnRsrAoFixture,
         didDocumentMetadata: {},
