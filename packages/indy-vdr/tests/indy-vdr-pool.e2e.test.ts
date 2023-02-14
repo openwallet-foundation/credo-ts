@@ -10,7 +10,6 @@ import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { indyVdrModuleConfig } from './helpers'
-import '@hyperledger/aries-askar-nodejs'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
 const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
