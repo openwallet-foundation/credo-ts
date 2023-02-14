@@ -1,6 +1,7 @@
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
+import type { Module } from '../plugins'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
@@ -160,6 +161,16 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public async initialize() {
     await super.initialize()
+
+    for (const [moduleKey, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
+      this.logger.debug(`initializing module ${moduleKey}`, {
+        hasInitializationMethod: module.initialize !== undefined,
+      })
+
+      if (module.initialize) {
+        await module.initialize(this.agentContext)
+      }
+    }
 
     for (const transport of this.inboundTransports) {
       await transport.start(this)

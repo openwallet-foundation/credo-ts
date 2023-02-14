@@ -9,11 +9,11 @@ import {
   EventEmitter,
   RepositoryEventTypes,
 } from '@aries-framework/core'
-import { mockFunction, getAgentConfig, getAgentContext, agentDependencies } from '@aries-framework/core/tests/helpers'
 import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { mockFunction, getAgentConfig, getAgentContext, agentDependencies } from '../../../../core/tests/helpers'
 import { IndySdkPoolService } from '../../ledger/IndySdkPoolService'
 import { IndySdkSymbol } from '../../types'
 import { IndySdkWallet } from '../../wallet'

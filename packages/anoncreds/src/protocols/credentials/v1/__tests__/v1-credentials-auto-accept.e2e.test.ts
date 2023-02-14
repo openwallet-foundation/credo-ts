@@ -46,8 +46,6 @@ describe('V1 Credentials Auto Accept', () => {
       } = await setupAnonCredsTests({
         issuerName: 'faber agent: always v1',
         holderName: 'alice agent: always v1',
-        // Not needed for this test
-        verifierName: 'verifier agent: always v1',
         autoAcceptCredentials: AutoAcceptCredential.Always,
       }))
     })

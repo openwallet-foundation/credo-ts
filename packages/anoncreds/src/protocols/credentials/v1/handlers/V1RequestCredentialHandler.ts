@@ -1,13 +1,9 @@
-import {
-  CredentialExchangeRecord,
-  DidCommMessageRepository,
-  DidCommMessageRole,
-  MessageHandler,
-  MessageHandlerInboundMessage,
-  OutboundMessageContext,
-} from '@aries-framework/core'
+import type { V1CredentialProtocol } from '../V1CredentialProtocol'
+import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
+
+import { DidCommMessageRepository, DidCommMessageRole, OutboundMessageContext } from '@aries-framework/core'
+
 import { V1RequestCredentialMessage } from '../messages'
-import { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 export class V1RequestCredentialHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol

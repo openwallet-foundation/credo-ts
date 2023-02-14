@@ -23,7 +23,6 @@ agent.dependencyManager.registerInstance(IndyVdrPoolService, indyVdrPoolService)
 describe('IndyVdrAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
-    await indyVdrPoolService.connectToPools()
   })
 
   afterAll(async () => {

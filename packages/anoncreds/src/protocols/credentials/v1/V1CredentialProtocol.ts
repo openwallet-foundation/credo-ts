@@ -57,8 +57,6 @@ import {
 } from './messages'
 
 export interface V1CredentialProtocolConfig {
-  // indyCredentialFormat must be a service that implements the `IndyCredentialFormat` interface, however it doesn't
-  // have to be the IndyCredentialFormatService implementation per se.
   indyCredentialFormat: LegacyIndyCredentialFormatService
 }
 
@@ -71,6 +69,7 @@ export class V1CredentialProtocol
   public constructor({ indyCredentialFormat }: V1CredentialProtocolConfig) {
     super()
 
+    // TODO: just create a new instance of LegacyIndyCredentialFormatService here so it makes the setup easier
     this.indyCredentialFormat = indyCredentialFormat
   }
 

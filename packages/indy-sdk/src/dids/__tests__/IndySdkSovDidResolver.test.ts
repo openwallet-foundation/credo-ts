@@ -3,10 +3,10 @@ import type { IndyEndpointAttrib } from '../didSovUtil'
 import type { GetNymResponse } from 'indy-sdk'
 
 import { SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
-import { parseDid } from '@aries-framework/core/src/modules/dids/domain/parse'
-import { mockFunction, getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
 import indySdk from 'indy-sdk'
 
+import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
+import { mockFunction, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { IndySdkPoolService } from '../../ledger/IndySdkPoolService'
 import { IndySdkSymbol } from '../../types'
 import { IndySdkWallet } from '../../wallet'

@@ -8,3 +8,9 @@ export { encodeCredentialValue, checkValidCredentialValueEncoding } from './cred
 export { IsMap } from './isMap'
 export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'
+export {
+  legacyIndyCredentialDefinitionIdRegex,
+  legacyIndyDidRegex,
+  legacyIndySchemaIdRegex,
+  legacyIndySchemaVersionRegex,
+} from './legacyIndyIdentifiers'

@@ -1,10 +1,12 @@
 import type { AgentContext } from '../../agent'
 import type { Key, Wallet } from '@aries-framework/core'
 
+import indySdk from 'indy-sdk'
+
+import { IndySdkWallet } from '../../../../indy-sdk/src'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { Buffer, JsonEncoder } from '../../utils'
-import { IndyWallet } from '../../wallet/IndyWallet'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
 import { SigningProviderRegistry } from '../signing-provider'
@@ -20,12 +22,12 @@ describe('JwsService', () => {
   let didJwsz6MkvKey: Key
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    // TODO: update to InMemoryWallet
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig)
 
     jwsService = new JwsService()
     didJwsz6MkfKey = await wallet.createKey({ seed: didJwsz6Mkf.SEED, keyType: KeyType.Ed25519 })

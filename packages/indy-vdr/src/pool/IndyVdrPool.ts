@@ -1,4 +1,4 @@
-import type { Logger, AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key } from '@aries-framework/core'
 import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { TypedArrayEncoder } from '@aries-framework/core'
@@ -35,16 +35,15 @@ export interface IndyVdrPoolConfig {
   isProduction: boolean
   indyNamespace: string
   transactionAuthorAgreement?: TransactionAuthorAgreement
+  connectOnStartup?: boolean
 }
 
 export class IndyVdrPool {
   private _pool?: indyVdrPool
-  private logger: Logger
   private poolConfig: IndyVdrPoolConfig
   public authorAgreement?: AuthorAgreement | null
 
-  public constructor(poolConfig: IndyVdrPoolConfig, logger: Logger) {
-    this.logger = logger
+  public constructor(poolConfig: IndyVdrPoolConfig) {
     this.poolConfig = poolConfig
   }
 

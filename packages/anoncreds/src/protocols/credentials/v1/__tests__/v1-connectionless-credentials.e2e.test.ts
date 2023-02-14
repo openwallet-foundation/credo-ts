@@ -1,17 +1,20 @@
-import {
+import type { SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
+import type {
   AcceptCredentialOfferOptions,
   AcceptCredentialRequestOptions,
+  CredentialStateChangedEvent,
+} from '@aries-framework/core'
+
+import {
   Agent,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialExchangeRecord,
   CredentialState,
-  CredentialStateChangedEvent,
 } from '@aries-framework/core'
 import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport, SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
-
+import { SubjectInboundTransport } from '../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
 import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'

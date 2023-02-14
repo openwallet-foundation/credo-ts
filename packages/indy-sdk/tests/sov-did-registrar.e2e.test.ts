@@ -1,25 +1,17 @@
 import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegistrar'
 
 import { Agent, TypedArrayEncoder, convertPublicKeyToX25519, JsonTransformer } from '@aries-framework/core'
-import { getAgentOptions, genesisPath } from '@aries-framework/core/tests/helpers'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
+import { getAgentOptions } from '../../core/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar', {
-  indyLedgers: [
-    {
-      id: `localhost`,
-      isProduction: false,
-      genesisPath,
-      indyNamespace: 'localhost',
-      transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
-    },
-  ],
-})
+import { indySdkModules } from './setupIndySdkModule'
+
+const agentOptions = getAgentOptions('Faber Dids Registrar', {}, indySdkModules)
 
 describe('dids', () => {
-  let agent: Agent
+  let agent: Agent<typeof indySdkModules>
 
   beforeAll(async () => {
     agent = new Agent(agentOptions)
@@ -59,6 +51,7 @@ describe('dids', () => {
       },
     })
 
+    console.log(did)
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocumentMetadata: {
         qualifiedIndyDid: `did:indy:localhost:${indyDid}`,

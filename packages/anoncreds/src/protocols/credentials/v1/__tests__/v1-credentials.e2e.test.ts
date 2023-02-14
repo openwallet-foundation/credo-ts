@@ -5,10 +5,10 @@ import {
   CredentialState,
   DidCommMessageRepository,
   JsonTransformer,
-} from '@aries-framework/core/src'
-import { waitForCredentialRecord } from '@aries-framework/core/tests/helpers'
-import testLogger from '@aries-framework/core/tests/logger'
+} from '@aries-framework/core'
 
+import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
+import testLogger from '../../../../../../core/tests/logger'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import {
   V1ProposeCredentialMessage,
@@ -33,8 +33,7 @@ describe('V1 Credentials', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber Agent Credentials V1',
       holderName: 'Alice Agent Credentials V1',
-      // Not needed for this test
-      verifierName: 'Verifier Agent Credentials V1',
+      attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
     }))
   })
 

@@ -57,11 +57,6 @@ export class V1OfferCredentialHandler implements MessageHandler {
 
       const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
         credentialRecord,
-        credentialFormats: {
-          indy: {
-            holderDid: ourService.recipientKeys[0],
-          },
-        },
       })
 
       // Set and save ~service decorator to record (to remember our verkey)

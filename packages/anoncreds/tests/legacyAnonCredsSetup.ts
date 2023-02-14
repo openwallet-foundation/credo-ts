@@ -1,24 +1,42 @@
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type {
+  AnonCredsRegisterCredentialDefinitionOptions,
+  AnonCredsRequestedAttribute,
+  AnonCredsRequestedPredicate,
+  AnonCredsOfferCredentialFormat,
+  AnonCredsSchema,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterSchemaReturnStateFinished,
+} from '../src'
+import type {
+  AutoAcceptProof,
+  BaseEvent,
+  ConnectionRecord,
+  CredentialStateChangedEvent,
+  ProofStateChangedEvent,
+} from '@aries-framework/core'
+
 import {
   Agent,
   AriesFrameworkError,
   AutoAcceptCredential,
-  AutoAcceptProof,
-  BaseEvent,
   CredentialEventTypes,
   CredentialsModule,
   CredentialState,
-  CredentialStateChangedEvent,
   ProofEventTypes,
   ProofsModule,
   ProofState,
-  ProofStateChangedEvent,
-  V1CredentialProtocol,
-  V1ProofProtocol,
   V2CredentialProtocol,
   V2ProofProtocol,
+  DidsModule,
 } from '@aries-framework/core'
+import testLogger from '@aries-framework/core/tests/logger'
+import { randomUUID } from 'crypto'
+import indySdk from 'indy-sdk'
 import { ReplaySubject, Subject } from 'rxjs'
-import { SubjectInboundTransport, SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+
+import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
   genesisPath,
   getAgentOptions,
@@ -27,20 +45,7 @@ import {
   taaVersion,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
-} from '@aries-framework/core/tests/helpers'
-import {
-  AnonCredsModule,
-  AnonCredsOfferCredentialFormat,
-  AnonCredsSchema,
-  RegisterCredentialDefinitionReturnStateFinished,
-  RegisterSchemaReturnStateFinished,
-} from '../src'
-
-import { DidsModule } from '@aries-framework/core'
-import { randomUUID } from 'crypto'
-import indySdk from 'indy-sdk'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import testLogger from '@aries-framework/core/tests/logger'
+} from '../../core/tests/helpers'
 import {
   IndySdkAnonCredsRegistry,
   IndySdkModule,
@@ -48,12 +53,12 @@ import {
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
 import {
-  AnonCredsRegisterCredentialDefinitionOptions,
+  V1CredentialProtocol,
+  V1ProofProtocol,
+  AnonCredsModule,
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
 } from '../src'
-
-import { AnonCredsRequestedAttribute, AnonCredsRequestedPredicate } from '../src'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<ReturnType<typeof getLegacyAnonCredsModules>>
@@ -241,19 +246,42 @@ export async function issueLegacyAnonCredsCredential({
   }
 }
 
-export async function setupAnonCredsTests({
+interface SetupAnonCredsTestReturn<VerifierName extends string | undefined> {
+  issuerAgent: AnonCredsTestsAgent
+  issuerReplay: ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
+
+  holderAgent: AnonCredsTestsAgent
+  holderReplay: ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
+
+  issuerHolderConnectionId: string
+  holderIssuerConnectionId: string
+
+  verifierHolderConnectionId: VerifierName extends string ? string : undefined
+  holderVerifierConnectionId: VerifierName extends string ? string : undefined
+
+  verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
+  verifierReplay: VerifierName extends string
+    ? ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>
+    : undefined
+
+  credentialDefinitionId: string
+}
+
+export async function setupAnonCredsTests<VerifierName extends string | undefined = undefined>({
   issuerName,
   holderName,
   verifierName,
   autoAcceptCredentials,
   autoAcceptProofs,
+  attributeNames,
 }: {
   issuerName: string
   holderName: string
-  verifierName: string
+  verifierName?: VerifierName
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
-}) {
+  attributeNames: string[]
+}): Promise<SetupAnonCredsTestReturn<VerifierName>> {
   const issuerMessages = new Subject<SubjectMessage>()
   const holderMessages = new Subject<SubjectMessage>()
   const verifierMessages = new Subject<SubjectMessage>()
@@ -294,46 +322,60 @@ export async function setupAnonCredsTests({
   holderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
   await holderAgent.initialize()
 
-  const verifierAgent = new Agent(
-    getAgentOptions(
-      verifierName,
-      {
-        endpoints: ['rxjs:verifier'],
-      },
-      modules
+  let verifierAgent: AnonCredsTestsAgent | undefined
+  if (verifierName) {
+    verifierAgent = new Agent(
+      getAgentOptions(
+        verifierName,
+        {
+          endpoints: ['rxjs:verifier'],
+        },
+        modules
+      )
     )
-  )
-  verifierAgent.registerInboundTransport(new SubjectInboundTransport(verifierMessages))
-  verifierAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await verifierAgent.initialize()
+    verifierAgent.registerInboundTransport(new SubjectInboundTransport(verifierMessages))
+    verifierAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await verifierAgent.initialize()
+  }
 
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
-    attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
+    attributeNames,
     // TODO: replace with more dynamic / generic value We should create a did using the dids module
     // and use that probably
     issuerId: issuerAgent.publicDid?.did as string,
   })
 
   const [issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
-  const [holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+
+  let verifierHolderConnection: ConnectionRecord | undefined
+  let holderVerifierConnection: ConnectionRecord | undefined
+  if (verifierAgent) {
+    ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+  }
 
   const issuerReplay = new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
   const holderReplay = new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
-  const verifierReplay = new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
+
+  const verifierReplay = verifierAgent
+    ? new ReplaySubject<CredentialStateChangedEvent | ProofStateChangedEvent>()
+    : undefined
 
   issuerAgent.events
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(issuerReplay)
+  issuerAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(issuerReplay)
+
   holderAgent.events
     .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
     .subscribe(holderReplay)
-  verifierAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(verifierReplay)
-
-  issuerAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(issuerReplay)
   holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
-  verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
+
+  if (verifierAgent) {
+    verifierAgent.events
+      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+      .subscribe(verifierReplay)
+    verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
+  }
 
   return {
     issuerAgent,
@@ -350,9 +392,9 @@ export async function setupAnonCredsTests({
 
     issuerHolderConnectionId: issuerHolderConnection.id,
     holderIssuerConnectionId: holderIssuerConnection.id,
-    holderVerifierConnectionId: holderVerifierConnection.id,
-    verifierHolderConnectionId: verifierHolderConnection.id,
-  }
+    holderVerifierConnectionId: holderVerifierConnection?.id,
+    verifierHolderConnectionId: verifierHolderConnection?.id,
+  } as unknown as SetupAnonCredsTestReturn<VerifierName>
 }
 
 export async function prepareForAnonCredsIssuance(

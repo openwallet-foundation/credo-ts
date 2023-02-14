@@ -25,6 +25,9 @@ export class IndySdkModule implements Module {
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(IndySdkSymbol, this.config.indySdk)
 
+    // Register config
+    dependencyManager.registerInstance(IndySdkModuleConfig, this.config)
+
     // NOTE: for now we are registering the needed indy services. We may want to make this
     // more explicit and require the user to register the services they need on the specific modules.
     dependencyManager.registerSingleton(InjectionSymbols.Wallet, IndySdkWallet)

@@ -1,9 +1,8 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
+import type { MessageHandler, MessageHandlerInboundMessage, CredentialExchangeRecord } from '@aries-framework/core'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
-import { DidCommMessageRepository } from '../../../../../storage'
+import { DidCommMessageRepository, OutboundMessageContext } from '@aries-framework/core'
+
 import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements MessageHandler {

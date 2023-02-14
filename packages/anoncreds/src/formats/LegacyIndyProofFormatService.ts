@@ -38,6 +38,7 @@ import type {
   ProofFormatSelectCredentialsForRequestReturn,
   ProofFormatAutoRespondProposalOptions,
   ProofFormatAutoRespondRequestOptions,
+  ProofFormatAutoRespondPresentationOptions,
 } from '@aries-framework/core'
 
 import {
@@ -318,7 +319,12 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     return areAnonCredsProofRequestsEqual(proposalJson, requestJson)
   }
 
-  public async shouldAutoRespondToPresentation(): Promise<boolean> {
+  public async shouldAutoRespondToPresentation(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _agentContext: AgentContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options: ProofFormatAutoRespondPresentationOptions
+  ): Promise<boolean> {
     // The presentation is already verified in processPresentation, so we can just return true here.
     // It's only an ack, so it's just that we received the presentation.
     return true

@@ -1,33 +1,35 @@
-import type { Agent, ConnectionRecord, ProofExchangeRecord } from '../src'
-import type { V1PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import type { CredDefId } from 'indy-sdk'
+import type { V1PresentationPreview } from '../../anoncreds/src'
+import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import type { ProofExchangeRecord } from '../src'
 
-import {
-  ProofAttributeInfo,
-  AttributeFilter,
-  ProofPredicateInfo,
-  PredicateType,
-} from '../src/modules/proofs/formats/indy/models'
+import { setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { uuid } from '../src/utils/uuid'
 
-import { setupProofsTest, waitForProofExchangeRecord } from './helpers'
+import { waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'
 
 describe('Present Proof Subprotocol', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let credDefId: CredDefId
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
+  let credentialDefinitionId: string
+  let faberConnectionId: string
+  let aliceConnectionId: string
   let aliceProofExchangeRecord: ProofExchangeRecord
   let presentationPreview: V1PresentationPreview
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-      await setupProofsTest('Faber agent', 'Alice agent'))
-    testLogger.test('Issuing second credential')
+    ;({
+      issuerAgent: faberAgent,
+      holderAgent: aliceAgent,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+      holderIssuerConnectionId: aliceConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber agent',
+      holderName: 'Alice agent',
+    }))
   })
 
   afterAll(async () => {
@@ -50,7 +52,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       parentThreadId,
       proofFormats: {
@@ -118,30 +120,6 @@ describe('Present Proof Subprotocol', () => {
     const parentThreadId = uuid()
     testLogger.test('Faber sends presentation request to Alice')
 
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
       state: ProofState.RequestReceived,
@@ -150,15 +128,35 @@ describe('Present Proof Subprotocol', () => {
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
     const faberProofExchangeRecord = await faberAgent.proofs.requestProof({
-      connectionId: faberConnection.id,
+      connectionId: faberConnectionId,
       parentThreadId,
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requestedAttributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requestedPredicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
     })
@@ -217,7 +215,7 @@ describe('Present Proof Subprotocol', () => {
     })
 
     aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       parentThreadId,
       proofFormats: {
@@ -285,30 +283,6 @@ describe('Present Proof Subprotocol', () => {
     const parentThreadId = uuid()
     testLogger.test('Faber sends presentation request to Alice')
 
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
       state: ProofState.RequestReceived,
@@ -317,15 +291,35 @@ describe('Present Proof Subprotocol', () => {
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
     const faberProofExchangeRecord = await faberAgent.proofs.requestProof({
-      connectionId: faberConnection.id,
+      connectionId: faberConnectionId,
       parentThreadId,
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requestedAttributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requestedPredicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
     })

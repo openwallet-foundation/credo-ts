@@ -27,11 +27,7 @@ let signerKey: Key
 
 describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
-    await indyVdrPoolService.connectToPools()
-
-    if (agentConfig.walletConfig) {
-      await wallet.createAndOpen(agentConfig.walletConfig)
-    }
+    await wallet.createAndOpen(agentConfig.walletConfig)
 
     signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
   })

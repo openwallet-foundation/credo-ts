@@ -33,7 +33,6 @@
     "@types/node-fetch": "^2.5.10",
     "@types/ws": "^7.4.6",
     "abort-controller": "^3.0.0",
-    "bn.js": "^5.2.0",
     "borc": "^3.0.0",
     "buffer": "^6.0.3",
     "class-transformer": "0.5.1",

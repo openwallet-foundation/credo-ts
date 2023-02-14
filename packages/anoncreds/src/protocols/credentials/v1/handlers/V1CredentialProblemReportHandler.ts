@@ -1,7 +1,7 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
+import type { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
 import { V1CredentialProblemReportMessage } from '../messages'
-import { MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
 export class V1CredentialProblemReportHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol

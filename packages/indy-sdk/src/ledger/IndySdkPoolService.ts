@@ -86,7 +86,7 @@ export class IndySdkPoolService {
 
       // one or more of the ledgers returned an unknown error
       throw new IndySdkPoolError(
-        `Unknown error retrieving did '${did}' from '${rejectedOtherThanNotFound.length}' of '${pools.length}' ledgers`,
+        `Unknown error retrieving did '${did}' from '${rejectedOtherThanNotFound.length}' of '${pools.length}' ledgers. ${rejectedOtherThanNotFound[0].reason}`,
         { cause: rejectedOtherThanNotFound[0].reason }
       )
     }

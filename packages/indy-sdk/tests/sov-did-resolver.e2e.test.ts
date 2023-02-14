@@ -1,31 +1,12 @@
 import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegistrar'
 
 import { Agent, AriesFrameworkError, JsonTransformer } from '@aries-framework/core'
-import { uuid } from '@aries-framework/core/src/utils/uuid'
-import { genesisPath, getAgentOptions, taaAcceptanceMechanism, taaVersion } from '@aries-framework/core/tests/helpers'
-import indySdk from 'indy-sdk'
 
-import { IndySdkModule } from '../src'
+import { getAgentOptions } from '../../core/tests/helpers'
 
-const agent = new Agent(
-  getAgentOptions(
-    'Indy SDK Sov DID resolver',
-    {},
-    {
-      indySdk: new IndySdkModule({
-        indySdk,
-        networks: [
-          {
-            isProduction: false,
-            genesisPath,
-            indyNamespace: `pool:localtest:${uuid()}`,
-            transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-          },
-        ],
-      }),
-    }
-  )
-)
+import { getIndySdkModules } from './setupIndySdkModule'
+
+const agent = new Agent(getAgentOptions('Indy SDK Sov DID resolver', {}, getIndySdkModules()))
 
 describe('Indy SDK Sov DID resolver', () => {
   beforeAll(async () => {

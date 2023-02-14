@@ -1,9 +1,13 @@
 import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
-// FIXME
-import { credDefIdRegex, indyDidRegex, schemaIdRegex, schemaVersionRegex } from '@aries-framework/core/src/utils'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
+import {
+  legacyIndyCredentialDefinitionIdRegex,
+  legacyIndyDidRegex,
+  legacyIndySchemaIdRegex,
+  legacyIndySchemaVersionRegex,
+} from '../../../../utils'
 import { V1CredentialPreview } from './V1CredentialPreview'
 
 export interface V1ProposeCredentialMessageOptions {
@@ -70,7 +74,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(indyDidRegex)
+  @Matches(legacyIndyDidRegex)
   public schemaIssuerDid?: string
 
   /**
@@ -79,7 +83,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_id' })
   @IsString()
   @IsOptional()
-  @Matches(schemaIdRegex)
+  @Matches(legacyIndySchemaIdRegex)
   public schemaId?: string
 
   /**
@@ -96,7 +100,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_version' })
   @IsString()
   @IsOptional()
-  @Matches(schemaVersionRegex, {
+  @Matches(legacyIndySchemaVersionRegex, {
     message: 'Version must be X.X or X.X.X',
   })
   public schemaVersion?: string
@@ -107,7 +111,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @IsOptional()
-  @Matches(credDefIdRegex)
+  @Matches(legacyIndyCredentialDefinitionIdRegex)
   public credentialDefinitionId?: string
 
   /**
@@ -116,6 +120,6 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(indyDidRegex)
+  @Matches(legacyIndyDidRegex)
   public issuerDid?: string
 }
