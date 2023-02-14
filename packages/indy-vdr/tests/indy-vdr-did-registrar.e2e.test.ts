@@ -1,7 +1,6 @@
-import type { Key } from '@aries-framework/core'
-
 import { AskarStorageService, AskarWallet } from '@aries-framework/askar'
 import {
+  Key,
   InjectionSymbols,
   CacheModuleConfig,
   InMemoryLruCache,
@@ -9,16 +8,22 @@ import {
   KeyType,
   SigningProviderRegistry,
   TypedArrayEncoder,
+  DidCommV1Service,
+  DidCommV2Service,
+  DidDocumentService,
 } from '@aries-framework/core'
+import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
+import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 
 import '@hyperledger/aries-askar-nodejs'
+
 import { indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
@@ -68,7 +73,7 @@ describe('Indy VDR registrar E2E', () => {
     await wallet.delete()
   })
 
-  test('can register a did:indy without endpoints', async () => {
+  test('can register a did:indy without services', async () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       options: {
@@ -102,6 +107,173 @@ describe('Indy VDR registrar E2E', () => {
         capabilityInvocation: undefined,
         authentication: [`${did}#verkey`],
         service: undefined,
+      },
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    })
+  })
+
+  test('can register a did:indy without services - did and verkey specified', async () => {
+    // Generate a seed and the indy did. This allows us to create a new did every time
+    // but still check if the created output document is as expected.
+    const seed = Array(32 + 1)
+      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+      .slice(0, 32)
+
+    const keyPair = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed))
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(keyPair.publicKey)
+
+    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
+      'pool:localtest',
+      Key.fromPublicKey(keyPair.publicKey, KeyType.Ed25519)
+    )
+    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
+      method: 'indy',
+      did,
+      options: {
+        submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
+        submitterVerkey: signerKey.publicKeyBase58,
+        verkey,
+      },
+    })
+
+    const receivedDid = result.didState.did
+
+    if (!receivedDid) {
+      throw Error('did not defined')
+    }
+
+    const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
+      didDocument: {
+        '@context': ['https://w3id.org/did/v1'],
+        id: did,
+        alsoKnownAs: undefined,
+        controller: undefined,
+        verificationMethod: [
+          {
+            type: 'Ed25519VerificationKey2018',
+            controller: did,
+            id: `${did}#verkey`,
+            publicKeyBase58: ed25519PublicKeyBase58,
+          },
+        ],
+        capabilityDelegation: undefined,
+        capabilityInvocation: undefined,
+        authentication: [`${did}#verkey`],
+        service: undefined,
+      },
+      didDocumentMetadata: {},
+      didResolutionMetadata: {
+        contentType: 'application/did+ld+json',
+      },
+    })
+  })
+
+  test('can register a did:indy with services - did and verkey specified - using attrib endpoint', async () => {
+    // Generate a seed and the indy did. This allows us to create a new did every time
+    // but still check if the created output document is as expected.
+    const seed = Array(32 + 1)
+      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+      .slice(0, 32)
+
+    const key = await wallet.createKey({ seed: seed, keyType: KeyType.Ed25519 })
+    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(key.publicKey))
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(key.publicKey)
+
+    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
+      'pool:localtest',
+      Key.fromPublicKey(key.publicKey, KeyType.Ed25519)
+    )
+
+    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
+      method: 'indy',
+      did,
+      options: {
+        submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
+        submitterVerkey: signerKey.publicKeyBase58,
+        useEndpointAttrib: true,
+        verkey,
+        services: [
+          new DidDocumentService({
+            id: `${did}#endpoint`,
+            serviceEndpoint: 'https://example.com/endpoint',
+            type: 'endpoint',
+          }),
+          new DidCommV1Service({
+            id: `${did}#did-communication`,
+            priority: 0,
+            recipientKeys: [`${did}#key-agreement-1`],
+            routingKeys: ['a-routing-key'],
+            serviceEndpoint: 'https://example.com/endpoint',
+          }),
+          new DidCommV2Service({
+            accept: ['didcomm/v2'],
+            id: `${did}#didcomm-1`,
+            routingKeys: ['a-routing-key'],
+            serviceEndpoint: 'https://example.com/endpoint',
+          }),
+        ],
+      },
+    })
+
+    const services = [
+      {
+        id: `${did}#endpoint`,
+        serviceEndpoint: 'https://example.com/endpoint',
+        type: 'endpoint',
+      },
+      {
+        accept: ['didcomm/aip2;env=rfc19'],
+        id: `${did}#did-communication`,
+        priority: 0,
+        recipientKeys: [`${did}#key-agreement-1`],
+        routingKeys: ['a-routing-key'],
+        serviceEndpoint: 'https://example.com/endpoint',
+        type: 'did-communication',
+      },
+      {
+        accept: ['didcomm/v2'],
+        id: `${did}#didcomm-1`,
+        routingKeys: ['a-routing-key'],
+        serviceEndpoint: 'https://example.com/endpoint',
+        type: 'DIDComm',
+      },
+    ]
+
+    const receivedDid = result.didState.did
+
+    if (!receivedDid) {
+      throw Error('did not defined')
+    }
+
+    const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    expect(JsonTransformer.toJSON(didResult)).toMatchObject({
+      didDocument: {
+        '@context': ['https://w3id.org/did/v1', 'https://didcomm.org/messaging/contexts/v2'],
+        id: did,
+        alsoKnownAs: undefined,
+        controller: undefined,
+        verificationMethod: [
+          {
+            type: 'Ed25519VerificationKey2018',
+            controller: did,
+            id: `${did}#verkey`,
+            publicKeyBase58: ed25519PublicKeyBase58,
+          },
+          {
+            type: 'X25519KeyAgreementKey2019',
+            controller: did,
+            id: `${did}#key-agreement-1`,
+            publicKeyBase58: x25519PublicKeyBase58,
+          },
+        ],
+        capabilityDelegation: undefined,
+        capabilityInvocation: undefined,
+        authentication: [`${did}#verkey`],
+        service: services,
       },
       didDocumentMetadata: {},
       didResolutionMetadata: {

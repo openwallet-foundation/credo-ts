@@ -23,6 +23,7 @@ import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
+import { isSelfCertifiedDid } from '../utils/did'
 
 import { createKeyAgreementKey, deepObjectDiff, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
 import { endpointsAttribFromServices } from './didSovUtil'
@@ -74,7 +75,9 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             },
           }
         }
-        // TODO: Validate that specified did matches to verkey
+        if (!isSelfCertifiedDid) {
+          throw new Error(`Initial verkey ${verkey} does not match did ˇ${did}`)
+        }
       } else {
         // Create a new key and calculate did according to the rules for indy did method
         const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
@@ -91,7 +94,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       // Add services if object was passed
       if (services) {
-        services.forEach(didDocumentBuilder.addService)
+        services.forEach((item) => didDocumentBuilder.addService(item))
 
         const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
         const serviceTypes = new Set(services.map((item) => item.type))
@@ -141,7 +144,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       )
 
       if (services && useEndpointAttrib) {
-        await this.setEndpointsForDid(agentContext, pool, id, endpointsAttribFromServices(services))
+        await this.setEndpointsForDid(agentContext, pool, verkey, id, endpointsAttribFromServices(services))
       }
 
       // Save the did so we know we created it and can issue with it
@@ -263,6 +266,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private async setEndpointsForDid(
     agentContext: AgentContext,
     pool: IndyVdrPool,
+    submitterVerkey: string,
     did: string,
     endpoints: IndyEndpointAttrib
   ): Promise<void> {
@@ -275,7 +279,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         raw: JSON.stringify({ endpoint: endpoints }),
       })
 
-      const signingKey = Key.fromPublicKeyBase58(did, KeyType.Ed25519)
+      const signingKey = Key.fromPublicKeyBase58(submitterVerkey, KeyType.Ed25519)
+
       const response = await pool.submitWriteRequest(agentContext, request, signingKey)
       agentContext.config.logger.debug(
         `Successfully set endpoints for did '${did}' on ledger '${pool.indyNamespace}'`,

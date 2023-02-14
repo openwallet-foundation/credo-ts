@@ -107,33 +107,34 @@ function processEndpointTypes(types?: string[]) {
   return types
 }
 
-export function endpointsAttribFromServices(services: DidDocumentService[]) {
+export function endpointsAttribFromServices(services: DidDocumentService[]): IndyEndpointAttrib {
   const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
   const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
-
-  const attrib: IndyEndpointAttrib = { endpoint: services[0].serviceEndpoint, types: [], routingKeys: [] }
 
   // Check that all services use the same endpoint, as only one is accepted
   if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
     throw new AriesFrameworkError('serviceEndpoint for all services must match')
   }
 
+  const types: CommEndpointType[] = []
+  const routingKeys = new Set<string>()
+
   for (const commService of commServices) {
     const commServiceType = commService.type as CommEndpointType
-    if (attrib.types?.includes(commServiceType)) {
+    if (types.includes(commServiceType)) {
       throw new AriesFrameworkError('Only a single communication service per type is supported')
     } else {
-      attrib.types?.push(commServiceType)
+      types.push(commServiceType)
     }
 
     if (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) {
       if (commService.routingKeys) {
-        attrib.routingKeys?.push()
+        commService.routingKeys.forEach((item) => routingKeys.add(item))
       }
     }
   }
 
-  return attrib
+  return { endpoint: services[0].serviceEndpoint, types, routingKeys: Array.from(routingKeys) }
 }
 
 export function addServicesFromEndpointsAttrib(

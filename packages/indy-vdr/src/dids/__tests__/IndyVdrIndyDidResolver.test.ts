@@ -9,21 +9,16 @@ import didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent from './__fixtures__/didIndyLj
 import didIndyR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didIndyR1xKJw17sUoXhejEpugMYJ.json'
 import didIndyWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didIndyWJz9mHyW9BZksioQnRsrAo.json'
 
-jest.mock('../../pool/IndyVdrPoolService')
-const IndyVdrPoolServiceMock = IndyVdrPoolService as jest.Mock<IndyVdrPoolService>
-const poolServiceMock = new IndyVdrPoolServiceMock()
-
 jest.mock('../../pool/IndyVdrPool')
 const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
-jest.spyOn(poolServiceMock, 'getPoolForNamespace').mockReturnValue(poolMock)
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidResolver')
 
 const agentContext = getAgentContext({
   agentConfig,
-  registerInstances: [[IndyVdrPoolService, poolServiceMock]],
+  registerInstances: [[IndyVdrPoolService, { getPoolForNamespace: jest.fn().mockReturnValue(poolMock) }]],
 })
 
 const resolver = new IndyVdrIndyDidResolver()
