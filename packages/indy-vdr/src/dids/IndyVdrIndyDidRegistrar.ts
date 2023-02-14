@@ -23,7 +23,6 @@ import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-import {} from '../utils/did'
 
 import {
   createKeyAgreementKey,
