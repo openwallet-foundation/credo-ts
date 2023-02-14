@@ -12,9 +12,9 @@ import type {
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
   AnonCredsProofRequestRestriction,
-  AnonCredsRequestedAttribute,
-  AnonCredsRequestedPredicate,
   AnonCredsCredential,
+  AnonCredsRequestedAttributeMatch,
+  AnonCredsRequestedPredicateMatch,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
 import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
@@ -63,7 +63,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   }
 
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {
-    const { credentialDefinitions, proofRequest, requestedCredentials, schemas } = options
+    const { credentialDefinitions, proofRequest, selectedCredentials, schemas } = options
 
     try {
       const rsCredentialDefinitions: Record<string, CredentialDefinition> = {}
@@ -82,7 +82,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const retrievedCredentials = new Map<string, AnonCredsCredentialRecord>()
 
       const credentialEntryFromAttribute = async (
-        attribute: AnonCredsRequestedAttribute | AnonCredsRequestedPredicate
+        attribute: AnonCredsRequestedAttributeMatch | AnonCredsRequestedPredicateMatch
       ): Promise<{ linkSecretId: string; credentialEntry: CredentialEntry }> => {
         let credentialRecord = retrievedCredentials.get(attribute.credentialId)
         if (!credentialRecord) {
@@ -136,15 +136,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const credentials: { linkSecretId: string; credentialEntry: CredentialEntry }[] = []
 
       let entryIndex = 0
-      for (const referent in requestedCredentials.requestedAttributes) {
-        const attribute = requestedCredentials.requestedAttributes[referent]
+      for (const referent in selectedCredentials.attributes) {
+        const attribute = selectedCredentials.attributes[referent]
         credentials.push(await credentialEntryFromAttribute(attribute))
         credentialsProve.push({ entryIndex, isPredicate: false, referent, reveal: attribute.revealed })
         entryIndex = entryIndex + 1
       }
 
-      for (const referent in requestedCredentials.requestedPredicates) {
-        const predicate = requestedCredentials.requestedPredicates[referent]
+      for (const referent in selectedCredentials.predicates) {
+        const predicate = selectedCredentials.predicates[referent]
         credentials.push(await credentialEntryFromAttribute(predicate))
         credentialsProve.push({ entryIndex, isPredicate: true, referent, reveal: true })
         entryIndex = entryIndex + 1
@@ -170,7 +170,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
-        selfAttest: requestedCredentials.selfAttestedAttributes,
+        selfAttest: selectedCredentials.selfAttestedAttributes,
         masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
       })
 
@@ -179,7 +179,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       agentContext.config.logger.error(`Error creating AnonCreds Proof`, {
         error,
         proofRequest,
-        requestedCredentials,
+        selectedCredentials,
       })
       throw new AnonCredsRsError(`Error creating proof: ${error}`, { cause: error })
     }

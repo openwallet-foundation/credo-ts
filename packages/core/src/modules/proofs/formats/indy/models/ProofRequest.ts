@@ -1,3 +1,5 @@
+import type { ProofAttributeInfoOptions } from './ProofAttributeInfo'
+import type { ProofPredicateInfoOptions } from './ProofPredicateInfo'
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -16,8 +18,8 @@ export interface ProofRequestOptions {
   nonce: string
   nonRevoked?: IndyRevocationInterval
   ver?: '1.0' | '2.0'
-  requestedAttributes?: Record<string, ProofAttributeInfo> | Map<string, ProofAttributeInfo>
-  requestedPredicates?: Record<string, ProofPredicateInfo> | Map<string, ProofPredicateInfo>
+  requestedAttributes?: Record<string, ProofAttributeInfoOptions>
+  requestedPredicates?: Record<string, ProofPredicateInfoOptions>
 }
 
 /**
@@ -31,17 +33,22 @@ export class ProofRequest {
       this.name = options.name
       this.version = options.version
       this.nonce = options.nonce
-      this.requestedAttributes = options.requestedAttributes
-        ? options.requestedAttributes instanceof Map
-          ? options.requestedAttributes
-          : new Map(Object.entries(options.requestedAttributes))
-        : new Map()
-      this.requestedPredicates = options.requestedPredicates
-        ? options.requestedPredicates instanceof Map
-          ? options.requestedPredicates
-          : new Map(Object.entries(options.requestedPredicates))
-        : new Map()
-      this.nonRevoked = options.nonRevoked
+
+      this.requestedAttributes = new Map(
+        Object.entries(options.requestedAttributes ?? {}).map(([key, attribute]) => [
+          key,
+          new ProofAttributeInfo(attribute),
+        ])
+      )
+
+      this.requestedPredicates = new Map(
+        Object.entries(options.requestedPredicates ?? {}).map(([key, predicate]) => [
+          key,
+          new ProofPredicateInfo(predicate),
+        ])
+      )
+
+      this.nonRevoked = options.nonRevoked ? new IndyRevocationInterval(options.nonRevoked) : undefined
       this.ver = options.ver
     }
   }

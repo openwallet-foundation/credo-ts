@@ -1,10 +1,14 @@
-import type { CredentialFormatsFromProtocols, GetFormatDataReturn } from './CredentialProtocolOptions'
 import type { CredentialFormatPayload } from './formats'
-import type { AutoAcceptCredential } from './models/CredentialAutoAcceptType'
+import type { AutoAcceptCredential } from './models'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
+import type {
+  CredentialFormatsFromProtocols,
+  DeleteCredentialOptions,
+  GetCredentialFormatDataReturn,
+} from './protocol/CredentialProtocolOptions'
 
-// re-export GetFormatDataReturn type from service, as it is also used in the module
-export type { GetFormatDataReturn }
+// re-export GetCredentialFormatDataReturn type from protocol, as it is also used in the api
+export type { GetCredentialFormatDataReturn, DeleteCredentialOptions }
 
 export type FindCredentialProposalMessageReturn<CPs extends CredentialProtocol[] = CredentialProtocol[]> = ReturnType<
   CPs[number]['findProposalMessage']
@@ -24,23 +28,6 @@ export type FindCredentialMessageReturn<CPs extends CredentialProtocol[] = Crede
  */
 export type CredentialProtocolVersionType<CPs extends CredentialProtocol[] = CredentialProtocol[]> =
   CPs[number]['version']
-
-/**
- * Get the service map for usage in the credentials module. Will return a type mapping of protocol version to service.
- *
- * @example
- * ```
- * type ProtocolMap = CredentialProtocolMap<[IndyCredentialFormatService], [V1CredentialProtocol]>
- *
- * // equal to
- * type ProtocolMap = {
- *   v1: V1CredentialProtocol
- * }
- * ```
- */
-export type CredentialProtocolMap<CPs extends CredentialProtocol[] = CredentialProtocol[]> = {
-  [CP in CPs[number] as CP['version']]: CredentialProtocol
-}
 
 interface BaseOptions {
   autoAcceptCredential?: AutoAcceptCredential
@@ -79,17 +66,18 @@ export interface NegotiateCredentialProposalOptions<CPs extends CredentialProtoc
 /**
  * Interface for CredentialsApi.createOffer. Will create an out of band offer
  */
-export interface CreateOfferOptions<CPs extends CredentialProtocol[] = CredentialProtocol[]> extends BaseOptions {
+export interface CreateCredentialOfferOptions<CPs extends CredentialProtocol[] = CredentialProtocol[]>
+  extends BaseOptions {
   protocolVersion: CredentialProtocolVersionType<CPs>
   credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
 }
 
 /**
- * Interface for CredentialsApi.offerCredentials. Extends CreateOfferOptions, will send an offer
+ * Interface for CredentialsApi.offerCredential. Extends CreateCredentialOfferOptions, will send an offer
  */
 export interface OfferCredentialOptions<CPs extends CredentialProtocol[] = CredentialProtocol[]>
   extends BaseOptions,
-    CreateOfferOptions<CPs> {
+    CreateCredentialOfferOptions<CPs> {
   connectionId: string
 }
 
@@ -138,5 +126,5 @@ export interface AcceptCredentialOptions {
  */
 export interface SendCredentialProblemReportOptions {
   credentialRecordId: string
-  message: string
+  description: string
 }

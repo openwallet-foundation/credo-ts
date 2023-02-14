@@ -1,3 +1,5 @@
+import type { RequestedAttributeOptions } from './RequestedAttribute'
+import type { RequestedPredicateOptions } from './RequestedPredicate'
 import type { IndyRequestedCredentials } from 'indy-sdk'
 
 import { Expose } from 'class-transformer'
@@ -10,8 +12,8 @@ import { RequestedAttribute } from './RequestedAttribute'
 import { RequestedPredicate } from './RequestedPredicate'
 
 export interface IndyRequestedCredentialsOptions {
-  requestedAttributes?: Record<string, RequestedAttribute>
-  requestedPredicates?: Record<string, RequestedPredicate>
+  requestedAttributes?: Record<string, RequestedAttributeOptions>
+  requestedPredicates?: Record<string, RequestedPredicateOptions>
   selfAttestedAttributes?: Record<string, string>
 }
 
@@ -23,8 +25,24 @@ export interface IndyRequestedCredentialsOptions {
 export class RequestedCredentials {
   public constructor(options: IndyRequestedCredentialsOptions = {}) {
     if (options) {
-      this.requestedAttributes = options.requestedAttributes ?? {}
-      this.requestedPredicates = options.requestedPredicates ?? {}
+      const { requestedAttributes, requestedPredicates } = options
+
+      // Create RequestedAttribute objects from options
+      this.requestedAttributes = {}
+      if (requestedAttributes) {
+        Object.keys(requestedAttributes).forEach((key) => {
+          this.requestedAttributes[key] = new RequestedAttribute(requestedAttributes[key])
+        })
+      }
+
+      // Create RequestedPredicate objects from options
+      this.requestedPredicates = {}
+      if (requestedPredicates) {
+        Object.keys(requestedPredicates).forEach((key) => {
+          this.requestedPredicates[key] = new RequestedPredicate(requestedPredicates[key])
+        })
+      }
+
       this.selfAttestedAttributes = options.selfAttestedAttributes ?? {}
     }
   }

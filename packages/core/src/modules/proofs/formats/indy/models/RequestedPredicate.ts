@@ -1,17 +1,26 @@
+import type { IndyCredentialInfoOptions } from '../../../../credentials'
+
 import { Exclude, Expose } from 'class-transformer'
 import { IsInt, IsOptional, IsString } from 'class-validator'
 
 import { IndyCredentialInfo } from '../../../../credentials'
 
+export interface RequestedPredicateOptions {
+  credentialId: string
+  timestamp?: number
+  credentialInfo?: IndyCredentialInfoOptions
+  revoked?: boolean
+}
+
 /**
  * Requested Predicate for Indy proof creation
  */
 export class RequestedPredicate {
-  public constructor(options: RequestedPredicate) {
+  public constructor(options: RequestedPredicateOptions) {
     if (options) {
       this.credentialId = options.credentialId
       this.timestamp = options.timestamp
-      this.credentialInfo = options.credentialInfo
+      this.credentialInfo = options.credentialInfo ? new IndyCredentialInfo(options.credentialInfo) : undefined
       this.revoked = options.revoked
     }
   }

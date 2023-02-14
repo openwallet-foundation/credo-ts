@@ -9,7 +9,7 @@ export interface AnonCredsCredentialInfo {
   credentialRevocationId?: string | undefined
 }
 
-export interface AnonCredsRequestedAttribute {
+export interface AnonCredsRequestedAttributeMatch {
   credentialId: string
   timestamp?: number
   revealed: boolean
@@ -17,16 +17,16 @@ export interface AnonCredsRequestedAttribute {
   revoked?: boolean
 }
 
-export interface AnonCredsRequestedPredicate {
+export interface AnonCredsRequestedPredicateMatch {
   credentialId: string
   timestamp?: number
   credentialInfo: AnonCredsCredentialInfo
   revoked?: boolean
 }
 
-export interface AnonCredsRequestedCredentials {
-  requestedAttributes?: Record<string, AnonCredsRequestedAttribute>
-  requestedPredicates?: Record<string, AnonCredsRequestedPredicate>
+export interface AnonCredsSelectedCredentials {
+  attributes: Record<string, AnonCredsRequestedAttributeMatch>
+  predicates: Record<string, AnonCredsRequestedPredicateMatch>
   selfAttestedAttributes: Record<string, string>
 }
 

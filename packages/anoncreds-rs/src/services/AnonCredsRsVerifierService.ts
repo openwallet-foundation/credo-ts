@@ -1,4 +1,5 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
+import type { AgentContext } from '@aries-framework/core'
 
 import { injectable } from '@aries-framework/core'
 import {
@@ -14,8 +15,8 @@ import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
-  public async verifyProof(options: VerifyProofOptions): Promise<boolean> {
-    const { credentialDefinitions, proof, proofRequest, revocationStates, schemas } = options
+  public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
+    const { credentialDefinitions, proof, proofRequest, revocationRegistries, schemas } = options
 
     try {
       const presentation = Presentation.load(JSON.stringify(proof))
@@ -33,8 +34,8 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
       const lists = []
 
-      for (const revocationRegistryDefinitionId in revocationStates) {
-        const { definition, revocationStatusLists } = options.revocationStates[revocationRegistryDefinitionId]
+      for (const revocationRegistryDefinitionId in revocationRegistries) {
+        const { definition, revocationStatusLists } = options.revocationRegistries[revocationRegistryDefinitionId]
 
         revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.load(
           JSON.stringify(definition)

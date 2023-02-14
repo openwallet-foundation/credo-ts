@@ -117,7 +117,7 @@ const mockCredentialRecord = ({
     id: '',
     formats: [
       {
-        attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+        attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
         format: 'hlindy/cred-abstract@v2.0',
       },
     ],
@@ -220,7 +220,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
     })
@@ -255,7 +255,7 @@ describe('JsonLd CredentialFormatService', () => {
       expect(previewAttributes).toBeUndefined()
 
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
     })
@@ -294,7 +294,7 @@ describe('JsonLd CredentialFormatService', () => {
         },
       })
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc-detail@v1.0',
       })
     })
@@ -362,7 +362,7 @@ describe('JsonLd CredentialFormatService', () => {
         },
       })
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'aries/ld-proof-vc@1.0',
       })
     })
@@ -552,7 +552,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       // indirectly test areCredentialsEqual as black box rather than expose that method in the API
-      let areCredentialsEqual = jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
+      let areCredentialsEqual = await jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
         credentialRecord,
         proposalAttachment: message1,
         offerAttachment: message2,
@@ -570,7 +570,7 @@ describe('JsonLd CredentialFormatService', () => {
         base64: JsonEncoder.toBase64(inputDoc2),
       })
 
-      areCredentialsEqual = jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
+      areCredentialsEqual = await jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
         credentialRecord,
         proposalAttachment: message1,
         offerAttachment: message2,

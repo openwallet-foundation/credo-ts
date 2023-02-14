@@ -6,7 +6,6 @@ import { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
  *	- Otherwise the agent config
  *	- Otherwise {@link AutoAcceptCredential.Never} is returned
  */
-
 export function composeAutoAccept(
   recordConfig: AutoAcceptCredential | undefined,
   agentConfig: AutoAcceptCredential | undefined

@@ -252,10 +252,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
         const result = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
-          proofType: 'Ed25519Signature2018',
           challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
-          verificationMethod:
-            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         })
 
         expect(result.verified).toBe(true)

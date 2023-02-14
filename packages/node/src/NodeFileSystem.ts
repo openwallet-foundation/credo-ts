@@ -1,5 +1,7 @@
-import type { FileSystem } from '@aries-framework/core'
+import type { DownloadToFileOptions, FileSystem } from '@aries-framework/core'
 
+import { AriesFrameworkError, TypedArrayEncoder } from '@aries-framework/core'
+import { createHash } from 'crypto'
 import fs, { promises } from 'fs'
 import http from 'http'
 import https from 'https'
@@ -44,13 +46,14 @@ export class NodeFileSystem implements FileSystem {
     return readFile(path, { encoding: 'utf-8' })
   }
 
-  public async downloadToFile(url: string, path: string) {
+  public async downloadToFile(url: string, path: string, options: DownloadToFileOptions) {
     const httpMethod = url.startsWith('https') ? https : http
 
     // Make sure parent directories exist
     await promises.mkdir(dirname(path), { recursive: true })
 
     const file = fs.createWriteStream(path)
+    const hash = options.verifyHash ? createHash('sha256') : undefined
 
     return new Promise<void>((resolve, reject) => {
       httpMethod
@@ -60,9 +63,26 @@ export class NodeFileSystem implements FileSystem {
             reject(`Unable to download file from url: ${url}. Response status was ${response.statusCode}`)
           }
 
+          hash && response.pipe(hash)
           response.pipe(file)
-          file.on('finish', () => {
+          file.on('finish', async () => {
             file.close()
+
+            if (hash && options.verifyHash?.hash) {
+              hash.end()
+              const digest = hash.digest()
+              if (digest.compare(options.verifyHash.hash) !== 0) {
+                await fs.promises.unlink(path)
+
+                reject(
+                  new AriesFrameworkError(
+                    `Hash of downloaded file does not match expected hash. Expected: ${
+                      options.verifyHash.hash
+                    }, Actual: ${TypedArrayEncoder.toUtf8String(digest)})}`
+                  )
+                )
+              }
+            }
             resolve()
           })
         })

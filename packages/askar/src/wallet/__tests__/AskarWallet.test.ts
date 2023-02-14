@@ -57,7 +57,9 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('Generate Nonce', async () => {
-    await expect(askarWallet.generateNonce()).resolves.toEqual(expect.any(String))
+    const nonce = await askarWallet.generateNonce()
+
+    expect(nonce).toMatch(/[0-9]+/)
   })
 
   test('Create ed25519 keypair', async () => {

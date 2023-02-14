@@ -82,6 +82,14 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
     }
   }
 
+  public assertProtocolVersion(version: string) {
+    if (this.protocolVersion !== version) {
+      throw new AriesFrameworkError(
+        `Proof record has invalid protocol version ${this.protocolVersion}. Expected version ${version}`
+      )
+    }
+  }
+
   public assertConnection(currentConnectionId: string) {
     if (!this.connectionId) {
       throw new AriesFrameworkError(

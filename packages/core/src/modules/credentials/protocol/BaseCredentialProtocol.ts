@@ -1,4 +1,19 @@
 import type { CredentialProtocol } from './CredentialProtocol'
+import type {
+  CreateCredentialProposalOptions,
+  CredentialProtocolMsgReturnType,
+  DeleteCredentialOptions,
+  AcceptCredentialProposalOptions,
+  NegotiateCredentialProposalOptions,
+  CreateCredentialOfferOptions,
+  NegotiateCredentialOfferOptions,
+  CreateCredentialRequestOptions,
+  AcceptCredentialOfferOptions,
+  AcceptCredentialRequestOptions,
+  AcceptCredentialOptions,
+  GetCredentialFormatDataReturn,
+  CreateCredentialProblemReportOptions,
+} from './CredentialProtocolOptions'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
@@ -7,21 +22,6 @@ import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
 import type { ProblemReportMessage } from '../../problem-reports'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
-import type {
-  CreateProposalOptions,
-  CredentialProtocolMsgReturnType,
-  DeleteCredentialOptions,
-  AcceptProposalOptions,
-  NegotiateProposalOptions,
-  CreateOfferOptions,
-  NegotiateOfferOptions,
-  CreateRequestOptions,
-  AcceptOfferOptions,
-  AcceptRequestOptions,
-  AcceptCredentialOptions,
-  GetFormatDataReturn,
-  CreateProblemReportOptions,
-} from '../CredentialProtocolOptions'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialExchangeRecord } from '../repository'
 
@@ -46,44 +46,44 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   // methods for proposal
   public abstract createProposal(
     agentContext: AgentContext,
-    options: CreateProposalOptions<CFs>
+    options: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   public abstract processProposal(
     messageContext: InboundMessageContext<AgentMessage>
   ): Promise<CredentialExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
-    options: AcceptProposalOptions<CFs>
+    options: AcceptCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   public abstract negotiateProposal(
     agentContext: AgentContext,
-    options: NegotiateProposalOptions<CFs>
+    options: NegotiateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for offer
   public abstract createOffer(
     agentContext: AgentContext,
-    options: CreateOfferOptions<CFs>
+    options: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   public abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
   public abstract acceptOffer(
     agentContext: AgentContext,
-    options: AcceptOfferOptions<CFs>
+    options: AcceptCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   public abstract negotiateOffer(
     agentContext: AgentContext,
-    options: NegotiateOfferOptions<CFs>
+    options: NegotiateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for request
   public abstract createRequest(
     agentContext: AgentContext,
-    options: CreateRequestOptions<CFs>
+    options: CreateCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
   public abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
-    options: AcceptRequestOptions<CFs>
+    options: AcceptCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
 
   // methods for issue
@@ -101,8 +101,8 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   // methods for problem-report
   public abstract createProblemReport(
     agentContext: AgentContext,
-    options: CreateProblemReportOptions
-  ): ProblemReportMessage
+    options: CreateCredentialProblemReportOptions
+  ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>>
 
   public abstract findProposalMessage(
     agentContext: AgentContext,
@@ -123,24 +123,9 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   public abstract getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<GetFormatDataReturn<ExtractCredentialFormats<CFs>>>
+  ): Promise<GetCredentialFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
   public abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
-
-  /**
-   * Decline a credential offer
-   * @param credentialRecord The credential to be declined
-   */
-  public async declineOffer(
-    agentContext: AgentContext,
-    credentialRecord: CredentialExchangeRecord
-  ): Promise<CredentialExchangeRecord> {
-    credentialRecord.assertState(CredentialState.OfferReceived)
-
-    await this.updateState(agentContext, credentialRecord, CredentialState.Declined)
-
-    return credentialRecord
-  }
 
   /**
    * Process a received credential {@link ProblemReportMessage}.
@@ -155,17 +140,17 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
 
     const connection = messageContext.assertReadyConnection()
 
-    agentContext.config.logger.debug(`Processing problem report with id ${credentialProblemReportMessage.id}`)
+    agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
     const credentialRecord = await this.getByThreadAndConnectionId(
-      messageContext.agentContext,
+      agentContext,
       credentialProblemReportMessage.threadId,
       connection.id
     )
 
     // Update record
     credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
-    await this.update(messageContext.agentContext, credentialRecord)
+    await this.updateState(agentContext, credentialRecord, CredentialState.Abandoned)
     return credentialRecord
   }
 
@@ -253,10 +238,10 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
    * @param credentialRecordId the credential record id
    * @returns The credential record or null if not found
    */
-  public findById(agentContext: AgentContext, connectionId: string): Promise<CredentialExchangeRecord | null> {
+  public findById(agentContext: AgentContext, proofRecordId: string): Promise<CredentialExchangeRecord | null> {
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
 
-    return credentialRepository.findById(agentContext, connectionId)
+    return credentialRepository.findById(agentContext, proofRecordId)
   }
 
   public async delete(

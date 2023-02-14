@@ -52,6 +52,6 @@ export class V2RequestCredentialMessage extends AgentMessage {
   public comment?: string
 
   public getRequestAttachmentById(id: string): Attachment | undefined {
-    return this.requestAttachments.find((attachment) => attachment.id == id)
+    return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }
