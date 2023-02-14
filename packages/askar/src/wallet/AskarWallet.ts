@@ -399,6 +399,7 @@ export class AskarWallet implements Wallet {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting signing of multiple messages`)
         }
+
         const keyEntry = await this.session.fetchKey({ name: key.publicKeyBase58 })
 
         if (!keyEntry) {
