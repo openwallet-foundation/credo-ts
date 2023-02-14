@@ -84,7 +84,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -94,7 +94,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',
@@ -199,7 +199,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -209,7 +209,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',
@@ -359,7 +359,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -369,7 +369,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',

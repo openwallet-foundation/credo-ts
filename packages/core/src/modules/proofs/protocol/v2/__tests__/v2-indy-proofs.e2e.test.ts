@@ -373,7 +373,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'Proof Request',
           version: '1.0.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -391,7 +391,7 @@ describe('Present Proof', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',
@@ -537,7 +537,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'Proof Request',
           version: '1.0.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -555,7 +555,7 @@ describe('Present Proof', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',
@@ -661,7 +661,7 @@ describe('Present Proof', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -679,7 +679,7 @@ describe('Present Proof', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',

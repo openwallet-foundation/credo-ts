@@ -1,6 +1,10 @@
 import type { EventReplaySubject } from './events'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../src'
 
+import indySdk from 'indy-sdk'
+
+import { BbsModule } from '../../bbs-signatures/src/BbsModule'
+import { IndySdkModule } from '../../indy-sdk/src'
 import {
   CacheModule,
   CredentialEventTypes,
@@ -39,6 +43,10 @@ export const getJsonLdModules = ({
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
+    indySdk: new IndySdkModule({
+      indySdk,
+    }),
+    bbs: new BbsModule(),
   } as const)
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {

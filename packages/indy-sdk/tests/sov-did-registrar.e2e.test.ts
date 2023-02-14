@@ -6,12 +6,12 @@ import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 import { getAgentOptions } from '../../core/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
-import { indySdkModules } from './setupIndySdkModule'
+import { getIndySdkModules } from './setupIndySdkModule'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar', {}, indySdkModules)
+const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getIndySdkModules())
 
 describe('dids', () => {
-  let agent: Agent<typeof indySdkModules>
+  let agent: Agent<ReturnType<typeof getIndySdkModules>>
 
   beforeAll(async () => {
     agent = new Agent(agentOptions)
@@ -51,7 +51,6 @@ describe('dids', () => {
       },
     })
 
-    console.log(did)
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocumentMetadata: {
         qualifiedIndyDid: `did:indy:localhost:${indyDid}`,

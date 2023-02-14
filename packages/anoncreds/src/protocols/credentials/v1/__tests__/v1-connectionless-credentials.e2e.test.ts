@@ -1,33 +1,12 @@
-import type { SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
-import type {
-  AcceptCredentialOfferOptions,
-  AcceptCredentialRequestOptions,
-  CredentialStateChangedEvent,
-} from '@aries-framework/core'
+import type { EventReplaySubject } from '../../../../../../core/tests'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
+import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '@aries-framework/core'
 
-import {
-  Agent,
-  AutoAcceptCredential,
-  CredentialEventTypes,
-  CredentialExchangeRecord,
-  CredentialState,
-} from '@aries-framework/core'
-import { ReplaySubject, Subject } from 'rxjs'
+import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState } from '@aries-framework/core'
 
-import { SubjectInboundTransport } from '../../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../core/tests/helpers'
-import testLogger from '../../../../../../core/tests/logger'
-import { prepareForAnonCredsIssuance } from '../../../../../tests/legacyAnonCredsSetup'
+import { waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
+import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1CredentialPreview } from '../messages'
-
-const faberAgentOptions = getAgentOptions('Faber connection-less Credentials V1', {
-  endpoints: ['rxjs:faber'],
-})
-
-const aliceAgentOptions = getAgentOptions('Alice connection-less Credentials V1', {
-  endpoints: ['rxjs:alice'],
-})
 
 const credentialPreview = V1CredentialPreview.fromRecord({
   name: 'John',
@@ -35,45 +14,25 @@ const credentialPreview = V1CredentialPreview.fromRecord({
 })
 
 describe('V1 Connectionless Credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let faberReplay: ReplaySubject<CredentialStateChangedEvent>
-  let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
 
   beforeEach(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
-    aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await aliceAgent.initialize()
-
-    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+    ;({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber connection-less Credentials V1',
+      holderName: 'Alice connection-less Credentials V1',
       attributeNames: ['name', 'age'],
-      issuerId: faberAgent.publicDid?.did as string,
-    })
-    credentialDefinitionId = credentialDefinition.credentialDefinitionId
-
-    faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
-    aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
-
-    faberAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-      .subscribe(faberReplay)
-    aliceAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-      .subscribe(aliceReplay)
+      createConnections: false,
+    }))
   })
 
   afterEach(async () => {

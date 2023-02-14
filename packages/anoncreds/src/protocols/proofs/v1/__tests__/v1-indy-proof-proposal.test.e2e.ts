@@ -1,28 +1,27 @@
-import type { Agent } from '../../../../../agent/Agent'
-import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V1PresentationPreview } from '../models/V1PresentationPreview'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { DidCommMessageRepository } from '../../../../../storage'
-import { ProofState } from '../../../models/ProofState'
-import { V1ProposePresentationMessage } from '../messages'
+import { ProofState } from '../../../../../../core/src'
+import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let presentationPreview: V1PresentationPreview
-  let faberProofExchangeRecord: ProofExchangeRecord
-  let didCommMessageRepository: DidCommMessageRepository
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
+  let aliceConnectionId: string
+  let credentialDefinitionId: string
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent',
-      'Alice agent'
-    ))
+    ;({
+      issuerAgent: faberAgent,
+      holderAgent: aliceAgent,
+      credentialDefinitionId,
+      holderIssuerConnectionId: aliceConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber - V1 Indy Proof Request',
+      holderName: 'Alice - V1 Indy Proof Request',
+      attributeNames: ['name', 'age'],
+    }))
   })
 
   afterAll(async () => {
@@ -41,29 +40,36 @@ describe('Present Proof', () => {
     })
 
     await aliceAgent.proofs.proposeProof({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
           version: '1.0',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+          attributes: [
+            {
+              name: 'name',
+              value: 'John',
+              credentialDefinitionId,
+            },
+          ],
+          predicates: [
+            {
+              name: 'age',
+              predicate: '>=',
+              threshold: 50,
+              credentialDefinitionId,
+            },
+          ],
         },
       },
       comment: 'V1 propose proof test',
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await faberProofExchangeRecordPromise
+    const faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
-    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofExchangeRecord.id,
-      messageClass: V1ProposePresentationMessage,
-    })
-
+    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
       id: expect.any(String),
@@ -73,19 +79,19 @@ describe('Present Proof', () => {
         attributes: [
           {
             name: 'name',
-            credentialDefinitionId: presentationPreview.attributes[0].credentialDefinitionId,
+            credentialDefinitionId,
             value: 'John',
             referent: '0',
           },
           {
             name: 'image_0',
-            credentialDefinitionId: presentationPreview.attributes[1].credentialDefinitionId,
+            credentialDefinitionId,
           },
         ],
         predicates: [
           {
             name: 'age',
-            credentialDefinitionId: presentationPreview.predicates[0].credentialDefinitionId,
+            credentialDefinitionId,
             predicate: '>=',
             threshold: 50,
           },

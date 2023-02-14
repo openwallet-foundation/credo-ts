@@ -1,5 +1,5 @@
 import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext, Wallet } from '@aries-framework/core'
 
 import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
@@ -17,14 +17,15 @@ import {
   LinkedDataProof,
   W3cPresentation,
   W3cVerifiablePresentation,
-  IndyWallet,
   Ed25519Signature2018,
 } from '@aries-framework/core'
+import indySdk from 'indy-sdk'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
 import { W3cVcModuleConfig } from '../../core/src/modules/vc/W3cVcModuleConfig'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { IndySdkWallet } from '../../indy-sdk/src'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
@@ -59,15 +60,14 @@ const signingProviderRegistry = new SigningProviderRegistry([new Bls12381g2Signi
 const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 
 describeSkipNode17And18('BBS W3cCredentialService', () => {
-  let wallet: IndyWallet
+  let wallet: Wallet
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
   const seed = 'testseed000000000000000000000001'
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,
       wallet,

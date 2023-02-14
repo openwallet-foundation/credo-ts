@@ -4,14 +4,15 @@ import {
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,
-  IndyWallet,
   KeyType,
   SigningProviderRegistry,
 } from '@aries-framework/core'
+import indySdk from 'indy-sdk'
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { IndySdkWallet } from '../../indy-sdk/src'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
@@ -19,7 +20,7 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
-const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })

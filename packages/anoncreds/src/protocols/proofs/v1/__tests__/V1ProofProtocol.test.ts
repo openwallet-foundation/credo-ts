@@ -1,22 +1,23 @@
-import type { AgentContext } from '../../../../../agent'
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
-import type { ProofStateChangedEvent } from '../../../ProofEvents'
-import type { CustomProofTags } from '../../../repository/ProofExchangeRecord'
+import type { CustomProofTags, AgentConfig, AgentContext, ProofStateChangedEvent } from '../../../../../../core/src'
 
 import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
-import { EventEmitter } from '../../../../../agent/EventEmitter'
-import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { DidCommMessageRepository } from '../../../../../storage'
-import { ConnectionService, DidExchangeState } from '../../../../connections'
-import { ProofEventTypes } from '../../../ProofEvents'
-import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
-import { IndyProofFormatService } from '../../../formats/indy/IndyProofFormatService'
-import { ProofState } from '../../../models/ProofState'
-import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import { ProofRepository } from '../../../repository/ProofRepository'
+import {
+  ProofRepository,
+  ConnectionService,
+  DidCommMessageRepository,
+  DidExchangeState,
+  Attachment,
+  AttachmentData,
+  ProofState,
+  ProofExchangeRecord,
+  InboundMessageContext,
+  ProofEventTypes,
+  PresentationProblemReportReason,
+  EventEmitter,
+} from '../../../../../../core/src'
+import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests'
+import { LegacyIndyProofFormatService } from '../../../../formats'
 import { V1ProofProtocol } from '../V1ProofProtocol'
 import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../messages'
 import { V1PresentationProblemReportMessage } from '../messages/V1PresentationProblemReportMessage'
@@ -31,7 +32,7 @@ jest.mock('../../../../../storage/Repository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const indyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
+const indyProofFormatServiceMock = LegacyIndyProofFormatService as jest.Mock<LegacyIndyProofFormatService>
 
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()

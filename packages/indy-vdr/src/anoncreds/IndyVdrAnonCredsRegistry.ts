@@ -317,9 +317,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           schemaId: `${schemaMetadata.indyLedgerSeqNo}`,
           type: 'CL',
           tag: options.credentialDefinition.tag,
-          value: {
-            primary: options.credentialDefinition.value,
-          },
+          value: options.credentialDefinition.value,
         },
       })
 
@@ -335,7 +333,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           credentialDefinitionState: {
             credentialDefinition: options.credentialDefinition,
             state: 'failed',
-            reason: `didNotFound: unable to resolve did did:sov${options.credentialDefinition.issuerId}: ${didResult.didResolutionMetadata.message}`,
+            reason: `didNotFound: unable to resolve did did:sov:${options.credentialDefinition.issuerId}: ${didResult.didResolutionMetadata.message}`,
           },
         }
       }

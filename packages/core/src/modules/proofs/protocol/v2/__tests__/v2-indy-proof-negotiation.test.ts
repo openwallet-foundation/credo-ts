@@ -158,7 +158,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          requestedAttributes: {
+          requested_attributes: {
             name: {
               name: 'name',
               restrictions: [
@@ -168,7 +168,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
               ],
             },
           },
-          requestedPredicates: {
+          requested_predicates: {
             age: {
               name: 'age',
               p_type: '>=',

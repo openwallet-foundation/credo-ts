@@ -37,7 +37,7 @@ export class IndySdkPool {
   private fileSystem: FileSystem
   private poolConfig: IndySdkPoolConfig
   private _poolHandle?: number
-  private poolConnected?: Promise<number>
+  private poolConnected?: Promise<void>
   public authorAgreement?: AuthorAgreement | null
 
   public constructor(
@@ -118,7 +118,7 @@ export class IndySdkPool {
 
     try {
       this._poolHandle = await this.indySdk.openPoolLedger(poolName)
-      return this._poolHandle
+      return
     } catch (error) {
       if (!isIndyError(error, 'PoolLedgerNotCreatedError')) {
         throw isIndyError(error) ? new IndySdkError(error) : error
@@ -131,7 +131,7 @@ export class IndySdkPool {
     try {
       await this.indySdk.createPoolLedgerConfig(poolName, { genesis_txn: genesisPath })
       this._poolHandle = await this.indySdk.openPoolLedger(poolName)
-      return this._poolHandle
+      return
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
@@ -175,9 +175,8 @@ export class IndySdkPool {
       }
     }
 
-    if (!this._poolHandle) {
-      return this.connect()
-    }
+    if (!this._poolHandle) await this.connect()
+    if (!this._poolHandle) throw new IndySdkPoolError('Pool handle not set after connection')
 
     return this._poolHandle
   }

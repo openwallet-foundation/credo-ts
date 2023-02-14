@@ -143,8 +143,8 @@ export async function presentLegacyAnonCredsProof({
     proofFormats: {
       indy: {
         name: 'Test Proof Request',
-        requestedAttributes: attributes,
-        requestedPredicates: predicates,
+        requested_attributes: attributes,
+        requested_predicates: predicates,
         version: '1.0',
       },
     },

@@ -1,16 +1,9 @@
+import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-import type { AcceptCredentialOfferOptions } from '@aries-framework/core'
 
-import {
-  AutoAcceptCredential,
-  CredentialState,
-  CredentialExchangeRecord,
-  JsonTransformer,
-  AriesFrameworkError,
-} from '@aries-framework/core'
+import { AutoAcceptCredential, CredentialState, CredentialExchangeRecord, JsonTransformer } from '@aries-framework/core'
 
-import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
-import testLogger from '../../../../../../core/tests/logger'
+import { waitForCredentialRecord, waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1CredentialPreview } from '../messages'
 
@@ -29,7 +22,9 @@ const newCredentialPreview = V1CredentialPreview.fromRecord({
 
 describe('V1 Credentials Auto Accept', () => {
   let faberAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
+  let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
   let schemaId: string
   let faberConnectionId: string
@@ -39,13 +34,16 @@ describe('V1 Credentials Auto Accept', () => {
     beforeAll(async () => {
       ;({
         issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
         holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
         credentialDefinitionId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupAnonCredsTests({
-        issuerName: 'faber agent: always v1',
-        holderName: 'alice agent: always v1',
+        issuerName: 'Faber connection-less Credentials V1',
+        holderName: 'Alice connection-less Credentials V1',
+        attributeNames: ['name', 'age'],
         autoAcceptCredentials: AutoAcceptCredential.Always,
       }))
     })
@@ -114,12 +112,12 @@ describe('V1 Credentials Auto Accept', () => {
         protocolVersion: 'v1',
       })
       testLogger.test('Alice waits for credential from Faber')
-      const aliceCredentialRecord = await waitForCredentialRecord(aliceAgent, {
+      const aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
       testLogger.test('Faber waits for credential ack from Alice')
-      const faberCredentialRecord: CredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      const faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.Done,
       })
@@ -157,15 +155,16 @@ describe('V1 Credentials Auto Accept', () => {
     beforeAll(async () => {
       ;({
         issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
         holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
         credentialDefinitionId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupAnonCredsTests({
         issuerName: 'faber agent: contentApproved v1',
         holderName: 'alice agent: contentApproved v1',
-        // Not needed for this test
-        verifierName: 'verifier agent: always v1',
+        attributeNames: ['name', 'age'],
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       }))
     })
@@ -194,7 +193,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      let faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      let faberCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
@@ -212,13 +211,13 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice waits for credential from Faber')
-      aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
+      aliceCredentialExchangeRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
-      faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      faberCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.Done,
       })
@@ -276,7 +275,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice waits for credential offer from Faber')
-      let aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialExchangeRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
@@ -294,56 +293,51 @@ describe('V1 Credentials Auto Accept', () => {
         credentialIds: [],
       })
 
-      if (aliceCredentialExchangeRecord.connectionId) {
-        const acceptOfferOptions: AcceptCredentialOfferOptions = {
-          credentialRecordId: aliceCredentialExchangeRecord.id,
-        }
-        testLogger.test('alice sends credential request to faber')
-        faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+      testLogger.test('alice sends credential request to faber')
+      faberCredentialExchangeRecord = await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialExchangeRecord.id,
+      })
 
-        testLogger.test('Alice waits for credential from Faber')
-        aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
-          threadId: faberCredentialExchangeRecord.threadId,
-          state: CredentialState.CredentialReceived,
-        })
+      testLogger.test('Alice waits for credential from Faber')
+      aliceCredentialExchangeRecord = await waitForCredentialRecordSubject(aliceReplay, {
+        threadId: faberCredentialExchangeRecord.threadId,
+        state: CredentialState.CredentialReceived,
+      })
 
-        testLogger.test('Faber waits for credential ack from Alice')
-        faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
-          threadId: faberCredentialExchangeRecord.threadId,
-          state: CredentialState.Done,
-        })
+      testLogger.test('Faber waits for credential ack from Alice')
+      faberCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
+        threadId: faberCredentialExchangeRecord.threadId,
+        state: CredentialState.Done,
+      })
 
-        expect(aliceCredentialExchangeRecord).toMatchObject({
-          type: CredentialExchangeRecord.type,
-          id: expect.any(String),
-          createdAt: expect.any(Date),
-          metadata: {
-            data: {
-              '_internal/indyRequest': expect.any(Object),
-              '_internal/indyCredential': {
-                schemaId,
-                credentialDefinitionId: credentialDefinitionId,
-              },
+      expect(aliceCredentialExchangeRecord).toMatchObject({
+        type: CredentialExchangeRecord.type,
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        metadata: {
+          data: {
+            '_internal/indyRequest': expect.any(Object),
+            '_internal/indyCredential': {
+              schemaId,
+              credentialDefinitionId: credentialDefinitionId,
             },
           },
-          credentials: [
-            {
-              credentialRecordType: 'indy',
-              credentialRecordId: expect.any(String),
-            },
-          ],
-          state: CredentialState.CredentialReceived,
-        })
+        },
+        credentials: [
+          {
+            credentialRecordType: 'indy',
+            credentialRecordId: expect.any(String),
+          },
+        ],
+        state: CredentialState.CredentialReceived,
+      })
 
-        expect(faberCredentialExchangeRecord).toMatchObject({
-          type: CredentialExchangeRecord.type,
-          id: expect.any(String),
-          createdAt: expect.any(Date),
-          state: CredentialState.Done,
-        })
-      } else {
-        throw new AriesFrameworkError('missing alice connection id')
-      }
+      expect(faberCredentialExchangeRecord).toMatchObject({
+        type: CredentialExchangeRecord.type,
+        id: expect.any(String),
+        createdAt: expect.any(Date),
+        state: CredentialState.Done,
+      })
     })
 
     test("Faber starts with V1 credential offer to Alice, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
@@ -361,7 +355,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice waits for credential offer from Faber')
-      let aliceCredentialExchangeRecord = await waitForCredentialRecord(aliceAgent, {
+      let aliceCredentialExchangeRecord = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })
@@ -416,7 +410,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber waits for credential proposal from Alice')
-      let faberCredentialExchangeRecord = await waitForCredentialRecord(faberAgent, {
+      let faberCredentialExchangeRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: aliceCredentialExchangeRecord.threadId,
         state: CredentialState.ProposalReceived,
       })
@@ -433,7 +427,7 @@ describe('V1 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential offer from Faber')
 
-      const record = await waitForCredentialRecord(aliceAgent, {
+      const record = await waitForCredentialRecordSubject(aliceReplay, {
         threadId: faberCredentialExchangeRecord.threadId,
         state: CredentialState.OfferReceived,
       })

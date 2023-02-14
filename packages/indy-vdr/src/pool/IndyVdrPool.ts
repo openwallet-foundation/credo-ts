@@ -55,26 +55,27 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
-  public async connect() {
+  public connect() {
+    if (this._pool) {
+      throw new IndyVdrError('Cannot connect to pool, already connected.')
+    }
+
     this._pool = new PoolCreate({
       parameters: {
         transactions: this.config.genesisTransactions,
       },
     })
-
-    return this.pool.handle
   }
 
   private get pool(): indyVdrPool {
-    if (!this._pool) {
-      throw new IndyVdrError('Pool is not connected. Make sure to call .connect() first')
-    }
+    if (!this._pool) this.connect()
+    if (!this._pool) throw new IndyVdrError('Pool is not connected.')
 
     return this._pool
   }
 
   public close() {
-    if (!this.pool) {
+    if (!this._pool) {
       throw new IndyVdrError("Can't close pool. Pool is not connected")
     }
 

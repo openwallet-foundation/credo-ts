@@ -1,4 +1,3 @@
-import type { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@aries-framework/core'
 
 import {
@@ -18,15 +17,16 @@ import {
   JsonTransformer,
   InboundMessageContext,
 } from '@aries-framework/core'
+import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
+import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { V1CredentialProtocol } from '../V1CredentialProtocol'
 import { V1CredentialPreview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../../ledger/services/IndyLedgerService')
-jest.mock('../../../formats/indy/IndyCredentialFormatService')
+jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
@@ -38,12 +38,15 @@ const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+const LegacyIndyCredentialFormatServiceMock =
+  LegacyIndyCredentialFormatService as jest.Mock<LegacyIndyCredentialFormatService>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 const routingService = new RoutingServiceMock()
 const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
+const indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
 
 const agentConfig = getAgentConfig('V1CredentialProtocolProposeOfferTest')
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
@@ -102,8 +105,6 @@ describe('V1CredentialProtocolProposeOffer', () => {
   beforeEach(async () => {
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
-    mockFunction(indyLedgerService.getCredentialDefinition).mockResolvedValue(credDef)
-    mockFunction(indyLedgerService.getSchema).mockResolvedValue(schema)
 
     credentialProtocol = new V1CredentialProtocol({
       indyCredentialFormat: indyCredentialFormatService,

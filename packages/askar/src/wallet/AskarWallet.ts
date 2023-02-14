@@ -361,7 +361,10 @@ export class AskarWallet implements Wallet {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key from seed
-        const key = seed ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm }) : AskarKey.generate(algorithm)
+        const key = seed
+          ? // FIXME: we call fromSecretBytes using the secretKey
+            AskarKey.fromSecretBytes({ secretKey: Buffer.from(seed), algorithm })
+          : AskarKey.generate(algorithm)
 
         // Store key
         await this.session.insertKey({ key, name: encodeToBase58(key.publicBytes) })
