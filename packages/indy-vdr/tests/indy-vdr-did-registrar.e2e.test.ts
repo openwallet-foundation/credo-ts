@@ -83,9 +83,7 @@ describe('Indy VDR registrar E2E', () => {
     })
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
-      didDocumentMetadata: {
-        qualifiedIndyDid: expect.stringMatching(DID_INDY_REGEX),
-      },
+      didDocumentMetadata: {},
       didRegistrationMetadata: {
         didIndyNamespace: 'pool:localtest',
       },
@@ -170,9 +168,7 @@ describe('Indy VDR registrar E2E', () => {
     })
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
-      didDocumentMetadata: {
-        qualifiedIndyDid: did,
-      },
+      didDocumentMetadata: {},
       didRegistrationMetadata: {
         didIndyNamespace: 'pool:localtest',
       },
@@ -323,9 +319,7 @@ describe('Indy VDR registrar E2E', () => {
     }
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
-      didDocumentMetadata: {
-        qualifiedIndyDid: did,
-      },
+      didDocumentMetadata: {},
       didRegistrationMetadata: {
         didIndyNamespace: 'pool:localtest',
       },

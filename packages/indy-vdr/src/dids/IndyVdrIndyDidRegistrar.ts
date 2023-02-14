@@ -173,9 +173,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       await didRepository.save(agentContext, didRecord)
 
       return {
-        didDocumentMetadata: {
-          qualifiedIndyDid: did,
-        },
+        didDocumentMetadata: {},
         didRegistrationMetadata: {
           didIndyNamespace: namespace,
         },
