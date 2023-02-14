@@ -13,6 +13,7 @@ import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
 const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
+
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
 
@@ -33,7 +34,10 @@ describe('IndyVdrPoolService', () => {
       await wallet.createAndOpen(agentConfig.walletConfig)
     }
 
-    signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
+    signerKey = await wallet.createKey({
+      seed: '000000000000000000000000Trustee9',
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {
