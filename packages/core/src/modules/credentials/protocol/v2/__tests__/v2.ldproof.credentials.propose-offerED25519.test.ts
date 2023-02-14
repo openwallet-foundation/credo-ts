@@ -1,7 +1,6 @@
 import type { EventReplaySubject } from '../../../../../../tests'
 
 import { randomUUID } from 'crypto'
-import indySdk from 'indy-sdk'
 
 import {
   LegacyIndyCredentialFormatService,
@@ -17,6 +16,7 @@ import {
   IndySdkSovDidRegistrar,
   IndySdkSovDidResolver,
 } from '../../../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
   setupEventReplaySubjects,
   setupSubjectTransports,
