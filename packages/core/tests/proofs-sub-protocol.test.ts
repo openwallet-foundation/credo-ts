@@ -1,4 +1,4 @@
-import type { EventReplaySubject } from './helpers'
+import type { EventReplaySubject } from './events'
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
 
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'

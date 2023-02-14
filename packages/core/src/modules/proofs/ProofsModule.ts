@@ -1,5 +1,5 @@
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
-import type { V2ProofProtocol, V1ProofProtocol } from './protocol'
+import type { V2ProofProtocol } from './protocol'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
@@ -13,7 +13,7 @@ import { ProofRepository } from './repository'
 /**
  * Default proofProtocols that will be registered if the `proofProtocols` property is not configured.
  */
-export type DefaultProofProtocols = [V1ProofProtocol, V2ProofProtocol<[]>]
+export type DefaultProofProtocols = [V2ProofProtocol<[]>]
 
 // ProofsModuleOptions makes the proofProtocols property optional from the config, as it will set it when not provided.
 export type ProofsModuleOptions<ProofProtocols extends ProofProtocol[]> = Optional<

@@ -7,7 +7,7 @@ import type {
 } from '../models'
 import type { AnonCredsIssuerService, AnonCredsHolderService, GetRevocationRegistryDefinitionReturn } from '../services'
 import type { AnonCredsCredentialMetadata } from '../utils/metadata'
-import {
+import type {
   CredentialFormatService,
   AgentContext,
   CredentialFormatCreateProposalOptions,
@@ -27,10 +27,10 @@ import {
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
-  ProblemReportError,
 } from '@aries-framework/core'
 
 import {
+  ProblemReportError,
   MessageValidator,
   CredentialFormatSpec,
   AriesFrameworkError,

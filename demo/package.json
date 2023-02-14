@@ -14,7 +14,12 @@
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "devDependencies": {
+    "@aries-framework/anoncreds": "*",
+    "@aries-framework/anoncreds-rs": "*",
+    "@aries-framework/askar": "*",
     "@aries-framework/core": "*",
+    "@aries-framework/indy-sdk": "*",
+    "@aries-framework/indy-vdr": "*",
     "@aries-framework/node": "*",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.1.3",

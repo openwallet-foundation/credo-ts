@@ -1,11 +1,11 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { ReplaySubject } from 'rxjs'
+import type { EventReplaySubject } from '../../../../../../tests'
 
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { waitForProofExchangeRecord } from '../../../../../../tests/helpers'
+import { waitForProofExchangeRecord } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
 import { ProofState } from '../../../models'
 import { ProofExchangeRecord } from '../../../repository'
@@ -13,9 +13,9 @@ import { V2ProposePresentationMessage, V2RequestPresentationMessage, V2Presentat
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
-  let faberReplay: ReplaySubject<any>
+  let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
-  let aliceReplay: ReplaySubject<any>
+  let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
   let aliceConnectionId: string
   let faberConnectionId: string

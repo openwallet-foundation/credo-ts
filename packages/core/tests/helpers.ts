@@ -61,8 +61,6 @@ export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${numb
 export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
-export type EventReplaySubject = ReplaySubject<BaseEvent>
-
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},

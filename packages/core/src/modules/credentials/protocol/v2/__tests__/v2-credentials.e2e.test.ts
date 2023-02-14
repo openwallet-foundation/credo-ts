@@ -1,12 +1,14 @@
-import type { ReplaySubject } from 'rxjs'
-import type { ConnectionRecord } from '../../../../connections'
-import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
+import type { AnonCredsHolderService } from '../../../../../../../anoncreds/src'
+import type { LegacyIndyProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyCredentialFormat'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../tests'
 
+import { AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
 import {
-  setupCredentialTests,
-  waitForCredentialRecord,
-  waitForCredentialRecordSubject,
-} from '../../../../../../tests/helpers'
+  issueLegacyAnonCredsCredential,
+  setupAnonCredsTests,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
@@ -20,15 +22,6 @@ import {
   V2RequestCredentialMessage,
 } from '../messages'
 
-import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
-import {
-  AnonCredsAgent,
-  issueLegacyAnonCredsCredential,
-} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-
-// TODO: what to export from anoncreds root package?
-import { LegacyIndyProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyCredentialFormat'
-
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
   age: '99',
@@ -37,17 +30,16 @@ const credentialPreview = V2CredentialPreview.fromRecord({
 })
 
 describe('v2 credentials', () => {
-  let faberAgent: AnonCredsAgent
-  let aliceAgent: AnonCredsAgent
-  let credDefId: string
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
-  let aliceCredentialRecord: CredentialExchangeRecord
-  let faberCredentialRecord: CredentialExchangeRecord
-  let faberReplay: ReplaySubject<CredentialStateChangedEvent>
-  let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
+  let credentialDefinitionId: string
+  let faberConnectionId: string
+  let aliceConnectionId: string
 
-  let credPropose: LegacyIndyProposeCredentialFormat
+  let faberReplay: EventReplaySubject
+  let aliceReplay: EventReplaySubject
+
+  let indyCredentialProposal: LegacyIndyProposeCredentialFormat
 
   const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
@@ -57,11 +49,22 @@ describe('v2 credentials', () => {
   })
 
   beforeAll(async () => {
-    ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, faberReplay, aliceReplay } =
-      await setupCredentialTests('Faber Agent Credentials v2', 'Alice Agent Credentials v2'))
+    ;({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+      holderIssuerConnectionId: aliceConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber Agent Credentials v2',
+      holderName: 'Alice Agent Credentials v2',
+      attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+    }))
 
-    credPropose = {
-      credentialDefinitionId: credDefId,
+    indyCredentialProposal = {
+      credentialDefinitionId: credentialDefinitionId,
       schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
       schemaName: 'ahoy',
       schemaVersion: '1.0',
@@ -81,7 +84,7 @@ describe('v2 credentials', () => {
     testLogger.test('Alice sends (v2) credential proposal to Faber')
 
     const credentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
         indy: {
@@ -98,14 +101,14 @@ describe('v2 credentials', () => {
     })
 
     expect(credentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       state: CredentialState.ProposalSent,
       threadId: expect.any(String),
     })
 
     testLogger.test('Faber waits for credential proposal from Alice')
-    faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
+    let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialExchangeRecord.threadId,
       state: CredentialState.ProposalReceived,
     })
@@ -116,14 +119,14 @@ describe('v2 credentials', () => {
       comment: 'V2 Indy Proposal',
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
       },
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
-    aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+    let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
@@ -185,7 +188,7 @@ describe('v2 credentials', () => {
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       state: CredentialState.RequestSent,
       threadId: expect.any(String),
@@ -221,12 +224,14 @@ describe('v2 credentials', () => {
   })
 
   test('Faber issues credential which is then deleted from Alice`s wallet', async () => {
-    const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
+    const { holderCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
-      issuerConnectionId: faberConnection.id,
+      issuerReplay: faberReplay,
+      issuerHolderConnectionId: faberConnectionId,
       holderAgent: aliceAgent,
-      credentialTemplate: {
-        credentialDefinitionId: credDefId,
+      holderReplay: aliceReplay,
+      offer: {
+        credentialDefinitionId: credentialDefinitionId,
         attributes: credentialPreview.attributes,
       },
     })
@@ -261,11 +266,11 @@ describe('v2 credentials', () => {
 
     testLogger.test('Alice sends credential proposal to Faber')
     let aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
         indy: {
-          ...credPropose,
+          ...indyCredentialProposal,
           attributes: credentialPreview.attributes,
         },
       },
@@ -285,7 +290,7 @@ describe('v2 credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -311,7 +316,7 @@ describe('v2 credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         indy: {
-          ...credPropose,
+          ...indyCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -331,7 +336,7 @@ describe('v2 credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -346,7 +351,7 @@ describe('v2 credentials', () => {
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       state: CredentialState.RequestSent,
       protocolVersion: 'v2',
       threadId: aliceCredentialExchangeRecord.threadId,
@@ -396,18 +401,18 @@ describe('v2 credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
     let faberCredentialRecord = await faberAgent.credentials.offerCredential({
       comment: 'some comment about credential',
-      connectionId: faberConnection.id,
+      connectionId: faberConnectionId,
       credentialFormats: {
         indy: {
           attributes: credentialPreview.attributes,
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
         },
       },
       protocolVersion: 'v2',
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
-    aliceCredentialRecord = await aliceCredentialRecordPromise
+    let aliceCredentialRecord = await aliceCredentialRecordPromise
 
     let faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
       threadId: aliceCredentialRecord.threadId,
@@ -418,7 +423,7 @@ describe('v2 credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         indy: {
-          ...credPropose,
+          ...indyCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -437,7 +442,7 @@ describe('v2 credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -456,7 +461,7 @@ describe('v2 credentials', () => {
       credentialRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         indy: {
-          ...credPropose,
+          ...indyCredentialProposal,
           attributes: newCredentialPreview.attributes,
         },
       },
@@ -478,7 +483,7 @@ describe('v2 credentials', () => {
       comment: 'V2 Indy Proposal',
       credentialFormats: {
         indy: {
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
         },
       },
@@ -497,7 +502,7 @@ describe('v2 credentials', () => {
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
-      connectionId: aliceConnection.id,
+      connectionId: aliceConnectionId,
       state: CredentialState.RequestSent,
       protocolVersion: 'v2',
     })
@@ -635,18 +640,18 @@ describe('v2 credentials', () => {
     testLogger.test('Faber sends credential offer to Alice')
     const faberCredentialExchangeRecord = await faberAgent.credentials.offerCredential({
       comment: 'some comment about credential',
-      connectionId: faberConnection.id,
+      connectionId: faberConnectionId,
       credentialFormats: {
         indy: {
           attributes: credentialPreview.attributes,
-          credentialDefinitionId: credDefId,
+          credentialDefinitionId: credentialDefinitionId,
         },
       },
       protocolVersion: 'v2',
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
-    aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
+    let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialExchangeRecord.threadId,
       state: CredentialState.OfferReceived,
     })

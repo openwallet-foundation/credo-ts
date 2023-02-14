@@ -1,7 +1,11 @@
+import type { Wallet } from '../../wallet'
+
+import indySdk from 'indy-sdk'
+
+import { IndySdkWallet } from '../../../../indy-sdk/src'
 import { getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'
-import { IndyWallet } from '../../wallet/IndyWallet'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
@@ -39,11 +43,11 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
     signer: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
   })
 
-  let wallet: IndyWallet
+  let wallet: Wallet
 
   beforeAll(async () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })

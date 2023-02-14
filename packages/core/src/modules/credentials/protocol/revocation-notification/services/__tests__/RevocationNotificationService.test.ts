@@ -32,9 +32,7 @@ describe('RevocationNotificationService', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
-    const agentConfig = getAgentConfig('RevocationNotificationService', {
-      indyLedgers: [],
-    })
+    const agentConfig = getAgentConfig('RevocationNotificationService')
 
     agentContext = getAgentContext()
 

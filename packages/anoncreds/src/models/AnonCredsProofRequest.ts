@@ -1,6 +1,5 @@
 import type { AnonCredsRequestedPredicateOptions } from './AnonCredsRequestedPredicate'
 
-import { IndyRevocationInterval } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsIn, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -72,10 +71,10 @@ export class AnonCredsProofRequest {
 
   @Expose({ name: 'non_revoked' })
   @ValidateNested()
-  @Type(() => IndyRevocationInterval)
+  @Type(() => AnonCredsRevocationInterval)
   @IsOptional()
-  @IsInstance(IndyRevocationInterval)
-  public nonRevoked?: IndyRevocationInterval
+  @IsInstance(AnonCredsRevocationInterval)
+  public nonRevoked?: AnonCredsRevocationInterval
 
   @IsIn(['1.0', '2.0'])
   @IsOptional()

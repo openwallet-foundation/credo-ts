@@ -1,4 +1,4 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRequestedAttribute,
@@ -8,13 +8,7 @@ import type {
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-import type {
-  AutoAcceptProof,
-  BaseEvent,
-  ConnectionRecord,
-  CredentialStateChangedEvent,
-  ProofStateChangedEvent,
-} from '@aries-framework/core'
+import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
   CacheModule,
@@ -34,10 +28,8 @@ import {
 } from '@aries-framework/core'
 import { randomUUID } from 'crypto'
 import indySdk from 'indy-sdk'
-import { ReplaySubject, Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   genesisPath,
   getAgentOptions,
@@ -131,10 +123,10 @@ export async function presentLegacyAnonCredsProof({
   request: { attributes, predicates },
 }: {
   holderAgent: AnonCredsTestsAgent
-  holderReplay: ReplaySubject<BaseEvent>
+  holderReplay: EventReplaySubject
 
   verifierAgent: AnonCredsTestsAgent
-  verifierReplay: ReplaySubject<BaseEvent>
+  verifierReplay: EventReplaySubject
 
   verifierHolderConnectionId: string
   request: {
@@ -207,10 +199,10 @@ export async function issueLegacyAnonCredsCredential({
   offer,
 }: {
   issuerAgent: AnonCredsTestsAgent
-  issuerReplay: Subject<BaseEvent>
+  issuerReplay: EventReplaySubject
 
   holderAgent: AnonCredsTestsAgent
-  holderReplay: Subject<BaseEvent>
+  holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
   offer: AnonCredsOfferCredentialFormat
@@ -252,32 +244,44 @@ export async function issueLegacyAnonCredsCredential({
   }
 }
 
-interface SetupAnonCredsTestReturn<VerifierName extends string | undefined> {
+interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
   issuerAgent: AnonCredsTestsAgent
-  issuerReplay: ReplaySubject<BaseEvent>
+  issuerReplay: EventReplaySubject
 
   holderAgent: AnonCredsTestsAgent
-  holderReplay: ReplaySubject<BaseEvent>
+  holderReplay: EventReplaySubject
 
-  issuerHolderConnectionId: string
-  holderIssuerConnectionId: string
+  issuerHolderConnectionId: CreateConnections extends true ? string : undefined
+  holderIssuerConnectionId: CreateConnections extends true ? string : undefined
 
-  verifierHolderConnectionId: VerifierName extends string ? string : undefined
-  holderVerifierConnectionId: VerifierName extends string ? string : undefined
+  verifierHolderConnectionId: CreateConnections extends true
+    ? VerifierName extends string
+      ? string
+      : undefined
+    : undefined
+  holderVerifierConnectionId: CreateConnections extends true
+    ? VerifierName extends string
+      ? string
+      : undefined
+    : undefined
 
   verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
-  verifierReplay: VerifierName extends string ? ReplaySubject<BaseEvent> : undefined
+  verifierReplay: VerifierName extends string ? EventReplaySubject : undefined
 
   credentialDefinitionId: string
 }
 
-export async function setupAnonCredsTests<VerifierName extends string | undefined = undefined>({
+export async function setupAnonCredsTests<
+  VerifierName extends string | undefined = undefined,
+  CreateConnections extends boolean = true
+>({
   issuerName,
   holderName,
   verifierName,
   autoAcceptCredentials,
   autoAcceptProofs,
   attributeNames,
+  createConnections,
 }: {
   issuerName: string
   holderName: string
@@ -285,16 +289,8 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   attributeNames: string[]
-}): Promise<SetupAnonCredsTestReturn<VerifierName>> {
-  const issuerMessages = new Subject<SubjectMessage>()
-  const holderMessages = new Subject<SubjectMessage>()
-  const verifierMessages = new Subject<SubjectMessage>()
-  const subjectMap = {
-    'rxjs:issuer': issuerMessages,
-    'rxjs:holder': holderMessages,
-    'rxjs:verifier': verifierMessages,
-  }
-
+  createConnections?: CreateConnections
+}): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const modules = getLegacyAnonCredsModules({
     autoAcceptCredentials,
     autoAcceptProofs,
@@ -309,9 +305,6 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
       modules
     )
   )
-  issuerAgent.registerInboundTransport(new SubjectInboundTransport(issuerMessages))
-  issuerAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await issuerAgent.initialize()
 
   const holderAgent = new Agent(
     getAgentOptions(
@@ -322,25 +315,26 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
       modules
     )
   )
-  holderAgent.registerInboundTransport(new SubjectInboundTransport(holderMessages))
-  holderAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await holderAgent.initialize()
 
-  let verifierAgent: AnonCredsTestsAgent | undefined
-  if (verifierName) {
-    verifierAgent = new Agent(
-      getAgentOptions(
-        verifierName,
-        {
-          endpoints: ['rxjs:verifier'],
-        },
-        modules
-      )
+  const verifierAgent = new Agent(
+    getAgentOptions(
+      verifierName ?? 'NOT USED -- NOT INITIALIZED',
+      {
+        endpoints: ['rxjs:verifier'],
+      },
+      modules
     )
-    verifierAgent.registerInboundTransport(new SubjectInboundTransport(verifierMessages))
-    verifierAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await verifierAgent.initialize()
-  }
+  )
+
+  setupSubjectTransports([issuerAgent, holderAgent, verifierAgent])
+  const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
+    [issuerAgent, holderAgent, verifierAgent],
+    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+  )
+
+  await issuerAgent.initialize()
+  await holderAgent.initialize()
+  if (verifierName) await verifierAgent.initialize()
 
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
@@ -349,33 +343,17 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
     issuerId: issuerAgent.publicDid?.did as string,
   })
 
-  const [issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
-
+  let issuerHolderConnection: ConnectionRecord | undefined
+  let holderIssuerConnection: ConnectionRecord | undefined
   let verifierHolderConnection: ConnectionRecord | undefined
   let holderVerifierConnection: ConnectionRecord | undefined
-  if (verifierAgent) {
-    ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
-  }
 
-  const issuerReplay = new ReplaySubject<BaseEvent>()
-  const holderReplay = new ReplaySubject<BaseEvent>()
-  const verifierReplay = verifierAgent ? new ReplaySubject<BaseEvent>() : undefined
+  if (createConnections ?? true) {
+    ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
 
-  issuerAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(issuerReplay)
-  issuerAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(issuerReplay)
-
-  holderAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(holderReplay)
-  holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
-
-  if (verifierAgent) {
-    verifierAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-      .subscribe(verifierReplay)
-    verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
+    if (verifierName) {
+      ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
+    }
   }
 
   return {
@@ -385,17 +363,17 @@ export async function setupAnonCredsTests<VerifierName extends string | undefine
     holderAgent,
     holderReplay,
 
-    verifierAgent,
-    verifierReplay,
+    verifierAgent: verifierName ? verifierAgent : undefined,
+    verifierReplay: verifierName ? verifierReplay : undefined,
 
     credentialDefinitionId: credentialDefinition.credentialDefinitionId,
     schemaId: schema.schemaId,
 
-    issuerHolderConnectionId: issuerHolderConnection.id,
-    holderIssuerConnectionId: holderIssuerConnection.id,
+    issuerHolderConnectionId: issuerHolderConnection?.id,
+    holderIssuerConnectionId: holderIssuerConnection?.id,
     holderVerifierConnectionId: holderVerifierConnection?.id,
     verifierHolderConnectionId: verifierHolderConnection?.id,
-  } as unknown as SetupAnonCredsTestReturn<VerifierName>
+  } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 
 export async function prepareForAnonCredsIssuance(
