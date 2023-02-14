@@ -1,6 +1,7 @@
 import type { Key } from '@aries-framework/core'
 
 import {
+  IndyWallet,
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,
@@ -39,11 +40,14 @@ const agentContext = getAgentContext({
 
 const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-describe('IndyVdrSov', () => {
+describe('indy-vdr DID Resolver E2E', () => {
   beforeAll(async () => {
     await wallet.createAndOpen(agentConfig.walletConfig)
 
-    signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
+    signerKey = await wallet.createKey({
+      seed: '000000000000000000000000Trustee9',
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {
