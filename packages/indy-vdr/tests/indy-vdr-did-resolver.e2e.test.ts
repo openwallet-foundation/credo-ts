@@ -38,7 +38,7 @@ const agentContext = getAgentContext({
 
 const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-describe('IndyVdrSov', () => {
+describe('indy-vdr DID Resolver E2E', () => {
   beforeAll(async () => {
     await indyVdrPoolService.connectToPools()
 

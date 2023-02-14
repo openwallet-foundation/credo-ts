@@ -43,7 +43,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       }
     }
 
-    const { alias, role, submitterDid, services, useEndpointAttrib } = options.options
+    const { alias, role, submitterDid, submitterVerkey, services, useEndpointAttrib } = options.options
     let verkey = options.options.verkey
     let did = options.did
     let id
@@ -87,7 +87,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       // Create base did document
       const didDocumentBuilder = indyDidDocumentFromDid(did, verkey)
-      let diddocContent = {}
+      let diddocContent
 
       // Add services if object was passed
       if (services) {
@@ -128,7 +128,17 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       }
 
       const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
-      await this.registerPublicDid(agentContext, pool, submitterId, id, verkey, alias, role, diddocContent)
+      await this.registerPublicDid(
+        agentContext,
+        pool,
+        submitterId,
+        submitterVerkey,
+        id,
+        verkey,
+        alias,
+        role,
+        diddocContent
+      )
 
       if (services && useEndpointAttrib) {
         await this.setEndpointsForDid(agentContext, pool, id, endpointsAttribFromServices(services))
@@ -202,10 +212,11 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  public async registerPublicDid(
+  private async registerPublicDid(
     agentContext: AgentContext,
     pool: IndyVdrPool,
     submitterDid: string,
+    submitterVerkey: string,
     targetDid: string,
     verkey: string,
     alias?: string,
@@ -222,7 +233,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       const request = new NymRequest({ submitterDid, dest: targetDid, verkey, alias })
 
-      const signingKey = Key.fromPublicKeyBase58(submitterDid, KeyType.Ed25519)
+      const signingKey = Key.fromPublicKeyBase58(submitterVerkey, KeyType.Ed25519)
 
       const response = await pool.submitWriteRequest(agentContext, request, signingKey)
 
@@ -249,7 +260,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  public async setEndpointsForDid(
+  private async setEndpointsForDid(
     agentContext: AgentContext,
     pool: IndyVdrPool,
     did: string,
@@ -295,6 +306,7 @@ export interface IndyVdrDidCreateOptions extends DidCreateOptions {
     services?: DidDocumentService[]
     useEndpointAttrib?: boolean
     submitterDid: string
+    submitterVerkey: string
     verkey?: string
   }
   secret?: {
