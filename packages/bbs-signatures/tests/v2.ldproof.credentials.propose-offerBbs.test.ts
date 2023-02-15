@@ -112,7 +112,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const offerMessage = await faberAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const offerMessage = await faberAgent.credentials.findOfferMessage(faberCredentialRecord.id)
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       '@id': expect.any(String),
@@ -201,8 +201,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
     const w3cCredential = (credentialMessage as V2IssueCredentialMessage).credentialAttachments[0].getDataAsJson()
 
     expect(w3cCredential).toMatchObject({
-      todo: 'todo',
-      context: [
+      '@context': [
         'https://www.w3.org/2018/credentials/v1',
         'https://w3id.org/citizenship/v1',
         'https://w3id.org/security/bbs/v1',

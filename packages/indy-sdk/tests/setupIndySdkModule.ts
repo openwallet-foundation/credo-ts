@@ -6,16 +6,15 @@ import { IndySdkModule, IndySdkSovDidRegistrar, IndySdkSovDidResolver } from '..
 
 export { indySdk }
 
-export const getIndySdkModules = ({
-  indyNamespace = `localhost-${utils.uuid()}`,
-}: { indyNamespace?: string } = {}) => ({
+export const getIndySdkModules = () => ({
   indySdk: new IndySdkModule({
     indySdk,
     networks: [
       {
+        id: `localhost-${utils.uuid()}`,
         isProduction: false,
         genesisPath,
-        indyNamespace,
+        indyNamespace: 'localhost',
         transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
       },
     ],

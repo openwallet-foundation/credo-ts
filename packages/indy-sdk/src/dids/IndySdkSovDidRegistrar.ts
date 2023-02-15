@@ -68,8 +68,6 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
       const unqualifiedSubmitterDid = submitterDid.replace('did:sov:', '')
 
-      // TODO: it should be possible to pass the pool used for writing to the indy ledger service.
-      // The easiest way to do this would be to make the submitterDid a fully qualified did, including the indy namespace.
       const pool = indySdkPoolService.getPoolForNamespace(indyNamespace)
       await this.registerPublicDid(agentContext, unqualifiedSubmitterDid, unqualifiedIndyDid, verkey, alias, pool, role)
 
@@ -95,7 +93,6 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
-        id: qualifiedSovDid,
         did: qualifiedSovDid,
         role: DidDocumentRole.Created,
         tags: {

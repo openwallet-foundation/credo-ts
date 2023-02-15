@@ -13,7 +13,7 @@ import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { mockFunction, getAgentConfig, getAgentContext, agentDependencies } from '../../../../core/tests/helpers'
+import { mockFunction, getAgentConfig, getAgentContext, agentDependencies, mockProperty } from '../../../../core/tests'
 import { IndySdkPoolService } from '../../ledger/IndySdkPoolService'
 import { IndySdkSymbol } from '../../types'
 import { IndySdkWallet } from '../../wallet'
@@ -34,12 +34,15 @@ const storageService = new InMemoryStorageService<DidRecord>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const didRepository = new DidRepository(storageService, eventEmitter)
 
+const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'])
+mockProperty(wallet, 'handle', 10)
+
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [
     [DidRepository, didRepository],
     [IndySdkPoolService, indySdkPoolServiceMock],
-    [IndySdkSymbol, indySdk],
+    [IndySdkSymbol, { createAndStoreMyDid: createDidMock }],
   ],
   agentConfig,
 })
@@ -78,6 +81,11 @@ describe('IndySdkSovDidRegistrar', () => {
     const agentContext = getAgentContext({
       wallet: {} as unknown as Wallet,
       agentConfig,
+      registerInstances: [
+        [DidRepository, didRepository],
+        [IndySdkPoolService, indySdkPoolServiceMock],
+        [IndySdkSymbol, indySdk],
+      ],
     })
 
     const result = await indySdkSovDidRegistrar.create(agentContext, {
@@ -97,7 +105,7 @@ describe('IndySdkSovDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: 'unknownError: Expected wallet to be instance of IndyWallet, found Object',
+        reason: 'unknownError: Expected wallet to be instance of IndySdkWallet, found Object',
       },
     })
   })
@@ -150,7 +158,7 @@ describe('IndySdkSovDidRegistrar', () => {
       // Alias
       'Hello',
       // Pool
-      { config: { id: 'pool1', indyNamespace: 'pool1' } },
+      { config: { indyNamespace: 'pool1' } },
       // Role
       'STEWARD'
     )
@@ -233,7 +241,7 @@ describe('IndySdkSovDidRegistrar', () => {
       // Alias
       'Hello',
       // Pool
-      { config: { id: 'pool1', indyNamespace: 'pool1' } },
+      { config: { indyNamespace: 'pool1' } },
       // Role
       'STEWARD'
     )
@@ -333,9 +341,9 @@ describe('IndySdkSovDidRegistrar', () => {
     })
 
     expect(saveCalled).toHaveBeenCalledTimes(1)
-    const [, didRecord] = saveCalled.mock.calls[0]
+    const [saveEvent] = saveCalled.mock.calls[0]
 
-    expect(didRecord).toMatchObject({
+    expect(saveEvent.payload.record).toMatchObject({
       did: 'did:sov:R1xKJw17sUoXhejEpugMYJ',
       role: DidDocumentRole.Created,
       _tags: {

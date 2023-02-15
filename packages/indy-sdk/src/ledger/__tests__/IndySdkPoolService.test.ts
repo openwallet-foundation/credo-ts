@@ -53,7 +53,8 @@ const pools: IndySdkPoolConfig[] = [
 ]
 
 const config = getAgentConfig('IndySdkPoolServiceTest')
-const cache = new InMemoryLruCache({ limit: 200 })
+const cache = new InMemoryLruCache({ limit: 1 })
+
 const indySdkModule = new IndySdkModuleConfig({ indySdk, networks: pools })
 const wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
 
@@ -78,6 +79,10 @@ describe('IndySdkPoolService', () => {
 
   afterAll(async () => {
     await wallet.delete()
+  })
+
+  afterEach(() => {
+    cache.clear()
   })
 
   describe('getPoolForDid', () => {

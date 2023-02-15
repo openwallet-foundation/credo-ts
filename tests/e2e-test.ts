@@ -1,7 +1,4 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
-import type { BaseEvent } from '@aries-framework/core'
-
-import { ReplaySubject } from 'rxjs'
 
 import { V1CredentialPreview } from '../packages/anoncreds/src/protocols/credentials/v1'
 import {
@@ -10,9 +7,16 @@ import {
   prepareForAnonCredsIssuance,
 } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { sleep } from '../packages/core/src/utils/sleep'
+import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
-import { CredentialState, MediationState, ProofState } from '@aries-framework/core'
+import {
+  CredentialState,
+  MediationState,
+  ProofState,
+  CredentialEventTypes,
+  ProofEventTypes,
+} from '@aries-framework/core'
 
 export async function e2eTest({
   mediatorAgent,
@@ -23,8 +27,10 @@ export async function e2eTest({
   recipientAgent: AnonCredsTestsAgent
   senderAgent: AnonCredsTestsAgent
 }) {
-  const senderReplay = new ReplaySubject<BaseEvent>()
-  const recipientReplay = new ReplaySubject<BaseEvent>()
+  const [senderReplay, recipientReplay] = setupEventReplaySubjects(
+    [senderAgent, recipientAgent],
+    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+  )
 
   // Make connection between mediator and recipient
   const [mediatorRecipientConnection, recipientMediatorConnection] = await makeConnection(mediatorAgent, recipientAgent)
