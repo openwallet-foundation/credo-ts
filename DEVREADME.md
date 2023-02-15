@@ -6,7 +6,15 @@ This file is intended for developers working on the internals of the framework. 
 
 ## VSCode devContainer
 
-This project comes with a [.devcontainer](./devcontainer) to make it as easy as possible to setup your dev environment and begin contributing to this project. All the [environment variables](https://code.visualstudio.com/remote/advancedcontainers/environment-variables) noted below can be added to [devcontainer.env](./devcontainer.env) and exposed to the development docker container.
+This project comes with a [.devcontainer](./devcontainer) to make it as easy as possible to setup your dev environment and begin contributing to this project.
+
+All the [environment variables](https://code.visualstudio.com/remote/advancedcontainers/environment-variables) noted below can be added to [devcontainer.env](./devcontainer.env) and exposed to the development docker container.
+
+When running in a container your project root directory will be `/work`. Use this to correctly path any environment variables, for example:
+
+```console
+GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
+```
 
 ## Running tests
 
