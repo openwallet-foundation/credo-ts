@@ -4,7 +4,7 @@ import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
-import { IndyVdrPoolService } from '../pool'
+import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
 
 import { addServicesFromEndpointsAttrib, sovDidDocumentFromDid } from './didSovUtil'
 
@@ -16,11 +16,15 @@ export class IndyVdrSovDidResolver implements DidResolver {
 
     try {
       const nym = await this.getPublicDid(agentContext, parsed.id)
+      const builder = sovDidDocumentFromDid(parsed.did, nym.verkey)
+
       const endpoints = await this.getEndpointsForDid(agentContext, parsed.id)
 
-      const keyAgreementId = `${parsed.did}#key-agreement-1`
-      const builder = sovDidDocumentFromDid(parsed.did, nym.verkey)
-      addServicesFromEndpointsAttrib(builder, parsed.did, endpoints, keyAgreementId)
+      if (endpoints) {
+        const keyAgreementId = `${parsed.did}#key-agreement-1`
+
+        addServicesFromEndpointsAttrib(builder, parsed.did, endpoints, keyAgreementId)
+      }
 
       return {
         didDocument: builder.build(),
@@ -69,7 +73,9 @@ export class IndyVdrSovDidResolver implements DidResolver {
       )
       const response = await pool.submitReadRequest(request)
 
-      if (!response.result.data) return {}
+      if (!response.result.data) {
+        return null
+      }
 
       const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
       agentContext.config.logger.debug(
@@ -80,7 +86,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
         }
       )
 
-      return endpoints ?? {}
+      return endpoints ?? null
     } catch (error) {
       agentContext.config.logger.error(
         `Error retrieving endpoints for did '${did}' from ledger '${pool.indyNamespace}'`,

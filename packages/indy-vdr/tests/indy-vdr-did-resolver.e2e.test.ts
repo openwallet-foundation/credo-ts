@@ -1,22 +1,22 @@
 import type { Key } from '@aries-framework/core'
 
 import {
+  IndyWallet,
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,
-  IndyWallet,
   KeyType,
   SigningProviderRegistry,
 } from '@aries-framework/core'
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
-import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
-import { createDidOnLedger } from './helpers'
+import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
 const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
@@ -25,28 +25,20 @@ const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 const cache = new InMemoryLruCache({ limit: 200 })
 const indyVdrSovDidResolver = new IndyVdrSovDidResolver()
 
-const config = {
-  isProduction: false,
-  genesisTransactions,
-  indyNamespace: `pool:localtest`,
-  transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
-} as const
-
 let signerKey: Key
 
 const agentContext = getAgentContext({
   wallet,
   agentConfig,
   registerInstances: [
-    [IndyVdrPoolService, new IndyVdrPoolService(logger)],
+    [IndyVdrPoolService, new IndyVdrPoolService(logger, indyVdrModuleConfig)],
     [CacheModuleConfig, new CacheModuleConfig({ cache })],
   ],
 })
 
 const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
-indyVdrPoolService.setPools([config])
 
-describe('IndyVdrSov', () => {
+describe('indy-vdr DID Resolver E2E', () => {
   beforeAll(async () => {
     await indyVdrPoolService.connectToPools()
 
@@ -54,7 +46,10 @@ describe('IndyVdrSov', () => {
       await wallet.createAndOpen(agentConfig.walletConfig)
     }
 
-    signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
+    signerKey = await wallet.createKey({
+      seed: '000000000000000000000000Trustee9',
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {

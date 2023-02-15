@@ -1,10 +1,11 @@
+import type { Wallet } from '@aries-framework/core'
+
 import {
   AnonCredsModuleConfig,
   LegacyIndyCredentialFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
-  AnonCredsRegistryService,
   AnonCredsSchemaRecord,
   AnonCredsSchemaRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -15,16 +16,20 @@ import {
   AnonCredsKeyCorrectnessProofRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsLinkSecretRecord,
+  LegacyIndyProofFormatService,
 } from '@aries-framework/anoncreds'
 import {
   CredentialState,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
   InjectionSymbols,
+  ProofState,
+  ProofExchangeRecord,
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
@@ -36,10 +41,12 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
 
-const agentConfig = getAgentConfig('LegacyIndyCredentialFormatService')
+const agentConfig = getAgentConfig('LegacyIndyCredentialFormatService using anoncreds-rs')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
+
+const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
 
 const inMemoryStorageService = new InMemoryStorageService()
 const agentContext = getAgentContext({
@@ -54,15 +61,17 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
   ],
   agentConfig,
+  wallet,
 })
 
 const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
-describe('LegacyIndyCredentialFormatService using anoncreds-rs', () => {
-  test('issuance flow starting from proposal without negotiation and without revocation', async () => {
-    // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
-    const indyDid = 'TL1EaPFCZ8Si5aUrqScBDt'
+// This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
+const indyDid = 'TL1EaPFCZ8Si5aUrqScBDt'
 
+describe('Legacy indy format services using anoncreds-rs', () => {
+  test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],
       issuerId: indyDid,
@@ -70,7 +79,7 @@ describe('LegacyIndyCredentialFormatService using anoncreds-rs', () => {
       version: '1.0.0',
     })
 
-    const { schemaState, schemaMetadata } = await registry.registerSchema(agentContext, {
+    const { schemaState } = await registry.registerSchema(agentContext, {
       schema,
       options: {},
     })
@@ -273,5 +282,71 @@ describe('LegacyIndyCredentialFormatService using anoncreds-rs', () => {
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
     })
+
+    const holderProofRecord = new ProofExchangeRecord({
+      protocolVersion: 'v1',
+      state: ProofState.ProposalSent,
+      threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    })
+    const verifierProofRecord = new ProofExchangeRecord({
+      protocolVersion: 'v1',
+      state: ProofState.ProposalReceived,
+      threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
+    })
+
+    const { attachment: proofProposalAttachment } = await legacyIndyProofFormatService.createProposal(agentContext, {
+      proofFormats: {
+        indy: {
+          attributes: [
+            {
+              name: 'name',
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              value: 'John',
+              referent: '1',
+            },
+          ],
+          predicates: [
+            {
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              name: 'age',
+              predicate: '>=',
+              threshold: 18,
+            },
+          ],
+          name: 'Proof Request',
+          version: '1.0',
+        },
+      },
+      proofRecord: holderProofRecord,
+    })
+
+    await legacyIndyProofFormatService.processProposal(agentContext, {
+      attachment: proofProposalAttachment,
+      proofRecord: verifierProofRecord,
+    })
+
+    const { attachment: proofRequestAttachment } = await legacyIndyProofFormatService.acceptProposal(agentContext, {
+      proofRecord: verifierProofRecord,
+      proposalAttachment: proofProposalAttachment,
+    })
+
+    await legacyIndyProofFormatService.processRequest(agentContext, {
+      attachment: proofRequestAttachment,
+      proofRecord: holderProofRecord,
+    })
+
+    const { attachment: proofAttachment } = await legacyIndyProofFormatService.acceptRequest(agentContext, {
+      proofRecord: holderProofRecord,
+      requestAttachment: proofRequestAttachment,
+      proposalAttachment: proofProposalAttachment,
+    })
+
+    const isValid = await legacyIndyProofFormatService.processPresentation(agentContext, {
+      attachment: proofAttachment,
+      proofRecord: verifierProofRecord,
+      requestAttachment: proofRequestAttachment,
+    })
+
+    expect(isValid).toBe(true)
   })
 })

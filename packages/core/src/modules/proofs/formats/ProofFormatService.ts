@@ -1,81 +1,70 @@
 import type { ProofFormat } from './ProofFormat'
-import type { IndyProofFormat } from './indy/IndyProofFormat'
-import type { GetRequestedCredentialsFormat } from './indy/IndyProofFormatsServiceOptions'
-import type { ProofAttachmentFormat } from './models/ProofAttachmentFormat'
 import type {
-  CreatePresentationFormatsOptions,
-  FormatCreateProofProposalOptions,
-  CreateRequestOptions,
-  FormatCreatePresentationOptions,
-  ProcessPresentationOptions,
-  ProcessProposalOptions,
-  ProcessRequestOptions,
-} from './models/ProofFormatServiceOptions'
+  ProofFormatAcceptProposalOptions,
+  ProofFormatAcceptRequestOptions,
+  ProofFormatCreateProposalOptions,
+  FormatCreateRequestOptions,
+  ProofFormatProcessPresentationOptions,
+  ProofFormatCreateReturn,
+  ProofFormatProcessOptions,
+  ProofFormatGetCredentialsForRequestOptions,
+  ProofFormatGetCredentialsForRequestReturn,
+  ProofFormatSelectCredentialsForRequestOptions,
+  ProofFormatSelectCredentialsForRequestReturn,
+  ProofFormatAutoRespondProposalOptions,
+  ProofFormatAutoRespondRequestOptions,
+  ProofFormatAutoRespondPresentationOptions,
+} from './ProofFormatServiceOptions'
 import type { AgentContext } from '../../../agent'
-import type { AgentConfig } from '../../../agent/AgentConfig'
-import type { DidCommMessageRepository } from '../../../storage'
-import type {
-  CreateRequestAsResponseOptions,
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../models/ProofServiceOptions'
-import type { ProofRequestFormats } from '../models/SharedOptions'
 
-/**
- * This abstract class is the base class for any proof format
- * specific service.
- *
- * @export
- * @abstract
- * @class ProofFormatService
- */
-export abstract class ProofFormatService<PF extends ProofFormat = ProofFormat> {
-  protected didCommMessageRepository: DidCommMessageRepository
-  protected agentConfig: AgentConfig
+export interface ProofFormatService<PF extends ProofFormat = ProofFormat> {
+  formatKey: PF['formatKey']
 
-  public abstract readonly formatKey: PF['formatKey']
-
-  public constructor(didCommMessageRepository: DidCommMessageRepository, agentConfig: AgentConfig) {
-    this.didCommMessageRepository = didCommMessageRepository
-    this.agentConfig = agentConfig
-  }
-
-  public abstract createProposal(options: FormatCreateProofProposalOptions): Promise<ProofAttachmentFormat>
-
-  public abstract processProposal(options: ProcessProposalOptions): Promise<void>
-
-  public abstract createRequest(options: CreateRequestOptions): Promise<ProofAttachmentFormat>
-
-  public abstract processRequest(options: ProcessRequestOptions): Promise<void>
-
-  public abstract createPresentation(
+  // proposal methods
+  createProposal(
     agentContext: AgentContext,
-    options: FormatCreatePresentationOptions<PF>
-  ): Promise<ProofAttachmentFormat>
-
-  public abstract processPresentation(agentContext: AgentContext, options: ProcessPresentationOptions): Promise<boolean>
-
-  public abstract createProofRequestFromProposal(
-    options: CreatePresentationFormatsOptions
-  ): Promise<ProofRequestFormats>
-
-  public abstract getRequestedCredentialsForProofRequest(
+    options: ProofFormatCreateProposalOptions<PF>
+  ): Promise<ProofFormatCreateReturn>
+  processProposal(agentContext: AgentContext, options: ProofFormatProcessOptions): Promise<void>
+  acceptProposal(
     agentContext: AgentContext,
-    options: GetRequestedCredentialsFormat
-  ): Promise<FormatRetrievedCredentialOptions<[PF]>>
+    options: ProofFormatAcceptProposalOptions<PF>
+  ): Promise<ProofFormatCreateReturn>
 
-  public abstract autoSelectCredentialsForProofRequest(
-    options: FormatRetrievedCredentialOptions<[PF]>
-  ): Promise<FormatRequestedCredentialReturn<[PF]>>
+  // request methods
+  createRequest(agentContext: AgentContext, options: FormatCreateRequestOptions<PF>): Promise<ProofFormatCreateReturn>
+  processRequest(agentContext: AgentContext, options: ProofFormatProcessOptions): Promise<void>
+  acceptRequest(
+    agentContext: AgentContext,
+    options: ProofFormatAcceptRequestOptions<PF>
+  ): Promise<ProofFormatCreateReturn>
 
-  public abstract proposalAndRequestAreEqual(
-    proposalAttachments: ProofAttachmentFormat[],
-    requestAttachments: ProofAttachmentFormat[]
-  ): boolean
+  // presentation methods
+  processPresentation(agentContext: AgentContext, options: ProofFormatProcessPresentationOptions): Promise<boolean>
 
-  public abstract supportsFormat(formatIdentifier: string): boolean
+  // credentials for request
+  getCredentialsForRequest(
+    agentContext: AgentContext,
+    options: ProofFormatGetCredentialsForRequestOptions<PF>
+  ): Promise<ProofFormatGetCredentialsForRequestReturn<PF>>
+  selectCredentialsForRequest(
+    agentContext: AgentContext,
+    options: ProofFormatSelectCredentialsForRequestOptions<PF>
+  ): Promise<ProofFormatSelectCredentialsForRequestReturn<PF>>
 
-  public abstract createRequestAsResponse(
-    options: CreateRequestAsResponseOptions<[IndyProofFormat]>
-  ): Promise<ProofAttachmentFormat>
+  // auto accept methods
+  shouldAutoRespondToProposal(
+    agentContext: AgentContext,
+    options: ProofFormatAutoRespondProposalOptions
+  ): Promise<boolean>
+  shouldAutoRespondToRequest(
+    agentContext: AgentContext,
+    options: ProofFormatAutoRespondRequestOptions
+  ): Promise<boolean>
+  shouldAutoRespondToPresentation(
+    agentContext: AgentContext,
+    options: ProofFormatAutoRespondPresentationOptions
+  ): Promise<boolean>
+
+  supportsFormat(formatIdentifier: string): boolean
 }

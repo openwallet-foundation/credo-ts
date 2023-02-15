@@ -16,8 +16,6 @@ import { IndyLedgerService } from '../../modules/ledger'
 import { LedgerApi } from '../../modules/ledger/LedgerApi'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
-import { V1ProofService } from '../../modules/proofs/protocol/v1'
-import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
   MediationRecipientService,
   MediationRepository,
@@ -161,8 +159,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
 
-      expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
-      expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
@@ -204,8 +200,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
 
-      expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
-      expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
@@ -263,10 +257,11 @@ describe('Agent', () => {
         'https://didcomm.org/messagepickup/2.0',
         'https://didcomm.org/out-of-band/1.1',
         'https://didcomm.org/present-proof/1.0',
+        'https://didcomm.org/present-proof/2.0',
         'https://didcomm.org/revocation_notification/1.0',
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(14)
+    expect(protocols.length).toEqual(15)
   })
 })

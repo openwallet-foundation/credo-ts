@@ -1,4 +1,4 @@
-import type { LegacyIndyCredentialFormat } from './LegacyIndyCredentialFormat'
+import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialOffer,
@@ -10,41 +10,39 @@ import type { AnonCredsCredentialMetadata } from '../utils/metadata'
 import type {
   CredentialFormatService,
   AgentContext,
-  FormatCreateProposalOptions,
-  FormatCreateProposalReturn,
-  FormatProcessOptions,
-  FormatAcceptProposalOptions,
-  FormatCreateOfferReturn,
-  FormatCreateOfferOptions,
-  FormatAcceptOfferOptions,
+  CredentialFormatCreateProposalOptions,
+  CredentialFormatCreateProposalReturn,
+  CredentialFormatProcessOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatCreateOfferReturn,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatAcceptOfferOptions,
   CredentialFormatCreateReturn,
-  FormatAcceptRequestOptions,
-  FormatProcessCredentialOptions,
-  FormatAutoRespondProposalOptions,
-  FormatAutoRespondOfferOptions,
-  FormatAutoRespondRequestOptions,
-  FormatAutoRespondCredentialOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatProcessCredentialOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatAutoRespondCredentialOptions,
   CredentialExchangeRecord,
   CredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@aries-framework/core'
 
 import {
+  MessageValidator,
   CredentialFormatSpec,
   AriesFrameworkError,
-  IndyCredPropose,
-  JsonTransformer,
   Attachment,
-  CredentialPreviewAttribute,
-  AttachmentData,
   JsonEncoder,
   utils,
-  MessageValidator,
   CredentialProblemReportError,
   CredentialProblemReportReason,
+  JsonTransformer,
 } from '@aries-framework/core'
 
 import { AnonCredsError } from '../error'
+import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 import {
@@ -80,8 +78,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   public async createProposal(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord }: FormatCreateProposalOptions<LegacyIndyCredentialFormat>
-  ): Promise<FormatCreateProposalReturn> {
+    { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
+  ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
       format: INDY_CRED_FILTER,
     })
@@ -96,8 +94,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attributes, linkedAttachments, ...indyCredentialProposal } = indyFormat
-
-    const proposal = new IndyCredPropose(indyCredentialProposal)
+    const proposal = new AnonCredsCredentialProposal(indyCredentialProposal)
 
     try {
       MessageValidator.validateSync(proposal)
@@ -105,8 +102,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       throw new AriesFrameworkError(`Invalid proposal supplied: ${indyCredentialProposal} in Indy Format Service`)
     }
 
-    const proposalJson = JsonTransformer.toJSON(proposal)
-    const attachment = this.getFormatData(proposalJson, format.attachId)
+    const attachment = this.getFormatData(JsonTransformer.toJSON(proposal), format.attachmentId)
 
     const { previewAttributes } = this.getCredentialLinkedAttachments(
       indyFormat.attributes,
@@ -122,27 +118,28 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     return { format, attachment, previewAttributes }
   }
 
-  public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
+  public async processProposal(
+    agentContext: AgentContext,
+    { attachment }: CredentialFormatProcessOptions
+  ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
 
-    // fromJSON also validates
-    JsonTransformer.fromJSON(proposalJson, IndyCredPropose)
+    JsonTransformer.fromJSON(proposalJson, AnonCredsCredentialProposal)
   }
 
   public async acceptProposal(
     agentContext: AgentContext,
     {
-      attachId,
+      attachmentId,
       credentialFormats,
       credentialRecord,
       proposalAttachment,
-    }: FormatAcceptProposalOptions<LegacyIndyCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    }: CredentialFormatAcceptProposalOptions<LegacyIndyCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats?.indy
 
-    const credentialProposal = JsonTransformer.fromJSON(proposalAttachment.getDataAsJson(), IndyCredPropose)
-
-    const credentialDefinitionId = indyFormat?.credentialDefinitionId ?? credentialProposal.credentialDefinitionId
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const credentialDefinitionId = indyFormat?.credentialDefinitionId ?? proposalJson.cred_def_id
 
     const attributes = indyFormat?.attributes ?? credentialRecord.credentialAttributes
 
@@ -158,7 +155,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
       credentialRecord,
-      attachId,
+      attachmentId,
       attributes,
       credentialDefinitionId,
       linkedAttachments: indyFormat?.linkedAttachments,
@@ -176,8 +173,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord, attachId }: FormatCreateOfferOptions<LegacyIndyCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    {
+      credentialFormats,
+      credentialRecord,
+      attachmentId,
+    }: CredentialFormatCreateOfferOptions<LegacyIndyCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
@@ -186,7 +187,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const { format, attachment, previewAttributes } = await this.createIndyOffer(agentContext, {
       credentialRecord,
-      attachId,
+      attachmentId,
       attributes: indyFormat.attributes,
       credentialDefinitionId: indyFormat.credentialDefinitionId,
       linkedAttachments: indyFormat.linkedAttachments,
@@ -195,7 +196,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     return { format, attachment, previewAttributes }
   }
 
-  public async processOffer(agentContext: AgentContext, { attachment, credentialRecord }: FormatProcessOptions) {
+  public async processOffer(
+    agentContext: AgentContext,
+    { attachment, credentialRecord }: CredentialFormatProcessOptions
+  ) {
     agentContext.config.logger.debug(`Processing indy credential offer for credential record ${credentialRecord.id}`)
 
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -211,10 +215,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     agentContext: AgentContext,
     {
       credentialRecord,
-      attachId,
+      attachmentId,
       offerAttachment,
       credentialFormats,
-    }: FormatAcceptOfferOptions<LegacyIndyCredentialFormat>
+    }: CredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
@@ -250,11 +254,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     })
 
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: INDY_CRED_REQUEST,
     })
 
-    const attachment = this.getFormatData(credentialRequest, format.attachId)
+    const attachment = this.getFormatData(credentialRequest, format.attachmentId)
     return { format, attachment }
   }
 
@@ -269,7 +273,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async processRequest(agentContext: AgentContext, options: FormatProcessOptions): Promise<void> {
+  public async processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void> {
     // not needed for Indy
   }
 
@@ -277,10 +281,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     agentContext: AgentContext,
     {
       credentialRecord,
-      attachId,
+      attachmentId,
       offerAttachment,
       requestAttachment,
-    }: FormatAcceptRequestOptions<LegacyIndyCredentialFormat>
+    }: CredentialFormatAcceptRequestOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
@@ -314,11 +318,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     }
 
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: INDY_CRED,
     })
 
-    const attachment = this.getFormatData(credential, format.attachId)
+    const attachment = this.getFormatData(credential, format.attachmentId)
     return { format, attachment }
   }
 
@@ -329,7 +333,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment }: FormatProcessCredentialOptions
+    { credentialRecord, attachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialRequestMetadata = credentialRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey
@@ -428,15 +432,15 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   /**
-   * Gets the attachment object for a given attachId. We need to get out the correct attachId for
+   * Gets the attachment object for a given attachmentId. We need to get out the correct attachmentId for
    * indy and then find the corresponding attachment (if there is one)
-   * @param formats the formats object containing the attachId
+   * @param formats the formats object containing the attachmentId
    * @param messageAttachments the attachments containing the payload
    * @returns The Attachment if found or undefined
    *
    */
   public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
-    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachId)
+    const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
     return supportedAttachment
@@ -449,49 +453,45 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     await anonCredsHolderService.deleteCredential(agentContext, credentialRecordId)
   }
 
-  public shouldAutoRespondToProposal(
+  public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
-    const credentialProposalJson = proposalAttachment.getDataAsJson()
-    const credentialProposal = JsonTransformer.fromJSON(credentialProposalJson, IndyCredPropose)
-
-    const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return credentialProposal.credentialDefinitionId === credentialOfferJson.cred_def_id
+    return proposalJson.cred_def_id === offerJson.cred_def_id
   }
 
-  public shouldAutoRespondToOffer(
+  public async shouldAutoRespondToOffer(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
-    const credentialProposalJson = proposalAttachment.getDataAsJson()
-    const credentialProposal = JsonTransformer.fromJSON(credentialProposalJson, IndyCredPropose)
-
-    const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.
     // TODO: If no credential definition is present on the proposal, we could check whether the other fields
     // of the proposal match with the credential definition id.
-    return credentialProposal.credentialDefinitionId === credentialOfferJson.cred_def_id
+    return proposalJson.cred_def_id === offerJson.cred_def_id
   }
 
-  public shouldAutoRespondToRequest(
+  public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
 
-    return credentialOfferJson.cred_def_id == credentialRequestJson.cred_def_id
+    return credentialOfferJson.cred_def_id === credentialRequestJson.cred_def_id
   }
 
-  public shouldAutoRespondToCredential(
+  public async shouldAutoRespondToCredential(
     agentContext: AgentContext,
-    { credentialRecord, requestAttachment, credentialAttachment }: FormatAutoRespondCredentialOptions
+    { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
@@ -511,24 +511,24 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     agentContext: AgentContext,
     {
       credentialRecord,
-      attachId,
+      attachmentId,
       credentialDefinitionId,
       attributes,
       linkedAttachments,
     }: {
       credentialDefinitionId: string
       credentialRecord: CredentialExchangeRecord
-      attachId?: string
+      attachmentId?: string
       attributes: CredentialPreviewAttributeOptions[]
       linkedAttachments?: LinkedAttachment[]
     }
-  ): Promise<FormatCreateOfferReturn> {
+  ): Promise<CredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
       agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
-      attachId: attachId,
+      attachmentId: attachmentId,
       format: INDY_CRED_ABSTRACT,
     })
 
@@ -548,7 +548,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialDefinitionId: offer.cred_def_id,
     })
 
-    const attachment = this.getFormatData(offer, format.attachId)
+    const attachment = this.getFormatData(offer, format.attachmentId)
 
     return { format, attachment, previewAttributes }
   }
@@ -556,7 +556,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   private async assertPreviewAttributesMatchSchemaAttributes(
     agentContext: AgentContext,
     offer: AnonCredsCredentialOffer,
-    attributes: CredentialPreviewAttribute[]
+    attributes: CredentialPreviewAttributeOptions[]
   ): Promise<void> {
     const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const registry = registryService.getRegistryForIdentifier(agentContext, offer.schema_id)
@@ -584,13 +584,13 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     linkedAttachments?: LinkedAttachment[]
   ): {
     attachments?: Attachment[]
-    previewAttributes?: CredentialPreviewAttribute[]
+    previewAttributes?: CredentialPreviewAttributeOptions[]
   } {
     if (!linkedAttachments && !attributes) {
       return {}
     }
 
-    let previewAttributes = attributes?.map((attribute) => new CredentialPreviewAttribute(attribute)) ?? []
+    let previewAttributes = attributes ?? []
     let attachments: Attachment[] | undefined
 
     if (linkedAttachments) {
@@ -614,9 +614,9 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const attachment = new Attachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: {
         base64: JsonEncoder.toBase64(data),
-      }),
+      },
     })
 
     return attachment

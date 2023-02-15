@@ -2,7 +2,7 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsRevocationStatusList,
   AnonCredsProofRequest,
-  AnonCredsRequestedCredentials,
+  AnonCredsSelectedCredentials,
   AnonCredsCredentialInfo,
   AnonCredsNonRevokedInterval,
 } from '@aries-framework/anoncreds'
@@ -44,7 +44,7 @@ export class IndySdkRevocationService {
   public async createRevocationState(
     agentContext: AgentContext,
     proofRequest: AnonCredsProofRequest,
-    requestedCredentials: AnonCredsRequestedCredentials,
+    selectedCredentials: AnonCredsSelectedCredentials,
     revocationRegistries: {
       [revocationRegistryDefinitionId: string]: {
         // Tails is already downloaded
@@ -59,7 +59,7 @@ export class IndySdkRevocationService {
     try {
       agentContext.config.logger.debug(`Creating Revocation State(s) for proof request`, {
         proofRequest,
-        requestedCredentials,
+        selectedCredentials,
       })
       const indyRevocationStates: RevStates = {}
       const referentCredentials: Array<{
@@ -70,18 +70,18 @@ export class IndySdkRevocationService {
       }> = []
 
       //Retrieve information for referents and push to single array
-      for (const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedAttributes ?? {})) {
+      for (const [referent, selectedCredential] of Object.entries(selectedCredentials.attributes ?? {})) {
         referentCredentials.push({
           referent,
-          credentialInfo: requestedCredential.credentialInfo,
+          credentialInfo: selectedCredential.credentialInfo,
           type: RequestReferentType.Attribute,
           referentRevocationInterval: proofRequest.requested_attributes[referent].non_revoked,
         })
       }
-      for (const [referent, requestedCredential] of Object.entries(requestedCredentials.requestedPredicates ?? {})) {
+      for (const [referent, selectedCredential] of Object.entries(selectedCredentials.predicates ?? {})) {
         referentCredentials.push({
           referent,
-          credentialInfo: requestedCredential.credentialInfo,
+          credentialInfo: selectedCredential.credentialInfo,
           type: RequestReferentType.Predicate,
           referentRevocationInterval: proofRequest.requested_predicates[referent].non_revoked,
         })
@@ -138,7 +138,7 @@ export class IndySdkRevocationService {
       agentContext.config.logger.error(`Error creating Indy Revocation State for Proof Request`, {
         error,
         proofRequest,
-        requestedCredentials,
+        selectedCredentials,
       })
 
       throw isIndyError(error) ? new IndySdkError(error) : error

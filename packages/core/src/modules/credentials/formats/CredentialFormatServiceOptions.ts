@@ -2,7 +2,7 @@ import type { CredentialFormat, CredentialFormatPayload } from './CredentialForm
 import type { CredentialFormatService } from './CredentialFormatService'
 import type { Attachment } from '../../../decorators/attachment/Attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
-import type { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
+import type { CredentialPreviewAttributeOptions } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
 
 /**
@@ -46,93 +46,88 @@ export interface CredentialFormatCreateReturn {
 }
 
 /**
- * Base return type for all process methods.
+ * Base return type for all credential process methods.
  */
-export interface FormatProcessOptions {
+export interface CredentialFormatProcessOptions {
   attachment: Attachment
   credentialRecord: CredentialExchangeRecord
 }
 
-export interface FormatProcessCredentialOptions extends FormatProcessOptions {
+export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
   requestAttachment: Attachment
 }
 
-export interface FormatCreateProposalOptions<CF extends CredentialFormat> {
+export interface CredentialFormatCreateProposalOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createProposal'>
+  attachmentId?: string
 }
 
-export interface FormatAcceptProposalOptions<CF extends CredentialFormat> {
+export interface CredentialFormatAcceptProposalOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptProposal'>
-  attachId?: string
+  attachmentId?: string
 
   proposalAttachment: Attachment
 }
 
-export interface FormatCreateProposalReturn extends CredentialFormatCreateReturn {
-  previewAttributes?: CredentialPreviewAttribute[]
+export interface CredentialFormatCreateProposalReturn extends CredentialFormatCreateReturn {
+  previewAttributes?: CredentialPreviewAttributeOptions[]
 }
 
-export interface FormatCreateOfferOptions<CF extends CredentialFormat> {
+export interface CredentialFormatCreateOfferOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createOffer'>
-  attachId?: string
+  attachmentId?: string
 }
 
-export interface FormatAcceptOfferOptions<CF extends CredentialFormat> {
+export interface CredentialFormatAcceptOfferOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptOffer'>
-  attachId?: string
+  attachmentId?: string
 
   offerAttachment: Attachment
 }
 
-export interface FormatCreateOfferReturn extends CredentialFormatCreateReturn {
-  previewAttributes?: CredentialPreviewAttribute[]
+export interface CredentialFormatCreateOfferReturn extends CredentialFormatCreateReturn {
+  previewAttributes?: CredentialPreviewAttributeOptions[]
 }
 
-export interface FormatCreateRequestOptions<CF extends CredentialFormat> {
+export interface CredentialFormatCreateRequestOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createRequest'>
 }
 
-export interface FormatAcceptRequestOptions<CF extends CredentialFormat> {
+export interface CredentialFormatAcceptRequestOptions<CF extends CredentialFormat> {
   credentialRecord: CredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
-  attachId?: string
+  attachmentId?: string
 
   requestAttachment: Attachment
   offerAttachment?: Attachment
 }
 
-export interface FormatAcceptCredentialOptions {
-  credentialRecord: CredentialExchangeRecord
-  attachId?: string
-  requestAttachment: Attachment
-  offerAttachment?: Attachment
-}
 // Auto accept method interfaces
-export interface FormatAutoRespondProposalOptions {
+export interface CredentialFormatAutoRespondProposalOptions {
   credentialRecord: CredentialExchangeRecord
   proposalAttachment: Attachment
   offerAttachment: Attachment
 }
 
-export interface FormatAutoRespondOfferOptions {
+export interface CredentialFormatAutoRespondOfferOptions {
   credentialRecord: CredentialExchangeRecord
   proposalAttachment: Attachment
   offerAttachment: Attachment
 }
 
-export interface FormatAutoRespondRequestOptions {
+export interface CredentialFormatAutoRespondRequestOptions {
   credentialRecord: CredentialExchangeRecord
   proposalAttachment?: Attachment
   offerAttachment: Attachment
   requestAttachment: Attachment
 }
 
-export interface FormatAutoRespondCredentialOptions {
+export interface CredentialFormatAutoRespondCredentialOptions {
   credentialRecord: CredentialExchangeRecord
   proposalAttachment?: Attachment
   offerAttachment?: Attachment

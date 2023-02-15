@@ -7,21 +7,21 @@ import type {
 import type { AgentContext } from '../../../../agent'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
-  FormatAcceptOfferOptions,
-  FormatAcceptProposalOptions,
-  FormatAcceptRequestOptions,
-  FormatAutoRespondOfferOptions,
-  FormatAutoRespondProposalOptions,
-  FormatAutoRespondRequestOptions,
-  FormatCreateOfferOptions,
-  FormatCreateOfferReturn,
-  FormatCreateProposalOptions,
-  FormatCreateProposalReturn,
-  FormatCreateRequestOptions,
+  CredentialFormatAcceptOfferOptions,
+  CredentialFormatAcceptProposalOptions,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatAutoRespondOfferOptions,
+  CredentialFormatAutoRespondProposalOptions,
+  CredentialFormatAutoRespondRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatCreateOfferReturn,
+  CredentialFormatCreateProposalOptions,
+  CredentialFormatCreateProposalReturn,
+  CredentialFormatCreateRequestOptions,
   CredentialFormatCreateReturn,
-  FormatProcessCredentialOptions,
-  FormatProcessOptions,
-  FormatAutoRespondCredentialOptions,
+  CredentialFormatProcessCredentialOptions,
+  CredentialFormatProcessOptions,
+  CredentialFormatAutoRespondCredentialOptions,
 } from '../CredentialFormatServiceOptions'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
@@ -52,8 +52,8 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    */
   public async createProposal(
     agentContext: AgentContext,
-    { credentialFormats }: FormatCreateProposalOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateProposalReturn> {
+    { credentialFormats }: CredentialFormatCreateProposalOptions<JsonLdCredentialFormat>
+  ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new CredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
     })
@@ -67,7 +67,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
     // jsonLdFormat is now of type JsonLdFormatDataCredentialDetail
-    const attachment = this.getFormatData(jsonLdFormat, format.attachId)
+    const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
     return { format, attachment }
   }
 
@@ -75,7 +75,10 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    * Method called on reception of a propose credential message
    * @param options the options needed to accept the proposal
    */
-  public async processProposal(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
+  public async processProposal(
+    agentContext: AgentContext,
+    { attachment }: CredentialFormatProcessOptions
+  ): Promise<void> {
     const credProposalJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credProposalJson) {
@@ -88,11 +91,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { attachId, proposalAttachment }: FormatAcceptProposalOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    { attachmentId, proposalAttachment }: CredentialFormatAcceptProposalOptions<JsonLdCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: JSONLD_VC_DETAIL,
     })
 
@@ -101,7 +104,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
     const offerData = credentialProposal
 
-    const attachment = this.getFormatData(offerData, format.attachId)
+    const attachment = this.getFormatData(offerData, format.attachmentId)
 
     return { format, attachment }
   }
@@ -115,11 +118,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, attachId }: FormatCreateOfferOptions<JsonLdCredentialFormat>
-  ): Promise<FormatCreateOfferReturn> {
+    { credentialFormats, attachmentId }: CredentialFormatCreateOfferOptions<JsonLdCredentialFormat>
+  ): Promise<CredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: JSONLD_VC_DETAIL,
     })
 
@@ -131,12 +134,12 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     // validate
     JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
-    const attachment = this.getFormatData(jsonLdFormat, format.attachId)
+    const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
 
     return { format, attachment }
   }
 
-  public async processOffer(agentContext: AgentContext, { attachment }: FormatProcessOptions) {
+  public async processOffer(agentContext: AgentContext, { attachment }: CredentialFormatProcessOptions) {
     const credentialOfferJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credentialOfferJson) {
@@ -148,7 +151,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
   public async acceptOffer(
     agentContext: AgentContext,
-    { attachId, offerAttachment }: FormatAcceptOfferOptions<JsonLdCredentialFormat>
+    { attachmentId, offerAttachment }: CredentialFormatAcceptOfferOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const credentialOffer = offerAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
@@ -156,11 +159,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     JsonTransformer.fromJSON(credentialOffer, JsonLdCredentialDetail)
 
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: JSONLD_VC_DETAIL,
     })
 
-    const attachment = this.getFormatData(credentialOffer, format.attachId)
+    const attachment = this.getFormatData(credentialOffer, format.attachmentId)
     return { format, attachment }
   }
 
@@ -173,7 +176,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    */
   public async createRequest(
     agentContext: AgentContext,
-    { credentialFormats }: FormatCreateRequestOptions<JsonLdCredentialFormat>
+    { credentialFormats }: CredentialFormatCreateRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
@@ -188,12 +191,15 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     // this does the validation
     JsonTransformer.fromJSON(jsonLdFormat.credential, JsonLdCredentialDetail)
 
-    const attachment = this.getFormatData(jsonLdFormat, format.attachId)
+    const attachment = this.getFormatData(jsonLdFormat, format.attachmentId)
 
     return { format, attachment }
   }
 
-  public async processRequest(agentContext: AgentContext, { attachment }: FormatProcessOptions): Promise<void> {
+  public async processRequest(
+    agentContext: AgentContext,
+    { attachment }: CredentialFormatProcessOptions
+  ): Promise<void> {
     const requestJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!requestJson) {
@@ -206,7 +212,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { credentialFormats, attachId, requestAttachment }: FormatAcceptRequestOptions<JsonLdCredentialFormat>
+    { credentialFormats, attachmentId, requestAttachment }: CredentialFormatAcceptRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
@@ -222,7 +228,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       throw new AriesFrameworkError('Missing verification method in credential data')
     }
     const format = new CredentialFormatSpec({
-      attachId,
+      attachmentId,
       format: JSONLD_VC,
     })
 
@@ -246,7 +252,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       verificationMethod: verificationMethod,
     })
 
-    const attachment = this.getFormatData(verifiableCredential, format.attachId)
+    const attachment = this.getFormatData(verifiableCredential, format.attachmentId)
     return { format, attachment }
   }
 
@@ -298,7 +304,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment, requestAttachment }: FormatProcessCredentialOptions
+    { credentialRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
@@ -385,30 +391,30 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     return areObjectsEqual(obj1, obj2)
   }
 
-  public shouldAutoRespondToProposal(
+  public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
-  public shouldAutoRespondToOffer(
+  public async shouldAutoRespondToOffer(
     agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: FormatAutoRespondOfferOptions
+    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
-  public shouldAutoRespondToRequest(
+  public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: FormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
   ) {
     return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 
-  public shouldAutoRespondToCredential(
+  public async shouldAutoRespondToCredential(
     agentContext: AgentContext,
-    { requestAttachment, credentialAttachment }: FormatAutoRespondCredentialOptions
+    { requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<JsonLdFormatDataVerifiableCredential>()
     const w3cCredential = JsonTransformer.fromJSON(credentialJson, W3cVerifiableCredential)
@@ -432,7 +438,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
+  private getFormatData(data: unknown, id: string): Attachment {
     const attachment = new Attachment({
       id,
       mimeType: 'application/json',

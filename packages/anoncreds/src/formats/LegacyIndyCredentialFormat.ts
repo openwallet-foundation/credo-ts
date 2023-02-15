@@ -2,10 +2,18 @@ import type {
   AnonCredsAcceptOfferFormat,
   AnonCredsAcceptProposalFormat,
   AnonCredsAcceptRequestFormat,
+  AnonCredsCredentialProposalFormat,
   AnonCredsOfferCredentialFormat,
+  AnonCredsProposeCredentialFormat,
 } from './AnonCredsCredentialFormat'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { CredentialPreviewAttributeOptions, CredentialFormat, LinkedAttachment } from '@aries-framework/core'
+import type { CredentialFormat } from '@aries-framework/core'
+
+// Legacy indy credential proposal doesn't support _id properties
+export type LegacyIndyCredentialProposalFormat = Omit<
+  AnonCredsCredentialProposalFormat,
+  'schema_issuer_id' | 'issuer_id'
+>
 
 /**
  * This defines the module payload for calling CredentialsApi.createProposal
@@ -13,18 +21,7 @@ import type { CredentialPreviewAttributeOptions, CredentialFormat, LinkedAttachm
  *
  * NOTE: This doesn't include the `issuerId` and `schemaIssuerId` properties that are present in the newer format.
  */
-export interface LegacyIndyProposeCredentialFormat {
-  schemaIssuerDid?: string
-  schemaId?: string
-  schemaName?: string
-  schemaVersion?: string
-
-  credentialDefinitionId?: string
-  issuerDid?: string
-
-  attributes?: CredentialPreviewAttributeOptions[]
-  linkedAttachments?: LinkedAttachment[]
-}
+type LegacyIndyProposeCredentialFormat = Omit<AnonCredsProposeCredentialFormat, 'schemaIssuerId' | 'issuerId'>
 
 export interface LegacyIndyCredentialRequest extends AnonCredsCredentialRequest {
   // prover_did is optional in AnonCreds credential request, but required in legacy format
@@ -51,15 +48,7 @@ export interface LegacyIndyCredentialFormat extends CredentialFormat {
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
   formatData: {
-    proposal: {
-      schema_name?: string
-      schema_issuer_did?: string
-      schema_version?: string
-      schema_id?: string
-
-      cred_def_id?: string
-      issuer_did?: string
-    }
+    proposal: LegacyIndyCredentialProposalFormat
     offer: AnonCredsCredentialOffer
     request: LegacyIndyCredentialRequest
     credential: AnonCredsCredential

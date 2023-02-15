@@ -7,8 +7,8 @@ export function parseVersionString(version: VersionString): Version {
 export function isFirstVersionHigherThanSecond(first: Version, second: Version) {
   return (
     first[0] > second[0] ||
-    (first[0] == second[0] && first[1] > second[1]) ||
-    (first[0] == second[0] && first[1] == second[1] && first[2] > second[2])
+    (first[0] === second[0] && first[1] > second[1]) ||
+    (first[0] === second[0] && first[1] === second[1] && first[2] > second[2])
   )
 }
 

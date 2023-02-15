@@ -20,7 +20,7 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { encode } from '../../../../anoncreds/src/utils/credential'
+import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
@@ -145,7 +145,10 @@ describe('AnonCredsRsServices', () => {
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest: credentialRequestState.credentialRequest,
-      credentialValues: { name: { raw: 'John', encoded: encode('John') }, age: { raw: '25', encoded: encode('25') } },
+      credentialValues: {
+        name: { raw: 'John', encoded: encodeCredentialValue('John') },
+        age: { raw: '25', encoded: encodeCredentialValue('25') },
+      },
     })
 
     const credentialId = 'holderCredentialId'
@@ -197,12 +200,12 @@ describe('AnonCredsRsServices', () => {
     const proof = await anonCredsHolderService.createProof(agentContext, {
       credentialDefinitions: { [credentialDefinitionState.credentialDefinitionId]: credentialDefinition },
       proofRequest,
-      requestedCredentials: {
-        requestedAttributes: {
+      selectedCredentials: {
+        attributes: {
           attr1_referent: { credentialId, credentialInfo, revealed: true },
           attr2_referent: { credentialId, credentialInfo, revealed: true },
         },
-        requestedPredicates: {
+        predicates: {
           predicate1_referent: { credentialId, credentialInfo },
         },
         selfAttestedAttributes: {},
@@ -211,12 +214,12 @@ describe('AnonCredsRsServices', () => {
       revocationRegistries: {},
     })
 
-    const verifiedProof = await anonCredsVerifierService.verifyProof({
+    const verifiedProof = await anonCredsVerifierService.verifyProof(agentContext, {
       credentialDefinitions: { [credentialDefinitionState.credentialDefinitionId]: credentialDefinition },
       proof,
       proofRequest,
       schemas: { [schemaState.schemaId]: schema },
-      revocationStates: {},
+      revocationRegistries: {},
     })
 
     expect(verifiedProof).toBeTruthy()

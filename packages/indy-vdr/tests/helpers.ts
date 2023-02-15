@@ -4,7 +4,20 @@ import type { AgentContext, Key } from '@aries-framework/core'
 import { KeyType } from '@aries-framework/core'
 import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
+import { genesisTransactions } from '../../core/tests/helpers'
+import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
+
+export const indyVdrModuleConfig = new IndyVdrModuleConfig({
+  networks: [
+    {
+      genesisTransactions,
+      indyNamespace: 'pool:localtest',
+      isProduction: false,
+      transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
+    },
+  ],
+})
 
 export async function createDidOnLedger(
   indyVdrPoolService: IndyVdrPoolService,

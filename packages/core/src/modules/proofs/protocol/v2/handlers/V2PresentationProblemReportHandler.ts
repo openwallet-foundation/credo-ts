@@ -1,13 +1,13 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { V2ProofService } from '../V2ProofService'
+import type { V2ProofProtocol } from '../V2ProofProtocol'
 
 import { V2PresentationProblemReportMessage } from '../messages'
 
 export class V2PresentationProblemReportHandler implements MessageHandler {
-  private proofService: V2ProofService
+  private proofService: V2ProofProtocol
   public supportedMessages = [V2PresentationProblemReportMessage]
 
-  public constructor(proofService: V2ProofService) {
+  public constructor(proofService: V2ProofProtocol) {
     this.proofService = proofService
   }
 

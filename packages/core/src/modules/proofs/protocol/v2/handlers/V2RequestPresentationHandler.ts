@@ -1,86 +1,45 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { MediationRecipientService, RoutingService } from '../../../../routing'
-import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { ProofFormat } from '../../../formats/ProofFormat'
-import type {
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../../../models/ProofServiceOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V2ProofService } from '../V2ProofService'
+import type { V2ProofProtocol } from '../V2ProofProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
 import { DidCommMessageRole } from '../../../../../storage'
+import { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
+import { RoutingService } from '../../../../routing'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
 
-export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofFormat[]> implements MessageHandler {
-  private proofService: V2ProofService
-  private agentConfig: AgentConfig
-  private proofResponseCoordinator: ProofResponseCoordinator
-  private mediationRecipientService: MediationRecipientService
-  private didCommMessageRepository: DidCommMessageRepository
-  private routingService: RoutingService
+export class V2RequestPresentationHandler implements MessageHandler {
+  private proofProtocol: V2ProofProtocol
   public supportedMessages = [V2RequestPresentationMessage]
 
-  public constructor(
-    proofService: V2ProofService,
-    agentConfig: AgentConfig,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository,
-    routingService: RoutingService
-  ) {
-    this.proofService = proofService
-    this.agentConfig = agentConfig
-    this.proofResponseCoordinator = proofResponseCoordinator
-    this.mediationRecipientService = mediationRecipientService
-    this.didCommMessageRepository = didCommMessageRepository
-    this.routingService = routingService
+  public constructor(proofProtocol: V2ProofProtocol) {
+    this.proofProtocol = proofProtocol
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V2RequestPresentationHandler>) {
-    const proofRecord = await this.proofService.processRequest(messageContext)
+    const proofRecord = await this.proofProtocol.processRequest(messageContext)
 
-    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
-      messageContext.agentContext,
-      proofRecord
-    )
+    const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
+      proofRecord,
+      requestMessage: messageContext.message,
+    })
+
+    messageContext.agentContext.config.logger.debug(`Should auto respond to request: ${shouldAutoRespond}`)
 
     if (shouldAutoRespond) {
-      return await this.createPresentation(proofRecord, messageContext)
+      return await this.acceptRequest(proofRecord, messageContext)
     }
   }
 
-  private async createPresentation(
-    record: ProofExchangeRecord,
+  private async acceptRequest(
+    proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V2RequestPresentationHandler>
   ) {
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: record.id,
-      messageClass: V2RequestPresentationMessage,
-    })
+    messageContext.agentContext.config.logger.info(`Automatically sending presentation with autoAccept`)
 
-    this.agentConfig.logger.info(
-      `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
-    )
-
-    const retrievedCredentials: FormatRetrievedCredentialOptions<PFs> =
-      await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
-        proofRecord: record,
-        config: {
-          filterByPresentationPreview: false,
-        },
-      })
-
-    const requestedCredentials: FormatRequestedCredentialReturn<PFs> =
-      await this.proofService.autoSelectCredentialsForProofRequest(retrievedCredentials)
-
-    const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {
-      proofRecord: record,
-      proofFormats: requestedCredentials.proofFormats,
+    const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
+      proofRecord,
     })
 
     if (messageContext.connection) {
@@ -89,16 +48,19 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
         connection: messageContext.connection,
         associatedRecord: proofRecord,
       })
-    } else if (requestMessage.service) {
-      const routing = await this.routingService.getRouting(messageContext.agentContext)
+    } else if (messageContext.message.service) {
+      const routingService = messageContext.agentContext.dependencyManager.resolve<RoutingService>(RoutingService)
+      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+
+      const routing = await routingService.getRouting(messageContext.agentContext)
       message.service = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-      const recipientService = requestMessage.service
+      const recipientService = messageContext.message.service
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
@@ -113,6 +75,6 @@ export class V2RequestPresentationHandler<PFs extends ProofFormat[] = ProofForma
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create presentation`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create presentation`)
   }
 }

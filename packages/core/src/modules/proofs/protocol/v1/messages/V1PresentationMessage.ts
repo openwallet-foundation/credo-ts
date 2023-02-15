@@ -1,4 +1,3 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 import type { IndyProof } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -6,14 +5,11 @@ import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormatConstants'
-import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
-export interface PresentationOptions {
+export interface V1PresentationMessageOptions {
   id?: string
   comment?: string
   presentationAttachments: Attachment[]
@@ -27,7 +23,7 @@ export interface PresentationOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation
  */
 export class V1PresentationMessage extends AgentMessage {
-  public constructor(options: PresentationOptions) {
+  public constructor(options: V1PresentationMessageOptions) {
     super()
 
     if (options) {
@@ -61,30 +57,16 @@ export class V1PresentationMessage extends AgentMessage {
   @IsInstance(Attachment, { each: true })
   public presentationAttachments!: Attachment[]
 
-  public getAttachmentFormats(): ProofAttachmentFormat[] {
-    const attachment = this.indyAttachment
-
-    if (!attachment) {
-      throw new AriesFrameworkError(`Could not find a presentation attachment`)
-    }
-
-    return [
-      {
-        format: new ProofFormatSpec({ format: V2_INDY_PRESENTATION }),
-        attachment: attachment,
-      },
-    ]
-  }
-
-  public get indyAttachment(): Attachment | null {
-    return this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID) ?? null
-  }
-
   public get indyProof(): IndyProof | null {
-    const attachment = this.indyAttachment
+    const attachment =
+      this.presentationAttachments.find((attachment) => attachment.id === INDY_PROOF_ATTACHMENT_ID) ?? null
 
     const proofJson = attachment?.getDataAsJson<IndyProof>() ?? null
 
     return proofJson
+  }
+
+  public getPresentationAttachmentById(id: string): Attachment | undefined {
+    return this.presentationAttachments.find((attachment) => attachment.id === id)
   }
 }
