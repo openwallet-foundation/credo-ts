@@ -71,7 +71,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaId,
         resolutionMetadata: {
           error: 'notFound',
-          message: `unable to resolve credential definition: ${error.message}`,
+          message: `unable to resolve schema: ${error.message}`,
         },
         schemaMetadata: {},
       }
@@ -124,6 +124,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       return {
+
         schemaState: {
           state: 'finished',
           schema: {
@@ -138,7 +139,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaMetadata: {
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
-          indyLedgerSeqNo: schema.seqNo,
+          indyLedgerSeqNo: response.result.txnMetadata.seqNo, 
           didIndyNamespace: pool.didIndyNamespace,
         },
       }
@@ -196,14 +197,13 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           credentialDefinition,
         }
       )
-
-      const { schema } = await this.fetchIndySchema(agentContext, credentialDefinition.schemaId)
+      
 
       return {
         credentialDefinitionId: credentialDefinition.id,
         credentialDefinition: {
           issuerId: didFromCredentialDefinitionId(credentialDefinition.id),
-          schemaId: schema.id,
+          schemaId: credentialDefinition.schemaId,
           tag: credentialDefinition.tag,
           type: 'CL',
           value: credentialDefinition.value,
@@ -229,6 +229,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
   }
+
 
   public async registerCredentialDefinition(
     agentContext: AgentContext,
@@ -263,6 +264,8 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         options.credentialDefinition.schemaId
       )
 
+      
+
       if (!schema || !schemaMetadata.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
         return {
           registrationMetadata: {},
@@ -285,7 +288,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const request = await indySdk.buildCredDefRequest(options.credentialDefinition.issuerId, {
         id: credentialDefinitionId,
-        schemaId: options.credentialDefinition.schemaId,
+        schemaId: schemaMetadata.indyLedgerSeqNo.toString(),
         tag: options.credentialDefinition.tag,
         type: options.credentialDefinition.type,
         value: options.credentialDefinition.value,
@@ -500,10 +503,13 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
     const request = await indySdk.buildGetSchemaRequest(null, schemaId)
 
+    indySdk
+
     agentContext.config.logger.trace(
       `Submitting get schema request for schema '${schemaId}' to ledger '${pool.didIndyNamespace}'`
     )
     const response = await indySdkPoolService.submitReadRequest(pool, request)
+
 
     agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
       response,
