@@ -16,5 +16,3 @@ RUN apt-get install -y curl python3 build-essential ca-certificates && \
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
   nvm install v16 && \
   npm install yarn -g
-
-RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
