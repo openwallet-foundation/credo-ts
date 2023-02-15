@@ -6,4 +6,3 @@ export { AskarStorageService } from './storage'
 
 // Module
 export { AskarModule } from './AskarModule'
-export { AskarModuleConfig } from './AskarModuleConfig'
