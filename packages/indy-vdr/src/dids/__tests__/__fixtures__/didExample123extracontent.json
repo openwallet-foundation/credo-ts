@@ -1,0 +1,92 @@
+{
+  "@context": ["https://w3id.org/did/v1"],
+  "alsoKnownAs": ["did:example:456"],
+  "controller": ["did:example:456"],
+  "verificationMethod": [
+    {
+      "id": "did:example:123#key-2",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyBase58": "-----BEGIN PUBLIC 9..."
+    },
+    {
+      "id": "did:example:123#key-3",
+      "type": "Secp256k1VerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyHex": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "service": [
+    {
+      "id": "did:example:123#service-1",
+      "type": "Mediator",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h"
+    },
+    {
+      "id": "did:example:123#service-2",
+      "type": "IndyAgent",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h",
+      "recipientKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
+      "routingKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
+      "priority": 5
+    },
+    {
+      "id": "did:example:123#service-3",
+      "type": "did-communication",
+      "serviceEndpoint": "https://agent.com/did-comm",
+      "recipientKeys": ["DADEajsDSaksLng9h"],
+      "routingKeys": ["DADEajsDSaksLng9h"],
+      "priority": 10
+    }
+  ],
+  "authentication": [
+    {
+      "id": "did:example:123#authentication-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "assertionMethod": [
+    "did:example:123#verkey",
+    {
+      "id": "did:example:123#assertionMethod-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "capabilityDelegation": [
+    "did:example:123#verkey",
+    {
+      "id": "did:example:123#capabilityDelegation-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "capabilityInvocation": [
+    "did:example:123#verkey",
+    {
+      "id": "did:example:123#capabilityInvocation-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "keyAgreement": [
+    "did:example:123#verkey",
+    {
+      "id": "did:example:123#keyAgreement-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    },
+    {
+      "id": "did:example:123#keyAgreement-1",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:sov:LjgpST2rjsoxYegQDRm7EL",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ]
+}
