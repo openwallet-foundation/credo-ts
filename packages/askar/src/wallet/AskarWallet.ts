@@ -49,7 +49,6 @@ const isError = (error: unknown): error is Error => error instanceof Error
 
 import { inject, injectable } from 'tsyringe'
 
-import { encodeToBase58, decodeFromBase58 } from '../../../core/src/utils/base58'
 import {
   askarErrors,
   isAskarError,
@@ -373,7 +372,7 @@ export class AskarWallet implements Wallet {
           : AskarKey.generate(algorithm)
 
         // Store key
-        await this.session.insertKey({ key, name: encodeToBase58(key.publicBytes) })
+        await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(key.publicBytes) })
         return Key.fromPublicKey(key.publicBytes, keyType)
       } else {
         // Check if there is a signing key provider for the specified key type.
@@ -645,7 +644,7 @@ export class AskarWallet implements Wallet {
           )
           const sender_x = AskarKey.fromPublicBytes({
             algorithm: KeyAlgs.Ed25519,
-            publicKey: decodeFromBase58(senderKey),
+            publicKey: TypedArrayEncoder.fromBase58(senderKey),
           }).convertkey({ algorithm: KeyAlgs.X25519 })
 
           payloadKey = CryptoBox.open({

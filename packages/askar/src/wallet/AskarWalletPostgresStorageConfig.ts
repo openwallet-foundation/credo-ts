@@ -1,4 +1,4 @@
-import type { WalletStorageConfig } from '../../../core/src/types'
+import type { WalletStorageConfig } from '@aries-framework/core'
 
 export interface AskarWalletPostgresConfig {
   host: string
