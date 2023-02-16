@@ -8,7 +8,7 @@ import https from 'https'
 import { tmpdir, homedir } from 'os'
 import { dirname } from 'path'
 
-const { access, readFile, writeFile } = promises
+const { access, readFile, writeFile, mkdir, rm, unlink } = promises
 
 export class NodeFileSystem implements FileSystem {
   public readonly dataPath
@@ -41,12 +41,12 @@ export class NodeFileSystem implements FileSystem {
   }
 
   public async createDirectory(path: string): Promise<void> {
-    await promises.mkdir(dirname(path), { recursive: true })
+    await mkdir(dirname(path), { recursive: true })
   }
 
   public async write(path: string, data: string): Promise<void> {
     // Make sure parent directories exist
-    await promises.mkdir(dirname(path), { recursive: true })
+    await mkdir(dirname(path), { recursive: true })
 
     return writeFile(path, data, { encoding: 'utf-8' })
   }
@@ -55,11 +55,15 @@ export class NodeFileSystem implements FileSystem {
     return readFile(path, { encoding: 'utf-8' })
   }
 
+  public async delete(path: string): Promise<void> {
+    await rm(path, { recursive: true, force: true })
+  }
+
   public async downloadToFile(url: string, path: string, options: DownloadToFileOptions) {
     const httpMethod = url.startsWith('https') ? https : http
 
     // Make sure parent directories exist
-    await promises.mkdir(dirname(path), { recursive: true })
+    await mkdir(dirname(path), { recursive: true })
 
     const file = fs.createWriteStream(path)
     const hash = options.verifyHash ? createHash('sha256') : undefined
@@ -97,7 +101,7 @@ export class NodeFileSystem implements FileSystem {
         })
         .on('error', async (error) => {
           // Handle errors
-          await fs.promises.unlink(path) // Delete the file async. (But we don't check the result)
+          await unlink(path) // Delete the file async. (But we don't check the result)
           reject(`Unable to download file from url: ${url}. ${error.message}`)
         })
     })

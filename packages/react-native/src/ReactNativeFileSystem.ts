@@ -45,6 +45,10 @@ export class ReactNativeFileSystem implements FileSystem {
     return RNFS.readFile(path, 'utf8')
   }
 
+  public async delete(path: string): Promise<void> {
+    await RNFS.unlink(path)
+  }
+
   public async downloadToFile(url: string, path: string, options?: DownloadToFileOptions) {
     // Make sure parent directories exist
     await RNFS.mkdir(getDirFromFilePath(path))

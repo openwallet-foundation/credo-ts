@@ -13,5 +13,6 @@ export interface FileSystem {
   createDirectory(path: string): Promise<void>
   write(path: string, data: string): Promise<void>
   read(path: string): Promise<string>
+  delete(path: string): Promise<void>
   downloadToFile(url: string, path: string, options?: DownloadToFileOptions): Promise<void>
 }
