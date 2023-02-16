@@ -17,6 +17,7 @@ import {
   SchemaRequest,
   GetCredentialDefinitionRequest,
   CredentialDefinitionRequest,
+  GetTransactionRequest,
 } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrPoolService } from '../pool'
@@ -34,33 +35,44 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
+      const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-      const {schema, indyNamespace} = await this.fetchIndySchema(agentContext, schemaId);
+      const did = didFromSchemaId(schemaId)
 
+      const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
-      if (schema) {
-        agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${indyNamespace}'`, {'schema:': schema})
+      agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.indyNamespace}'`)
+      const request = new GetSchemaRequest({ submitterDid: did, schemaId })
 
+      agentContext.config.logger.trace(
+        `Submitting get schema request for schema '${schemaId}' to ledger '${pool.indyNamespace}'`
+      )
+      const response = await pool.submitReadRequest(request)
+
+      agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.indyNamespace}'`, {
+        response,
+      })
+
+      const issuerId = didFromSchemaId(schemaId)
+
+      if ('attr_names' in response.result.data) {
         return {
           schema: {
-            attrNames: schema.attrNames,
-            name: schema.name,
-            version: schema.version,
-            issuerId: schema.issuerId,
+            attrNames: response.result.data.attr_names,
+            name: response.result.data.name,
+            version: response.result.data.version,
+            issuerId,
           },
-          schemaId: schema.id,
+          schemaId: schemaId,
           resolutionMetadata: {},
           schemaMetadata: {
-            didIndyNamespace: indyNamespace,
+            didIndyNamespace: pool.indyNamespace,
             // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
             // For this reason we return it in the metadata.
-            indyLedgerSeqNo: schema.seqNo,
+            indyLedgerSeqNo: response.result.seqNo,
           },
         }
       }
-
-
-    
 
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`)
 
@@ -207,20 +219,26 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await pool.submitReadRequest(request)
 
+      //FIXME: Is the ledgerType 1 ok or is it meant to be a dynamic value?
+      // if yes, what the best way to get the ledgerType
+      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did, 1)
+
       if (response.result.data) {
-        return {
-          credentialDefinitionId: credentialDefinitionId,
-          credentialDefinition: {
-            issuerId: didFromCredentialDefinitionId(credentialDefinitionId),
-            schemaId: response.result.ref.toString(),
-            tag: response.result.tag,
-            type: 'CL',
-            value: response.result.data,
-          },
-          credentialDefinitionMetadata: {
-            didIndyNamespace: pool.indyNamespace,
-          },
-          resolutionMetadata: {},
+        if (schema) {
+          return {
+            credentialDefinitionId: credentialDefinitionId,
+            credentialDefinition: {
+              issuerId: didFromCredentialDefinitionId(credentialDefinitionId),
+              schemaId: schema.schema.schemaId,
+              tag: response.result.tag,
+              type: 'CL',
+              value: response.result.data,
+            },
+            credentialDefinitionMetadata: {
+              didIndyNamespace: pool.indyNamespace,
+            },
+            resolutionMetadata: {},
+          }
         }
       }
 
@@ -406,42 +424,44 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  private async fetchIndySchema(agentContext: AgentContext, schemaId: string) {
+  public async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string, type: number) {
     const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
-
-    const did = didFromSchemaId(schemaId)
 
     const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
-    agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.indyNamespace}'`)
-    const request = new GetSchemaRequest({ schemaId })
+    agentContext.config.logger.debug(`Getting transaction with seqNo '${seqNo}' from ledger '${pool.indyNamespace}'`)
+    const request = new GetTransactionRequest({ ledgerType: type, seqNo })
 
-    agentContext.config.logger.trace(
-      `Submitting get schema request for schema '${schemaId}' to ledger '${pool.indyNamespace}'`
-    )
+    agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.indyNamespace}'`)
     const response = await pool.submitReadRequest(request)
 
-    if ('attr_names' in response.result.data) {
-      const schemaID = getLegacySchemaId(did, response.result.data.name, response.result.data.version)
+    if (response.result.data?.txn.type === '101') {
+      const schema = response.result.data?.txn.data as SchemaType
+
+      const schemaId = getLegacySchemaId(did, schema.data.name, schema.data.version)
 
       return {
         schema: {
-          id: schemaID,
-          seqNo: response.result.seqNo,
-          attrNames: response.result.data.attr_names,
-          name: response.result.data.name,
-          version: response.result.data.version,
+          schemaId,
+          attr_name: schema.data.attr_names,
+          name: schema.data.name,
+          version: schema.data.version,
           issuerId: did,
+          seqNo,
         },
         indyNamespace: pool.indyNamespace,
       }
     }
 
-    agentContext.config.logger.error(`Error retrieving schema with ID: ${schemaId}`)
+    return agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)
+  }
+}
 
-    return {
-      indyNamespace: pool.indyNamespace,
-    }
+export interface SchemaType {
+  data: {
+    attr_names: string[]
+    version: string
+    name: string
   }
 }
 

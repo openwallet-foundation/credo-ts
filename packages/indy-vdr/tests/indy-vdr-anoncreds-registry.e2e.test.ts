@@ -154,8 +154,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       credentialDefinitionId: `TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResponse.schemaMetadata.indyLedgerSeqNo}:TAG`,
       credentialDefinition: {
         issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
-        // FIXME: this will change when https://github.com/hyperledger/aries-framework-javascript/issues/1259 is merged
-        schemaId: `${schemaResponse.schemaMetadata.indyLedgerSeqNo}`,
+        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
         tag: 'TAG',
         type: 'CL',
         value: {
