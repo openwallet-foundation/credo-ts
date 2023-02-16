@@ -192,7 +192,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   }
 
   private getBackupPath(backupIdentifier: string) {
-    return `${this.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    return `${this.fileSystem.tempPath}/migration/backup/${backupIdentifier}`
   }
 
   private async createBackup(backupIdentifier: string) {

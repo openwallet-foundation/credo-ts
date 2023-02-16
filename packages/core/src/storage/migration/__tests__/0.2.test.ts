@@ -84,7 +84,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.tempPath}/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -138,7 +138,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.tempPath}/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()
@@ -190,7 +190,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     expect(storageService.records).toMatchSnapshot()
 
     // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    const backupPath = `${fileSystem.tempPath}/migration/backup/${backupIdentifier}`
     unlinkSync(backupPath)
 
     await agent.shutdown()

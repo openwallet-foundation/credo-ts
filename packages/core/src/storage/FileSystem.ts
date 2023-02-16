@@ -5,7 +5,9 @@ export interface DownloadToFileOptions {
 }
 
 export interface FileSystem {
-  readonly basePath: string
+  readonly dataPath: string
+  readonly cachePath: string
+  readonly tempPath: string
 
   exists(path: string): Promise<boolean>
   createDirectory(path: string): Promise<void>

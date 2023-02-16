@@ -63,7 +63,7 @@ export class IndyUtilitiesService {
   public async downloadTails(hash: string, tailsLocation: string): Promise<BlobReaderHandle> {
     try {
       this.logger.debug(`Checking to see if tails file for URL ${tailsLocation} has been stored in the FileSystem`)
-      const filePath = `${this.fileSystem.basePath}/afj/tails/${hash}`
+      const filePath = `${this.fileSystem.cachePath}/tails/${hash}`
 
       const tailsExists = await this.fileSystem.exists(filePath)
       this.logger.debug(`Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${filePath}`)

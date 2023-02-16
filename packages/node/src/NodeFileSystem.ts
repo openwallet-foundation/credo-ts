@@ -5,21 +5,30 @@ import { createHash } from 'crypto'
 import fs, { promises } from 'fs'
 import http from 'http'
 import https from 'https'
-import { tmpdir } from 'os'
+import { tmpdir, homedir } from 'os'
 import { dirname } from 'path'
 
 const { access, readFile, writeFile } = promises
 
 export class NodeFileSystem implements FileSystem {
-  public readonly basePath
+  public readonly dataPath
+  public readonly cachePath
+  public readonly tempPath
 
   /**
    * Create new NodeFileSystem class instance.
    *
-   * @param basePath The base path to use for reading and writing files. process.cwd() if not specified
+   * @param baseDataPath The base path to use for reading and writing data files used within the framework.
+   * Files will be created under baseDataPath/.afj directory. If not specified, it will be set to homedir()
+   * @param baseCachePath The base path to use for reading and writing cache files used within the framework.
+   * Files will be created under baseCachePath/.afj directory. If not specified, it will be set to homedir()
+   * @param baseTempPath The base path to use for reading and writing temporary files within the framework.
+   * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to tmpdir()
    */
-  public constructor(basePath?: string) {
-    this.basePath = basePath ?? tmpdir()
+  public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
+    this.dataPath = `${options?.baseDataPath ?? homedir()}/.afj`
+    this.cachePath = `${options?.baseCachePath ?? homedir()}/.afj`
+    this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.afj`
   }
 
   public async exists(path: string) {

@@ -32,7 +32,7 @@ describe('UpdateAssistant | Backup', () => {
   beforeEach(async () => {
     agent = new Agent(agentOptions)
     const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    backupPath = `${fileSystem.tempPath}/migration/backup/${backupIdentifier}`
 
     // If tests fail it's possible the cleanup has been skipped. So remove before running tests
     const doesFileSystemExist = await fileSystem.exists(backupPath)
