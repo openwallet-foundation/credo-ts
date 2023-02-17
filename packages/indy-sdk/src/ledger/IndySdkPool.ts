@@ -54,7 +54,7 @@ export class IndySdkPool {
   }
 
   public get didIndyNamespace(): string {
-    return this.didIndyNamespace
+    return this.config.indyNamespace
   }
 
   public get id() {
