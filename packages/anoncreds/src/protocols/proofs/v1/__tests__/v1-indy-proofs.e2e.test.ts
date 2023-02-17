@@ -26,8 +26,8 @@ describe('Present Proof', () => {
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
-      issuerName: 'Faber Auto Accept Always Proofs',
-      holderName: 'Alice Auto Accept Always Proofs',
+      issuerName: 'Faber Proofs V1 - Full',
+      holderName: 'Alice Proofs V1 - Full',
       attributeNames: ['name', 'age'],
     }))
 
@@ -73,6 +73,7 @@ describe('Present Proof', () => {
               name: 'name',
               value: 'John',
               credentialDefinitionId,
+              referent: '0',
             },
           ],
           predicates: [
@@ -102,10 +103,6 @@ describe('Present Proof', () => {
             credentialDefinitionId,
             value: 'John',
             referent: '0',
-          },
-          {
-            name: 'image_0',
-            credentialDefinitionId,
           },
         ],
         predicates: [
@@ -246,6 +243,9 @@ describe('Present Proof', () => {
 
     const formatData = await aliceAgent.proofs.getFormatData(aliceProofExchangeRecord.id)
 
+    const proposalPredicateKey = Object.keys(formatData.proposal?.indy?.requested_predicates || {})[0]
+    const requestPredicateKey = Object.keys(formatData.request?.indy?.requested_predicates || {})[0]
+
     expect(formatData).toMatchObject({
       proposal: {
         indy: {
@@ -256,17 +256,9 @@ describe('Present Proof', () => {
             0: {
               name: 'name',
             },
-            something: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
-            something_else: {
+            [proposalPredicateKey]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -288,17 +280,9 @@ describe('Present Proof', () => {
             0: {
               name: 'name',
             },
-            something: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
           },
           requested_predicates: {
-            something_else: {
+            [requestPredicateKey]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -421,15 +405,6 @@ describe('Present Proof', () => {
           },
         },
       ],
-      // appendedAttachments: [
-      //   {
-      //     id: expect.any(String),
-      //     filename: expect.any(String),
-      //     data: {
-      //       base64: expect.any(String),
-      //     },
-      //   },
-      // ],
       thread: {
         threadId: expect.any(String),
       },
@@ -485,8 +460,8 @@ describe('Present Proof', () => {
             name: 'proof-request',
             version: '1.0',
             requested_attributes: {
-              name: {
-                name: 'name',
+              age: {
+                name: 'age',
                 restrictions: [
                   {
                     cred_def_id: credentialDefinitionId,

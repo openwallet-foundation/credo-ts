@@ -7,21 +7,32 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientAgentOptions = getAgentOptions('Mediation: Recipient')
-const mediatorAgentOptions = getAgentOptions('Mediation: Mediator', {
-  autoAcceptMediationRequests: true,
-  endpoints: ['rxjs:mediator'],
-})
+const modules = getIndySdkModules()
 
-const senderAgentOptions = getAgentOptions('Mediation: Sender', {
-  endpoints: ['rxjs:sender'],
-})
+const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, modules)
+const mediatorAgentOptions = getAgentOptions(
+  'Mediation: Mediator',
+  {
+    autoAcceptMediationRequests: true,
+    endpoints: ['rxjs:mediator'],
+  },
+  modules
+)
+
+const senderAgentOptions = getAgentOptions(
+  'Mediation: Sender',
+  {
+    endpoints: ['rxjs:sender'],
+  },
+  modules
+)
 
 describe('mediator establishment', () => {
   let recipientAgent: Agent
@@ -146,27 +157,27 @@ describe('mediator establishment', () => {
         6. Send basic message from sender to recipient and assert it is received on the recipient side
 `, async () => {
     await e2eMediationTest(mediatorAgentOptions, {
+      ...recipientAgentOptions,
       config: {
         ...recipientAgentOptions.config,
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
-      dependencies: recipientAgentOptions.dependencies,
     })
   })
 
   test('Mediation end-to-end flow (not using did:key)', async () => {
     await e2eMediationTest(
       {
+        ...mediatorAgentOptions,
         config: { ...mediatorAgentOptions.config, useDidKeyInProtocols: false },
-        dependencies: mediatorAgentOptions.dependencies,
       },
       {
+        ...recipientAgentOptions,
         config: {
           ...recipientAgentOptions.config,
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
           useDidKeyInProtocols: false,
         },
-        dependencies: recipientAgentOptions.dependencies,
       }
     )
   })

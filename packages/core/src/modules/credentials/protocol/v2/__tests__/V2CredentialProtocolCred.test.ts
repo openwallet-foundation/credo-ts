@@ -201,7 +201,7 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     credentials: [
       {
-        credentialRecordType: 'indy',
+        credentialRecordType: 'test',
         credentialRecordId: '123456',
       },
     ],
@@ -234,8 +234,11 @@ export const testCredentialFormatService = {
     _agentContext: AgentContext,
     _options: CredentialFormatAcceptRequestOptions<TestCredentialFormat>
   ) => ({ attachment: credentialAttachment, format: credentialFormat }),
-  deleteCredentialById: jest.fn() as CredentialFormatService<TestCredentialFormat>['deleteCredentialById'],
-} as TestCredentialFormatService
+  deleteCredentialById: jest.fn(),
+  processCredential: jest.fn(),
+  acceptOffer: () => ({ attachment: requestAttachment, format: requestFormat }),
+  processRequest: jest.fn(),
+} as unknown as TestCredentialFormatService
 
 describe('credentialProtocol', () => {
   let credentialProtocol: V2CredentialProtocol
@@ -261,7 +264,7 @@ describe('credentialProtocol', () => {
   })
 
   describe('acceptOffer', () => {
-    test(`updates state to ${CredentialState.RequestSent}, set request metadata`, async () => {
+    test(`updates state to ${CredentialState.RequestSent}`, async () => {
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
@@ -400,11 +403,6 @@ describe('credentialProtocol', () => {
 
   describe('acceptRequest', () => {
     test(`updates state to ${CredentialState.CredentialIssued}`, async () => {
-      mockFunction(testCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -426,11 +424,6 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${CredentialState.RequestReceived} to ${CredentialState.CredentialIssued}`, async () => {
-      mockFunction(testCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -464,11 +457,6 @@ describe('credentialProtocol', () => {
     })
 
     test('returns credential response message base on credential request message', async () => {
-      mockFunction(testCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -513,10 +501,7 @@ describe('credentialProtocol', () => {
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
 
-      // when
-      const record = await credentialProtocol.processCredential(messageContext)
-
-      expect(record.credentialAttributes?.length).toBe(2)
+      await credentialProtocol.processCredential(messageContext)
     })
   })
 

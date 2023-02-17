@@ -8,9 +8,6 @@ import type {
 
 import {
   EventEmitter,
-  CredentialRepository,
-  DidCommMessageRepository,
-  ConnectionService,
   DidExchangeState,
   Attachment,
   AttachmentData,
@@ -20,7 +17,6 @@ import {
   AriesFrameworkError,
   CredentialState,
   CredentialExchangeRecord,
-  CredentialMetadataKeys,
   CredentialFormatSpec,
   AutoAcceptCredential,
   JsonTransformer,
@@ -31,6 +27,9 @@ import {
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
+import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'
+import { CredentialRepository } from '../../../../../../core/src/modules/credentials/repository/CredentialRepository'
+import { DidCommMessageRepository } from '../../../../../../core/src/storage/didcomm/DidCommMessageRepository'
 import { getMockConnection, getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { convertAttributesToCredentialValues } from '../../../../utils/credential'
@@ -49,10 +48,10 @@ import {
 } from '../messages'
 
 // Mock classes
-jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../formats/indy/IndyCredentialFormatService')
-jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../connections/services/ConnectionService')
+jest.mock('../../../../../../core/src/modules/credentials/repository/CredentialRepository')
+jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
+jest.mock('../../../../../../core/src/storage/didcomm/DidCommMessageRepository')
+jest.mock('../../../../../../core/src/modules/connections/services/ConnectionService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -153,25 +152,19 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: { messag
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
-  metadata,
   threadId,
   connectionId,
   tags,
   id,
   credentialAttributes,
-  indyRevocationRegistryId,
-  indyCredentialRevocationId,
 }: {
   state?: CredentialState
-  metadata?: { indyRequest: Record<string, unknown> }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
   credentialId?: string
   id?: string
   credentialAttributes?: CredentialPreviewAttribute[]
-  indyRevocationRegistryId?: string
-  indyCredentialRevocationId?: string
 } = {}) => {
   const credentialRecord = new CredentialExchangeRecord({
     id,
@@ -181,24 +174,13 @@ const mockCredentialRecord = ({
     connectionId: connectionId ?? '123',
     credentials: [
       {
-        credentialRecordType: 'indy',
+        credentialRecordType: 'anoncreds',
         credentialRecordId: '123456',
       },
     ],
     tags,
     protocolVersion: 'v1',
   })
-
-  if (metadata?.indyRequest) {
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
-  }
-
-  if (indyCredentialRevocationId || indyRevocationRegistryId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      indyCredentialRevocationId,
-      indyRevocationRegistryId,
-    })
-  }
 
   return credentialRecord
 }
@@ -286,11 +268,6 @@ describe('V1CredentialProtocol', () => {
         credentialRecord,
         attachmentId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
         offerAttachment,
-        credentialFormats: {
-          indy: {
-            holderDid: 'did:sov:123456789abcdefghi',
-          },
-        },
       })
       expect(didCommMessageRepository.saveOrUpdateAgentMessage).toHaveBeenCalledWith(agentContext, {
         agentMessage: message,

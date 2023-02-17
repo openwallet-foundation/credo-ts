@@ -170,7 +170,7 @@ export async function updateIndyMetadata<Agent extends BaseAgent>(
  *  "credentials": [
  *    {
  *      "credentialRecordId": "09e46da9-a575-4909-b016-040e96c3c539",
- *      "credentialRecordType": "indy",
+ *      "credentialRecordType": "anoncreds"
  *    }
  *  ]
  * }

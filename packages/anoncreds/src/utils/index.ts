@@ -1,6 +1,6 @@
 export { createRequestFromPreview } from './createRequestFromPreview'
 export { sortRequestedCredentialsMatches } from './sortRequestedCredentialsMatches'
-export { hasDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupNames'
+export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupNames'
 export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
 export { downloadTailsFile } from './tails'
 export { assertRevocationInterval } from './revocationInterval'

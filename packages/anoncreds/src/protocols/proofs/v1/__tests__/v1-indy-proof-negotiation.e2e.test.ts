@@ -72,18 +72,13 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test 1',
       presentationProposal: {
         type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
-        attributes: [
-          {
-            name: 'image_0',
-            credentialDefinitionId,
-          },
-        ],
+        attributes: [],
         predicates: [
           {
             name: 'age',
             credentialDefinitionId,
             predicate: '>=',
-            threshold: 50,
+            threshold: 18,
           },
         ],
       },
@@ -196,20 +191,13 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test 2',
       presentationProposal: {
         type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
-        attributes: [
-          {
-            name: 'name',
-            credentialDefinitionId,
-            value: 'John',
-            referent: '0',
-          },
-        ],
+        attributes: [],
         predicates: [
           {
             name: 'age',
             credentialDefinitionId,
             predicate: '>=',
-            threshold: 50,
+            threshold: 18,
           },
         ],
       },
@@ -268,20 +256,13 @@ describe('Present Proof', () => {
       comment: 'V1 propose proof test 2',
       presentationProposal: {
         type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
-        attributes: [
-          {
-            name: 'name',
-            credentialDefinitionId,
-            value: 'John',
-            referent: '0',
-          },
-        ],
+        attributes: [],
         predicates: [
           {
             name: 'age',
             credentialDefinitionId,
             predicate: '>=',
-            threshold: 50,
+            threshold: 18,
           },
         ],
       },
@@ -295,20 +276,11 @@ describe('Present Proof', () => {
     expect(proofRequestMessage.indyProofRequest).toMatchObject({
       name: 'Proof Request',
       version: '1.0',
-      requested_attributes: {
-        '0': {
-          name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
+      requested_attributes: {},
       requested_predicates: {
         [predicateKey]: {
           p_type: '>=',
-          p_value: 50,
+          p_value: 18,
           restrictions: [
             {
               cred_def_id: credentialDefinitionId,

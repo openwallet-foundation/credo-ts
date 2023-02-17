@@ -19,6 +19,7 @@ describe('V1 Connectionless Credentials', () => {
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
   let credentialDefinitionId: string
+  let schemaId: string
 
   beforeEach(async () => {
     ;({
@@ -27,6 +28,7 @@ describe('V1 Connectionless Credentials', () => {
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       credentialDefinitionId,
+      schemaId,
     } = await setupAnonCredsTests({
       issuerName: 'Faber connection-less Credentials V1',
       holderName: 'Alice connection-less Credentials V1',
@@ -112,14 +114,15 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
+            schemaId,
             credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],
@@ -133,7 +136,8 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
+            schemaId,
             credentialDefinitionId,
           },
         },
@@ -193,14 +197,15 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
+            schemaId,
             credentialDefinitionId: credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],

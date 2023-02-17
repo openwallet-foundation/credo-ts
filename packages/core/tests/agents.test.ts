@@ -1,22 +1,29 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { Subject } from 'rxjs'
-
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
 import { waitForBasicMessage, getAgentOptions } from './helpers'
+import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions('Agents Alice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobAgentOptions = getAgentOptions('Agents Bob', {
-  endpoints: ['rxjs:bob'],
-})
+const modules = getIndySdkModules()
+
+const aliceAgentOptions = getAgentOptions(
+  'Agents Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  modules
+)
+const bobAgentOptions = getAgentOptions(
+  'Agents Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  modules
+)
 
 describe('agents', () => {
   let aliceAgent: Agent
@@ -32,22 +39,12 @@ describe('agents', () => {
   })
 
   test('make a connection between agents', async () => {
-    const aliceMessages = new Subject<SubjectMessage>()
-    const bobMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:alice': aliceMessages,
-      'rxjs:bob': bobMessages,
-    }
-
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await aliceAgent.initialize()
-
     bobAgent = new Agent(bobAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+
+    setupSubjectTransports([aliceAgent, bobAgent])
+
+    await aliceAgent.initialize()
     await bobAgent.initialize()
 
     const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({

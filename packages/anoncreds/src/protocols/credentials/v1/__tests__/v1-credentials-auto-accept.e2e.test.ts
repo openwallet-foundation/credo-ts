@@ -38,12 +38,13 @@ describe('V1 Credentials Auto Accept', () => {
         holderAgent: aliceAgent,
         holderReplay: aliceReplay,
         credentialDefinitionId,
+        schemaId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupAnonCredsTests({
-        issuerName: 'Faber connection-less Credentials V1',
-        holderName: 'Alice connection-less Credentials V1',
-        attributeNames: ['name', 'age'],
+        issuerName: 'Faber Credentials Auto Accept V1',
+        holderName: 'Alice Credentials Auto Accept V1',
+        attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
         autoAcceptCredentials: AutoAcceptCredential.Always,
       }))
     })
@@ -88,7 +89,7 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_internal/indyCredential': {
+            '_anonCreds/anonCredsCredential': {
               schemaId: schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -127,8 +128,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_internal/indyRequest': expect.any(Object),
-            '_internal/indyCredential': {
+            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
+            '_anonCreds/anonCredsCredential': {
               schemaId,
               credentialDefinitionId,
             },
@@ -136,7 +137,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'indy',
+            credentialRecordType: 'anoncreds',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -159,12 +160,13 @@ describe('V1 Credentials Auto Accept', () => {
         holderAgent: aliceAgent,
         holderReplay: aliceReplay,
         credentialDefinitionId,
+        schemaId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
       } = await setupAnonCredsTests({
         issuerName: 'faber agent: contentApproved v1',
         holderName: 'alice agent: contentApproved v1',
-        attributeNames: ['name', 'age'],
+        attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       }))
     })
@@ -228,8 +230,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_internal/indyRequest': expect.any(Object),
-            '_internal/indyCredential': {
+            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
+            '_anonCreds/anonCredsCredential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -237,7 +239,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'indy',
+            credentialRecordType: 'anoncreds',
             credentialRecordId: expect.any(String),
           },
         ],
@@ -250,7 +252,7 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_internal/indyCredential': {
+            '_anonCreds/anonCredsCredential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -316,8 +318,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_internal/indyRequest': expect.any(Object),
-            '_internal/indyCredential': {
+            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
+            '_anonCreds/anonCredsCredential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -325,7 +327,7 @@ describe('V1 Credentials Auto Accept', () => {
         },
         credentials: [
           {
-            credentialRecordType: 'indy',
+            credentialRecordType: 'anoncreds',
             credentialRecordId: expect.any(String),
           },
         ],

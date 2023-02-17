@@ -718,17 +718,6 @@ export class V1CredentialProtocol
     throw new AriesFrameworkError('Starting from a request is not supported for v1 issue credential protocol')
   }
 
-  /**
-   * Process a received {@link IssueCredentialMessage}. This will not accept the credential
-   * or send a credential acknowledgement. It will only update the existing credential record with
-   * the information from the issue credential message. Use {@link createAck}
-   * after calling this method to create a credential acknowledgement.
-   *
-   * @param messageContext The message context containing an issue credential message
-   *
-   * @returns credential record associated with the issue credential message
-   *
-   */
   public async processRequest(
     messageContext: InboundMessageContext<V1RequestCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
@@ -791,7 +780,7 @@ export class V1CredentialProtocol
   }
 
   /**
-   * Create a {@link IssueCredentialMessage} as response to a received credential request.
+   * Create a {@link V1IssueCredentialMessage} as response to a received credential request.
    *
    * @returns Object containing issue credential message and associated credential record
    *
@@ -860,7 +849,7 @@ export class V1CredentialProtocol
   }
 
   /**
-   * Process an incoming {@link IssueCredentialMessage}
+   * Process an incoming {@link V1IssueCredentialMessage}
    *
    * @param messageContext The message context containing a credential acknowledgement message
    * @returns credential record associated with the credential acknowledgement message

@@ -5,18 +5,28 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 
-const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {
-  autoAcceptConnections: true,
-})
-const mediatorOptions = getAgentOptions('Mediation: Mediator Pickup', {
-  autoAcceptConnections: true,
-  endpoints: ['wss://mediator'],
-})
+const modules = getIndySdkModules()
+const recipientOptions = getAgentOptions(
+  'Mediation: Recipient Pickup',
+  {
+    autoAcceptConnections: true,
+  },
+  modules
+)
+const mediatorOptions = getAgentOptions(
+  'Mediation: Mediator Pickup',
+  {
+    autoAcceptConnections: true,
+    endpoints: ['wss://mediator'],
+  },
+  modules
+)
 
 describe('E2E Pick Up protocol', () => {
   let recipientAgent: Agent

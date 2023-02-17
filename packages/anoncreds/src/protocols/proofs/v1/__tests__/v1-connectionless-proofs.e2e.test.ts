@@ -24,6 +24,7 @@ import {
   makeConnection,
   setupEventReplaySubjects,
 } from '../../../../../../core/tests'
+import { getIndySdkModules } from '../../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
   getLegacyAnonCredsModules,
   issueLegacyAnonCredsCredential,
@@ -253,10 +254,14 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorAgentOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
-      autoAcceptMediationRequests: true,
-      endpoints: ['rxjs:mediator'],
-    })
+    const mediatorAgentOptions = getAgentOptions(
+      `Connectionless proofs with mediator Mediator-${unique}`,
+      {
+        autoAcceptMediationRequests: true,
+        endpoints: ['rxjs:mediator'],
+      },
+      getIndySdkModules()
+    )
 
     const mediatorMessages = new Subject<SubjectMessage>()
     const subjectMap = { 'rxjs:mediator': mediatorMessages }

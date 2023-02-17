@@ -1,11 +1,6 @@
 import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@aries-framework/core'
 
 import {
-  CredentialRepository,
-  DidCommMessageRepository,
-  RoutingService,
-  ConnectionService,
-  Dispatcher,
   EventEmitter,
   DidExchangeState,
   Attachment,
@@ -19,32 +14,29 @@ import {
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
+import { ConnectionService } from '../../../../../../core/src/modules/connections/services/ConnectionService'
+import { CredentialRepository } from '../../../../../../core/src/modules/credentials/repository/CredentialRepository'
+import { DidCommMessageRepository } from '../../../../../../core/src/storage/didcomm/DidCommMessageRepository'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { V1CredentialProtocol } from '../V1CredentialProtocol'
 import { V1CredentialPreview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
-jest.mock('../../../repository/CredentialRepository')
+jest.mock('../../../../../../core/src/modules/credentials/repository/CredentialRepository')
 jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
-jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
-jest.mock('../../../../routing/services/RoutingService')
-jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../agent/Dispatcher')
+jest.mock('../../../../../../core/src/storage/didcomm/DidCommMessageRepository')
+jest.mock('../../../../../../core/src/modules/connections/services/ConnectionService')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 const LegacyIndyCredentialFormatServiceMock =
   LegacyIndyCredentialFormatService as jest.Mock<LegacyIndyCredentialFormatService>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const routingService = new RoutingServiceMock()
-const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
 const indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
 
@@ -55,8 +47,6 @@ const agentContext = getAgentContext({
   registerInstances: [
     [CredentialRepository, credentialRepository],
     [DidCommMessageRepository, didCommMessageRepository],
-    [RoutingService, routingService],
-    [Dispatcher, dispatcher],
     [ConnectionService, connectionService],
     [EventEmitter, eventEmitter],
   ],
@@ -65,7 +55,7 @@ const agentContext = getAgentContext({
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-indyCredentialFormatService.credentialRecordType = 'indy'
+indyCredentialFormatService.credentialRecordType = 'anoncreds'
 
 const connectionRecord = getMockConnection({
   id: '123',

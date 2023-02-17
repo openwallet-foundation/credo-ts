@@ -51,7 +51,7 @@ describe('CredentialsModule', () => {
     )
   })
 
-  test('registers V1CredentialProtocol and V2CredentialProtocol if no credentialProtocols are configured', () => {
+  test('registers V2CredentialProtocol if no credentialProtocols are configured', () => {
     const credentialsModule = new CredentialsModule()
 
     expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2CredentialProtocol)])

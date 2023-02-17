@@ -160,14 +160,14 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],
@@ -181,7 +181,7 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId,
           },
         },
@@ -241,14 +241,14 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId: credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],

@@ -6,7 +6,7 @@ import {
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
 } from '@aries-framework/anoncreds'
-import { InjectionSymbols } from '@aries-framework/core'
+import { AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
 
 import { IndySdkModuleConfig } from './IndySdkModuleConfig'
 import { IndySdkHolderService, IndySdkIssuerService, IndySdkVerifierService } from './anoncreds'
@@ -28,10 +28,20 @@ export class IndySdkModule implements Module {
     // Register config
     dependencyManager.registerInstance(IndySdkModuleConfig, this.config)
 
+    if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
+      throw new AriesFrameworkError('There is an instance of Wallet already registered')
+    } else {
+      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    }
+
+    if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
+      throw new AriesFrameworkError('There is an instance of StorageService already registered')
+    } else {
+      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
+    }
+
     // NOTE: for now we are registering the needed indy services. We may want to make this
     // more explicit and require the user to register the services they need on the specific modules.
-    dependencyManager.registerSingleton(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndySdkStorageService)
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, IndySdkIssuerService)
     dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, IndySdkHolderService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, IndySdkVerifierService)

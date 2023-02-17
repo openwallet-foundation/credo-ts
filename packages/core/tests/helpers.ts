@@ -21,8 +21,8 @@ import type { Observable } from 'rxjs'
 
 import { readFileSync } from 'fs'
 import path from 'path'
-import { firstValueFrom, ReplaySubject } from 'rxjs'
-import { catchError, filter, map, timeout } from 'rxjs/operators'
+import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
+import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies, WalletScheme } from '../../node/src'
 import {
@@ -47,6 +47,7 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
+import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
 
@@ -66,10 +67,11 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
 ): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+  const random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name}`,
+    label: `Agent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet: ${name}`,
+      id: `Wallet: ${name} - ${random}`,
       key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
@@ -84,11 +86,17 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
 }
 
-export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getPostgresAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  modules?: AgentModules
+) {
+  const random = uuid().slice(0, 4)
+
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      id: `Wallet: ${name} - ${random}`,
       key: `Key${name}`,
       storage: {
         type: 'postgres_storage',
@@ -111,7 +119,7 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
     ...extraConfig,
   }
 
-  return { config, dependencies: agentDependencies } as const
+  return { config, dependencies: agentDependencies, modules: (modules ?? {}) as AgentModules } as const
 }
 
 export function getAgentConfig(
@@ -180,16 +188,18 @@ export function waitForProofExchangeRecordSubject(
     state,
     previousState,
     timeoutMs = 10000,
+    count = 1,
   }: {
     threadId?: string
     parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
+    count?: number
   }
 ) {
   const observable: Observable<BaseEvent> = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return lastValueFrom(
     observable.pipe(
       filter(isProofStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -200,13 +210,14 @@ export function waitForProofExchangeRecordSubject(
       catchError(() => {
         throw new Error(
           `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
-  previousState: ${previousState},
-  threadId: ${threadId},
-  parentThreadId: ${parentThreadId},
-  state: ${state}
-}`
+          previousState: ${previousState},
+          threadId: ${threadId},
+          parentThreadId: ${parentThreadId},
+          state: ${state}
+        }`
         )
       }),
+      take(count),
       map((e) => e.payload.proofRecord)
     )
   )

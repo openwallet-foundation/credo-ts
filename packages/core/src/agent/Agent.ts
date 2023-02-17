@@ -162,11 +162,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   public async initialize() {
     await super.initialize()
 
-    for (const [moduleKey, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      this.logger.debug(`initializing module ${moduleKey}`, {
-        hasInitializationMethod: module.initialize !== undefined,
-      })
-
+    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
       if (module.initialize) {
         await module.initialize(this.agentContext)
       }

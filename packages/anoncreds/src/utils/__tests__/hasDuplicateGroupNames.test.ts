@@ -1,10 +1,10 @@
 import type { AnonCredsProofRequest } from '../../models'
 
-import { hasDuplicateGroupsNamesInProofRequest } from '../hasDuplicateGroupNames'
+import { assertNoDuplicateGroupsNamesInProofRequest } from '../hasDuplicateGroupNames'
 
 const credentialDefinitionId = '9vPXgSpQJPkJEALbLXueBp:3:CL:57753:tag1'
 
-describe('util | hasDuplicateGroupsNamesInProofRequest', () => {
+describe('util | assertNoDuplicateGroupsNamesInProofRequest', () => {
   describe('assertNoDuplicateGroupsNamesInProofRequest', () => {
     test('attribute names match', () => {
       const proofRequest = {
@@ -32,7 +32,7 @@ describe('util | hasDuplicateGroupsNamesInProofRequest', () => {
         requested_predicates: {},
       } satisfies AnonCredsProofRequest
 
-      expect(hasDuplicateGroupsNamesInProofRequest(proofRequest)).toBe(false)
+      expect(() => assertNoDuplicateGroupsNamesInProofRequest(proofRequest)).not.toThrow()
     })
 
     test('attribute names match with predicates name', () => {
@@ -64,7 +64,9 @@ describe('util | hasDuplicateGroupsNamesInProofRequest', () => {
         },
       } satisfies AnonCredsProofRequest
 
-      expect(hasDuplicateGroupsNamesInProofRequest(proofRequest)).toBe(true)
+      expect(() => assertNoDuplicateGroupsNamesInProofRequest(proofRequest)).toThrowError(
+        'The proof request contains duplicate predicates and attributes: age'
+      )
     })
   })
 })

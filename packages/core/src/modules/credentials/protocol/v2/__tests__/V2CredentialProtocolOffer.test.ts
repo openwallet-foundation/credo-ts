@@ -1,6 +1,11 @@
 import type { AgentContext } from '../../../../../agent'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
+import type {
+  CredentialFormat,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatService,
+} from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
@@ -55,8 +60,26 @@ export const testCredentialFormatService = {
   ) => ({
     attachment: offerAttachment,
     format: offerFormat,
+    previewAttributes: [
+      {
+        mimeType: 'text/plain',
+        name: 'name',
+        value: 'John',
+      },
+      {
+        mimeType: 'text/plain',
+        name: 'age',
+        value: '99',
+      },
+    ],
   }),
-} as TestCredentialFormatService
+  acceptRequest: jest.fn(),
+  deleteCredentialById: jest.fn(),
+  processCredential: jest.fn(),
+  acceptOffer: jest.fn(),
+  processRequest: jest.fn(),
+  processOffer: jest.fn(),
+} as unknown as TestCredentialFormatService
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')

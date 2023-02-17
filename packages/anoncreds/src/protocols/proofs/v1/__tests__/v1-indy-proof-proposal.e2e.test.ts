@@ -51,6 +51,7 @@ describe('Present Proof', () => {
               name: 'name',
               value: 'John',
               credentialDefinitionId,
+              referent: '0',
             },
           ],
           predicates: [
@@ -82,10 +83,6 @@ describe('Present Proof', () => {
             credentialDefinitionId,
             value: 'John',
             referent: '0',
-          },
-          {
-            name: 'image_0',
-            credentialDefinitionId,
           },
         ],
         predicates: [

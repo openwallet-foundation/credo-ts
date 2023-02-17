@@ -7,18 +7,27 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { loadPostgresPlugin, WalletScheme } from '../../node/src'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
 import { waitForBasicMessage, getPostgresAgentOptions } from './helpers'
 
-const alicePostgresAgentOptions = getPostgresAgentOptions('AgentsAlice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', {
-  endpoints: ['rxjs:bob'],
-})
+const alicePostgresAgentOptions = getPostgresAgentOptions(
+  'AgentsAlice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getIndySdkModules()
+)
+const bobPostgresAgentOptions = getPostgresAgentOptions(
+  'AgentsBob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  getIndySdkModules()
+)
 
 describe('postgres agents', () => {
   let aliceAgent: Agent

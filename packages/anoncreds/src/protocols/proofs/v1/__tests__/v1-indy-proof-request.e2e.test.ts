@@ -32,7 +32,7 @@ describe('Present Proof | V1ProofProtocol', () => {
     await aliceAgent.wallet.delete()
   })
 
-  test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
+  test(`Alice Creates and sends Proof Proposal to Faber and Faber accepts the proposal`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
@@ -51,6 +51,7 @@ describe('Present Proof | V1ProofProtocol', () => {
               name: 'name',
               value: 'John',
               credentialDefinitionId,
+              referent: '0',
             },
           ],
           predicates: [
@@ -70,28 +71,24 @@ describe('Present Proof | V1ProofProtocol', () => {
     let faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
     const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
-    expect(proposal).toMatchObject({
-      type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
-      id: expect.any(String),
+    expect(proposal?.toJSON()).toMatchObject({
+      '@type': 'https://didcomm.org/present-proof/1.0/propose-presentation',
+      '@id': expect.any(String),
       comment: 'V1 propose proof test',
-      presentationProposal: {
-        type: 'https://didcomm.org/present-proof/1.0/presentation-preview',
+      presentation_proposal: {
+        '@type': 'https://didcomm.org/present-proof/1.0/presentation-preview',
         attributes: [
           {
             name: 'name',
-            credentialDefinitionId,
+            cred_def_id: credentialDefinitionId,
             value: 'John',
             referent: '0',
-          },
-          {
-            name: 'image_0',
-            credentialDefinitionId,
           },
         ],
         predicates: [
           {
             name: 'age',
-            credentialDefinitionId,
+            cred_def_id: credentialDefinitionId,
             predicate: '>=',
             threshold: 50,
           },

@@ -1,27 +1,55 @@
+import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { ProofState, ProofExchangeRecord } from '../../../../../../core/src'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
-import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
+import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
+  let aliceReplay: EventReplaySubject
   let aliceConnectionId: string
+  let faberConnectionId: string
   let credentialDefinitionId: string
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
     ;({
       issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
       holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
       credentialDefinitionId,
       holderIssuerConnectionId: aliceConnectionId,
+      issuerHolderConnectionId: faberConnectionId,
     } = await setupAnonCredsTests({
       issuerName: 'Faber - V1 Indy Proof',
       holderName: 'Alice - V1 Indy Proof',
       attributeNames: ['name', 'age'],
     }))
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'John',
+          },
+          {
+            name: 'age',
+            value: '55',
+          },
+        ],
+      },
+    })
   })
 
   afterAll(async () => {
@@ -51,6 +79,7 @@ describe('Present Proof', () => {
               name: 'name',
               value: 'John',
               credentialDefinitionId,
+              referent: '0',
             },
           ],
           predicates: [
@@ -83,10 +112,6 @@ describe('Present Proof', () => {
             credentialDefinitionId,
             value: 'John',
             referent: '0',
-          },
-          {
-            name: 'image_0',
-            credentialDefinitionId,
           },
         ],
         predicates: [
@@ -170,15 +195,6 @@ describe('Present Proof', () => {
         {
           id: 'libindy-presentation-0',
           mimeType: 'application/json',
-          data: {
-            base64: expect.any(String),
-          },
-        },
-      ],
-      appendedAttachments: [
-        {
-          id: expect.any(String),
-          filename: expect.any(String),
           data: {
             base64: expect.any(String),
           },

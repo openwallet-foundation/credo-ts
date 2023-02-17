@@ -118,25 +118,27 @@ export async function setupJsonLdTests<
     )
   )
 
-  const verifierAgent = new Agent(
-    getAgentOptions(
-      verifierName ?? 'NOT USED -- NOT INITIALIZED',
-      {
-        endpoints: ['rxjs:verifier'],
-      },
-      modules
-    )
-  )
+  const verifierAgent = verifierName
+    ? new Agent(
+        getAgentOptions(
+          verifierName,
+          {
+            endpoints: ['rxjs:verifier'],
+          },
+          modules
+        )
+      )
+    : undefined
 
-  setupSubjectTransports([issuerAgent, holderAgent, verifierAgent])
+  setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
-    [issuerAgent, holderAgent, verifierAgent],
+    verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
     [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
-  if (verifierName) await verifierAgent.initialize()
+  if (verifierAgent) await verifierAgent.initialize()
 
   let issuerHolderConnection: ConnectionRecord | undefined
   let holderIssuerConnection: ConnectionRecord | undefined
@@ -146,7 +148,7 @@ export async function setupJsonLdTests<
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
 
-    if (verifierName) {
+    if (verifierAgent) {
       ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
     }
   }

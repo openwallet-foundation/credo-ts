@@ -268,6 +268,7 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
   verifierAgent: VerifierName extends string ? AnonCredsTestsAgent : undefined
   verifierReplay: VerifierName extends string ? EventReplaySubject : undefined
 
+  schemaId: string
   credentialDefinitionId: string
 }
 
@@ -316,25 +317,27 @@ export async function setupAnonCredsTests<
     )
   )
 
-  const verifierAgent = new Agent(
-    getAgentOptions(
-      verifierName ?? 'NOT USED -- NOT INITIALIZED',
-      {
-        endpoints: ['rxjs:verifier'],
-      },
-      modules
-    )
-  )
+  const verifierAgent = verifierName
+    ? new Agent(
+        getAgentOptions(
+          verifierName,
+          {
+            endpoints: ['rxjs:verifier'],
+          },
+          modules
+        )
+      )
+    : undefined
 
-  setupSubjectTransports([issuerAgent, holderAgent, verifierAgent])
+  setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
-    [issuerAgent, holderAgent, verifierAgent],
+    verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
     [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
-  if (verifierName) await verifierAgent.initialize()
+  if (verifierAgent) await verifierAgent.initialize()
 
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
@@ -351,7 +354,7 @@ export async function setupAnonCredsTests<
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)
 
-    if (verifierName) {
+    if (verifierAgent) {
       ;[holderVerifierConnection, verifierHolderConnection] = await makeConnection(holderAgent, verifierAgent)
     }
   }

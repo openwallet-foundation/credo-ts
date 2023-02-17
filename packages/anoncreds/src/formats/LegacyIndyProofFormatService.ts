@@ -56,12 +56,12 @@ import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistry
 import {
   sortRequestedCredentialsMatches,
   createRequestFromPreview,
-  hasDuplicateGroupsNamesInProofRequest,
   areAnonCredsProofRequestsEqual,
   assertRevocationInterval,
   downloadTailsFile,
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
+  assertNoDuplicateGroupsNamesInProofRequest,
 } from '../utils'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -104,9 +104,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     JsonTransformer.fromJSON(proposalJson, AnonCredsProofRequestClass)
 
     // Assert attribute and predicate (group) names do not match
-    if (hasDuplicateGroupsNamesInProofRequest(proposalJson)) {
-      throw new AriesFrameworkError('Attribute and predicate (group) names must be unique in proof request')
-    }
+    assertNoDuplicateGroupsNamesInProofRequest(proposalJson)
   }
 
   public async acceptProposal(
@@ -154,10 +152,8 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       non_revoked: indyFormat.non_revoked,
     } satisfies AnonCredsProofRequest
 
-    // Validate to make sure user provided correct input
-    if (hasDuplicateGroupsNamesInProofRequest(request)) {
-      throw new AriesFrameworkError('Attribute and predicate (group) names must be unique in proof request')
-    }
+    // Assert attribute and predicate (group) names do not match
+    assertNoDuplicateGroupsNamesInProofRequest(request)
 
     const attachment = this.getFormatData(request, format.attachmentId)
 
@@ -171,9 +167,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     JsonTransformer.fromJSON(requestJson, AnonCredsProofRequestClass)
 
     // Assert attribute and predicate (group) names do not match
-    if (hasDuplicateGroupsNamesInProofRequest(requestJson)) {
-      throw new AriesFrameworkError('Attribute and predicate (group) names must be unique in proof request')
-    }
+    assertNoDuplicateGroupsNamesInProofRequest(requestJson)
   }
 
   public async acceptRequest(

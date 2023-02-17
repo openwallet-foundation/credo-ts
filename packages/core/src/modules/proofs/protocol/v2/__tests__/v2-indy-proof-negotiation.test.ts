@@ -1,8 +1,9 @@
+import type { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/exchange'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../tests'
 import type { V2ProposePresentationMessage, V2RequestPresentationMessage } from '../messages'
 
-import { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
+import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
@@ -94,6 +95,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.ProposalReceived,
+      threadId: aliceProofExchangeRecord.threadId,
     })
 
     const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
@@ -119,23 +121,17 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const proposalAttach = (proposal as V2ProposePresentationMessage)?.proposalAttachments?.[0].getDataAsJson()
+    const proposalAttach = (
+      proposal as V2ProposePresentationMessage
+    )?.proposalAttachments?.[0].getDataAsJson<AnonCredsProofRequest>()
+
     expect(proposalAttach).toMatchObject({
-      requested_attributes: {
-        something: {
-          name: 'image_0',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
+      requested_attributes: {},
       requested_predicates: {
-        something_else: {
+        [Object.keys(proposalAttach.requested_predicates)[0]]: {
           name: 'age',
           p_type: '>=',
-          p_value: 50,
+          p_value: 18,
           restrictions: [
             {
               cred_def_id: credentialDefinitionId,
@@ -239,6 +235,9 @@ describe('V2 Proofs Negotiation - Indy', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.ProposalReceived,
+      threadId: aliceProofExchangeRecord.threadId,
+      // Negotiation so this will be the second proposal
+      count: 2,
     })
 
     const proposal2 = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
@@ -263,11 +262,13 @@ describe('V2 Proofs Negotiation - Indy', () => {
       comment: 'V2 propose proof test 2',
     })
 
-    const proposalAttach2 = (proposal as V2ProposePresentationMessage)?.proposalAttachments[0].getDataAsJson()
+    const proposalAttach2 = (
+      proposal as V2ProposePresentationMessage
+    )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach2).toMatchObject({
       requested_attributes: {},
       requested_predicates: {
-        something_else: {
+        [Object.keys(proposalAttach2.requested_predicates)[0]]: {
           name: 'age',
           p_type: '>=',
           p_value: 50,
@@ -296,6 +297,8 @@ describe('V2 Proofs Negotiation - Indy', () => {
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
+      // Negotiation so this will be the second request
+      count: 2,
     })
 
     const request2 = await faberAgent.proofs.findRequestMessage(faberProofExchangeRecord.id)
@@ -382,7 +385,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
 
     const proofRequest = JsonTransformer.fromJSON(
       proofRequestMessage.requestAttachments[0].getDataAsJson(),
-      AnonCredsProofRequest
+      AnonCredsProofRequestClass
     )
     const predicateKey = proofRequest.requestedPredicates?.keys().next().value
 

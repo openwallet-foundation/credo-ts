@@ -1,6 +1,8 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
+import { IndySdkModule } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../tests'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
@@ -8,7 +10,15 @@ import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { JsonTransformer } from '@aries-framework/core'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar')
+const agentOptions = getAgentOptions(
+  'Faber Dids Registrar',
+  {},
+  {
+    indySdk: new IndySdkModule({
+      indySdk,
+    }),
+  }
+)
 
 describe('dids', () => {
   let agent: Agent

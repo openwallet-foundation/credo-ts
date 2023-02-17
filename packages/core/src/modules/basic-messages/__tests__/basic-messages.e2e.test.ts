@@ -6,6 +6,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
@@ -13,13 +14,23 @@ import { MessageSendingError, RecordNotFoundError } from '../../../error'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const faberConfig = getAgentOptions('Faber Basic Messages', {
-  endpoints: ['rxjs:faber'],
-})
+const modules = getIndySdkModules()
 
-const aliceConfig = getAgentOptions('Alice Basic Messages', {
-  endpoints: ['rxjs:alice'],
-})
+const faberConfig = getAgentOptions(
+  'Faber Basic Messages',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  modules
+)
+
+const aliceConfig = getAgentOptions(
+  'Alice Basic Messages',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  modules
+)
 
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent

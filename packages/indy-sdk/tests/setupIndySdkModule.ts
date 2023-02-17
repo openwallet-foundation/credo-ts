@@ -1,4 +1,4 @@
-import { DidsModule, utils } from '@aries-framework/core'
+import { DidsModule, KeyDidRegistrar, KeyDidResolver, utils } from '@aries-framework/core'
 import indySdk from 'indy-sdk'
 
 import { genesisPath, taaVersion, taaAcceptanceMechanism } from '../../core/tests/helpers'
@@ -20,7 +20,7 @@ export const getIndySdkModules = () => ({
     ],
   }),
   dids: new DidsModule({
-    registrars: [new IndySdkSovDidRegistrar()],
-    resolvers: [new IndySdkSovDidResolver()],
+    registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
+    resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
   }),
 })

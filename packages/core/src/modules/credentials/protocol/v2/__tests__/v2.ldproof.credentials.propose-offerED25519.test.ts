@@ -26,12 +26,13 @@ import {
   getAgentOptions,
   waitForCredentialRecordSubject,
   testLogger,
+  makeConnection,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { KeyType } from '../../../../../crypto'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CacheModule, InMemoryLruCache } from '../../../../cache'
-import { DidsModule } from '../../../../dids'
+import { DidsModule, KeyDidRegistrar, KeyDidResolver } from '../../../../dids'
 import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
 import { W3cVcModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
@@ -104,8 +105,8 @@ const indyJsonLdModules = {
     registries: [new IndySdkAnonCredsRegistry()],
   }),
   dids: new DidsModule({
-    resolvers: [new IndySdkSovDidResolver()],
-    registrars: [new IndySdkSovDidRegistrar()],
+    resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
+    registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
   }),
   indySdk: new IndySdkModule({
     indySdk,
@@ -137,14 +138,33 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
   let credentialDefinitionId: string
 
   beforeAll(async () => {
-    const faberAgent = new Agent(getAgentOptions('Faber Agent Indy/JsonLD', {}, indyJsonLdModules))
-    const aliceAgent = new Agent(getAgentOptions('Alice Agent Indy/JsonLD', {}, indyJsonLdModules))
+    faberAgent = new Agent(
+      getAgentOptions(
+        'Faber Agent Indy/JsonLD',
+        {
+          endpoints: ['rxjs:faber'],
+        },
+        indyJsonLdModules
+      )
+    )
+    aliceAgent = new Agent(
+      getAgentOptions(
+        'Alice Agent Indy/JsonLD',
+        {
+          endpoints: ['rxjs:alice'],
+        },
+        indyJsonLdModules
+      )
+    )
 
     setupSubjectTransports([faberAgent, aliceAgent])
     ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
       [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
     )
+    await faberAgent.initialize()
+    await aliceAgent.initialize()
+    ;[, { id: aliceConnectionId }] = await makeConnection(faberAgent, aliceAgent)
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
@@ -197,7 +217,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       state: CredentialState.OfferReceived,
     })
 
-    const offerMessage = await faberAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const offerMessage = await aliceAgent.credentials.findOfferMessage(aliceCredentialRecord.id)
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
       '@type': 'https://didcomm.org/issue-credential/2.0/offer-credential',
       '@id': expect.any(String),
@@ -515,8 +535,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     const credentialMessage = await faberAgent.credentials.findCredentialMessage(faberCredentialRecord.id)
     const w3cCredential = credentialMessage?.credentialAttachments[1].getDataAsJson()
     expect(w3cCredential).toMatchObject({
-      todo: 'todo',
-      context: [
+      '@context': [
         'https://www.w3.org/2018/credentials/v1',
         'https://w3id.org/citizenship/v1',
         'https://w3id.org/security/bbs/v1',
