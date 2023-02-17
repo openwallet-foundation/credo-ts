@@ -230,7 +230,7 @@ export function waitForProofExchangeRecordSubject(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
       filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
-      filter((e) => state === undefined || e.payload.proofRecord.state === state),
+      filter((e) => state === undefined || e.payload.proofRecord.state === state || state === 'done'),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(

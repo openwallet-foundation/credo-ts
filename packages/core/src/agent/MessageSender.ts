@@ -486,6 +486,7 @@ export class MessageSender {
             await this.sendMessageToSession(agentContext, session, message)
             console.log('====================================')
             console.log('after sendMessageToSession')
+            console.log(`${JSON.stringify(outboundMessageContext)}`)
             console.log('====================================')
             this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
             console.log('====================================')
@@ -507,9 +508,9 @@ export class MessageSender {
         }
       }
     }
-    // throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
-    //   outboundMessageContext,
-    // })
+    throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
+      outboundMessageContext,
+    })
   }
 
   private async retrieveServicesByConnection(
