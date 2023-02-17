@@ -12,6 +12,7 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
+
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkPoolService } from '../../ledger'
 import { IndySdkSymbol } from '../../types'
@@ -218,8 +219,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         }
       )
 
-      const {schema}  = await this.fetchIndySchemaWithSeqNo(agentContext, Number(credentialDefinition.schemaId), did)
-
+      const { schema } = await this.fetchIndySchemaWithSeqNo(agentContext, Number(credentialDefinition.schemaId), did)
 
       return {
         credentialDefinitionId: credentialDefinition.id,
