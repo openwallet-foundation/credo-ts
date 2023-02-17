@@ -1,9 +1,9 @@
-import type { AgentDependencies } from './AgentDependencies'
-import type { AgentModulesInput } from './AgentModules'
-import type { AgentMessageReceivedEvent } from './Events'
 import type { InboundTransport } from '../transport/InboundTransport'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { InitConfig } from '../types'
+import type { AgentDependencies } from './AgentDependencies'
+import type { AgentModulesInput } from './AgentModules'
+import type { AgentMessageReceivedEvent } from './Events'
 import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'
@@ -139,6 +139,10 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
     this.messageSender.registerOutboundTransport(outboundTransport)
+  }
+
+  public resetOutboundTransport() {
+    this.messageSender.resetOutboundTransport()
   }
 
   public get outboundTransports() {

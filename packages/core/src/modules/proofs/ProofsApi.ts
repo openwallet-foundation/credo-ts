@@ -1,3 +1,5 @@
+import type { AgentMessage } from '../../agent/AgentMessage'
+import type { Query } from '../../storage/StorageService'
 import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
@@ -21,8 +23,6 @@ import type {
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
-import type { AgentMessage } from '../../agent/AgentMessage'
-import type { Query } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
 

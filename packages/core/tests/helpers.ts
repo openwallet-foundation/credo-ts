@@ -17,7 +17,8 @@ import type {
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { ProofAttributeInfo, ProofPredicateInfoOptions } from '../src/modules/proofs/formats/indy/models'
+import type { ProofAttributeInfo } from '../src/modules/proofs/formats/indy/models'
+import type { ProofPredicateInfoOptions } from '../src/modules/proofs/formats/indy/models/ProofPredicateInfo'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
 import type { Awaited, WalletConfig } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
@@ -65,7 +66,7 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
-import { PredicateType } from '../src/modules/proofs/formats/indy/models'
+import { PredicateType, ProofPredicateInfo, AttributeFilter } from '../src/modules/proofs/formats/indy/models'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { V1PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
@@ -478,6 +479,48 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
   return [agentAConnection, agentBConnection]
 }
 
+// export async function makConnectionlessLegacyConnection(agentA: Agent, agentB: Agent, recordId: string) {
+//   const attributes = {
+//     name: new ProofAttributeInfo({
+//       name: 'name',
+//       restrictions: [
+//         new AttributeFilter({
+//           credentialDefinitionId: credDefId,
+//         }),
+//       ],
+//     }),
+//   }
+
+//   const predicates = {
+//     age: new ProofPredicateInfo({
+//       name: 'age',
+//       predicateType: PredicateType.GreaterThanOrEqualTo,
+//       predicateValue: 50,
+//       restrictions: [
+//         new AttributeFilter({
+//           credentialDefinitionId: credDefId,
+//         }),
+//       ],
+//     }),
+//   }
+//   const { message: agentMessage } = await agentA.oob.createLegacyConnectionlessInvitation({
+//     recordId: recordId,
+//     message,
+//     domain: `rxjs`, // or 'subject'
+//   })
+//   const agentAOutOfBand = await agentA.oob.createInvitation({
+//     handshakeProtocols: [HandshakeProtocol.Connections],
+//   })
+
+//   let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+
+//   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
+//   let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+//   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
+
+//   return [agentAConnection, agentBConnection]
+// }
+
 export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
   const schema = await agent.ledger.registerSchema(schemaTemplate)
   testLogger.test(`created schema with id ${schema.id}`, schema)
@@ -871,6 +914,123 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
 
   faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
   aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  return {
+    faberAgent,
+    aliceAgent,
+    credDefId: definition.id,
+    faberConnection,
+    aliceConnection,
+    presentationPreview,
+    faberReplay,
+    aliceReplay,
+  }
+}
+
+export async function setupProofsTestNoOutbound(
+  faberName: string,
+  aliceName: string,
+  autoAcceptProofs?: AutoAcceptProof
+) {
+  const credentialPreview = V1CredentialPreview.fromRecord({
+    name: 'John',
+    age: '99',
+  })
+
+  const unique = uuid().substring(0, 4)
+
+  const faberAgentOptions = getAgentOptions(`${faberName} - ${unique}`, {
+    autoAcceptProofs,
+    endpoints: ['rxjs:faber'],
+  })
+
+  const aliceAgentOptions = getAgentOptions(`${aliceName} - ${unique}`, {
+    autoAcceptProofs,
+    endpoints: ['rxjs:alice'],
+  })
+
+  const faberMessages = new Subject<SubjectMessage>()
+  const aliceMessages = new Subject<SubjectMessage>()
+
+  const subjectMap = {
+    'rxjs:faber': faberMessages,
+    'rxjs:alice': aliceMessages,
+  }
+  const faberAgent = new Agent(faberAgentOptions)
+  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await faberAgent.initialize()
+
+  const aliceAgent = new Agent(aliceAgentOptions)
+  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+  await aliceAgent.initialize()
+
+  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+
+  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
+  expect(agentAConnection.isReady).toBe(true)
+  expect(agentBConnection.isReady).toBe(true)
+
+  const faberConnection = agentAConnection
+  const aliceConnection = agentBConnection
+
+  const presentationPreview = new V1PresentationPreview({
+    attributes: [
+      {
+        name: 'name',
+        credentialDefinitionId: definition.id,
+        referent: '0',
+        value: 'John',
+      },
+      {
+        name: 'image_0',
+        credentialDefinitionId: definition.id,
+      },
+    ],
+    predicates: [
+      {
+        name: 'age',
+        credentialDefinitionId: definition.id,
+        predicate: PredicateType.GreaterThanOrEqualTo,
+        threshold: 50,
+      },
+    ],
+  })
+
+  await issueCredential({
+    issuerAgent: faberAgent,
+    issuerConnectionId: faberConnection.id,
+    holderAgent: aliceAgent,
+    credentialTemplate: {
+      credentialDefinitionId: definition.id,
+      attributes: credentialPreview.attributes,
+      linkedAttachments: [
+        new LinkedAttachment({
+          name: 'image_0',
+          attachment: new Attachment({
+            filename: 'picture-of-a-cat.png',
+            data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+          }),
+        }),
+        new LinkedAttachment({
+          name: 'image_1',
+          attachment: new Attachment({
+            filename: 'picture-of-a-dog.png',
+            data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+          }),
+        }),
+      ],
+    },
+  })
+  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
+  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
+
+  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
+  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
+
+  aliceAgent.resetOutboundTransport()
+  faberAgent.resetOutboundTransport()
 
   return {
     faberAgent,

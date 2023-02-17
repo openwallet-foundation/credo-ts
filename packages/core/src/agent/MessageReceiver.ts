@@ -1,12 +1,14 @@
-import type { AgentMessage } from './AgentMessage'
-import type { DecryptedMessageContext } from './EnvelopeService'
-import type { TransportSession } from './TransportService'
-import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 import type { EncryptedMessage, PlaintextMessage } from '../types'
+import type { AgentMessage } from './AgentMessage'
+import type { DecryptedMessageContext, EnvelopeKeys } from './EnvelopeService'
+import type { TransportSession } from './TransportService'
+import type { AgentContext } from './context'
 
 import { InjectionSymbols } from '../constants'
+import { Key } from '../crypto'
+import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
@@ -85,7 +87,7 @@ export class MessageReceiver {
       if (this.isEncryptedMessage(inboundMessage)) {
         await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
       } else if (this.isPlaintextMessage(inboundMessage)) {
-        await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
+        await this.receivePlaintextMessage(agentContext, inboundMessage, connection, session)
       } else {
         throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
       }
@@ -98,10 +100,31 @@ export class MessageReceiver {
   private async receivePlaintextMessage(
     agentContext: AgentContext,
     plaintextMessage: PlaintextMessage,
-    connection?: ConnectionRecord
+    connection?: ConnectionRecord,
+    session?: TransportSession
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
-    const messageContext = new InboundMessageContext(message, { connection, agentContext })
+    const messageContext = new InboundMessageContext(message, { connection, agentContext, sessionId: session?.id })
+    const { senderKey, recipientKey } = messageContext
+
+    if (message.hasAnyReturnRoute() && session) {
+      this.logger.debug(`Storing session for inbound message '${message.id}'`)
+      let keys
+      if (messageContext.recipientKey && messageContext.senderKey) {
+        keys = {
+          recipientKeys: [messageContext.senderKey],
+          routingKeys: [],
+          senderKey: messageContext.recipientKey,
+        }
+      }
+      session.keys = keys
+      message.setReturnRouting(ReturnRouteTypes.all, message.transport?.returnRouteThread)
+      session.inboundMessage = message
+      session.connectionId = connection?.id
+      session.connectionId = connection?.id
+      messageContext.sessionId = session.id
+      this.transportService.saveSession(session)
+    }
     await this.dispatcher.dispatch(messageContext)
   }
 
@@ -136,6 +159,7 @@ export class MessageReceiver {
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+      // if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],

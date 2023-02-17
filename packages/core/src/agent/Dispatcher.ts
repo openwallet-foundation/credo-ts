@@ -78,6 +78,8 @@ class Dispatcher {
     }
 
     if (outboundMessage) {
+      outboundMessage.sessionIdFromInbound = messageContext.sessionId
+      this.logger.debug(`OutboundMessage ${outboundMessage}`, outboundMessage)
       if (outboundMessage.isOutboundServiceMessage()) {
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {

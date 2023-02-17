@@ -1,9 +1,13 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { TransportSession } from '../../../../../agent/TransportService'
 import type { ProofStateChangedEvent } from '../../../ProofEvents'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import {
+  SubjectTransportSession,
+  SubjectInboundTransport,
+} from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import {
   setupProofsTest,
@@ -12,10 +16,12 @@ import {
   prepareForIssuance,
   makeConnection,
   issueCredential,
+  setupProofsTestNoOutbound,
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -192,6 +198,80 @@ describe('Present Proof', () => {
     })
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
+
+    await aliceProofExchangeRecordPromise
+
+    await faberProofExchangeRecordPromise
+  })
+
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and using other transport', async () => {
+    testLogger.test('Faber sends presentation request to Alice')
+
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTestNoOutbound(
+      'Faber connection-less Proofs - Auto Accept',
+      'Alice connection-less Proofs - Auto Accept',
+      AutoAcceptProof.Always
+    )
+
+    agents = [aliceAgent, faberAgent]
+
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+      protocolVersion: 'v1',
+      proofFormats: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+      autoAcceptProof: AutoAcceptProof.Always,
+    })
+
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofExchangeRecord.id,
+      message,
+      domain: 'subject',
+    })
+
+    message.setReturnRouting(ReturnRouteTypes.all, message.thread?.threadId)
+    const aliceMessages = new Subject<SubjectMessage>()
+    const session = new SubjectTransportSession(message.threadId, aliceMessages)
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON(), session)
 
     await aliceProofExchangeRecordPromise
 

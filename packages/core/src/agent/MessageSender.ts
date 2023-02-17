@@ -1,15 +1,19 @@
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
-import type { AgentMessageSentEvent } from './Events'
-import type { TransportSession } from './TransportService'
-import type { AgentContext } from './context'
+import type { SubjectMessage } from '../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundPackage, EncryptedMessage } from '../types'
+import type { AgentMessage } from './AgentMessage'
+import type { EnvelopeKeys } from './EnvelopeService'
+import type { AgentMessageSentEvent } from './Events'
+import type { TransportSession } from './TransportService'
+import type { AgentContext } from './context'
 
+import { Subject } from 'rxjs'
+
+import { SubjectTransportSession } from '../../../../tests/transport/SubjectInboundTransport'
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
@@ -43,7 +47,7 @@ export class MessageSender {
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
-  public readonly outboundTransports: OutboundTransport[] = []
+  public outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -66,6 +70,10 @@ export class MessageSender {
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
     this.outboundTransports.push(outboundTransport)
+  }
+
+  public resetOutboundTransport() {
+    this.outboundTransports = []
   }
 
   public async packMessage(
@@ -185,7 +193,7 @@ export class MessageSender {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { agentContext, connection, outOfBand, sessionId, message } = outboundMessageContext
+    const { agentContext, connection, outOfBand, sessionId, message, sessionIdFromInbound } = outboundMessageContext
     const errors: Error[] = []
 
     if (!connection) {
@@ -203,8 +211,10 @@ export class MessageSender {
 
     let session: TransportSession | undefined
 
-    if (sessionId) {
-      session = this.transportService.findSessionById(sessionId)
+    if (sessionId || sessionIdFromInbound) {
+      session = sessionId
+        ? this.transportService.findSessionById(sessionId)
+        : this.transportService.findSessionById(sessionIdFromInbound)
     }
     if (!session) {
       // Try to send to already open session
@@ -364,14 +374,14 @@ export class MessageSender {
   }
 
   private async sendToService(outboundMessageContext: OutboundMessageContext) {
-    const { agentContext, message, serviceParams, connection } = outboundMessageContext
+    const { agentContext, message, serviceParams, connection, sessionIdFromInbound, sessionId } = outboundMessageContext
 
     if (!serviceParams) {
       throw new AriesFrameworkError('No service parameters found in outbound message context')
     }
     const { service, senderKey, returnRoute } = serviceParams
 
-    if (this.outboundTransports.length === 0) {
+    if (this.outboundTransports.length === 0 && !sessionIdFromInbound && !sessionId) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
@@ -408,18 +418,73 @@ export class MessageSender {
     const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
-    for (const transport of this.outboundTransports) {
-      const protocolScheme = getProtocolScheme(service.serviceEndpoint)
-      if (!protocolScheme) {
-        this.logger.warn('Service does not have valid protocolScheme.')
-      } else if (transport.supportedSchemes.includes(protocolScheme)) {
-        await transport.sendMessage(outboundPackage)
-        return
+
+    if (this.outboundTransports.length !== 0) {
+      for (const transport of this.outboundTransports) {
+        const protocolScheme = getProtocolScheme(service.serviceEndpoint)
+        if (!protocolScheme) {
+          this.logger.warn('Service does not have valid protocolScheme.')
+        } else if (transport.supportedSchemes.includes(protocolScheme)) {
+          await transport.sendMessage(outboundPackage)
+          return
+        }
+      }
+    } else {
+      // throw new MessageSendingError(`sessionId and sessionIdFromInbound: ${sessionId} ${sessionIdFromInbound}`, {
+      //   sessionId,
+      //   sessionIdFromInbound,
+      // })
+      if (sessionId || sessionIdFromInbound) {
+        // throw new MessageSendingError(
+        //   `sessionId and sessionIdFromInbound in condition: ${sessionId} ${sessionIdFromInbound}`,
+        //   {
+        //     sessionId,
+        //     sessionIdFromInbound,
+        //   }
+        // )
+        let session: TransportSession | undefined
+
+        if (sessionId || sessionIdFromInbound) {
+          if (sessionIdFromInbound) {
+            session = this.transportService.findSessionById(sessionIdFromInbound)
+          } else if (sessionId) {
+            session = this.transportService.findSessionById(sessionId)
+          }
+        }
+        if (!session) {
+          // Try to send to already open session
+          throw new MessageSendingError(`no session for: ${sessionId} ${sessionIdFromInbound}`, {
+            sessionId,
+            sessionIdFromInbound,
+          })
+        }
+
+        if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
+          this.logger.debug(
+            `Found session with return routing for message '${message.id}' (connection '${connection?.id}'`
+          )
+          try {
+            await this.sendMessageToSession(agentContext, session, message)
+            // this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+            return
+          } catch (error) {
+            // errors.push(error)
+            this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
+            throw new MessageSendingError(
+              `Unable to send message to service: ${service.serviceEndpoint} ${JSON.stringify(
+                message.threadId
+              )} ${JSON.stringify(session)}`,
+              {
+                outboundMessageContext,
+              }
+            )
+          }
+        }
       }
     }
-    throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
-      outboundMessageContext,
-    })
+    // throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
+    //   outboundMessageContext,
+    // })
   }
 
   private async retrieveServicesByConnection(
