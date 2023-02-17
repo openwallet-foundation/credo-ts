@@ -278,7 +278,7 @@ export class MessageReceiver {
       },
     })
     problemReportMessage.setThread({
-      threadId: plaintextMessage['@id'],
+      parentThreadId: plaintextMessage['@id'],
     })
     const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
     if (outboundMessageContext) {
