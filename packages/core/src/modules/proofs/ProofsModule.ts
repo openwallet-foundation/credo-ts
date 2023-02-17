@@ -1,5 +1,4 @@
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
-import type { V2ProofProtocol } from './protocol'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
@@ -8,6 +7,7 @@ import type { Constructor } from '../../utils/mixins'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
+import { V2ProofProtocol } from './protocol'
 import { ProofRepository } from './repository'
 
 /**
@@ -31,8 +31,7 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
       ...config,
       // NOTE: the proofProtocols defaults are set in the ProofsModule rather than the ProofsModuleConfig to
       // avoid dependency cycles.
-      // TODO: default proof protocols
-      proofProtocols: config?.proofProtocols ?? [],
+      proofProtocols: config?.proofProtocols ?? [new V2ProofProtocol({ proofFormats: [] })],
     }) as ProofsModuleConfig<ProofProtocols>
   }
 

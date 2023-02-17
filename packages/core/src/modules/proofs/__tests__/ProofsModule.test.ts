@@ -33,7 +33,7 @@ describe('ProofsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ProofRepository)
   })
 
-  test('registers V1ProofProtocol and V2ProofProtocol if no proofProtocols are configured', () => {
+  test('registers V2ProofProtocol if no proofProtocols are configured', () => {
     const proofsModule = new ProofsModule()
 
     expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol)])

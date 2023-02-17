@@ -84,7 +84,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
               credentialDefinitionId,
               name: 'age',
               predicate: '>=',
-              threshold: 18,
+              threshold: 50,
             },
           ],
         },
@@ -131,7 +131,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
         [Object.keys(proposalAttach.requested_predicates)[0]]: {
           name: 'age',
           p_type: '>=',
-          p_value: 18,
+          p_value: 50,
           restrictions: [
             {
               cred_def_id: credentialDefinitionId,
@@ -224,7 +224,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
               credentialDefinitionId,
               name: 'age',
               predicate: '>=',
-              threshold: 18,
+              threshold: 50,
             },
           ],
         },
@@ -353,20 +353,13 @@ describe('V2 Proofs Negotiation - Indy', () => {
       comment: 'V2 propose proof test 2',
     })
 
-    const proposalAttach3 = (proposal as V2ProposePresentationMessage)?.proposalAttachments[0].getDataAsJson()
+    const proposalAttach3 = (
+      proposal as V2ProposePresentationMessage
+    )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach3).toMatchObject({
-      requested_attributes: {
-        something: {
-          name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
+      requested_attributes: {},
       requested_predicates: {
-        somethingElse: {
+        [Object.keys(proposalAttach3.requested_predicates ?? {})[0]]: {
           name: 'age',
           p_type: '>=',
           p_value: 50,
@@ -393,16 +386,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
       name: 'proof-request',
       nonce: expect.any(String),
       version: '1.0',
-      requested_attributes: {
-        '0': {
-          name: 'name',
-          restrictions: [
-            {
-              cred_def_id: credentialDefinitionId,
-            },
-          ],
-        },
-      },
+      requested_attributes: {},
       requested_predicates: {
         [predicateKey]: {
           name: 'age',

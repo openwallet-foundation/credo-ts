@@ -21,7 +21,9 @@ describe('Auto accept present proof', () => {
     beforeAll(async () => {
       ;({
         issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
         holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
         credentialDefinitionId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,
@@ -148,7 +150,9 @@ describe('Auto accept present proof', () => {
       testLogger.test('Initializing the agents')
       ;({
         issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
         holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
         credentialDefinitionId,
         issuerHolderConnectionId: faberConnectionId,
         holderIssuerConnectionId: aliceConnectionId,

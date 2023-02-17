@@ -252,10 +252,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
-      autoAcceptMediationRequests: true,
-      endpoints: ['rxjs:mediator'],
+    const anonCredsModules = getLegacyAnonCredsModules({
+      autoAcceptProofs: AutoAcceptProof.Always,
     })
+
+    const mediatorOptions = getAgentOptions(
+      `Connectionless proofs with mediator Mediator-${unique}`,
+      {
+        autoAcceptMediationRequests: true,
+        endpoints: ['rxjs:mediator'],
+      },
+      anonCredsModules
+    )
 
     const mediatorMessages = new Subject<SubjectMessage>()
     const subjectMap = { 'rxjs:mediator': mediatorMessages }
@@ -274,10 +282,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const aliceMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
-    })
-
-    const anonCredsModules = getLegacyAnonCredsModules({
-      autoAcceptProofs: AutoAcceptProof.Always,
     })
 
     const faberOptions = getAgentOptions(

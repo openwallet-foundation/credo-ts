@@ -7,6 +7,8 @@ import {
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { waitForProofExchangeRecord } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { ProofState } from '../../../models'
 import { ProofExchangeRecord } from '../../../repository'
 import { V2ProposePresentationMessage, V2RequestPresentationMessage, V2PresentationMessage } from '../messages'
@@ -36,7 +38,7 @@ describe('Present Proof', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber agent indy proofs',
       holderName: 'Alice agent indy proofs',
-      attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
+      attributeNames: ['name', 'age', 'image_0', 'image_1'],
     }))
 
     await issueLegacyAnonCredsCredential({
@@ -50,20 +52,28 @@ describe('Present Proof', () => {
         attributes: [
           {
             name: 'name',
-            value: 'Alice',
+            value: 'John',
           },
           {
             name: 'age',
-            value: '22',
+            value: '99',
           },
-          {
-            name: 'profile_picture',
-            value: 'https://example.com/alice.jpg',
-          },
-          {
-            name: 'x-ray',
-            value: 'https://example.com/alice-xray.jpg',
-          },
+        ],
+        linkedAttachments: [
+          new LinkedAttachment({
+            name: 'image_0',
+            attachment: new Attachment({
+              filename: 'picture-of-a-cat.png',
+              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+            }),
+          }),
+          new LinkedAttachment({
+            name: 'image_1',
+            attachment: new Attachment({
+              filename: 'picture-of-a-dog.png',
+              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+            }),
+          }),
         ],
       },
     })
@@ -103,7 +113,7 @@ describe('Present Proof', () => {
             {
               name: 'age',
               predicate: '>=',
-              threshold: 18,
+              threshold: 50,
               credentialDefinitionId,
             },
           ],
@@ -280,11 +290,8 @@ describe('Present Proof', () => {
           version: '1.0',
           nonce: expect.any(String),
           requested_attributes: {
-            0: {
+            [Object.keys(formatData.proposal?.indy?.requested_attributes ?? {})[0]]: {
               name: 'name',
-            },
-            anything: {
-              name: 'image_0',
               restrictions: [
                 {
                   cred_def_id: credentialDefinitionId,
@@ -293,7 +300,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            else: {
+            [Object.keys(formatData.proposal?.indy?.requested_predicates ?? {})[0]]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -312,11 +319,8 @@ describe('Present Proof', () => {
           version: '1.0',
           nonce: expect.any(String),
           requested_attributes: {
-            0: {
+            [Object.keys(formatData.request?.indy?.requested_attributes ?? {})[0]]: {
               name: 'name',
-            },
-            anything: {
-              name: 'image_0',
               restrictions: [
                 {
                   cred_def_id: credentialDefinitionId,
@@ -325,7 +329,7 @@ describe('Present Proof', () => {
             },
           },
           requested_predicates: {
-            else: {
+            [Object.keys(formatData.request?.indy?.requested_predicates ?? {})[0]]: {
               name: 'age',
               p_type: '>=',
               p_value: 50,
@@ -395,7 +399,7 @@ describe('Present Proof', () => {
             age: {
               name: 'age',
               p_type: '>=',
-              p_value: 18,
+              p_value: 50,
               restrictions: [
                 {
                   cred_def_id: credentialDefinitionId,
@@ -588,7 +592,7 @@ describe('Present Proof', () => {
                 credentialId: expect.any(String),
                 revealed: true,
                 credentialInfo: {
-                  referent: expect.any(String),
+                  credentialId: expect.any(String),
                   attributes: {
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
                     image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
@@ -607,7 +611,7 @@ describe('Present Proof', () => {
                 credentialId: expect.any(String),
                 revealed: true,
                 credentialInfo: {
-                  referent: expect.any(String),
+                  credentialId: expect.any(String),
                   attributes: {
                     age: '99',
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',
@@ -627,7 +631,7 @@ describe('Present Proof', () => {
               {
                 credentialId: expect.any(String),
                 credentialInfo: {
-                  referent: expect.any(String),
+                  credentialId: expect.any(String),
                   attributes: {
                     image_1: 'hl:zQmRHBT9rDs5QhsnYuPY3mNpXxgLcnNXkhjWJvTSAPMmcVd',
                     image_0: 'hl:zQmfDXo7T3J43j3CTkEZaz7qdHuABhWktksZ7JEBueZ5zUS',

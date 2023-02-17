@@ -33,7 +33,10 @@ const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()
 const didCommMessageRepository = new didCommMessageRepositoryMock()
-const proofFormatService = {} satisfies Partial<ProofFormatService> as ProofFormatService
+const proofFormatService = {
+  supportsFormat: () => true,
+  processRequest: jest.fn(),
+} as unknown as ProofFormatService
 
 const agentConfig = getAgentConfig('V2ProofProtocolTest')
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
