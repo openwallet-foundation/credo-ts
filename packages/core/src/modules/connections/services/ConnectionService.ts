@@ -120,7 +120,7 @@ export class ConnectionService {
     })
 
     connectionRequest.setThread({
-      threadId: connectionRequest.id,
+      threadId: connectionRequest.threadId,
       parentThreadId: outOfBandInvitation.id,
     })
 
@@ -136,7 +136,7 @@ export class ConnectionService {
       outOfBandId: outOfBandRecord.id,
       invitationDid,
       imageUrl: outOfBandInvitation.imageUrl,
-      threadId: connectionRequest.id,
+      threadId: connectionRequest.threadId,
     })
 
     await this.updateState(agentContext, connectionRecord, DidExchangeState.RequestSent)

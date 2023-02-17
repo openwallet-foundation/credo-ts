@@ -28,7 +28,7 @@ export class TrustPingService {
 
     if (message.responseRequested) {
       const response = new TrustPingResponseMessage({
-        threadId: message.id,
+        threadId: message.threadId,
       })
 
       return new OutboundMessageContext(response, { agentContext, connection })
