@@ -121,7 +121,6 @@ export class MessageReceiver {
       message.setReturnRouting(ReturnRouteTypes.all, message.transport?.returnRouteThread)
       session.inboundMessage = message
       session.connectionId = connection?.id
-      session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     }

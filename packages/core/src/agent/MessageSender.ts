@@ -98,10 +98,19 @@ export class MessageSender {
   }
 
   private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
+    console.log('====================================')
+    console.log('sendMessageToSession')
+    console.log('====================================')
     this.logger.debug(`Existing ${session.type} transport session has been found.`)
     if (!session.keys) {
+      console.log('====================================')
+      console.log(`no session keys ${JSON.stringify(session)}`)
+      console.log('====================================')
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
+    console.log('====================================')
+    console.log('calling send ')
+    console.log('====================================')
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
     await session.send(encryptedMessage)
   }
@@ -212,9 +221,10 @@ export class MessageSender {
     let session: TransportSession | undefined
 
     if (sessionId || sessionIdFromInbound) {
-      session = sessionId
-        ? this.transportService.findSessionById(sessionId)
-        : this.transportService.findSessionById(sessionIdFromInbound)
+      session = this.transportService.findSessionById(sessionId)
+      // session = sessionId
+      //   ? this.transportService.findSessionById(sessionId)
+      // : this.transportService.findSessionById(sessionIdFromInbound)
     }
     if (!session) {
       // Try to send to already open session
@@ -354,6 +364,9 @@ export class MessageSender {
 
   public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     try {
+      console.log('====================================')
+      console.log('send message to service try')
+      console.log('====================================')
       await this.sendToService(outboundMessageContext)
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
     } catch (error) {
@@ -464,8 +477,20 @@ export class MessageSender {
             `Found session with return routing for message '${message.id}' (connection '${connection?.id}'`
           )
           try {
+            session.keys = keys
+            console.log('====================================')
+            console.log('session before sendMessageToSession ')
+            console.log(`${JSON.stringify(session)}`)
+            console.log('====================================')
+            // session.inboundMessage?.transport?.returnRoute =
             await this.sendMessageToSession(agentContext, session, message)
-            // this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+            console.log('====================================')
+            console.log('after sendMessageToSession')
+            console.log('====================================')
+            this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+            console.log('====================================')
+            console.log('after emitMessageSentEvent')
+            console.log('====================================')
             return
           } catch (error) {
             // errors.push(error)

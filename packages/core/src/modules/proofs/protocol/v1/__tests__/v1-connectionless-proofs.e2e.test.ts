@@ -264,11 +264,12 @@ describe('Present Proof', () => {
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
-      domain: 'subject',
+      domain: 'rxjs:faber',
     })
 
-    message.setReturnRouting(ReturnRouteTypes.all, message.thread?.threadId)
+    message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
     const aliceMessages = new Subject<SubjectMessage>()
+
     const session = new SubjectTransportSession(message.threadId, aliceMessages)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON(), session)
