@@ -26,8 +26,8 @@ export class NodeFileSystem implements FileSystem {
    * Files will be created under baseTempPath/.afj directory. If not specified, it will be set to tmpdir()
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
-    this.dataPath = `${options?.baseDataPath ?? homedir()}/.afj`
-    this.cachePath = `${options?.baseCachePath ?? homedir()}/.afj`
+    this.dataPath = `${options?.baseDataPath ?? homedir()}/.afj/data`
+    this.cachePath = `${options?.baseCachePath ?? homedir()}/.afj/cache`
     this.tempPath = `${options?.baseTempPath ?? tmpdir()}/.afj`
   }
 
