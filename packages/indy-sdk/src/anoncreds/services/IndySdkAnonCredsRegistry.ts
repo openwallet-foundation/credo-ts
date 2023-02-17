@@ -212,28 +212,43 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const [, credentialDefinition] = await indySdk.parseGetCredDefResponse(response)
-      agentContext.config.logger.debug(
-        `Got credential definition '${credentialDefinitionId}' from ledger '${pool.didIndyNamespace}'`,
-        {
-          credentialDefinition,
-        }
-      )
-
       const { schema } = await this.fetchIndySchemaWithSeqNo(agentContext, Number(credentialDefinition.schemaId), did)
 
+      if (credentialDefinition && schema) {
+        agentContext.config.logger.debug(
+          `Got credential definition '${credentialDefinitionId}' from ledger '${pool.didIndyNamespace}'`,
+          {
+            credentialDefinition,
+          }
+        )
+
+        return {
+          credentialDefinitionId: credentialDefinition.id,
+          credentialDefinition: {
+            issuerId: didFromCredentialDefinitionId(credentialDefinition.id),
+            schemaId: schema.schemaId,
+            tag: credentialDefinition.tag,
+            type: 'CL',
+            value: credentialDefinition.value,
+          },
+          credentialDefinitionMetadata: {
+            didIndyNamespace: pool.didIndyNamespace,
+          },
+          resolutionMetadata: {},
+        }
+      }
+
+      agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
+        credentialDefinitionId,
+      })
+
       return {
-        credentialDefinitionId: credentialDefinition.id,
-        credentialDefinition: {
-          issuerId: didFromCredentialDefinitionId(credentialDefinition.id),
-          schemaId: schema.schemaId,
-          tag: credentialDefinition.tag,
-          type: 'CL',
-          value: credentialDefinition.value,
+        credentialDefinitionId,
+        credentialDefinitionMetadata: {},
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve credential definition`,
         },
-        credentialDefinitionMetadata: {
-          didIndyNamespace: pool.didIndyNamespace,
-        },
-        resolutionMetadata: {},
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
@@ -526,6 +541,11 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
     const schema = response.result.data as SchemaType
 
+    if (schema.txn.type !== '101') {
+      agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)
+      return {}
+    }
+
     const schemaId = getLegacySchemaId(did, schema.txn.data.data.name, schema.txn.data.data.version)
 
     return {
@@ -551,6 +571,8 @@ interface SchemaType {
         name: string
       }
     }
+
+    type: string
   }
 }
 

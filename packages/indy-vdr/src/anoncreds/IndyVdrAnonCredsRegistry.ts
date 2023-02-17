@@ -219,7 +219,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await pool.submitReadRequest(request)
 
-      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did, 1)
+      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did)
 
       if (response.result.data && schema) {
         return {
@@ -420,13 +420,14 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string, type: number) {
+  private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
     const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
     const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
 
     agentContext.config.logger.debug(`Getting transaction with seqNo '${seqNo}' from ledger '${pool.indyNamespace}'`)
-    const request = new GetTransactionRequest({ ledgerType: type, seqNo })
+    // ledgerType 1 is domain ledger
+    const request = new GetTransactionRequest({ ledgerType: 1, seqNo })
 
     agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.indyNamespace}'`)
     const response = await pool.submitReadRequest(request)
