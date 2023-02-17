@@ -1,4 +1,5 @@
 import type { AcceptanceMechanisms, AuthorAgreement } from './IndySdkPool'
+import type { IndySdk } from '../types'
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
@@ -7,7 +8,6 @@ import { Subject } from 'rxjs'
 
 import { IndySdkModuleConfig } from '../IndySdkModuleConfig'
 import { IndySdkError, isIndyError } from '../error'
-import { IndySdk, IndySdkSymbol } from '../types'
 import { assertIndySdkWallet } from '../utils/assertIndySdkWallet'
 import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
@@ -30,14 +30,13 @@ export class IndySdkPoolService {
   private indySdkModuleConfig: IndySdkModuleConfig
 
   public constructor(
-    @inject(IndySdkSymbol) indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
     indySdkModuleConfig: IndySdkModuleConfig
   ) {
     this.logger = logger
-    this.indySdk = indySdk
+    this.indySdk = indySdkModuleConfig.indySdk
     this.fileSystem = fileSystem
     this.stop$ = stop$
     this.indySdkModuleConfig = indySdkModuleConfig
@@ -151,7 +150,7 @@ export class IndySdkPoolService {
     const pool = this.pools.find((pool) => pool.didIndyNamespace === indyNamespace)
 
     if (!pool) {
-      throw new IndySdkPoolNotFoundError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
+      throw new IndySdkPoolNotFoundError(`No ledgers found for indy namespace '${indyNamespace}'.`)
     }
 
     return pool

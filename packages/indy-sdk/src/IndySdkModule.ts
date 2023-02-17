@@ -42,6 +42,7 @@ export class IndySdkModule implements Module {
 
     // NOTE: for now we are registering the needed indy services. We may want to make this
     // more explicit and require the user to register the services they need on the specific modules.
+    dependencyManager.registerSingleton(IndySdkPoolService)
     dependencyManager.registerSingleton(AnonCredsIssuerServiceSymbol, IndySdkIssuerService)
     dependencyManager.registerSingleton(AnonCredsHolderServiceSymbol, IndySdkHolderService)
     dependencyManager.registerSingleton(AnonCredsVerifierServiceSymbol, IndySdkVerifierService)

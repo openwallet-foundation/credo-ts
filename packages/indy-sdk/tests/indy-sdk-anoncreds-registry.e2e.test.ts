@@ -1,46 +1,29 @@
-import { Agent, DidsModule } from '@aries-framework/core'
+import { Agent } from '@aries-framework/core'
 
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
-import { IndyVdrSovDidResolver } from '../src'
-import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
-import { IndyVdrPoolService } from '../src/pool'
+import { IndySdkModule } from '../src'
+import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
 
-import { indyVdrModuleConfig } from './helpers'
+import { indySdkModuleConfig } from './setupIndySdkModule'
 
-const agentConfig = getAgentConfig('IndyVdrAnonCredsRegistry')
-
-// TODO: update to module once available
-const indyVdrPoolService = new IndyVdrPoolService(agentConfig.logger, indyVdrModuleConfig)
-
-const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
+const agentConfig = getAgentConfig('IndySdkAnonCredsRegistry')
 
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver()],
-    }),
+    indySdk: new IndySdkModule(indySdkModuleConfig),
   },
 })
 
-agent.dependencyManager.registerInstance(IndyVdrPoolService, indyVdrPoolService)
+const indySdkAnonCredsRegistry = new IndySdkAnonCredsRegistry()
 
-describe('IndyVdrAnonCredsRegistry', () => {
+describe('IndySdkAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
   })
 
   afterAll(async () => {
-    for (const pool of indyVdrPoolService.pools) {
-      pool.close()
-    }
-
     await agent.shutdown()
     await agent.wallet.delete()
   })
@@ -49,15 +32,15 @@ describe('IndyVdrAnonCredsRegistry', () => {
   test('register and resolve a schema and credential definition', async () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
-    const schemaResult = await indyVdrAnonCredsRegistry.registerSchema(agent.context, {
+    const schemaResult = await indySdkAnonCredsRegistry.registerSchema(agent.context, {
+      schema: {
+        attrNames: ['name'],
+        issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
+        name: 'test - 11',
+        version: dynamicVersion,
+      },
       options: {
         didIndyNamespace: 'pool:localtest',
-      },
-      schema: {
-        attrNames: ['age'],
-        issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
-        name: 'test',
-        version: dynamicVersion,
       },
     })
 
@@ -65,12 +48,12 @@ describe('IndyVdrAnonCredsRegistry', () => {
       schemaState: {
         state: 'finished',
         schema: {
-          attrNames: ['age'],
+          attrNames: ['name'],
           issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
-          name: 'test',
+          name: 'test - 11',
           version: dynamicVersion,
         },
-        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
+        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
       },
       registrationMetadata: {},
       schemaMetadata: {
@@ -79,18 +62,19 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    const schemaResponse = await indyVdrAnonCredsRegistry.getSchema(
+    const schemaResponse = await indySdkAnonCredsRegistry.getSchema(
       agent.context,
-      schemaResult.schemaState.schemaId as string
+      `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`
     )
+
     expect(schemaResponse).toMatchObject({
       schema: {
-        attrNames: ['age'],
-        name: 'test',
+        attrNames: ['name'],
+        name: 'test - 11',
         version: dynamicVersion,
         issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
       },
-      schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
+      schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
       resolutionMetadata: {},
       schemaMetadata: {
         didIndyNamespace: 'pool:localtest',
@@ -98,11 +82,11 @@ describe('IndyVdrAnonCredsRegistry', () => {
       },
     })
 
-    const credentialDefinitionResult = await indyVdrAnonCredsRegistry.registerCredentialDefinition(agent.context, {
+    const credentialDefinitionResult = await indySdkAnonCredsRegistry.registerCredentialDefinition(agent.context, {
       credentialDefinition: {
         issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
         tag: 'TAG',
-        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
+        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
         type: 'CL',
         value: {
           primary: {
@@ -132,7 +116,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
         credentialDefinition: {
           issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
           tag: 'TAG',
-          schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
+          schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
           type: 'CL',
           value: {
             primary: {
@@ -155,7 +139,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       registrationMetadata: {},
     })
 
-    const credentialDefinitionResponse = await indyVdrAnonCredsRegistry.getCredentialDefinition(
+    const credentialDefinitionResponse = await indySdkAnonCredsRegistry.getCredentialDefinition(
       agent.context,
       credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
     )
@@ -164,7 +148,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       credentialDefinitionId: `TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResponse.schemaMetadata.indyLedgerSeqNo}:TAG`,
       credentialDefinition: {
         issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
-        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`,
+        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
         tag: 'TAG',
         type: 'CL',
         value: {

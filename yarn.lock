@@ -2534,17 +2534,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk-react-native@npm:@types/indy-sdk@1.16.24", "@types/indy-sdk@1.16.24":
-  version "1.16.24"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.24.tgz#1b8e33e8fd2a095a29cb06b76146ed14d1477cdd"
-  integrity sha512-5YliU8lqahihz46MPpiu1ZWNkG2c/lm9SI+Fp3DUV2HrGbuAPxI8dYg2CP6avuD5kfCYr6Y5+TaqeOH/aID0FQ==
-  dependencies:
-    buffer "^6.0.0"
-
-"@types/indy-sdk@^1.16.25":
-  version "1.16.25"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.25.tgz#003eaed57efaae188a5a1ea57aa9bb001ffc3127"
-  integrity sha512-yAwdEcD013U2HPLaFFkpw+VlOlEQNPCRbY9qcXQwRarSa+ngYKpnu66gDhmWsr34q0bfKDmUVsFqIdGB6KYxIA==
+"@types/indy-sdk@1.16.26", "@types/indy-sdk@^1.16.26":
+  version "1.16.26"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.26.tgz#871f82c3f7d241d649aff5eb6800048890efb8f8"
+  integrity sha512-KlnjsVsX/7yTmyyIlHWcytlBHoQ1vPGeiLnLv5y1vDftL6OQ5V+hebfAr7d3roMEsjCTH3qKkklwGcj1qS90YA==
   dependencies:
     buffer "^6.0.0"
 
@@ -2591,11 +2584,6 @@
   version "0.0.29"
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
-
-"@types/libsodium-wrappers@^0.7.5":
-  version "0.7.10"
-  resolved "https://registry.yarnpkg.com/@types/libsodium-wrappers/-/libsodium-wrappers-0.7.10.tgz#a6ebde70d3b4af960fd802af8d0e3c7cfe281eb2"
-  integrity sha512-BqI9B92u+cM3ccp8mpHf+HzJ8fBlRwdmyd6+fz3p99m3V6ifT5O3zmOMi612PGkpeFeG/G6loxUnzlDNhfjPSA==
 
 "@types/luxon@^1.27.0":
   version "1.27.1"
@@ -3487,11 +3475,6 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-base-58@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/base-58/-/base-58-0.0.1.tgz#85d3e70251075661933388f831d1eb8b8f6314e3"
-  integrity sha512-denlKTnozZTVWuh1QkbXf10kkFNc+0/eno29RR+6g5al0yGI+iAOFt/cIA2tvnKoADlUFLZHs50ZdWF+c9WBnw==
-
 base-64@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/base-64/-/base-64-0.1.0.tgz#780a99c84e7d600260361511c4877613bf24f6bb"
@@ -3654,7 +3637,7 @@ bs-logger@0.x:
   dependencies:
     fast-json-stable-stringify "2.x"
 
-bs58@4.0.1, bs58@^4.0.1:
+bs58@4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/bs58/-/bs58-4.0.1.tgz#be161e76c354f6f788ae4071f63f34e8c4f0a42a"
   integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
@@ -3673,7 +3656,7 @@ buffer-from@^1.0.0:
   resolved "https://registry.yarnpkg.com/buffer-from/-/buffer-from-1.1.2.tgz#2b146a6fd72e80b4f55d255f35ed59a3a9a41bd5"
   integrity sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==
 
-buffer@^6.0.0, buffer@^6.0.2, buffer@^6.0.3:
+buffer@^6.0.0, buffer@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/buffer/-/buffer-6.0.3.tgz#2ace578459cc8fbe2a70aaa8f52ee63b6a74c6c6"
   integrity sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==
@@ -4766,17 +4749,6 @@ encoding@^0.1.12:
   integrity sha512-ETBauow1T35Y/WZMkio9jiM0Z5xjHHmJ4XmjZOq1l/dXz3lr2sRn87nJy20RupqSh1F2m3HHPSp8ShIPQJrJ3A==
   dependencies:
     iconv-lite "^0.6.2"
-
-encryption-envelope-js@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/encryption-envelope-js/-/encryption-envelope-js-1.2.5.tgz#fe9399f893a634e90aeb4e59d108a801fe865f8e"
-  integrity sha512-QjIuFou3vZTqRhn24rOvLHeKd8Q6ZBkd8crnQDWkJPNCsKAVlv4bMmHDOIhVD/Px4TFFJZsnTEvPRH1QdXOXTg==
-  dependencies:
-    "@types/libsodium-wrappers" "^0.7.5"
-    base-58 "0.0.1"
-    bs58 "^4.0.1"
-    libsodium "^0.7.3"
-    libsodium-wrappers "^0.7.3"
 
 end-of-stream@^1.1.0:
   version "1.4.4"
@@ -6206,13 +6178,6 @@ indent-string@^4.0.0:
   resolved "https://registry.yarnpkg.com/indent-string/-/indent-string-4.0.0.tgz#624f8f4497d619b2d9768531d58f4122854d7251"
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
 
-indy-sdk-react-native@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/indy-sdk-react-native/-/indy-sdk-react-native-0.3.0.tgz#37b20476bf1207d3dea7b66dba65bf44ed0c903a"
-  integrity sha512-3qaB4R7QDNQRI9ijpSvMaow/HlZYMB2LdJlRtbhefmrjQYwpz9oSqB595NPKajBIoIxzgDaUdBkK7kmwMY90Xg==
-  dependencies:
-    buffer "^6.0.2"
-
 indy-sdk@^1.16.0-dev-1636, indy-sdk@^1.16.0-dev-1655:
   version "1.16.0-dev-1655"
   resolved "https://registry.yarnpkg.com/indy-sdk/-/indy-sdk-1.16.0-dev-1655.tgz#098c38df4a6eb4e13f89c0b86ebe9636944b71e0"
@@ -7529,18 +7494,6 @@ libphonenumber-js@^1.10.14, libphonenumber-js@^1.9.7:
   version "1.10.18"
   resolved "https://registry.yarnpkg.com/libphonenumber-js/-/libphonenumber-js-1.10.18.tgz#657c419071c8a02c638c0e80d9ee1232f152f280"
   integrity sha512-NS4ZEgNhwbcPz1gfSXCGFnQm0xEiyTSPRthIuWytDzOiEG9xnZ2FbLyfJC4tI2BMAAXpoWbNxHYH75pa3Dq9og==
-
-libsodium-wrappers@^0.7.10, libsodium-wrappers@^0.7.3:
-  version "0.7.10"
-  resolved "https://registry.yarnpkg.com/libsodium-wrappers/-/libsodium-wrappers-0.7.10.tgz#13ced44cacb0fc44d6ac9ce67d725956089ce733"
-  integrity sha512-pO3F1Q9NPLB/MWIhehim42b/Fwb30JNScCNh8TcQ/kIc+qGLQch8ag8wb0keK3EP5kbGakk1H8Wwo7v+36rNQg==
-  dependencies:
-    libsodium "^0.7.0"
-
-libsodium@^0.7.0, libsodium@^0.7.3:
-  version "0.7.10"
-  resolved "https://registry.yarnpkg.com/libsodium/-/libsodium-0.7.10.tgz#c2429a7e4c0836f879d701fec2c8a208af024159"
-  integrity sha512-eY+z7hDrDKxkAK+QKZVNv92A5KYkxfvIshtBJkmg5TSiCnYqZP3i9OO9whE79Pwgm4jGaoHgkM4ao/b9Cyu4zQ==
 
 lines-and-columns@^1.1.6:
   version "1.2.4"

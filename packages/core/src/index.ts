@@ -26,6 +26,7 @@ export type {
   JsonValue,
   WalletConfigRekey,
   WalletExportImportConfig,
+  WalletStorageConfig,
 } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'

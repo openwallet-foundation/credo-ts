@@ -1,4 +1,3 @@
-import type { CredentialMetadata } from './CredentialMetadataTypes'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
@@ -11,8 +10,6 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { CredentialPreviewAttribute } from '../models/CredentialPreviewAttribute'
-
-import { CredentialMetadataKeys } from './CredentialMetadataTypes'
 
 export interface CredentialExchangeRecordProps {
   id?: string
@@ -37,8 +34,6 @@ export type DefaultCredentialTags = {
   connectionId?: string
   state: CredentialState
   credentialIds: string[]
-  indyRevocationRegistryId?: string
-  indyCredentialRevocationId?: string
 }
 
 export interface CredentialRecordBinding {
@@ -46,11 +41,7 @@ export interface CredentialRecordBinding {
   credentialRecordId: string
 }
 
-export class CredentialExchangeRecord extends BaseRecord<
-  DefaultCredentialTags,
-  CustomCredentialTags,
-  CredentialMetadata
-> {
+export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
   public connectionId?: string
   public threadId!: string
   public state!: CredentialState
@@ -91,7 +82,6 @@ export class CredentialExchangeRecord extends BaseRecord<
   }
 
   public getTags() {
-    const metadata = this.metadata.get(CredentialMetadataKeys.IndyCredential)
     const ids = this.credentials.map((c) => c.credentialRecordId)
 
     return {
@@ -100,8 +90,6 @@ export class CredentialExchangeRecord extends BaseRecord<
       connectionId: this.connectionId,
       state: this.state,
       credentialIds: ids,
-      indyRevocationRegistryId: metadata?.indyRevocationRegistryId,
-      indyCredentialRevocationId: metadata?.indyCredentialRevocationId,
     }
   }
 

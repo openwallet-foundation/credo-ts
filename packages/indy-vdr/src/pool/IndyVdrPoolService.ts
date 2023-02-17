@@ -150,7 +150,7 @@ export class IndyVdrPoolService {
     const pool = this.pools.find((pool) => pool.indyNamespace === indyNamespace)
 
     if (!pool) {
-      throw new IndyVdrError(`No ledgers found for IndyNamespace '${indyNamespace}'.`)
+      throw new IndyVdrError(`No ledgers found for indy namespace '${indyNamespace}'.`)
     }
 
     return pool

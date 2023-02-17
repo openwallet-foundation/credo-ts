@@ -2,23 +2,25 @@ import { DidsModule, KeyDidRegistrar, KeyDidResolver, utils } from '@aries-frame
 import indySdk from 'indy-sdk'
 
 import { genesisPath, taaVersion, taaAcceptanceMechanism } from '../../core/tests/helpers'
-import { IndySdkModule, IndySdkSovDidRegistrar, IndySdkSovDidResolver } from '../src'
+import { IndySdkModule, IndySdkModuleConfig, IndySdkSovDidRegistrar, IndySdkSovDidResolver } from '../src'
 
 export { indySdk }
 
+export const indySdkModuleConfig = new IndySdkModuleConfig({
+  indySdk,
+  networks: [
+    {
+      id: `localhost-${utils.uuid()}`,
+      isProduction: false,
+      genesisPath,
+      indyNamespace: 'pool:localtest',
+      transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
+    },
+  ],
+})
+
 export const getIndySdkModules = () => ({
-  indySdk: new IndySdkModule({
-    indySdk,
-    networks: [
-      {
-        id: `localhost-${utils.uuid()}`,
-        isProduction: false,
-        genesisPath,
-        indyNamespace: 'localhost',
-        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-      },
-    ],
-  }),
+  indySdk: new IndySdkModule(indySdkModuleConfig),
   dids: new DidsModule({
     registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
     resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],

@@ -3,7 +3,7 @@ import type { FileSystem, Logger } from '@aries-framework/core'
 import type { LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 import type { Subject } from 'rxjs'
 
-import { AriesFrameworkError, utils } from '@aries-framework/core'
+import { AriesFrameworkError } from '@aries-framework/core'
 
 import { isIndyError, IndySdkError } from '../error'
 
@@ -64,6 +64,10 @@ export class IndySdkPool {
     return this.config.indyNamespace
   }
 
+  public get id() {
+    return this.poolConfig.id
+  }
+
   public get config() {
     return this.poolConfig
   }
@@ -106,7 +110,7 @@ export class IndySdkPool {
   }
 
   private async connectToLedger() {
-    const poolName = `${this.poolConfig.indyNamespace}-${utils.uuid()}`
+    const poolName = this.poolConfig.id ?? this.poolConfig.indyNamespace
     const genesisPath = await this.getGenesisPath()
 
     if (!genesisPath) {

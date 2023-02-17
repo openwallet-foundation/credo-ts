@@ -1,7 +1,6 @@
 import type { Key } from '@aries-framework/core'
 
 import {
-  IndyWallet,
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,

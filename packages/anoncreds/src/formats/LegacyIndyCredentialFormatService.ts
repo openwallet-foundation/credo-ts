@@ -314,6 +314,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
         credentialRevocationId: credentialRevocationId,
         revocationRegistryId: credential.rev_reg_id,
       })
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: credential.rev_reg_id,
+        anonCredsCredentialRevocationId: credentialRevocationId,
+      })
     }
 
     const format = new CredentialFormatSpec({
@@ -413,7 +417,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialRevocationId: credential.credentialRevocationId,
-        revocationRegistryId: anonCredsCredential.rev_reg_id,
+        revocationRegistryId: credential.revocationRegistryId,
+      })
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: credential.revocationRegistryId,
+        anonCredsCredentialRevocationId: credential.credentialRevocationId,
       })
     }
 

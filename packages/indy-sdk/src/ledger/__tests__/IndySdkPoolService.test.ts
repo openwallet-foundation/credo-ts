@@ -63,13 +63,7 @@ const agentContext = getAgentContext({
   registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
 })
 
-const poolService = new IndySdkPoolService(
-  indySdk,
-  config.logger,
-  new Subject<boolean>(),
-  new NodeFileSystem(),
-  indySdkModule
-)
+const poolService = new IndySdkPoolService(config.logger, new Subject<boolean>(), new NodeFileSystem(), indySdkModule)
 
 describe('IndySdkPoolService', () => {
   beforeAll(async () => {
