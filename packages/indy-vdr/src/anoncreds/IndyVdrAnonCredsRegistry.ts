@@ -219,26 +219,22 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await pool.submitReadRequest(request)
 
-      //FIXME: Is the ledgerType 1 ok or is it meant to be a dynamic value?
-      // if yes, what the best way to get the ledgerType
       const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did, 1)
 
-      if (response.result.data) {
-        if (schema) {
-          return {
-            credentialDefinitionId: credentialDefinitionId,
-            credentialDefinition: {
-              issuerId: didFromCredentialDefinitionId(credentialDefinitionId),
-              schemaId: schema.schema.schemaId,
-              tag: response.result.tag,
-              type: 'CL',
-              value: response.result.data,
-            },
-            credentialDefinitionMetadata: {
-              didIndyNamespace: pool.indyNamespace,
-            },
-            resolutionMetadata: {},
-          }
+      if (response.result.data && schema) {
+        return {
+          credentialDefinitionId: credentialDefinitionId,
+          credentialDefinition: {
+            issuerId: didFromCredentialDefinitionId(credentialDefinitionId),
+            schemaId: schema.schema.schemaId,
+            tag: response.result.tag,
+            type: 'CL',
+            value: response.result.data,
+          },
+          credentialDefinitionMetadata: {
+            didIndyNamespace: pool.indyNamespace,
+          },
+          resolutionMetadata: {},
         }
       }
 
@@ -435,29 +431,30 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.indyNamespace}'`)
     const response = await pool.submitReadRequest(request)
 
-    if (response.result.data?.txn.type === '101') {
-      const schema = response.result.data?.txn.data as SchemaType
-
-      const schemaId = getLegacySchemaId(did, schema.data.name, schema.data.version)
-
-      return {
-        schema: {
-          schemaId,
-          attr_name: schema.data.attr_names,
-          name: schema.data.name,
-          version: schema.data.version,
-          issuerId: did,
-          seqNo,
-        },
-        indyNamespace: pool.indyNamespace,
-      }
+    if (response.result.data?.txn.type !== '101') {
+      agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)
+      return null
     }
 
-    return agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)
+    const schema = response.result.data?.txn.data as SchemaType
+
+    const schemaId = getLegacySchemaId(did, schema.data.name, schema.data.version)
+
+    return {
+      schema: {
+        schemaId,
+        attr_name: schema.data.attr_names,
+        name: schema.data.name,
+        version: schema.data.version,
+        issuerId: did,
+        seqNo,
+      },
+      indyNamespace: pool.indyNamespace,
+    }
   }
 }
 
-export interface SchemaType {
+interface SchemaType {
   data: {
     attr_names: string[]
     version: string

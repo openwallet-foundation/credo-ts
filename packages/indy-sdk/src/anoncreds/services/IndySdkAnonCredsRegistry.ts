@@ -512,7 +512,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
+  private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
     const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
     const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
@@ -542,7 +542,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   }
 }
 
-export interface SchemaType {
+interface SchemaType {
   txn: {
     data: {
       data: {
