@@ -35,7 +35,6 @@ export class DidExchangeRequestMessage extends AgentMessage {
       this.did = options.did
 
       this.setThread({
-        threadId: this.id,
         parentThreadId: options.parentThreadId,
       })
     }
