@@ -1,11 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../agent'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type {
-  CredentialFormat,
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatService,
-} from '../../../formats'
+import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptions'
 
 import { Subject } from 'rxjs'

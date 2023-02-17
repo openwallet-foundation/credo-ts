@@ -14,16 +14,14 @@ import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const modules = getIndySdkModules()
-
-const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, modules)
+const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, getIndySdkModules())
 const mediatorAgentOptions = getAgentOptions(
   'Mediation: Mediator',
   {
     autoAcceptMediationRequests: true,
     endpoints: ['rxjs:mediator'],
   },
-  modules
+  getIndySdkModules()
 )
 
 const senderAgentOptions = getAgentOptions(
@@ -31,7 +29,7 @@ const senderAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:sender'],
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('mediator establishment', () => {

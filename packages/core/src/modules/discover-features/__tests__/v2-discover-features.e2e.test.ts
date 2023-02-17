@@ -15,14 +15,12 @@ import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
-const modules = getIndySdkModules()
-
 const faberAgentOptions = getAgentOptions(
   'Faber Discover Features V2 E2E',
   {
     endpoints: ['rxjs:faber'],
   },
-  modules
+  getIndySdkModules()
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -30,7 +28,7 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('v2 discover features', () => {

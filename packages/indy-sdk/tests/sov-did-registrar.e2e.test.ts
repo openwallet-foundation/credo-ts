@@ -53,10 +53,10 @@ describe('dids', () => {
 
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocumentMetadata: {
-        qualifiedIndyDid: `did:indy:localhost:${indyDid}`,
+        qualifiedIndyDid: `did:indy:pool:localtest:${indyDid}`,
       },
       didRegistrationMetadata: {
-        didIndyNamespace: 'localhost',
+        didIndyNamespace: 'pool:localtest',
       },
       didState: {
         state: 'finished',

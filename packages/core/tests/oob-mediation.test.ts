@@ -22,14 +22,12 @@ import {
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const modules = getIndySdkModules()
-
 const faberAgentOptions = getAgentOptions(
   'OOB mediation - Faber Agent',
   {
     endpoints: ['rxjs:faber'],
   },
-  modules
+  getIndySdkModules()
 )
 const aliceAgentOptions = getAgentOptions(
   'OOB mediation - Alice Recipient Agent',
@@ -39,7 +37,7 @@ const aliceAgentOptions = getAgentOptions(
     // we should return that we only support the mediator role so we don't have to explicitly declare this
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getIndySdkModules()
 )
 const mediatorAgentOptions = getAgentOptions(
   'OOB mediation - Mediator Agent',
@@ -47,7 +45,7 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: ['rxjs:mediator'],
     autoAcceptMediationRequests: true,
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('out of band with mediation', () => {

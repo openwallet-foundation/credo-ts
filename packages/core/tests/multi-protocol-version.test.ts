@@ -11,20 +11,19 @@ import { OutboundMessageContext } from '../src/agent/models'
 import { getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const modules = getIndySdkModules()
 const aliceAgentOptions = getAgentOptions(
   'Multi Protocol Versions - Alice',
   {
     endpoints: ['rxjs:alice'],
   },
-  modules
+  getIndySdkModules()
 )
 const bobAgentOptions = getAgentOptions(
   'Multi Protocol Versions - Bob',
   {
     endpoints: ['rxjs:bob'],
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('multi version protocols', () => {

@@ -272,10 +272,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const anonCredsModules = getLegacyAnonCredsModules({
-      autoAcceptProofs: AutoAcceptProof.Always,
-    })
-
     const faberMediationOutOfBandRecord = await mediatorAgent.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
@@ -294,7 +290,9 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
-      anonCredsModules
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
     )
 
     const aliceAgentOptions = getAgentOptions(
@@ -305,7 +303,9 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
-      anonCredsModules
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
     )
 
     const faberAgent = new Agent(faberAgentOptions)

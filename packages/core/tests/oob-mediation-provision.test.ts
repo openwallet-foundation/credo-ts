@@ -9,14 +9,12 @@ import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const modules = getIndySdkModules()
-
 const faberAgentOptions = getAgentOptions(
   'OOB mediation provision - Faber Agent',
   {
     endpoints: ['rxjs:faber'],
   },
-  modules
+  getIndySdkModules()
 )
 const aliceAgentOptions = getAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
@@ -24,7 +22,7 @@ const aliceAgentOptions = getAgentOptions(
     endpoints: ['rxjs:alice'],
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getIndySdkModules()
 )
 const mediatorAgentOptions = getAgentOptions(
   'OOB mediation provision - Mediator Agent',
@@ -32,7 +30,7 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: ['rxjs:mediator'],
     autoAcceptMediationRequests: true,
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('out of band with mediation set up with provision method', () => {

@@ -26,21 +26,23 @@ import { JsonEncoder } from '../src/utils'
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
 
-const legacyAnonCredsModules = getLegacyAnonCredsModules()
-
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB',
   {
     endpoints: ['rxjs:faber'],
   },
-  legacyAnonCredsModules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB',
   {
     endpoints: ['rxjs:alice'],
   },
-  legacyAnonCredsModules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 describe('out of band', () => {
@@ -62,8 +64,8 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<typeof legacyAnonCredsModules>
-  let aliceAgent: Agent<typeof legacyAnonCredsModules>
+  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {

@@ -84,55 +84,56 @@ const indyCredentialFormat = new LegacyIndyCredentialFormatService()
 const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
 const indyProofFormat = new LegacyIndyProofFormatService()
 
-const indyJsonLdModules = {
-  credentials: new CredentialsModule({
-    credentialProtocols: [
-      new V1CredentialProtocol({ indyCredentialFormat }),
-      new V2CredentialProtocol({
-        credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
-      }),
-    ],
-  }),
-  proofs: new ProofsModule({
-    proofProtocols: [
-      new V1ProofProtocol({ indyProofFormat }),
-      new V2ProofProtocol({
-        proofFormats: [indyProofFormat],
-      }),
-    ],
-  }),
-  anoncreds: new AnonCredsModule({
-    registries: [new IndySdkAnonCredsRegistry()],
-  }),
-  dids: new DidsModule({
-    resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
-    registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
-  }),
-  indySdk: new IndySdkModule({
-    indySdk,
-    networks: [
-      {
-        isProduction: false,
-        genesisPath,
-        id: randomUUID(),
-        indyNamespace: `pool:localtest`,
-        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-      },
-    ],
-  }),
-  cache: new CacheModule({
-    cache: new InMemoryLruCache({ limit: 100 }),
-  }),
-  w3cVc: new W3cVcModule({
-    documentLoader: customDocumentLoader,
-  }),
-} as const
+const getIndyJsonLdModules = () =>
+  ({
+    credentials: new CredentialsModule({
+      credentialProtocols: [
+        new V1CredentialProtocol({ indyCredentialFormat }),
+        new V2CredentialProtocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    proofs: new ProofsModule({
+      proofProtocols: [
+        new V1ProofProtocol({ indyProofFormat }),
+        new V2ProofProtocol({
+          proofFormats: [indyProofFormat],
+        }),
+      ],
+    }),
+    anoncreds: new AnonCredsModule({
+      registries: [new IndySdkAnonCredsRegistry()],
+    }),
+    dids: new DidsModule({
+      resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
+      registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
+    }),
+    indySdk: new IndySdkModule({
+      indySdk,
+      networks: [
+        {
+          isProduction: false,
+          genesisPath,
+          id: randomUUID(),
+          indyNamespace: `pool:localtest`,
+          transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
+        },
+      ],
+    }),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 100 }),
+    }),
+    w3cVc: new W3cVcModule({
+      documentLoader: customDocumentLoader,
+    }),
+  } as const)
 
 // TODO: extract these very specific tests to the jsonld format
 describe('V2 Credentials - JSON-LD - Ed25519', () => {
-  let faberAgent: Agent<typeof indyJsonLdModules>
+  let faberAgent: Agent<ReturnType<typeof getIndyJsonLdModules>>
   let faberReplay: EventReplaySubject
-  let aliceAgent: Agent<typeof indyJsonLdModules>
+  let aliceAgent: Agent<ReturnType<typeof getIndyJsonLdModules>>
   let aliceReplay: EventReplaySubject
   let aliceConnectionId: string
   let credentialDefinitionId: string
@@ -144,7 +145,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         {
           endpoints: ['rxjs:faber'],
         },
-        indyJsonLdModules
+        getIndyJsonLdModules()
       )
     )
     aliceAgent = new Agent(
@@ -153,7 +154,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         {
           endpoints: ['rxjs:alice'],
         },
-        indyJsonLdModules
+        getIndyJsonLdModules()
       )
     )
 

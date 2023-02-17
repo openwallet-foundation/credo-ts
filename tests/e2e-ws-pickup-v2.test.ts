@@ -3,21 +3,20 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnon
 import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
+import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
+
 import { e2eTest } from './e2e-test'
 
-import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
-
-const modules = getLegacyAnonCredsModules({
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-})
 
 const recipientOptions = getAgentOptions(
   'E2E WS Pickup V2 Recipient ',
   {
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
@@ -28,7 +27,9 @@ const mediatorOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
     autoAcceptMediationRequests: true,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 const senderPort = 4101
@@ -40,7 +41,9 @@ const senderOptions = getAgentOptions(
 
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 describe('E2E WS Pickup V2 tests', () => {

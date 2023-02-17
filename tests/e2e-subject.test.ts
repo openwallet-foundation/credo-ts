@@ -13,16 +13,14 @@ import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-fram
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-const modules = getLegacyAnonCredsModules({
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-})
-
 const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',
   {
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 const mediatorAgentOptions = getAgentOptions(
   'E2E Subject Mediator',
@@ -30,7 +28,9 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: ['rxjs:mediator'],
     autoAcceptMediationRequests: true,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 const senderAgentOptions = getAgentOptions(
   'E2E Subject Sender',
@@ -39,7 +39,9 @@ const senderAgentOptions = getAgentOptions(
     mediatorPollingInterval: 1000,
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 describe('E2E Subject tests', () => {

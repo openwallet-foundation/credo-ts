@@ -8,16 +8,14 @@ import { e2eTest } from './e2e-test'
 import { HttpOutboundTransport, Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { HttpInboundTransport } from '@aries-framework/node'
 
-const modules = getLegacyAnonCredsModules({
-  autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-})
-
 const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
   {
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 const mediatorPort = 3000
@@ -27,7 +25,9 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: [`http://localhost:${mediatorPort}`],
     autoAcceptMediationRequests: true,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 const senderPort = 3001
@@ -38,7 +38,9 @@ const senderAgentOptions = getAgentOptions(
     mediatorPollingInterval: 1000,
     mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  modules
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
 )
 
 describe('E2E HTTP tests', () => {

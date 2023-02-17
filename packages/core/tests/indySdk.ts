@@ -1,3 +1,3 @@
-import indySdk from 'indy-sdk'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 
 export { indySdk }

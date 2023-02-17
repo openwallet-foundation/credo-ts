@@ -6,21 +6,22 @@ import { IndySdkModule, IndySdkModuleConfig, IndySdkSovDidRegistrar, IndySdkSovD
 
 export { indySdk }
 
-export const indySdkModuleConfig = new IndySdkModuleConfig({
-  indySdk,
-  networks: [
-    {
-      id: `localhost-${utils.uuid()}`,
-      isProduction: false,
-      genesisPath,
-      indyNamespace: 'pool:localtest',
-      transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-    },
-  ],
-})
+export const getIndySdkModuleConfig = () =>
+  new IndySdkModuleConfig({
+    indySdk,
+    networks: [
+      {
+        id: `localhost-${utils.uuid()}`,
+        isProduction: false,
+        genesisPath,
+        indyNamespace: 'pool:localtest',
+        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
+      },
+    ],
+  })
 
 export const getIndySdkModules = () => ({
-  indySdk: new IndySdkModule(indySdkModuleConfig),
+  indySdk: new IndySdkModule(getIndySdkModuleConfig()),
   dids: new DidsModule({
     registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
     resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],

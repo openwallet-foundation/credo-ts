@@ -4,7 +4,7 @@ import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { IndySdkModule } from '../src'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
 
-import { indySdkModuleConfig } from './setupIndySdkModule'
+import { getIndySdkModuleConfig } from './setupIndySdkModule'
 
 const agentConfig = getAgentConfig('IndySdkAnonCredsRegistry')
 
@@ -12,7 +12,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    indySdk: new IndySdkModule(indySdkModuleConfig),
+    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
   },
 })
 

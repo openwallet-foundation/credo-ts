@@ -26,27 +26,26 @@ describe('connections', () => {
   let mediatorAgent: Agent
 
   beforeEach(async () => {
-    const modules = getIndySdkModules()
     const faberAgentOptions = getAgentOptions(
       'Faber Agent Connections',
       {
         endpoints: ['rxjs:faber'],
       },
-      modules
+      getIndySdkModules()
     )
     const aliceAgentOptions = getAgentOptions(
       'Alice Agent Connections',
       {
         endpoints: ['rxjs:alice'],
       },
-      modules
+      getIndySdkModules()
     )
     const acmeAgentOptions = getAgentOptions(
       'Acme Agent Connections',
       {
         endpoints: ['rxjs:acme'],
       },
-      modules
+      getIndySdkModules()
     )
     const mediatorAgentOptions = getAgentOptions(
       'Mediator Agent Connections',
@@ -54,7 +53,7 @@ describe('connections', () => {
         endpoints: ['rxjs:mediator'],
         autoAcceptMediationRequests: true,
       },
-      modules
+      getIndySdkModules()
     )
 
     faberAgent = new Agent(faberAgentOptions)

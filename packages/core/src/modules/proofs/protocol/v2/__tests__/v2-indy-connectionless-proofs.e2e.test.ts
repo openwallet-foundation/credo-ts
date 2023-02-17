@@ -252,17 +252,15 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const anonCredsModules = getLegacyAnonCredsModules({
-      autoAcceptProofs: AutoAcceptProof.Always,
-    })
-
     const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         autoAcceptMediationRequests: true,
         endpoints: ['rxjs:mediator'],
       },
-      anonCredsModules
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
     )
 
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -292,7 +290,9 @@ describe('V2 Connectionless Proofs - Indy', () => {
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
-      anonCredsModules
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
     )
 
     const aliceOptions = getAgentOptions(
@@ -303,7 +303,9 @@ describe('V2 Connectionless Proofs - Indy', () => {
         }),
         mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
-      anonCredsModules
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
     )
 
     const faberAgent = new Agent(faberOptions)

@@ -89,14 +89,14 @@ export class RevocationNotificationService {
         )
       }
 
-      const [, , indyRevocationRegistryId, indyCredentialRevocationId] = threadIdGroups
+      const [, , anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = threadIdGroups
       const comment = messageContext.message.comment
       const connection = messageContext.assertReadyConnection()
 
       await this.processRevocationNotification(
         messageContext.agentContext,
-        indyRevocationRegistryId,
-        indyCredentialRevocationId,
+        anonCredsRevocationRegistryId,
+        anonCredsCredentialRevocationId,
         connection,
         comment
       )
@@ -132,13 +132,13 @@ export class RevocationNotificationService {
         )
       }
 
-      const [, indyRevocationRegistryId, indyCredentialRevocationId] = credentialIdGroups
+      const [, anonCredsRevocationRegistryId, anonCredsCredentialRevocationId] = credentialIdGroups
       const comment = messageContext.message.comment
       const connection = messageContext.assertReadyConnection()
       await this.processRevocationNotification(
         messageContext.agentContext,
-        indyRevocationRegistryId,
-        indyCredentialRevocationId,
+        anonCredsRevocationRegistryId,
+        anonCredsCredentialRevocationId,
         connection,
         comment
       )

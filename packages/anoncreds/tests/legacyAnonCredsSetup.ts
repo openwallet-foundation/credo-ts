@@ -27,15 +27,11 @@ import {
   DidsModule,
 } from '@aries-framework/core'
 import { randomUUID } from 'crypto'
-import indySdk from 'indy-sdk'
 
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
-  genesisPath,
   getAgentOptions,
   makeConnection,
-  taaAcceptanceMechanism,
-  taaVersion,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
@@ -46,6 +42,7 @@ import {
   IndySdkSovDidRegistrar,
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
+import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -91,18 +88,7 @@ export const getLegacyAnonCredsModules = ({
       resolvers: [new IndySdkSovDidResolver()],
       registrars: [new IndySdkSovDidRegistrar()],
     }),
-    indySdk: new IndySdkModule({
-      indySdk,
-      networks: [
-        {
-          isProduction: false,
-          genesisPath,
-          id: randomUUID(),
-          indyNamespace: `pool:localtest`,
-          transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-        },
-      ],
-    }),
+    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -292,18 +278,16 @@ export async function setupAnonCredsTests<
   attributeNames: string[]
   createConnections?: CreateConnections
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
-  const modules = getLegacyAnonCredsModules({
-    autoAcceptCredentials,
-    autoAcceptProofs,
-  })
-
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
       },
-      modules
+      getLegacyAnonCredsModules({
+        autoAcceptCredentials,
+        autoAcceptProofs,
+      })
     )
   )
 
@@ -313,7 +297,10 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
-      modules
+      getLegacyAnonCredsModules({
+        autoAcceptCredentials,
+        autoAcceptProofs,
+      })
     )
   )
 
@@ -324,7 +311,10 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
-          modules
+          getLegacyAnonCredsModules({
+            autoAcceptCredentials,
+            autoAcceptProofs,
+          })
         )
       )
     : undefined

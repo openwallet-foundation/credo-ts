@@ -14,14 +14,12 @@ import { MessageSendingError, RecordNotFoundError } from '../../../error'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const modules = getIndySdkModules()
-
 const faberConfig = getAgentOptions(
   'Faber Basic Messages',
   {
     endpoints: ['rxjs:faber'],
   },
-  modules
+  getIndySdkModules()
 )
 
 const aliceConfig = getAgentOptions(
@@ -29,7 +27,7 @@ const aliceConfig = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('Basic Messages E2E', () => {

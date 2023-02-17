@@ -253,6 +253,6 @@ describe('Agent', () => {
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(11)
+    expect(protocols.length).toEqual(13)
   })
 })

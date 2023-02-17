@@ -2,7 +2,6 @@ import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
 } from './AnonCredsApiOptions'
-import type { AnonCredsCredentialDefinition } from './models'
 import type {
   GetCredentialDefinitionReturn,
   GetRevocationStatusListReturn,

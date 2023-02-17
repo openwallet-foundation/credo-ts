@@ -1,3 +1,4 @@
+import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/utils/metadata'
 import type { AgentContext } from '../../../../../../agent'
 import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
 
@@ -12,7 +13,6 @@ import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
 import { RevocationNotificationService } from '../RevocationNotificationService'
-import { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/utils/metadata'
 
 jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>

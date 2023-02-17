@@ -8,21 +8,19 @@ import { HandshakeProtocol } from '../src/modules/connections'
 import { waitForBasicMessage, getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const modules = getIndySdkModules()
-
 const aliceAgentOptions = getAgentOptions(
   'Agents Alice',
   {
     endpoints: ['rxjs:alice'],
   },
-  modules
+  getIndySdkModules()
 )
 const bobAgentOptions = getAgentOptions(
   'Agents Bob',
   {
     endpoints: ['rxjs:bob'],
   },
-  modules
+  getIndySdkModules()
 )
 
 describe('agents', () => {

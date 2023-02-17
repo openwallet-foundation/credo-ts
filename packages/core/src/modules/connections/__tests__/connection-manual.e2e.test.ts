@@ -41,8 +41,6 @@ function waitForResponse(agent: Agent, connectionId: string) {
   )
 }
 
-const modules = getIndySdkModules()
-
 describe('Manual Connection Flow', () => {
   // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
   // This was only present in the manual flow, which is almost never used.
@@ -54,7 +52,7 @@ describe('Manual Connection Flow', () => {
         autoAcceptConnections: false,
         endpoints: ['rxjs:alice'],
       },
-      modules
+      getIndySdkModules()
     )
     const bobAgentOptions = getAgentOptions(
       'Manual Connection Flow Bob',
@@ -63,7 +61,7 @@ describe('Manual Connection Flow', () => {
         autoAcceptConnections: false,
         endpoints: ['rxjs:bob'],
       },
-      modules
+      getIndySdkModules()
     )
     const faberAgentOptions = getAgentOptions(
       'Manual Connection Flow Faber',
@@ -71,7 +69,7 @@ describe('Manual Connection Flow', () => {
         autoAcceptConnections: false,
         endpoints: ['rxjs:faber'],
       },
-      modules
+      getIndySdkModules()
     )
 
     const aliceAgent = new Agent(aliceAgentOptions)

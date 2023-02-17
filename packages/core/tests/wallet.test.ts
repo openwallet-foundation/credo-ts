@@ -12,10 +12,8 @@ import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getAgentOptions } from './helpers'
 
-const modules = getIndySdkModules()
-
-const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, modules)
-const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, modules)
+const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, getIndySdkModules())
+const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, getIndySdkModules())
 
 describe('wallet', () => {
   let aliceAgent: Agent
