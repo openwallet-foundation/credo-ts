@@ -7,6 +7,7 @@ import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { Logger } from '../logger'
 import { injectable, inject } from '../plugins'
+import { parseMessageType } from '../utils/messageType'
 
 import { ProblemReportMessage } from './../modules/problem-reports/messages/ProblemReportMessage'
 import { EventEmitter } from './EventEmitter'
@@ -57,9 +58,21 @@ class Dispatcher {
       const problemReportMessage = error.problemReport
 
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
-        problemReportMessage.setThread({
-          threadId: message.threadId,
-        })
+        const { protocolUri: problemReportProtocolUri } = parseMessageType(problemReportMessage.type)
+        const { protocolUri: inboundProtocolUri } = parseMessageType(messageContext.message.type)
+
+        // If the inbound protocol uri is the same as the problem report protocol uri, we can see the interaction as the same thread
+        // However if it is no the same we should see it as a new thread, where the inbound message `@id` is the parentThreadId
+        if (inboundProtocolUri === problemReportProtocolUri) {
+          problemReportMessage.setThread({
+            threadId: message.threadId,
+          })
+        } else {
+          problemReportMessage.setThread({
+            parentThreadId: message.id,
+          })
+        }
+
         outboundMessage = new OutboundMessageContext(problemReportMessage, {
           agentContext,
           connection: messageContext.connection,

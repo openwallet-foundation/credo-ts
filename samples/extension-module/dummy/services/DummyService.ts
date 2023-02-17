@@ -41,7 +41,7 @@ export class DummyService {
     // Create record
     const record = new DummyRecord({
       connectionId: connectionRecord.id,
-      threadId: message.id,
+      threadId: message.threadId,
       state: DummyState.Init,
     })
 
@@ -79,7 +79,7 @@ export class DummyService {
     // Create record
     const record = new DummyRecord({
       connectionId: connectionRecord.id,
-      threadId: messageContext.message.id,
+      threadId: messageContext.message.threadId,
       state: DummyState.RequestReceived,
     })
 

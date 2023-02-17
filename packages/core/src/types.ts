@@ -162,6 +162,9 @@ export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string
   '@id': string
+  '~thread'?: {
+    thid?: string
+  }
   [key: string]: unknown
 }
 
