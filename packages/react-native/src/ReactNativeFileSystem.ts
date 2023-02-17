@@ -22,8 +22,9 @@ export class ReactNativeFileSystem implements FileSystem {
    */
   public constructor(options?: { baseDataPath?: string; baseCachePath?: string; baseTempPath?: string }) {
     this.dataPath = `${options?.baseDataPath ?? RNFS.DocumentDirectoryPath}/.afj`
-    this.cachePath = `${options?.baseCachePath ?? RNFS.CachesDirectoryPath}/.afj`
-    this.tempPath = `${options?.baseTempPath ?? RNFS.TemporaryDirectoryPath}/.afj`
+    // we add cache and temp suffix because in Android TemporaryDirectoryPath falls back to CachesDirectoryPath
+    this.cachePath = `${options?.baseCachePath ?? RNFS.CachesDirectoryPath}/.afj/cache`
+    this.tempPath = `${options?.baseTempPath ?? RNFS.TemporaryDirectoryPath}/.afj/temp`
   }
 
   public async exists(path: string): Promise<boolean> {
