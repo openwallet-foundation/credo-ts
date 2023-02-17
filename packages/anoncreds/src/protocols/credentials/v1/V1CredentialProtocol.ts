@@ -540,7 +540,7 @@ export class V1CredentialProtocol
       // No credential record exists with thread id
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
-        threadId: offerMessage.id,
+        threadId: offerMessage.threadId,
         state: CredentialState.OfferReceived,
         protocolVersion: 'v1',
       })

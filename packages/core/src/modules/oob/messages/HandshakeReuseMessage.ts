@@ -13,7 +13,6 @@ export class HandshakeReuseMessage extends AgentMessage {
     if (options) {
       this.id = options.id ?? this.generateId()
       this.setThread({
-        threadId: this.id,
         parentThreadId: options.parentThreadId,
       })
     }
