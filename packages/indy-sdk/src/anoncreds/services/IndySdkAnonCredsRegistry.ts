@@ -1,4 +1,3 @@
-
 import type { IndySdk } from '../../types'
 import type {
   AnonCredsRegistry,
@@ -13,7 +12,6 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
-
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkPoolService } from '../../ledger'
 import { IndySdkSymbol } from '../../types'
@@ -43,19 +41,42 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     try {
-      const { schema, indyNamespace } = await this.fetchIndySchema(agentContext, schemaId)
+      const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
+      const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
+
+      const did = didFromSchemaId(schemaId)
+      const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
+      agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`)
+
+      const request = await indySdk.buildGetSchemaRequest(null, schemaId)
+
+      agentContext.config.logger.trace(
+        `Submitting get schema request for schema '${schemaId}' to ledger '${pool.didIndyNamespace}'`
+      )
+      const response = await indySdkPoolService.submitReadRequest(pool, request)
+
+      agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
+        response,
+      })
+
+      const [, schema] = await indySdk.parseGetSchemaResponse(response)
+      agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
+        schema,
+      })
+
+      const issuerId = didFromSchemaId(schema.id)
 
       return {
         schema: {
           attrNames: schema.attrNames,
           name: schema.name,
           version: schema.version,
-          issuerId: schema.issuerId,
+          issuerId: issuerId,
         },
         schemaId: schema.id,
         resolutionMetadata: {},
         schemaMetadata: {
-          didIndyNamespace: indyNamespace,
+          didIndyNamespace: pool.didIndyNamespace,
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
           indyLedgerSeqNo: schema.seqNo,
@@ -71,7 +92,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaId,
         resolutionMetadata: {
           error: 'notFound',
-          message: `unable to resolve schema: ${error.message}`,
+          message: `unable to resolve credential definition: ${error.message}`,
         },
         schemaMetadata: {},
       }
@@ -124,7 +145,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       return {
-
         schemaState: {
           state: 'finished',
           schema: {
@@ -139,7 +159,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaMetadata: {
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
-          indyLedgerSeqNo: response.result.txnMetadata.seqNo, 
+          indyLedgerSeqNo: response.result.txnMetadata.seqNo,
           didIndyNamespace: pool.didIndyNamespace,
         },
       }
@@ -197,13 +217,15 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           credentialDefinition,
         }
       )
-      
+
+      const {schema}  = await this.fetchIndySchemaWithSeqNo(agentContext, Number(credentialDefinition.schemaId), did)
+
 
       return {
         credentialDefinitionId: credentialDefinition.id,
         credentialDefinition: {
           issuerId: didFromCredentialDefinitionId(credentialDefinition.id),
-          schemaId: credentialDefinition.schemaId,
+          schemaId: schema.schemaId,
           tag: credentialDefinition.tag,
           type: 'CL',
           value: credentialDefinition.value,
@@ -229,7 +251,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
   }
-
 
   public async registerCredentialDefinition(
     agentContext: AgentContext,
@@ -263,8 +284,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         agentContext,
         options.credentialDefinition.schemaId
       )
-
-      
 
       if (!schema || !schemaMetadata.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
         return {
@@ -493,45 +512,44 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  private async fetchIndySchema(agentContext: AgentContext, schemaId: string) {
+  public async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
     const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
     const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
-    const did = didFromSchemaId(schemaId)
     const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
-    agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`)
+    agentContext.config.logger.debug(`Getting transaction with seqNo '${seqNo}' from ledger '${pool.didIndyNamespace}'`)
 
-    const request = await indySdk.buildGetSchemaRequest(null, schemaId)
+    const request = await indySdk.buildGetTxnRequest(did, 'DOMAIN', seqNo)
 
-    indySdk
-
-    agentContext.config.logger.trace(
-      `Submitting get schema request for schema '${schemaId}' to ledger '${pool.didIndyNamespace}'`
-    )
+    agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.didIndyNamespace}'`)
     const response = await indySdkPoolService.submitReadRequest(pool, request)
 
+    const schema = response.result.data as SchemaType
 
-    agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
-      response,
-    })
-
-    const [, schema] = await indySdk.parseGetSchemaResponse(response)
-    agentContext.config.logger.debug(`Got schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`, {
-      schema,
-    })
-
-    const issuerId = didFromSchemaId(schema.id)
+    const schemaId = getLegacySchemaId(did, schema.txn.data.data.name, schema.txn.data.data.version)
 
     return {
       schema: {
-        id: schema.id,
-        seqNo: schema.seqNo,
-        attrNames: schema.attrNames,
-        name: schema.name,
-        version: schema.version,
-        issuerId: issuerId,
+        schemaId,
+        attr_name: schema.txn.data.data.attr_names,
+        name: schema.txn.data.data.name,
+        version: schema.txn.data.data.version,
+        issuerId: did,
+        seqNo,
       },
       indyNamespace: pool.didIndyNamespace,
+    }
+  }
+}
+
+export interface SchemaType {
+  txn: {
+    data: {
+      data: {
+        attr_names: string[]
+        version: string
+        name: string
+      }
     }
   }
 }

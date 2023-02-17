@@ -156,11 +156,13 @@ describe('IndySdkAnonCredsRegistry', () => {
       credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
     )
 
+    console.log(credentialDefinitionResponse)
+
     expect(credentialDefinitionResponse).toMatchObject({
       credentialDefinitionId: `TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResponse.schemaMetadata.indyLedgerSeqNo}:TAG`,
       credentialDefinition: {
         issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
-        schemaId: `${schemaResponse.schemaMetadata.indyLedgerSeqNo}`,
+        schemaId: `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`,
         tag: 'TAG',
         type: 'CL',
         value: {
