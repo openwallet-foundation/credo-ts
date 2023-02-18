@@ -289,7 +289,7 @@ export class AskarWallet implements Wallet {
     }
 
     try {
-      const { uri } = uriFromWalletConfig(this.walletConfig, this.fileSystem.basePath)
+      const { uri } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
       await Store.remove(uri)
     } catch (error) {
       const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
@@ -689,7 +689,7 @@ export class AskarWallet implements Wallet {
   }
 
   private async getAskarWalletConfig(walletConfig: WalletConfig) {
-    const { uri, path } = uriFromWalletConfig(walletConfig, this.fileSystem.basePath)
+    const { uri, path } = uriFromWalletConfig(walletConfig, this.fileSystem.dataPath)
 
     // Make sure path exists before creating the wallet
     if (path) {

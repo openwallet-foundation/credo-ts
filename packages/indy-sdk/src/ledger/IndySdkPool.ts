@@ -180,7 +180,7 @@ export class IndySdkPool {
     if (this.poolConfig.genesisPath) return this.poolConfig.genesisPath
 
     // Determine the genesisPath
-    const genesisPath = this.fileSystem.basePath + `/afj/genesis-${this.poolConfig.id}.txn`
+    const genesisPath = this.fileSystem.tempPath + `/genesis-${this.poolConfig.id}.txn`
     // Store genesis data if provided
     if (this.poolConfig.genesisTransactions) {
       await this.fileSystem.write(genesisPath, this.poolConfig.genesisTransactions)

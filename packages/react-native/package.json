@@ -26,11 +26,11 @@
   "dependencies": {
     "@aries-framework/core": "0.3.3",
     "@azure/core-asynciterator-polyfill": "^1.0.0",
-    "events": "^3.3.0"
+    "events": "^3.3.0",
+    "@types/react-native": "^0.64.10"
   },
   "devDependencies": {
     "@types/indy-sdk-react-native": "npm:@types/indy-sdk@1.16.26",
-    "@types/react-native": "^0.64.10",
     "indy-sdk-react-native": "^0.3.1",
     "react": "17.0.1",
     "react-native": "0.64.2",
