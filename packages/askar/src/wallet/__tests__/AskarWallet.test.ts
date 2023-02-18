@@ -63,28 +63,28 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('Create ed25519 keypair from seed', async () => {
-    await expect(
-      askarWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
-    ).resolves.toMatchObject({
+    const key = await askarWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
+
+    expect(key).toMatchObject({
       keyType: KeyType.Ed25519,
     })
   })
 
-  test('Create ed25519 keypair from secret bytes', async () => {
-    await expect(
-      askarWallet.createKey({
-        secretKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
-        keyType: KeyType.Ed25519,
-      })
-    ).resolves.toMatchObject({
+  test('Create ed25519 keypair from private key', async () => {
+    const key = await askarWallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+      keyType: KeyType.Ed25519,
+    })
+
+    expect(key).toMatchObject({
       keyType: KeyType.Ed25519,
     })
   })
 
-  test('Attempt to create ed25519 keypair from both seed and secret bytes', async () => {
+  test('Attempt to create ed25519 keypair from both seed and private key', async () => {
     await expect(
       askarWallet.createKey({
-        secretKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+        privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
         seed: '2103de41b4ae37e8e28586d84a342b67',
         keyType: KeyType.Ed25519,
       })

@@ -8,6 +8,7 @@ import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -33,7 +34,7 @@ describe('credentials', () => {
   let aliceCredentialRecord: CredentialExchangeRecord
   let signCredentialOptions: JsonLdCredentialDetailFormat
   let wallet
-  const seed = 'testseed000000000000000000000001'
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   describe('Auto accept on `always`', () => {
     beforeAll(async () => {
@@ -44,7 +45,7 @@ describe('credentials', () => {
       ))
 
       wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+      await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
         options: {
@@ -143,7 +144,7 @@ describe('credentials', () => {
         AutoAcceptCredential.ContentApproved
       ))
       wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
-      await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+      await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
         options: {

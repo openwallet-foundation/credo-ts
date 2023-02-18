@@ -346,7 +346,7 @@ export class AskarWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
-   * @param secretKey string Optional secret for creating a key
+   * @param privateKey Buffer Optional privateKey for creating a key
    * @param seed string Optional seed for creating a key
    * @param keyType KeyType the type of key that should be created
    *
@@ -355,18 +355,18 @@ export class AskarWallet implements Wallet {
    * @throws {WalletError} When an unsupported keytype is requested
    * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, secretKey, keyType }: AskarWalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (keyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
-        if (seed && secretKey) {
-          throw new AriesFrameworkError('Only one of seed and secretKey can be set')
+        if (seed && privateKey) {
+          throw new AriesFrameworkError('Only one of seed and privateKey can be set')
         }
 
         // Create key
-        const key = secretKey
-          ? AskarKey.fromSecretBytes({ secretKey, algorithm })
+        const key = privateKey
+          ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
           : seed
           ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm })
           : AskarKey.generate(algorithm)
@@ -379,8 +379,8 @@ export class AskarWallet implements Wallet {
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
           const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-          if (secretKey) {
-            throw new AriesFrameworkError('Cannot create key from secret for types not supported by Askar')
+          if (privateKey) {
+            throw new AriesFrameworkError('Cannot create key from private key for types not supported by Askar')
           }
 
           const keyPair = await signingKeyProvider.createKeyPair({ seed })
@@ -759,8 +759,4 @@ export class AskarWallet implements Wallet {
       throw new WalletError('Error saving KeyPair record', { cause: error })
     }
   }
-}
-
-export interface AskarWalletCreateKeyOptions extends WalletCreateKeyOptions {
-  secretKey?: Uint8Array
 }

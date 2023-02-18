@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
+import type { Buffer } from '../../../../utils'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
@@ -16,6 +17,7 @@ export class KeyDidRegistrar implements DidRegistrar {
 
     const keyType = options.options.keyType
     const seed = options.secret?.seed
+    const privateKey = options.secret?.privateKey
 
     if (!keyType) {
       return {
@@ -43,6 +45,7 @@ export class KeyDidRegistrar implements DidRegistrar {
       const key = await agentContext.wallet.createKey({
         keyType,
         seed,
+        privateKey,
       })
 
       const didKey = new DidKey(key)
@@ -68,6 +71,7 @@ export class KeyDidRegistrar implements DidRegistrar {
             // we have a secure method for generating seeds we should use the same
             // approach
             seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey,
           },
         },
       }
@@ -116,6 +120,7 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
   }
   secret?: {
     seed?: string
+    privateKey?: Buffer
   }
 }
 

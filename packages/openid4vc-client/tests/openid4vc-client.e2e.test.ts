@@ -1,6 +1,6 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
-import { Agent, KeyType, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
+import { Agent, KeyType, W3cCredentialRecord, W3cVcModule, TypedArrayEncoder } from '@aries-framework/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
@@ -76,7 +76,7 @@ describe('OpenId4VcClient', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
         },
       })
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

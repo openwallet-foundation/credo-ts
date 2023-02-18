@@ -13,6 +13,7 @@ import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { W3cVcModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
@@ -62,7 +63,7 @@ describe('credentials', () => {
   let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
-  const seed = 'testseed000000000000000000000001'
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   const TEST_LD_DOCUMENT: JsonCredential = {
     '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -106,7 +107,7 @@ describe('credentials', () => {
       .subscribe(aliceReplay)
     wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
 
-    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+    await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
 
     signCredentialOptions = {
       credential: TEST_LD_DOCUMENT,

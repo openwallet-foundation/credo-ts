@@ -47,7 +47,7 @@ describe('dids', () => {
         keyType: KeyType.Ed25519,
       },
       secret: {
-        seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
       },
     })
 
@@ -97,7 +97,7 @@ describe('dids', () => {
           ],
           id: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         },
-        secret: { seed: '96213c3d7fc8d4d6754c7a0fd969598e' },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       },
     })
   })
@@ -110,7 +110,7 @@ describe('dids', () => {
         numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
       },
       secret: {
-        seed: 'e008ef10b7c163114b3857542b3736eb',
+        privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb'),
       },
     })
 
@@ -160,7 +160,7 @@ describe('dids', () => {
           ],
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
-        secret: { seed: 'e008ef10b7c163114b3857542b3736eb' },
+        secret: { privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb') },
       },
     })
   })

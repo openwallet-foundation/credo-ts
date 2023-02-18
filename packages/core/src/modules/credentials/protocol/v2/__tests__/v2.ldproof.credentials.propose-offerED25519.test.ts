@@ -8,6 +8,7 @@ import testLogger from '../../../../../../tests/logger'
 import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
 import { DidCommMessageRepository } from '../../../../../storage'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -57,7 +58,7 @@ describe('credentials', () => {
   let signCredentialOptions: JsonLdCredentialDetailFormat
 
   let wallet
-  const seed = 'testseed000000000000000000000001'
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   let credDefId: string
 
   beforeAll(async () => {
@@ -66,7 +67,7 @@ describe('credentials', () => {
       'Alice Agent Credentials LD'
     ))
     wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+    await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
     signCredentialOptions = {
       credential: inputDocAsJson,
       options: {
