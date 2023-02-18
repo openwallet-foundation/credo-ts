@@ -17,6 +17,7 @@ import {
   SchemaRequest,
   GetCredentialDefinitionRequest,
   CredentialDefinitionRequest,
+  GetTransactionRequest,
 } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrPoolService } from '../pool'
@@ -218,12 +219,14 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await pool.submitReadRequest(request)
 
-      if (response.result.data) {
+      const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, did)
+
+      if (response.result.data && schema) {
         return {
           credentialDefinitionId: credentialDefinitionId,
           credentialDefinition: {
             issuerId: didFromCredentialDefinitionId(credentialDefinitionId),
-            schemaId: response.result.ref.toString(),
+            schemaId: schema.schema.schemaId,
             tag: response.result.tag,
             type: 'CL',
             value: response.result.data,
@@ -415,6 +418,48 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       revocationRegistryDefinitionId,
       revocationRegistryDefinitionMetadata: {},
     }
+  }
+
+  private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {
+    const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    const pool = await indyVdrPoolService.getPoolForDid(agentContext, did)
+
+    agentContext.config.logger.debug(`Getting transaction with seqNo '${seqNo}' from ledger '${pool.indyNamespace}'`)
+    // ledgerType 1 is domain ledger
+    const request = new GetTransactionRequest({ ledgerType: 1, seqNo })
+
+    agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.indyNamespace}'`)
+    const response = await pool.submitReadRequest(request)
+
+    if (response.result.data?.txn.type !== '101') {
+      agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)
+      return null
+    }
+
+    const schema = response.result.data?.txn.data as SchemaType
+
+    const schemaId = getLegacySchemaId(did, schema.data.name, schema.data.version)
+
+    return {
+      schema: {
+        schemaId,
+        attr_name: schema.data.attr_names,
+        name: schema.data.name,
+        version: schema.data.version,
+        issuerId: did,
+        seqNo,
+      },
+      indyNamespace: pool.indyNamespace,
+    }
+  }
+}
+
+interface SchemaType {
+  data: {
+    attr_names: string[]
+    version: string
+    name: string
   }
 }
 

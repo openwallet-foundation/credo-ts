@@ -28,7 +28,7 @@ describe('@aries-framework/file-system-node', () => {
 
         await fileSystem.downloadToFile(
           'https://tails.prod.absa.africa/api/public/tails/4B1NxYuGxwYMe5BAyP9NXkUmbEkDATo4oGZCgjXQ3y1p',
-          `${fileSystem.basePath}/afj/tails/4B1NxYuGxwYMe5BAyP9NXkUmbEkDATo4oGZCgjXQ3y1p`,
+          `${fileSystem.dataPath}/tails/4B1NxYuGxwYMe5BAyP9NXkUmbEkDATo4oGZCgjXQ3y1p`,
           {
             verifyHash: {
               algorithm: 'sha256',
