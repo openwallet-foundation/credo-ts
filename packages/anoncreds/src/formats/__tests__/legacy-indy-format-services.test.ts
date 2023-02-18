@@ -6,13 +6,16 @@ import {
   CredentialPreviewAttribute,
   ProofExchangeRecord,
   ProofState,
+  EventEmitter,
 } from '@aries-framework/core'
 import * as indySdk from 'indy-sdk'
+import { Subject } from 'rxjs'
 
-import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import {
   IndySdkHolderService,
   IndySdkIssuerService,
+  IndySdkStorageService,
   IndySdkVerifierService,
   IndySdkWallet,
 } from '../../../../indy-sdk/src'
@@ -20,6 +23,7 @@ import { IndySdkRevocationService } from '../../../../indy-sdk/src/anoncreds/ser
 import { indyDidFromPublicKeyBase58 } from '../../../../indy-sdk/src/utils/did'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
+import { AnonCredsLinkSecretRecord, AnonCredsLinkSecretRepository } from '../../repository'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -40,6 +44,9 @@ const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
 const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
 const anonCredsIssuerService = new IndySdkIssuerService(indySdk)
 const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const storageService = new IndySdkStorageService<AnonCredsLinkSecretRecord>(indySdk)
+const eventEmitter = new EventEmitter(agentDependencies, new Subject())
+const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
@@ -47,6 +54,7 @@ const agentContext = getAgentContext({
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
+    [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
   ],
   agentConfig,
   wallet,
@@ -70,6 +78,16 @@ describe('Legacy indy format services', () => {
     // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
     const indyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+
+    // Create link secret
+    await anonCredsHolderService.createLinkSecret(agentContext, {
+      linkSecretId: 'link-secret-id',
+    })
+    const anonCredsLinkSecret = new AnonCredsLinkSecretRecord({
+      linkSecretId: 'link-secret-id',
+    })
+    anonCredsLinkSecret.setTag('isDefault', true)
+    await anonCredsLinkSecretRepository.save(agentContext, anonCredsLinkSecret)
 
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],

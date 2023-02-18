@@ -81,16 +81,6 @@ export class IndySdkWallet implements Wallet {
     return this.walletHandle
   }
 
-  public get masterSecretId() {
-    if (!this.isInitialized || !(this.walletConfig?.id || this.walletConfig?.masterSecretId)) {
-      throw new AriesFrameworkError(
-        'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
-      )
-    }
-
-    return this.walletConfig?.masterSecretId ?? this.walletConfig.id
-  }
-
   /**
    * Dispose method is called when an agent context is disposed.
    */
@@ -155,15 +145,8 @@ export class IndySdkWallet implements Wallet {
       await this.indySdk.createWallet(this.walletStorageConfig(walletConfig), this.walletCredentials(walletConfig))
       this.walletConfig = walletConfig
 
-      // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
       await this.open(walletConfig)
-
-      // We need to open wallet before creating master secret because we need wallet handle here.
-      await this.createMasterSecret(this.handle, this.masterSecretId)
     } catch (error) {
-      // If an error ocurred while creating the master secret, we should close the wallet
-      if (this.isInitialized) await this.close()
-
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
@@ -390,51 +373,6 @@ export class IndySdkWallet implements Wallet {
         })
 
         throw new WalletError(errorMessage, { cause: error })
-      }
-    }
-  }
-
-  /**
-   * Create master secret with specified id in currently opened wallet.
-   *
-   * If a master secret by this id already exists in the current wallet, the method
-   * will return without doing anything.
-   *
-   * @throws {WalletError} if an error occurs
-   */
-  private async createMasterSecret(walletHandle: number, masterSecretId: string): Promise<string> {
-    this.logger.debug(`Creating master secret with id '${masterSecretId}' in wallet with handle '${walletHandle}'`)
-
-    try {
-      await this.indySdk.proverCreateMasterSecret(walletHandle, masterSecretId)
-
-      return masterSecretId
-    } catch (error) {
-      if (isIndyError(error, 'AnoncredsMasterSecretDuplicateNameError')) {
-        // master secret id is the same as the master secret id passed in the create function
-        // so if it already exists we can just assign it.
-        this.logger.debug(
-          `Master secret with id '${masterSecretId}' already exists in wallet with handle '${walletHandle}'`,
-          {
-            indyError: 'AnoncredsMasterSecretDuplicateNameError',
-          }
-        )
-
-        return masterSecretId
-      } else {
-        if (!isIndyError(error)) {
-          throw new AriesFrameworkError('Attempted to throw Indy error, but it was not an Indy error')
-        }
-
-        this.logger.error(`Error creating master secret with id ${masterSecretId}`, {
-          indyError: error.indyName,
-          error,
-        })
-
-        throw new WalletError(
-          `Error creating master secret with id ${masterSecretId} in wallet with handle '${walletHandle}'`,
-          { cause: error }
-        )
       }
     }
   }

@@ -48,10 +48,6 @@ describe('AskarWallet basic operations', () => {
     await askarWallet.delete()
   })
 
-  test('Get the Master Secret', () => {
-    expect(askarWallet.masterSecretId).toEqual('Wallet: AskarWalletTest')
-  })
-
   test('Get the wallet store', () => {
     expect(askarWallet.store).toEqual(expect.any(Store))
   })
@@ -98,10 +94,6 @@ describe('AskarWallet basic operations', () => {
       key: ed25519Key,
     })
     await expect(askarWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
-  })
-
-  test('masterSecretId is equal to wallet ID by default', async () => {
-    expect(askarWallet.masterSecretId).toEqual(walletConfig.id)
   })
 })
 

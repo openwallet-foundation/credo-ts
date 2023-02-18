@@ -332,6 +332,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     expect(faberConnection.isReady).toBe(true)
     expect(aliceConnection.isReady).toBe(true)
 
+    await aliceAgent.modules.anoncreds.createLinkSecret({
+      linkSecretId: 'default',
+      setAsDefault: true,
+    })
+
     await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,

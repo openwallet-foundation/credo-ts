@@ -110,16 +110,6 @@ export class AskarWallet implements Wallet {
     return this._session
   }
 
-  public get masterSecretId() {
-    if (!this.isInitialized || !(this.walletConfig?.id || this.walletConfig?.masterSecretId)) {
-      throw new AriesFrameworkError(
-        'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
-      )
-    }
-
-    return this.walletConfig?.masterSecretId ?? this.walletConfig.id
-  }
-
   /**
    * Dispose method is called when an agent context is disposed.
    */
@@ -156,8 +146,6 @@ export class AskarWallet implements Wallet {
       })
       this.walletConfig = walletConfig
       this._session = await this._store.openSession()
-
-      // TODO: Master Secret creation (now part of IndyCredx/AnonCreds)
     } catch (error) {
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
