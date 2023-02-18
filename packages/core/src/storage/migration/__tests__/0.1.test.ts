@@ -48,8 +48,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         dependencyManager
       )
 
-      const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
           mediationRoleUpdateStrategy,
@@ -79,10 +77,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       delete storageService.records.MEDIATOR_ROUTING_RECORD
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
-      // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-      unlinkSync(backupPath)
-
       await agent.shutdown()
       await agent.wallet.delete()
     }
@@ -109,8 +103,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -141,10 +133,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -174,8 +162,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -205,10 +191,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -242,8 +224,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -273,10 +253,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()
