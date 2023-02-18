@@ -1,17 +1,7 @@
 import type { JwsGeneralFormat } from '../../crypto/JwsTypes'
 
 import { Expose, Type } from 'class-transformer'
-import {
-  IsBase64,
-  IsDate,
-  IsHash,
-  IsInstance,
-  IsInt,
-  IsMimeType,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator'
+import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { Jws } from '../../crypto/JwsTypes'
 import { AriesFrameworkError } from '../../error'
@@ -44,7 +34,7 @@ export class AttachmentData {
    * Base64-encoded data, when representing arbitrary content inline instead of via links. Optional.
    */
   @IsOptional()
-  @IsBase64()
+  @IsString()
   public base64?: string
 
   /**
