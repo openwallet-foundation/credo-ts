@@ -24,7 +24,7 @@ import path from 'path'
 import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
-import { agentDependencies, WalletScheme } from '../../node/src'
+import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
   AgentConfig,
   AgentContext,
@@ -91,18 +91,17 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
 ) {
-  const random = uuid().slice(0, 4)
-
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
-      id: `Wallet: ${name} - ${random}`,
+      // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
+      id: `PostGresWallet${name}`,
       key: `Key${name}`,
       storage: {
         type: 'postgres_storage',
         config: {
           url: 'localhost:5432',
-          wallet_scheme: WalletScheme.DatabasePerWallet,
+          wallet_scheme: IndySdkPostgresWalletScheme.DatabasePerWallet,
         },
         credentials: {
           account: 'postgres',

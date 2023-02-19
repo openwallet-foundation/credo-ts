@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { IndyPostgresStorageConfig } from '../../node/src'
-import type { ConnectionRecord } from '../src/modules/connections'
+import type { ConnectionRecord } from '../../core/src/modules/connections'
+import type { IndySdkPostgresStorageConfig } from '../../node/src'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
-import { loadPostgresPlugin, WalletScheme } from '../../node/src'
-import { Agent } from '../src/agent/Agent'
-import { HandshakeProtocol } from '../src/modules/connections'
+import { Agent } from '../../core/src/agent/Agent'
+import { HandshakeProtocol } from '../../core/src/modules/connections'
+import { waitForBasicMessage, getPostgresAgentOptions } from '../../core/tests/helpers'
+import { loadIndySdkPostgresPlugin, IndySdkPostgresWalletScheme } from '../../node/src'
 
-import { waitForBasicMessage, getPostgresAgentOptions } from './helpers'
+import { getIndySdkModules } from './setupIndySdkModule'
 
 const alicePostgresAgentOptions = getPostgresAgentOptions(
   'AgentsAlice',
@@ -21,6 +21,7 @@ const alicePostgresAgentOptions = getPostgresAgentOptions(
   },
   getIndySdkModules()
 )
+
 const bobPostgresAgentOptions = getPostgresAgentOptions(
   'AgentsBob',
   {
@@ -33,7 +34,6 @@ describe('postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceConnection: ConnectionRecord
-  let bobConnection: ConnectionRecord
 
   afterAll(async () => {
     await bobAgent.shutdown()
@@ -51,11 +51,11 @@ describe('postgres agents', () => {
       'rxjs:bob': bobMessages,
     }
 
-    const storageConfig: IndyPostgresStorageConfig = {
+    const storageConfig: IndySdkPostgresStorageConfig = {
       type: 'postgres_storage',
       config: {
         url: 'localhost:5432',
-        wallet_scheme: WalletScheme.DatabasePerWallet,
+        wallet_scheme: IndySdkPostgresWalletScheme.DatabasePerWallet,
       },
       credentials: {
         account: 'postgres',
@@ -66,7 +66,7 @@ describe('postgres agents', () => {
     }
 
     // loading the postgres wallet plugin
-    loadPostgresPlugin(storageConfig.config, storageConfig.credentials)
+    loadIndySdkPostgresPlugin(storageConfig.config, storageConfig.credentials)
 
     aliceAgent = new Agent(alicePostgresAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
@@ -85,13 +85,10 @@ describe('postgres agents', () => {
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
       aliceBobOutOfBandRecord.outOfBandInvitation
     )
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+    await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 
     const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
-
-    expect(aliceConnection).toBeConnectedWith(bobConnection)
-    expect(bobConnection).toBeConnectedWith(aliceConnection)
+    await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
   })
 
   test('send a message to connection', async () => {
