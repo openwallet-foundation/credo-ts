@@ -35,25 +35,8 @@ describe('IndySdkWallet', () => {
     await indySdkWallet.delete()
   })
 
-  test('Get the public DID', async () => {
-    await indySdkWallet.initPublicDid({ seed: '000000000000000000000000Trustee9' })
-    expect(indySdkWallet.publicDid).toMatchObject({
-      did: expect.any(String),
-      verkey: expect.any(String),
-    })
-  })
-
   test('Get the wallet handle', () => {
     expect(indySdkWallet.handle).toEqual(expect.any(Number))
-  })
-
-  test('Initializes a public did', async () => {
-    await indySdkWallet.initPublicDid({ seed: '00000000000000000000000Forward01' })
-
-    expect(indySdkWallet.publicDid).toEqual({
-      did: 'DtWRdd6C5dN5vpcN6XRAvu',
-      verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
-    })
   })
 
   test('Generate Nonce', async () => {

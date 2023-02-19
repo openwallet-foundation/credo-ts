@@ -1,3 +1,4 @@
+import type { StoreDidOptions } from './DidsApiOptions'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -98,5 +99,24 @@ export class DidsApi {
    */
   public getCreatedDids({ method, did }: { method?: string; did?: string } = {}) {
     return this.didRepository.getCreatedDids(this.agentContext, { method, did })
+  }
+
+  /**
+   * Store a did document that was created outside of the agent. This will create a `DidRecord` for the did
+   * and will allow the did to be used in other parts of the agent. If you need to create a new did document,
+   * you can use the {@link DidsApi.create} method to create and register the did.
+   *
+   * NOTE: You need to make sure the keys in the did document are stored in the agent wallet before you can
+   * use them for other operations. You can use the {@link WalletApi.createKey} method to import keys based
+   * on a seed or privateKey
+   */
+  public async storeCreatedDid({ didDocument }: StoreDidOptions) {
+    await this.didRepository.storeCreatedDid(this.agentContext, {
+      did: didDocument.id,
+      didDocument,
+      tags: {
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+      },
+    })
   }
 }

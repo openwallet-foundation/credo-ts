@@ -11,6 +11,7 @@ import type {
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
+  TypedArrayEncoder,
   CacheModule,
   InMemoryLruCache,
   Agent,
@@ -31,7 +32,9 @@ import { randomUUID } from 'crypto'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
+  importExistingIndyDidFromPrivateKey,
   makeConnection,
+  publicDidSeed,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
@@ -337,9 +340,6 @@ export async function setupAnonCredsTests<
 
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
-    // TODO: replace with more dynamic / generic value We should create a did using the dids module
-    // and use that probably
-    issuerId: issuerAgent.publicDid?.did as string,
   })
 
   let issuerHolderConnection: ConnectionRecord | undefined
@@ -375,10 +375,10 @@ export async function setupAnonCredsTests<
   } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 
-export async function prepareForAnonCredsIssuance(
-  agent: Agent,
-  { attributeNames, issuerId }: { attributeNames: string[]; issuerId: string }
-) {
+export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames }: { attributeNames: string[] }) {
+  // Add existing endorser did to the wallet
+  const issuerId = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
+
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,

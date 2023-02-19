@@ -2,7 +2,6 @@ import type {
   EncryptedMessage,
   WalletConfig,
   WalletCreateKeyOptions,
-  DidInfo,
   WalletSignOptions,
   UnpackedMessageContext,
   WalletVerifyOptions,
@@ -70,7 +69,6 @@ export class AskarWallet implements Wallet {
   private fileSystem: FileSystem
 
   private signingKeyProviderRegistry: SigningProviderRegistry
-  private publicDidInfo: DidInfo | undefined
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -88,10 +86,6 @@ export class AskarWallet implements Wallet {
 
   public get isInitialized() {
     return this._store !== undefined
-  }
-
-  public get publicDid() {
-    return this.publicDidInfo
   }
 
   public get store() {
@@ -314,7 +308,6 @@ export class AskarWallet implements Wallet {
       await this.store.close()
       this._session = undefined
       this._store = undefined
-      this.publicDidInfo = undefined
     } catch (error) {
       const errorMessage = `Error closing wallet': ${error.message}`
       this.logger.error(errorMessage, {
@@ -324,10 +317,6 @@ export class AskarWallet implements Wallet {
 
       throw new WalletError(errorMessage, { cause: error })
     }
-  }
-
-  public async initPublicDid() {
-    // Not implemented, as it does not work with legacy Ledger module
   }
 
   /**

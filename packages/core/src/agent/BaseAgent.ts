@@ -120,7 +120,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig } = this.agentConfig
+    const { walletConfig } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -160,21 +160,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
           `You can also downgrade your version of Aries Framework JavaScript.`
       )
     }
-
-    if (publicDidSeed) {
-      // If an agent has publicDid it will be used as routing key.
-      await this.agentContext.wallet.initPublicDid({ seed: publicDidSeed })
-    }
-  }
-
-  /**
-   * @deprecated The publicDid property has been deprecated in favour of the DidsModule, which can be used to
-   * create and resolve dids. Currently the global agent `publicDid` property is still used by the `LedgerModule`, but
-   * will be removed once the LedgerApi has been refactored. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  public get publicDid() {
-    return this.agentContext.wallet.publicDid
   }
 
   /**

@@ -1,9 +1,17 @@
 import type { AcceptanceMechanisms, AuthorAgreement } from './IndySdkPool'
 import type { IndySdk } from '../types'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext, Key } from '@aries-framework/core'
 import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
-import { CacheModuleConfig, InjectionSymbols, Logger, injectable, inject, FileSystem } from '@aries-framework/core'
+import {
+  TypedArrayEncoder,
+  CacheModuleConfig,
+  InjectionSymbols,
+  Logger,
+  injectable,
+  inject,
+  FileSystem,
+} from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { IndySdkModuleConfig } from '../IndySdkModuleConfig'
@@ -14,6 +22,7 @@ import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
 import { IndySdkPool } from './IndySdkPool'
 import { IndySdkPoolError, IndySdkPoolNotConfiguredError, IndySdkPoolNotFoundError } from './error'
+import { serializeRequestForSignature } from './serializeRequestForSignature'
 
 export interface CachedDidResponse {
   nymResponse: GetNymResponse
@@ -160,11 +169,11 @@ export class IndySdkPoolService {
     agentContext: AgentContext,
     pool: IndySdkPool,
     request: LedgerRequest,
-    signDid: string
+    signingKey: Key
   ): Promise<LedgerWriteReplyResponse> {
     try {
       const requestWithTaa = await this.appendTaa(pool, request)
-      const signedRequestWithTaa = await this.signRequest(agentContext, signDid, requestWithTaa)
+      const signedRequestWithTaa = await this.signRequest(agentContext, signingKey, requestWithTaa)
 
       const response = await pool.submitWriteRequest(signedRequestWithTaa)
 
@@ -184,11 +193,18 @@ export class IndySdkPoolService {
     }
   }
 
-  private async signRequest(agentContext: AgentContext, did: string, request: LedgerRequest): Promise<LedgerRequest> {
+  private async signRequest(agentContext: AgentContext, key: Key, request: LedgerRequest): Promise<LedgerRequest> {
     assertIndySdkWallet(agentContext.wallet)
 
     try {
-      return this.indySdk.signRequest(agentContext.wallet.handle, did, request)
+      const signedPayload = await this.indySdk.cryptoSign(
+        agentContext.wallet.handle,
+        key.publicKeyBase58,
+        TypedArrayEncoder.fromString(serializeRequestForSignature(request))
+      )
+
+      const signedRequest = { ...request, signature: TypedArrayEncoder.toBase58(signedPayload) }
+      return signedRequest
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }

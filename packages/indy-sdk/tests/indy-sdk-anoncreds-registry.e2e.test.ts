@@ -1,19 +1,22 @@
-import { Agent } from '@aries-framework/core'
+import { Agent, TypedArrayEncoder } from '@aries-framework/core'
 
-import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
-import { IndySdkModule } from '../src'
+import {
+  agentDependencies,
+  getAgentConfig,
+  importExistingIndyDidFromPrivateKey,
+  publicDidSeed,
+} from '../../core/tests/helpers'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
 
-import { getIndySdkModuleConfig } from './setupIndySdkModule'
+import { getIndySdkModules } from './setupIndySdkModule'
 
 const agentConfig = getAgentConfig('IndySdkAnonCredsRegistry')
+const indySdkModules = getIndySdkModules()
 
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
-  modules: {
-    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
-  },
+  modules: indySdkModules,
 })
 
 const indySdkAnonCredsRegistry = new IndySdkAnonCredsRegistry()
@@ -21,6 +24,9 @@ const indySdkAnonCredsRegistry = new IndySdkAnonCredsRegistry()
 describe('IndySdkAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
+
+    // We need to import the endorser did/key into the wallet
+    await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
   })
 
   afterAll(async () => {

@@ -325,7 +325,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'image_0', 'image_1'],
-      issuerId: faberAgent.publicDid?.did as string,
     })
 
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)

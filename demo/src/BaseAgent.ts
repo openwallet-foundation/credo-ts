@@ -12,8 +12,6 @@ import {
 import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
 import { AskarModule } from '@aries-framework/askar'
 import {
-  TypedArrayEncoder,
-  KeyType,
   DidsModule,
   V2ProofProtocol,
   V2CredentialProtocol,
@@ -53,7 +51,6 @@ export class BaseAgent {
   public name: string
   public config: InitConfig
   public agent: DemoAgent
-  public anonCredsIssuerId: string
   public useLegacyIndySdk: boolean
 
   public constructor({
@@ -74,15 +71,12 @@ export class BaseAgent {
         id: name,
         key: name,
       },
-      publicDidSeed: 'afjdemoverysercure00000000000000',
       endpoints: [`http://localhost:${this.port}`],
       autoAcceptConnections: true,
     } satisfies InitConfig
 
     this.config = config
 
-    // TODO: do not hardcode this
-    this.anonCredsIssuerId = '2jEvRuKmfBJTRa7QowDpNN'
     this.useLegacyIndySdk = useLegacyIndySdk
 
     this.agent = new Agent({
@@ -96,22 +90,6 @@ export class BaseAgent {
 
   public async initializeAgent() {
     await this.agent.initialize()
-
-    // FIXME:
-    // We need to make sure the key to submit transactions is created. We should update this to use the dids module, and allow
-    // to add an existing did based on a seed/secretKey, and not register it on the the ledger. However for Indy SDK we currently
-    // use the deprecated publicDidSeed property (which will register the did in the wallet), and for Askar we manually create the key
-    // in the wallet.
-    if (!this.useLegacyIndySdk) {
-      try {
-        await this.agent.context.wallet.createKey({
-          keyType: KeyType.Ed25519,
-          privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
-        })
-      } catch (error) {
-        // We assume the key already exists, and that's why askar failed
-      }
-    }
 
     console.log(greenText(`\nAgent ${this.name} created!\n`))
   }

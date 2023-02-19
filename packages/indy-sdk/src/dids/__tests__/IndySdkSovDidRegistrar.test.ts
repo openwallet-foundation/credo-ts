@@ -2,6 +2,13 @@ import type { IndySdkPool } from '../../ledger/IndySdkPool'
 import type { Wallet, DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
+  DidsApi,
+  DidResolverService,
+  DidsModuleConfig,
+  DidDocument,
+  VerificationMethod,
+  KeyType,
+  Key,
   TypedArrayEncoder,
   DidRepository,
   SigningProviderRegistry,
@@ -30,20 +37,38 @@ mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue({
 
 const agentConfig = getAgentConfig('IndySdkSovDidRegistrar')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = {
+  createKey: jest
+    .fn()
+    .mockResolvedValue(Key.fromPublicKeyBase58('E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu', KeyType.Ed25519)),
+} as unknown as Wallet
 const storageService = new InMemoryStorageService<DidRecord>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const didRepository = new DidRepository(storageService, eventEmitter)
-
-const createDidMock = jest.fn(async () => ['R1xKJw17sUoXhejEpugMYJ', 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu'])
-mockProperty(wallet, 'handle', 10)
 
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [
     [DidRepository, didRepository],
     [IndySdkPoolService, indySdkPoolServiceMock],
-    [IndySdkSymbol, { createAndStoreMyDid: createDidMock }],
+    [
+      DidsApi,
+      {
+        resolve: jest.fn().mockResolvedValue({
+          didDocument: new DidDocument({
+            id: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+            authentication: [
+              new VerificationMethod({
+                id: 'did:sov:BzCbsNYhMrjHiqZDTUASHg#key-1',
+                type: 'Ed25519VerificationKey2018',
+                controller: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+                publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+              }),
+            ],
+          }),
+        }),
+      },
+    ],
   ],
   agentConfig,
 })
@@ -60,7 +85,7 @@ describe('IndySdkSovDidRegistrar', () => {
       method: 'sov',
 
       options: {
-        submitterDid: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+        submitterVerificationMethod: 'did:sov:BzCbsNYhMrjHiqZDTUASHg#key-1',
         alias: 'Hello',
       },
       secret: {
@@ -78,44 +103,11 @@ describe('IndySdkSovDidRegistrar', () => {
     })
   })
 
-  it('should return an error state if the wallet is not an indy wallet', async () => {
-    const agentContext = getAgentContext({
-      wallet: {} as unknown as Wallet,
-      agentConfig,
-      registerInstances: [
-        [DidRepository, didRepository],
-        [IndySdkPoolService, indySdkPoolServiceMock],
-        [IndySdkSymbol, indySdk],
-      ],
-    })
-
-    const result = await indySdkSovDidRegistrar.create(agentContext, {
-      method: 'sov',
-
-      options: {
-        submitterDid: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
-        alias: 'Hello',
-      },
-      secret: {
-        privateKey: TypedArrayEncoder.fromString('12345678901234567890123456789012'),
-      },
-    })
-
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'unknownError: Expected wallet to be instance of IndySdkWallet, found Object',
-      },
-    })
-  })
-
   it('should return an error state if the submitter did is not qualified with did:sov', async () => {
     const result = await indySdkSovDidRegistrar.create(agentContext, {
       method: 'sov',
       options: {
-        submitterDid: 'BzCbsNYhMrjHiqZDTUASHg',
+        submitterVerificationMethod: 'BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
       },
     })
@@ -140,22 +132,23 @@ describe('IndySdkSovDidRegistrar', () => {
       method: 'sov',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+        submitterVerificationMethod: 'did:sov:BzCbsNYhMrjHiqZDTUASHg#key-1',
         role: 'STEWARD',
       },
       secret: {
         privateKey,
       },
     })
-
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       // Unqualified submitter did
       'BzCbsNYhMrjHiqZDTUASHg',
+      // submitter signing key,
+      expect.any(Key),
       // Unqualified created indy did
       'R1xKJw17sUoXhejEpugMYJ',
       // Verkey
-      'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+      expect.any(Key),
       // Alias
       'Hello',
       // Pool
@@ -218,7 +211,7 @@ describe('IndySdkSovDidRegistrar', () => {
       method: 'sov',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+        submitterVerificationMethod: 'did:sov:BzCbsNYhMrjHiqZDTUASHg#key-1',
         role: 'STEWARD',
         endpoints: {
           endpoint: 'https://example.com/endpoint',
@@ -235,10 +228,12 @@ describe('IndySdkSovDidRegistrar', () => {
       agentContext,
       // Unqualified submitter did
       'BzCbsNYhMrjHiqZDTUASHg',
+      // submitter signing key,
+      expect.any(Key),
       // Unqualified created indy did
       'R1xKJw17sUoXhejEpugMYJ',
       // Verkey
-      'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+      expect.any(Key),
       // Alias
       'Hello',
       // Pool
@@ -328,7 +323,7 @@ describe('IndySdkSovDidRegistrar', () => {
       method: 'sov',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:sov:BzCbsNYhMrjHiqZDTUASHg',
+        submitterVerificationMethod: 'did:sov:BzCbsNYhMrjHiqZDTUASHg#key-1',
         role: 'STEWARD',
         endpoints: {
           endpoint: 'https://example.com/endpoint',

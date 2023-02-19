@@ -4,8 +4,6 @@ import type {
   WalletConfig,
   Buffer,
   WalletCreateKeyOptions,
-  DidConfig,
-  DidInfo,
   WalletSignOptions,
   UnpackedMessageContext,
   WalletVerifyOptions,
@@ -48,7 +46,6 @@ export class IndySdkWallet implements Wallet {
 
   private logger: Logger
   private signingKeyProviderRegistry: SigningProviderRegistry
-  private publicDidInfo: DidInfo | undefined
   private indySdk: IndySdk
 
   public constructor(
@@ -67,10 +64,6 @@ export class IndySdkWallet implements Wallet {
 
   public get isInitialized() {
     return this.walletHandle !== undefined
-  }
-
-  public get publicDid() {
-    return this.publicDidInfo
   }
 
   public get handle() {
@@ -355,7 +348,6 @@ export class IndySdkWallet implements Wallet {
     try {
       await this.indySdk.closeWallet(this.walletHandle)
       this.walletHandle = undefined
-      this.publicDidInfo = undefined
     } catch (error) {
       if (isIndyError(error, 'WalletInvalidHandle')) {
         const errorMessage = `Error closing wallet: wallet already closed`
@@ -376,27 +368,6 @@ export class IndySdkWallet implements Wallet {
 
         throw new WalletError(errorMessage, { cause: error })
       }
-    }
-  }
-
-  public async initPublicDid(didConfig: DidConfig) {
-    const { did, verkey } = await this.createDid(didConfig)
-    this.publicDidInfo = {
-      did,
-      verkey,
-    }
-  }
-
-  private async createDid(didConfig?: DidConfig): Promise<DidInfo> {
-    try {
-      const [did, verkey] = await this.indySdk.createAndStoreMyDid(this.handle, didConfig || {})
-
-      return { did, verkey }
-    } catch (error) {
-      if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
-      }
-      throw new WalletError('Error creating Did', { cause: error })
     }
   }
 
