@@ -465,12 +465,12 @@ export class IndyWallet implements Wallet {
   }
 
   /**
-   * Create a key with an optional seed and keyType.
+   * Create a key with an optional private key and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
    * Bls12381g1g2 and X25519 are not supported.
    *
-   * @param seed string The seed for creating a key
+   * @param privateKey Buffer Private key (formerly called 'seed')
    * @param keyType KeyType the type of key that should be created
    *
    * @returns a Key instance with a publicKeyBase58
@@ -478,13 +478,26 @@ export class IndyWallet implements Wallet {
    * @throws {WalletError} When an unsupported keytype is requested
    * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (seed && privateKey) {
+        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+      }
+
       // Ed25519 is supported natively in Indy wallet
       if (keyType === KeyType.Ed25519) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const verkey = await this.indy.createKey(this.handle, { seed, crypto_type: 'ed25519' })
+        if (seed) {
+          throw new AriesFrameworkError(
+            'IndyWallet does not support seed. You may rather want to specify a private key for deterministic ed25519 key generation'
+          )
+        }
+
+        const verkey = await this.indy.createKey(this.handle, {
+          seed: privateKey?.toString(),
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          //@ts-ignore
+          crypto_type: 'ed25519',
+        })
         return Key.fromPublicKeyBase58(verkey, keyType)
       }
 
@@ -492,7 +505,7 @@ export class IndyWallet implements Wallet {
       if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
         const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-        const keyPair = await signingKeyProvider.createKeyPair({ seed })
+        const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
         return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
       }

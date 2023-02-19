@@ -8,7 +8,7 @@ import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { IndyStorageService } from '../../../storage/IndyStorageService'
-import { JsonTransformer } from '../../../utils'
+import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
@@ -62,9 +62,12 @@ describe('peer dids', () => {
   test('create a peer did method 1 document from ed25519 keys with a service', async () => {
     // The following scenario show how we could create a key and create a did document from it for DID Exchange
 
-    const ed25519Key = await wallet.createKey({ seed: 'astringoftotalin32characterslong', keyType: KeyType.Ed25519 })
+    const ed25519Key = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('astringoftotalin32characterslong'),
+      keyType: KeyType.Ed25519,
+    })
     const mediatorEd25519Key = await wallet.createKey({
-      seed: 'anotherstringof32characterslong1',
+      privateKey: TypedArrayEncoder.fromString('anotherstringof32characterslong1'),
       keyType: KeyType.Ed25519,
     })
 

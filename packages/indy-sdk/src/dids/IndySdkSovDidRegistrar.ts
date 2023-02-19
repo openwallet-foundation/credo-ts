@@ -40,15 +40,15 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
 
   public async create(agentContext: AgentContext, options: IndySdkSovDidCreateOptions): Promise<DidCreateResult> {
     const { alias, role, submitterDid, indyNamespace } = options.options
-    const seed = options.secret?.seed
+    const privateKey = options.secret?.privateKey
 
-    if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
+    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Invalid seed provided',
+          reason: 'Invalid private key provided',
         },
       }
     }
@@ -71,7 +71,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       // to rely directly on the indy SDK, as we don't want to expose a createDid method just for.
       assertIndySdkWallet(agentContext.wallet)
       const [unqualifiedIndyDid, verkey] = await this.indySdk.createAndStoreMyDid(agentContext.wallet.handle, {
-        seed,
+        seed: privateKey?.toString(),
       })
 
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
@@ -131,7 +131,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey?.toString(),
           },
         },
       }
@@ -256,7 +256,7 @@ export interface IndySdkSovDidCreateOptions extends DidCreateOptions {
     submitterDid: string
   }
   secret?: {
-    seed?: string
+    privateKey?: Buffer
   }
 }
 

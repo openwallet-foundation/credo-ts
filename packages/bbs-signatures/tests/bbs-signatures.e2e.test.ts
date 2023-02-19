@@ -19,6 +19,7 @@ import {
   W3cVerifiablePresentation,
   IndyWallet,
   Ed25519Signature2018,
+  TypedArrayEncoder,
 } from '@aries-framework/core'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
@@ -62,7 +63,8 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
-  const seed = 'testseed000000000000000000000001'
+  const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
     wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
@@ -219,7 +221,10 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
     describe('signPresentation', () => {
       it('should sign the presentation successfully', async () => {
-        const signingKey = await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+        const signingKey = await wallet.createKey({
+          privateKey,
+          keyType: KeyType.Ed25519,
+        })
         const signingDidKey = new DidKey(signingKey)
         const verificationMethod = `${signingDidKey.did}#${signingDidKey.key.fingerprint}`
         const presentation = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT, W3cPresentation)

@@ -1,6 +1,7 @@
 import type { Key } from '@aries-framework/core'
 
 import {
+  TypedArrayEncoder,
   IndyWallet,
   CacheModuleConfig,
   InMemoryLruCache,
@@ -47,7 +48,7 @@ describe('indy-vdr DID Resolver E2E', () => {
     }
 
     signerKey = await wallet.createKey({
-      seed: '000000000000000000000000Trustee9',
+      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
       keyType: KeyType.Ed25519,
     })
   })

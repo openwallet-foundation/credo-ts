@@ -5,6 +5,7 @@ import type * as Indy from 'indy-sdk'
 
 import { getAgentConfig, getAgentContext, mockFunction, mockProperty } from '../../../../../../tests/helpers'
 import { SigningProviderRegistry } from '../../../../../crypto/signing-provider'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../../../wallet/IndyWallet'
 import { IndyPoolService } from '../../../../ledger/services/IndyPoolService'
@@ -52,7 +53,7 @@ describe('DidRegistrar', () => {
       jest.clearAllMocks()
     })
 
-    it('should return an error state if an invalid seed is provided', async () => {
+    it('should return an error state if an invalid private key is provided', async () => {
       const result = await indySdkSovDidRegistrar.create(agentContext, {
         method: 'sov',
 
@@ -61,7 +62,7 @@ describe('DidRegistrar', () => {
           alias: 'Hello',
         },
         secret: {
-          seed: 'invalid',
+          privateKey: TypedArrayEncoder.fromString('invalid'),
         },
       })
 
@@ -70,7 +71,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Invalid seed provided',
+          reason: 'Invalid private key provided',
         },
       })
     })
@@ -89,7 +90,7 @@ describe('DidRegistrar', () => {
           alias: 'Hello',
         },
         secret: {
-          seed: '12345678901234567890123456789012',
+          privateKey: TypedArrayEncoder.fromString('12345678901234567890123456789012'),
         },
       })
 
@@ -123,7 +124,7 @@ describe('DidRegistrar', () => {
     })
 
     it('should correctly create a did:sov document without services', async () => {
-      const seed = '96213c3d7fc8d4d6754c712fd969598e'
+      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
       const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
       registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
@@ -136,7 +137,7 @@ describe('DidRegistrar', () => {
           role: 'STEWARD',
         },
         secret: {
-          seed,
+          privateKey,
         },
       })
 
@@ -191,14 +192,14 @@ describe('DidRegistrar', () => {
             keyAgreement: ['did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1'],
           },
           secret: {
-            seed,
+            privateKey: privateKey.toString(),
           },
         },
       })
     })
 
     it('should correctly create a did:sov document with services', async () => {
-      const seed = '96213c3d7fc8d4d6754c712fd969598e'
+      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
       const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
       registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
@@ -219,7 +220,7 @@ describe('DidRegistrar', () => {
           },
         },
         secret: {
-          seed,
+          privateKey,
         },
       })
 
@@ -298,14 +299,14 @@ describe('DidRegistrar', () => {
             keyAgreement: ['did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1'],
           },
           secret: {
-            seed,
+            privateKey: privateKey.toString(),
           },
         },
       })
     })
 
     it('should store the did document', async () => {
-      const seed = '96213c3d7fc8d4d6754c712fd969598e'
+      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
       const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
       registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('did'))
@@ -326,7 +327,7 @@ describe('DidRegistrar', () => {
           },
         },
         secret: {
-          seed,
+          privateKey,
         },
       })
 

@@ -3,6 +3,7 @@ import type { AgentContext } from '../../../agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
+import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
@@ -67,7 +68,7 @@ describe('W3cCredentialService', () => {
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
-  const seed = 'testseed000000000000000000000001'
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
     wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
@@ -116,7 +117,10 @@ describe('W3cCredentialService', () => {
     let verificationMethod: string
     beforeAll(async () => {
       // TODO: update to use did registrar
-      const issuerKey = await wallet.createKey({ keyType: KeyType.Ed25519, seed })
+      const issuerKey = await wallet.createKey({
+        keyType: KeyType.Ed25519,
+        privateKey,
+      })
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })

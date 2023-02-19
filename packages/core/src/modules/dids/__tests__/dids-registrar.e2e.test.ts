@@ -47,7 +47,7 @@ describe('dids', () => {
         keyType: KeyType.Ed25519,
       },
       secret: {
-        seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
       },
     })
 
@@ -97,7 +97,7 @@ describe('dids', () => {
           ],
           id: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         },
-        secret: { seed: '96213c3d7fc8d4d6754c7a0fd969598e' },
+        secret: { privateKey: '96213c3d7fc8d4d6754c7a0fd969598e' },
       },
     })
   })
@@ -110,7 +110,7 @@ describe('dids', () => {
         numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
       },
       secret: {
-        seed: 'e008ef10b7c163114b3857542b3736eb',
+        privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb'),
       },
     })
 
@@ -160,7 +160,7 @@ describe('dids', () => {
           ],
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
-        secret: { seed: 'e008ef10b7c163114b3857542b3736eb' },
+        secret: { privateKey: 'e008ef10b7c163114b3857542b3736eb' },
       },
     })
   })
@@ -168,11 +168,13 @@ describe('dids', () => {
   it('should create a did:sov did', async () => {
     // Generate a seed and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const seed = Array(32 + 1)
-      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
-      .slice(0, 32)
+    const privateKey = TypedArrayEncoder.fromString(
+      Array(32 + 1)
+        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .slice(0, 32)
+    )
 
-    const publicKeyEd25519 = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed)).publicKey
+    const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
     const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicKeyEd25519))
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
     const indyDid = indyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
@@ -193,7 +195,7 @@ describe('dids', () => {
         },
       },
       secret: {
-        seed,
+        privateKey,
       },
     })
 
@@ -261,7 +263,7 @@ describe('dids', () => {
           id: `did:sov:${indyDid}`,
         },
         secret: {
-          seed,
+          privateKey: privateKey.toString(),
         },
       },
     })

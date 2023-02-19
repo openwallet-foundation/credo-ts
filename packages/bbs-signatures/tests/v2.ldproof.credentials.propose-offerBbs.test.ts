@@ -3,6 +3,8 @@ import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../core/sr
 import type { Wallet } from '../../core/src/wallet'
 import type { CredentialTestsAgent } from '../../core/tests/helpers'
 
+import { TypedArrayEncoder } from '@aries-framework/core'
+
 import { InjectionSymbols } from '../../core/src/constants'
 import { KeyType } from '../../core/src/crypto'
 import { CredentialState } from '../../core/src/modules/credentials/models'
@@ -29,14 +31,14 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
   let issuerDidKey: DidKey
   let didCommMessageRepository: DidCommMessageRepository
   let signCredentialOptions: JsonLdCredentialDetailFormat
-  const seed = 'testseed000000000000000000000001'
+  const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   beforeAll(async () => {
     ;({ faberAgent, aliceAgent, aliceConnection } = await setupCredentialTests(
       'Faber Agent Credentials LD BBS+',
       'Alice Agent Credentials LD BBS+'
     ))
     wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
-    await wallet.createKey({ keyType: KeyType.Ed25519, seed })
+    await wallet.createKey({ keyType: KeyType.Ed25519, privateKey: seed })
     const key = await wallet.createKey({ keyType: KeyType.Bls12381g2, seed })
 
     issuerDidKey = new DidKey(key)

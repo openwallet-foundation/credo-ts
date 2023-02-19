@@ -60,7 +60,7 @@ describe('Indy VDR registrar E2E', () => {
     }
 
     signerKey = await wallet.createKey({
-      seed: '000000000000000000000000Trustee9',
+      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
       keyType: KeyType.Ed25519,
     })
   })
@@ -224,13 +224,15 @@ describe('Indy VDR registrar E2E', () => {
   })
 
   test('can register a did:indy with services - did and verkey specified - using attrib endpoint', async () => {
-    // Generate a seed and the indy did. This allows us to create a new did every time
+    // Generate a private key and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const seed = Array(32 + 1)
-      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
-      .slice(0, 32)
+    const privateKey = TypedArrayEncoder.fromString(
+      Array(32 + 1)
+        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .slice(0, 32)
+    )
 
-    const key = await wallet.createKey({ seed: seed, keyType: KeyType.Ed25519 })
+    const key = await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
     const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(key.publicKey))
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(key.publicKey)
 
