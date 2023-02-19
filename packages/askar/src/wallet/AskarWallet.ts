@@ -357,18 +357,18 @@ export class AskarWallet implements Wallet {
    */
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (seed && privateKey) {
+        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+      }
+
       if (keyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
-
-        if (seed && privateKey) {
-          throw new AriesFrameworkError('Only one of seed and privateKey can be set')
-        }
 
         // Create key
         const key = privateKey
           ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
           : seed
-          ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm })
+          ? AskarKey.fromSeed({ seed, algorithm })
           : AskarKey.generate(algorithm)
 
         // Store key
@@ -379,11 +379,7 @@ export class AskarWallet implements Wallet {
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
           const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-          if (privateKey) {
-            throw new AriesFrameworkError('Cannot create key from private key for types not supported by Askar')
-          }
-
-          const keyPair = await signingKeyProvider.createKeyPair({ seed })
+          const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
           await this.storeKeyPair(keyPair)
           return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
         }

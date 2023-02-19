@@ -480,6 +480,10 @@ export class IndyWallet implements Wallet {
    */
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (seed && privateKey) {
+        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+      }
+
       // Ed25519 is supported natively in Indy wallet
       if (keyType === KeyType.Ed25519) {
         if (seed) {
@@ -501,11 +505,7 @@ export class IndyWallet implements Wallet {
       if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
         const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-        if (privateKey) {
-          throw new AriesFrameworkError('Cannot create key from private key for types not supported by Askar')
-        }
-
-        const keyPair = await signingKeyProvider.createKeyPair({ seed })
+        const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
         return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
       }

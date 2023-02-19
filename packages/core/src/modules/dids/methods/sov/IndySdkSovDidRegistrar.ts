@@ -1,4 +1,5 @@
 import type { AgentContext } from '../../../../agent'
+import type { Buffer } from '../../../../utils'
 import type { IndyEndpointAttrib, IndyPool } from '../../../ledger'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
@@ -24,15 +25,15 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
 
     const { alias, role, submitterDid, indyNamespace } = options.options
-    const seed = options.secret?.seed
+    const privateKey = options.secret?.privateKey
 
-    if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
+    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Invalid seed provided',
+          reason: 'Invalid private key provided',
         },
       }
     }
@@ -56,7 +57,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       // FIXME: once askar/indy-vdr is supported we need to adjust this to work with both indy-sdk and askar
       assertIndyWallet(agentContext.wallet)
       const [unqualifiedIndyDid, verkey] = await indy.createAndStoreMyDid(agentContext.wallet.handle, {
-        seed,
+        seed: privateKey?.toString(),
       })
 
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
@@ -115,7 +116,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey?.toString(),
           },
         },
       }
@@ -237,7 +238,7 @@ export interface SovDidCreateOptions extends DidCreateOptions {
     submitterDid: string
   }
   secret?: {
-    seed?: string
+    privateKey?: Buffer
   }
 }
 

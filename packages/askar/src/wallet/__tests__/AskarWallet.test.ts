@@ -36,7 +36,8 @@ const walletConfig: WalletConfig = {
 describe('AskarWallet basic operations', () => {
   let askarWallet: AskarWallet
 
-  const seed = 'sample-seed'
+  const seed = TypedArrayEncoder.fromString('sample-seed')
+  const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
@@ -63,7 +64,10 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('Create ed25519 keypair from seed', async () => {
-    const key = await askarWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
+    const key = await askarWallet.createKey({
+      seed,
+      keyType: KeyType.Ed25519,
+    })
 
     expect(key).toMatchObject({
       keyType: KeyType.Ed25519,
@@ -72,7 +76,7 @@ describe('AskarWallet basic operations', () => {
 
   test('Create ed25519 keypair from private key', async () => {
     const key = await askarWallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+      privateKey,
       keyType: KeyType.Ed25519,
     })
 
@@ -84,8 +88,8 @@ describe('AskarWallet basic operations', () => {
   test('Attempt to create ed25519 keypair from both seed and private key', async () => {
     await expect(
       askarWallet.createKey({
-        privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
-        seed: '2103de41b4ae37e8e28586d84a342b67',
+        privateKey,
+        seed,
         keyType: KeyType.Ed25519,
       })
     ).rejects.toThrowError()
@@ -130,7 +134,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
   describe('AskarWallet with custom signing provider', () => {
     let askarWallet: AskarWallet
 
-    const seed = 'sample-seed'
+    const seed = TypedArrayEncoder.fromString('sample-seed')
     const message = TypedArrayEncoder.fromString('sample-message')
 
     class DummySigningProvider implements SigningProvider {
@@ -138,7 +142,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
 
       public async createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair> {
         return {
-          publicKeyBase58: encodeToBase58(Buffer.from(options.seed || 'publicKeyBase58')),
+          publicKeyBase58: encodeToBase58(Buffer.from(options.seed || TypedArrayEncoder.fromString('publicKeyBase58'))),
           privateKeyBase58: 'privateKeyBase58',
           keyType: KeyType.Bls12381g1g2,
         }
@@ -196,11 +200,11 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
     })
 
     test('Attempt to create the same custom keypair twice', async () => {
-      await askarWallet.createKey({ seed: 'keybase58', keyType: KeyType.Bls12381g1g2 })
+      await askarWallet.createKey({ seed: TypedArrayEncoder.fromString('keybase58'), keyType: KeyType.Bls12381g1g2 })
 
-      await expect(askarWallet.createKey({ seed: 'keybase58', keyType: KeyType.Bls12381g1g2 })).rejects.toThrow(
-        WalletError
-      )
+      await expect(
+        askarWallet.createKey({ seed: TypedArrayEncoder.fromString('keybase58'), keyType: KeyType.Bls12381g1g2 })
+      ).rejects.toThrow(WalletError)
     })
   })
 })

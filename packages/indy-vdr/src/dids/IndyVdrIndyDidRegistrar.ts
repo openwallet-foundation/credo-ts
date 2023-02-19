@@ -2,6 +2,7 @@ import type { IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
+  Buffer,
   DidRegistrar,
   DidCreateOptions,
   DidCreateResult,
@@ -41,7 +42,20 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<DidCreateResult> {
     const seed = options.secret?.seed
-    if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
+    const privateKey = options.secret?.privateKey
+
+    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
+      return {
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: {
+          state: 'failed',
+          reason: 'Invalid privateKey provided',
+        },
+      }
+    }
+
+    if (seed && (typeof seed !== 'object' || seed.length !== 32)) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -57,13 +71,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     let did = options.did
     let id
 
-    if (seed && did) {
+    const allowOne = [privateKey, seed, did].filter((e) => e !== undefined)
+    if (allowOne.length > 1) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `Only one of 'seed' and 'did' must be provided`,
+          reason: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
         },
       }
     }
@@ -88,7 +103,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
       } else {
         // Create a new key and calculate did according to the rules for indy did method
-        const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+        const key = await agentContext.wallet.createKey({ privateKey, seed, keyType: KeyType.Ed25519 })
         const buffer = Hasher.hash(key.publicKey, 'sha2-256')
 
         id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
@@ -187,7 +202,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed,
+            seed: options.secret?.seed?.toString(),
+            privateKey: options.secret?.privateKey?.toString(),
           },
         },
       }
@@ -325,7 +341,8 @@ export interface IndyVdrDidCreateOptions extends DidCreateOptions {
     verkey?: string
   }
   secret?: {
-    seed?: string
+    seed?: Buffer
+    privateKey?: Buffer
   }
 }
 

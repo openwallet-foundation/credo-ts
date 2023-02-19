@@ -63,7 +63,8 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: IndyWallet
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
-  const seed = 'testseed000000000000000000000001'
+  const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
     wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
@@ -221,7 +222,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
     describe('signPresentation', () => {
       it('should sign the presentation successfully', async () => {
         const signingKey = await wallet.createKey({
-          privateKey: TypedArrayEncoder.fromString(seed),
+          privateKey,
           keyType: KeyType.Ed25519,
         })
         const signingDidKey = new DidKey(signingKey)

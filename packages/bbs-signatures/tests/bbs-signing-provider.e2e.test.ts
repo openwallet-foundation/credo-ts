@@ -26,7 +26,7 @@ const walletConfig: WalletConfig = {
 
 describeSkipNode17And18('BBS Signing Provider', () => {
   let indyWallet: IndyWallet
-  const seed = 'sample-seed'
+  const seed = TypedArrayEncoder.fromString('sample-seed')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
