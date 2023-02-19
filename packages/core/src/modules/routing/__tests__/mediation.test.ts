@@ -10,6 +10,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
@@ -284,5 +285,7 @@ describe('mediator establishment', () => {
     })
 
     expect(basicMessage.content).toBe(message)
+
+    await recipientAgent.mediationRecipient.stopMessagePickup()
   })
 })

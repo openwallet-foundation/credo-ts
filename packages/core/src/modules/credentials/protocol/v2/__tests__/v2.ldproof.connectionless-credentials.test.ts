@@ -47,7 +47,7 @@ describe('credentials', () => {
     }))
 
     await faberAgent.context.wallet.createKey({
-      seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
       keyType: KeyType.Ed25519,
     })
   })

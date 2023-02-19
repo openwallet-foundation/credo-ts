@@ -67,7 +67,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
 
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
     })
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Bls12381g2,
