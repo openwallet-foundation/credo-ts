@@ -1,4 +1,4 @@
-import {
+import type {
   EncryptedMessage,
   KeyDerivationMethod,
   WalletConfig,
@@ -13,8 +13,6 @@ import {
   KeyPair,
   WalletExportImportConfig,
   WalletConfigRekey,
-  isValidSeed,
-  isValidPrivateKey,
 } from '@aries-framework/core'
 import type { WalletStorageConfig, WalletConfig as IndySdkWalletConfig, OpenWalletCredentials } from 'indy-sdk'
 
@@ -35,6 +33,8 @@ import {
   Key,
   SigningProviderRegistry,
   TypedArrayEncoder,
+  isValidSeed,
+  isValidPrivateKey,
 } from '@aries-framework/core'
 import { inject, injectable } from 'tsyringe'
 
