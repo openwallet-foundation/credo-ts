@@ -88,7 +88,7 @@ describe('postgres agents', () => {
     await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 
     const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
-    await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
+    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
   })
 
   test('send a message to connection', async () => {
