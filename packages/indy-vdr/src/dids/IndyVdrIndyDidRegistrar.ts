@@ -2,13 +2,13 @@ import type { IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
+  Buffer,
   DidRegistrar,
   DidCreateOptions,
   DidCreateResult,
   DidDeactivateResult,
   DidUpdateResult,
   DidDocumentService,
-  Buffer,
 } from '@aries-framework/core'
 
 import {
