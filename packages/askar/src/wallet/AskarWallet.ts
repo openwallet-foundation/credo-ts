@@ -287,7 +287,7 @@ export class AskarWallet implements Wallet {
     }
 
     try {
-      const { uri } = uriFromWalletConfig(this.walletConfig, this.fileSystem.basePath)
+      const { uri } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
       await Store.remove(uri)
     } catch (error) {
       const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
@@ -344,7 +344,8 @@ export class AskarWallet implements Wallet {
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
-   * @param seed string The seed for creating a key
+   * @param privateKey Buffer Optional privateKey for creating a key
+   * @param seed string Optional seed for creating a key
    * @param keyType KeyType the type of key that should be created
    *
    * @returns a Key instance with a publicKeyBase58
@@ -352,13 +353,21 @@ export class AskarWallet implements Wallet {
    * @throws {WalletError} When an unsupported keytype is requested
    * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (seed && privateKey) {
+        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+      }
+
       if (keyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
-        // Create key from seed
-        const key = seed ? AskarKey.fromSeed({ seed: Buffer.from(seed), algorithm }) : AskarKey.generate(algorithm)
+        // Create key
+        const key = privateKey
+          ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
+          : seed
+          ? AskarKey.fromSeed({ seed, algorithm })
+          : AskarKey.generate(algorithm)
 
         // Store key
         await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(key.publicBytes) })
@@ -368,7 +377,7 @@ export class AskarWallet implements Wallet {
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
           const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-          const keyPair = await signingKeyProvider.createKeyPair({ seed })
+          const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
           await this.storeKeyPair(keyPair)
           return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
         }
@@ -396,7 +405,6 @@ export class AskarWallet implements Wallet {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting signing of multiple messages`)
         }
-
         const keyEntry = await this.session.fetchKey({ name: key.publicKeyBase58 })
 
         if (!keyEntry) {
@@ -687,7 +695,7 @@ export class AskarWallet implements Wallet {
   }
 
   private async getAskarWalletConfig(walletConfig: WalletConfig) {
-    const { uri, path } = uriFromWalletConfig(walletConfig, this.fileSystem.basePath)
+    const { uri, path } = uriFromWalletConfig(walletConfig, this.fileSystem.dataPath)
 
     // Make sure path exists before creating the wallet
     if (path) {

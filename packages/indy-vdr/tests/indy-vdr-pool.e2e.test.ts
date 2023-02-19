@@ -1,6 +1,6 @@
 import type { Key } from '@aries-framework/core'
 
-import { KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -32,7 +32,7 @@ describe('IndyVdrPoolService', () => {
     await wallet.createAndOpen(agentConfig.walletConfig)
 
     signerKey = await wallet.createKey({
-      seed: '000000000000000000000000Trustee9',
+      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
       keyType: KeyType.Ed25519,
     })
   })

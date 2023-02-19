@@ -5,6 +5,7 @@ import { waitForCredentialRecord } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { AutoAcceptCredential, CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
@@ -47,7 +48,10 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         autoAcceptCredentials: AutoAcceptCredential.Always,
       }))
 
-      await faberAgent.context.wallet.createKey({ seed: 'testseed000000000000000000000001', keyType: KeyType.Ed25519 })
+      await faberAgent.context.wallet.createKey({
+        seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        keyType: KeyType.Ed25519,
+      })
     })
 
     afterAll(async () => {
@@ -145,7 +149,10 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       }))
 
-      await faberAgent.context.wallet.createKey({ seed: 'testseed000000000000000000000001', keyType: KeyType.Ed25519 })
+      await faberAgent.context.wallet.createKey({
+        seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        keyType: KeyType.Ed25519,
+      })
     })
 
     afterAll(async () => {

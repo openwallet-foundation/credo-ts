@@ -31,7 +31,7 @@ const walletConfigWithMasterSecretId: WalletConfig = {
 describe('IndySdkWallet', () => {
   let indySdkWallet: IndySdkWallet
 
-  const seed = 'sample-seed'
+  const privateKey = TypedArrayEncoder.fromString('sample-seed')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
@@ -72,16 +72,23 @@ describe('IndySdkWallet', () => {
     await expect(indySdkWallet.generateNonce()).resolves.toEqual(expect.any(String))
   })
 
-  test('Create ed25519 keypair', async () => {
+  test('Create ed25519 keypair from private key', async () => {
     await expect(
-      indySdkWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
+      indySdkWallet.createKey({
+        privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+        keyType: KeyType.Ed25519,
+      })
     ).resolves.toMatchObject({
       keyType: KeyType.Ed25519,
     })
   })
 
+  test('Fail to create ed25519 keypair from seed', async () => {
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(WalletError)
+  })
+
   test('Fail to create x25519 keypair', async () => {
-    await expect(indySdkWallet.createKey({ seed, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {

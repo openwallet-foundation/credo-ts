@@ -3,6 +3,7 @@ import type { Wallet } from '../../../../../wallet'
 import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { DidCommV1Service, DidDocumentBuilder } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
@@ -32,7 +33,7 @@ describe('DidRegistrar', () => {
   describe('PeerDidRegistrar', () => {
     describe('did:peer:0', () => {
       it('should correctly create a did:peer:0 document using Ed25519 key type', async () => {
-        const seed = '96213c3d7fc8d4d6754c712fd969598e'
+        const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
@@ -41,7 +42,7 @@ describe('DidRegistrar', () => {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },
           secret: {
-            seed,
+            privateKey,
           },
         })
 
@@ -53,7 +54,7 @@ describe('DidRegistrar', () => {
             did: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
             didDocument: didPeer0z6MksLeFixture,
             secret: {
-              seed: '96213c3d7fc8d4d6754c712fd969598e',
+              privateKey: '96213c3d7fc8d4d6754c712fd969598e',
             },
           },
         })
@@ -78,7 +79,7 @@ describe('DidRegistrar', () => {
         })
       })
 
-      it('should return an error state if an invalid seed is provided', async () => {
+      it('should return an error state if an invalid private key is provided', async () => {
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
@@ -86,7 +87,7 @@ describe('DidRegistrar', () => {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },
           secret: {
-            seed: 'invalid',
+            privateKey: TypedArrayEncoder.fromString('invalid'),
           },
         })
 
@@ -95,13 +96,13 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Invalid seed provided',
+            reason: 'Invalid private key provided',
           },
         })
       })
 
       it('should store the did without the did document', async () => {
-        const seed = '96213c3d7fc8d4d6754c712fd969598e'
+        const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
         const did = 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
         await peerDidRegistrar.create(agentContext, {
@@ -111,7 +112,7 @@ describe('DidRegistrar', () => {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },
           secret: {
-            seed,
+            privateKey,
           },
         })
 

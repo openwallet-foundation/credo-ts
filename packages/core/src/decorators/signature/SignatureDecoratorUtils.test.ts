@@ -5,6 +5,7 @@ import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'
+import { TypedArrayEncoder } from '../../utils'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
@@ -56,8 +57,8 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   })
 
   test('signData signs json object and returns SignatureDecorator', async () => {
-    const seed1 = '00000000000000000000000000000My1'
-    const key = await wallet.createKey({ seed: seed1, keyType: KeyType.Ed25519 })
+    const privateKey = TypedArrayEncoder.fromString('00000000000000000000000000000My1')
+    const key = await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
 
     const result = await signData(data, wallet, key.publicKeyBase58)
 

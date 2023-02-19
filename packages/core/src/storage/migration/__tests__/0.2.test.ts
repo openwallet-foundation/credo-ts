@@ -16,7 +16,6 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-const backupIdentifier = backupDate.getTime()
 
 const walletConfig = {
   id: `Wallet: 0.2 Update`,
@@ -51,8 +50,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -89,10 +86,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
 
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
-
     await agent.shutdown()
     await agent.wallet.delete()
 
@@ -128,8 +121,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
     // version in the in memory storage service. We need to manually set the records between initializing
@@ -145,10 +136,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -182,8 +169,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencyManager
     )
 
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-
     // We need to manually initialize the wallet as we're using the in memory wallet service
     // When we call agent.initialize() it will create the wallet and store the current framework
     // version in the in memory storage service. We need to manually set the records between initializing
@@ -200,10 +185,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     delete storageService.records.MEDIATOR_ROUTING_RECORD
 
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()

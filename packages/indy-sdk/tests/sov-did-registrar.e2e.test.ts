@@ -26,11 +26,13 @@ describe('dids', () => {
   it('should create a did:sov did', async () => {
     // Generate a seed and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
-    const seed = Array(32 + 1)
-      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
-      .slice(0, 32)
+    const privateKey = TypedArrayEncoder.fromString(
+      Array(32 + 1)
+        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .slice(0, 32)
+    )
 
-    const publicKeyEd25519 = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed)).publicKey
+    const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
     const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicKeyEd25519))
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
     const indyDid = indyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
@@ -47,7 +49,7 @@ describe('dids', () => {
         },
       },
       secret: {
-        seed,
+        privateKey,
       },
     })
 
@@ -115,7 +117,7 @@ describe('dids', () => {
           id: `did:sov:${indyDid}`,
         },
         secret: {
-          seed,
+          privateKey,
         },
       },
     })
