@@ -36,7 +36,7 @@ const walletConfig: WalletConfig = {
 describe('AskarWallet basic operations', () => {
   let askarWallet: AskarWallet
 
-  const seed = TypedArrayEncoder.fromString('sample-seed')
+  const seed = TypedArrayEncoder.fromString('sample-seed-min-of-32-bytes-long')
   const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67')
   const message = TypedArrayEncoder.fromString('sample-message')
 

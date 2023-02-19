@@ -22,11 +22,11 @@ import { inject, injectable } from 'tsyringe'
 
 import { AgentDependencies } from '../agent/AgentDependencies'
 import { InjectionSymbols } from '../constants'
-import { KeyType } from '../crypto'
+import { isValidPrivateKey, isValidSeed, KeyType } from '../crypto'
 import { Key } from '../crypto/Key'
 import { SigningProviderRegistry } from '../crypto/signing-provider/SigningProviderRegistry'
 import { AriesFrameworkError, IndySdkError, RecordDuplicateError, RecordNotFoundError } from '../error'
-import { Logger } from '../logger'
+import { ConsoleLogger, Logger } from '../logger'
 import { TypedArrayEncoder } from '../utils'
 import { JsonEncoder } from '../utils/JsonEncoder'
 import { isError } from '../utils/error'
@@ -481,7 +481,15 @@ export class IndyWallet implements Wallet {
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (seed && privateKey) {
-        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+        throw new WalletError('Only one of seed and privateKey can be set')
+      }
+
+      if (seed && !isValidSeed(seed, keyType)) {
+        throw new WalletError('Invalid seed provided')
+      }
+
+      if (privateKey && !isValidPrivateKey(privateKey, keyType)) {
+        throw new WalletError('Invalid private key provided')
       }
 
       // Ed25519 is supported natively in Indy wallet

@@ -1,4 +1,4 @@
-import type {
+import {
   EncryptedMessage,
   KeyDerivationMethod,
   WalletConfig,
@@ -13,6 +13,8 @@ import type {
   KeyPair,
   WalletExportImportConfig,
   WalletConfigRekey,
+  isValidSeed,
+  isValidPrivateKey,
 } from '@aries-framework/core'
 import type { WalletStorageConfig, WalletConfig as IndySdkWalletConfig, OpenWalletCredentials } from 'indy-sdk'
 
@@ -477,7 +479,15 @@ export class IndySdkWallet implements Wallet {
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (seed && privateKey) {
-        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+        throw new WalletError('Only one of seed and privateKey can be set')
+      }
+
+      if (seed && !isValidSeed(seed, keyType)) {
+        throw new WalletError('Invalid seed provided')
+      }
+
+      if (privateKey && !isValidPrivateKey(privateKey, keyType)) {
+        throw new WalletError('Invalid private key provided')
       }
 
       // Ed25519 is supported natively in Indy wallet

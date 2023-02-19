@@ -5,6 +5,7 @@ import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { WalletError } from '../../../../../wallet/error'
 import { DidCommV1Service, DidDocumentBuilder } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { getEd25519VerificationMethod } from '../../../domain/key-type/ed25519'
@@ -54,7 +55,7 @@ describe('DidRegistrar', () => {
             did: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
             didDocument: didPeer0z6MksLeFixture,
             secret: {
-              privateKey: '96213c3d7fc8d4d6754c712fd969598e',
+              privateKey,
             },
           },
         })
@@ -79,7 +80,9 @@ describe('DidRegistrar', () => {
         })
       })
 
-      it('should return an error state if an invalid private key is provided', async () => {
+      it('should return an error state if a key creation error is thrown', async () => {
+        mockFunction(walletMock.createKey).mockRejectedValueOnce(new WalletError('Invalid private key provided'))
+
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
@@ -96,7 +99,7 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Invalid private key provided',
+            reason: expect.stringContaining('Invalid private key provided'),
           },
         })
       })

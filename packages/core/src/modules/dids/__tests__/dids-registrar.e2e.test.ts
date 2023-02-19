@@ -97,12 +97,14 @@ describe('dids', () => {
           ],
           id: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         },
-        secret: { privateKey: '96213c3d7fc8d4d6754c7a0fd969598e' },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       },
     })
   })
 
   it('should create a did:peer did', async () => {
+    const privateKey = TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb')
+
     const did = await agent.dids.create<PeerDidNumAlgo0CreateOptions>({
       method: 'peer',
       options: {
@@ -110,7 +112,7 @@ describe('dids', () => {
         numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
       },
       secret: {
-        privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb'),
+        privateKey,
       },
     })
 
@@ -160,7 +162,7 @@ describe('dids', () => {
           ],
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
-        secret: { privateKey: 'e008ef10b7c163114b3857542b3736eb' },
+        secret: { privateKey },
       },
     })
   })
@@ -263,7 +265,7 @@ describe('dids', () => {
           id: `did:sov:${indyDid}`,
         },
         secret: {
-          privateKey: privateKey.toString(),
+          privateKey,
         },
       },
     })

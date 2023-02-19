@@ -192,7 +192,7 @@ describe('DidRegistrar', () => {
             keyAgreement: ['did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1'],
           },
           secret: {
-            privateKey: privateKey.toString(),
+            privateKey,
           },
         },
       })
@@ -299,7 +299,7 @@ describe('DidRegistrar', () => {
             keyAgreement: ['did:sov:R1xKJw17sUoXhejEpugMYJ#key-agreement-1'],
           },
           secret: {
-            privateKey: privateKey.toString(),
+            privateKey,
           },
         },
       })
