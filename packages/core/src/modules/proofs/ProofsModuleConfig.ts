@@ -18,11 +18,11 @@ export interface ProofsModuleConfigOptions<ProofProtocols extends ProofProtocol[
    * Proof protocols to make available to the proofs module. Only one proof protocol should be registered for each proof
    * protocol version.
    *
-   * When not provided, the `V1ProofProtocol` and `V2ProofProtocol` are registered by default.
+   * When not provided, the `V2ProofProtocol` is registered by default.
    *
    * @default
    * ```
-   * [V1ProofProtocol, V2ProofProtocol]
+   * [V2ProofProtocol]
    * ```
    */
   proofProtocols: ProofProtocols
@@ -40,7 +40,7 @@ export class ProofsModuleConfig<ProofProtocols extends ProofProtocol[]> {
     return this.options.autoAcceptProofs ?? AutoAcceptProof.Never
   }
 
-  /** See {@link CredentialsModuleConfigOptions.proofProtocols} */
+  /** See {@link ProofsModuleConfigOptions.proofProtocols} */
   public get proofProtocols() {
     return this.options.proofProtocols
   }

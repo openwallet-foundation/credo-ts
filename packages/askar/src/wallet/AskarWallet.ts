@@ -2,13 +2,11 @@ import type {
   EncryptedMessage,
   WalletConfig,
   WalletCreateKeyOptions,
-  DidConfig,
   DidInfo,
   WalletSignOptions,
   UnpackedMessageContext,
   WalletVerifyOptions,
   Wallet,
-  WalletExportImportConfig,
   WalletConfigRekey,
   KeyPair,
   KeyDerivationMethod,
@@ -302,12 +300,12 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  public async export(exportConfig: WalletExportImportConfig) {
+  public async export() {
     // TODO
     throw new WalletError('AskarWallet Export not yet implemented')
   }
 
-  public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig) {
+  public async import() {
     // TODO
     throw new WalletError('AskarWallet Import not yet implemented')
   }
@@ -338,7 +336,7 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  public async initPublicDid(didConfig: DidConfig) {
+  public async initPublicDid() {
     // Not implemented, as it does not work with legacy Ledger module
   }
 

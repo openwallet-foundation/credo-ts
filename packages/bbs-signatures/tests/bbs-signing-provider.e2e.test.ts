@@ -1,4 +1,4 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { Wallet, WalletConfig } from '@aries-framework/core'
 
 import {
   KeyDerivationMethod,
@@ -6,12 +6,12 @@ import {
   WalletError,
   TypedArrayEncoder,
   SigningProviderRegistry,
-  IndyWallet,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import testLogger from '../../core/tests/logger'
+import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'
@@ -25,25 +25,21 @@ const walletConfig: WalletConfig = {
 }
 
 describeSkipNode17And18('BBS Signing Provider', () => {
-  let indyWallet: IndyWallet
+  let wallet: Wallet
   const seed = TypedArrayEncoder.fromString('sample-seed')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indyWallet = new IndyWallet(
-      agentDependencies,
-      testLogger,
-      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
-    )
-    await indyWallet.createAndOpen(walletConfig)
+    wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([new Bls12381g2SigningProvider()]))
+    await wallet.createAndOpen(walletConfig)
   })
 
   afterEach(async () => {
-    await indyWallet.delete()
+    await wallet.delete()
   })
 
   test('Create bls12381g2 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
+    await expect(wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
       publicKeyBase58:
         't54oLBmhhRcDLUyWTvfYRWw8VRXRy1p43pVm62hrpShrYPuHe9WNAgS33DPfeTK6xK7iPrtJDwCHZjYgbFYDVTJHxXex9xt2XEGF8D356jBT1HtqNeucv3YsPLfTWcLcpFA',
       keyType: KeyType.Bls12381g2,
@@ -51,12 +47,12 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   })
 
   test('Fail to create bls12381g1g2 keypair', async () => {
-    await expect(indyWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
+    await expect(wallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
   })
 
   test('Create a signature with a bls12381g2 keypair', async () => {
-    const bls12381g2Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
-    const signature = await indyWallet.sign({
+    const bls12381g2Key = await wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
+    const signature = await wallet.sign({
       data: message,
       key: bls12381g2Key,
     })
@@ -64,11 +60,11 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   })
 
   test('Verify a signed message with a bls12381g2 publicKey', async () => {
-    const bls12381g2Key = await indyWallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
-    const signature = await indyWallet.sign({
+    const bls12381g2Key = await wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })
+    const signature = await wallet.sign({
       data: message,
       key: bls12381g2Key,
     })
-    await expect(indyWallet.verify({ key: bls12381g2Key, data: message, signature })).resolves.toStrictEqual(true)
+    await expect(wallet.verify({ key: bls12381g2Key, data: message, signature })).resolves.toStrictEqual(true)
   })
 })

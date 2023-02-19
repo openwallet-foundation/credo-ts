@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent, KeylistUpdate } from '../src'
 
-import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
+import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   Key,
   AgentEventTypes,
@@ -19,6 +17,7 @@ import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 
 import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { setupSubjectTransports } from './transport'
 
 describe('connections', () => {
   let faberAgent: Agent
@@ -27,50 +26,46 @@ describe('connections', () => {
   let mediatorAgent: Agent
 
   beforeEach(async () => {
-    const faberAgentOptions = getAgentOptions('Faber Agent Connections', {
-      endpoints: ['rxjs:faber'],
-    })
-    const aliceAgentOptions = getAgentOptions('Alice Agent Connections', {
-      endpoints: ['rxjs:alice'],
-    })
-    const acmeAgentOptions = getAgentOptions('Acme Agent Connections', {
-      endpoints: ['rxjs:acme'],
-    })
-    const mediatorAgentOptions = getAgentOptions('Mediator Agent Connections', {
-      endpoints: ['rxjs:mediator'],
-      autoAcceptMediationRequests: true,
-    })
-
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const acmeMessages = new Subject<SubjectMessage>()
-    const mediatorMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-      'rxjs:acme': acmeMessages,
-      'rxjs:mediator': mediatorMessages,
-    }
+    const faberAgentOptions = getAgentOptions(
+      'Faber Agent Connections',
+      {
+        endpoints: ['rxjs:faber'],
+      },
+      getIndySdkModules()
+    )
+    const aliceAgentOptions = getAgentOptions(
+      'Alice Agent Connections',
+      {
+        endpoints: ['rxjs:alice'],
+      },
+      getIndySdkModules()
+    )
+    const acmeAgentOptions = getAgentOptions(
+      'Acme Agent Connections',
+      {
+        endpoints: ['rxjs:acme'],
+      },
+      getIndySdkModules()
+    )
+    const mediatorAgentOptions = getAgentOptions(
+      'Mediator Agent Connections',
+      {
+        endpoints: ['rxjs:mediator'],
+        autoAcceptMediationRequests: true,
+      },
+      getIndySdkModules()
+    )
 
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await aliceAgent.initialize()
-
     acmeAgent = new Agent(acmeAgentOptions)
-    acmeAgent.registerInboundTransport(new SubjectInboundTransport(acmeMessages))
-    acmeAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await acmeAgent.initialize()
-
     mediatorAgent = new Agent(mediatorAgentOptions)
-    mediatorAgent.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
-    mediatorAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+
+    setupSubjectTransports([faberAgent, aliceAgent, acmeAgent, mediatorAgent])
+
+    await faberAgent.initialize()
+    await aliceAgent.initialize()
+    await acmeAgent.initialize()
     await mediatorAgent.initialize()
   })
 

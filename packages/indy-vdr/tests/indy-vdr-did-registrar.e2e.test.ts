@@ -10,14 +10,15 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentService,
-  IndyWallet,
 } from '@aries-framework/core'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 import { Subject } from 'rxjs'
 
-import { IndyStorageService } from '../../core/src/storage/IndyStorageService'
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
@@ -27,7 +28,7 @@ import { DID_INDY_REGEX } from '../src/utils/did'
 import { indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
-const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, logger, new SigningProviderRegistry([]))
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar E2E', { logger })
 
@@ -43,7 +44,7 @@ const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
-    [InjectionSymbols.StorageService, new IndyStorageService(agentDependencies)],
+    [InjectionSymbols.StorageService, new InMemoryStorageService()],
     [IndyVdrPoolService, new IndyVdrPoolService(logger, indyVdrModuleConfig)],
     [CacheModuleConfig, new CacheModuleConfig({ cache })],
   ],
@@ -53,11 +54,7 @@ const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolSer
 
 describe('Indy VDR registrar E2E', () => {
   beforeAll(async () => {
-    await indyVdrPoolService.connectToPools()
-
-    if (agentConfig.walletConfig) {
-      await wallet.createAndOpen(agentConfig.walletConfig)
-    }
+    await wallet.createAndOpen(agentConfig.walletConfig)
 
     signerKey = await wallet.createKey({
       privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),

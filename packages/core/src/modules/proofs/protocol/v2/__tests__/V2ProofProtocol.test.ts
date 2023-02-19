@@ -1,4 +1,5 @@
 import type { ProofStateChangedEvent } from '../../../ProofEvents'
+import type { ProofFormatService } from '../../../formats'
 import type { CustomProofTags } from '../../../repository/ProofExchangeRecord'
 
 import { Subject } from 'rxjs'
@@ -12,7 +13,6 @@ import { uuid } from '../../../../../utils/uuid'
 import { ConnectionService, DidExchangeState } from '../../../../connections'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
-import { IndyProofFormatService } from '../../../formats/indy/IndyProofFormatService'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 import { ProofState } from '../../../models/ProofState'
 import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
@@ -29,12 +29,14 @@ jest.mock('../../../../../storage/Repository')
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
 const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const IndyProofFormatServiceMock = IndyProofFormatService as jest.Mock<IndyProofFormatService>
 
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()
 const didCommMessageRepository = new didCommMessageRepositoryMock()
-const indyProofFormatService = new IndyProofFormatServiceMock()
+const proofFormatService = {
+  supportsFormat: () => true,
+  processRequest: jest.fn(),
+} as unknown as ProofFormatService
 
 const agentConfig = getAgentConfig('V2ProofProtocolTest')
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
@@ -49,7 +51,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const proofProtocol = new V2ProofProtocol({ proofFormats: [indyProofFormatService] })
+const proofProtocol = new V2ProofProtocol({ proofFormats: [proofFormatService] })
 
 const connection = getMockConnection({
   id: '123',

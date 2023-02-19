@@ -1,39 +1,26 @@
 import { Agent } from '@aries-framework/core'
-import indySdk from 'indy-sdk'
-import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { IndySdkModule } from '../src'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
-import { IndySdkPoolService } from '../src/ledger/IndySdkPoolService'
+
+import { getIndySdkModuleConfig } from './setupIndySdkModule'
 
 const agentConfig = getAgentConfig('IndySdkAnonCredsRegistry')
-
-const indySdkPoolService = new IndySdkPoolService(
-  indySdk,
-  agentConfig.logger,
-  new Subject(),
-  new agentConfig.agentDependencies.FileSystem()
-)
 
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
+    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
   },
 })
 
-agent.dependencyManager.registerInstance(IndySdkPoolService, indySdkPoolService)
-indySdkPoolService.setPools(agentConfig.indyLedgers)
 const indySdkAnonCredsRegistry = new IndySdkAnonCredsRegistry()
 
 describe('IndySdkAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
-    await indySdkPoolService.connectToPools()
   })
 
   afterAll(async () => {
@@ -41,7 +28,8 @@ describe('IndySdkAnonCredsRegistry', () => {
     await agent.wallet.delete()
   })
 
-  test('it works! :)', async () => {
+  // One test as the credential definition depends on the schema
+  test('register and resolve a schema and credential definition', async () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
     const schemaResult = await indySdkAnonCredsRegistry.registerSchema(agent.context, {
@@ -52,7 +40,7 @@ describe('IndySdkAnonCredsRegistry', () => {
         version: dynamicVersion,
       },
       options: {
-        didIndyNamespace: agentConfig.indyLedgers[0].indyNamespace,
+        didIndyNamespace: 'pool:localtest',
       },
     })
 

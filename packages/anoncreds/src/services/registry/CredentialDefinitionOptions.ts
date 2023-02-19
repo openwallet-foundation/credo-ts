@@ -26,7 +26,7 @@ export interface RegisterCredentialDefinitionReturnStateFailed extends AnonCreds
 
 export interface RegisterCredentialDefinitionReturnStateFinished extends AnonCredsOperationStateFinished {
   credentialDefinition: AnonCredsCredentialDefinition
-  credentialDefinitionId?: string
+  credentialDefinitionId: string
 }
 
 export interface RegisterCredentialDefinitionReturnState extends AnonCredsOperationState {

@@ -1,70 +1,16 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { Wallet } from '../../../../../wallet'
-import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
+import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../tests'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
-import { ReplaySubject, Subject } from 'rxjs'
-
-import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, prepareForIssuance, waitForCredentialRecordSubject } from '../../../../../../tests/helpers'
+import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
-import { Agent } from '../../../../../agent/Agent'
-import { InjectionSymbols } from '../../../../../constants'
 import { KeyType } from '../../../../../crypto'
 import { TypedArrayEncoder } from '../../../../../utils'
-import { JsonEncoder } from '../../../../../utils/JsonEncoder'
-import { W3cVcModule } from '../../../../vc'
-import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
-import { CredentialEventTypes } from '../../../CredentialEvents'
-import { CredentialsModule } from '../../../CredentialsModule'
-import { JsonLdCredentialFormatService } from '../../../formats'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
-import { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-const faberAgentOptions = getAgentOptions(
-  'Faber LD connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:faber'],
-  },
-  {
-    credentials: new CredentialsModule({
-      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
-    }),
-    w3cVc: new W3cVcModule({
-      documentLoader: customDocumentLoader,
-    }),
-  }
-)
-
-const aliceAgentOptions = getAgentOptions(
-  'Alice LD connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:alice'],
-  },
-  {
-    credentials: new CredentialsModule({
-      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
-    }),
-    w3cVc: new W3cVcModule({
-      documentLoader: customDocumentLoader,
-    }),
-  }
-)
-
-let wallet
-let signCredentialOptions: JsonLdCredentialDetailFormat
-
-describe('credentials', () => {
-  let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
-  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
-  let faberReplay: ReplaySubject<CredentialStateChangedEvent>
-  let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
-  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
-  const TEST_LD_DOCUMENT: JsonCredential = {
+const signCredentialOptions = {
+  credential: {
     '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -75,47 +21,35 @@ describe('credentials', () => {
         name: 'Bachelor of Science and Arts',
       },
     },
-  }
+  },
+  options: {
+    proofType: 'Ed25519Signature2018',
+    proofPurpose: 'assertionMethod',
+  },
+}
+
+describe('credentials', () => {
+  let faberAgent: JsonLdTestsAgent
+  let faberReplay: EventReplaySubject
+  let aliceAgent: JsonLdTestsAgent
+  let aliceReplay: EventReplaySubject
+
   beforeEach(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
+    ;({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+    } = await setupJsonLdTests({
+      issuerName: 'Faber LD connection-less Credentials V2',
+      holderName: 'Alice LD connection-less Credentials V2',
+      createConnections: false,
+    }))
 
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
-    aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await aliceAgent.initialize()
-
-    await prepareForIssuance(faberAgent, ['name', 'age'])
-
-    faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
-    aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
-
-    faberAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-      .subscribe(faberReplay)
-    aliceAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-      .subscribe(aliceReplay)
-    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
-
-    await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
-
-    signCredentialOptions = {
-      credential: TEST_LD_DOCUMENT,
-      options: {
-        proofType: 'Ed25519Signature2018',
-        proofPurpose: 'assertionMethod',
-      },
-    }
+    await faberAgent.context.wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterEach(async () => {
@@ -137,36 +71,34 @@ describe('credentials', () => {
       protocolVersion: 'v2',
     })
 
-    const offerMsg = message as V2OfferCredentialMessage
-    const attachment = offerMsg?.offerAttachments[0]
+    const offerMessage = message as V2OfferCredentialMessage
+    const attachment = offerMessage?.offerAttachments[0]
 
-    if (attachment.data.base64) {
-      expect(JsonEncoder.fromBase64(attachment.data.base64)).toMatchObject({
-        credential: {
-          '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
-          type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-          issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
-          issuanceDate: '2017-10-22T12:23:48Z',
-          credentialSubject: {
-            degree: {
-              name: 'Bachelor of Science and Arts',
-              type: 'BachelorDegree',
-            },
+    expect(attachment?.getDataAsJson()).toMatchObject({
+      credential: {
+        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://www.w3.org/2018/credentials/examples/v1'],
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        issuanceDate: '2017-10-22T12:23:48Z',
+        credentialSubject: {
+          degree: {
+            name: 'Bachelor of Science and Arts',
+            type: 'BachelorDegree',
           },
         },
-        options: {
-          proofType: 'Ed25519Signature2018',
-          proofPurpose: 'assertionMethod',
-        },
-      })
-    }
+      },
+      options: {
+        proofType: 'Ed25519Signature2018',
+        proofPurpose: 'assertionMethod',
+      },
+    })
 
-    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: connectionlessOfferMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    await aliceAgent.receiveMessage(connectionlessOfferMessage.toJSON())
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,

@@ -447,7 +447,7 @@ export class IndySdkWallet implements Wallet {
     }
   }
 
-  public async createDid(didConfig?: DidConfig): Promise<DidInfo> {
+  private async createDid(didConfig?: DidConfig): Promise<DidInfo> {
     try {
       const [did, verkey] = await this.indySdk.createAndStoreMyDid(this.handle, didConfig || {})
 

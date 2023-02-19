@@ -139,6 +139,8 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
   public async save(agentContext: AgentContext, record: T) {
     assertIndySdkWallet(agentContext.wallet)
 
+    record.updatedAt = new Date()
+
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
@@ -157,6 +159,8 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     assertIndySdkWallet(agentContext.wallet)
+
+    record.updatedAt = new Date()
 
     const value = JsonTransformer.serialize(record)
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>

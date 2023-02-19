@@ -33,6 +33,7 @@
   "devDependencies": {
     "indy-sdk": "^1.16.0-dev-1636",
     "rimraf": "^4.0.7",
+    "rxjs": "^7.8.0",
     "typescript": "~4.9.4"
   }
 }

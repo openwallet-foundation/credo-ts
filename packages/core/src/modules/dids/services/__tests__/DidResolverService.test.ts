@@ -65,6 +65,7 @@ describe('DidResolverService', () => {
       didDocumentMetadata: {},
       didResolutionMetadata: {
         error: 'unsupportedDidMethod',
+        message: 'No did resolver registered for did method example',
       },
     })
   })

@@ -34,7 +34,7 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
 
-const agentConfig = getAgentConfig('LegacyIndyProofFormatServiceTest')
+const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
 const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
 const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
 const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)

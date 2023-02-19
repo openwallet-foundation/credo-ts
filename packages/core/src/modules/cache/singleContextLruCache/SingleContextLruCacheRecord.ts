@@ -1,5 +1,7 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 
+import { Type } from 'class-transformer'
+
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
@@ -17,6 +19,7 @@ export interface SingleContextLruCacheProps {
 }
 
 export class SingleContextLruCacheRecord extends BaseRecord {
+  @Type(() => Object)
   public entries!: Map<string, SingleContextLruCacheItem>
 
   public static readonly type = 'SingleContextLruCacheRecord'

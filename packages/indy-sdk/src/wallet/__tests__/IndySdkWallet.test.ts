@@ -7,9 +7,9 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
 } from '@aries-framework/core'
+import indySdk from 'indy-sdk'
 
 import testLogger from '../../../../core/tests/logger'
-import { agentDependencies } from '../../../../node/src'
 import { IndySdkWallet } from '../IndySdkWallet'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
@@ -35,7 +35,7 @@ describe('IndySdkWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(agentDependencies.indy, testLogger, new SigningProviderRegistry([]))
+    indySdkWallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
     await indySdkWallet.createAndOpen(walletConfig)
   })
 
@@ -118,7 +118,7 @@ describe('IndySdkWallet with custom Master Secret Id', () => {
   let indySdkWallet: IndySdkWallet
 
   beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(agentDependencies.indy, testLogger, new SigningProviderRegistry([]))
+    indySdkWallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
     await indySdkWallet.createAndOpen(walletConfigWithMasterSecretId)
   })
 

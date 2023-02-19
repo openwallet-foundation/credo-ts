@@ -70,32 +70,35 @@ type NativeIndyPostgres = {
 
 let indyPostgresStorage: NativeIndyPostgres | undefined
 
-export interface WalletStorageConfig {
+export interface IndySdkPostgresWalletStorageConfig {
   url: string
-  wallet_scheme: WalletScheme
+  wallet_scheme: IndySdkPostgresWalletScheme
   path?: string
 }
 
-export interface WalletStorageCredentials {
+export interface IndySdkPostgresWalletStorageCredentials {
   account: string
   password: string
   admin_account: string
   admin_password: string
 }
 
-export enum WalletScheme {
+export enum IndySdkPostgresWalletScheme {
   DatabasePerWallet = 'DatabasePerWallet',
   MultiWalletSingleTable = 'MultiWalletSingleTable',
   MultiWalletSingleTableSharedPool = 'MultiWalletSingleTableSharedPool',
 }
 
-export interface IndyPostgresStorageConfig {
+export interface IndySdkPostgresStorageConfig {
   type: 'postgres_storage'
-  config: WalletStorageConfig
-  credentials: WalletStorageCredentials
+  config: IndySdkPostgresWalletStorageConfig
+  credentials: IndySdkPostgresWalletStorageCredentials
 }
 
-export function loadPostgresPlugin(config: WalletStorageConfig, credentials: WalletStorageCredentials) {
+export function loadIndySdkPostgresPlugin(
+  config: IndySdkPostgresWalletStorageConfig,
+  credentials: IndySdkPostgresWalletStorageCredentials
+) {
   if (!indyPostgresStorage) {
     indyPostgresStorage = getLibrary()
   }

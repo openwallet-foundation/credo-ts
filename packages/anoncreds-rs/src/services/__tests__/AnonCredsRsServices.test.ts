@@ -57,7 +57,7 @@ describe('AnonCredsRsServices', () => {
       version: '1.0.0',
     })
 
-    const { schemaState, schemaMetadata } = await registry.registerSchema(agentContext, {
+    const { schemaState } = await registry.registerSchema(agentContext, {
       schema,
       options: {},
     })
