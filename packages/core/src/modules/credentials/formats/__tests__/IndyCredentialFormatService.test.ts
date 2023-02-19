@@ -67,7 +67,11 @@ const revDef: RevocRegDef = {
     maxCredNum: 33,
     tailsHash: 'd',
     tailsLocation: 'x',
-    publicKeys: ['x'],
+    publicKeys: {
+      accumKey: {
+        z: 'x',
+      },
+    },
   },
   ver: 't',
 }
@@ -132,7 +136,7 @@ const mockCredentialRecord = ({
     id: '',
     formats: [
       {
-        attachId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+        attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
         format: 'hlindy/cred-abstract@v2.0',
       },
     ],
@@ -244,7 +248,7 @@ describe('Indy CredentialFormatService', () => {
       ])
 
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'hlindy/cred-filter@v2.0',
       })
     })
@@ -295,7 +299,7 @@ describe('Indy CredentialFormatService', () => {
       ])
 
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'hlindy/cred-abstract@v2.0',
       })
     })
@@ -356,7 +360,7 @@ describe('Indy CredentialFormatService', () => {
         },
       })
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'hlindy/cred-req@v2.0',
       })
 
@@ -383,7 +387,7 @@ describe('Indy CredentialFormatService', () => {
         credentialRecord,
         requestAttachment,
         offerAttachment,
-        attachId: INDY_CREDENTIAL_ATTACHMENT_ID,
+        attachmentId: INDY_CREDENTIAL_ATTACHMENT_ID,
       })
 
       expect(attachment).toMatchObject({
@@ -403,7 +407,7 @@ describe('Indy CredentialFormatService', () => {
         },
       })
       expect(format).toMatchObject({
-        attachId: expect.any(String),
+        attachmentId: expect.any(String),
         format: 'hlindy/cred@v2.0',
       })
     })

@@ -1,6 +1,7 @@
+import type { Jwk } from './JwkTypes'
+import type { Jws, JwsGeneralFormat } from './JwsTypes'
 import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
-import type { Jws, JwsGeneralFormat } from './JwsTypes'
 
 import { AriesFrameworkError } from '../error'
 import { injectable } from '../plugins'
@@ -17,23 +18,61 @@ const JWS_ALG = 'EdDSA'
 
 @injectable()
 export class JwsService {
-  public async createJws(
-    agentContext: AgentContext,
-    { payload, verkey, header }: CreateJwsOptions
-  ): Promise<JwsGeneralFormat> {
-    const base64Payload = TypedArrayEncoder.toBase64URL(payload)
-    const base64Protected = JsonEncoder.toBase64URL(this.buildProtected(verkey))
-    const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+  public static supportedKeyTypes = [KeyType.Ed25519]
+
+  private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
+    if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
+      throw new AriesFrameworkError(
+        `Only ${JwsService.supportedKeyTypes.join(',')} key type(s) supported for creating JWS`
+      )
+    }
+    const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
+    const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
 
     const signature = TypedArrayEncoder.toBase64URL(
-      await agentContext.wallet.sign({ data: TypedArrayEncoder.fromString(`${base64Protected}.${base64Payload}`), key })
+      await agentContext.wallet.sign({
+        data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`),
+        key: options.key,
+      })
     )
 
     return {
-      protected: base64Protected,
+      base64Payload,
+      base64UrlProtectedHeader,
+      signature,
+    }
+  }
+
+  public async createJws(
+    agentContext: AgentContext,
+    { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
+  ): Promise<JwsGeneralFormat> {
+    const { base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
+      payload,
+      key,
+      protectedHeaderOptions,
+    })
+
+    return {
+      protected: base64UrlProtectedHeader,
       signature,
       header,
     }
+  }
+
+  /**
+   *  @see {@link https://www.rfc-editor.org/rfc/rfc7515#section-3.1}
+   * */
+  public async createJwsCompact(
+    agentContext: AgentContext,
+    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
+  ): Promise<string> {
+    const { base64Payload, base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
+      payload,
+      key,
+      protectedHeaderOptions,
+    })
+    return `${base64UrlProtectedHeader}.${base64Payload}.${signature}`
   }
 
   /**
@@ -47,7 +86,7 @@ export class JwsService {
       throw new AriesFrameworkError('Unable to verify JWS: No entries in JWS signatures array.')
     }
 
-    const signerVerkeys = []
+    const signerKeys: Key[] = []
     for (const jws of signatures) {
       const protectedJson = JsonEncoder.fromBase64(jws.protected)
 
@@ -62,9 +101,9 @@ export class JwsService {
       const data = TypedArrayEncoder.fromString(`${jws.protected}.${base64Payload}`)
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
 
-      const verkey = TypedArrayEncoder.toBase58(TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x))
-      const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-      signerVerkeys.push(verkey)
+      const publicKey = TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x)
+      const key = Key.fromPublicKey(publicKey, KeyType.Ed25519)
+      signerKeys.push(key)
 
       try {
         const isValid = await agentContext.wallet.verify({ key, data, signature })
@@ -72,7 +111,7 @@ export class JwsService {
         if (!isValid) {
           return {
             isValid: false,
-            signerVerkeys: [],
+            signerKeys: [],
           }
         }
       } catch (error) {
@@ -81,7 +120,7 @@ export class JwsService {
         if (error instanceof WalletError) {
           return {
             isValid: false,
-            signerVerkeys: [],
+            signerKeys: [],
           }
         }
 
@@ -89,30 +128,35 @@ export class JwsService {
       }
     }
 
-    return { isValid: true, signerVerkeys }
+    return { isValid: true, signerKeys: signerKeys }
   }
 
-  /**
-   * @todo This currently only work with a single alg, key type and curve
-   *    This needs to be extended with other formats in the future
-   */
-  private buildProtected(verkey: string) {
+  private buildProtected(options: ProtectedHeaderOptions) {
+    if (!options.jwk && !options.kid) {
+      throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
+    }
+    if (options.jwk && options.kid) {
+      throw new AriesFrameworkError('Both JWK and kid are provided. Please only provide one of the two.')
+    }
+
     return {
-      alg: 'EdDSA',
-      jwk: {
-        kty: 'OKP',
-        crv: 'Ed25519',
-        x: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromBase58(verkey)),
-      },
+      alg: options.alg,
+      jwk: options.jwk,
+      kid: options.kid,
     }
   }
 }
 
 export interface CreateJwsOptions {
-  verkey: string
+  key: Key
   payload: Buffer
   header: Record<string, unknown>
+  protectedHeaderOptions: ProtectedHeaderOptions
 }
+
+type CreateJwsBaseOptions = Omit<CreateJwsOptions, 'header'>
+
+type CreateCompactJwsOptions = Omit<CreateJwsOptions, 'header'>
 
 export interface VerifyJwsOptions {
   jws: Jws
@@ -121,5 +165,14 @@ export interface VerifyJwsOptions {
 
 export interface VerifyJwsResult {
   isValid: boolean
-  signerVerkeys: string[]
+  signerKeys: Key[]
+}
+
+export type kid = string
+
+export interface ProtectedHeaderOptions {
+  alg: string
+  jwk?: Jwk
+  kid?: kid
+  [key: string]: any
 }

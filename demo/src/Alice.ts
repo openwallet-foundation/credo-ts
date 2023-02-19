@@ -52,11 +52,8 @@ export class Alice extends BaseAgent {
   }
 
   public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
-    const requestedCredentials = await this.agent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await this.agent.proofs.selectCredentialsForRequest({
       proofRecordId: proofRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
 
     await this.agent.proofs.acceptRequest({

@@ -1,0 +1,526 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UpdateAssistant | v0.3 - v0.3.1 should correctly update the did records 1`] = `
+Object {
+  "1-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+      "recipientKeyFingerprints": Array [
+        "z6Mkpg6nDPuYdLMuzNEjaa2Xprh3J2MC1WtNakWUEFqC4wvU",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6Mkpg6nDPuYdLMuzNEjaa2Xprh3J2MC1WtNakWUEFqC4wvU",
+        ],
+        "role": "created",
+      },
+      "createdAt": "2022-12-27T13:51:21.344Z",
+      "did": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#57a05508-1d1c-474c-8c68-1afcf3188720",
+            "publicKeyBase58": "BDqjd9f7HnsSssQ2u14gym93UT5Lbde1tjbYPysB9j96",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#59d2ce6f-c9fc-49c6-a8f6-eab14820b028",
+            "publicKeyBase58": "avivQP6GvWj6cBbxbXSSZnZTA4tGsvQ5DB9FXm45tZt",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#57a05508-1d1c-474c-8c68-1afcf3188720",
+            ],
+            "routingKeys": Array [
+              "did:key:z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop#z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop",
+            ],
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "2-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "2-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+      "recipientKeyFingerprints": Array [
+        "z6MkuLL6bQykGpposTrQhfYceQRR4JDzvdm133xpwb7Dv1oz",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6MkuLL6bQykGpposTrQhfYceQRR4JDzvdm133xpwb7Dv1oz",
+        ],
+        "role": "received",
+      },
+      "createdAt": "2022-12-27T13:51:51.414Z",
+      "did": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#6173438e-09a5-4b1e-895a-0563f5a169b7",
+            "publicKeyBase58": "Ft541AjJwHLLky1i26amoJsREix9WkWeM33u7K9Czo2c",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#a0448ee3-093a-4b16-bc59-8bf8559d60a5",
+            "publicKeyBase58": "JCfZJ72mtgGE9xuekJKV6yoAGzLgQCNkdHKkct8uaNKb",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#6173438e-09a5-4b1e-895a-0563f5a169b7",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "http://ssi.verifier.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "2-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "3-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "3-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+      "recipientKeyFingerprints": Array [
+        "z6Mkv6Kd744JcBL5P9gi5Ddtehxn1gSMTgM9kbTdfQ9soB8G",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6Mkv6Kd744JcBL5P9gi5Ddtehxn1gSMTgM9kbTdfQ9soB8G",
+        ],
+        "role": "created",
+      },
+      "createdAt": "2022-12-27T13:50:32.815Z",
+      "did": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#d9d97b3e-5615-4e60-9366-a8ab1ec1a84d",
+            "publicKeyBase58": "Ge4aWoosGdqcGer1Peg3ocQnC7AW3o6o4aYhq8BrsxLt",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#c30ea91b-5f49-461f-b0bd-046f947ef668",
+            "publicKeyBase58": "HKBdBGRK8uxgCwge2QHPBzVuuayEQFhC2LM3g1fzMFGE",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#d9d97b3e-5615-4e60-9366-a8ab1ec1a84d",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "didcomm:transport/queue",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "3-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "4-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "4-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+      "recipientKeyFingerprints": Array [
+        "z6MkvcuHjVcNRBM78E3xWy7MnVqQV9hAvTawBsPmg3bR1DaE",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6MkvcuHjVcNRBM78E3xWy7MnVqQV9hAvTawBsPmg3bR1DaE",
+        ],
+        "role": "created",
+      },
+      "createdAt": "2022-12-27T13:51:50.193Z",
+      "did": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#22219a28-b52a-4024-bc0f-62d3969131fd",
+            "publicKeyBase58": "HAeF9FMw5dre1jDFqQ9WwQHQfaRKWaLaVrUqqmdQ5znr",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#0f9535d1-9c9c-4491-be1e-1628f365b513",
+            "publicKeyBase58": "FztF8HCahTeL9gYHoHnDFo6HruwnKB19ZtbHFbLndAmE",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#22219a28-b52a-4024-bc0f-62d3969131fd",
+            ],
+            "routingKeys": Array [
+              "did:key:z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop#z6MkqhwtVT5V6kwsNkErPNgSWuRGd4QLFQ324FMfw5oWGHop",
+            ],
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "4-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "5-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "5-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+      "recipientKeyFingerprints": Array [
+        "z6Mkp1wyxzqoUrZ3TvnerfZBq48o1XLDSPH8ibFALkNABSgh",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6Mkp1wyxzqoUrZ3TvnerfZBq48o1XLDSPH8ibFALkNABSgh",
+        ],
+        "role": "received",
+      },
+      "createdAt": "2022-12-27T13:50:44.957Z",
+      "did": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#075b7e8b-a7bd-41e1-9b01-044f1ccab1a6",
+            "publicKeyBase58": "AZgwNkbN9K4aMRwxB6bLyxaoBx4N2W2n2aLEWUQ9GDuK",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#bf888dc5-0f54-4e71-9058-c43bebfc7d01",
+            "publicKeyBase58": "3Q8wpgxdCVdJfznYERZR1r9eVnCy7oxpjzGVucDLF2tG",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#075b7e8b-a7bd-41e1-9b01-044f1ccab1a6",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "ws://ssi.mediator.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "5-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "6-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "6-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+      "recipientKeyFingerprints": Array [
+        "z6MkrQzQqPtNjJHGLGjWC7H3mjMSNA36bCBTYJeoR44JoFvH",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6MkrQzQqPtNjJHGLGjWC7H3mjMSNA36bCBTYJeoR44JoFvH",
+        ],
+        "role": "received",
+      },
+      "createdAt": "2022-12-27T13:50:34.057Z",
+      "did": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#b6d349fb-93fb-4298-b57a-3f2fecffccd8",
+            "publicKeyBase58": "CxjNF9dwPknoDmtoWYKCvdoSYamFBJw6rHjsan6Ht38u",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#c0917f9f-1102-4f13-800c-ff7b522999eb",
+            "publicKeyBase58": "Eso3A6AmL5qiWr9syqHx8NgdQ8EMkYcitmrW5G7bX9uU",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#b6d349fb-93fb-4298-b57a-3f2fecffccd8",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "ws://ssi.issuer.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "6-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "7-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "7-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+      "recipientKeyFingerprints": Array [
+        "z6Mkt4ohp4uT74HdENeGVGAyVFTerCzzuDXP8kpU3yo6SqqM",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6Mkt4ohp4uT74HdENeGVGAyVFTerCzzuDXP8kpU3yo6SqqM",
+        ],
+        "role": "received",
+      },
+      "createdAt": "2022-12-27T13:51:22.817Z",
+      "did": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#5ea98568-dfcd-4614-9495-ba95ec2665d3",
+            "publicKeyBase58": "EcYfDpf1mWoA7soZohD8e9uf2dj9VLH2SjuYDhq5Xd3y",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#506e5ead-ddbc-44ef-848b-6593a692a916",
+            "publicKeyBase58": "EeQHhb6CqWGrQR9PfWpS1L8CedsbK2mZfPdaxaHN4s8b",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#5ea98568-dfcd-4614-9495-ba95ec2665d3",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "http://ssi.verifier.com",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "7-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "8-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "8-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "did": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+      "legacyUnqualifiedDid": undefined,
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+      "recipientKeyFingerprints": Array [
+        "z6MktdgEKUiH5kt5t2dKAH14WzFYhzj3JFobUf2PFFQAg2ma",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": Object {
+      "_tags": Object {
+        "method": "peer",
+        "recipientKeyFingerprints": Array [
+          "z6MktdgEKUiH5kt5t2dKAH14WzFYhzj3JFobUf2PFFQAg2ma",
+        ],
+        "role": "created",
+      },
+      "createdAt": "2022-12-27T13:50:43.937Z",
+      "did": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+      "didDocument": Object {
+        "@context": Array [
+          "https://w3id.org/did/v1",
+        ],
+        "authentication": Array [
+          Object {
+            "controller": "#id",
+            "id": "#12b8b7d4-87b9-4638-a929-f98df2f1f566",
+            "publicKeyBase58": "FBRBjETqkDPcmXncUi3DfthYtRTBtNZEne7TQyS9kozC",
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+        "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
+        "keyAgreement": Array [
+          Object {
+            "controller": "#id",
+            "id": "#77b9cf84-2441-419f-b295-945d06e29edc",
+            "publicKeyBase58": "EgsQArrmCUru9MxR1RNNiomnMFz6E3ia2GfjVvoCjAWY",
+            "type": "X25519KeyAgreementKey2019",
+          },
+        ],
+        "service": Array [
+          Object {
+            "id": "#inline-0",
+            "priority": 0,
+            "recipientKeys": Array [
+              "#12b8b7d4-87b9-4638-a929-f98df2f1f566",
+            ],
+            "routingKeys": Array [],
+            "serviceEndpoint": "didcomm:transport/queue",
+            "type": "did-communication",
+          },
+        ],
+      },
+      "id": "8-4e4f-41d9-94c4-f49351b811f1",
+      "metadata": Object {},
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "STORAGE_VERSION_RECORD_ID": Object {
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "tags": Object {},
+    "type": "StorageVersionRecord",
+    "value": Object {
+      "createdAt": "2022-09-08T19:35:53.872Z",
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "metadata": Object {},
+      "storageVersion": "0.3.1",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+}
+`;

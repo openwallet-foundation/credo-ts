@@ -1,6 +1,3 @@
-import type { AgentContext } from '../../agent/context'
-import type { Key } from '../../crypto/Key'
-import type { Query } from '../../storage/StorageService'
 import type { W3cVerifyCredentialResult } from './models'
 import type {
   CreatePresentationOptions,
@@ -12,6 +9,9 @@ import type {
   VerifyPresentationOptions,
 } from './models/W3cCredentialServiceOptions'
 import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
+import type { AgentContext } from '../../agent/context'
+import type { Key } from '../../crypto/Key'
+import type { Query } from '../../storage/StorageService'
 
 import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
@@ -103,7 +103,8 @@ export class W3cCredentialService {
    */
   public async verifyCredential(
     agentContext: AgentContext,
-    options: VerifyCredentialOptions
+    options: VerifyCredentialOptions,
+    verifyRevocationState = true
   ): Promise<W3cVerifyCredentialResult> {
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
@@ -111,6 +112,14 @@ export class W3cCredentialService {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
       documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      checkStatus: () => {
+        if (verifyRevocationState) {
+          throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
+        }
+        return {
+          verified: true,
+        }
+      },
     }
 
     // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -335,7 +344,7 @@ export class W3cCredentialService {
     return await this.w3cCredentialRepository.getById(agentContext, id)
   }
 
-  public async findCredentialRecordsByQuery(
+  public async findCredentialsByQuery(
     agentContext: AgentContext,
     query: Query<W3cCredentialRecord>
   ): Promise<W3cVerifiableCredential[]> {
@@ -357,6 +366,15 @@ export class W3cCredentialService {
   ): Promise<W3cVerifiableCredential | undefined> {
     const result = await this.w3cCredentialRepository.findSingleByQuery(agentContext, query)
     return result?.credential
+  }
+  public getProofTypeByVerificationMethodType(verificationMethodType: string): string {
+    const suite = this.signatureSuiteRegistry.getByVerificationMethodType(verificationMethodType)
+
+    if (!suite) {
+      throw new AriesFrameworkError(`No suite found for verification method type ${verificationMethodType}}`)
+    }
+
+    return suite.proofType
   }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cVerifiableCredential) {

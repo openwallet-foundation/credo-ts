@@ -1,9 +1,10 @@
-import type { Logger } from '../logger'
-import type { CredentialsModule } from '../modules/credentials'
-import type { DependencyManager } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
 import type { TransportSession } from './TransportService'
+import type { Logger } from '../logger'
+import type { CredentialsModule } from '../modules/credentials'
+import type { ProofsModule } from '../modules/proofs'
+import type { DependencyManager } from '../plugins'
 
 import { AriesFrameworkError } from '../error'
 import { BasicMessagesApi } from '../modules/basic-messages'
@@ -14,7 +15,7 @@ import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
 import { LedgerApi } from '../modules/ledger'
 import { OutOfBandApi } from '../modules/oob'
-import { ProofsApi } from '../modules/proofs/ProofsApi'
+import { ProofsApi } from '../modules/proofs'
 import { MediatorApi, RecipientApi } from '../modules/routing'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
@@ -44,7 +45,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
   public readonly connections: ConnectionsApi
   public readonly credentials: CustomOrDefaultApi<AgentModules['credentials'], CredentialsModule>
-  public readonly proofs: ProofsApi
+  public readonly proofs: CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
   public readonly mediator: MediatorApi
   public readonly mediationRecipient: RecipientApi
   public readonly basicMessages: BasicMessagesApi
@@ -88,7 +89,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       AgentModules['credentials'],
       CredentialsModule
     >
-    this.proofs = this.dependencyManager.resolve(ProofsApi)
+    this.proofs = this.dependencyManager.resolve(ProofsApi) as CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
     this.mediator = this.dependencyManager.resolve(MediatorApi)
     this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
@@ -194,6 +195,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     })
   }
 
+  /**
+   * @deprecated The injectionContainer property has been deprecated in favour of the dependencyManager property.
+   */
   public get injectionContainer() {
     return this.dependencyManager.container
   }

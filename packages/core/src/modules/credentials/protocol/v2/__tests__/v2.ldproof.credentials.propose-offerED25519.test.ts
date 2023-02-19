@@ -65,7 +65,7 @@ describe('credentials', () => {
       'Faber Agent Credentials LD',
       'Alice Agent Credentials LD'
     ))
-    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
     await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
     signCredentialOptions = {
       credential: inputDocAsJson,
@@ -312,7 +312,6 @@ describe('credentials', () => {
       threadId: faberCredentialRecord.threadId,
       state: CredentialState.OfferReceived,
     })
-    // didCommMessageRepository = faberAgent.injectionContainer.resolve(DidCommMessageRepository)
     didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {

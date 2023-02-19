@@ -77,7 +77,11 @@ const revocRegDef: Indy.RevocRegDef = {
     maxCredNum: 3,
     tailsHash: 'abcde',
     tailsLocation: 'xyz',
-    publicKeys: ['abcde', 'fghijk'],
+    publicKeys: {
+      accumKey: {
+        z: 'z',
+      },
+    },
   },
   ver: 'abcde',
 }

@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Question Answer Plugin</b></h1>
+<h1 align="center"><b>Aries Framework JavaScript Question Answer Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -28,7 +28,7 @@
 </p>
 <br />
 
-Question Answer plugin for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git). Implements [Aries RFC 0113](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0113-question-answer/README.md).
+Question Answer module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git). Implements [Aries RFC 0113](https://github.com/hyperledger/aries-rfcs/blob/1795d5c2d36f664f88f5e8045042ace8e573808c/features/0113-question-answer/README.md).
 
 ### Installation
 
@@ -38,7 +38,7 @@ Make sure you have set up the correct version of Aries Framework JavaScript acco
 npm info "@aries-framework/question-answer" peerDependencies
 ```
 
-Then add the question-answer plugin to your project.
+Then add the question-answer module to your project.
 
 ```sh
 yarn add @aries-framework/question-answer
@@ -46,7 +46,7 @@ yarn add @aries-framework/question-answer
 
 ### Quick start
 
-In order for this plugin to work, we have to inject it into the agent to access agent functionality. See the example for more information.
+In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
 ### Example of usage
 

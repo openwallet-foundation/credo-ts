@@ -6,13 +6,22 @@ import { IndyRevocationInterval } from '../../../../credentials'
 import { AttributeFilter } from './AttributeFilter'
 import { PredicateType } from './PredicateType'
 
+export interface ProofPredicateInfoOptions {
+  name: string
+  // Also allow string value of the enum as input, to make it easier to use in the API
+  predicateType: PredicateType | `${PredicateType}`
+  predicateValue: number
+  nonRevoked?: IndyRevocationInterval
+  restrictions?: AttributeFilter[]
+}
+
 export class ProofPredicateInfo {
-  public constructor(options: ProofPredicateInfo) {
+  public constructor(options: ProofPredicateInfoOptions) {
     if (options) {
       this.name = options.name
-      this.nonRevoked = options.nonRevoked
-      this.restrictions = options.restrictions
-      this.predicateType = options.predicateType
+      this.nonRevoked = options.nonRevoked ? new IndyRevocationInterval(options.nonRevoked) : undefined
+      this.restrictions = options.restrictions?.map((r) => new AttributeFilter(r))
+      this.predicateType = options.predicateType as PredicateType
       this.predicateValue = options.predicateValue
     }
   }

@@ -2,6 +2,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
   AcceptCredentialOfferOptions,
+  AgentDependencies,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
@@ -13,13 +14,16 @@ import type {
   SchemaTemplate,
   Wallet,
 } from '../src'
-import type { AgentModulesInput } from '../src/agent/AgentModules'
+import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
+import type { ProofAttributeInfo, ProofPredicateInfoOptions } from '../src/modules/proofs/formats/indy/models'
 import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
+import type { Awaited, WalletConfig } from '../src/types'
 import type { CredDef, Schema } from 'indy-sdk'
 import type { Observable } from 'rxjs'
 
+import { readFileSync } from 'fs'
 import path from 'path'
 import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
 import { catchError, filter, map, timeout } from 'rxjs/operators'
@@ -43,12 +47,12 @@ import {
   ConnectionRecord,
   CredentialEventTypes,
   CredentialState,
+  TrustPingEventTypes,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
   InjectionSymbols,
-  LogLevel,
   ProofEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
@@ -63,12 +67,9 @@ import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { PredicateType } from '../src/modules/proofs/formats/indy/models'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
-import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
+import { V1PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { KeyDerivationMethod } from '../src/types'
 import { LinkedAttachment } from '../src/utils/LinkedAttachment'
 import { uuid } from '../src/utils/uuid'
 
@@ -78,21 +79,24 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
+export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
+
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
 const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput>(
+export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
-) {
+): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
   const config: InitConfig = {
     label: `Agent: ${name}`,
     walletConfig: {
       id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
     publicDidSeed,
     autoAcceptConnections: true,
@@ -108,10 +112,11 @@ export function getAgentOptions<AgentModules extends AgentModulesInput>(
     ],
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
-    logger: new TestLogger(LogLevel.off, name),
+    logger: TestLogger.fromLogger(testLogger, name),
     ...extraConfig,
   }
-  return { config, modules, dependencies: agentDependencies } as const
+
+  return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
 }
 
 export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
@@ -145,16 +150,19 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
         genesisPath,
       },
     ],
-    logger: new TestLogger(LogLevel.off, name),
+    logger: TestLogger.fromLogger(testLogger, name),
     ...extraConfig,
   }
 
   return { config, dependencies: agentDependencies } as const
 }
 
-export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getAgentConfig(
+  name: string,
+  extraConfig: Partial<InitConfig> = {}
+): AgentConfig & { walletConfig: WalletConfig } {
   const { config, dependencies } = getAgentOptions(name, extraConfig)
-  return new AgentConfig(config, dependencies)
+  return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 
 export function getAgentContext({
@@ -214,7 +222,8 @@ export function waitForProofExchangeRecordSubject(
     timeoutMs?: number
   }
 ) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  const observable: Observable<ProofStateChangedEvent> =
+    subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueFrom(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -224,7 +233,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
+          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
   previousState: ${previousState},
   threadId: ${threadId},
   parentThreadId: ${parentThreadId},
@@ -233,6 +242,86 @@ export function waitForProofExchangeRecordSubject(
         )
       }),
       map((e) => e.payload.proofRecord)
+    )
+  )
+}
+
+export async function waitForTrustPingReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+
+  return waitForTrustPingReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingReceivedEventSubject(
+  subject: ReplaySubject<TrustPingReceivedEvent> | Observable<TrustPingReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
+export async function waitForTrustPingResponseReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
+    TrustPingEventTypes.TrustPingResponseReceivedEvent
+  )
+
+  return waitForTrustPingResponseReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingResponseReceivedEventSubject(
+  subject: ReplaySubject<TrustPingResponseReceivedEvent> | Observable<TrustPingResponseReceivedEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
     )
   )
 }
@@ -512,71 +601,24 @@ export async function issueCredential({
   }
 }
 
-export async function issueConnectionLessCredential({
-  issuerAgent,
-  holderAgent,
-  credentialTemplate,
-}: {
-  issuerAgent: Agent
-  holderAgent: Agent
-  credentialTemplate: IndyOfferCredentialFormat
-}) {
-  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
-  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
+/**
+ * Returns mock of function with correct type annotations according to original function `fn`.
+ * It can be used also for class methods.
+ *
+ * @param fn function you want to mock
+ * @returns mock function with type annotations
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
+  return fn as jest.MockedFunction<T>
+}
 
-  issuerAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(issuerReplay)
-  holderAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(holderReplay)
-
-  // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer({
-    comment: 'V1 Out of Band offer',
-    protocolVersion: 'v1',
-    credentialFormats: {
-      indy: {
-        attributes: credentialTemplate.attributes,
-        credentialDefinitionId: credentialTemplate.credentialDefinitionId,
-      },
-    },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  })
-
-  const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
-    recordId: issuerCredentialRecord.id,
-    domain: 'https://example.org',
-    message,
-  })
-
-  await holderAgent.receiveMessage(offerMessage.toJSON())
-
-  let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.OfferReceived,
-  })
-  const acceptOfferOptions: AcceptCredentialOfferOptions = {
-    credentialRecordId: holderCredentialRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-
-  await holderAgent.credentials.acceptOffer(acceptOfferOptions)
-
-  holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-
-  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-
-  return {
-    issuerCredential: issuerCredentialRecord,
-    holderCredential: holderCredentialRecord,
-  }
+/**
+ * Set a property using a getter value on a mocked oject.
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
+  Object.defineProperty(object, property, { get: () => value })
 }
 
 export async function presentProof({
@@ -590,7 +632,7 @@ export async function presentProof({
   holderAgent: Agent
   presentationTemplate: {
     attributes?: Record<string, ProofAttributeInfo>
-    predicates?: Record<string, ProofPredicateInfo>
+    predicates?: Record<string, ProofPredicateInfoOptions>
   }
 }) {
   const verifierReplay = new ReplaySubject<ProofStateChangedEvent>()
@@ -611,7 +653,6 @@ export async function presentProof({
         requestedAttributes: attributes,
         requestedPredicates: predicates,
         version: '1.0',
-        nonce: '947121108704767252195123',
       },
     },
     protocolVersion: 'v2',
@@ -619,11 +660,8 @@ export async function presentProof({
 
   let holderRecord = await holderProofExchangeRecordPromise
 
-  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
+  const requestedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
     proofRecordId: holderRecord.id,
-    config: {
-      filterByPresentationPreview: true,
-    },
   })
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
@@ -646,7 +684,7 @@ export async function presentProof({
     state: ProofState.Done,
   })
 
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
+  verifierRecord = await verifierAgent.proofs.acceptPresentation({ proofRecordId: verifierRecord.id })
   holderRecord = await holderProofExchangeRecordPromise
 
   return {
@@ -655,26 +693,8 @@ export async function presentProof({
   }
 }
 
-/**
- * Returns mock of function with correct type annotations according to original function `fn`.
- * It can be used also for class methods.
- *
- * @param fn function you want to mock
- * @returns mock function with type annotations
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
-  return fn as jest.MockedFunction<T>
-}
-
-/**
- * Set a property using a getter value on a mocked oject.
- */
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
-  Object.defineProperty(object, property, { get: () => value })
-}
-
+// Helper type to get the type of the agents (with the custom modules) for the credential tests
+export type CredentialTestsAgent = Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
 export async function setupCredentialTests(
   faberName: string,
   aliceName: string,
@@ -762,12 +782,12 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
 
   const unique = uuid().substring(0, 4)
 
-  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
+  const faberAgentOptions = getAgentOptions(`${faberName} - ${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:faber'],
   })
 
-  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
+  const aliceAgentOptions = getAgentOptions(`${aliceName} - ${unique}`, {
     autoAcceptProofs,
     endpoints: ['rxjs:alice'],
   })
@@ -798,26 +818,26 @@ export async function setupProofsTest(faberName: string, aliceName: string, auto
   const faberConnection = agentAConnection
   const aliceConnection = agentBConnection
 
-  const presentationPreview = new PresentationPreview({
+  const presentationPreview = new V1PresentationPreview({
     attributes: [
-      new PresentationPreviewAttribute({
+      {
         name: 'name',
         credentialDefinitionId: definition.id,
         referent: '0',
         value: 'John',
-      }),
-      new PresentationPreviewAttribute({
+      },
+      {
         name: 'image_0',
         credentialDefinitionId: definition.id,
-      }),
+      },
     ],
     predicates: [
-      new PresentationPreviewPredicate({
+      {
         name: 'age',
         credentialDefinitionId: definition.id,
         predicate: PredicateType.GreaterThanOrEqualTo,
         threshold: 50,
-      }),
+      },
     ],
   })
 

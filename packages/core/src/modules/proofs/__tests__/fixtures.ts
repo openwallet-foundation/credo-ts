@@ -15,3 +15,33 @@ export const credDef = {
     },
   },
 }
+
+export const TEST_INPUT_DESCRIPTORS_CITIZENSHIP = {
+  constraints: {
+    fields: [
+      {
+        path: ['$.credentialSubject.familyName'],
+        purpose: 'The claim must be from one of the specified issuers',
+        id: '1f44d55f-f161-4938-a659-f8026467f126',
+      },
+      {
+        path: ['$.credentialSubject.givenName'],
+        purpose: 'The claim must be from one of the specified issuers',
+      },
+    ],
+  },
+  schema: [
+    {
+      uri: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+    },
+    {
+      uri: 'https://w3id.org/citizenship#PermanentResident',
+    },
+    {
+      uri: 'https://w3id.org/citizenship/v1',
+    },
+  ],
+  name: "EU Driver's License",
+  group: ['A'],
+  id: 'citizenship_input_1',
+}

@@ -1,126 +1,74 @@
-import type { AgentConfig } from '../../../../../agent/AgentConfig'
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
-import type { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import type { MediationRecipientService, RoutingService } from '../../../../routing'
-import type { ProofResponseCoordinator } from '../../../ProofResponseCoordinator'
-import type { IndyProofFormat } from '../../../formats/indy/IndyProofFormat'
-import type {
-  FormatRequestedCredentialReturn,
-  FormatRetrievedCredentialOptions,
-} from '../../../models/ProofServiceOptions'
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V1ProofService } from '../V1ProofService'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { AriesFrameworkError } from '../../../../../error'
-import { DidCommMessageRole } from '../../../../../storage'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
+import { RoutingService } from '../../../../routing'
 import { V1RequestPresentationMessage } from '../messages'
 
 export class V1RequestPresentationHandler implements MessageHandler {
-  private proofService: V1ProofService
-  private agentConfig: AgentConfig
-  private proofResponseCoordinator: ProofResponseCoordinator
-  private mediationRecipientService: MediationRecipientService
-  private didCommMessageRepository: DidCommMessageRepository
-  private routingService: RoutingService
+  private proofProtocol: V1ProofProtocol
   public supportedMessages = [V1RequestPresentationMessage]
 
-  public constructor(
-    proofService: V1ProofService,
-    agentConfig: AgentConfig,
-    proofResponseCoordinator: ProofResponseCoordinator,
-    mediationRecipientService: MediationRecipientService,
-    didCommMessageRepository: DidCommMessageRepository,
-    routingService: RoutingService
-  ) {
-    this.proofService = proofService
-    this.agentConfig = agentConfig
-    this.proofResponseCoordinator = proofResponseCoordinator
-    this.mediationRecipientService = mediationRecipientService
-    this.didCommMessageRepository = didCommMessageRepository
-    this.routingService = routingService
+  public constructor(proofProtocol: V1ProofProtocol) {
+    this.proofProtocol = proofProtocol
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>) {
-    const proofRecord = await this.proofService.processRequest(messageContext)
+    const proofRecord = await this.proofProtocol.processRequest(messageContext)
 
-    const shouldAutoRespond = await this.proofResponseCoordinator.shouldAutoRespondToRequest(
-      messageContext.agentContext,
-      proofRecord
-    )
+    const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
+      proofRecord,
+      requestMessage: messageContext.message,
+    })
 
     if (shouldAutoRespond) {
-      return await this.createPresentation(proofRecord, messageContext)
+      return await this.acceptRequest(proofRecord, messageContext)
     }
   }
 
-  private async createPresentation(
-    record: ProofExchangeRecord,
+  private async acceptRequest(
+    proofRecord: ProofExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
-    const requestMessage = await this.didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: record.id,
-      messageClass: V1RequestPresentationMessage,
-    })
-
-    const indyProofRequest = requestMessage.indyProofRequest
-
-    this.agentConfig.logger.info(
-      `Automatically sending presentation with autoAccept on ${this.agentConfig.autoAcceptProofs}`
-    )
-
-    if (!indyProofRequest) {
-      this.agentConfig.logger.error('Proof request is undefined.')
-      throw new AriesFrameworkError('No proof request found.')
-    }
-
-    const retrievedCredentials: FormatRetrievedCredentialOptions<[IndyProofFormat]> =
-      await this.proofService.getRequestedCredentialsForProofRequest(messageContext.agentContext, {
-        proofRecord: record,
-        config: {
-          filterByPresentationPreview: true,
-        },
-      })
-    if (!retrievedCredentials.proofFormats.indy) {
-      this.agentConfig.logger.error('No matching Indy credentials could be retrieved.')
-      throw new AriesFrameworkError('No matching Indy credentials could be retrieved.')
-    }
-
-    const options: FormatRetrievedCredentialOptions<[IndyProofFormat]> = {
-      proofFormats: retrievedCredentials.proofFormats,
-    }
-    const requestedCredentials: FormatRequestedCredentialReturn<[IndyProofFormat]> =
-      await this.proofService.autoSelectCredentialsForProofRequest(options)
-
-    const { message, proofRecord } = await this.proofService.createPresentation(messageContext.agentContext, {
-      proofRecord: record,
-      proofFormats: {
-        indy: requestedCredentials.proofFormats.indy,
-      },
-      willConfirm: true,
-    })
+    messageContext.agentContext.config.logger.info(`Automatically sending presentation with autoAccept on`)
 
     if (messageContext.connection) {
+      const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
+        proofRecord,
+      })
+
       return new OutboundMessageContext(message, {
         agentContext: messageContext.agentContext,
         connection: messageContext.connection,
         associatedRecord: proofRecord,
       })
-    } else if (requestMessage.service) {
-      const routing = await this.routingService.getRouting(messageContext.agentContext)
-      message.service = new ServiceDecorator({
+    } else if (messageContext.message.service) {
+      const { message } = await this.proofProtocol.acceptRequest(messageContext.agentContext, {
+        proofRecord,
+      })
+
+      const routingService = messageContext.agentContext.dependencyManager.resolve(RoutingService)
+      const routing = await routingService.getRouting(messageContext.agentContext)
+      const ourService = new ServiceDecorator({
         serviceEndpoint: routing.endpoints[0],
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-      const recipientService = requestMessage.service
+      const recipientService = messageContext.message.service
 
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
+      // Set and save ~service decorator to record (to remember our verkey)
+      message.service = ourService
+
+      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
+      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: message,
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Sender,
       })
+
       return new OutboundMessageContext(message, {
         agentContext: messageContext.agentContext,
         serviceParams: {
@@ -130,6 +78,6 @@ export class V1RequestPresentationHandler implements MessageHandler {
       })
     }
 
-    this.agentConfig.logger.error(`Could not automatically create presentation`)
+    messageContext.agentContext.config.logger.error(`Could not automatically create presentation`)
   }
 }

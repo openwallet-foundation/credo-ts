@@ -121,12 +121,4 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @IsOptional()
   @Matches(indyDidRegex)
   public issuerDid?: string
-
-  public getAttachment(): Attachment | undefined {
-    if (this.appendedAttachments) {
-      return this.appendedAttachments[0]
-    } else {
-      return undefined
-    }
-  }
 }

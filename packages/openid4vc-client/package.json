@@ -1,0 +1,36 @@
+{
+  "name": "@aries-framework/openid4vc-client",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.3.3",
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-client",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/openid4vc-client"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/core": "0.3.3",
+    "@sphereon/openid4vci-client": "^0.3.6"
+  },
+  "devDependencies": {
+    "@aries-framework/node": "0.3.3",
+    "nock": "^13.3.0",
+    "rimraf": "^4.0.7",
+    "typescript": "~4.9.4"
+  }
+}

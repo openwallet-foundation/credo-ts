@@ -297,10 +297,7 @@ describe('W3cCredentialService', () => {
 
         const result = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
-          proofType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
-          verificationMethod:
-            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         })
 
         expect(result.verified).toBe(true)
@@ -310,7 +307,7 @@ describe('W3cCredentialService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<typeof w3cCredentialRepository['delete']>
+    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(typeof w3cCredentialRepository)['delete']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(

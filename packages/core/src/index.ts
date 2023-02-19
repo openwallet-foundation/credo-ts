@@ -9,6 +9,7 @@ export type { ModulesMap, DefaultAgentModules, EmptyModuleMap } from './agent/Ag
 export { EventEmitter } from './agent/EventEmitter'
 export { FeatureRegistry } from './agent/FeatureRegistry'
 export { MessageHandler, MessageHandlerInboundMessage } from './agent/MessageHandler'
+export { MessageHandlerRegistry } from './agent/MessageHandlerRegistry'
 export * from './agent/models'
 export { AgentConfig } from './agent/AgentConfig'
 export { AgentMessage } from './agent/AgentMessage'
@@ -23,14 +24,18 @@ export type {
   JsonArray,
   JsonObject,
   JsonValue,
+  WalletConfigRekey,
+  WalletExportImportConfig,
+  WalletStorageConfig,
 } from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
-export type { FileSystem } from './storage/FileSystem'
+export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export { StorageService, Query } from './storage/StorageService'
+export { StorageService, Query, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
+export * from './storage/migration'
 export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'
 export * from './wallet'
@@ -53,6 +58,7 @@ export * from './modules/routing'
 export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
+export * from './modules/cache'
 export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedArrayEncoder, Buffer } from './utils'
 export * from './logger'
 export * from './error'
@@ -62,6 +68,10 @@ export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
 
+export { encodeAttachment } from './utils/attachment'
+export { Hasher } from './utils/Hasher'
+export { MessageValidator } from './utils/MessageValidator'
+export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'
 import { uuid } from './utils/uuid'
 

@@ -1,5 +1,3 @@
-import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
-import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
   ClearMenuOptions,
   CreateMenuOptions,
@@ -7,6 +5,8 @@ import type {
   CreateRequestOptions,
   FindMenuOptions,
 } from './ActionMenuServiceOptions'
+import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
+import type { ActionMenuProblemReportMessage } from '../messages'
 import type { AgentContext, InboundMessageContext, Logger, Query } from '@aries-framework/core'
 
 import { AgentConfig, EventEmitter, AriesFrameworkError, injectable, JsonTransformer } from '@aries-framework/core'
@@ -63,7 +63,7 @@ export class ActionMenuService {
         connectionId: options.connection.id,
         role: ActionMenuRole.Requester,
         state: ActionMenuState.AwaitingRootMenu,
-        threadId: menuRequestMessage.id,
+        threadId: menuRequestMessage.threadId,
       })
 
       await this.actionMenuRepository.save(agentContext, actionMenuRecord)
@@ -102,7 +102,7 @@ export class ActionMenuService {
         connectionId: connection.id,
         role: ActionMenuRole.Responder,
         state: ActionMenuState.PreparingRootMenu,
-        threadId: menuRequestMessage.id,
+        threadId: menuRequestMessage.threadId,
       })
 
       await this.actionMenuRepository.save(agentContext, actionMenuRecord)
@@ -157,7 +157,7 @@ export class ActionMenuService {
         role: ActionMenuRole.Responder,
         state: ActionMenuState.AwaitingSelection,
         menu: options.menu,
-        threadId: menuMessage.id,
+        threadId: menuMessage.threadId,
       })
 
       await this.actionMenuRepository.save(agentContext, actionMenuRecord)
@@ -203,7 +203,7 @@ export class ActionMenuService {
         connectionId: connection.id,
         role: ActionMenuRole.Requester,
         state: ActionMenuState.PreparingSelection,
-        threadId: menuMessage.id,
+        threadId: menuMessage.threadId,
         menu: new ActionMenu({
           title: menuMessage.title,
           description: menuMessage.description,

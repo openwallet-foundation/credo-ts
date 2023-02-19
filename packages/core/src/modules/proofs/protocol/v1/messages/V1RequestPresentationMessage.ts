@@ -1,4 +1,3 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
 import type { IndyProofRequest } from 'indy-sdk'
 
 import { Expose, Type } from 'class-transformer'
@@ -6,18 +5,12 @@ import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V2_INDY_PRESENTATION_REQUEST } from '../../../formats/ProofFormatConstants'
-import { ProofRequest } from '../../../formats/indy/models/ProofRequest'
-import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
-export interface RequestPresentationOptions {
+export interface V1RequestPresentationMessageOptions {
   id?: string
   comment?: string
-  parentThreadId?: string
-  requestPresentationAttachments: Attachment[]
+  requestAttachments: Attachment[]
 }
 
 export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
@@ -28,18 +21,13 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
 export class V1RequestPresentationMessage extends AgentMessage {
-  public constructor(options: RequestPresentationOptions) {
+  public constructor(options: V1RequestPresentationMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.requestPresentationAttachments = options.requestPresentationAttachments
-      if (options.parentThreadId) {
-        this.setThread({
-          parentThreadId: options.parentThreadId,
-        })
-      }
+      this.requestAttachments = options.requestAttachments
     }
   }
 
@@ -64,43 +52,15 @@ export class V1RequestPresentationMessage extends AgentMessage {
     each: true,
   })
   @IsInstance(Attachment, { each: true })
-  public requestPresentationAttachments!: Attachment[]
+  public requestAttachments!: Attachment[]
 
-  public get indyProofRequest(): ProofRequest | null {
-    // Extract proof request from attachment
-    const proofRequestJson = this.indyProofRequestJson
-    const proofRequest = JsonTransformer.fromJSON(proofRequestJson, ProofRequest)
-
-    return proofRequest
-  }
-
-  public get indyProofRequestJson(): IndyProofRequest | null {
-    const attachment = this.requestPresentationAttachments.find(
-      (attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID
-    )
+  public get indyProofRequest(): IndyProofRequest | null {
+    const attachment = this.requestAttachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID)
     // Extract proof request from attachment
     return attachment?.getDataAsJson<IndyProofRequest>() ?? null
   }
 
-  public getAttachmentFormats(): ProofAttachmentFormat[] {
-    const attachment = this.indyAttachment
-
-    if (!attachment) {
-      throw new AriesFrameworkError(`Could not find a request presentation attachment`)
-    }
-
-    return [
-      {
-        format: new ProofFormatSpec({ format: V2_INDY_PRESENTATION_REQUEST }),
-        attachment: attachment,
-      },
-    ]
-  }
-
-  public get indyAttachment(): Attachment | null {
-    return (
-      this.requestPresentationAttachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID) ??
-      null
-    )
+  public getRequestAttachmentById(id: string): Attachment | undefined {
+    return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

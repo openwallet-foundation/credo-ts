@@ -3,13 +3,12 @@ import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validato
 
 import { AgentMessage } from '../../../../../agent/AgentMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { PresentationPreview } from '../models/V1PresentationPreview'
+import { V1PresentationPreview } from '../models/V1PresentationPreview'
 
-export interface ProposePresentationMessageOptions {
+export interface V1ProposePresentationMessageOptions {
   id?: string
   comment?: string
-  parentThreadId?: string
-  presentationProposal: PresentationPreview
+  presentationProposal: V1PresentationPreview
 }
 
 /**
@@ -18,17 +17,12 @@ export interface ProposePresentationMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#propose-presentation
  */
 export class V1ProposePresentationMessage extends AgentMessage {
-  public constructor(options: ProposePresentationMessageOptions) {
+  public constructor(options: V1ProposePresentationMessageOptions) {
     super()
 
     if (options) {
       this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      if (options.parentThreadId) {
-        this.setThread({
-          parentThreadId: options.parentThreadId,
-        })
-      }
       this.presentationProposal = options.presentationProposal
     }
   }
@@ -48,8 +42,8 @@ export class V1ProposePresentationMessage extends AgentMessage {
    * Represents the presentation example that prover wants to provide.
    */
   @Expose({ name: 'presentation_proposal' })
-  @Type(() => PresentationPreview)
+  @Type(() => V1PresentationPreview)
   @ValidateNested()
-  @IsInstance(PresentationPreview)
-  public presentationProposal!: PresentationPreview
+  @IsInstance(V1PresentationPreview)
+  public presentationProposal!: V1PresentationPreview
 }

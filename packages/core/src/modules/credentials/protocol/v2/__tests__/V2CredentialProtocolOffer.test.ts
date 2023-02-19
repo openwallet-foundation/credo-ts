@@ -1,5 +1,5 @@
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CreateOfferOptions } from '../../../CredentialProtocolOptions'
+import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
 
@@ -78,7 +78,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const connection = getMockConnection({
+const connectionRecord = getMockConnection({
   id: '123',
   state: DidExchangeState.Completed,
 })
@@ -88,7 +88,7 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 const offerFormat = new CredentialFormatSpec({
-  attachId: 'offer-attachment-id',
+  attachmentId: 'offer-attachment-id',
   format: 'hlindy/cred-abstract@v2.0',
 })
 
@@ -106,7 +106,7 @@ describe('V2CredentialProtocolOffer', () => {
 
   beforeEach(async () => {
     // mock function implementations
-    mockFunction(connectionService.getById).mockResolvedValue(connection)
+    mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
     mockFunction(indyLedgerService.getCredentialDefinition).mockResolvedValue(credDef)
     mockFunction(indyLedgerService.getSchema).mockResolvedValue(schema)
 
@@ -120,9 +120,9 @@ describe('V2CredentialProtocolOffer', () => {
   })
 
   describe('createOffer', () => {
-    const offerOptions: CreateOfferOptions<[IndyCredentialFormatService]> = {
+    const offerOptions: CreateCredentialOfferOptions<[IndyCredentialFormatService]> = {
       comment: 'some comment',
-      connection,
+      connectionRecord,
       credentialFormats: {
         indy: {
           attributes: credentialPreview.attributes,
@@ -150,7 +150,7 @@ describe('V2CredentialProtocolOffer', () => {
           id: expect.any(String),
           createdAt: expect.any(Date),
           state: CredentialState.OfferSent,
-          connectionId: connection.id,
+          connectionId: connectionRecord.id,
         })
       )
     })
@@ -224,7 +224,10 @@ describe('V2CredentialProtocolOffer', () => {
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundMessageContext(credentialOfferMessage, { agentContext, connection })
+    const messageContext = new InboundMessageContext(credentialOfferMessage, {
+      agentContext,
+      connection: connectionRecord,
+    })
 
     test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
       mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
@@ -241,7 +244,7 @@ describe('V2CredentialProtocolOffer', () => {
           id: expect.any(String),
           createdAt: expect.any(Date),
           threadId: credentialOfferMessage.id,
-          connectionId: connection.id,
+          connectionId: connectionRecord.id,
           state: CredentialState.OfferReceived,
         })
       )

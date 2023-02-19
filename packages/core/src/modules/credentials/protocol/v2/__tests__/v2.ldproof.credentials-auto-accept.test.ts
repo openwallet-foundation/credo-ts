@@ -1,4 +1,4 @@
-import type { Agent } from '../../../../../agent/Agent'
+import type { CredentialTestsAgent } from '../../../../../../tests/helpers'
 import type { Wallet } from '../../../../../wallet'
 import type { ConnectionRecord } from '../../../../connections'
 import type { JsonCredential, JsonLdCredentialDetailFormat } from '../../../formats/jsonld/JsonLdCredentialFormat'
@@ -26,8 +26,8 @@ const TEST_LD_DOCUMENT: JsonCredential = {
 }
 
 describe('credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: CredentialTestsAgent
+  let aliceAgent: CredentialTestsAgent
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
   let aliceCredentialRecord: CredentialExchangeRecord
@@ -43,7 +43,7 @@ describe('credentials', () => {
         AutoAcceptCredential.Always
       ))
 
-      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
@@ -142,7 +142,7 @@ describe('credentials', () => {
         'alice agent: content-approved v2 jsonld',
         AutoAcceptCredential.ContentApproved
       ))
-      wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+      wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
       await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
       signCredentialOptions = {
         credential: TEST_LD_DOCUMENT,
@@ -310,7 +310,17 @@ describe('credentials', () => {
       const aliceExchangeCredentialRecord = await aliceAgent.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
-          jsonld: signCredentialOptions,
+          // Send a different object
+          jsonld: {
+            ...signCredentialOptions,
+            credential: {
+              ...signCredentialOptions.credential,
+              credentialSubject: {
+                ...signCredentialOptions.credential.credentialSubject,
+                name: 'Different Property',
+              },
+            },
+          },
         },
         comment: 'v2 propose credential test',
       })
@@ -328,6 +338,7 @@ describe('credentials', () => {
       aliceCredentialRecord = await aliceAgent.credentials.getById(aliceCredentialRecord.id)
       aliceCredentialRecord.assertState(CredentialState.ProposalSent)
     })
+
     test('Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on `contentApproved` and attributes did change', async () => {
       testLogger.test('Alice sends credential proposal to Faber')
       const aliceCredentialExchangeRecord = await aliceAgent.credentials.proposeCredential({
@@ -348,7 +359,17 @@ describe('credentials', () => {
       await faberAgent.credentials.negotiateProposal({
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
-          jsonld: signCredentialOptions,
+          // Send a different object
+          jsonld: {
+            ...signCredentialOptions,
+            credential: {
+              ...signCredentialOptions.credential,
+              credentialSubject: {
+                ...signCredentialOptions.credential.credentialSubject,
+                name: 'Different Property',
+              },
+            },
+          },
         },
       })
 

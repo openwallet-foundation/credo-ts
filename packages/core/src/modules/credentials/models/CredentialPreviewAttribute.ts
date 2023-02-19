@@ -35,5 +35,5 @@ export class CredentialPreviewAttribute {
 }
 
 export interface CredentialPreviewOptions {
-  attributes: CredentialPreviewAttribute[]
+  attributes: CredentialPreviewAttributeOptions[]
 }

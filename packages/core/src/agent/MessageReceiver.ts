@@ -1,10 +1,10 @@
-import type { ConnectionRecord } from '../modules/connections'
-import type { InboundTransport } from '../transport'
-import type { EncryptedMessage, PlaintextMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { ConnectionRecord } from '../modules/connections'
+import type { InboundTransport } from '../transport'
+import type { EncryptedMessage, PlaintextMessage } from '../types'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -147,7 +147,7 @@ export class MessageReceiver {
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
+      session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     } else if (session) {
@@ -278,7 +278,7 @@ export class MessageReceiver {
       },
     })
     problemReportMessage.setThread({
-      threadId: plaintextMessage['@id'],
+      parentThreadId: plaintextMessage['@id'],
     })
     const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
     if (outboundMessageContext) {

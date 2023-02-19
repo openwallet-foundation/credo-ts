@@ -1,9 +1,9 @@
+import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
+import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Constructor } from '../../utils/mixins'
 import type { Optional } from '../../utils/type'
-import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
-import type { CredentialProtocol } from './protocol/CredentialProtocol'
 
 import { Protocol } from '../../agent/models'
 
@@ -20,7 +20,7 @@ import { CredentialRepository } from './repository'
  */
 export type DefaultCredentialProtocols = [V1CredentialProtocol, V2CredentialProtocol<IndyCredentialFormatService[]>]
 
-// CredentialModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
+// CredentialsModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
 export type CredentialsModuleOptions<CredentialProtocols extends CredentialProtocol[]> = Optional<
   CredentialsModuleConfigOptions<CredentialProtocols>,
   'credentialProtocols'
@@ -38,7 +38,7 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
     this.config = new CredentialsModuleConfig({
       ...config,
       // NOTE: the credentialProtocols defaults are set in the CredentialsModule rather than the CredentialsModuleConfig to
-      // void dependency cycles.
+      // avoid dependency cycles.
       credentialProtocols: config?.credentialProtocols ?? this.getDefaultCredentialProtocols(),
     }) as CredentialsModuleConfig<CredentialProtocols>
   }

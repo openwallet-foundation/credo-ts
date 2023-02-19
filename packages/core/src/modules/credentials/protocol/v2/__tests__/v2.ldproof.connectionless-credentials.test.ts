@@ -58,8 +58,8 @@ let wallet
 let signCredentialOptions: JsonLdCredentialDetailFormat
 
 describe('credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
+  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   const seed = 'testseed000000000000000000000001'
@@ -104,7 +104,7 @@ describe('credentials', () => {
     aliceAgent.events
       .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
       .subscribe(aliceReplay)
-    wallet = faberAgent.injectionContainer.resolve<Wallet>(InjectionSymbols.Wallet)
+    wallet = faberAgent.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
 
     await wallet.createKey({ seed, keyType: KeyType.Ed25519 })
 
