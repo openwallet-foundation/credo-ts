@@ -356,7 +356,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
+            returnRoute: options.hasReturnRoute !== false, // defaults to true if missing
           },
         })
       )
@@ -495,7 +495,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
+            returnRoute: options.hasReturnRoute !== false, // defaults to true if missing
           },
         })
       )

@@ -94,6 +94,7 @@ export interface RequestProofOptions<PPs extends ProofProtocol[] = ProofProtocol
  */
 export interface AcceptProofRequestOptions<PPs extends ProofProtocol[] = ProofProtocol[]> extends BaseOptions {
   proofRecordId: string
+  hasReturnRoute?: boolean
   proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptRequest'>
 
   goalCode?: string
@@ -117,6 +118,7 @@ export interface NegotiateProofRequestOptions<PPs extends ProofProtocol[] = Proo
  */
 export interface AcceptProofOptions {
   proofRecordId: string
+  hasReturnRoute?: boolean
 }
 
 /**
