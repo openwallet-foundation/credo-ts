@@ -130,9 +130,8 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
   // did is first 16 bytes of public key encoded as base58
   const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
 
-  // resolve and store the did document in the wallet so it can be used
-  const didDocument = await agent.dids.resolveDidDocument(`did:sov:${unqualifiedIndyDid}`)
-  await agent.dids.storeCreatedDid({ didDocument })
+  // import the did in the wallet so it can be used
+  await agent.dids.import({ did: `did:sov:${unqualifiedIndyDid}` })
 
   return unqualifiedIndyDid
 }

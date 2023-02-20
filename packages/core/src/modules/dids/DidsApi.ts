@@ -1,4 +1,4 @@
-import type { StoreDidOptions } from './DidsApiOptions'
+import type { ImportDidOptions } from './DidsApiOptions'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -10,6 +10,7 @@ import type {
 } from './types'
 
 import { AgentContext } from '../../agent'
+import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 
 import { DidsModuleConfig } from './DidsModuleConfig'
@@ -102,17 +103,57 @@ export class DidsApi {
   }
 
   /**
-   * Store a did document that was created outside of the agent. This will create a `DidRecord` for the did
+   * Import an existing did that was created outside of the DidsApi. This will create a `DidRecord` for the did
    * and will allow the did to be used in other parts of the agent. If you need to create a new did document,
    * you can use the {@link DidsApi.create} method to create and register the did.
    *
-   * NOTE: You need to make sure the keys in the did document are stored in the agent wallet before you can
-   * use them for other operations. You can use the {@link WalletApi.createKey} method to import keys based
-   * on a seed or privateKey
+   * If no `didDocument` is provided, the did document will be resolved using the did resolver. You can optionally provide a list
+   * of private key buffer with the respective private key bytes. These keys will be stored in the wallet, and allows you to use the
+   * did for other operations.
+   *
+   * By default, this method will throw an error if the did already exists in the wallet. You can override this behavior by setting
+   * the `overwrite` option to `true`. This will update the did document in the record, and allows you to update the did over time.
    */
-  public async storeCreatedDid({ didDocument }: StoreDidOptions) {
+  public async import({ did, didDocument, privateKeys = [], overwrite }: ImportDidOptions) {
+    if (didDocument && didDocument.id !== did) {
+      throw new AriesFrameworkError(`Did document id ${didDocument.id} does not match did ${did}`)
+    }
+
+    const existingDidRecord = await this.didRepository.findCreatedDid(this.agentContext, did)
+    if (existingDidRecord && !overwrite) {
+      throw new AriesFrameworkError(
+        `A created did ${did} already exists. If you want to override the existing did, set the 'overwrite' option to update the did.`
+      )
+    }
+
+    if (!didDocument) {
+      didDocument = await this.resolveDidDocument(did)
+    }
+
+    // Loop over all private keys and store them in the wallet. We don't check whether the keys are actually associated
+    // with the did document, this is up to the user.
+    for (const key of privateKeys) {
+      // TODO: Should we check if the keys are already in the wallet?
+      await this.agentContext.wallet.createKey({
+        keyType: key.keyType,
+        privateKey: key.privateKey,
+      })
+    }
+
+    // Update existing did record
+    if (existingDidRecord) {
+      existingDidRecord.didDocument = didDocument
+      existingDidRecord.setTags({
+        recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+      })
+
+      await this.didRepository.update(this.agentContext, existingDidRecord)
+      return
+    }
+
+    // Create new did record
     await this.didRepository.storeCreatedDid(this.agentContext, {
-      did: didDocument.id,
+      did,
       didDocument,
       tags: {
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),

@@ -34,10 +34,10 @@ export class Faber extends BaseAgent {
 
     // did is first 16 bytes of public key encoded as base58
     const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
+    await faber.agent.dids.import({
+      did: `did:sov:${unqualifiedIndyDid}`,
+    })
 
-    // resolve and store the did document in the wallet so it can be used
-    const didDocument = await faber.agent.dids.resolveDidDocument(`did:sov:${unqualifiedIndyDid}`)
-    await faber.agent.dids.storeCreatedDid({ didDocument })
     faber.anonCredsIssuerId = unqualifiedIndyDid
 
     return faber
