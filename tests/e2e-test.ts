@@ -50,6 +50,9 @@ export async function e2eTest({
   const [recipientSenderConnection, senderRecipientConnection] = await makeConnection(recipientAgent, senderAgent)
   expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
 
+  // Create link secret with default options. This should create a default link secret.
+  await recipientAgent.modules.anoncreds.createLinkSecret()
+
   // Issue credential from sender to recipient
   const { credentialDefinition } = await prepareForAnonCredsIssuance(senderAgent, {
     attributeNames: ['name', 'age', 'dateOfBirth'],

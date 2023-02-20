@@ -168,6 +168,12 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     await aliceAgent.initialize()
     ;[, { id: aliceConnectionId }] = await makeConnection(faberAgent, aliceAgent)
 
+    // Create link secret for alice
+    await aliceAgent.modules.anoncreds.createLinkSecret({
+      linkSecretId: 'default',
+      setAsDefault: true,
+    })
+
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
       issuerId: faberAgent.publicDid?.did as string,

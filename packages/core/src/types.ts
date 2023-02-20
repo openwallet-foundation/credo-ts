@@ -22,7 +22,6 @@ export interface WalletConfig {
   key: string
   keyDerivationMethod?: KeyDerivationMethod
   storage?: WalletStorageConfig
-  masterSecretId?: string
 }
 
 export interface WalletConfigRekey {

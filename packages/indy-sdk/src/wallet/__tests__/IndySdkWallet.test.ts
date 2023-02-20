@@ -20,14 +20,6 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-const walletConfigWithMasterSecretId: WalletConfig = {
-  id: 'Wallet: WalletTestWithMasterSecretId',
-  // generated using indy.generateWalletKey
-  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
-  keyDerivationMethod: KeyDerivationMethod.Raw,
-  masterSecretId: 'customMasterSecretId',
-}
-
 describe('IndySdkWallet', () => {
   let indySdkWallet: IndySdkWallet
 
@@ -49,10 +41,6 @@ describe('IndySdkWallet', () => {
       did: expect.any(String),
       verkey: expect.any(String),
     })
-  })
-
-  test('Get the Master Secret', () => {
-    expect(indySdkWallet.masterSecretId).toEqual('Wallet: IndySdkWalletTest')
   })
 
   test('Get the wallet handle', () => {
@@ -107,26 +95,5 @@ describe('IndySdkWallet', () => {
       key: ed25519Key,
     })
     await expect(indySdkWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
-  })
-
-  test('masterSecretId is equal to wallet ID by default', async () => {
-    expect(indySdkWallet.masterSecretId).toEqual(walletConfig.id)
-  })
-})
-
-describe('IndySdkWallet with custom Master Secret Id', () => {
-  let indySdkWallet: IndySdkWallet
-
-  beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
-    await indySdkWallet.createAndOpen(walletConfigWithMasterSecretId)
-  })
-
-  afterEach(async () => {
-    await indySdkWallet.delete()
-  })
-
-  test('masterSecretId is set by config', async () => {
-    expect(indySdkWallet.masterSecretId).toEqual(walletConfigWithMasterSecretId.masterSecretId)
   })
 })
