@@ -88,6 +88,7 @@ export interface AnonCredsProof {
 
     requested_predicates: Record<string, { sub_proof_index: number }>
   }
+  // TODO: extend types for proof property
   proof: any
   identifiers: Array<{
     schema_id: string

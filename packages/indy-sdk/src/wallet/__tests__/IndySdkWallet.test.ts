@@ -7,9 +7,9 @@ import {
   TypedArrayEncoder,
   KeyDerivationMethod,
 } from '@aries-framework/core'
+import indySdk from 'indy-sdk'
 
 import testLogger from '../../../../core/tests/logger'
-import { agentDependencies } from '../../../../node/src'
 import { IndySdkWallet } from '../IndySdkWallet'
 
 // use raw key derivation method to speed up wallet creating / opening / closing between tests
@@ -20,22 +20,14 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-const walletConfigWithMasterSecretId: WalletConfig = {
-  id: 'Wallet: WalletTestWithMasterSecretId',
-  // generated using indy.generateWalletKey
-  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
-  keyDerivationMethod: KeyDerivationMethod.Raw,
-  masterSecretId: 'customMasterSecretId',
-}
-
 describe('IndySdkWallet', () => {
   let indySdkWallet: IndySdkWallet
 
-  const seed = 'sample-seed'
+  const privateKey = TypedArrayEncoder.fromString('sample-seed')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(agentDependencies.indy, testLogger, new SigningProviderRegistry([]))
+    indySdkWallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
     await indySdkWallet.createAndOpen(walletConfig)
   })
 
@@ -49,10 +41,6 @@ describe('IndySdkWallet', () => {
       did: expect.any(String),
       verkey: expect.any(String),
     })
-  })
-
-  test('Get the Master Secret', () => {
-    expect(indySdkWallet.masterSecretId).toEqual('Wallet: IndySdkWalletTest')
   })
 
   test('Get the wallet handle', () => {
@@ -72,16 +60,23 @@ describe('IndySdkWallet', () => {
     await expect(indySdkWallet.generateNonce()).resolves.toEqual(expect.any(String))
   })
 
-  test('Create ed25519 keypair', async () => {
+  test('Create ed25519 keypair from private key', async () => {
     await expect(
-      indySdkWallet.createKey({ seed: '2103de41b4ae37e8e28586d84a342b67', keyType: KeyType.Ed25519 })
+      indySdkWallet.createKey({
+        privateKey: TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67'),
+        keyType: KeyType.Ed25519,
+      })
     ).resolves.toMatchObject({
       keyType: KeyType.Ed25519,
     })
   })
 
+  test('Fail to create ed25519 keypair from seed', async () => {
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(WalletError)
+  })
+
   test('Fail to create x25519 keypair', async () => {
-    await expect(indySdkWallet.createKey({ seed, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {
@@ -100,26 +95,5 @@ describe('IndySdkWallet', () => {
       key: ed25519Key,
     })
     await expect(indySdkWallet.verify({ key: ed25519Key, data: message, signature })).resolves.toStrictEqual(true)
-  })
-
-  test('masterSecretId is equal to wallet ID by default', async () => {
-    expect(indySdkWallet.masterSecretId).toEqual(walletConfig.id)
-  })
-})
-
-describe('IndySdkWallet with custom Master Secret Id', () => {
-  let indySdkWallet: IndySdkWallet
-
-  beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(agentDependencies.indy, testLogger, new SigningProviderRegistry([]))
-    await indySdkWallet.createAndOpen(walletConfigWithMasterSecretId)
-  })
-
-  afterEach(async () => {
-    await indySdkWallet.delete()
-  })
-
-  test('masterSecretId is set by config', async () => {
-    expect(indySdkWallet.masterSecretId).toEqual(walletConfigWithMasterSecretId.masterSecretId)
   })
 })

@@ -2,6 +2,7 @@ import type { IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type {
   AgentContext,
+  Buffer,
   DidRegistrar,
   DidCreateOptions,
   DidCreateResult,
@@ -41,29 +42,21 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<DidCreateResult> {
     const seed = options.secret?.seed
-    if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Invalid seed provided',
-        },
-      }
-    }
+    const privateKey = options.secret?.privateKey
 
     const { alias, role, submitterDid, submitterVerkey, services, useEndpointAttrib } = options.options
     let verkey = options.options.verkey
     let did = options.did
     let id
 
-    if (seed && did) {
+    const allowOne = [privateKey, seed, did].filter((e) => e !== undefined)
+    if (allowOne.length > 1) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `Only one of 'seed' and 'did' must be provided`,
+          reason: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
         },
       }
     }
@@ -88,7 +81,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
       } else {
         // Create a new key and calculate did according to the rules for indy did method
-        const key = await agentContext.wallet.createKey({ seed, keyType: KeyType.Ed25519 })
+        const key = await agentContext.wallet.createKey({ privateKey, seed, keyType: KeyType.Ed25519 })
         const buffer = Hasher.hash(key.publicKey, 'sha2-256')
 
         id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
@@ -188,6 +181,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             // we have a secure method for generating seeds we should use the same
             // approach
             seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey,
           },
         },
       }
@@ -325,7 +319,8 @@ export interface IndyVdrDidCreateOptions extends DidCreateOptions {
     verkey?: string
   }
   secret?: {
-    seed?: string
+    seed?: Buffer
+    privateKey?: Buffer
   }
 }
 

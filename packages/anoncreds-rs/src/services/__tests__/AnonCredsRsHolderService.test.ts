@@ -240,7 +240,7 @@ describe('AnonCredsRsHolderService', () => {
       },
     }
 
-    const proof = await anonCredsHolderService.createProof(agentContext, {
+    await anonCredsHolderService.createProof(agentContext, {
       credentialDefinitions: {
         'personcreddef:uri': personCredentialDefinition as AnonCredsCredentialDefinition,
         'phonecreddef:uri': phoneCredentialDefinition as AnonCredsCredentialDefinition,

@@ -235,7 +235,7 @@ export class MessageSender {
         outOfBand
       ))
     } catch (error) {
-      this.logger.error(`Unable to retrieve services for connection '${connection.id}`)
+      this.logger.error(`Unable to retrieve services for connection '${connection.id}. ${error.message}`)
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
       throw new MessageSendingError(`Unable to retrieve services for connection '${connection.id}`, {
         outboundMessageContext,

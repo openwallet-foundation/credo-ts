@@ -1,30 +1,29 @@
 import type { IndySdk } from '../../types'
-import type { AgentContext, TagsBase } from '@aries-framework/core'
+import type { TagsBase } from '@aries-framework/core'
 
-import { SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry } from '@aries-framework/core'
+import * as indySdk from 'indy-sdk'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { IndySdkWallet } from '../../wallet/IndySdkWallet'
 import { IndySdkStorageService } from '../IndySdkStorageService'
 
-describe('IndySdkStorageService', () => {
-  let wallet: IndySdkWallet
-  let indy: IndySdk
-  let storageService: IndySdkStorageService<TestRecord>
-  let agentContext: AgentContext
+const agentConfig = getAgentConfig('IndySdkStorageServiceTest')
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
 
+const agentContext = getAgentContext({
+  wallet,
+  agentConfig,
+})
+
+const storageService = new IndySdkStorageService<TestRecord>(indySdk)
+const startDate = Date.now()
+
+describe('IndySdkStorageService', () => {
   beforeEach(async () => {
-    indy = agentDependencies.indy
-    const agentConfig = getAgentConfig('IndySdkStorageServiceTest')
-    wallet = new IndySdkWallet(indy, agentConfig.logger, new SigningProviderRegistry([]))
-    agentContext = getAgentContext({
-      wallet,
-      agentConfig,
-    })
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)
-    storageService = new IndySdkStorageService<TestRecord>(indy)
   })
 
   afterEach(async () => {
@@ -57,7 +56,7 @@ describe('IndySdkStorageService', () => {
         },
       })
 
-      const retrieveRecord = await indy.getWalletRecord(wallet.handle, record.type, record.id, {
+      const retrieveRecord = await indySdk.getWalletRecord(wallet.handle, record.type, record.id, {
         retrieveType: true,
         retrieveTags: true,
       })
@@ -74,7 +73,7 @@ describe('IndySdkStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await indy.addWalletRecord(wallet.handle, TestRecord.type, 'some-id', '{}', {
+      await indySdk.addWalletRecord(wallet.handle, TestRecord.type, 'some-id', '{}', {
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
@@ -110,6 +109,12 @@ describe('IndySdkStorageService', () => {
       const found = await storageService.getById(agentContext, TestRecord, 'test-id')
 
       expect(record).toEqual(found)
+    })
+
+    it('After a save the record should have update the updatedAt property', async () => {
+      const time = startDate
+      const record = await insertRecord({ id: 'test-updatedAt' })
+      expect(record.updatedAt?.getTime()).toBeGreaterThan(time)
     })
   })
 
@@ -148,6 +153,18 @@ describe('IndySdkStorageService', () => {
 
       const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
       expect(retrievedRecord).toEqual(record)
+    })
+
+    it('After a record has been updated it should have updated the updatedAT property', async () => {
+      const time = startDate
+      const record = await insertRecord({ id: 'test-id' })
+
+      record.replaceTags({ ...record.getTags(), foo: 'bar' })
+      record.foo = 'foobaz'
+      await storageService.update(agentContext, record)
+
+      const retrievedRecord = await storageService.getById(agentContext, TestRecord, record.id)
+      expect(retrievedRecord.createdAt.getTime()).toBeGreaterThan(time)
     })
   })
 
@@ -237,13 +254,13 @@ describe('IndySdkStorageService', () => {
 
     it('correctly transforms an advanced query into a valid WQL query', async () => {
       const indySpy = jest.fn()
-      const storageServiceWithoutIndy = new IndySdkStorageService<TestRecord>({
+      const storageServiceWithoutIndySdk = new IndySdkStorageService<TestRecord>({
         openWalletSearch: indySpy,
         fetchWalletSearchNextRecords: jest.fn(() => ({ records: undefined })),
         closeWalletSearch: jest.fn(),
       } as unknown as IndySdk)
 
-      await storageServiceWithoutIndy.findByQuery(agentContext, TestRecord, {
+      await storageServiceWithoutIndySdk.findByQuery(agentContext, TestRecord, {
         $and: [
           {
             $or: [{ myTag: true }, { myTag: false }],

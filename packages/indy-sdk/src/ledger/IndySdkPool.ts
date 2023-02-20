@@ -16,12 +16,19 @@ export interface TransactionAuthorAgreement {
 }
 
 export interface IndySdkPoolConfig {
+  /**
+   * Optional id that influences the pool config that is created by the indy-sdk.
+   * Uses the indyNamespace as the pool identifier if not provided.
+   */
+  id?: string
+
   genesisPath?: string
   genesisTransactions?: string
-  id: string
+
   isProduction: boolean
   indyNamespace: string
   transactionAuthorAgreement?: TransactionAuthorAgreement
+  connectOnStartup?: boolean
 }
 
 export class IndySdkPool {
@@ -30,7 +37,7 @@ export class IndySdkPool {
   private fileSystem: FileSystem
   private poolConfig: IndySdkPoolConfig
   private _poolHandle?: number
-  private poolConnected?: Promise<number>
+  private poolConnected?: Promise<void>
   public authorAgreement?: AuthorAgreement | null
 
   public constructor(
@@ -84,7 +91,7 @@ export class IndySdkPool {
       await this.close()
     }
 
-    await this.indySdk.deletePoolLedgerConfig(this.poolConfig.id)
+    await this.indySdk.deletePoolLedgerConfig(this.poolConfig.indyNamespace)
   }
 
   public async connect() {
@@ -103,7 +110,7 @@ export class IndySdkPool {
   }
 
   private async connectToLedger() {
-    const poolName = this.poolConfig.id
+    const poolName = this.poolConfig.id ?? this.poolConfig.indyNamespace
     const genesisPath = await this.getGenesisPath()
 
     if (!genesisPath) {
@@ -115,7 +122,7 @@ export class IndySdkPool {
 
     try {
       this._poolHandle = await this.indySdk.openPoolLedger(poolName)
-      return this._poolHandle
+      return
     } catch (error) {
       if (!isIndyError(error, 'PoolLedgerNotCreatedError')) {
         throw isIndyError(error) ? new IndySdkError(error) : error
@@ -128,7 +135,7 @@ export class IndySdkPool {
     try {
       await this.indySdk.createPoolLedgerConfig(poolName, { genesis_txn: genesisPath })
       this._poolHandle = await this.indySdk.openPoolLedger(poolName)
-      return this._poolHandle
+      return
     } catch (error) {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
@@ -142,7 +149,9 @@ export class IndySdkPool {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
-      throw new IndySdkPoolError(`Ledger '${this.id}' rejected read transaction request: ${response.reason}`)
+      throw new IndySdkPoolError(
+        `Ledger '${this.didIndyNamespace}' rejected read transaction request: ${response.reason}`
+      )
     }
 
     return response as LedgerReadReplyResponse
@@ -152,7 +161,9 @@ export class IndySdkPool {
     const response = await this.submitRequest(request)
 
     if (isLedgerRejectResponse(response) || isLedgerReqnackResponse(response)) {
-      throw new IndySdkPoolError(`Ledger '${this.id}' rejected write transaction request: ${response.reason}`)
+      throw new IndySdkPoolError(
+        `Ledger '${this.didIndyNamespace}' rejected write transaction request: ${response.reason}`
+      )
     }
 
     return response as LedgerWriteReplyResponse
@@ -168,9 +179,8 @@ export class IndySdkPool {
       }
     }
 
-    if (!this._poolHandle) {
-      return this.connect()
-    }
+    if (!this._poolHandle) await this.connect()
+    if (!this._poolHandle) throw new IndySdkPoolError('Pool handle not set after connection')
 
     return this._poolHandle
   }
@@ -180,7 +190,7 @@ export class IndySdkPool {
     if (this.poolConfig.genesisPath) return this.poolConfig.genesisPath
 
     // Determine the genesisPath
-    const genesisPath = this.fileSystem.tempPath + `/genesis-${this.poolConfig.id}.txn`
+    const genesisPath = this.fileSystem.tempPath + `/genesis-${this.poolConfig.id ?? this.poolConfig.indyNamespace}.txn`
     // Store genesis data if provided
     if (this.poolConfig.genesisTransactions) {
       await this.fileSystem.write(genesisPath, this.poolConfig.genesisTransactions)

@@ -1,0 +1,6 @@
+export * from './V1CredentialAckHandler'
+export * from './V1IssueCredentialHandler'
+export * from './V1OfferCredentialHandler'
+export * from './V1ProposeCredentialHandler'
+export * from './V1RequestCredentialHandler'
+export * from './V1CredentialProblemReportHandler'

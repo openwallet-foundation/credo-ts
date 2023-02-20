@@ -4,8 +4,7 @@
   "types": "build/index",
   "version": "0.3.3",
   "files": [
-    "build",
-    "bin"
+    "build"
   ],
   "license": "Apache-2.0",
   "publishConfig": {
@@ -16,9 +15,6 @@
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
     "directory": "packages/node"
-  },
-  "bin": {
-    "is-indy-installed": "bin/is-indy-installed.js"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
@@ -32,7 +28,6 @@
     "@types/express": "^4.17.15",
     "express": "^4.17.1",
     "ffi-napi": "^4.0.3",
-    "indy-sdk": "^1.16.0-dev-1636",
     "node-fetch": "^2.6.1",
     "ref-napi": "^3.0.3",
     "ws": "^7.5.3"

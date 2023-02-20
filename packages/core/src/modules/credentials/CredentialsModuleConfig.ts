@@ -18,11 +18,11 @@ export interface CredentialsModuleConfigOptions<CredentialProtocols extends Cred
    * Credential protocols to make available to the credentials module. Only one credential protocol should be registered for each credential
    * protocol version.
    *
-   * When not provided, the `V1CredentialProtocol` and `V2CredentialProtocol` are registered by default.
+   * When not provided, the `V2CredentialProtocol` is registered by default.
    *
    * @default
    * ```
-   * [V1CredentialProtocol, V2CredentialProtocol]
+   * [V2CredentialProtocol]
    * ```
    */
   credentialProtocols: CredentialProtocols

@@ -1,9 +1,8 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
-import type { CredentialMetadata, CredentialExchangeRecord } from '../../../../modules/credentials'
+import type { CredentialExchangeRecord } from '../../../../modules/credentials'
 import type { JsonObject } from '../../../../types'
 
 import { CredentialState } from '../../../../modules/credentials/models/CredentialState'
-import { CredentialMetadataKeys } from '../../../../modules/credentials/repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
 import { Metadata } from '../../../Metadata'
 import { DidCommMessageRepository, DidCommMessageRecord, DidCommMessageRole } from '../../../didcomm'
@@ -122,27 +121,25 @@ export async function updateIndyMetadata<Agent extends BaseAgent>(
   agent.config.logger.debug(`Updating indy metadata to use the generic metadata api available to records.`)
 
   const { requestMetadata, schemaId, credentialDefinitionId, ...rest } = credentialRecord.metadata.data
-  const metadata = new Metadata<CredentialMetadata>(rest)
+  const metadata = new Metadata<Record<string, unknown>>(rest)
 
+  const indyRequestMetadataKey = '_internal/indyRequest'
+  const indyCredentialMetadataKey = '_internal/indyCredential'
   if (requestMetadata) {
-    agent.config.logger.trace(
-      `Found top-level 'requestMetadata' key, moving to '${CredentialMetadataKeys.IndyRequest}'`
-    )
-    metadata.add(CredentialMetadataKeys.IndyRequest, { ...requestMetadata })
+    agent.config.logger.trace(`Found top-level 'requestMetadata' key, moving to '${indyRequestMetadataKey}'`)
+    metadata.add(indyRequestMetadataKey, { ...requestMetadata })
   }
 
   if (schemaId && typeof schemaId === 'string') {
-    agent.config.logger.trace(
-      `Found top-level 'schemaId' key, moving to '${CredentialMetadataKeys.IndyCredential}.schemaId'`
-    )
-    metadata.add(CredentialMetadataKeys.IndyCredential, { schemaId })
+    agent.config.logger.trace(`Found top-level 'schemaId' key, moving to '${indyCredentialMetadataKey}.schemaId'`)
+    metadata.add(indyCredentialMetadataKey, { schemaId })
   }
 
   if (credentialDefinitionId && typeof credentialDefinitionId === 'string') {
     agent.config.logger.trace(
-      `Found top-level 'credentialDefinitionId' key, moving to '${CredentialMetadataKeys.IndyCredential}.credentialDefinitionId'`
+      `Found top-level 'credentialDefinitionId' key, moving to '${indyCredentialMetadataKey}.credentialDefinitionId'`
     )
-    metadata.add(CredentialMetadataKeys.IndyCredential, { credentialDefinitionId })
+    metadata.add(indyCredentialMetadataKey, { credentialDefinitionId })
   }
 
   credentialRecord.metadata = metadata
@@ -170,7 +167,7 @@ export async function updateIndyMetadata<Agent extends BaseAgent>(
  *  "credentials": [
  *    {
  *      "credentialRecordId": "09e46da9-a575-4909-b016-040e96c3c539",
- *      "credentialRecordType": "indy",
+ *      "credentialRecordType": "anoncreds"
  *    }
  *  ]
  * }
