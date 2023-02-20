@@ -1,32 +1,32 @@
+import type { Wallet } from '../../../../wallet'
+
 import { Subject } from 'rxjs'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { Key } from '../../../../crypto'
-import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import { MediationRecipientService } from '../MediationRecipientService'
 import { RoutingService } from '../RoutingService'
 
-jest.mock('../../../../wallet/IndyWallet')
-const IndyWalletMock = IndyWallet as jest.Mock<IndyWallet>
-
 jest.mock('../MediationRecipientService')
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 
+const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 const agentConfig = getAgentConfig('RoutingService', {
   endpoints: ['http://endpoint.com'],
 })
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-const wallet = new IndyWalletMock()
+const wallet = {
+  createKey: jest.fn().mockResolvedValue(recipientKey),
+  // with satisfies Partial<Wallet> we still get type errors when the interface changes
+} satisfies Partial<Wallet>
 const agentContext = getAgentContext({
-  wallet,
+  wallet: wallet as unknown as Wallet,
   agentConfig,
 })
 const mediationRecipientService = new MediationRecipientServiceMock()
 const routingService = new RoutingService(mediationRecipientService, eventEmitter)
-
-const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 
 const routing = {
   endpoints: ['http://endpoint.com'],
@@ -34,7 +34,6 @@ const routing = {
   routingKeys: [],
 }
 mockFunction(mediationRecipientService.addMediationRouting).mockResolvedValue(routing)
-mockFunction(wallet.createKey).mockResolvedValue(recipientKey)
 
 describe('RoutingService', () => {
   afterEach(() => {

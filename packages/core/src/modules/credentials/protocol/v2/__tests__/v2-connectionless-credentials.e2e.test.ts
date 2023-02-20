@@ -1,4 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../CredentialsApiOptions'
 
@@ -6,7 +7,11 @@ import { ReplaySubject, Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { prepareForIssuance, waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
+import {
+  getLegacyAnonCredsModules,
+  prepareForAnonCredsIssuance,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -15,13 +20,21 @@ import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
 
-const faberAgentOptions = getAgentOptions('Faber connection-less Credentials V2', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getLegacyAnonCredsModules()
+)
 
-const aliceAgentOptions = getAgentOptions('Alice connection-less Credentials V2', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Alice connection-less Credentials V2',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getLegacyAnonCredsModules()
+)
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -29,8 +42,8 @@ const credentialPreview = V2CredentialPreview.fromRecord({
 })
 
 describe('V2 Connectionless Credentials', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: AnonCredsTestsAgent
+  let aliceAgent: AnonCredsTestsAgent
   let faberReplay: ReplaySubject<CredentialStateChangedEvent>
   let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
   let credentialDefinitionId: string
@@ -53,8 +66,11 @@ describe('V2 Connectionless Credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age'])
-    credentialDefinitionId = definition.id
+    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+      issuerId: faberAgent.publicDid?.did as string,
+      attributeNames: ['name', 'age'],
+    })
+    credentialDefinitionId = credentialDefinition.credentialDefinitionId
 
     faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
     aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
@@ -144,14 +160,14 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],
@@ -165,7 +181,7 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId,
           },
         },
@@ -225,14 +241,14 @@ describe('V2 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_internal/indyCredential': {
+          '_anonCreds/anonCredsCredential': {
             credentialDefinitionId: credentialDefinitionId,
           },
         },
       },
       credentials: [
         {
-          credentialRecordType: 'indy',
+          credentialRecordType: 'anoncreds',
           credentialRecordId: expect.any(String),
         },
       ],

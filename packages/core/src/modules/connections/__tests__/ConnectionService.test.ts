@@ -5,6 +5,8 @@ import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
 
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
   getAgentConfig,
   getAgentContext,
@@ -21,7 +23,6 @@ import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { uuid } from '../../../utils/uuid'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidKey, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
@@ -81,10 +82,9 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({ wallet, agentConfig })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig)
   })
 
   afterAll(async () => {

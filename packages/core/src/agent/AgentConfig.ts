@@ -34,13 +34,6 @@ export class AgentConfig {
   }
 
   /**
-   * @deprecated use connectToIndyLedgersOnStartup from the `LedgerModuleConfig` class
-   */
-  public get connectToIndyLedgersOnStartup() {
-    return this.initConfig.connectToIndyLedgersOnStartup ?? true
-  }
-
-  /**
    * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
    * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
    * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
@@ -48,13 +41,6 @@ export class AgentConfig {
    */
   public get publicDidSeed() {
     return this.initConfig.publicDidSeed
-  }
-
-  /**
-   * @deprecated use indyLedgers from the `LedgerModuleConfig` class
-   */
-  public get indyLedgers() {
-    return this.initConfig.indyLedgers ?? []
   }
 
   /**

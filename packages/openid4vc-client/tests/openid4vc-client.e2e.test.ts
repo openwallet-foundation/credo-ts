@@ -5,29 +5,28 @@ import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions, indySdk } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
+const modules = {
+  openId4VcClient: new OpenId4VcClientModule(),
+  w3cVc: new W3cVcModule({
+    documentLoader: customDocumentLoader,
+  }),
+  indySdk: new IndySdkModule({
+    indySdk,
+  }),
+}
+
 describe('OpenId4VcClient', () => {
-  let agent: Agent<{
-    openId4VcClient: OpenId4VcClientModule
-    w3cVc: W3cVcModule
-  }>
+  let agent: Agent<typeof modules>
 
   beforeEach(async () => {
-    const agentOptions = getAgentOptions(
-      'OpenId4VcClient Agent',
-      {},
-      {
-        openId4VcClient: new OpenId4VcClientModule(),
-        w3cVc: new W3cVcModule({
-          documentLoader: customDocumentLoader,
-        }),
-      }
-    )
+    const agentOptions = getAgentOptions('OpenId4VcClient Agent', {}, modules)
 
     agent = new Agent(agentOptions)
     await agent.initialize()

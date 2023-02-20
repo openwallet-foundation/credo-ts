@@ -1,15 +1,17 @@
 import type { AgentContext } from '../../../agent'
+import type { Wallet } from '../../../wallet'
 
 import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
-import { IndyStorageService } from '../../../storage/IndyStorageService'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
@@ -29,13 +31,13 @@ describe('peer dids', () => {
 
   let didRepository: DidRepository
   let didResolverService: DidResolverService
-  let wallet: IndyWallet
+  let wallet: Wallet
   let agentContext: AgentContext
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
-    const storageService = new IndyStorageService<DidRecord>(config.agentDependencies)
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
+    const storageService = new InMemoryStorageService<DidRecord>()
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)
 
@@ -46,8 +48,7 @@ describe('peer dids', () => {
         [InjectionSymbols.StorageService, storageService],
       ],
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig)
 
     didResolverService = new DidResolverService(
       config.logger,

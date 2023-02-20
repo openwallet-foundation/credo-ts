@@ -30,8 +30,7 @@
     "@types/react-native": "^0.64.10"
   },
   "devDependencies": {
-    "@types/indy-sdk-react-native": "npm:@types/indy-sdk@1.16.26",
-    "indy-sdk-react-native": "^0.3.1",
+    "@types/react-native": "^0.64.10",
     "react": "17.0.1",
     "react-native": "0.64.2",
     "react-native-fs": "^2.18.0",
@@ -40,7 +39,6 @@
     "typescript": "~4.9.4"
   },
   "peerDependencies": {
-    "indy-sdk-react-native": "^0.3.1",
     "react-native-fs": "^2.18.0",
     "react-native-get-random-values": "^1.7.0"
   }

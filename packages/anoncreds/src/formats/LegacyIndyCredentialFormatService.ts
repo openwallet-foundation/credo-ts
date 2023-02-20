@@ -30,13 +30,13 @@ import type {
 } from '@aries-framework/core'
 
 import {
+  ProblemReportError,
   MessageValidator,
   CredentialFormatSpec,
   AriesFrameworkError,
   Attachment,
   JsonEncoder,
   utils,
-  CredentialProblemReportError,
   CredentialProblemReportReason,
   JsonTransformer,
 } from '@aries-framework/core'
@@ -205,7 +205,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     if (!credOffer.schema_id || !credOffer.cred_def_id) {
-      throw new CredentialProblemReportError('Invalid credential offer', {
+      throw new ProblemReportError('Invalid credential offer', {
         problemCode: CredentialProblemReportReason.IssuanceAbandoned,
       })
     }
@@ -289,9 +289,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     // Assert credential attributes
     const credentialAttributes = credentialRecord.credentialAttributes
     if (!credentialAttributes) {
-      throw new CredentialProblemReportError(
-        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+      throw new AriesFrameworkError(
+        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
       )
     }
 
@@ -314,6 +313,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialRevocationId: credentialRevocationId,
         revocationRegistryId: credential.rev_reg_id,
+      })
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: credential.rev_reg_id,
+        anonCredsCredentialRevocationId: credentialRevocationId,
       })
     }
 
@@ -344,9 +347,8 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     if (!credentialRequestMetadata) {
-      throw new CredentialProblemReportError(
-        `Missing required request metadata for credential with id ${credentialRecord.id}`,
-        { problemCode: CredentialProblemReportReason.IssuanceAbandoned }
+      throw new AriesFrameworkError(
+        `Missing required request metadata for credential exchange with thread id with id ${credentialRecord.id}`
       )
     }
 
@@ -415,7 +417,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
       credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialRevocationId: credential.credentialRevocationId,
-        revocationRegistryId: anonCredsCredential.rev_reg_id,
+        revocationRegistryId: credential.revocationRegistryId,
+      })
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: credential.revocationRegistryId,
+        anonCredsCredentialRevocationId: credential.credentialRevocationId,
       })
     }
 

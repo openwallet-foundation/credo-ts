@@ -322,6 +322,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const request = await indySdk.buildCredDefRequest(options.credentialDefinition.issuerId, {
         id: credentialDefinitionId,
+        // Indy ledger requires the credential schemaId to be a string of the schema seqNo.
         schemaId: schemaMetadata.indyLedgerSeqNo.toString(),
         tag: options.credentialDefinition.tag,
         type: options.credentialDefinition.type,
@@ -447,7 +448,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
-        `Using ledger '${pool.id}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
+        `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
       )
 
       // TODO: implement caching for returned deltas
