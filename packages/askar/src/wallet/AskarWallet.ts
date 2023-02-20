@@ -14,6 +14,8 @@ import type {
 import type { Session } from '@hyperledger/aries-askar-shared'
 
 import {
+  isValidSeed,
+  isValidPrivateKey,
   JsonTransformer,
   RecordNotFoundError,
   RecordDuplicateError,
@@ -344,7 +346,15 @@ export class AskarWallet implements Wallet {
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
       if (seed && privateKey) {
-        throw new AriesFrameworkError('Only one of seed and privateKey can be set')
+        throw new WalletError('Only one of seed and privateKey can be set')
+      }
+
+      if (seed && !isValidSeed(seed, keyType)) {
+        throw new WalletError('Invalid seed provided')
+      }
+
+      if (privateKey && !isValidPrivateKey(privateKey, keyType)) {
+        throw new WalletError('Invalid private key provided')
       }
 
       if (keyTypeSupportedByAskar(keyType)) {

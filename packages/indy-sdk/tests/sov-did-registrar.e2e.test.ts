@@ -117,7 +117,7 @@ describe('dids', () => {
           id: `did:sov:${indyDid}`,
         },
         secret: {
-          privateKey: privateKey.toString(),
+          privateKey,
         },
       },
     })
