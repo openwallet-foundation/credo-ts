@@ -1,10 +1,13 @@
 import type { AgentContext } from '../../../agent'
+import type { Wallet } from '../../../wallet'
 
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
+import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { WalletError } from '../../../wallet/error'
 import { DidKey } from '../../dids'
 import {
@@ -42,8 +45,6 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
 
 const signingProviderRegistry = new SigningProviderRegistry([])
 
-jest.mock('../../ledger/services/IndyLedgerService')
-
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
@@ -63,16 +64,15 @@ const credentialRecordFactory = async (credential: W3cVerifiableCredential) => {
 }
 
 describe('W3cCredentialService', () => {
-  let wallet: IndyWallet
+  let wallet: Wallet
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialRepository: W3cCredentialRepository
-  const seed = 'testseed000000000000000000000001'
+  const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, signingProviderRegistry)
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,
       wallet,
@@ -116,7 +116,10 @@ describe('W3cCredentialService', () => {
     let verificationMethod: string
     beforeAll(async () => {
       // TODO: update to use did registrar
-      const issuerKey = await wallet.createKey({ keyType: KeyType.Ed25519, seed })
+      const issuerKey = await wallet.createKey({
+        keyType: KeyType.Ed25519,
+        privateKey,
+      })
       issuerDidKey = new DidKey(issuerKey)
       verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
     })
@@ -297,10 +300,7 @@ describe('W3cCredentialService', () => {
 
         const result = await w3cCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
-          proofType: 'Ed25519Signature2018',
           challenge: '7bf32d0b-39d4-41f3-96b6-45de52988e4c',
-          verificationMethod:
-            'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
         })
 
         expect(result.verified).toBe(true)

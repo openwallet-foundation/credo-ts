@@ -1,6 +1,21 @@
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { CredentialPreviewAttributeOptions, CredentialFormat, LinkedAttachment } from '@aries-framework/core'
 
+export interface AnonCredsCredentialProposalFormat {
+  schema_issuer_id?: string
+  schema_name?: string
+  schema_version?: string
+  schema_id?: string
+
+  cred_def_id?: string
+  issuer_id?: string
+
+  // TODO: we don't necessarily need to include these in the AnonCreds Format RFC
+  // as it's a new one and we can just forbid the use of legacy properties
+  schema_issuer_did?: string
+  issuer_did?: string
+}
+
 /**
  * This defines the module payload for calling CredentialsApi.createProposal
  * or CredentialsApi.negotiateOffer
@@ -35,7 +50,9 @@ export interface AnonCredsAcceptProposalFormat {
  * This defines the module payload for calling CredentialsApi.acceptOffer. No options are available for this
  * method, so it's an empty object
  */
-export type AnonCredsAcceptOfferFormat = Record<string, never>
+export interface AnonCredsAcceptOfferFormat {
+  linkSecretId?: string
+}
 
 /**
  * This defines the module payload for calling CredentialsApi.offerCredential
@@ -68,20 +85,7 @@ export interface AnonCredsCredentialFormat extends CredentialFormat {
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
   formatData: {
-    proposal: {
-      schema_issuer_id?: string
-      schema_name?: string
-      schema_version?: string
-      schema_id?: string
-
-      cred_def_id?: string
-      issuer_id?: string
-
-      // TODO: we don't necessarily need to include these in the AnonCreds Format RFC
-      // as it's a new one and we can just forbid the use of legacy properties
-      schema_issuer_did?: string
-      issuer_did?: string
-    }
+    proposal: AnonCredsCredentialProposalFormat
     offer: AnonCredsCredentialOffer
     request: AnonCredsCredentialRequest
     credential: AnonCredsCredential

@@ -10,8 +10,6 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
-import { IndyModule } from '../modules/indy'
-import { LedgerModule } from '../modules/ledger'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
 import { MediatorModule, RecipientModule } from '../modules/routing'
@@ -36,9 +34,11 @@ export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
  * Defines the input type for the default agent modules. This is overwritten as we
  * want the input type to allow for generics to be passed in for the credentials module.
  */
-export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials'> & {
+export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials' | 'proofs'> & {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   credentials: CredentialsModule<any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  proofs: ProofsModule<any>
 }
 
 /**
@@ -147,16 +147,10 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
       }),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
-    ledger: () =>
-      new LedgerModule({
-        connectToIndyLedgersOnStartup: agentConfig.connectToIndyLedgersOnStartup,
-        indyLedgers: agentConfig.indyLedgers,
-      }),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
-    indy: () => new IndyModule(),
     w3cVc: () => new W3cVcModule(),
     cache: () => new CacheModule(),
   } as const

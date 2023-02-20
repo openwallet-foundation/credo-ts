@@ -15,11 +15,12 @@ export class Bls12381g2SigningProvider implements SigningProvider {
    *
    * @throws {SigningProviderError} When a key could not be created
    */
-  public async createKeyPair({ seed }: CreateKeyPairOptions): Promise<KeyPair> {
-    // Generate bytes from the seed as required by the bbs-signatures libraries
-    const seedBytes = seed ? TypedArrayEncoder.fromString(seed) : undefined
+  public async createKeyPair({ seed, privateKey }: CreateKeyPairOptions): Promise<KeyPair> {
+    if (privateKey) {
+      throw new SigningProviderError('Cannot create keypair from private key')
+    }
 
-    const blsKeyPair = await generateBls12381G2KeyPair(seedBytes)
+    const blsKeyPair = await generateBls12381G2KeyPair(seed)
 
     return {
       keyType: KeyType.Bls12381g2,

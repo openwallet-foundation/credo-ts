@@ -3,6 +3,7 @@ import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, Custo
 import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
 import type { CredentialsModule } from '../modules/credentials'
+import type { ProofsModule } from '../modules/proofs'
 import type { DependencyManager } from '../plugins'
 
 import { AriesFrameworkError } from '../error'
@@ -12,9 +13,8 @@ import { CredentialsApi } from '../modules/credentials'
 import { DidsApi } from '../modules/dids'
 import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { LedgerApi } from '../modules/ledger'
 import { OutOfBandApi } from '../modules/oob'
-import { ProofsApi } from '../modules/proofs/ProofsApi'
+import { ProofsApi } from '../modules/proofs'
 import { MediatorApi, RecipientApi } from '../modules/routing'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
@@ -44,12 +44,11 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
   public readonly connections: ConnectionsApi
   public readonly credentials: CustomOrDefaultApi<AgentModules['credentials'], CredentialsModule>
-  public readonly proofs: ProofsApi
+  public readonly proofs: CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
   public readonly mediator: MediatorApi
   public readonly mediationRecipient: RecipientApi
   public readonly basicMessages: BasicMessagesApi
   public readonly genericRecords: GenericRecordsApi
-  public readonly ledger: LedgerApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
   public readonly wallet: WalletApi
@@ -88,12 +87,11 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       AgentModules['credentials'],
       CredentialsModule
     >
-    this.proofs = this.dependencyManager.resolve(ProofsApi)
+    this.proofs = this.dependencyManager.resolve(ProofsApi) as CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
     this.mediator = this.dependencyManager.resolve(MediatorApi)
     this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
-    this.ledger = this.dependencyManager.resolve(LedgerApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
     this.wallet = this.dependencyManager.resolve(WalletApi)
@@ -107,7 +105,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.mediationRecipient,
       this.basicMessages,
       this.genericRecords,
-      this.ledger,
       this.discovery,
       this.dids,
       this.wallet,

@@ -64,7 +64,7 @@ export const getMetadataResponse = {
   },
 }
 
-export const aquireAccessTokenResponse = {
+export const acquireAccessTokenResponse = {
   access_token: '7nikUotMQefxn7oRX56R7MDNE7KJTGfwGjOkHzGaUIG',
   expires_in: 3600,
   scope: 'OpenBadgeCredential',

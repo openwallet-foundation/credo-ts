@@ -15,7 +15,7 @@ export interface VerifyProofOptions {
   credentialDefinitions: {
     [credentialDefinitionId: string]: AnonCredsCredentialDefinition
   }
-  revocationStates: {
+  revocationRegistries: {
     [revocationRegistryDefinitionId: string]: {
       definition: AnonCredsRevocationRegistryDefinition
       // NOTE: the verifier only needs the accumulator, not the whole state of the revocation registry

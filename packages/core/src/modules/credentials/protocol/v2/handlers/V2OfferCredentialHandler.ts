@@ -32,8 +32,7 @@ export class V2OfferCredentialHandler implements MessageHandler {
 
   private async acceptOffer(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2OfferCredentialHandler>,
-    offerMessage?: V2OfferCredentialMessage
+    messageContext: MessageHandlerInboundMessage<V2OfferCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
 
@@ -46,7 +45,7 @@ export class V2OfferCredentialHandler implements MessageHandler {
         connection: messageContext.connection,
         associatedRecord: credentialRecord,
       })
-    } else if (offerMessage?.service) {
+    } else if (messageContext.message?.service) {
       const routingService = messageContext.agentContext.dependencyManager.resolve(RoutingService)
       const routing = await routingService.getRouting(messageContext.agentContext)
       const ourService = new ServiceDecorator({
@@ -54,7 +53,7 @@ export class V2OfferCredentialHandler implements MessageHandler {
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-      const recipientService = offerMessage.service
+      const recipientService = messageContext.message.service
 
       const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
         credentialRecord,

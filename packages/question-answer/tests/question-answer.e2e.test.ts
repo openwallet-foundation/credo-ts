@@ -1,26 +1,27 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '@aries-framework/core'
 
 import { Agent } from '@aries-framework/core'
-import { Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
-import testLogger from '../../core/tests/logger'
+import { indySdk, setupSubjectTransports, testLogger, getAgentOptions, makeConnection } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
 
 import { waitForQuestionAnswerRecord } from './helpers'
+
+const modules = {
+  questionAnswer: new QuestionAnswerModule(),
+  indySdk: new IndySdkModule({
+    indySdk,
+  }),
+}
 
 const bobAgentOptions = getAgentOptions(
   'Bob Question Answer',
   {
     endpoints: ['rxjs:bob'],
   },
-  {
-    questionAnswer: new QuestionAnswerModule(),
-  }
+  modules
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -28,37 +29,20 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  {
-    questionAnswer: new QuestionAnswerModule(),
-  }
+  modules
 )
 
 describe('Question Answer', () => {
-  let bobAgent: Agent<{
-    questionAnswer: QuestionAnswerModule
-  }>
-  let aliceAgent: Agent<{
-    questionAnswer: QuestionAnswerModule
-  }>
+  let bobAgent: Agent<typeof modules>
+  let aliceAgent: Agent<typeof modules>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
-    const bobMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:bob': bobMessages,
-      'rxjs:alice': aliceMessages,
-    }
-
     bobAgent = new Agent(bobAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await bobAgent.initialize()
-
     aliceAgent = new Agent(aliceAgentOptions)
+    setupSubjectTransports([bobAgent, aliceAgent])
 
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await bobAgent.initialize()
     await aliceAgent.initialize()
     ;[aliceConnection] = await makeConnection(aliceAgent, bobAgent)
   })

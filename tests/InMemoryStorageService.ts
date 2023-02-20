@@ -18,7 +18,10 @@ interface StorageRecord {
 }
 
 @injectable()
-export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implements StorageService<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
+  implements StorageService<T>
+{
   public records: { [id: string]: StorageRecord }
 
   public constructor(records: { [id: string]: StorageRecord } = {}) {
@@ -35,6 +38,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
 
   /** @inheritDoc */
   public async save(agentContext: AgentContext, record: T) {
+    record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
 
     if (this.records[record.id]) {
@@ -51,6 +55,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
 
   /** @inheritDoc */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
+    record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
     delete value._tags
 
@@ -129,6 +134,7 @@ export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implement
     }
 
     const records = Object.values(this.records)
+      .filter((record) => record.type === recordClass.type)
       .filter((record) => {
         const tags = record.tags as TagsBase
 

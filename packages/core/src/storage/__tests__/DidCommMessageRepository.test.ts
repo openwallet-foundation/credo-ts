@@ -1,15 +1,17 @@
+import type { StorageService } from '../StorageService'
+
 import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { ConnectionInvitationMessage } from '../../modules/connections'
 import { JsonTransformer } from '../../utils/JsonTransformer'
-import { IndyStorageService } from '../IndyStorageService'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../didcomm'
 
-jest.mock('../IndyStorageService')
+jest.mock('../../../../../tests/InMemoryStorageService')
 
-const StorageMock = IndyStorageService as unknown as jest.Mock<IndyStorageService<DidCommMessageRecord>>
+const StorageMock = InMemoryStorageService as unknown as jest.Mock<InMemoryStorageService<DidCommMessageRecord>>
 
 const invitationJson = {
   '@type': 'https://didcomm.org/connections/1.0/invitation',
@@ -24,7 +26,7 @@ const agentContext = getAgentContext()
 
 describe('DidCommMessageRepository', () => {
   let repository: DidCommMessageRepository
-  let storageMock: IndyStorageService<DidCommMessageRecord>
+  let storageMock: StorageService<DidCommMessageRecord>
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {

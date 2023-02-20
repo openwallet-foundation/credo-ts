@@ -4,6 +4,7 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -13,7 +14,7 @@ import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const agentOptions = getAgentOptions('UpdateAssistant | Backup')
+const agentOptions = getAgentOptions('UpdateAssistant | Backup', {}, getIndySdkModules())
 
 const aliceCredentialRecordsString = readFileSync(
   path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
@@ -32,7 +33,7 @@ describe('UpdateAssistant | Backup', () => {
   beforeEach(async () => {
     agent = new Agent(agentOptions)
     const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    backupPath = `${fileSystem.dataPath}/migration/backup/${backupIdentifier}`
 
     // If tests fail it's possible the cleanup has been skipped. So remove before running tests
     const doesFileSystemExist = await fileSystem.exists(backupPath)
@@ -85,11 +86,16 @@ describe('UpdateAssistant | Backup', () => {
     // Backup should not exist before update
     expect(await fileSystem.exists(backupPath)).toBe(false)
 
+    const walletSpy = jest.spyOn(agent.wallet, 'export')
+
     // Create update
     await updateAssistant.update()
 
-    // Backup should exist after update
-    expect(await fileSystem.exists(backupPath)).toBe(true)
+    // A wallet export should have been initiated
+    expect(walletSpy).toHaveBeenCalledWith({ key: agent.wallet.walletConfig?.key, path: backupPath })
+
+    // Backup should be cleaned after update
+    expect(await fileSystem.exists(backupPath)).toBe(false)
 
     expect(
       (await credentialRepository.getAll(agent.context)).sort((a, b) => a.id.localeCompare(b.id))
@@ -142,8 +148,8 @@ describe('UpdateAssistant | Backup', () => {
 
     expect(updateError?.cause?.message).toEqual("Uh oh I'm broken")
 
-    // Backup should exist after update
-    expect(await fileSystem.exists(backupPath)).toBe(true)
+    // Only backup error should exist after update
+    expect(await fileSystem.exists(backupPath)).toBe(false)
     expect(await fileSystem.exists(`${backupPath}-error`)).toBe(true)
 
     // Wallet should be same as when we started because of backup

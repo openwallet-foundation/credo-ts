@@ -129,7 +129,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
         )
       }
 
-      if (neededUpdates.length == 0) {
+      if (neededUpdates.length === 0) {
         this.agent.config.logger.info('No update needed. Agent storage is up to date.')
         return
       }
@@ -157,12 +157,17 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
             `Successfully updated agent storage from version ${update.fromVersion} to version ${update.toVersion}`
           )
         }
+        // Delete backup file, as it is not needed anymore
+        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
       } catch (error) {
         this.agent.config.logger.fatal('An error occurred while updating the wallet. Restoring backup', {
           error,
         })
         // In the case of an error we want to restore the backup
         await this.restoreBackup(updateIdentifier)
+
+        // Delete backup file, as wallet was already restored (backup-error file will persist though)
+        await this.fileSystem.delete(this.getBackupPath(updateIdentifier))
 
         throw error
       }
@@ -192,7 +197,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
   }
 
   private getBackupPath(backupIdentifier: string) {
-    return `${this.fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
+    return `${this.fileSystem.dataPath}/migration/backup/${backupIdentifier}`
   }
 
   private async createBackup(backupIdentifier: string) {

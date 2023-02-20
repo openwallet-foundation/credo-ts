@@ -1,7 +1,7 @@
 import type { AnonCredsSchema, AnonCredsCredentialValues } from '../models'
 import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@aries-framework/core'
 
-import { CredentialPreviewAttribute, AriesFrameworkError, Hasher, encodeAttachment } from '@aries-framework/core'
+import { AriesFrameworkError, Hasher, encodeAttachment } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
 const isString = (value: unknown): value is string => typeof value === 'string'
@@ -34,7 +34,7 @@ export function convertAttributesToCredentialValues(
     return {
       [attribute.name]: {
         raw: attribute.value,
-        encoded: encode(attribute.value),
+        encoded: encodeCredentialValue(attribute.value),
       },
       ...credentialValues,
     }
@@ -109,8 +109,8 @@ export function assertCredentialValuesMatch(
  * @see https://github.com/hyperledger/aries-framework-dotnet/blob/a18bef91e5b9e4a1892818df7408e2383c642dfa/src/Hyperledger.Aries/Utils/CredentialUtils.cs#L78-L89
  * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
  */
-export function checkValidEncoding(raw: unknown, encoded: string) {
-  return encoded === encode(raw)
+export function checkValidCredentialValueEncoding(raw: unknown, encoded: string) {
+  return encoded === encodeCredentialValue(raw)
 }
 
 /**
@@ -123,7 +123,7 @@ export function checkValidEncoding(raw: unknown, encoded: string) {
  * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0037-present-proof/README.md#verifying-claims-of-indy-based-verifiable-credentials
  * @see https://github.com/hyperledger/aries-rfcs/blob/be4ad0a6fb2823bb1fc109364c96f077d5d8dffa/features/0036-issue-credential/README.md#encoding-claims-for-indy-based-verifiable-credentials
  */
-export function encode(value: unknown) {
+export function encodeCredentialValue(value: unknown) {
   const isEmpty = (value: unknown) => isString(value) && value === ''
 
   // If bool return bool as number string
@@ -153,7 +153,7 @@ export function encode(value: unknown) {
   return new BigNumber(Hasher.hash(Buffer.from(value as string), 'sha2-256')).toString()
 }
 
-export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttribute[]) {
+export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {
   const schemaAttributes = schema.attrNames
   const credAttributes = attributes.map((a) => a.name)
 
@@ -178,7 +178,7 @@ export function assertAttributesMatch(schema: AnonCredsSchema, attributes: Crede
  * */
 export function createAndLinkAttachmentsToPreview(
   attachments: LinkedAttachment[],
-  previewAttributes: CredentialPreviewAttribute[]
+  previewAttributes: CredentialPreviewAttributeOptions[]
 ) {
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)
   const newPreviewAttributes = [...previewAttributes]
@@ -187,12 +187,11 @@ export function createAndLinkAttachmentsToPreview(
     if (credentialPreviewAttributeNames.includes(linkedAttachment.attributeName)) {
       throw new AriesFrameworkError(`linkedAttachment ${linkedAttachment.attributeName} already exists in the preview`)
     } else {
-      const credentialPreviewAttribute = new CredentialPreviewAttribute({
+      newPreviewAttributes.push({
         name: linkedAttachment.attributeName,
         mimeType: linkedAttachment.attachment.mimeType,
         value: encodeAttachment(linkedAttachment.attachment),
       })
-      newPreviewAttributes.push(credentialPreviewAttribute)
     }
   })
 

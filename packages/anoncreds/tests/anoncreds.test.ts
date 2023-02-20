@@ -1,5 +1,6 @@
 import { Agent, KeyDerivationMethod } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
+import indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
 import { AnonCredsCredentialDefinitionRepository, AnonCredsModule, AnonCredsSchemaRepository } from '../src'
@@ -43,16 +44,18 @@ const existingRevocationRegistryDefinitions = {
   'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG': {
     credDefId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
     issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
-    maxCredNum: 100,
-    type: 'CL_ACCUM',
-    publicKeys: {
-      accumKey: {
-        z: 'ab81257c-be63-4051-9e21-c7d384412f64',
+    revocDefType: 'CL_ACCUM',
+    value: {
+      publicKeys: {
+        accumKey: {
+          z: 'ab81257c-be63-4051-9e21-c7d384412f64',
+        },
       },
+      maxCredNum: 100,
+      tailsHash: 'ab81257c-be63-4051-9e21-c7d384412f64',
+      tailsLocation: 'http://localhost:7200/tails',
     },
     tag: 'TAG',
-    tailsHash: 'ab81257c-be63-4051-9e21-c7d384412f64',
-    tailsLocation: 'http://localhost:7200/tails',
   },
 } as const
 
@@ -79,7 +82,7 @@ const agent = new Agent({
   },
   modules: {
     indySdk: new IndySdkModule({
-      indySdk: agentDependencies.indy,
+      indySdk,
     }),
     anoncreds: new AnonCredsModule({
       registries: [

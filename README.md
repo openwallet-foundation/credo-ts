@@ -12,12 +12,6 @@
     alt="Pipeline Status"
     src="https://github.com/hyperledger/aries-framework-javascript/workflows/Continuous%20Integration/badge.svg?branch=main"
   />
-  <a
-    href="https://lgtm.com/projects/g/hyperledger/aries-framework-javascript/context:javascript"
-    ><img
-      alt="Language grade: JavaScript"
-      src="https://img.shields.io/lgtm/grade/javascript/g/hyperledger/aries-framework-javascript.svg?logo=lgtm&logoWidth=18"
-  /></a>
   <a href="https://codecov.io/gh/hyperledger/aries-framework-javascript/"
     ><img
       alt="Codecov Coverage"
@@ -48,27 +42,14 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
 
 ## Features
 
-Some features are not yet supported, but are on our roadmap. Check [the roadmap](https://github.com/hyperledger/aries-framework-javascript/issues/39) for more information.
-
-- ✅ React Native
-- ✅ Node.JS
-- ✅ Report Problem Protocol ([RFC 0035](https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md))
-- ✅ Issue Credential Protocol ([RFC 0036](https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md))
-- ✅ Issue Credential Protocol V2 ([RFC 0453](https://github.com/hyperledger/aries-rfcs/blob/master/features/0453-issue-credential-v2/README.md))
-- ✅ Present Proof Protocol ([RFC 0037](https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof/README.md))
-- ✅ Basic Message Protocol ([RFC 0095](https://github.com/hyperledger/aries-rfcs/blob/master/features/0095-basic-message/README.md))
-- ✅ Connection Protocol ([RFC 0160](https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md))
-- ✅ Out of Band Protocol ([RFC 0434](https://github.com/hyperledger/aries-rfcs/blob/main/features/0434-outofband/README.md))
-- ✅ DID Exchange Protocol ([RFC 0023](https://github.com/hyperledger/aries-rfcs/tree/main/features/0023-did-exchange))
-- ✅ Mediator Coordination Protocol ([RFC 0211](https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md))
-- ✅ Indy Credentials (with `did:sov` support)
-- ✅ HTTP & WebSocket Transport
-- ✅ Connection-less Issuance and Verification
-- ✅ Smart Auto Acceptance of Connections, Credentials and Proofs
-- 🚧 Receiving and Verifying revocable Indy Credentials
-- 🚧 W3C Linked Data VCs, BBS+ Signatures
-- ✅ Multi Tenancy
-- ❌ Browser
+- 🏃 Runs in React Native & Node.JS
+- 🔒 DIDComm v1 support
+- 🌎 [Aries Interop Profile](https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0302-aries-interop-profile/README.md) v1 & v2 support
+  - With support for Chat, Mediator Coordination, Indy Credentials & and JSON-LD Credentials sub-targets
+- `did:sov`, `did:web`, `did:key` and `did:peer`, with pluggable interface for registering custom did methods.
+- OpenID for Verifiable Credential Issuance (only receiving JSON-LD credentials for now)
+- 💡 Smart Auto Acceptance of Connections, Credentials and Proofs
+- 🏢 Multi tenant module for managing multiple tenants under a single agent.
 
 ### Packages
 
@@ -98,6 +79,54 @@ Some features are not yet supported, but are on our roadmap. Check [the roadmap]
     <td>
       <a href="https://npmjs.com/package/@aries-framework/react-native">
         <img alt="@aries-framework/react-native version" src="https://img.shields.io/npm/v/@aries-framework/react-native"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/indy-sdk</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
+        <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/indy-vdr</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/indy-vdr">
+        <img alt="@aries-framework/indy-vdr version" src="https://img.shields.io/npm/v/@aries-framework/indy-vdr"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/askar</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/askar">
+        <img alt="@aries-framework/askar version" src="https://img.shields.io/npm/v/@aries-framework/askar"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/anoncreds</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/anoncreds">
+        <img alt="@aries-framework/anoncreds version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/anoncreds-rs</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/anoncreds-rs">
+        <img alt="@aries-framework/anoncreds-rs version" src="https://img.shields.io/npm/v/@aries-framework/anoncreds-rs"/>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td>@aries-framework/openid4vc-client</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/openid4vc-client">
+        <img alt="@aries-framework/openid4vc-client version" src="https://img.shields.io/npm/v/@aries-framework/openid4vc-client"/>
       </a>
     </td>
   </tr>

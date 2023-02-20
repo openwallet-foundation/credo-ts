@@ -1,0 +1,148 @@
+import { JsonTransformer } from '@aries-framework/core'
+
+import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
+import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
+import { IndyVdrIndyDidResolver } from '../IndyVdrIndyDidResolver'
+
+import didIndyLjgpST2rjsoxYegQDRm7EL from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7EL.json'
+import didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent.json'
+import didIndyR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didIndyR1xKJw17sUoXhejEpugMYJ.json'
+import didIndyWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didIndyWJz9mHyW9BZksioQnRsrAo.json'
+
+jest.mock('../../pool/IndyVdrPool')
+const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
+const poolMock = new IndyVdrPoolMock()
+mockProperty(poolMock, 'indyNamespace', 'ns1')
+
+const agentConfig = getAgentConfig('IndyVdrIndyDidResolver')
+
+const agentContext = getAgentContext({
+  agentConfig,
+  registerInstances: [[IndyVdrPoolService, { getPoolForNamespace: jest.fn().mockReturnValue(poolMock) }]],
+})
+
+const resolver = new IndyVdrIndyDidResolver()
+
+describe('IndyVdrIndyDidResolver', () => {
+  describe('NYMs with diddocContent', () => {
+    it('should correctly resolve a did:indy document with arbitrary diddocContent', async () => {
+      const did = 'did:indy:ns2:LjgpST2rjsoxYegQDRm7EL'
+
+      const nymResponse = {
+        result: {
+          data: JSON.stringify({
+            did: 'LjgpST2rjsoxYegQDRm7EL',
+            verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+            role: 'ENDORSER',
+            diddocContent: didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent,
+          }),
+        },
+      }
+
+      const poolMockSubmitReadRequest = jest.spyOn(poolMock, 'submitReadRequest')
+      poolMockSubmitReadRequest.mockResolvedValueOnce(nymResponse)
+
+      const result = await resolver.resolve(agentContext, did)
+
+      expect(poolMockSubmitReadRequest).toHaveBeenCalledTimes(1)
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
+        didDocument: didIndyLjgpST2rjsoxYegQDRm7EL,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          contentType: 'application/did+ld+json',
+        },
+      })
+    })
+  })
+
+  describe('NYMs without diddocContent', () => {
+    it('should correctly resolve a did:indy document without endpoint attrib', async () => {
+      const did = 'did:indy:ns1:R1xKJw17sUoXhejEpugMYJ'
+
+      const nymResponse = {
+        result: {
+          data: JSON.stringify({
+            did: 'R1xKJw17sUoXhejEpugMYJ',
+            verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+            role: 'ENDORSER',
+          }),
+        },
+      }
+
+      const attribResponse = {
+        result: {
+          data: null,
+        },
+      }
+
+      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+
+      const result = await resolver.resolve(agentContext, did)
+
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
+        didDocument: didIndyR1xKJw17sUoXhejEpugMYJFixture,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          contentType: 'application/did+ld+json',
+        },
+      })
+    })
+
+    it('should correctly resolve a did:indy document with endpoint attrib', async () => {
+      const did = 'did:indy:ns1:WJz9mHyW9BZksioQnRsrAo'
+
+      const nymResponse = {
+        result: {
+          data: JSON.stringify({
+            did: 'WJz9mHyW9BZksioQnRsrAo',
+            verkey: 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8',
+            role: 'ENDORSER',
+          }),
+        },
+      }
+
+      const attribResponse = {
+        result: {
+          data: JSON.stringify({
+            endpoint: {
+              endpoint: 'https://agent.com',
+              types: ['endpoint', 'did-communication', 'DIDComm'],
+              routingKeys: ['routingKey1', 'routingKey2'],
+            },
+          }),
+        },
+      }
+
+      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+
+      const result = await resolver.resolve(agentContext, did)
+
+      expect(JsonTransformer.toJSON(result)).toMatchObject({
+        didDocument: didIndyWJz9mHyW9BZksioQnRsrAoFixture,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          contentType: 'application/did+ld+json',
+        },
+      })
+    })
+
+    it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
+      const did = 'did:indy:ns1:R1xKJw17sUoXhejEpugMYJ'
+
+      jest.spyOn(poolMock, 'submitReadRequest').mockRejectedValue(new Error('Error submitting read request'))
+
+      const result = await resolver.resolve(agentContext, did)
+
+      expect(result).toMatchObject({
+        didDocument: null,
+        didDocumentMetadata: {},
+        didResolutionMetadata: {
+          error: 'notFound',
+          message: `resolver_error: Unable to resolve did 'did:indy:ns1:R1xKJw17sUoXhejEpugMYJ': Error: Error submitting read request`,
+        },
+      })
+    })
+  })
+})

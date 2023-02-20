@@ -1,7 +1,13 @@
-import type { IndyCredentialViewMetadata } from '../../../../..'
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../agent'
 import type { GetAgentMessageOptions } from '../../../../../storage'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
+import type {
+  CredentialFormat,
+  CredentialFormatAcceptRequestOptions,
+  CredentialFormatCreateOfferOptions,
+  CredentialFormatService,
+} from '../../../formats'
 import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
 import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
 
@@ -9,7 +15,6 @@ import { Subject } from 'rxjs'
 
 import { AriesFrameworkError, CredentialFormatSpec } from '../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
-import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
@@ -19,20 +24,14 @@ import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { AckStatus } from '../../../../common/messages/AckMessage'
 import { DidExchangeState } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
-import { RoutingService } from '../../../../routing/services/RoutingService'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
-import { CredentialProblemReportReason } from '../../../errors/CredentialProblemReportReason'
-import { IndyCredentialFormatService } from '../../../formats'
-import { IndyCredentialUtils } from '../../../formats/indy/IndyCredentialUtils'
-import { JsonLdCredentialFormatService } from '../../../formats/jsonld/JsonLdCredentialFormatService'
+import { CredentialProblemReportReason } from '../../../models/CredentialProblemReportReason'
 import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { CredentialMetadataKeys } from '../../../repository/CredentialMetadataTypes'
 import { CredentialRepository } from '../../../repository/CredentialRepository'
-import { V1CredentialPreview } from '../../v1/messages/V1CredentialPreview'
 import { V2CredentialProtocol } from '../V2CredentialProtocol'
-import { V2ProposeCredentialMessage } from '../messages'
+import { V2CredentialPreview, V2ProposeCredentialMessage } from '../messages'
 import { V2CredentialAckMessage } from '../messages/V2CredentialAckMessage'
 import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
@@ -41,8 +40,6 @@ import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessa
 
 // Mock classes
 jest.mock('../../../repository/CredentialRepository')
-jest.mock('../../../formats/jsonld/JsonLdCredentialFormatService')
-jest.mock('../../../formats/indy/IndyCredentialFormatService')
 jest.mock('../../../../../storage/didcomm/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
@@ -50,31 +47,12 @@ jest.mock('../../../../../agent/Dispatcher')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
-const IndyCredentialFormatServiceMock = IndyCredentialFormatService as jest.Mock<IndyCredentialFormatService>
-const JsonLdCredentialFormatServiceMock = JsonLdCredentialFormatService as jest.Mock<JsonLdCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const routingService = new RoutingServiceMock()
-const indyCredentialFormatService = new IndyCredentialFormatServiceMock()
-const jsonLdCredentialFormatService = new JsonLdCredentialFormatServiceMock()
-const dispatcher = new DispatcherMock()
 const connectionService = new ConnectionServiceMock()
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-indyCredentialFormatService.formatKey = 'indy'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-indyCredentialFormatService.credentialRecordType = 'indy'
-
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-jsonLdCredentialFormatService.formatKey = 'jsonld'
 
 const agentConfig = getAgentConfig('V2CredentialProtocolCredTest')
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
@@ -83,8 +61,6 @@ const agentContext = getAgentContext({
   registerInstances: [
     [CredentialRepository, credentialRepository],
     [DidCommMessageRepository, didCommMessageRepository],
-    [RoutingService, routingService],
-    [Dispatcher, dispatcher],
     [ConnectionService, connectionService],
     [EventEmitter, eventEmitter],
   ],
@@ -94,11 +70,6 @@ const agentContext = getAgentContext({
 const connection = getMockConnection({
   id: '123',
   state: DidExchangeState.Completed,
-})
-
-const credentialPreview = V1CredentialPreview.fromRecord({
-  name: 'John',
-  age: '99',
 })
 
 const offerAttachment = new Attachment({
@@ -123,13 +94,13 @@ const credentialAttachment = new Attachment({
   mimeType: 'application/json',
   data: new AttachmentData({
     base64: JsonEncoder.toBase64({
-      values: IndyCredentialUtils.convertAttributesToValues(credentialPreview.attributes),
+      values: {},
     }),
   }),
 })
 
 const requestFormat = new CredentialFormatSpec({
-  attachId: 'request-attachment-id',
+  attachmentId: 'request-attachment-id',
   format: 'hlindy/cred-filter@v2.0',
 })
 
@@ -143,17 +114,17 @@ const proposalAttachment = new Attachment({
 })
 
 const offerFormat = new CredentialFormatSpec({
-  attachId: 'offer-attachment-id',
+  attachmentId: 'offer-attachment-id',
   format: 'hlindy/cred-abstract@v2.0',
 })
 
 const proposalFormat = new CredentialFormatSpec({
-  attachId: 'proposal-attachment-id',
+  attachmentId: 'proposal-attachment-id',
   format: 'hlindy/cred-abstract@v2.0',
 })
 
 const credentialFormat = new CredentialFormatSpec({
-  attachId: 'credential-attachment-id',
+  attachmentId: 'credential-attachment-id',
   format: 'hlindy/cred@v2.0',
 })
 
@@ -170,7 +141,9 @@ credentialRequestMessage.setThread({ threadId: 'somethreadid' })
 const credentialOfferMessage = new V2OfferCredentialMessage({
   formats: [offerFormat],
   comment: 'some comment',
-  credentialPreview: credentialPreview,
+  credentialPreview: new V2CredentialPreview({
+    attributes: [],
+  }),
   offerAttachments: [offerAttachment],
 })
 const credentialIssueMessage = new V2IssueCredentialMessage({
@@ -207,7 +180,6 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: GetAgent
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
-  metadata,
   threadId,
   connectionId,
   tags,
@@ -215,7 +187,6 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
-  metadata?: IndyCredentialViewMetadata & { indyRequest: Record<string, unknown> }
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -224,13 +195,13 @@ const mockCredentialRecord = ({
 } = {}) => {
   const credentialRecord = new CredentialExchangeRecord({
     id,
-    credentialAttributes: credentialAttributes || credentialPreview.attributes,
+    credentialAttributes: credentialAttributes,
     state: state || CredentialState.OfferSent,
     threadId: threadId || 'thread-id',
     connectionId: connectionId ?? '123',
     credentials: [
       {
-        credentialRecordType: 'indy',
+        credentialRecordType: 'test',
         credentialRecordId: '123456',
       },
     ],
@@ -238,24 +209,36 @@ const mockCredentialRecord = ({
     protocolVersion: 'v2',
   })
 
-  if (metadata?.indyRequest) {
-    credentialRecord.metadata.set(CredentialMetadataKeys.IndyRequest, { ...metadata.indyRequest })
-  }
-
-  if (metadata?.schemaId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      schemaId: metadata.schemaId,
-    })
-  }
-
-  if (metadata?.credentialDefinitionId) {
-    credentialRecord.metadata.add(CredentialMetadataKeys.IndyCredential, {
-      credentialDefinitionId: metadata.credentialDefinitionId,
-    })
-  }
-
   return credentialRecord
 }
+
+interface TestCredentialFormat extends CredentialFormat {
+  formatKey: 'test'
+  credentialRecordType: 'test'
+}
+
+type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
+
+export const testCredentialFormatService = {
+  credentialRecordType: 'test',
+  formatKey: 'test',
+  supportsFormat: (_format: string) => true,
+  createOffer: async (
+    _agentContext: AgentContext,
+    _options: CredentialFormatCreateOfferOptions<TestCredentialFormat>
+  ) => ({
+    attachment: offerAttachment,
+    format: offerFormat,
+  }),
+  acceptRequest: async (
+    _agentContext: AgentContext,
+    _options: CredentialFormatAcceptRequestOptions<TestCredentialFormat>
+  ) => ({ attachment: credentialAttachment, format: credentialFormat }),
+  deleteCredentialById: jest.fn(),
+  processCredential: jest.fn(),
+  acceptOffer: () => ({ attachment: requestAttachment, format: requestFormat }),
+  processRequest: jest.fn(),
+} as unknown as TestCredentialFormatService
 
 describe('credentialProtocol', () => {
   let credentialProtocol: V2CredentialProtocol
@@ -272,7 +255,7 @@ describe('credentialProtocol', () => {
     ])
 
     credentialProtocol = new V2CredentialProtocol({
-      credentialFormats: [indyCredentialFormatService, jsonLdCredentialFormatService],
+      credentialFormats: [testCredentialFormatService],
     })
   })
 
@@ -281,28 +264,17 @@ describe('credentialProtocol', () => {
   })
 
   describe('acceptOffer', () => {
-    test(`updates state to ${CredentialState.RequestSent}, set request metadata`, async () => {
+    test(`updates state to ${CredentialState.RequestSent}`, async () => {
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-      mockFunction(indyCredentialFormatService.acceptOffer).mockResolvedValue({
-        attachment: requestAttachment,
-        format: requestFormat,
-      })
-
       // when
       await credentialProtocol.acceptOffer(agentContext, {
         credentialRecord,
-        credentialFormats: {
-          indy: {
-            attributes: credentialPreview.attributes,
-            credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
-          },
-        },
+        credentialFormats: {},
       })
 
       // then
@@ -323,12 +295,6 @@ describe('credentialProtocol', () => {
         state: CredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
-      })
-
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-      mockFunction(indyCredentialFormatService.acceptOffer).mockResolvedValue({
-        attachment: requestAttachment,
-        format: requestFormat,
       })
 
       // when
@@ -365,8 +331,6 @@ describe('credentialProtocol', () => {
 
   describe('processRequest', () => {
     test(`updates state to ${CredentialState.RequestReceived}, set request and returns credential record`, async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-
       const credentialRecord = mockCredentialRecord({ state: CredentialState.OfferSent })
       const messageContext = new InboundMessageContext(credentialRequestMessage, {
         connection,
@@ -389,8 +353,6 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${CredentialState.OfferSent} to ${CredentialState.RequestReceived}`, async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-
       const credentialRecord = mockCredentialRecord({ state: CredentialState.OfferSent })
       const messageContext = new InboundMessageContext(credentialRequestMessage, {
         connection,
@@ -421,8 +383,6 @@ describe('credentialProtocol', () => {
     const validState = CredentialState.OfferSent
     const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
     test(`throws an error when state transition is invalid`, async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-
       const messageContext = new InboundMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
@@ -443,12 +403,6 @@ describe('credentialProtocol', () => {
 
   describe('acceptRequest', () => {
     test(`updates state to ${CredentialState.CredentialIssued}`, async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-      mockFunction(indyCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -470,12 +424,6 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${CredentialState.RequestReceived} to ${CredentialState.CredentialIssued}`, async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-      mockFunction(indyCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -509,12 +457,6 @@ describe('credentialProtocol', () => {
     })
 
     test('returns credential response message base on credential request message', async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-      mockFunction(indyCredentialFormatService.acceptRequest).mockResolvedValue({
-        attachment: credentialAttachment,
-        format: credentialFormat,
-      })
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -547,8 +489,6 @@ describe('credentialProtocol', () => {
 
   describe('processCredential', () => {
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
-      mockFunction(indyCredentialFormatService.supportsFormat).mockReturnValue(true)
-
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestSent,
       })
@@ -561,10 +501,7 @@ describe('credentialProtocol', () => {
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
 
-      // when
-      const record = await credentialProtocol.processCredential(messageContext)
-
-      expect(record.credentialAttributes?.length).toBe(2)
+      await credentialProtocol.processCredential(messageContext)
     })
   })
 
@@ -687,22 +624,25 @@ describe('credentialProtocol', () => {
   })
 
   describe('createProblemReport', () => {
-    test('returns problem report message base once get error', () => {
+    test('returns problem report message base once get error', async () => {
       // given
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.OfferReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
-      const message = 'Indy error'
+      const description = 'Indy error'
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
 
       // when
-      const credentialProblemReportMessage = credentialProtocol.createProblemReport(agentContext, { message })
+      const { message } = await credentialProtocol.createProblemReport(agentContext, {
+        description,
+        credentialRecord,
+      })
 
-      credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
+      message.setThread({ threadId: 'somethreadid' })
       // then
-      expect(credentialProblemReportMessage.toJSON()).toMatchObject({
+      expect(message.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/2.0/problem-report',
         '~thread': {
@@ -710,21 +650,21 @@ describe('credentialProtocol', () => {
         },
         description: {
           code: CredentialProblemReportReason.IssuanceAbandoned,
-          en: message,
+          en: description,
         },
       })
     })
   })
 
   describe('processProblemReport', () => {
-    const credentialProblemReportMessage = new V2CredentialProblemReportMessage({
+    const message = new V2CredentialProblemReportMessage({
       description: {
         en: 'Indy error',
         code: CredentialProblemReportReason.IssuanceAbandoned,
       },
     })
-    credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
-    const messageContext = new InboundMessageContext(credentialProblemReportMessage, {
+    message.setThread({ threadId: 'somethreadid' })
+    const messageContext = new InboundMessageContext(message, {
       connection,
       agentContext,
     })
@@ -813,8 +753,8 @@ describe('credentialProtocol', () => {
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialRecord)
     })
 
-    it('should call deleteCredentialById in indyCredentialFormatService if deleteAssociatedCredential is true', async () => {
-      const deleteCredentialMock = mockFunction(indyCredentialFormatService.deleteCredentialById)
+    it('should call deleteCredentialById in testCredentialFormatService if deleteAssociatedCredential is true', async () => {
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
@@ -831,8 +771,8 @@ describe('credentialProtocol', () => {
       )
     })
 
-    it('should not call deleteCredentialById in indyCredentialFormatService if deleteAssociatedCredential is false', async () => {
-      const deleteCredentialMock = mockFunction(indyCredentialFormatService.deleteCredentialById)
+    it('should not call deleteCredentialById in testCredentialFormatService if deleteAssociatedCredential is false', async () => {
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
@@ -846,7 +786,7 @@ describe('credentialProtocol', () => {
     })
 
     it('deleteAssociatedCredentials should default to true', async () => {
-      const deleteCredentialMock = mockFunction(indyCredentialFormatService.deleteCredentialById)
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
@@ -860,7 +800,7 @@ describe('credentialProtocol', () => {
       )
     })
     it('deleteAssociatedDidCommMessages should default to true', async () => {
-      const deleteCredentialMock = mockFunction(indyCredentialFormatService.deleteCredentialById)
+      const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
       const credentialRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
@@ -873,70 +813,6 @@ describe('credentialProtocol', () => {
         credentialRecord.credentials[0].credentialRecordId
       )
       expect(didCommMessageRepository.delete).toHaveBeenCalledTimes(3)
-    })
-  })
-
-  describe('declineOffer', () => {
-    test(`updates state to ${CredentialState.Declined}`, async () => {
-      const credentialRecord = mockCredentialRecord({
-        state: CredentialState.OfferReceived,
-      })
-
-      // when
-      await credentialProtocol.declineOffer(agentContext, credentialRecord)
-
-      // then
-
-      expect(credentialRepository.update).toHaveBeenNthCalledWith(
-        1,
-        agentContext,
-        expect.objectContaining({
-          state: CredentialState.Declined,
-        })
-      )
-    })
-
-    test(`emits stateChange event from ${CredentialState.OfferReceived} to ${CredentialState.Declined}`, async () => {
-      const credentialRecord = mockCredentialRecord({
-        state: CredentialState.OfferReceived,
-      })
-
-      const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
-
-      // given
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
-
-      // when
-      await credentialProtocol.declineOffer(agentContext, credentialRecord)
-
-      // then
-      expect(eventListenerMock).toHaveBeenCalledTimes(1)
-      const [[event]] = eventListenerMock.mock.calls
-      expect(event).toMatchObject({
-        type: 'CredentialStateChanged',
-        metadata: {
-          contextCorrelationId: 'mock',
-        },
-        payload: {
-          previousState: CredentialState.OfferReceived,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.Declined,
-          }),
-        },
-      })
-    })
-
-    const validState = CredentialState.OfferReceived
-    const invalidCredentialStates = Object.values(CredentialState).filter((state) => state !== validState)
-    test(`throws an error when state transition is invalid`, async () => {
-      await Promise.all(
-        invalidCredentialStates.map(async (state) => {
-          await expect(
-            credentialProtocol.declineOffer(agentContext, mockCredentialRecord({ state }))
-          ).rejects.toThrowError(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
-        })
-      )
     })
   })
 })

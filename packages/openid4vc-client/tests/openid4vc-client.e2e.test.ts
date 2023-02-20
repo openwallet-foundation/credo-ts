@@ -1,37 +1,32 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
-import { Agent, KeyType, LogLevel, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
+import { Agent, KeyType, W3cCredentialRecord, W3cVcModule, TypedArrayEncoder } from '@aries-framework/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions, indySdk } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
-import { TestLogger } from '../../core/tests/logger'
+import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
-import { aquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
+const modules = {
+  openId4VcClient: new OpenId4VcClientModule(),
+  w3cVc: new W3cVcModule({
+    documentLoader: customDocumentLoader,
+  }),
+  indySdk: new IndySdkModule({
+    indySdk,
+  }),
+}
 
 describe('OpenId4VcClient', () => {
-  let agent: Agent<{
-    openId4VcClient: OpenId4VcClientModule
-    w3cVc: W3cVcModule
-  }>
+  let agent: Agent<typeof modules>
 
   beforeEach(async () => {
-    const agentOptions = getAgentOptions(
-      'OpenId4VcClient Agent',
-      {
-        logger: new TestLogger(LogLevel.test),
-      },
-      {
-        openId4VcClient: new OpenId4VcClientModule(),
-        w3cVc: new W3cVcModule({
-          documentLoader: customDocumentLoader,
-        }),
-      }
-    )
+    const agentOptions = getAgentOptions('OpenId4VcClient Agent', {}, modules)
 
     agent = new Agent(agentOptions)
     await agent.initialize()
@@ -62,7 +57,7 @@ describe('OpenId4VcClient', () => {
         .reply(200, getMetadataResponse)
 
       // setup access token response
-      httpMock.post('/oidc/v1/auth/token').reply(200, aquireAccessTokenResponse)
+      httpMock.post('/oidc/v1/auth/token').reply(200, acquireAccessTokenResponse)
 
       // setup credential request response
       httpMock.post('/oidc/v1/auth/credential').reply(200, credentialRequestResponse)
@@ -80,7 +75,7 @@ describe('OpenId4VcClient', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
         },
       })
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
