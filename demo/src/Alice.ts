@@ -8,7 +8,7 @@ export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
 
   public constructor(port: number, name: string) {
-    super({ port, name, useSharedComponents: false })
+    super({ port, name, useLegacyIndySdk: true })
     this.connected = false
   }
 

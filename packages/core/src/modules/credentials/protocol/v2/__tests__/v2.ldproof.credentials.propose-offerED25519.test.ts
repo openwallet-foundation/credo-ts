@@ -30,6 +30,7 @@ import {
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { KeyType } from '../../../../../crypto'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CacheModule, InMemoryLruCache } from '../../../../cache'
 import { DidsModule, KeyDidRegistrar, KeyDidResolver } from '../../../../dids'
@@ -179,7 +180,10 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     })
     credentialDefinitionId = credentialDefinition.credentialDefinitionId
 
-    await faberAgent.context.wallet.createKey({ seed: 'testseed000000000000000000000001', keyType: KeyType.Ed25519 })
+    await faberAgent.context.wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {

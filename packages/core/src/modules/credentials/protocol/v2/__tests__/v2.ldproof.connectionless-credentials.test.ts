@@ -4,6 +4,7 @@ import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMess
 import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
 import { KeyType } from '../../../../../crypto'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
@@ -45,7 +46,10 @@ describe('credentials', () => {
       createConnections: false,
     }))
 
-    await faberAgent.context.wallet.createKey({ seed: 'testseed000000000000000000000001', keyType: KeyType.Ed25519 })
+    await faberAgent.context.wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterEach(async () => {

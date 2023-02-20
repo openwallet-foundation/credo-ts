@@ -5,7 +5,7 @@ import { IndySdkWallet } from '../../../../indy-sdk/src'
 import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
-import { Buffer, JsonEncoder } from '../../utils'
+import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
 import { SigningProviderRegistry } from '../signing-provider'
@@ -29,8 +29,14 @@ describe('JwsService', () => {
     await wallet.createAndOpen(config.walletConfig)
 
     jwsService = new JwsService()
-    didJwsz6MkfKey = await wallet.createKey({ seed: didJwsz6Mkf.SEED, keyType: KeyType.Ed25519 })
-    didJwsz6MkvKey = await wallet.createKey({ seed: didJwsz6Mkv.SEED, keyType: KeyType.Ed25519 })
+    didJwsz6MkfKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
+      keyType: KeyType.Ed25519,
+    })
+    didJwsz6MkvKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {

@@ -1,6 +1,7 @@
 import type { V2IssueCredentialMessage } from '../../core/src/modules/credentials/protocol/v2/messages/V2IssueCredentialMessage'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../core/tests'
 
+import { TypedArrayEncoder } from '../../core/src'
 import { KeyType } from '../../core/src/crypto'
 import { CredentialState } from '../../core/src/modules/credentials/models'
 import { CredentialExchangeRecord } from '../../core/src/modules/credentials/repository/CredentialExchangeRecord'
@@ -64,10 +65,13 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       holderName: 'Alice Agent Credentials LD BBS+',
     }))
 
-    await faberAgent.context.wallet.createKey({ keyType: KeyType.Ed25519, seed: 'testseed000000000000000000000001' })
+    await faberAgent.context.wallet.createKey({
+      keyType: KeyType.Ed25519,
+      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+    })
     await faberAgent.context.wallet.createKey({
       keyType: KeyType.Bls12381g2,
-      seed: 'testseed000000000000000000000001',
+      seed: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
     })
   })
 

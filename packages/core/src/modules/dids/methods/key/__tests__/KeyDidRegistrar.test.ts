@@ -3,6 +3,7 @@ import type { Wallet } from '../../../../../wallet'
 import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
+import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
@@ -32,7 +33,7 @@ describe('DidRegistrar', () => {
 
   describe('KeyDidRegistrar', () => {
     it('should correctly create a did:key document using Ed25519 key type', async () => {
-      const seed = '96213c3d7fc8d4d6754c712fd969598e'
+      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
       const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
@@ -40,7 +41,7 @@ describe('DidRegistrar', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed,
+          privateKey,
         },
       })
 
@@ -52,12 +53,12 @@ describe('DidRegistrar', () => {
           did: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
           didDocument: didKeyz6MksLeFixture,
           secret: {
-            seed: '96213c3d7fc8d4d6754c712fd969598e',
+            privateKey: '96213c3d7fc8d4d6754c712fd969598e',
           },
         },
       })
 
-      expect(walletMock.createKey).toHaveBeenCalledWith({ keyType: KeyType.Ed25519, seed })
+      expect(walletMock.createKey).toHaveBeenCalledWith({ keyType: KeyType.Ed25519, privateKey })
     })
 
     it('should return an error state if no key type is provided', async () => {
@@ -77,7 +78,7 @@ describe('DidRegistrar', () => {
       })
     })
 
-    it('should return an error state if an invalid seed is provided', async () => {
+    it('should return an error state if an invalid private key is provided', async () => {
       const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
 
@@ -85,7 +86,7 @@ describe('DidRegistrar', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed: 'invalid',
+          privateKey: TypedArrayEncoder.fromString('invalid'),
         },
       })
 
@@ -94,13 +95,13 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Invalid seed provided',
+          reason: 'Invalid private key provided',
         },
       })
     })
 
     it('should store the did document', async () => {
-      const seed = '96213c3d7fc8d4d6754c712fd969598e'
+      const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
       const did = 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
       await keyDidRegistrar.create(agentContext, {
@@ -110,7 +111,7 @@ describe('DidRegistrar', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed,
+          privateKey,
         },
       })
 

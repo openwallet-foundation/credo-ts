@@ -18,7 +18,16 @@ export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod?: KeyDer
   return correspondenceTable[keyDerivationMethod] as StoreKeyMethod
 }
 
-export const uriFromWalletConfig = (walletConfig: WalletConfig, basePath: string): { uri: string; path?: string } => {
+/**
+ * Creates a proper askar wallet URI value based on walletConfig
+ * @param walletConfig WalletConfig object
+ * @param afjDataPath framework data path (used in case walletConfig.storage.path is undefined)
+ * @returns string containing the askar wallet URI
+ */
+export const uriFromWalletConfig = (
+  walletConfig: WalletConfig,
+  afjDataPath: string
+): { uri: string; path?: string } => {
   let uri = ''
   let path
 
@@ -31,7 +40,7 @@ export const uriFromWalletConfig = (walletConfig: WalletConfig, basePath: string
     if (walletConfig.storage.inMemory) {
       uri = 'sqlite://:memory:'
     } else {
-      path = `${(walletConfig.storage.path as string) ?? basePath + '/wallet'}/${walletConfig.id}/sqlite.db`
+      path = (walletConfig.storage.path as string) ?? `${afjDataPath}/wallet/${walletConfig.id}/sqlite.db`
       uri = `sqlite://${path}`
     }
   } else if (walletConfig.storage.type === 'postgres') {

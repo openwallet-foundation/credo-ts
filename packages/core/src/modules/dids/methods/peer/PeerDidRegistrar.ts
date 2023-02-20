@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { KeyType } from '../../../../crypto'
+import type { Buffer } from '../../../../utils'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
@@ -27,6 +28,7 @@ export class PeerDidRegistrar implements DidRegistrar {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
         const keyType = options.options.keyType
         const seed = options.secret?.seed
+        const privateKey = options.secret?.privateKey
 
         if (!keyType) {
           return {
@@ -39,7 +41,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           }
         }
 
-        if (seed && (typeof seed !== 'string' || seed.length !== 32)) {
+        if (seed && (typeof seed !== 'object' || seed.length !== 32)) {
           return {
             didDocumentMetadata: {},
             didRegistrationMetadata: {},
@@ -50,9 +52,21 @@ export class PeerDidRegistrar implements DidRegistrar {
           }
         }
 
+        if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: 'Invalid private key provided',
+            },
+          }
+        }
+
         const key = await agentContext.wallet.createKey({
           keyType,
           seed,
+          privateKey,
         })
 
         // TODO: validate did:peer document
@@ -105,7 +119,8 @@ export class PeerDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed,
+            seed: options.secret?.seed?.toString(),
+            privateKey: options.secret?.privateKey?.toString(),
           },
         },
       }
@@ -170,7 +185,8 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
   }
   secret?: {
-    seed?: string
+    seed?: Buffer
+    privateKey?: Buffer
   }
 }
 

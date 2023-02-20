@@ -12,6 +12,7 @@ import {
 import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
 import { AskarModule } from '@aries-framework/askar'
 import {
+  TypedArrayEncoder,
   KeyType,
   DidsModule,
   V2ProofProtocol,
@@ -45,7 +46,7 @@ const indyNetworkConfig = {
   connectOnStartup: true,
 } satisfies IndySdkPoolConfig | IndyVdrPoolConfig
 
-type DemoAgent = Agent<ReturnType<typeof getIndySdkModules> | ReturnType<typeof getSharedComponentModules>>
+type DemoAgent = Agent<ReturnType<typeof getLegacyIndySdkModules> | ReturnType<typeof getAskarAnonCredsIndyModules>>
 
 export class BaseAgent {
   public port: number
@@ -53,16 +54,16 @@ export class BaseAgent {
   public config: InitConfig
   public agent: DemoAgent
   public anonCredsIssuerId: string
-  public usesSharedComponents: boolean
+  public useLegacyIndySdk: boolean
 
   public constructor({
     port,
     name,
-    useSharedComponents,
+    useLegacyIndySdk = false,
   }: {
     port: number
     name: string
-    useSharedComponents: boolean
+    useLegacyIndySdk?: boolean
   }) {
     this.name = name
     this.port = port
@@ -82,12 +83,12 @@ export class BaseAgent {
 
     // TODO: do not hardcode this
     this.anonCredsIssuerId = '2jEvRuKmfBJTRa7QowDpNN'
-    this.usesSharedComponents = useSharedComponents
+    this.useLegacyIndySdk = useLegacyIndySdk
 
     this.agent = new Agent({
       config,
       dependencies: agentDependencies,
-      modules: useSharedComponents ? getSharedComponentModules() : getIndySdkModules(),
+      modules: useLegacyIndySdk ? getLegacyIndySdkModules() : getAskarAnonCredsIndyModules(),
     })
     this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
@@ -100,14 +101,12 @@ export class BaseAgent {
     // We need to make sure the key to submit transactions is created. We should update this to use the dids module, and allow
     // to add an existing did based on a seed/secretKey, and not register it on the the ledger. However for Indy SDK we currently
     // use the deprecated publicDidSeed property (which will register the did in the wallet), and for Askar we manually create the key
-    // in the wallet. Additional issue is that when creating a key in askar using the seed, it will give different results than indy-sdk
-    // but if we create the key in askar from the seed, but use it as the secret key, it will work.
-    // For IndySDK we can't call createKey as it won't allow to sign the transactions in that case, as it needs to be a did
-    if (this.usesSharedComponents) {
+    // in the wallet.
+    if (!this.useLegacyIndySdk) {
       try {
         await this.agent.context.wallet.createKey({
           keyType: KeyType.Ed25519,
-          seed: 'afjdemoverysercure00000000000000',
+          privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
         })
       } catch (error) {
         // We assume the key already exists, and that's why askar failed
@@ -118,7 +117,7 @@ export class BaseAgent {
   }
 }
 
-function getSharedComponentModules() {
+function getAskarAnonCredsIndyModules() {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
@@ -159,7 +158,7 @@ function getSharedComponentModules() {
   } as const
 }
 
-function getIndySdkModules() {
+function getLegacyIndySdkModules() {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 

@@ -2,11 +2,11 @@ import type { AgentContext, FileSystem } from '@aries-framework/core'
 
 import { TypedArrayEncoder, InjectionSymbols } from '@aries-framework/core'
 
-const getTailsFilePath = (basePath: string, tailsHash: string) => `${basePath}/afj/anoncreds/tails/${tailsHash}`
+const getTailsFilePath = (cachePath: string, tailsHash: string) => `${cachePath}/anoncreds/tails/${tailsHash}`
 
 export function tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean> {
   const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-  const tailsFilePath = getTailsFilePath(fileSystem.basePath, tailsHash)
+  const tailsFilePath = getTailsFilePath(fileSystem.cachePath, tailsHash)
 
   return fileSystem.exists(tailsFilePath)
 }
@@ -27,7 +27,7 @@ export async function downloadTailsFile(
 
     // hash is used as file identifier
     const tailsExists = await tailsFileExists(agentContext, tailsHashBase58)
-    const tailsFilePath = getTailsFilePath(fileSystem.basePath, tailsHashBase58)
+    const tailsFilePath = getTailsFilePath(fileSystem.cachePath, tailsHashBase58)
     agentContext.config.logger.debug(
       `Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${tailsFilePath}`
     )
