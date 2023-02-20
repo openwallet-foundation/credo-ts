@@ -10,16 +10,35 @@ class CustomProtocolMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
+class LegacyDidSovPrefixMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
+  @IsValidMessageType(LegacyDidSovPrefixMessage.type)
+  public readonly type = LegacyDidSovPrefixMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/another-message')
+}
+
 describe('AgentMessage', () => {
   describe('toJSON', () => {
-    it('should only use did:sov message prefix if useLegacyDidSovPrefix is true', () => {
+    it('should only use did:sov message prefix if useDidSovPrefixWhereAllowed and allowDidSovPrefix are both true', () => {
       const message = new TestMessage()
+      const legacyPrefixMessage = new LegacyDidSovPrefixMessage()
 
-      const jsonDidComm = message.toJSON()
-      expect(jsonDidComm['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+      // useDidSovPrefixWhereAllowed & allowDidSovPrefix are both false
+      let testMessageJson = message.toJSON()
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
 
-      const jsonSov = message.toJSON({ useLegacyDidSovPrefix: true })
-      expect(jsonSov['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation')
+      // useDidSovPrefixWhereAllowed is true, but allowDidSovPrefix is false
+      testMessageJson = message.toJSON({ useDidSovPrefixWhereAllowed: true })
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/connections/1.0/invitation')
+
+      // useDidSovPrefixWhereAllowed is false, but allowDidSovPrefix is true
+      testMessageJson = legacyPrefixMessage.toJSON()
+      expect(testMessageJson['@type']).toBe('https://didcomm.org/fake-protocol/1.5/another-message')
+
+      // useDidSovPrefixWhereAllowed & allowDidSovPrefix are both true
+      testMessageJson = legacyPrefixMessage.toJSON({ useDidSovPrefixWhereAllowed: true })
+      expect(testMessageJson['@type']).toBe('did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/fake-protocol/1.5/another-message')
     })
   })
 

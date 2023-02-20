@@ -18,6 +18,8 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
 export class V1RequestPresentationMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   public constructor(options: V1RequestPresentationMessageOptions) {
     super()
 

@@ -15,6 +15,8 @@ export interface ForwardMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
 export class ForwardMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new ForwardMessage instance.
    *
