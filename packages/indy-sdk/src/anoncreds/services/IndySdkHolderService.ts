@@ -25,7 +25,8 @@ import type {
   IndyProofRequest,
 } from 'indy-sdk'
 
-import { injectable, inject, utils } from '@aries-framework/core'
+import { AnonCredsLinkSecretRepository } from '@aries-framework/anoncreds'
+import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
@@ -80,6 +81,8 @@ export class IndySdkHolderService implements AnonCredsHolderService {
 
     assertIndySdkWallet(agentContext.wallet)
 
+    const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
+
     try {
       agentContext.config.logger.debug('Creating Indy Proof')
       const indyRevocationStates: RevStates = await this.indyRevocationService.createRevocationState(
@@ -114,11 +117,19 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         indySchemas[schemaId] = indySdkSchemaFromAnonCreds(schemaId, schema, seqNoMap[schemaId])
       }
 
+      const linkSecretRecord = await linkSecretRepository.findDefault(agentContext)
+      if (!linkSecretRecord) {
+        // No default link secret
+        throw new AriesFrameworkError(
+          'No default link secret found. Indy SDK requires a default link secret to be created before creating a proof.'
+        )
+      }
+
       const indyProof = await this.indySdk.proverCreateProof(
         agentContext.wallet.handle,
         proofRequest as IndyProofRequest,
         this.parseSelectedCredentials(selectedCredentials),
-        agentContext.wallet.masterSecretId,
+        linkSecretRecord.linkSecretId,
         indySchemas,
         indyCredentialDefinitions,
         indyRevocationStates
@@ -201,9 +212,23 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   ): Promise<CreateCredentialRequestReturn> {
     assertIndySdkWallet(agentContext.wallet)
 
+    const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
+
     // We just generate a prover did like string, as it's not used for anything and we don't need
     // to prove ownership of the did. It's deprecated in AnonCreds v1, but kept for backwards compatibility
     const proverDid = generateLegacyProverDidLikeString()
+
+    // If a link secret is specified, use it. Otherwise, attempt to use default link secret
+    const linkSecretRecord = options.linkSecretId
+      ? await linkSecretRepository.getByLinkSecretId(agentContext, options.linkSecretId)
+      : await linkSecretRepository.findDefault(agentContext)
+
+    if (!linkSecretRecord) {
+      // No default link secret
+      throw new AriesFrameworkError(
+        'No link secret provided to createCredentialRequest and no default link secret has been found'
+      )
+    }
 
     try {
       const result = await this.indySdk.proverCreateCredentialReq(
@@ -213,9 +238,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         // NOTE: Is it safe to use the cred_def_id from the offer? I think so. You can't create a request
         // for a cred def that is not in the offer
         indySdkCredentialDefinitionFromAnonCreds(options.credentialOffer.cred_def_id, options.credentialDefinition),
-        // FIXME: we need to remove the masterSecret from the wallet, as it is AnonCreds specific
-        // Issue: https://github.com/hyperledger/aries-framework-javascript/issues/1198
-        agentContext.wallet.masterSecretId
+        linkSecretRecord.linkSecretId
       )
 
       return {

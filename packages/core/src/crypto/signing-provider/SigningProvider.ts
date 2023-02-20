@@ -20,7 +20,8 @@ export interface VerifyOptions {
 }
 
 export interface CreateKeyPairOptions {
-  seed?: string
+  seed?: Buffer
+  privateKey?: Buffer
 }
 
 export interface SigningProvider {

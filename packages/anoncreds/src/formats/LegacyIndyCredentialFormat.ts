@@ -21,7 +21,7 @@ export type LegacyIndyCredentialProposalFormat = Omit<
  *
  * NOTE: This doesn't include the `issuerId` and `schemaIssuerId` properties that are present in the newer format.
  */
-type LegacyIndyProposeCredentialFormat = Omit<AnonCredsProposeCredentialFormat, 'schemaIssuerId' | 'issuerId'>
+export type LegacyIndyProposeCredentialFormat = Omit<AnonCredsProposeCredentialFormat, 'schemaIssuerId' | 'issuerId'>
 
 export interface LegacyIndyCredentialRequest extends AnonCredsCredentialRequest {
   // prover_did is optional in AnonCreds credential request, but required in legacy format

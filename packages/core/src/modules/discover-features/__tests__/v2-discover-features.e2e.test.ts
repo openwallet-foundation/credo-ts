@@ -1,20 +1,35 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '../../connections'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
 } from '../DiscoverFeaturesEvents'
 
-import { ReplaySubject, Subject } from 'rxjs'
+import { ReplaySubject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { setupSubjectTransports } from '../../../../tests'
 import { getAgentOptions, makeConnection } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { GoalCode, Feature } from '../../../agent/models'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
+
+const faberAgentOptions = getAgentOptions(
+  'Faber Discover Features V2 E2E',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getIndySdkModules()
+)
+
+const aliceAgentOptions = getAgentOptions(
+  'Alice Discover Features V2 E2E',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getIndySdkModules()
+)
 
 describe('v2 discover features', () => {
   let faberAgent: Agent
@@ -23,27 +38,11 @@ describe('v2 discover features', () => {
   let faberConnection: ConnectionRecord
 
   beforeAll(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-    const faberAgentOptions = getAgentOptions('Faber Discover Features V2 E2E', {
-      endpoints: ['rxjs:faber'],
-    })
-
-    const aliceAgentOptions = getAgentOptions('Alice Discover Features V2 E2E', {
-      endpoints: ['rxjs:alice'],
-    })
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    setupSubjectTransports([faberAgent, aliceAgent])
+
+    await faberAgent.initialize()
     await aliceAgent.initialize()
     ;[faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
   })
@@ -70,14 +69,14 @@ describe('v2 discover features', () => {
     await faberAgent.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
     })
 
     const query = await waitForQuerySubject(aliceReplay, { timeoutMs: 10000 })
 
     expect(query).toMatchObject({
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
     })
 
     const disclosure = await waitForDisclosureSubject(faberReplay, { timeoutMs: 10000 })
@@ -85,8 +84,8 @@ describe('v2 discover features', () => {
     expect(disclosure).toMatchObject({
       protocolVersion: 'v2',
       disclosures: [
-        { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
-        { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
+        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
+        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
       ],
     })
   })
@@ -220,14 +219,14 @@ describe('v2 discover features', () => {
     const matchingFeatures = await faberAgent.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v2',
-      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/issue-credential/*' }],
+      queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
       awaitDisclosures: true,
     })
 
     expect(matchingFeatures).toMatchObject({
       features: [
-        { type: 'protocol', id: 'https://didcomm.org/issue-credential/1.0', roles: ['holder', 'issuer'] },
-        { type: 'protocol', id: 'https://didcomm.org/issue-credential/2.0', roles: ['holder', 'issuer'] },
+        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/1.0', roles: ['holder'] },
+        { type: 'protocol', id: 'https://didcomm.org/revocation_notification/2.0', roles: ['holder'] },
       ],
     })
   })

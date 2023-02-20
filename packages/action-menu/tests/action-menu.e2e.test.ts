@@ -1,13 +1,9 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '@aries-framework/core'
 
 import { Agent } from '@aries-framework/core'
-import { Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
-import testLogger from '../../core/tests/logger'
+import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports, indySdk } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import {
   ActionMenu,
@@ -19,14 +15,19 @@ import {
 
 import { waitForActionMenuRecord } from './helpers'
 
+const modules = {
+  actionMenu: new ActionMenuModule(),
+  indySdk: new IndySdkModule({
+    indySdk,
+  }),
+}
+
 const faberAgentOptions = getAgentOptions(
   'Faber Action Menu',
   {
     endpoints: ['rxjs:faber'],
   },
-  {
-    actionMenu: new ActionMenuModule(),
-  }
+  modules
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -34,18 +35,12 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  {
-    actionMenu: new ActionMenuModule(),
-  }
+  modules
 )
 
 describe('Action Menu', () => {
-  let faberAgent: Agent<{
-    actionMenu: ActionMenuModule
-  }>
-  let aliceAgent: Agent<{
-    actionMenu: ActionMenuModule
-  }>
+  let faberAgent: Agent<typeof modules>
+  let aliceAgent: Agent<typeof modules>
   let faberConnection: ConnectionRecord
   let aliceConnection: ConnectionRecord
 
@@ -84,21 +79,12 @@ describe('Action Menu', () => {
   })
 
   beforeEach(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+
+    setupSubjectTransports([faberAgent, aliceAgent])
+
+    await faberAgent.initialize()
     await aliceAgent.initialize()
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })

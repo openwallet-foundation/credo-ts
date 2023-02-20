@@ -1,6 +1,5 @@
 import type { IndySdkPoolConfig } from '../IndySdkPool'
 import type { CachedDidResponse } from '../IndySdkPoolService'
-import type { AgentContext, Cache } from '@aries-framework/core'
 
 import {
   CacheModuleConfig,
@@ -8,46 +7,44 @@ import {
   SigningProviderRegistry,
   AriesFrameworkError,
 } from '@aries-framework/core'
+import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
-import { getDidResponsesForDid } from '../../../../core/src/modules/ledger/__tests__/didResponses'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { IndySdkModuleConfig } from '../../IndySdkModuleConfig'
 import { IndySdkWallet } from '../../wallet/IndySdkWallet'
 import { IndySdkPoolService } from '../IndySdkPoolService'
 import { IndySdkPoolError, IndySdkPoolNotConfiguredError, IndySdkPoolNotFoundError } from '../error'
 
+import { getDidResponsesForDid } from './didResponses'
+
 const pools: IndySdkPoolConfig[] = [
   {
-    id: 'sovrinMain',
     indyNamespace: 'sovrin',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
-    id: 'sovrinBuilder',
     indyNamespace: 'sovrin:builder',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
-    id: 'sovringStaging',
     indyNamespace: 'sovrin:staging',
     isProduction: false,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
-    id: 'indicioMain',
     indyNamespace: 'indicio',
     isProduction: true,
     genesisTransactions: 'xxx',
     transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
   },
   {
-    id: 'bcovrinTest',
     indyNamespace: 'bcovrin:test',
     isProduction: false,
     genesisTransactions: 'xxx',
@@ -55,17 +52,21 @@ const pools: IndySdkPoolConfig[] = [
   },
 ]
 
-describe('IndySdkPoolService', () => {
-  const config = getAgentConfig('IndySdkPoolServiceTest', {
-    indyLedgers: pools,
-  })
-  let agentContext: AgentContext
-  let wallet: IndySdkWallet
-  let poolService: IndySdkPoolService
-  let cache: Cache
+const config = getAgentConfig('IndySdkPoolServiceTest')
+const cache = new InMemoryLruCache({ limit: 1 })
 
+const indySdkModule = new IndySdkModuleConfig({ indySdk, networks: pools })
+const wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
+
+const agentContext = getAgentContext({
+  wallet,
+  registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
+})
+
+const poolService = new IndySdkPoolService(config.logger, new Subject<boolean>(), new NodeFileSystem(), indySdkModule)
+
+describe('IndySdkPoolService', () => {
   beforeAll(async () => {
-    wallet = new IndySdkWallet(config.agentDependencies.indy, config.logger, new SigningProviderRegistry([]))
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })
@@ -74,26 +75,18 @@ describe('IndySdkPoolService', () => {
     await wallet.delete()
   })
 
-  beforeEach(async () => {
-    cache = new InMemoryLruCache({ limit: 200 })
-    agentContext = getAgentContext({
-      registerInstances: [[CacheModuleConfig, new CacheModuleConfig({ cache })]],
-    })
-    poolService = new IndySdkPoolService(
-      agentDependencies.indy,
-      config.logger,
-      new Subject<boolean>(),
-      new NodeFileSystem()
-    )
-
-    poolService.setPools(pools)
+  afterEach(() => {
+    cache.clear()
   })
 
   describe('getPoolForDid', () => {
     it('should throw a IndySdkPoolNotConfiguredError error if no pools are configured on the pool service', async () => {
-      poolService.setPools([])
+      const oldPools = poolService.pools
+      poolService.pools = []
 
       expect(poolService.getPoolForDid(agentContext, 'some-did')).rejects.toThrow(IndySdkPoolNotConfiguredError)
+
+      poolService.pools = oldPools
     })
 
     it('should throw a IndySdkPoolError if all ledger requests throw an error other than NotFoundError', async () => {
@@ -124,7 +117,7 @@ describe('IndySdkPoolService', () => {
       const did = 'TL1EaPFCZ8Si5aUrqScBDt'
       // Only found on one ledger
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinMain: '~43X4NhAFqREffK7eWdKgFH',
+        sovrin: '~43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -134,16 +127,16 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('sovrinMain')
+      expect(pool.config.indyNamespace).toBe('sovrin')
     })
 
     it('should return the first pool with a self certifying DID if at least one did is self certifying ', async () => {
       const did = 'did:sov:q7ATwTYbQDgiigVijUAej'
       // Found on one production and one non production ledger
       const responses = getDidResponsesForDid(did, pools, {
-        indicioMain: '~43X4NhAFqREffK7eWdKgFH',
-        bcovrinTest: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
-        sovrinBuilder: '~43X4NhAFqREffK7eWdKgFH',
+        indicio: '~43X4NhAFqREffK7eWdKgFH',
+        'bcovrin:test': '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
+        'sovrin:builder': '~43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -153,15 +146,15 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('sovrinBuilder')
+      expect(pool.config.indyNamespace).toBe('sovrin:builder')
     })
 
     it('should return the production pool if the did was found on one production and one non production ledger and both DIDs are not self certifying', async () => {
       const did = 'V6ty6ttM3EjuCtosH6sGtW'
       // Found on one production and one non production ledger
       const responses = getDidResponsesForDid(did, pools, {
-        indicioMain: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
-        sovrinBuilder: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
+        indicio: '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
+        'sovrin:builder': '43X4NhAFqREffK7eWdKgFH43X4NhAFqREffK7eWdKgFH',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -171,15 +164,15 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('indicioMain')
+      expect(pool.config.indyNamespace).toBe('indicio')
     })
 
     it('should return the pool with the self certified did if the did was found on two production ledgers where one did is self certified', async () => {
       const did = 'VsKV7grR1BUE29mG2Fm2kX'
       // Found on two production ledgers. Sovrin is self certified
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinMain: '~43X4NhAFqREffK7eWdKgFH',
-        indicioMain: 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn',
+        sovrin: '~43X4NhAFqREffK7eWdKgFH',
+        indicio: 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -189,16 +182,16 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('sovrinMain')
+      expect(pool.config.indyNamespace).toBe('sovrin')
     })
 
     it('should return the first pool with a self certified did if the did was found on three non production ledgers where two DIDs are self certified', async () => {
       const did = 'HEi9QViXNThGQaDsQ3ptcw'
       // Found on two non production ledgers. Sovrin is self certified
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinBuilder: '~M9kv2Ez61cur7X39DXWh8W',
-        sovrinStaging: '~M9kv2Ez61cur7X39DXWh8W',
-        bcovrinTest: '3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4',
+        'sovrin:builder': '~M9kv2Ez61cur7X39DXWh8W',
+        'sovrin:staging': '~M9kv2Ez61cur7X39DXWh8W',
+        'bcovrin:test': '3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -208,7 +201,7 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('sovrinBuilder')
+      expect(pool.config.indyNamespace).toBe('sovrin:builder')
     })
 
     it('should return the pool from the cache if the did was found in the cache', async () => {
@@ -222,20 +215,20 @@ describe('IndySdkPoolService', () => {
           role: 'ENDORSER',
           verkey: '~M9kv2Ez61cur7X39DXWh8W',
         },
-        poolId: expectedPool.id,
+        indyNamespace: expectedPool.indyNamespace,
       }
 
       await cache.set(agentContext, `IndySdkPoolService:${did}`, didResponse)
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe(pool.id)
+      expect(pool.config.indyNamespace).toBe(pool.didIndyNamespace)
     })
 
-    it('should set the poolId in the cache if the did was not found in the cache, but resolved later on', async () => {
+    it('should set the indyNamespace in the cache if the did was not found in the cache, but resolved later on', async () => {
       const did = 'HEi9QViXNThGQaDsQ3ptcw'
       // Found on one ledger
       const responses = getDidResponsesForDid(did, pools, {
-        sovrinBuilder: '~M9kv2Ez61cur7X39DXWh8W',
+        'sovrin:builder': '~M9kv2Ez61cur7X39DXWh8W',
       })
 
       poolService.pools.forEach((pool, index) => {
@@ -245,7 +238,7 @@ describe('IndySdkPoolService', () => {
 
       const { pool } = await poolService.getPoolForDid(agentContext, did)
 
-      expect(pool.config.id).toBe('sovrinBuilder')
+      expect(pool.config.indyNamespace).toBe('sovrin:builder')
       expect(pool.config.indyNamespace).toBe('sovrin:builder')
 
       expect(await cache.get(agentContext, `IndySdkPoolService:${did}`)).toEqual({
@@ -254,22 +247,25 @@ describe('IndySdkPoolService', () => {
           verkey: '~M9kv2Ez61cur7X39DXWh8W',
           role: '0',
         },
-        poolId: 'sovrinBuilder',
+        indyNamespace: 'sovrin:builder',
       })
     })
   })
 
   describe('getPoolForNamespace', () => {
     it('should throw a IndySdkPoolNotConfiguredError error if no pools are configured on the pool service', async () => {
-      poolService.setPools([])
+      const oldPools = poolService.pools
+      poolService.pools = []
 
       expect(() => poolService.getPoolForNamespace()).toThrow(IndySdkPoolNotConfiguredError)
+
+      poolService.pools = oldPools
     })
 
     it('should return the first pool if indyNamespace is not provided', async () => {
       const expectedPool = pools[0]
 
-      expect(poolService.getPoolForNamespace().id).toEqual(expectedPool.id)
+      expect(poolService.getPoolForNamespace().didIndyNamespace).toEqual(expectedPool.indyNamespace)
     })
 
     it('should throw a IndySdkPoolNotFoundError error if any of the pools did not have the provided indyNamespace', async () => {
@@ -296,7 +292,7 @@ describe('IndySdkPoolService', () => {
 
       const pool = poolService.getPoolForNamespace(indyNameSpace)
 
-      expect(pool.id).toEqual(expectedPool.id)
+      expect(pool.didIndyNamespace).toEqual(expectedPool.indyNamespace)
     })
   })
 

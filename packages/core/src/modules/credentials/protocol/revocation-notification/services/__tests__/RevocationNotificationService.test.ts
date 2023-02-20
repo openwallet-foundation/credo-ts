@@ -1,3 +1,4 @@
+import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/utils/metadata'
 import type { AgentContext } from '../../../../../../agent'
 import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
 
@@ -9,7 +10,6 @@ import { Dispatcher } from '../../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
-import { CredentialMetadataKeys } from '../../../../repository'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
 import { RevocationNotificationService } from '../RevocationNotificationService'
@@ -32,9 +32,7 @@ describe('RevocationNotificationService', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
-    const agentConfig = getAgentConfig('RevocationNotificationService', {
-      indyLedgers: [],
-    })
+    const agentConfig = getAgentConfig('RevocationNotificationService')
 
     agentContext = getAgentContext()
 
@@ -72,16 +70,19 @@ describe('RevocationNotificationService', () => {
         state: CredentialState.Done,
       })
 
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        indyRevocationRegistryId:
+      const metadata = {
+        revocationRegistryId:
           'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
-        indyCredentialRevocationId: '1',
-      })
+        credentialRevocationId: '1',
+      } satisfies AnonCredsCredentialMetadata
+
+      // Set required tags
+      credentialRecord.setTag('anonCredsRevocationRegistryId', metadata.revocationRegistryId)
+      credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
-      const { indyRevocationRegistryId, indyCredentialRevocationId } = credentialRecord.getTags()
-      const revocationNotificationThreadId = `indy::${indyRevocationRegistryId}::${indyCredentialRevocationId}`
 
+      const revocationNotificationThreadId = `indy::${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
@@ -182,15 +183,14 @@ describe('RevocationNotificationService', () => {
         state: CredentialState.Done,
       })
 
-      credentialRecord.metadata.set(CredentialMetadataKeys.IndyCredential, {
-        indyRevocationRegistryId:
+      const metadata = {
+        revocationRegistryId:
           'AsB27X6KRrJFsqZ3unNAH6:4:AsB27X6KRrJFsqZ3unNAH6:3:cl:48187:default:CL_ACCUM:3b24a9b0-a979-41e0-9964-2292f2b1b7e9',
-        indyCredentialRevocationId: '1',
-      })
+        credentialRevocationId: '1',
+      } satisfies AnonCredsCredentialMetadata
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
-      const { indyRevocationRegistryId, indyCredentialRevocationId } = credentialRecord.getTags()
-      const revocationNotificationCredentialId = `${indyRevocationRegistryId}::${indyCredentialRevocationId}`
+      const revocationNotificationCredentialId = `${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
 
       const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId: revocationNotificationCredentialId,

@@ -252,7 +252,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       verificationMethod: verificationMethod,
     })
 
-    const attachment = this.getFormatData(verifiableCredential, format.attachmentId)
+    const attachment = this.getFormatData(JsonTransformer.toJSON(verifiableCredential), format.attachmentId)
     return { format, attachment }
   }
 

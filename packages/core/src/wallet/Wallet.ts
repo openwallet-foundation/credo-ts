@@ -55,7 +55,8 @@ export interface DidInfo {
 
 export interface WalletCreateKeyOptions {
   keyType: KeyType
-  seed?: string
+  seed?: Buffer
+  privateKey?: Buffer
 }
 
 export interface WalletSignOptions {

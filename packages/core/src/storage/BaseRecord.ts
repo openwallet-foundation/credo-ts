@@ -18,7 +18,10 @@ export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']
 export abstract class BaseRecord<
   DefaultTags extends TagsBase = TagsBase,
   CustomTags extends TagsBase = TagsBase,
-  MetadataValues = Record<string, unknown>
+  // We want an empty object, as Record<string, unknown> will make typescript
+  // not infer the types correctly
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  MetadataValues = {}
 > {
   protected _tags: CustomTags = {} as CustomTags
 

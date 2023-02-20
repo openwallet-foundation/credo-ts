@@ -36,8 +36,7 @@ import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
-import { CredentialProblemReportReason } from '../../errors'
-import { AutoAcceptCredential, CredentialState } from '../../models'
+import { AutoAcceptCredential, CredentialProblemReportReason, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
 import { arePreviewAttributesEqual } from '../../util/previewAttributes'
@@ -699,7 +698,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
   }
 
   /**
-   * Process a received {@link IssueCredentialMessage}. This will not accept the credential
+   * Process a received {@link V2IssueCredentialMessage}. This will not accept the credential
    * or send a credential acknowledgement. It will only update the existing credential record with
    * the information from the issue credential message. Use {@link createAck}
    * after calling this method to create a credential acknowledgement.

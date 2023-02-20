@@ -380,8 +380,6 @@ Object {
     "tags": Object {
       "connectionId": "0b6de73d-b376-430f-b2b4-f6e51407bb66",
       "credentialIds": Array [],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -429,8 +427,6 @@ Object {
       "credentialIds": Array [
         "a77114e1-c812-4bff-a53c-3d5003fcc278",
       ],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -679,8 +675,6 @@ Object {
     "tags": Object {
       "connectionId": "cd66cbf1-5721-449e-8724-f4d8dcef1bc4",
       "credentialIds": Array [],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },
@@ -728,8 +722,6 @@ Object {
       "credentialIds": Array [
         "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
       ],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },
@@ -2823,8 +2815,6 @@ Object {
     "tags": Object {
       "connectionId": "0b6de73d-b376-430f-b2b4-f6e51407bb66",
       "credentialIds": Array [],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -2872,8 +2862,6 @@ Object {
       "credentialIds": Array [
         "a77114e1-c812-4bff-a53c-3d5003fcc278",
       ],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
     },
@@ -3122,8 +3110,6 @@ Object {
     "tags": Object {
       "connectionId": "cd66cbf1-5721-449e-8724-f4d8dcef1bc4",
       "credentialIds": Array [],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },
@@ -3171,8 +3157,6 @@ Object {
       "credentialIds": Array [
         "19c1f29f-d2df-486c-b8c6-950c403fa7d9",
       ],
-      "indyCredentialRevocationId": undefined,
-      "indyRevocationRegistryId": undefined,
       "state": "done",
       "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
     },

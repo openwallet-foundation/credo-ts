@@ -1,24 +1,20 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateCredentialOfferOptions, DefaultCredentialProtocols } from '../src/modules/credentials'
+import type { V1CredentialProtocol } from '../../anoncreds/src'
+import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
 import type { AgentMessage, AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
+
+import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
+
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-
-import {
-  AgentEventTypes,
-  AriesFrameworkError,
-  AutoAcceptCredential,
-  CredentialState,
-  V1CredentialPreview,
-} from '@aries-framework/core'
-
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -28,14 +24,26 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
 import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, waitForCredentialRecord } from './helpers'
 
-const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
-  endpoints: ['rxjs:faber'],
-})
-const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
-  endpoints: ['rxjs:alice'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber Agent OOB',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
+)
+const aliceAgentOptions = getAgentOptions(
+  'Alice Agent OOB',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
+)
 
 describe('out of band', () => {
   const makeConnectionConfig = {
@@ -56,9 +64,9 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let credentialTemplate: CreateCredentialOfferOptions<DefaultCredentialProtocols>
+  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -79,19 +87,34 @@ describe('out of band', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+      attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
+      issuerId: faberAgent.publicDid?.did as string,
+    })
 
     credentialTemplate = {
       protocolVersion: 'v1',
       credentialFormats: {
         indy: {
-          attributes: V1CredentialPreview.fromRecord({
-            name: 'name',
-            age: 'age',
-            profile_picture: 'profile_picture',
-            'x-ray': 'x-ray',
-          }).attributes,
-          credentialDefinitionId: definition.id,
+          attributes: [
+            {
+              name: 'name',
+              value: 'name',
+            },
+            {
+              name: 'age',
+              value: 'age',
+            },
+            {
+              name: 'profile_picture',
+              value: 'profile_picture',
+            },
+            {
+              name: 'x-ray',
+              value: 'x-ray',
+            },
+          ],
+          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         },
       },
       autoAcceptCredential: AutoAcceptCredential.Never,

@@ -7,6 +7,7 @@ import { filter, firstValueFrom, map, Subject, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -21,19 +22,31 @@ import {
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberAgentOptions = getAgentOptions('OOB mediation - Faber Agent', {
-  endpoints: ['rxjs:faber'],
-})
-const aliceAgentOptions = getAgentOptions('OOB mediation - Alice Recipient Agent', {
-  endpoints: ['rxjs:alice'],
-  // FIXME: discover features returns that we support this protocol, but we don't support all roles
-  // we should return that we only support the mediator role so we don't have to explicitly declare this
-  mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-})
-const mediatorAgentOptions = getAgentOptions('OOB mediation - Mediator Agent', {
-  endpoints: ['rxjs:mediator'],
-  autoAcceptMediationRequests: true,
-})
+const faberAgentOptions = getAgentOptions(
+  'OOB mediation - Faber Agent',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getIndySdkModules()
+)
+const aliceAgentOptions = getAgentOptions(
+  'OOB mediation - Alice Recipient Agent',
+  {
+    endpoints: ['rxjs:alice'],
+    // FIXME: discover features returns that we support this protocol, but we don't support all roles
+    // we should return that we only support the mediator role so we don't have to explicitly declare this
+    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+  },
+  getIndySdkModules()
+)
+const mediatorAgentOptions = getAgentOptions(
+  'OOB mediation - Mediator Agent',
+  {
+    endpoints: ['rxjs:mediator'],
+    autoAcceptMediationRequests: true,
+  },
+  getIndySdkModules()
+)
 
 describe('out of band with mediation', () => {
   const makeConnectionConfig = {

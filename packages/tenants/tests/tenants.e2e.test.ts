@@ -5,7 +5,8 @@ import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import testLogger from '../../core/tests/logger'
+import { testLogger, indySdk } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
@@ -36,6 +37,7 @@ const agent1 = new Agent({
   config: agent1Config,
   modules: {
     tenants: new TenantsModule(),
+    indySdk: new IndySdkModule({ indySdk }),
   },
   dependencies: agentDependencies,
 })
@@ -44,6 +46,7 @@ const agent2 = new Agent({
   config: agent2Config,
   modules: {
     tenants: new TenantsModule(),
+    indySdk: new IndySdkModule({ indySdk }),
   },
   dependencies: agentDependencies,
 })

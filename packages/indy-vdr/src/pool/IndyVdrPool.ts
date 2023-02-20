@@ -1,4 +1,4 @@
-import type { Logger, AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, Key } from '@aries-framework/core'
 import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { TypedArrayEncoder } from '@aries-framework/core'
@@ -35,16 +35,15 @@ export interface IndyVdrPoolConfig {
   isProduction: boolean
   indyNamespace: string
   transactionAuthorAgreement?: TransactionAuthorAgreement
+  connectOnStartup?: boolean
 }
 
 export class IndyVdrPool {
   private _pool?: indyVdrPool
-  private logger: Logger
   private poolConfig: IndyVdrPoolConfig
   public authorAgreement?: AuthorAgreement | null
 
-  public constructor(poolConfig: IndyVdrPoolConfig, logger: Logger) {
-    this.logger = logger
+  public constructor(poolConfig: IndyVdrPoolConfig) {
     this.poolConfig = poolConfig
   }
 
@@ -56,26 +55,27 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
-  public async connect() {
+  public connect() {
+    if (this._pool) {
+      throw new IndyVdrError('Cannot connect to pool, already connected.')
+    }
+
     this._pool = new PoolCreate({
       parameters: {
         transactions: this.config.genesisTransactions,
       },
     })
-
-    return this.pool.handle
   }
 
   private get pool(): indyVdrPool {
-    if (!this._pool) {
-      throw new IndyVdrError('Pool is not connected. Make sure to call .connect() first')
-    }
+    if (!this._pool) this.connect()
+    if (!this._pool) throw new IndyVdrError('Pool is not connected.')
 
     return this._pool
   }
 
   public close() {
-    if (!this.pool) {
+    if (!this._pool) {
       throw new IndyVdrError("Can't close pool. Pool is not connected")
     }
 
