@@ -131,7 +131,7 @@ describe('IndySdkSovDidRegistrar', () => {
   })
 
   it('should correctly create a did:sov document without services', async () => {
-    const privateKey = '96213c3d7fc8d4d6754c712fd969598e'
+    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
     const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
@@ -144,7 +144,7 @@ describe('IndySdkSovDidRegistrar', () => {
         role: 'STEWARD',
       },
       secret: {
-        privateKey: TypedArrayEncoder.fromString(privateKey),
+        privateKey,
       },
     })
 
@@ -206,7 +206,7 @@ describe('IndySdkSovDidRegistrar', () => {
   })
 
   it('should correctly create a did:sov document with services', async () => {
-    const privateKey = '96213c3d7fc8d4d6754c712fd969598e'
+    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
     const registerPublicDidSpy = jest.spyOn(indySdkSovDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve('R1xKJw17sUoXhejEpugMYJ'))
@@ -227,7 +227,7 @@ describe('IndySdkSovDidRegistrar', () => {
         },
       },
       secret: {
-        privateKey: TypedArrayEncoder.fromString(privateKey),
+        privateKey,
       },
     })
 
