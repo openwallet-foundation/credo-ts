@@ -199,7 +199,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       if (!linkSecretRecord) {
         // No default link secret
-        throw new AnonCredsRsError('No default link secret has been found')
+        throw new AnonCredsRsError(
+          'No link secret provided to createCredentialRequest and no default link secret has been found'
+        )
       }
 
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({

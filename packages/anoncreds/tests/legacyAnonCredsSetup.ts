@@ -329,6 +329,12 @@ export async function setupAnonCredsTests<
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
+  // Create default link secret for holder
+  await holderAgent.modules.anoncreds.createLinkSecret({
+    linkSecretId: 'default',
+    setAsDefault: true,
+  })
+
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
     // TODO: replace with more dynamic / generic value We should create a did using the dids module
