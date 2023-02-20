@@ -5,6 +5,7 @@ import { KeyType } from '../../../../../crypto'
 import { Key } from '../../../../../crypto/Key'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
+import { WalletError } from '../../../../../wallet/error'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
 import { KeyDidRegistrar } from '../KeyDidRegistrar'
@@ -53,7 +54,7 @@ describe('DidRegistrar', () => {
           did: 'did:key:z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
           didDocument: didKeyz6MksLeFixture,
           secret: {
-            privateKey: '96213c3d7fc8d4d6754c712fd969598e',
+            privateKey,
           },
         },
       })
@@ -78,10 +79,10 @@ describe('DidRegistrar', () => {
       })
     })
 
-    it('should return an error state if an invalid private key is provided', async () => {
+    it('should return an error state if a key creation error is thrown', async () => {
+      mockFunction(walletMock.createKey).mockRejectedValueOnce(new WalletError('Invalid private key provided'))
       const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
-
         options: {
           keyType: KeyType.Ed25519,
         },
@@ -95,7 +96,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Invalid private key provided',
+          reason: expect.stringContaining('Invalid private key provided'),
         },
       })
     })

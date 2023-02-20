@@ -26,7 +26,7 @@ const walletConfig: WalletConfig = {
 
 describeSkipNode17And18('BBS Signing Provider', () => {
   let wallet: Wallet
-  const seed = TypedArrayEncoder.fromString('sample-seed')
+  const seed = TypedArrayEncoder.fromString('sample-seed-min-of-32-bytes-long')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
@@ -41,7 +41,7 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   test('Create bls12381g2 keypair', async () => {
     await expect(wallet.createKey({ seed, keyType: KeyType.Bls12381g2 })).resolves.toMatchObject({
       publicKeyBase58:
-        't54oLBmhhRcDLUyWTvfYRWw8VRXRy1p43pVm62hrpShrYPuHe9WNAgS33DPfeTK6xK7iPrtJDwCHZjYgbFYDVTJHxXex9xt2XEGF8D356jBT1HtqNeucv3YsPLfTWcLcpFA',
+        '25TvGExLTWRTgn9h2wZuohrQmmLafXiacY4dhv66wcbY8pLbuNTBRMTgWVcPKh2wsEyrRPmnhLdc4C7LEcJ2seoxzBkoydJEdQD8aqg5dw8wesBTS9Twg8EjuFG1WPRAiERd',
       keyType: KeyType.Bls12381g2,
     })
   })

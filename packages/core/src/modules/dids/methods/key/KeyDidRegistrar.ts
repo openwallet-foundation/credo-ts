@@ -30,28 +30,6 @@ export class KeyDidRegistrar implements DidRegistrar {
       }
     }
 
-    if (seed && (typeof seed !== 'object' || seed.length !== 32)) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Invalid seed provided',
-        },
-      }
-    }
-
-    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Invalid private key provided',
-        },
-      }
-    }
-
     try {
       const key = await agentContext.wallet.createKey({
         keyType,
@@ -81,8 +59,8 @@ export class KeyDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed?.toString(),
-            privateKey: options.secret?.privateKey?.toString(),
+            seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey,
           },
         },
       }

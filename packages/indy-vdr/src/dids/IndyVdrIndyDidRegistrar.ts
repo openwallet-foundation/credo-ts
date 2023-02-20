@@ -44,28 +44,6 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const seed = options.secret?.seed
     const privateKey = options.secret?.privateKey
 
-    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Invalid privateKey provided',
-        },
-      }
-    }
-
-    if (seed && (typeof seed !== 'object' || seed.length !== 32)) {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Invalid seed provided',
-        },
-      }
-    }
-
     const { alias, role, submitterDid, submitterVerkey, services, useEndpointAttrib } = options.options
     let verkey = options.options.verkey
     let did = options.did
@@ -202,8 +180,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            seed: options.secret?.seed?.toString(),
-            privateKey: options.secret?.privateKey?.toString(),
+            seed: options.secret?.seed,
+            privateKey: options.secret?.privateKey,
           },
         },
       }

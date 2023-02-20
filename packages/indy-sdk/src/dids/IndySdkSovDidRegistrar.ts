@@ -13,7 +13,7 @@ import type {
 } from '@aries-framework/core'
 import type { NymRole } from 'indy-sdk'
 
-import { DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
+import { KeyType, isValidPrivateKey, DidDocumentRole, DidRecord, DidRepository } from '@aries-framework/core'
 
 import { IndySdkError } from '../error'
 import { isIndyError } from '../error/indyError'
@@ -34,7 +34,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
     const { alias, role, submitterDid, indyNamespace } = options.options
     const privateKey = options.secret?.privateKey
 
-    if (privateKey && (typeof privateKey !== 'object' || privateKey.length !== 32)) {
+    if (privateKey && !isValidPrivateKey(privateKey, KeyType.Ed25519)) {
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -120,7 +120,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
             // we can only return it if the seed was passed in by the user. Once
             // we have a secure method for generating seeds we should use the same
             // approach
-            privateKey: options.secret?.privateKey?.toString(),
+            privateKey: options.secret?.privateKey,
           },
         },
       }
