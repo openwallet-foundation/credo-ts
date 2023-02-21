@@ -14,18 +14,18 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   const revocationList = new Array(revocationRegistryDefinition.value.maxCredNum).fill(defaultState)
 
   // Set all `issuer` indexes to 0 (not revoked)
-  for (const issued of delta.value.issued ?? []) {
+  for (const issued of delta.issued ?? []) {
     revocationList[issued] = 0
   }
 
   // Set all `revoked` indexes to 1 (revoked)
-  for (const revoked of delta.value.revoked ?? []) {
+  for (const revoked of delta.revoked ?? []) {
     revocationList[revoked] = 1
   }
 
   return {
     issuerId: revocationRegistryDefinition.issuerId,
-    currentAccumulator: delta.value.accum,
+    currentAccumulator: delta.accum,
     revRegId: revocationRegistryDefinitionId,
     revocationList,
     timestamp,
@@ -33,10 +33,7 @@ export function anonCredsRevocationStatusListFromIndyVdr(
 }
 
 interface RevocRegDelta {
-  value: {
-    accum: string
-    issued: number[]
-    revoked: number[]
-  }
-  ver: string
+  accum: string
+  issued: number[]
+  revoked: number[]
 }

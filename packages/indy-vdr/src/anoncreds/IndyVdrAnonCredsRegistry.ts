@@ -324,9 +324,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           schemaId: `${schemaMetadata.indyLedgerSeqNo}`,
           type: 'CL',
           tag: options.credentialDefinition.tag,
-          value: {
-            primary: options.credentialDefinition.value,
-          },
+          value: options.credentialDefinition.value,
         },
       })
 
@@ -342,7 +340,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           credentialDefinitionState: {
             credentialDefinition: options.credentialDefinition,
             state: 'failed',
-            reason: `didNotFound: unable to resolve did did:sov${options.credentialDefinition.issuerId}: ${didResult.didResolutionMetadata.message}`,
+            reason: `didNotFound: unable to resolve did did:sov:${options.credentialDefinition.issuerId}: ${didResult.didResolutionMetadata.message}`,
           },
         }
       }
@@ -439,10 +437,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const issuerId = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
-
       const revocationRegistryDefinition = {
-        issuerId,
+        issuerId: did,
         revocDefType: response.result.data?.revocDefType,
         value: {
           maxCredNum: response.result.data?.value.maxCredNum,
@@ -549,12 +545,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const revocationRegistryDelta = {
-        value: {
-          accum: response.result.data?.value.accum_to.value.accum,
-          issued: response.result.data?.value.issued,
-          revoked: response.result.data?.value.revoked,
-        },
-        ver: '1.0',
+        accum: response.result.data?.value.accum_to.value.accum,
+        issued: response.result.data?.value.issued,
+        revoked: response.result.data?.value.revoked,
       }
 
       return {
