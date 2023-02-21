@@ -471,6 +471,8 @@ export class MessageSender {
       // })
       console.log('====================================')
       console.log('NOT IN TRANSPORT SEND TO SERVICE')
+      console.log(sessionId)
+      console.log(sessionIdFromInbound)
       console.log('====================================')
       if (sessionId || sessionIdFromInbound) {
         // throw new MessageSendingError(
@@ -485,19 +487,25 @@ export class MessageSender {
         if (sessionId || sessionIdFromInbound) {
           if (sessionIdFromInbound) {
             // session = this.transportService.findSessionById(sessionIdFromInbound)
-            const aliceMessages = new Subject<SubjectMessage>()
-            session = new SubjectTransportSession(sessionIdFromInbound, aliceMessages)
+            // const aliceMessages = new Subject<SubjectMessage>()
+            // session = new SubjectTransportSession(sessionIdFromInbound, aliceMessages)
+            session = this.transportService.findSessionById(`${sessionIdFromInbound}`)
+            // session = this.transportService.findSessionById(sessionIdFromInbound)
+            console.log('====================================')
+            console.log('SESSIONID from retrieve session from inbound prop')
+            console.log(session?.id)
+            console.log('====================================')
           } else if (sessionId) {
             session = this.transportService.findSessionById(sessionId)
           }
         }
-        if (!session) {
-          // Try to send to already open session
-          throw new MessageSendingError(`no session for: ${sessionId} ${sessionIdFromInbound}`, {
-            sessionId,
-            sessionIdFromInbound,
-          })
-        }
+        // if (!session) {
+        //   // Try to send to already open session
+        //   throw new MessageSendingError(`no session for: ${sessionId} ${sessionIdFromInbound}`, {
+        //     sessionId,
+        //     sessionIdFromInbound,
+        //   })
+        // }
 
         // if (outboundMessageContext.serviceParams?.service.serviceEndpoint) {
         if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
@@ -508,7 +516,7 @@ export class MessageSender {
             `Found session with return routing for message '${message.id}' (connection '${connection?.id}'`
           )
           try {
-            session.keys = keys
+            // session.keys = keys
             console.log('====================================')
             console.log('session before sendMessageToSession ')
             console.log(`${JSON.stringify(session)}`)
@@ -537,6 +545,11 @@ export class MessageSender {
               }
             )
           }
+        } else if (outboundMessageContext.serviceParams?.service.serviceEndpoint && session) {
+          console.log('====================================')
+          console.log('HAS SERVICE ENDPOINT ROUTING')
+          console.log('====================================')
+          await this.sendMessageToSession(agentContext, session, message)
         }
       }
     }

@@ -273,8 +273,8 @@ describe('Present Proof', () => {
       domain: 'rxjs:faber',
     })
 
-    // faberAgent.resetOutboundTransport()
-    message.setReturnRouting(ReturnRouteTypes.all)
+    faberAgent.resetOutboundTransport()
+    message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
     // console.log('====================================')
     // console.log(message)
     // console.log('====================================')

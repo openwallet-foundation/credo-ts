@@ -1035,8 +1035,8 @@ export async function setupProofsTestNoOutbound(
   faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
   aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
 
-  aliceAgent.resetOutboundTransport()
-  faberAgent.resetOutboundTransport()
+  // aliceAgent.resetOutboundTransport()
+  // faberAgent.resetOutboundTransport()
 
   return {
     faberAgent,

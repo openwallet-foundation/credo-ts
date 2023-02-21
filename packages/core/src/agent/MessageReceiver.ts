@@ -192,13 +192,13 @@ export class MessageReceiver {
       messageContext.sessionId = session.id
       console.log('====================================')
       console.log('SESSION IN ENCRYPTED')
-      console.log(JSON.stringify(session))
+      // console.log(JSON.stringify(session))
       console.log('====================================')
       this.transportService.saveSession(session)
     } else if (senderKey && recipientKey && message.service?.serviceEndpoint && session) {
       console.log('====================================')
       console.log('SESSION IN service endpoint')
-      console.log(JSON.stringify(session))
+      // console.log(JSON.stringify(session))
       console.log('====================================')
       const keys = {
         recipientKeys: [senderKey],
@@ -212,6 +212,13 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
+      // messageContext.sessionId = message.threadId
+      console.log('====================================')
+      console.log('SESSIONID IN service endpoint')
+      console.log(session.id)
+      console.log('inboundmessage IN service endpoint')
+      console.log(session.inboundMessage)
+      console.log('====================================')
       this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.

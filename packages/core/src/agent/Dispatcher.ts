@@ -91,7 +91,7 @@ class Dispatcher {
       console.log(outboundMessage.toJSON())
       console.log('====================================')
       this.logger.debug(`OutboundMessage ${outboundMessage}`, outboundMessage)
-      outboundMessage.sessionIdFromInbound = message.thread?.threadId
+      outboundMessage.sessionIdFromInbound = messageContext.sessionId
       if (outboundMessage.isOutboundServiceMessage()) {
         console.log('====================================')
         console.log('DISPATCHER ISOUTBOUNDMESSAGE')
