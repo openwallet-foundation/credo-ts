@@ -19,6 +19,8 @@ export interface TrustPingMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
 export class TrustPingMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new TrustPingMessage instance.
    * responseRequested will be true if not passed

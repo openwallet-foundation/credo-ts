@@ -18,6 +18,8 @@ import {
   GetCredentialDefinitionRequest,
   CredentialDefinitionRequest,
   GetTransactionRequest,
+  GetRevocationRegistryDeltaRequest,
+  GetRevocationRegistryDefinitionRequest,
 } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrPoolService } from '../pool'
@@ -25,10 +27,12 @@ import { IndyVdrPoolService } from '../pool'
 import {
   didFromSchemaId,
   didFromCredentialDefinitionId,
+  didFromRevocationRegistryDefinitionId,
   getLegacySchemaId,
   getLegacyCredentialDefinitionId,
   indyVdrAnonCredsRegistryIdentifierRegex,
 } from './utils/identifiers'
+import { anonCredsRevocationStatusListFromIndyVdr } from './utils/transform'
 
 export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
   public readonly supportedIdentifier = indyVdrAnonCredsRegistryIdentifierRegex
@@ -390,31 +394,191 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  public async getRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    revocationRegistryDefinitionId: string
+  ): Promise<GetRevocationRegistryDefinitionReturn> {
+    try {
+      const indySdkPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+      const did = didFromRevocationRegistryDefinitionId(revocationRegistryDefinitionId)
+
+      const pool = await indySdkPoolService.getPoolForDid(agentContext, did)
+
+      agentContext.config.logger.debug(
+        `Using ledger '${pool.indyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
+      )
+
+      const request = new GetRevocationRegistryDefinitionRequest({
+        submitterDid: did,
+        revocationRegistryId: revocationRegistryDefinitionId,
+      })
+
+      agentContext.config.logger.trace(
+        `Submitting get revocation registry definition request for revocation registry definition '${revocationRegistryDefinitionId}' to ledger`
+      )
+
+      const response = await pool.submitReadRequest(request)
+
+      if (!response.result.data) {
+        agentContext.config.logger.error(
+          `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}' from ledger`,
+          {
+            revocationRegistryDefinitionId,
+          }
+        )
+
+        return {
+          resolutionMetadata: {
+            error: 'notFound',
+            message: `unable to resolve revocation registry definition`,
+          },
+          revocationRegistryDefinitionId,
+          revocationRegistryDefinitionMetadata: {},
+        }
+      }
+
+      const revocationRegistryDefinition = {
+        issuerId: did,
+        revocDefType: response.result.data?.revocDefType,
+        value: {
+          maxCredNum: response.result.data?.value.maxCredNum,
+          tailsHash: response.result.data?.value.tailsHash,
+          tailsLocation: response.result.data?.value.tailsLocation,
+          publicKeys: {
+            accumKey: {
+              z: response.result.data?.value.publicKeys.accumKey.z,
+            },
+          },
+        },
+        tag: response.result.data?.tag,
+        credDefId: response.result.data?.credDefId,
+      }
+
+      return {
+        revocationRegistryDefinitionId,
+        revocationRegistryDefinition,
+        revocationRegistryDefinitionMetadata: {
+          issuanceType: response.result.data?.value.issuanceType,
+          didIndyNamespace: pool.indyNamespace,
+        },
+        resolutionMetadata: {},
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}' from ledger`,
+        {
+          error,
+          revocationRegistryDefinitionId,
+        }
+      )
+
+      return {
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve revocation registry definition: ${error.message}`,
+        },
+        revocationRegistryDefinitionId,
+        revocationRegistryDefinitionMetadata: {},
+      }
+    }
+  }
+
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
-    return {
-      resolutionMetadata: {
-        error: 'Not Implemented',
-        message: `Revocation list not yet implemented `,
-      },
-      revocationStatusListMetadata: {},
-    }
-  }
+    try {
+      const indySdkPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+      const did = didFromRevocationRegistryDefinitionId(revocationRegistryId)
 
-  public async getRevocationRegistryDefinition(
-    agentContext: AgentContext,
-    revocationRegistryDefinitionId: string
-  ): Promise<GetRevocationRegistryDefinitionReturn> {
-    return {
-      resolutionMetadata: {
-        error: 'Not Implemented',
-        message: `Revocation registry definition not yet implemented`,
-      },
-      revocationRegistryDefinitionId,
-      revocationRegistryDefinitionMetadata: {},
+      const pool = await indySdkPoolService.getPoolForDid(agentContext, did)
+
+      agentContext.config.logger.debug(
+        `Using ledger '${pool.indyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
+      )
+
+      const request = new GetRevocationRegistryDeltaRequest({
+        submitterDid: did,
+        revocationRegistryId,
+        toTs: timestamp,
+      })
+
+      agentContext.config.logger.trace(
+        `Submitting get revocation registry delta request for revocation registry '${revocationRegistryId}' to ledger`
+      )
+
+      const response = await pool.submitReadRequest(request)
+
+      agentContext.config.logger.debug(
+        `Got revocation registry deltas '${revocationRegistryId}' until timestamp ${timestamp} from ledger`
+      )
+
+      const { revocationRegistryDefinition, resolutionMetadata, revocationRegistryDefinitionMetadata } =
+        await this.getRevocationRegistryDefinition(agentContext, revocationRegistryId)
+
+      if (
+        !revocationRegistryDefinition ||
+        !revocationRegistryDefinitionMetadata.issuanceType ||
+        typeof revocationRegistryDefinitionMetadata.issuanceType !== 'string'
+      ) {
+        return {
+          resolutionMetadata: {
+            error: `error resolving revocation registry definition with id ${revocationRegistryId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
+          },
+          revocationStatusListMetadata: {
+            didIndyNamespace: pool.indyNamespace,
+          },
+        }
+      }
+
+      const isIssuanceByDefault = revocationRegistryDefinitionMetadata.issuanceType === 'ISSUANCE_BY_DEFAULT'
+
+      if (!response.result.data) {
+        return {
+          resolutionMetadata: {
+            error: 'notFound',
+            message: `Error retrieving revocation registry delta '${revocationRegistryId}' from ledger, potentially revocation interval ends before revocation registry creation`,
+          },
+          revocationStatusListMetadata: {},
+        }
+      }
+
+      const revocationRegistryDelta = {
+        accum: response.result.data?.value.accum_to.value.accum,
+        issued: response.result.data?.value.issued,
+        revoked: response.result.data?.value.revoked,
+      }
+
+      return {
+        resolutionMetadata: {},
+        revocationStatusList: anonCredsRevocationStatusListFromIndyVdr(
+          revocationRegistryId,
+          revocationRegistryDefinition,
+          revocationRegistryDelta,
+          response.result.data.value.accum_to.txnTime,
+          isIssuanceByDefault
+        ),
+        revocationStatusListMetadata: {
+          didIndyNamespace: pool.indyNamespace,
+        },
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error retrieving revocation registry delta '${revocationRegistryId}' from ledger, potentially revocation interval ends before revocation registry creation?"`,
+        {
+          error,
+          revocationRegistryId: revocationRegistryId,
+        }
+      )
+
+      return {
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `Error retrieving revocation registry delta '${revocationRegistryId}' from ledger, potentially revocation interval ends before revocation registry creation: ${error.message}`,
+        },
+        revocationStatusListMetadata: {},
+      }
     }
   }
 

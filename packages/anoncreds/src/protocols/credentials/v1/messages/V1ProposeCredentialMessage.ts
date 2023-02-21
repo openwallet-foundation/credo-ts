@@ -32,6 +32,8 @@ export interface V1ProposeCredentialMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
 export class V1ProposeCredentialMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   public constructor(options: V1ProposeCredentialMessageOptions) {
     super()
 
