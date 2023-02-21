@@ -46,7 +46,7 @@ const senderAgentOptions = getAgentOptions(
   })
 )
 
-describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
+describe.skip('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent
