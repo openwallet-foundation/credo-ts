@@ -3,28 +3,22 @@ import type { Wallet, DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
   DidsApi,
-  DidResolverService,
-  DidsModuleConfig,
   DidDocument,
   VerificationMethod,
   KeyType,
   Key,
   TypedArrayEncoder,
   DidRepository,
-  SigningProviderRegistry,
   JsonTransformer,
   DidDocumentRole,
   EventEmitter,
   RepositoryEventTypes,
 } from '@aries-framework/core'
-import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { mockFunction, getAgentConfig, getAgentContext, agentDependencies, mockProperty } from '../../../../core/tests'
+import { mockFunction, getAgentConfig, getAgentContext, agentDependencies } from '../../../../core/tests'
 import { IndySdkPoolService } from '../../ledger/IndySdkPoolService'
-import { IndySdkSymbol } from '../../types'
-import { IndySdkWallet } from '../../wallet'
 import { IndySdkSovDidRegistrar } from '../IndySdkSovDidRegistrar'
 
 jest.mock('../../ledger/IndySdkPoolService')

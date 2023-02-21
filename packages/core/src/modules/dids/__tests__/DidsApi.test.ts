@@ -196,4 +196,35 @@ describe('DidsApi', () => {
     const createdDidsOverwrite = await agent.dids.getCreatedDids({ did })
     expect(createdDidsOverwrite[0].didDocument?.service).toHaveLength(1)
   })
+
+  test('providing privateKeys that already exist is allowd', async () => {
+    const privateKey = TypedArrayEncoder.fromString('another-samples-seed-of-32-bytes')
+
+    const did = 'did:example:456'
+    const didDocument = new DidDocument({ id: did })
+
+    await agent.dids.import({
+      did,
+      didDocument,
+      privateKeys: [
+        {
+          keyType: KeyType.Ed25519,
+          privateKey,
+        },
+      ],
+    })
+
+    // Provide the same key again, should work
+    await agent.dids.import({
+      did,
+      didDocument,
+      overwrite: true,
+      privateKeys: [
+        {
+          keyType: KeyType.Ed25519,
+          privateKey,
+        },
+      ],
+    })
+  })
 })

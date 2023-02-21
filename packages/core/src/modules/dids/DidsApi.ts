@@ -12,6 +12,7 @@ import type {
 import { AgentContext } from '../../agent'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
+import { WalletKeyExistsError } from '../../wallet/error'
 
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidRepository } from './repository'
@@ -109,7 +110,8 @@ export class DidsApi {
    *
    * If no `didDocument` is provided, the did document will be resolved using the did resolver. You can optionally provide a list
    * of private key buffer with the respective private key bytes. These keys will be stored in the wallet, and allows you to use the
-   * did for other operations.
+   * did for other operations. Providing keys that already exist in the wallet is allowed, and those keys will be skipped from being
+   * added to the wallet.
    *
    * By default, this method will throw an error if the did already exists in the wallet. You can override this behavior by setting
    * the `overwrite` option to `true`. This will update the did document in the record, and allows you to update the did over time.
@@ -133,11 +135,21 @@ export class DidsApi {
     // Loop over all private keys and store them in the wallet. We don't check whether the keys are actually associated
     // with the did document, this is up to the user.
     for (const key of privateKeys) {
-      // TODO: Should we check if the keys are already in the wallet?
-      await this.agentContext.wallet.createKey({
-        keyType: key.keyType,
-        privateKey: key.privateKey,
-      })
+      try {
+        // We can't check whether the key already exists in the wallet, but we can try to create it and catch the error
+        // if the key already exists.
+        await this.agentContext.wallet.createKey({
+          keyType: key.keyType,
+          privateKey: key.privateKey,
+        })
+      } catch (error) {
+        if (error instanceof WalletKeyExistsError) {
+          // If the error is a WalletKeyExistsError, we can ignore it. This means the key
+          // already exists in the wallet. We don't want to throw an error in this case.
+        } else {
+          throw error
+        }
+      }
     }
 
     // Update existing did record

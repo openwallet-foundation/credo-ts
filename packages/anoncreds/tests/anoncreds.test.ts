@@ -1,9 +1,8 @@
-import { Agent, Key, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import * as indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
-import { assertIndySdkWallet } from '../../indy-sdk/src/utils/assertIndySdkWallet'
 import { AnonCredsCredentialDefinitionRepository, AnonCredsModule, AnonCredsSchemaRepository } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'

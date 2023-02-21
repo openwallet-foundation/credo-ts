@@ -8,6 +8,8 @@ import type {
 } from '@aries-framework/core'
 
 import {
+  WalletKeyExistsError,
+  Key,
   WalletError,
   WalletDuplicateError,
   WalletNotFoundError,
@@ -95,6 +97,14 @@ describe('AskarWallet basic operations', () => {
     await expect(askarWallet.createKey({ seed, keyType: KeyType.X25519 })).resolves.toMatchObject({
       keyType: KeyType.X25519,
     })
+  })
+
+  test('throws WalletKeyExistsError when a key already exists', async () => {
+    const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b68')
+    await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).resolves.toEqual(expect.any(Key))
+    await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(
+      WalletKeyExistsError
+    )
   })
 
   describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {

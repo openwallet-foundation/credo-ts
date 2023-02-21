@@ -22,6 +22,18 @@ export interface Wallet extends Disposable {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
+  /**
+   * Create a key with an optional private key and keyType.
+   *
+   * @param options.privateKey Buffer Private key (formerly called 'seed')
+   * @param options.keyType KeyType the type of key that should be created
+   *
+   * @returns a `Key` instance
+   *
+   * @throws {WalletError} When an unsupported keytype is requested
+   * @throws {WalletError} When the key could not be created
+   * @throws {WalletKeyExistsError} When the key already exists in the wallet
+   */
   createKey(options: WalletCreateKeyOptions): Promise<Key>
   sign(options: WalletSignOptions): Promise<Buffer>
   verify(options: WalletVerifyOptions): Promise<boolean>
