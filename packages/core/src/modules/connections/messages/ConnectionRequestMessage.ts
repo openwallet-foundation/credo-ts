@@ -21,6 +21,8 @@ export interface ConnectionRequestMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#1-connection-request
  */
 export class ConnectionRequestMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new ConnectionRequestMessage instance.
    * @param options
