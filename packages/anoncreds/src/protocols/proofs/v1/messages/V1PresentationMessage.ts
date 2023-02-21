@@ -20,6 +20,7 @@ export interface V1PresentationMessageOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation
  */
 export class V1PresentationMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
   public constructor(options: V1PresentationMessageOptions) {
     super()
 
