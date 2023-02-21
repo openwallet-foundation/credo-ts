@@ -230,7 +230,13 @@ export function waitForProofExchangeRecordSubject(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
       filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
-      filter((e) => state === undefined || e.payload.proofRecord.state === state || state === 'done'),
+      filter((e) => state === undefined || e.payload.proofRecord.state === state),
+      // filter(
+      //   (e) =>
+      //     state === undefined ||
+      //     e.payload.proofRecord.state === state ||
+      //     (state === 'done' && previousState === undefined && threadId === undefined && parentThreadId === undefined)
+      // ),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
@@ -479,7 +485,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
   return [agentAConnection, agentBConnection]
 }
 
-// export async function makConnectionlessLegacyConnection(agentA: Agent, agentB: Agent, recordId: string) {
+// export async function makeConnectionlessLegacyConnection(agentA: Agent, agentB: Agent, recordId: string) {
 //   const attributes = {
 //     name: new ProofAttributeInfo({
 //       name: 'name',

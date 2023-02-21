@@ -20,6 +20,7 @@ import {
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
+import { AckValues } from '../../../../../decorators/ack/AckDecorator'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
@@ -261,19 +262,27 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.Always,
     })
 
+    // message.pleaseAck = { on: [AckValues.Receipt, AckValues.Outcome] }
+    message.setService({
+      recipientKeys: [faberAgent.config.walletConfig?.key ?? ''],
+      serviceEndpoint: message.service?.serviceEndpoint ?? 'rxjs:faber',
+    })
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'rxjs:faber',
     })
 
-    message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
+    // faberAgent.resetOutboundTransport()
+    message.setReturnRouting(ReturnRouteTypes.all)
+    // console.log('====================================')
+    // console.log(message)
+    // console.log('====================================')
     const aliceMessages = new Subject<SubjectMessage>()
 
-    const session = new SubjectTransportSession(message.threadId, aliceMessages)
+    const session = new SubjectTransportSession(requestMessage.thread?.threadId ?? message.threadId, aliceMessages)
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON(), session)
-
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
     await aliceProofExchangeRecordPromise
 
     await faberProofExchangeRecordPromise

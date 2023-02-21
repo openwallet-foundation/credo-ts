@@ -78,11 +78,29 @@ class Dispatcher {
     }
 
     if (outboundMessage) {
-      outboundMessage.sessionIdFromInbound = messageContext.sessionId
+      // Store the sessionId of the inbound message, if there is one, so messages can later be send without
+      // outbound transport.
+      // if (message.service?.serviceEndpoint) {
+
+      // }
+      console.log('====================================')
+      console.log('sessionIdFromInbound')
+      console.log(outboundMessage.sessionIdFromInbound)
+      console.log('====================================')
+      console.log('====================================')
+      console.log(outboundMessage.toJSON())
+      console.log('====================================')
       this.logger.debug(`OutboundMessage ${outboundMessage}`, outboundMessage)
+      outboundMessage.sessionIdFromInbound = message.thread?.threadId
       if (outboundMessage.isOutboundServiceMessage()) {
+        console.log('====================================')
+        console.log('DISPATCHER ISOUTBOUNDMESSAGE')
+        console.log('====================================')
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {
+        console.log('====================================')
+        console.log('DISPATCHER IS SESSION MESSAGE')
+        console.log('====================================')
         outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
       }

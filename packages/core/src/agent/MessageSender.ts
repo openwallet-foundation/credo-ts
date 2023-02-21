@@ -15,6 +15,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectTransportSession } from '../../../../tests/transport/SubjectInboundTransport'
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
+import { AckDecorator, AckValues } from '../decorators/ack/AckDecorator'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
@@ -112,6 +113,10 @@ export class MessageSender {
     console.log('calling send ')
     console.log('====================================')
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+    console.log('====================================')
+    console.log('sessionIdFromInbound encryptedMessage')
+    console.log(encryptedMessage)
+    console.log('====================================')
     await session.send(encryptedMessage)
   }
 
@@ -220,11 +225,10 @@ export class MessageSender {
 
     let session: TransportSession | undefined
 
-    if (sessionId || sessionIdFromInbound) {
-      session = this.transportService.findSessionById(sessionId)
-      // session = sessionId
-      //   ? this.transportService.findSessionById(sessionId)
-      // : this.transportService.findSessionById(sessionIdFromInbound)
+    if (sessionIdFromInbound) {
+      session = this.transportService.findSessionById(sessionIdFromInbound)
+    } else if (sessionId) {
+      this.transportService.findSessionById(sessionId)
     }
     if (!session) {
       // Try to send to already open session
@@ -232,6 +236,9 @@ export class MessageSender {
     }
 
     if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
+      console.log('====================================')
+      console.log('SENDMESSAGE HAS RETURN ROUTING')
+      console.log('====================================')
       this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
       try {
         await this.sendMessageToSession(agentContext, session, message)
@@ -411,8 +418,13 @@ export class MessageSender {
 
     // Set return routing for message if requested
     if (returnRoute) {
-      message.setReturnRouting(ReturnRouteTypes.all)
+      message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
     }
+    // message.pleaseAck = { on: [AckValues.Receipt] }
+    console.log('====================================')
+    console.log('SENDTOSERVICE MESSAGE')
+    console.log(message.toJSON())
+    console.log('====================================')
 
     try {
       MessageValidator.validateSync(message)
@@ -427,12 +439,21 @@ export class MessageSender {
 
       throw error
     }
+    // message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
 
     const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
+    console.log('====================================')
+    console.log('SENDTOSERVICE OUTBOUNDPACKAGE')
+    console.log(JSON.stringify(outboundPackage))
+    console.log('====================================')
 
+    // Outbound transport is present
     if (this.outboundTransports.length !== 0) {
+      console.log('====================================')
+      console.log('IN TRANSPORT SEND TO SERVICE')
+      console.log('====================================')
       for (const transport of this.outboundTransports) {
         const protocolScheme = getProtocolScheme(service.serviceEndpoint)
         if (!protocolScheme) {
@@ -442,11 +463,15 @@ export class MessageSender {
           return
         }
       }
+      // No outbound transport: Try retrieving session-based connection instead
     } else {
       // throw new MessageSendingError(`sessionId and sessionIdFromInbound: ${sessionId} ${sessionIdFromInbound}`, {
       //   sessionId,
       //   sessionIdFromInbound,
       // })
+      console.log('====================================')
+      console.log('NOT IN TRANSPORT SEND TO SERVICE')
+      console.log('====================================')
       if (sessionId || sessionIdFromInbound) {
         // throw new MessageSendingError(
         //   `sessionId and sessionIdFromInbound in condition: ${sessionId} ${sessionIdFromInbound}`,
@@ -459,7 +484,9 @@ export class MessageSender {
 
         if (sessionId || sessionIdFromInbound) {
           if (sessionIdFromInbound) {
-            session = this.transportService.findSessionById(sessionIdFromInbound)
+            // session = this.transportService.findSessionById(sessionIdFromInbound)
+            const aliceMessages = new Subject<SubjectMessage>()
+            session = new SubjectTransportSession(sessionIdFromInbound, aliceMessages)
           } else if (sessionId) {
             session = this.transportService.findSessionById(sessionId)
           }
@@ -472,7 +499,11 @@ export class MessageSender {
           })
         }
 
+        // if (outboundMessageContext.serviceParams?.service.serviceEndpoint) {
         if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
+          console.log('====================================')
+          console.log('HAS RETURN ROUTING')
+          console.log('====================================')
           this.logger.debug(
             `Found session with return routing for message '${message.id}' (connection '${connection?.id}'`
           )
@@ -483,6 +514,7 @@ export class MessageSender {
             console.log(`${JSON.stringify(session)}`)
             console.log('====================================')
             // session.inboundMessage?.transport?.returnRoute =
+            // await this.sendMessageToService(outboundMessageContext)
             await this.sendMessageToSession(agentContext, session, message)
             console.log('====================================')
             console.log('after sendMessageToSession')
