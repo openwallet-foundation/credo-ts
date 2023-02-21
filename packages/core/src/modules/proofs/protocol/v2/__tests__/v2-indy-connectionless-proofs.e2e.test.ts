@@ -38,7 +38,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  const connectionlessTest = async (returnRoute?: boolean) => {
     const {
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
@@ -130,6 +130,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
+      hasReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -150,238 +151,20 @@ describe('V2 Connectionless Proofs - Indy', () => {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
+  }
+
+  test('Faber starts with connection-less proof requests to Alice', async () => {
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to false', async () => {
-    const {
-      issuerAgent: faberAgent,
-      issuerReplay: faberReplay,
-      holderAgent: aliceAgent,
-      holderReplay: aliceReplay,
-      credentialDefinitionId,
-      issuerHolderConnectionId: faberConnectionId,
-    } = await setupAnonCredsTests({
-      issuerName: 'Faber connection-less Proofs v2',
-      holderName: 'Alice connection-less Proofs v2',
-      autoAcceptProofs: AutoAcceptProof.Never,
-      attributeNames: ['name', 'age'],
-    })
-
-    await issueLegacyAnonCredsCredential({
-      issuerAgent: faberAgent,
-      issuerReplay: faberReplay,
-      holderAgent: aliceAgent,
-      holderReplay: aliceReplay,
-      issuerHolderConnectionId: faberConnectionId,
-      offer: {
-        credentialDefinitionId,
-        attributes: [
-          {
-            name: 'name',
-            value: 'Alice',
-          },
-          {
-            name: 'age',
-            value: '99',
-          },
-        ],
-      },
-    })
-
-    agents = [aliceAgent, faberAgent]
-    testLogger.test('Faber sends presentation request to Alice')
-
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
-      protocolVersion: 'v2',
-      proofFormats: {
-        indy: {
-          name: 'test-proof-request',
-          version: '1.0',
-          requested_attributes: {
-            name: {
-              name: 'name',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-          requested_predicates: {
-            age: {
-              name: 'age',
-              p_type: '>=',
-              p_value: 50,
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-        },
-      },
-    })
-
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
-    })
-
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
-
-    testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
-    })
-
-    testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-    })
-
-    await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      hasReturnRoute: false,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-    })
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
-    })
-
-    // assert presentation is valid
-    expect(faberProofExchangeRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
-
-    // Alice waits till it receives presentation ack
-    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
-    })
+    await connectionlessTest(false)
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to true', async () => {
-    const {
-      issuerAgent: faberAgent,
-      issuerReplay: faberReplay,
-      holderAgent: aliceAgent,
-      holderReplay: aliceReplay,
-      credentialDefinitionId,
-      issuerHolderConnectionId: faberConnectionId,
-    } = await setupAnonCredsTests({
-      issuerName: 'Faber connection-less Proofs v2',
-      holderName: 'Alice connection-less Proofs v2',
-      autoAcceptProofs: AutoAcceptProof.Never,
-      attributeNames: ['name', 'age'],
-    })
-
-    await issueLegacyAnonCredsCredential({
-      issuerAgent: faberAgent,
-      issuerReplay: faberReplay,
-      holderAgent: aliceAgent,
-      holderReplay: aliceReplay,
-      issuerHolderConnectionId: faberConnectionId,
-      offer: {
-        credentialDefinitionId,
-        attributes: [
-          {
-            name: 'name',
-            value: 'Alice',
-          },
-          {
-            name: 'age',
-            value: '99',
-          },
-        ],
-      },
-    })
-
-    agents = [aliceAgent, faberAgent]
-    testLogger.test('Faber sends presentation request to Alice')
-
-    // eslint-disable-next-line prefer-const
-    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
-      protocolVersion: 'v2',
-      proofFormats: {
-        indy: {
-          name: 'test-proof-request',
-          version: '1.0',
-          requested_attributes: {
-            name: {
-              name: 'name',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-          requested_predicates: {
-            age: {
-              name: 'age',
-              p_type: '>=',
-              p_value: 50,
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-        },
-      },
-    })
-
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
-    })
-
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
-
-    testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
-    })
-
-    testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-    })
-
-    await aliceAgent.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
-      hasReturnRoute: true,
-      proofFormats: { indy: requestedCredentials.proofFormats.indy },
-    })
-
-    testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
-    })
-
-    // assert presentation is valid
-    expect(faberProofExchangeRecord.isVerified).toBe(true)
-
-    // Faber accepts presentation
-    await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
-
-    // Alice waits till it receives presentation ack
-    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
-    })
+    await connectionlessTest(true)
   })
-  
+
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
