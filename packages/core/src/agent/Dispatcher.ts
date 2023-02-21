@@ -52,10 +52,22 @@ class Dispatcher {
     let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
+      console.log('====================================')
+      console.log('HANDLING OUTBOUND MESSAGE')
+      console.log('====================================')
       outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
 
+      console.log('====================================')
+      console.log(`Error handling message with type ${message.type}`, {
+        message: message.toJSON(),
+        error,
+        senderKey: senderKey?.fingerprint,
+        recipientKey: recipientKey?.fingerprint,
+        connectionId: connection?.id,
+      })
+      console.log('====================================')
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
         problemReportMessage.setThread({
           threadId: message.threadId,
@@ -77,6 +89,9 @@ class Dispatcher {
       }
     }
 
+    console.log('====================================')
+    console.log('MADE IT HERE IN HANDLER')
+    console.log('====================================')
     if (outboundMessage) {
       // Store the sessionId of the inbound message, if there is one, so messages can later be send without
       // outbound transport.
@@ -105,6 +120,9 @@ class Dispatcher {
         await this.messageSender.sendMessage(outboundMessage)
       }
     }
+    console.log('====================================')
+    console.log('MADE IT TO EVENTEMITTER')
+    console.log('====================================')
     // Emit event that allows to hook into received messages
     this.eventEmitter.emit<AgentMessageProcessedEvent>(agentContext, {
       type: AgentEventTypes.AgentMessageProcessed,

@@ -224,7 +224,9 @@ export class MessageReceiver {
       // No need to wait for session to stay open if we're not actually going to respond to the message.
       await session.close()
     }
-
+    console.log('====================================')
+    console.log('DISPATCH MESSAGE CONTEXT UPON RECEIVED')
+    console.log('====================================')
     await this.dispatcher.dispatch(messageContext)
   }
 

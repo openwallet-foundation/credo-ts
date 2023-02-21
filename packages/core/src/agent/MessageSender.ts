@@ -378,7 +378,7 @@ export class MessageSender {
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
     } catch (error) {
       this.logger.error(
-        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error.message}`,
+        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error}`,
         {
           message: outboundMessageContext.message,
           error,
@@ -386,6 +386,9 @@ export class MessageSender {
       )
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
 
+      console.log('====================================')
+      console.log(`${JSON.stringify(error)}`)
+      console.log('====================================')
       throw new MessageSendingError(
         `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error.message}`,
         { outboundMessageContext }
@@ -522,8 +525,8 @@ export class MessageSender {
             console.log(`${JSON.stringify(session)}`)
             console.log('====================================')
             // session.inboundMessage?.transport?.returnRoute =
-            // await this.sendMessageToService(outboundMessageContext)
-            await this.sendMessageToSession(agentContext, session, message)
+            await this.sendMessageToService(outboundMessageContext)
+            // await this.sendMessageToSession(agentContext, session, message)
             console.log('====================================')
             console.log('after sendMessageToSession')
             console.log(`${JSON.stringify(outboundMessageContext)}`)
@@ -550,6 +553,8 @@ export class MessageSender {
           console.log('HAS SERVICE ENDPOINT ROUTING')
           console.log('====================================')
           await this.sendMessageToSession(agentContext, session, message)
+          this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+          return
         }
       }
     }
