@@ -645,6 +645,8 @@ export class AskarWallet implements Wallet {
             message: recipient.encrypted_key,
             nonce: recipient.iv,
           })
+        } else {
+          payloadKey = CryptoBox.sealOpen({ ciphertext: recipient.encrypted_key, recipientKey: recip_x })
         }
         break
       }
