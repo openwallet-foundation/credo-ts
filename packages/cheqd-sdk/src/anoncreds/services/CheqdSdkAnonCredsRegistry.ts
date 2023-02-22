@@ -1,0 +1,300 @@
+import type { CheqdCreateResourceOptions } from '../../dids'
+import type {
+  AnonCredsRegistry,
+  GetCredentialDefinitionReturn,
+  GetRevocationStatusListReturn,
+  GetRevocationRegistryDefinitionReturn,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
+  RegisterCredentialDefinitionReturn,
+  RegisterSchemaReturn,
+  RegisterSchemaOptions,
+} from '@aries-framework/anoncreds'
+import type { AgentContext } from '@aries-framework/core'
+
+import { v4 } from 'uuid'
+
+import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
+import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
+import { Convert } from '../utils/transform'
+
+export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
+  /**
+   * This class supports resolving and registering objects with cheqd identifiers.
+   * It needs to include support for the schema, credential definition, revocation registry as well
+   * as the issuer id (which is needed when registering objects).
+   */
+  public readonly supportedIdentifier = cheqdSdkAnonCredsRegistryIdentifierRegex
+
+  public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+    try {
+      const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
+      const parsedDid = parseCheqdDid(schemaId)
+      if (!parsedDid) {
+        throw new Error(`Invalid schemaId: ${schemaId}`)
+      }
+
+      agentContext.config.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger`)
+
+      const response = await cheqdDidResolver.resolveResource(agentContext, schemaId)
+      const schema = Convert.toCheqdSchema(JSON.stringify(response.resource))
+
+      return {
+        schema: {
+          attrNames: schema.attrNames,
+          name: schema.name,
+          version: schema.version,
+          issuerId: parsedDid.did,
+        },
+        schemaId,
+        resolutionMetadata: {},
+        schemaMetadata: {},
+      }
+    } catch (error) {
+      agentContext.config.logger.error(`Error retrieving schema '${schemaId}'`, {
+        error,
+        schemaId,
+      })
+
+      return {
+        schemaId,
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve schema: ${error.message}`,
+        },
+        schemaMetadata: {},
+      }
+    }
+  }
+
+  public async registerSchema(
+    agentContext: AgentContext,
+    options: RegisterSchemaOptions
+  ): Promise<RegisterSchemaReturn> {
+    //TODO: Handle validations
+    try {
+      const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
+
+      const schema = options.schema
+      const schemaResource = {
+        id: v4(),
+        name: schema.name,
+        resourceType: 'anonCredsSchema',
+        data: {
+          name: schema.name,
+          version: schema.version,
+          attrNames: schema.attrNames,
+        },
+        version: schema.version,
+      } as CheqdCreateResourceOptions
+
+      const response = await cheqdDidRegistrar.createResource(agentContext, schema.issuerId, schemaResource)
+      if (response.resourceState.state !== 'finished') {
+        throw new Error(response.resourceState.reason)
+      }
+
+      return {
+        schemaState: {
+          state: 'finished',
+          schema,
+          schemaId: `${schema.issuerId}/resources/${schemaResource.id!}`,
+        },
+        registrationMetadata: {},
+        schemaMetadata: {},
+      }
+    } catch (error) {
+      agentContext.config.logger.debug(`Error registering schema for did '${options.schema.issuerId}'`, {
+        error,
+        did: options.schema.issuerId,
+        schema: options,
+      })
+
+      return {
+        schemaMetadata: {},
+        registrationMetadata: {},
+        schemaState: {
+          state: 'failed',
+          schema: options.schema,
+          reason: `unknownError: ${error.message}`,
+        },
+      }
+    }
+  }
+
+  public async registerCredentialDefinition(
+    agentContext: AgentContext,
+    options: RegisterCredentialDefinitionOptions
+  ): Promise<RegisterCredentialDefinitionReturn> {
+    try {
+      const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
+      const { credentialDefinition } = options
+      const schemaResponse = await this.getSchema(agentContext, credentialDefinition.schemaId)
+      if (!schemaResponse.schema) {
+        return {
+          credentialDefinitionMetadata: {},
+          registrationMetadata: {},
+          credentialDefinitionState: {
+            state: 'failed',
+            credentialDefinition: options.credentialDefinition,
+            reason: `Schema Id not found`,
+          },
+        }
+      }
+      const credDefResource = {
+        id: v4(),
+        name: credentialDefinition.tag,
+        resourceType: 'anonCredsCredDef',
+        data: {
+          type: credentialDefinition.type,
+          tag: credentialDefinition.tag,
+          value: credentialDefinition.value,
+          schemaId: schemaResponse.schemaId,
+        },
+        version: v4(),
+      } as CheqdCreateResourceOptions
+
+      const response = await cheqdDidRegistrar.createResource(
+        agentContext,
+        credentialDefinition.issuerId,
+        credDefResource
+      )
+      if (response.resourceState.state !== 'finished') {
+        throw new Error(response.resourceState.reason)
+      }
+
+      return {
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+          credentialDefinitionId: `${schemaResponse.schema.issuerId}/resources/${credDefResource.id!}`,
+        },
+        registrationMetadata: {},
+        credentialDefinitionMetadata: {},
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error registering credential definition for did '${options.credentialDefinition.issuerId}'`,
+        {
+          error,
+          did: options.credentialDefinition.issuerId,
+          schema: options,
+        }
+      )
+
+      return {
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+        credentialDefinitionState: {
+          state: 'failed',
+          credentialDefinition: options.credentialDefinition,
+          reason: `unknownError: ${error.message}`,
+        },
+      }
+    }
+  }
+
+  public async getCredentialDefinition(
+    agentContext: AgentContext,
+    credentialDefinitionId: string
+  ): Promise<GetCredentialDefinitionReturn> {
+    try {
+      const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
+      const parsedDid = parseCheqdDid(credentialDefinitionId)
+      if (!parsedDid) {
+        throw new Error(`Invalid credentialDefinitionId: ${credentialDefinitionId}`)
+      }
+
+      agentContext.config.logger.trace(
+        `Submitting get credential definition request for '${credentialDefinitionId}' to ledger`
+      )
+
+      const response = await cheqdDidResolver.resolveResource(agentContext, credentialDefinitionId)
+      const credentialDefinition = Convert.toCheqdCredentialDefinition(JSON.stringify(response.resource))
+      return {
+        credentialDefinition: {
+          ...credentialDefinition,
+          issuerId: parsedDid.did,
+        },
+        credentialDefinitionId,
+        resolutionMetadata: {},
+        credentialDefinitionMetadata: response.resourceMetadata,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
+        error,
+        credentialDefinitionId,
+      })
+
+      return {
+        credentialDefinitionId,
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve credential definition: ${error.message}`,
+        },
+        credentialDefinitionMetadata: {},
+      }
+    }
+  }
+
+  public async getRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    revocationRegistryDefinitionId: string
+  ): Promise<GetRevocationRegistryDefinitionReturn> {
+    try {
+      const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
+      const parsedDid = parseCheqdDid(revocationRegistryDefinitionId)
+      if (!parsedDid) {
+        throw new Error(`Invalid revocationRegistryDefinitionId: ${revocationRegistryDefinitionId}`)
+      }
+
+      agentContext.config.logger.trace(
+        `Submitting get revocation registry definition request for '${revocationRegistryDefinitionId}' to ledger`
+      )
+
+      const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryDefinitionId)
+      const revocationRegistryDefinition = Convert.toCheqdRevocationRegistryDefinition(
+        JSON.stringify(response.resource)
+      )
+      return {
+        revocationRegistryDefinition: {
+          ...revocationRegistryDefinition,
+          issuerId: parsedDid.did,
+        },
+        revocationRegistryDefinitionId,
+        resolutionMetadata: {},
+        revocationRegistryDefinitionMetadata: response.resourceMetadata,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(
+        `Error retrieving revocation registry definition '${revocationRegistryDefinitionId}'`,
+        {
+          error,
+          revocationRegistryDefinitionId,
+        }
+      )
+
+      return {
+        revocationRegistryDefinitionId,
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve revocation registry definition: ${error.message}`,
+        },
+        revocationRegistryDefinitionMetadata: {},
+      }
+    }
+  }
+
+  public async getRevocationStatusList(
+    agentContext: AgentContext,
+    revocationRegistryId: string,
+    timestamp: number
+  ): Promise<GetRevocationStatusListReturn> {
+    return {
+      resolutionMetadata: {
+        error: 'notFound',
+        message: `Not implemented yet`,
+      },
+      revocationStatusListMetadata: {},
+    }
+  }
+}
