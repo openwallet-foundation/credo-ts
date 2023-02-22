@@ -134,7 +134,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
-      hasReturnRoute: returnRoute,
+      useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
