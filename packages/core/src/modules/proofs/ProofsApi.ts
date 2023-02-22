@@ -492,7 +492,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: options.useReturnRoute ?? true, // defaults to true if missing
+            returnRoute: false, // hard wire to be false since it's the end of the protocol so not needed here
           },
         })
       )
