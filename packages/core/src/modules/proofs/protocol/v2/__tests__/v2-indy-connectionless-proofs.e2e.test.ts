@@ -1,6 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 
-import { DidCommMessageRepository, ReturnRouteTypes, V2PresentationMessage } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
@@ -21,6 +20,8 @@ import {
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -28,6 +29,7 @@ import { CredentialEventTypes } from '../../../../credentials'
 import { MediatorPickupStrategy } from '../../../../routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
+import { V2PresentationMessage } from '../messages/V2PresentationMessage'
 
 describe('V2 Connectionless Proofs - Indy', () => {
   let agents: Agent[]
