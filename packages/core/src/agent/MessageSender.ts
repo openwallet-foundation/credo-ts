@@ -1,21 +1,16 @@
-import type { SubjectMessage } from '../../../../tests/transport/SubjectInboundTransport'
+import type { AgentMessage } from './AgentMessage'
+import type { EnvelopeKeys } from './EnvelopeService'
+import type { AgentMessageSentEvent } from './Events'
+import type { TransportSession } from './TransportService'
+import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { OutboundPackage, EncryptedMessage } from '../types'
-import type { AgentMessage } from './AgentMessage'
-import type { EnvelopeKeys } from './EnvelopeService'
-import type { AgentMessageSentEvent } from './Events'
-import type { TransportSession } from './TransportService'
-import type { AgentContext } from './context'
 
-import { Subject } from 'rxjs'
-
-import { SubjectTransportSession } from '../../../../tests/transport/SubjectInboundTransport'
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
-import { AckDecorator, AckValues } from '../decorators/ack/AckDecorator'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
@@ -420,7 +415,6 @@ export class MessageSender {
 
       throw error
     }
-    // message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
 
     const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
@@ -454,7 +448,6 @@ export class MessageSender {
           this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
           return
         } catch (error) {
-          // errors.push(error)
           this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
           throw new MessageSendingError(
             `Unable to send message to service: ${service.serviceEndpoint} ${JSON.stringify(
@@ -475,7 +468,7 @@ export class MessageSender {
           throw new MessageSendingError(
             `Unable to send message to service: ${
               outboundMessageContext.serviceParams?.service.serviceEndpoint
-            } ${JSON.stringify(message.threadId)} ${JSON.stringify(session)}`,
+            } with threadId ${JSON.stringify(message.threadId)} `,
             {
               outboundMessageContext,
             }

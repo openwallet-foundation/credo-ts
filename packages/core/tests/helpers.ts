@@ -66,7 +66,7 @@ import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
-import { PredicateType, ProofPredicateInfo, AttributeFilter } from '../src/modules/proofs/formats/indy/models'
+import { PredicateType } from '../src/modules/proofs/formats/indy/models'
 import { ProofState } from '../src/modules/proofs/models/ProofState'
 import { V1PresentationPreview } from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
 import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
@@ -231,12 +231,6 @@ export function waitForProofExchangeRecordSubject(
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
       filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
       filter((e) => state === undefined || e.payload.proofRecord.state === state),
-      // filter(
-      //   (e) =>
-      //     state === undefined ||
-      //     e.payload.proofRecord.state === state ||
-      //     (state === 'done' && previousState === undefined && threadId === undefined && parentThreadId === undefined)
-      // ),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
