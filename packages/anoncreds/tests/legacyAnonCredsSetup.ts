@@ -28,10 +28,16 @@ import {
 } from '@aries-framework/core'
 import { randomUUID } from 'crypto'
 
+import { AnonCredsRsModule } from '../../anoncreds-rs/src'
+import { AskarModule } from '../../askar/src'
+import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
   makeConnection,
+  genesisTransactions,
+  taaVersion,
+  taaAcceptanceMechanism,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
@@ -43,6 +49,7 @@ import {
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
+import { IndyVdrAnonCredsRegistry, IndyVdrSovDidResolver, IndyVdrModule } from '../../indy-vdr/src'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -52,7 +59,9 @@ import {
 } from '../src'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+export type AnonCredsTestsAgent =
+  | Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
 export const getLegacyAnonCredsModules = ({
   autoAcceptCredentials,
@@ -89,6 +98,63 @@ export const getLegacyAnonCredsModules = ({
       registrars: [new IndySdkSovDidRegistrar()],
     }),
     indySdk: new IndySdkModule(getIndySdkModuleConfig()),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 100 }),
+    }),
+  } as const
+
+  return modules
+}
+
+export const getAskarAnonCredsIndyModules = ({
+  autoAcceptCredentials,
+  autoAcceptProofs,
+}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
+  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+
+  const indyNetworkConfig = {
+    id: `localhost-${uuid()}`,
+    isProduction: false,
+    genesisTransactions,
+    indyNamespace: 'pool:localtest',
+    transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
+  }
+
+  const modules = {
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({
+          indyCredentialFormat: legacyIndyCredentialFormatService,
+        }),
+        new V2CredentialProtocol({
+          credentialFormats: [legacyIndyCredentialFormatService],
+        }),
+      ],
+    }),
+    proofs: new ProofsModule({
+      autoAcceptProofs,
+      proofProtocols: [
+        new V1ProofProtocol({
+          indyProofFormat: legacyIndyProofFormatService,
+        }),
+        new V2ProofProtocol({
+          proofFormats: [legacyIndyProofFormatService],
+        }),
+      ],
+    }),
+    anoncreds: new AnonCredsModule({
+      registries: [new IndyVdrAnonCredsRegistry()],
+    }),
+    anoncredsRs: new AnonCredsRsModule(),
+    indyVdr: new IndyVdrModule({
+      networks: [indyNetworkConfig],
+    }),
+    dids: new DidsModule({
+      resolvers: [new IndyVdrSovDidResolver()], // TODO: Support Registrar for tests
+    }),
+    askar: new AskarModule(),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
