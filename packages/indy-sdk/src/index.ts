@@ -7,6 +7,9 @@ export {
   IndySdkSovDidResolver,
 } from './dids'
 
+// Ledger
+export { IndySdkPoolConfig } from './ledger'
+
 // Wallet
 export { IndySdkWallet } from './wallet'
 
