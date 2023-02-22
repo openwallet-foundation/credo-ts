@@ -155,15 +155,6 @@ export class OpenId4VcClientService {
 
     this.logger.info('Fetched server accessToken', accessToken)
 
-    // We currently need the ts-ignore because the type
-    // inside of OpenID4VCIClient needs to be updated.
-    // @ts-ignore
-    if (!accessToken.scope) {
-      throw new AriesFrameworkError(
-        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
-      )
-    }
-
     const serverMetadata = await client.retrieveServerMetadata()
 
     // @ts-ignore
