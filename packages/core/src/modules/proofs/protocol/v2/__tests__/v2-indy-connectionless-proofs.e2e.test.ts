@@ -1,5 +1,6 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 
+import { DidCommMessageRepository, ReturnRouteTypes, V2PresentationMessage } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
@@ -30,6 +31,7 @@ import { AutoAcceptProof, ProofState } from '../../../models'
 
 describe('V2 Connectionless Proofs - Indy', () => {
   let agents: Agent[]
+  let sentPresentationMessage: V2PresentationMessage | null
 
   afterEach(async () => {
     for (const agent of agents) {
@@ -128,7 +130,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    await aliceAgent.proofs.acceptRequest({
+    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
@@ -140,6 +142,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const didCommMessageRepository = aliceAgent.dependencyManager.resolve(DidCommMessageRepository)
+    sentPresentationMessage = await didCommMessageRepository.findAgentMessage(aliceAgent.context, {
+      associatedRecordId: aliceProofExchangeRecord.id,
+      messageClass: V2PresentationMessage,
+    })
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
@@ -155,14 +162,17 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
     await connectionlessTest()
+    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to false', async () => {
     await connectionlessTest(false)
+    expect(sentPresentationMessage?.transport).toBe(undefined)
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to true', async () => {
     await connectionlessTest(true)
+    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
