@@ -91,12 +91,14 @@ describe('Present Proof', () => {
       message,
       domain: 'https://a-domain.com',
     })
+
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     testLogger.test('Alice accepts presentation request from Faber')
+
     const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
     })
@@ -348,6 +350,7 @@ describe('Present Proof', () => {
     expect(faberConnection.isReady).toBe(true)
     expect(aliceConnection.isReady).toBe(true)
 
+    // issue credential with two linked attachments
     await issueCredential({
       issuerAgent: faberAgent,
       issuerConnectionId: faberConnection.id,

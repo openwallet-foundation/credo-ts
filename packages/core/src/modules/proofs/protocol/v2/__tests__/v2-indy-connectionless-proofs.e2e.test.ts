@@ -16,6 +16,7 @@ import {
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -192,8 +193,85 @@ describe('Present Proof', () => {
       message,
       domain: 'https://a-domain.com',
     })
+
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
+    await aliceProofExchangeRecordPromise
+
+    await faberProofExchangeRecordPromise
+  })
+
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and using other transport', async () => {
+    testLogger.test('Faber sends presentation request to Alice')
+
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
+      'Faber connection-less Proofs - Auto Accept',
+      'Alice connection-less Proofs - Auto Accept',
+      AutoAcceptProof.Always
+    )
+
+    agents = [aliceAgent, faberAgent]
+
+    const attributes = {
+      name: new ProofAttributeInfo({
+        name: 'name',
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const predicates = {
+      age: new ProofPredicateInfo({
+        name: 'age',
+        predicateType: PredicateType.GreaterThanOrEqualTo,
+        predicateValue: 50,
+        restrictions: [
+          new AttributeFilter({
+            credentialDefinitionId: credDefId,
+          }),
+        ],
+      }),
+    }
+
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
+
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
+
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          requestedAttributes: attributes,
+          requestedPredicates: predicates,
+        },
+      },
+      autoAcceptProof: AutoAcceptProof.Always,
+    })
+
+    message.setService({
+      recipientKeys: [faberAgent.config.walletConfig?.key ?? ''],
+      serviceEndpoint: message.service?.serviceEndpoint ?? 'rxjs:faber',
+    })
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofExchangeRecord.id,
+      message,
+      domain: 'rxjs:faber',
+    })
+
+    await faberAgent.resetOutboundTransport()
+    message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
     await aliceProofExchangeRecordPromise
 
     await faberProofExchangeRecordPromise
@@ -374,5 +452,8 @@ describe('Present Proof', () => {
     await aliceProofExchangeRecordPromise
 
     await faberProofExchangeRecordPromise
+
+    await aliceAgent.mediationRecipient.stopMessagePickup()
+    await faberAgent.mediationRecipient.stopMessagePickup()
   })
 })

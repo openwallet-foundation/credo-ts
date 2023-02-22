@@ -141,8 +141,8 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     this.messageSender.registerOutboundTransport(outboundTransport)
   }
 
-  public resetOutboundTransport() {
-    this.messageSender.resetOutboundTransport()
+  public async resetOutboundTransport() {
+    await this.messageSender.resetOutboundTransport()
   }
 
   public get outboundTransports() {
