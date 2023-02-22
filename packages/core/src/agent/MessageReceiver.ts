@@ -7,8 +7,6 @@ import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 
 import { InjectionSymbols } from '../constants'
-import { Key, KeyType } from '../crypto'
-import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
@@ -87,9 +85,6 @@ export class MessageReceiver {
       if (this.isEncryptedMessage(inboundMessage)) {
         await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
       } else if (this.isPlaintextMessage(inboundMessage)) {
-        console.log('====================================')
-        console.log('PLAINTEXT MESSAGE RECEIVED')
-        console.log('====================================')
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection, session)
       } else {
         throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
@@ -108,28 +103,7 @@ export class MessageReceiver {
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
     const messageContext = new InboundMessageContext(message, { connection, agentContext, sessionId: session?.id })
-    // const { senderKey, recipientKey } = messageContext
 
-    // if (message.hasAnyReturnRoute() && session) {
-    //   this.logger.debug(`Storing session for inbound message '${message.id}'`)
-    //   let keys
-    //   // const newKeys = agentContext.dependencyManager.
-    //   if (messageContext.recipientKey && messageContext.senderKey) {
-    //     // const newKeys = await agentContext.wallet.generateWalletKey()
-    //     keys = {
-    //       recipientKeys: [messageContext.senderKey],
-    //       routingKeys: [],
-    //       senderKey: messageContext.recipientKey,
-    //     }
-    //     // }
-    //     session.keys = keys
-    //     message.setReturnRouting(ReturnRouteTypes.all, message.transport?.returnRouteThread)
-    //     session.inboundMessage = message
-    //     session.connectionId = connection?.id
-    //     messageContext.sessionId = session.id
-    //     this.transportService.saveSession(session)
-    //   }
-    // }
     await this.dispatcher.dispatch(messageContext)
   }
 
@@ -139,10 +113,6 @@ export class MessageReceiver {
     session?: TransportSession
   ) {
     const decryptedMessage = await this.decryptMessage(agentContext, encryptedMessage)
-    console.log('====================================')
-    console.log('DECRYPTED MESSAGE IN receiveEncryptedMessage')
-    console.log(decryptedMessage)
-    console.log('====================================')
     const { plaintextMessage, senderKey, recipientKey } = decryptedMessage
 
     this.logger.info(
@@ -153,10 +123,6 @@ export class MessageReceiver {
     const connection = await this.findConnectionByMessageKeys(agentContext, decryptedMessage)
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
-    console.log('====================================')
-    console.log('MESSAGE IN receiveEncryptedMessage')
-    console.log(message)
-    console.log('====================================')
 
     const messageContext = new InboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
@@ -167,16 +133,11 @@ export class MessageReceiver {
       recipientKey,
       agentContext,
     })
-    console.log('====================================')
-    console.log('MESSAGE CONTEXT IN receiveEncryptedMessage')
-    console.log(messageContext)
-    console.log('====================================')
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
-      // if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],
@@ -190,16 +151,8 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
-      console.log('====================================')
-      console.log('SESSION IN ENCRYPTED')
-      // console.log(JSON.stringify(session))
-      console.log('====================================')
       this.transportService.saveSession(session)
     } else if (senderKey && recipientKey && message.service?.serviceEndpoint && session) {
-      console.log('====================================')
-      console.log('SESSION IN service endpoint')
-      // console.log(JSON.stringify(session))
-      console.log('====================================')
       const keys = {
         recipientKeys: [senderKey],
         routingKeys: [],
@@ -212,21 +165,11 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
-      // messageContext.sessionId = message.threadId
-      console.log('====================================')
-      console.log('SESSIONID IN service endpoint')
-      console.log(session.id)
-      console.log('inboundmessage IN service endpoint')
-      console.log(session.inboundMessage)
-      console.log('====================================')
       this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.
       await session.close()
     }
-    console.log('====================================')
-    console.log('DISPATCH MESSAGE CONTEXT UPON RECEIVED')
-    console.log('====================================')
     await this.dispatcher.dispatch(messageContext)
   }
 

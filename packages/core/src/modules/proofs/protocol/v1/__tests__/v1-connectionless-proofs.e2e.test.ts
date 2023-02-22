@@ -1,13 +1,9 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { TransportSession } from '../../../../../agent/TransportService'
 import type { ProofStateChangedEvent } from '../../../ProofEvents'
 
 import { Subject, ReplaySubject } from 'rxjs'
 
-import {
-  SubjectTransportSession,
-  SubjectInboundTransport,
-} from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import {
   setupProofsTest,
@@ -16,11 +12,9 @@ import {
   prepareForIssuance,
   makeConnection,
   issueCredential,
-  setupProofsTestNoOutbound,
 } from '../../../../../../tests/helpers'
 import testLogger from '../../../../../../tests/logger'
 import { Agent } from '../../../../../agent/Agent'
-import { AckValues } from '../../../../../decorators/ack/AckDecorator'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
@@ -208,7 +202,7 @@ describe('Present Proof', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and using other transport', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTestNoOutbound(
+    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
       'Faber connection-less Proofs - Auto Accept',
       'Alice connection-less Proofs - Auto Accept',
       AutoAcceptProof.Always
@@ -262,7 +256,6 @@ describe('Present Proof', () => {
       autoAcceptProof: AutoAcceptProof.Always,
     })
 
-    // message.pleaseAck = { on: [AckValues.Receipt, AckValues.Outcome] }
     message.setService({
       recipientKeys: [faberAgent.config.walletConfig?.key ?? ''],
       serviceEndpoint: message.service?.serviceEndpoint ?? 'rxjs:faber',
@@ -273,14 +266,8 @@ describe('Present Proof', () => {
       domain: 'rxjs:faber',
     })
 
-    faberAgent.resetOutboundTransport()
+    await faberAgent.resetOutboundTransport()
     message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
-    // console.log('====================================')
-    // console.log(message)
-    // console.log('====================================')
-    const aliceMessages = new Subject<SubjectMessage>()
-
-    const session = new SubjectTransportSession(requestMessage.thread?.threadId ?? message.threadId, aliceMessages)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
     await aliceProofExchangeRecordPromise

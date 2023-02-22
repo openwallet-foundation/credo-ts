@@ -52,22 +52,9 @@ class Dispatcher {
     let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
     try {
-      console.log('====================================')
-      console.log('HANDLING OUTBOUND MESSAGE')
-      console.log('====================================')
       outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
-
-      console.log('====================================')
-      console.log(`Error handling message with type ${message.type}`, {
-        message: message.toJSON(),
-        error,
-        senderKey: senderKey?.fingerprint,
-        recipientKey: recipientKey?.fingerprint,
-        connectionId: connection?.id,
-      })
-      console.log('====================================')
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
         problemReportMessage.setThread({
           threadId: message.threadId,
@@ -89,40 +76,17 @@ class Dispatcher {
       }
     }
 
-    console.log('====================================')
-    console.log('MADE IT HERE IN HANDLER')
-    console.log('====================================')
     if (outboundMessage) {
       // Store the sessionId of the inbound message, if there is one, so messages can later be send without
       // outbound transport.
-      // if (message.service?.serviceEndpoint) {
-
-      // }
-      console.log('====================================')
-      console.log('sessionIdFromInbound')
-      console.log(outboundMessage.sessionIdFromInbound)
-      console.log('====================================')
-      console.log('====================================')
-      console.log(outboundMessage.toJSON())
-      console.log('====================================')
-      this.logger.debug(`OutboundMessage ${outboundMessage}`, outboundMessage)
       outboundMessage.sessionIdFromInbound = messageContext.sessionId
       if (outboundMessage.isOutboundServiceMessage()) {
-        console.log('====================================')
-        console.log('DISPATCHER ISOUTBOUNDMESSAGE')
-        console.log('====================================')
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {
-        console.log('====================================')
-        console.log('DISPATCHER IS SESSION MESSAGE')
-        console.log('====================================')
         outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
       }
     }
-    console.log('====================================')
-    console.log('MADE IT TO EVENTEMITTER')
-    console.log('====================================')
     // Emit event that allows to hook into received messages
     this.eventEmitter.emit<AgentMessageProcessedEvent>(agentContext, {
       type: AgentEventTypes.AgentMessageProcessed,
