@@ -25,6 +25,8 @@ import {
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
 
+import { extractCredentialType } from './utils/issuerUri'
+
 export interface PreAuthorizedOptions {
   issuerUri: string
   kid: string
@@ -157,8 +159,18 @@ export class OpenId4VcClientService {
 
     const serverMetadata = await client.retrieveServerMetadata()
 
+    // The following @ts-ignore is needed because the scope
+    // parameter isn't present in the openid client lib
     // @ts-ignore
-    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
+    const scope = accessToken.scope ?? extractCredentialType(options.issuerUri)
+
+    if (!scope) {
+      throw new AriesFrameworkError(
+        'Scope should be present in the issuer URI, or the access token response. Both are undefined.'
+      )
+    }
+
+    this.assertCredentialHasFormat(credentialFormat, scope, serverMetadata)
 
     this.logger.info('Fetched server metadata', {
       issuer: serverMetadata.issuer,
@@ -192,7 +204,7 @@ export class OpenId4VcClientService {
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
       // @ts-ignore
-      credentialType: accessToken.scope,
+      credentialType: scope,
       format: 'ldp_vc', // Allows us to override the format
     })
 
