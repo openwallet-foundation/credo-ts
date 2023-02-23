@@ -1,32 +1,35 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { ProofStateChangedEvent } from '../../../ProofEvents'
 
-import { Subject, ReplaySubject } from 'rxjs'
+import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
+import { V1CredentialPreview } from '../../../../../../../anoncreds/src'
 import {
-  setupProofsTest,
+  getLegacyAnonCredsModules,
+  issueLegacyAnonCredsCredential,
+  prepareForAnonCredsIssuance,
+  setupAnonCredsTests,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import {
   waitForProofExchangeRecordSubject,
   getAgentOptions,
-  prepareForIssuance,
   makeConnection,
-  issueCredential,
-} from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
+  testLogger,
+  setupEventReplaySubjects,
+} from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
-import { V1CredentialPreview } from '../../../../credentials'
+import { CredentialEventTypes } from '../../../../credentials'
 import { MediatorPickupStrategy } from '../../../../routing'
 import { ProofEventTypes } from '../../../ProofEvents'
-import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo, PredicateType } from '../../../formats/indy/models'
 import { AutoAcceptProof, ProofState } from '../../../models'
 
-describe('Present Proof', () => {
+describe('V2 Connectionless Proofs - Indy', () => {
   let agents: Agent[]
 
   afterEach(async () => {
@@ -37,41 +40,43 @@ describe('Present Proof', () => {
   })
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
-      'Faber connection-less Proofs v2',
-      'Alice connection-less Proofs v2',
-      AutoAcceptProof.Never
-    )
+    const {
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber connection-less Proofs v2',
+      holderName: 'Alice connection-less Proofs v2',
+      autoAcceptProofs: AutoAcceptProof.Never,
+      attributeNames: ['name', 'age'],
+    })
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
+
     agents = [aliceAgent, faberAgent]
     testLogger.test('Faber sends presentation request to Alice')
-
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    let aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
-    })
 
     // eslint-disable-next-line prefer-const
     let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.proofs.createRequest({
@@ -80,8 +85,28 @@ describe('Present Proof', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
     })
@@ -95,17 +120,13 @@ describe('Present Proof', () => {
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    testLogger.test('Alice accepts presentation request from Faber')
-
-    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+    let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.RequestReceived,
     })
 
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+    testLogger.test('Alice accepts presentation request from Faber')
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
     })
 
     await aliceAgent.proofs.acceptRequest({
@@ -114,65 +135,63 @@ describe('Present Proof', () => {
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await faberProofExchangeRecordPromise
+    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
 
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
-
-    aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
-    })
 
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits till it receives presentation ack
-    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: ProofState.Done,
+    })
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
-      'Faber connection-less Proofs - Auto Accept',
-      'Alice connection-less Proofs - Auto Accept',
-      AutoAcceptProof.Always
-    )
+    const {
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber connection-less Proofs v2 - Auto Accept',
+      holderName: 'Alice connection-less Proofs v2 - Auto Accept',
+      autoAcceptProofs: AutoAcceptProof.Always,
+      attributeNames: ['name', 'age'],
+    })
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
 
     agents = [aliceAgent, faberAgent]
-
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
 
     // eslint-disable-next-line prefer-const
     let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
@@ -181,8 +200,28 @@ describe('Present Proof', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
@@ -196,53 +235,54 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
 
-    await faberProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(
-      'Faber connection-less Proofs - Auto Accept',
-      'Alice connection-less Proofs - Auto Accept',
-      AutoAcceptProof.Always
-    )
+    const {
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber connection-less Proofs v2 - Auto Accept',
+      holderName: 'Alice connection-less Proofs v2 - Auto Accept',
+      autoAcceptProofs: AutoAcceptProof.Always,
+      attributeNames: ['name', 'age'],
+    })
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
 
     agents = [aliceAgent, faberAgent]
-
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: credDefId,
-          }),
-        ],
-      }),
-    }
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
 
     // eslint-disable-next-line prefer-const
     let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
@@ -251,11 +291,31 @@ describe('Present Proof', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
-      autoAcceptProof: AutoAcceptProof.Always,
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
     message.setService({
@@ -272,9 +332,13 @@ describe('Present Proof', () => {
     message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
-    await aliceProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
 
-    await faberProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
@@ -287,18 +351,19 @@ describe('Present Proof', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getAgentOptions(`Connectionless proofs with mediator Mediator-${unique}`, {
-      autoAcceptMediationRequests: true,
-      endpoints: ['rxjs:mediator'],
-    })
+    const mediatorOptions = getAgentOptions(
+      `Connectionless proofs with mediator Mediator-${unique}`,
+      {
+        autoAcceptMediationRequests: true,
+        endpoints: ['rxjs:mediator'],
+      },
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
+    )
 
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
     const mediatorMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:mediator': mediatorMessages,
-    }
+    const subjectMap = { 'rxjs:mediator': mediatorMessages }
 
     // Initialize mediator
     const mediatorAgent = new Agent(mediatorOptions)
@@ -316,47 +381,67 @@ describe('Present Proof', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberOptions = getAgentOptions(`Connectionless proofs with mediator Faber-${unique}`, {
-      autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-        domain: 'https://example.com',
-      }),
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-    })
+    const faberOptions = getAgentOptions(
+      `Connectionless proofs with mediator Faber-${unique}`,
+      {
+        mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com',
+        }),
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
+    )
 
-    const aliceOptions = getAgentOptions(`Connectionless proofs with mediator Alice-${unique}`, {
-      autoAcceptProofs: AutoAcceptProof.Always,
-      mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-        domain: 'https://example.com',
-      }),
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-    })
+    const aliceOptions = getAgentOptions(
+      `Connectionless proofs with mediator Alice-${unique}`,
+      {
+        mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com',
+        }),
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
+      getLegacyAnonCredsModules({
+        autoAcceptProofs: AutoAcceptProof.Always,
+      })
+    )
 
     const faberAgent = new Agent(faberOptions)
     faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
     await faberAgent.initialize()
 
     const aliceAgent = new Agent(aliceOptions)
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     await aliceAgent.initialize()
 
+    const [faberReplay, aliceReplay] = setupEventReplaySubjects(
+      [faberAgent, aliceAgent],
+      [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    )
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
+    await aliceAgent.modules.anoncreds.createLinkSecret({
+      linkSecretId: 'default',
+      setAsDefault: true,
+    })
 
-    const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
-    expect(faberConnection.isReady).toBe(true)
-    expect(aliceConnection.isReady).toBe(true)
+    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+      attributeNames: ['name', 'age', 'image_0', 'image_1'],
+      issuerId: faberAgent.publicDid?.did as string,
+    })
+
+    const [faberConnection] = await makeConnection(faberAgent, aliceAgent)
 
     // issue credential with two linked attachments
-    await issueCredential({
+    await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent,
-      issuerConnectionId: faberConnection.id,
+      issuerReplay: faberReplay,
+      issuerHolderConnectionId: faberConnection.id,
       holderAgent: aliceAgent,
-      credentialTemplate: {
-        credentialDefinitionId: definition.id,
+      holderReplay: aliceReplay,
+      offer: {
+        credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
         linkedAttachments: [
           new LinkedAttachment({
@@ -376,43 +461,6 @@ describe('Present Proof', () => {
         ],
       },
     })
-    const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
-    const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
-
-    faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
-    aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
-
-    const attributes = {
-      name: new ProofAttributeInfo({
-        name: 'name',
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: definition.id,
-          }),
-        ],
-      }),
-    }
-
-    const predicates = {
-      age: new ProofPredicateInfo({
-        name: 'age',
-        predicateType: PredicateType.GreaterThanOrEqualTo,
-        predicateValue: 50,
-        restrictions: [
-          new AttributeFilter({
-            credentialDefinitionId: definition.id,
-          }),
-        ],
-      }),
-    }
-
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
 
     // eslint-disable-next-line prefer-const
     let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
@@ -421,8 +469,28 @@ describe('Present Proof', () => {
         indy: {
           name: 'test-proof-request',
           version: '1.0',
-          requestedAttributes: attributes,
-          requestedPredicates: predicates,
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinition.credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinition.credentialDefinitionId,
+                },
+              ],
+            },
+          },
         },
       },
       autoAcceptProof: AutoAcceptProof.ContentApproved,
@@ -435,9 +503,7 @@ describe('Present Proof', () => {
     })
 
     const mediationRecord = await faberAgent.mediationRecipient.findDefaultMediator()
-    if (!mediationRecord) {
-      throw new Error('Faber agent has no default mediator')
-    }
+    if (!mediationRecord) throw new Error('Faber agent has no default mediator')
 
     expect(requestMessage).toMatchObject({
       service: {
@@ -449,11 +515,12 @@ describe('Present Proof', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+    })
 
-    await faberProofExchangeRecordPromise
-
-    await aliceAgent.mediationRecipient.stopMessagePickup()
-    await faberAgent.mediationRecipient.stopMessagePickup()
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+    })
   })
 })

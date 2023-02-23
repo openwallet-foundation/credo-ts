@@ -1,17 +1,19 @@
 import type { Key } from '@aries-framework/core'
 
 import {
+  TypedArrayEncoder,
   CacheModuleConfig,
   InMemoryLruCache,
   JsonTransformer,
-  IndyWallet,
   KeyType,
   SigningProviderRegistry,
 } from '@aries-framework/core'
 
 import { parseDid } from '../../core/src/modules/dids/domain/parse'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrSovDidResolver } from '../src/dids'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
@@ -19,7 +21,7 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
 const logger = testLogger
-const wallet = new IndyWallet(agentDependencies, logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, logger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrResolver E2E', { logger })
 
 const cache = new InMemoryLruCache({ limit: 200 })
@@ -38,15 +40,14 @@ const agentContext = getAgentContext({
 
 const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
-describe('IndyVdrSov', () => {
+describe('indy-vdr DID Resolver E2E', () => {
   beforeAll(async () => {
-    await indyVdrPoolService.connectToPools()
+    await wallet.createAndOpen(agentConfig.walletConfig)
 
-    if (agentConfig.walletConfig) {
-      await wallet.createAndOpen(agentConfig.walletConfig)
-    }
-
-    signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
+    signerKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {

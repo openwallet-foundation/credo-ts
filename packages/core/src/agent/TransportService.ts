@@ -1,7 +1,7 @@
-import type { DidDocument } from '../modules/dids'
-import type { EncryptedMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { EnvelopeKeys } from './EnvelopeService'
+import type { DidDocument } from '../modules/dids'
+import type { EncryptedMessage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { injectable } from '../plugins'

@@ -33,6 +33,8 @@ export interface DIDInvitationOptions {
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#0-invitation-to-connect
  */
 export class ConnectionInvitationMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new ConnectionInvitationMessage instance.
    * @param options
@@ -107,8 +109,14 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * @param domain domain name to use for invitation url
    * @returns invitation url with base64 encoded invitation
    */
-  public toUrl({ domain, useLegacyDidSovPrefix = false }: { domain: string; useLegacyDidSovPrefix?: boolean }) {
-    const invitationJson = this.toJSON({ useLegacyDidSovPrefix })
+  public toUrl({
+    domain,
+    useDidSovPrefixWhereAllowed = false,
+  }: {
+    domain: string
+    useDidSovPrefixWhereAllowed?: boolean
+  }) {
+    const invitationJson = this.toJSON({ useDidSovPrefixWhereAllowed })
 
     const encodedInvitation = JsonEncoder.toBase64URL(invitationJson)
     const invitationUrl = `${domain}?c_i=${encodedInvitation}`

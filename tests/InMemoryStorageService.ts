@@ -18,7 +18,10 @@ interface StorageRecord {
 }
 
 @injectable()
-export class InMemoryStorageService<T extends BaseRecord = BaseRecord> implements StorageService<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
+  implements StorageService<T>
+{
   public records: { [id: string]: StorageRecord }
 
   public constructor(records: { [id: string]: StorageRecord } = {}) {

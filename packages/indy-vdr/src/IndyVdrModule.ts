@@ -1,5 +1,5 @@
 import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
 
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
 import { IndyVdrPoolService } from './pool/IndyVdrPoolService'
@@ -31,5 +31,15 @@ export class IndyVdrModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(IndyVdrPoolService)
+  }
+
+  public async initialize(agentContext: AgentContext): Promise<void> {
+    const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
+
+    for (const pool of indyVdrPoolService.pools) {
+      if (pool.config.connectOnStartup) {
+        await pool.connect()
+      }
+    }
   }
 }

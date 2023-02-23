@@ -5,11 +5,14 @@ import {
   DidCommV1Service,
   DidCommV2Service,
   convertPublicKeyToX25519,
+  AriesFrameworkError,
 } from '@aries-framework/core'
+
+export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
 
 export interface IndyEndpointAttrib {
   endpoint?: string
-  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
+  types?: Array<CommEndpointType>
   routingKeys?: string[]
   [key: string]: unknown
 }
@@ -18,6 +21,8 @@ export interface GetNymResponseData {
   did: string
   verkey: string
   role: string
+  alias?: string
+  diddocContent?: Record<string, unknown>
 }
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
@@ -102,6 +107,36 @@ function processEndpointTypes(types?: string[]) {
   return types
 }
 
+export function endpointsAttribFromServices(services: DidDocumentService[]): IndyEndpointAttrib {
+  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+  const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
+
+  // Check that all services use the same endpoint, as only one is accepted
+  if (!commServices.every((item) => item.serviceEndpoint === services[0].serviceEndpoint)) {
+    throw new AriesFrameworkError('serviceEndpoint for all services must match')
+  }
+
+  const types: CommEndpointType[] = []
+  const routingKeys = new Set<string>()
+
+  for (const commService of commServices) {
+    const commServiceType = commService.type as CommEndpointType
+    if (types.includes(commServiceType)) {
+      throw new AriesFrameworkError('Only a single communication service per type is supported')
+    } else {
+      types.push(commServiceType)
+    }
+
+    if (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) {
+      if (commService.routingKeys) {
+        commService.routingKeys.forEach((item) => routingKeys.add(item))
+      }
+    }
+  }
+
+  return { endpoint: services[0].serviceEndpoint, types, routingKeys: Array.from(routingKeys) }
+}
+
 export function addServicesFromEndpointsAttrib(
   builder: DidDocumentBuilder,
   did: string,
@@ -138,6 +173,7 @@ export function addServicesFromEndpointsAttrib(
       )
 
       // If 'DIDComm' included in types, add DIDComm v2 entry
+      // TODO: should it be DIDComm or DIDCommMessaging? (see https://github.com/sovrin-foundation/sovrin/issues/343)
       if (processedTypes.includes('DIDComm')) {
         builder
           .addService(

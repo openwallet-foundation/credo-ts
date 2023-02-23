@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../../agent'
-import type { Wallet } from '../../../../wallet/Wallet'
 import type { Routing } from '../../../connections/services/ConnectionService'
 
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
@@ -8,11 +7,9 @@ import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { Key } from '../../../../crypto'
-import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
-import { IndyWallet } from '../../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../../connections'
 import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
@@ -63,7 +60,6 @@ describe('MediationRecipientService', () => {
     connectionImageUrl,
   })
 
-  let wallet: Wallet
   let mediationRepository: MediationRepository
   let didRepository: DidRepository
   let didRegistrarService: DidRegistrarService
@@ -76,16 +72,9 @@ describe('MediationRecipientService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       agentConfig: config,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
   })
 
   beforeEach(async () => {

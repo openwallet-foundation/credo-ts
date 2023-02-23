@@ -1,6 +1,5 @@
 import type { Logger } from './logger'
 import type { AutoAcceptCredential } from './modules/credentials/models/CredentialAutoAcceptType'
-import type { IndyPoolConfig } from './modules/ledger/IndyPool'
 import type { AutoAcceptProof } from './modules/proofs'
 import type { MediatorPickupStrategy } from './modules/routing'
 
@@ -23,7 +22,6 @@ export interface WalletConfig {
   key: string
   keyDerivationMethod?: KeyDerivationMethod
   storage?: WalletStorageConfig
-  masterSecretId?: string
 }
 
 export interface WalletConfigRekey {
@@ -59,7 +57,7 @@ export interface InitConfig {
   logger?: Logger
   didCommMimeType?: DidCommMimeType
   useDidKeyInProtocols?: boolean
-  useLegacyDidSovPrefix?: boolean
+  useDidSovPrefixWhereAllowed?: boolean
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
 
@@ -83,20 +81,6 @@ export interface InitConfig {
    * a module
    */
   autoAcceptCredentials?: AutoAcceptCredential
-
-  /**
-   * @deprecated configure `indyLedgers` on the `LedgerModule` class
-   * @note This setting will be ignored if the `LedgerModule` is manually configured as
-   * a module
-   */
-  indyLedgers?: IndyPoolConfig[]
-
-  /**
-   * @deprecated configure `connectToIndyLedgersOnStartup` on the `LedgerModule` class
-   * @note This setting will be ignored if the `LedgerModule` is manually configured as
-   * a module
-   */
-  connectToIndyLedgersOnStartup?: boolean
 
   /**
    * @deprecated configure `autoAcceptMediationRequests` on the `RecipientModule` class
@@ -162,6 +146,9 @@ export type ProtocolVersion = `${number}.${number}`
 export interface PlaintextMessage {
   '@type': string
   '@id': string
+  '~thread'?: {
+    thid?: string
+  }
   [key: string]: unknown
 }
 

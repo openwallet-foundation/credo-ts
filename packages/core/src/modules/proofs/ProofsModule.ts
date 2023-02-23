@@ -7,14 +7,13 @@ import type { Constructor } from '../../utils/mixins'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
-import { IndyProofFormatService } from './formats/indy/IndyProofFormatService'
-import { V1ProofProtocol, V2ProofProtocol } from './protocol'
+import { V2ProofProtocol } from './protocol'
 import { ProofRepository } from './repository'
 
 /**
  * Default proofProtocols that will be registered if the `proofProtocols` property is not configured.
  */
-export type DefaultProofProtocols = [V1ProofProtocol, V2ProofProtocol<IndyProofFormatService[]>]
+export type DefaultProofProtocols = [V2ProofProtocol<[]>]
 
 // ProofsModuleOptions makes the proofProtocols property optional from the config, as it will set it when not provided.
 export type ProofsModuleOptions<ProofProtocols extends ProofProtocol[]> = Optional<
@@ -32,24 +31,8 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
       ...config,
       // NOTE: the proofProtocols defaults are set in the ProofsModule rather than the ProofsModuleConfig to
       // avoid dependency cycles.
-      proofProtocols: config?.proofProtocols ?? this.getDefaultProofProtocols(),
+      proofProtocols: config?.proofProtocols ?? [new V2ProofProtocol({ proofFormats: [] })],
     }) as ProofsModuleConfig<ProofProtocols>
-  }
-
-  /**
-   * Get the default proof protocols that will be registered if the `proofProtocols` property is not configured.
-   */
-  private getDefaultProofProtocols(): DefaultProofProtocols {
-    // Instantiate proof formats
-    const indyProofFormat = new IndyProofFormatService()
-
-    // Instantiate proof protocols
-    const v1ProofProtocol = new V1ProofProtocol({ indyProofFormat })
-    const v2ProofProtocol = new V2ProofProtocol({
-      proofFormats: [indyProofFormat],
-    })
-
-    return [v1ProofProtocol, v2ProofProtocol]
   }
 
   /**

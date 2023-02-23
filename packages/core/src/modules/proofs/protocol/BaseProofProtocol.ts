@@ -1,13 +1,3 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
-import type { AgentContext } from '../../../agent/context/AgentContext'
-import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { DependencyManager } from '../../../plugins'
-import type { Query } from '../../../storage/StorageService'
-import type { ProblemReportMessage } from '../../problem-reports'
-import type { ProofStateChangedEvent } from '../ProofEvents'
-import type { ExtractProofFormats, ProofFormatService } from '../formats'
-import type { ProofExchangeRecord } from '../repository'
 import type { ProofProtocol } from './ProofProtocol'
 import type {
   CreateProofProposalOptions,
@@ -26,6 +16,16 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
+import type { AgentContext } from '../../../agent/context/AgentContext'
+import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
+import type { DependencyManager } from '../../../plugins'
+import type { Query } from '../../../storage/StorageService'
+import type { ProblemReportMessage } from '../../problem-reports'
+import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { ExtractProofFormats, ProofFormatService } from '../formats'
+import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage'

@@ -1,5 +1,6 @@
 import { Agent, KeyDerivationMethod } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
+import indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
 import { AnonCredsCredentialDefinitionRepository, AnonCredsModule, AnonCredsSchemaRepository } from '../src'
@@ -81,7 +82,7 @@ const agent = new Agent({
   },
   modules: {
     indySdk: new IndySdkModule({
-      indySdk: agentDependencies.indy,
+      indySdk,
     }),
     anoncreds: new AnonCredsModule({
       registries: [

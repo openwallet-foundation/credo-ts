@@ -4,8 +4,8 @@ import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
 
-import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { setupSubjectTransports } from '../../../../tests'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -45,42 +45,38 @@ describe('Manual Connection Flow', () => {
   // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
   // This was only present in the manual flow, which is almost never used.
   it('can connect multiple times using the same reusable invitation without manually using the connections api', async () => {
-    const aliceInboundTransport = new SubjectInboundTransport()
-    const bobInboundTransport = new SubjectInboundTransport()
-    const faberInboundTransport = new SubjectInboundTransport()
-
-    const subjectMap = {
-      'rxjs:faber': faberInboundTransport.ourSubject,
-      'rxjs:alice': aliceInboundTransport.ourSubject,
-      'rxjs:bob': bobInboundTransport.ourSubject,
-    }
-    const aliceAgentOptions = getAgentOptions('Manual Connection Flow Alice', {
-      label: 'alice',
-      autoAcceptConnections: false,
-      endpoints: ['rxjs:alice'],
-    })
-    const bobAgentOptions = getAgentOptions('Manual Connection Flow Bob', {
-      label: 'bob',
-      autoAcceptConnections: false,
-      endpoints: ['rxjs:bob'],
-    })
-    const faberAgentOptions = getAgentOptions('Manual Connection Flow Faber', {
-      autoAcceptConnections: false,
-      endpoints: ['rxjs:faber'],
-    })
+    const aliceAgentOptions = getAgentOptions(
+      'Manual Connection Flow Alice',
+      {
+        label: 'alice',
+        autoAcceptConnections: false,
+        endpoints: ['rxjs:alice'],
+      },
+      getIndySdkModules()
+    )
+    const bobAgentOptions = getAgentOptions(
+      'Manual Connection Flow Bob',
+      {
+        label: 'bob',
+        autoAcceptConnections: false,
+        endpoints: ['rxjs:bob'],
+      },
+      getIndySdkModules()
+    )
+    const faberAgentOptions = getAgentOptions(
+      'Manual Connection Flow Faber',
+      {
+        autoAcceptConnections: false,
+        endpoints: ['rxjs:faber'],
+      },
+      getIndySdkModules()
+    )
 
     const aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(aliceInboundTransport)
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-
     const bobAgent = new Agent(bobAgentOptions)
-    bobAgent.registerInboundTransport(bobInboundTransport)
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-
     const faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(faberInboundTransport)
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
 
+    setupSubjectTransports([aliceAgent, bobAgent, faberAgent])
     await aliceAgent.initialize()
     await bobAgent.initialize()
     await faberAgent.initialize()

@@ -5,7 +5,6 @@ import { DependencyManager } from '../../../plugins/DependencyManager'
 import { ProofsApi } from '../ProofsApi'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
-import { V1ProofProtocol } from '../protocol/v1/V1ProofProtocol'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
 import { ProofRepository } from '../repository'
 
@@ -34,10 +33,10 @@ describe('ProofsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ProofRepository)
   })
 
-  test('registers V1ProofProtocol and V2ProofProtocol if no proofProtocols are configured', () => {
+  test('registers V2ProofProtocol if no proofProtocols are configured', () => {
     const proofsModule = new ProofsModule()
 
-    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V1ProofProtocol), expect.any(V2ProofProtocol)])
+    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol)])
   })
 
   test('calls register on the provided ProofProtocols', () => {

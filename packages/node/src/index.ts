@@ -1,12 +1,11 @@
 import type { AgentDependencies } from '@aries-framework/core'
 
 import { EventEmitter } from 'events'
-import * as indy from 'indy-sdk'
 import fetch from 'node-fetch'
 import WebSocket from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
-import { IndyPostgresStorageConfig, loadPostgresPlugin, WalletScheme } from './PostgresPlugin'
+import { IndySdkPostgresStorageConfig, loadIndySdkPostgresPlugin, IndySdkPostgresWalletScheme } from './PostgresPlugin'
 import { HttpInboundTransport } from './transport/HttpInboundTransport'
 import { WsInboundTransport } from './transport/WsInboundTransport'
 
@@ -15,14 +14,13 @@ const agentDependencies: AgentDependencies = {
   fetch,
   EventEmitterClass: EventEmitter,
   WebSocketClass: WebSocket,
-  indy,
 }
 
 export {
   agentDependencies,
   HttpInboundTransport,
   WsInboundTransport,
-  loadPostgresPlugin,
-  IndyPostgresStorageConfig,
-  WalletScheme,
+  loadIndySdkPostgresPlugin,
+  IndySdkPostgresStorageConfig,
+  IndySdkPostgresWalletScheme,
 }

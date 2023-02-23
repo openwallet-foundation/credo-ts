@@ -1,10 +1,12 @@
 import type { Key } from '@aries-framework/core'
 
-import { IndyWallet, KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
-import { agentDependencies, genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { IndySdkWallet } from '../../indy-sdk/src'
+import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
@@ -12,7 +14,7 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
-const wallet = new IndyWallet(agentDependencies, testLogger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
 
@@ -27,13 +29,12 @@ let signerKey: Key
 
 describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
-    await indyVdrPoolService.connectToPools()
+    await wallet.createAndOpen(agentConfig.walletConfig)
 
-    if (agentConfig.walletConfig) {
-      await wallet.createAndOpen(agentConfig.walletConfig)
-    }
-
-    signerKey = await wallet.createKey({ seed: '000000000000000000000000Trustee9', keyType: KeyType.Ed25519 })
+    signerKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {

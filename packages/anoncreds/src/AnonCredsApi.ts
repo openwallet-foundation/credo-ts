@@ -1,5 +1,7 @@
-import type { AnonCredsCreateLinkSecretOptions } from './AnonCredsApiOptions'
-import type { AnonCredsCredentialDefinition } from './models'
+import type {
+  AnonCredsCreateLinkSecretOptions,
+  AnonCredsRegisterCredentialDefinitionOptions,
+} from './AnonCredsApiOptions'
 import type {
   GetCredentialDefinitionReturn,
   GetRevocationStatusListReturn,
@@ -207,7 +209,7 @@ export class AnonCredsApi {
   }
 
   public async registerCredentialDefinition(options: {
-    credentialDefinition: Omit<AnonCredsCredentialDefinition, 'value' | 'type'>
+    credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
     // TODO: options should support supportsRevocation at some points
     options: Extensible
   }): Promise<RegisterCredentialDefinitionReturn> {

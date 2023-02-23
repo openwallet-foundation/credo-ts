@@ -24,7 +24,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
 } from '@aries-framework/anoncreds'
-import { injectable } from '@aries-framework/core'
+import { utils, injectable } from '@aries-framework/core'
 import {
   CredentialRequestMetadata,
   Credential,
@@ -40,7 +40,6 @@ import {
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
-import { uuid } from '../../../core/src/utils/uuid'
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 @injectable()
@@ -51,7 +50,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   ): Promise<CreateLinkSecretReturn> {
     try {
       return {
-        linkSecretId: options?.linkSecretId ?? uuid(),
+        linkSecretId: options?.linkSecretId ?? utils.uuid(),
         linkSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
       }
     } catch (error) {
@@ -200,7 +199,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       if (!linkSecretRecord) {
         // No default link secret
-        throw new AnonCredsRsError('No default link secret has been found')
+        throw new AnonCredsRsError(
+          'No link secret provided to createCredentialRequest and no default link secret has been found'
+        )
       }
 
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
@@ -230,7 +231,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       ? RevocationRegistryDefinition.load(JSON.stringify(revocationRegistry.definition))
       : undefined
 
-    const credentialId = options.credentialId ?? uuid()
+    const credentialId = options.credentialId ?? utils.uuid()
     const processedCredential = Credential.load(JSON.stringify(credential)).process({
       credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
       credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(credentialRequestMetadata)),

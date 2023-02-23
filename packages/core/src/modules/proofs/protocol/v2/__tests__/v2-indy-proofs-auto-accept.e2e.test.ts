@@ -1,29 +1,61 @@
-import type { Agent } from '../../../../../agent/Agent'
-import type { ConnectionRecord } from '../../../../connections'
-import type { V1PresentationPreview } from '../../v1'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../tests'
 
-import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
-import testLogger from '../../../../../../tests/logger'
-import { ProofAttributeInfo, AttributeFilter, ProofPredicateInfo, PredicateType } from '../../../formats/indy/models'
+import {
+  issueLegacyAnonCredsCredential,
+  setupAnonCredsTests,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { waitForProofExchangeRecord, testLogger } from '../../../../../../tests'
 import { AutoAcceptProof, ProofState } from '../../../models'
 
 describe('Auto accept present proof', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let credDefId: string
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
-  let presentationPreview: V1PresentationPreview
+  let faberAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
+  let aliceAgent: AnonCredsTestsAgent
+  let aliceReplay: EventReplaySubject
+  let credentialDefinitionId: string
+  let faberConnectionId: string
+  let aliceConnectionId: string
 
-  describe('Auto accept on `always`', () => {
+  describe("Auto accept on 'always'", () => {
     beforeAll(async () => {
-      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest(
-          'Faber Auto Accept Always Proofs',
-          'Alice Auto Accept Always Proofs',
-          AutoAcceptProof.Always
-        ))
+      ;({
+        issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
+        holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
+        credentialDefinitionId,
+        issuerHolderConnectionId: faberConnectionId,
+        holderIssuerConnectionId: aliceConnectionId,
+      } = await setupAnonCredsTests({
+        issuerName: 'Faber Auto Accept Always Proofs',
+        holderName: 'Alice Auto Accept Always Proofs',
+        attributeNames: ['name', 'age'],
+        autoAcceptProofs: AutoAcceptProof.Always,
+      }))
+
+      await issueLegacyAnonCredsCredential({
+        issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
+        holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
+        issuerHolderConnectionId: faberConnectionId,
+        offer: {
+          credentialDefinitionId,
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice',
+            },
+            {
+              name: 'age',
+              value: '99',
+            },
+          ],
+        },
+      })
     })
+
     afterAll(async () => {
       await faberAgent.shutdown()
       await faberAgent.wallet.delete()
@@ -31,18 +63,31 @@ describe('Auto accept present proof', () => {
       await aliceAgent.wallet.delete()
     })
 
-    test('Alice starts with proof proposal to Faber, both with autoAcceptProof on `always`', async () => {
+    test("Alice starts with proof proposal to Faber, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
       await aliceAgent.proofs.proposeProof({
-        connectionId: aliceConnection.id,
+        connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
           indy: {
             name: 'abc',
             version: '1.0',
-            attributes: presentationPreview.attributes,
-            predicates: presentationPreview.predicates,
+            attributes: [
+              {
+                credentialDefinitionId,
+                name: 'name',
+                value: 'Alice',
+              },
+            ],
+            predicates: [
+              {
+                credentialDefinitionId,
+                name: 'age',
+                predicate: '>=',
+                threshold: 50,
+              },
+            ],
           },
         },
       })
@@ -55,40 +100,38 @@ describe('Auto accept present proof', () => {
       ])
     })
 
-    test('Faber starts with proof requests to Alice, both with autoAcceptProof on `always`', async () => {
+    test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
-      const attributes = {
-        name: new ProofAttributeInfo({
-          name: 'name',
-          restrictions: [
-            new AttributeFilter({
-              credentialDefinitionId: credDefId,
-            }),
-          ],
-        }),
-      }
-      const predicates = {
-        age: new ProofPredicateInfo({
-          name: 'age',
-          predicateType: PredicateType.GreaterThanOrEqualTo,
-          predicateValue: 50,
-          restrictions: [
-            new AttributeFilter({
-              credentialDefinitionId: credDefId,
-            }),
-          ],
-        }),
-      }
 
       await faberAgent.proofs.requestProof({
         protocolVersion: 'v2',
-        connectionId: faberConnection.id,
+        connectionId: faberConnectionId,
         proofFormats: {
           indy: {
             name: 'proof-request',
             version: '1.0',
-            requestedAttributes: attributes,
-            requestedPredicates: predicates,
+            requested_attributes: {
+              name: {
+                name: 'name',
+                restrictions: [
+                  {
+                    cred_def_id: credentialDefinitionId,
+                  },
+                ],
+              },
+            },
+            requested_predicates: {
+              age: {
+                name: 'age',
+                p_type: '>=',
+                p_value: 50,
+                restrictions: [
+                  {
+                    cred_def_id: credentialDefinitionId,
+                  },
+                ],
+              },
+            },
           },
         },
       })
@@ -105,13 +148,43 @@ describe('Auto accept present proof', () => {
   describe("Auto accept on 'contentApproved'", () => {
     beforeAll(async () => {
       testLogger.test('Initializing the agents')
-      ;({ faberAgent, aliceAgent, credDefId, faberConnection, aliceConnection, presentationPreview } =
-        await setupProofsTest(
-          'Faber Auto Accept Content Approved Proofs',
-          'Alice Auto Accept Content Approved Proofs',
-          AutoAcceptProof.ContentApproved
-        ))
+      ;({
+        issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
+        holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
+        credentialDefinitionId,
+        issuerHolderConnectionId: faberConnectionId,
+        holderIssuerConnectionId: aliceConnectionId,
+      } = await setupAnonCredsTests({
+        issuerName: 'Faber Auto Accept ContentApproved Proofs',
+        holderName: 'Alice Auto Accept ContentApproved Proofs',
+        attributeNames: ['name', 'age'],
+        autoAcceptProofs: AutoAcceptProof.ContentApproved,
+      }))
+
+      await issueLegacyAnonCredsCredential({
+        issuerAgent: faberAgent,
+        issuerReplay: faberReplay,
+        holderAgent: aliceAgent,
+        holderReplay: aliceReplay,
+        issuerHolderConnectionId: faberConnectionId,
+        offer: {
+          credentialDefinitionId,
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice',
+            },
+            {
+              name: 'age',
+              value: '99',
+            },
+          ],
+        },
+      })
     })
+
     afterAll(async () => {
       testLogger.test('Shutting down both agents')
       await faberAgent.shutdown()
@@ -128,14 +201,27 @@ describe('Auto accept present proof', () => {
       })
 
       await aliceAgent.proofs.proposeProof({
-        connectionId: aliceConnection.id,
+        connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
           indy: {
-            attributes: presentationPreview.attributes,
-            predicates: presentationPreview.predicates,
             name: 'abc',
             version: '1.0',
+            attributes: [
+              {
+                credentialDefinitionId,
+                name: 'name',
+                value: 'Alice',
+              },
+            ],
+            predicates: [
+              {
+                credentialDefinitionId,
+                name: 'age',
+                predicate: '>=',
+                threshold: 50,
+              },
+            ],
           },
         },
       })
@@ -153,28 +239,6 @@ describe('Auto accept present proof', () => {
 
     test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'contentApproved'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
-      const attributes = {
-        name: new ProofAttributeInfo({
-          name: 'name',
-          restrictions: [
-            new AttributeFilter({
-              credentialDefinitionId: credDefId,
-            }),
-          ],
-        }),
-      }
-      const predicates = {
-        age: new ProofPredicateInfo({
-          name: 'age',
-          predicateType: PredicateType.GreaterThanOrEqualTo,
-          predicateValue: 50,
-          restrictions: [
-            new AttributeFilter({
-              credentialDefinitionId: credDefId,
-            }),
-          ],
-        }),
-      }
 
       const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
         state: ProofState.RequestReceived,
@@ -182,13 +246,33 @@ describe('Auto accept present proof', () => {
 
       await faberAgent.proofs.requestProof({
         protocolVersion: 'v2',
-        connectionId: faberConnection.id,
+        connectionId: faberConnectionId,
         proofFormats: {
           indy: {
             name: 'proof-request',
             version: '1.0',
-            requestedAttributes: attributes,
-            requestedPredicates: predicates,
+            requested_attributes: {
+              name: {
+                name: 'name',
+                restrictions: [
+                  {
+                    cred_def_id: credentialDefinitionId,
+                  },
+                ],
+              },
+            },
+            requested_predicates: {
+              age: {
+                name: 'age',
+                p_type: '>=',
+                p_value: 50,
+                restrictions: [
+                  {
+                    cred_def_id: credentialDefinitionId,
+                  },
+                ],
+              },
+            },
           },
         },
       })

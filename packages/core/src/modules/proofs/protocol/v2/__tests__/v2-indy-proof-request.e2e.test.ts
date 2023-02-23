@@ -1,31 +1,60 @@
-import type { Agent } from '../../../../../agent/Agent'
-import type { ConnectionRecord } from '../../../../connections/repository/ConnectionRecord'
-import type { AcceptProofProposalOptions } from '../../../ProofsApiOptions'
-import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V1PresentationPreview } from '../../v1/models/V1PresentationPreview'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../tests'
 
-import { setupProofsTest, waitForProofExchangeRecord } from '../../../../../../tests/helpers'
+import {
+  issueLegacyAnonCredsCredential,
+  setupAnonCredsTests,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { waitForProofExchangeRecordSubject } from '../../../../../../tests'
 import testLogger from '../../../../../../tests/logger'
-import { DidCommMessageRepository } from '../../../../../storage'
 import { ProofState } from '../../../models/ProofState'
-import { V2RequestPresentationMessage } from '../messages'
-import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
 
-describe('Present Proof', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let presentationPreview: V1PresentationPreview
-  let faberProofExchangeRecord: ProofExchangeRecord
-  let aliceProofExchangeRecord: ProofExchangeRecord
-  let didCommMessageRepository: DidCommMessageRepository
+describe('V2 Proofs - Indy', () => {
+  let faberAgent: AnonCredsTestsAgent
+  let faberReplay: EventReplaySubject
+  let aliceAgent: AnonCredsTestsAgent
+  let aliceReplay: EventReplaySubject
+  let faberConnectionId: string
+  let aliceConnectionId: string
+  let credentialDefinitionId: string
 
   beforeAll(async () => {
     testLogger.test('Initializing the agents')
-    ;({ faberAgent, aliceAgent, aliceConnection, presentationPreview } = await setupProofsTest(
-      'Faber agent v2',
-      'Alice agent v2'
-    ))
+    ;({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      holderIssuerConnectionId: aliceConnectionId,
+
+      credentialDefinitionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber agent v2',
+      holderName: 'Alice agent v2',
+      attributeNames: ['name', 'age'],
+    }))
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
   })
 
   afterAll(async () => {
@@ -39,34 +68,39 @@ describe('Present Proof', () => {
   test(`Alice Creates and sends Proof Proposal to Faber`, async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    const faberPresentationRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
-    })
-
-    aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
-      connectionId: aliceConnection.id,
+    let aliceProofExchangeRecord = await aliceAgent.proofs.proposeProof({
+      connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
           name: 'ProofRequest',
           version: '1.0',
-          attributes: presentationPreview.attributes,
-          predicates: presentationPreview.predicates,
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice',
+              credentialDefinitionId,
+            },
+          ],
+          predicates: [
+            {
+              credentialDefinitionId,
+              name: 'age',
+              predicate: '>=',
+              threshold: 18,
+            },
+          ],
         },
       },
       comment: 'V2 propose proof test',
     })
 
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await faberPresentationRecordPromise
-
-    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
-    const proposal = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofExchangeRecord.id,
-      messageClass: V2ProposePresentationMessage,
+    let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.ProposalReceived,
     })
 
+    const proposal = await faberAgent.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -93,32 +127,20 @@ describe('Present Proof', () => {
       state: ProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
-  })
 
-  test(`Faber accepts the Proposal sent by Alice`, async () => {
     // Accept Proposal
-    const acceptProposalOptions: AcceptProofProposalOptions = {
+    testLogger.test('Faber accepts presentation proposal from Alice')
+    faberProofExchangeRecord = await faberAgent.proofs.acceptProposal({
       proofRecordId: faberProofExchangeRecord.id,
-    }
+    })
 
-    const alicePresentationRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+    testLogger.test('Alice waits for proof request from Faber')
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
       state: ProofState.RequestReceived,
     })
 
-    testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.proofs.acceptProposal(acceptProposalOptions)
-
-    testLogger.test('Alice waits for proof request from Faber')
-    aliceProofExchangeRecord = await alicePresentationRecordPromise
-
-    didCommMessageRepository = faberAgent.dependencyManager.resolve<DidCommMessageRepository>(DidCommMessageRepository)
-
-    const request = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
-      associatedRecordId: faberProofExchangeRecord.id,
-      messageClass: V2RequestPresentationMessage,
-    })
-
+    const request = await faberAgent.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       formats: [

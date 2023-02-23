@@ -51,6 +51,10 @@ export class InMemoryLruCache implements Cache {
     })
   }
 
+  public clear() {
+    this.cache.clear()
+  }
+
   public async remove(agentContext: AgentContext, key: string): Promise<void> {
     this.removeExpiredItems()
     this.cache.delete(key)
