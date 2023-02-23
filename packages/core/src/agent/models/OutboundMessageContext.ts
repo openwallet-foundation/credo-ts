@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { InboundMessageContext } from './InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
@@ -6,7 +7,6 @@ import type { OutOfBandRecord } from '../../modules/oob'
 import type { BaseRecord } from '../../storage/BaseRecord'
 import type { AgentMessage } from '../AgentMessage'
 import type { AgentContext } from '../context'
-import type { InboundMessageContext } from './InboundMessageContext'
 
 import { AriesFrameworkError } from '../../error'
 
@@ -28,7 +28,7 @@ export interface OutboundMessageContextParams {
 
 export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public message: T
-  public sessionIdFromInbound?: string | undefined
+  public sessionIdFromInbound?: string
   public connection?: ConnectionRecord
   public serviceParams?: ServiceMessageParams
   public outOfBand?: OutOfBandRecord
@@ -38,7 +38,7 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
 
   public constructor(message: T, context: OutboundMessageContextParams, inboundContext?: InboundMessageContext) {
     this.message = message
-    this.sessionIdFromInbound = inboundContext?.sessionId ? inboundContext.sessionId : undefined
+    this.sessionIdFromInbound = inboundContext?.sessionId
     this.connection = context.connection
     this.sessionId = context.sessionId
     this.outOfBand = context.outOfBand

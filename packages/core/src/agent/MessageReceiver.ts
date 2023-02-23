@@ -1,10 +1,10 @@
-import type { ConnectionRecord } from '../modules/connections'
-import type { InboundTransport } from '../transport'
-import type { EncryptedMessage, PlaintextMessage } from '../types'
 import type { AgentMessage } from './AgentMessage'
 import type { DecryptedMessageContext, EnvelopeKeys } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { ConnectionRecord } from '../modules/connections'
+import type { InboundTransport } from '../transport'
+import type { EncryptedMessage, PlaintextMessage } from '../types'
 
 import { InjectionSymbols } from '../constants'
 import { AriesFrameworkError } from '../error'
@@ -137,22 +137,8 @@ export class MessageReceiver {
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
+    if (senderKey && recipientKey && session && (message.hasAnyReturnRoute() || message.service?.serviceEndpoint)) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
-      const keys = {
-        recipientKeys: [senderKey],
-        routingKeys: [],
-        senderKey: recipientKey,
-      }
-      session.keys = keys
-      session.inboundMessage = message
-      // We allow unready connections to be attached to the session as we want to be able to
-      // use return routing to make connections. This is especially useful for creating connections
-      // with mediators when you don't have a public endpoint yet.
-      session.connectionId = connection?.id
-      messageContext.sessionId = session.id
-      this.transportService.saveSession(session)
-    } else if (senderKey && recipientKey && message.service?.serviceEndpoint && session) {
       const keys = {
         recipientKeys: [senderKey],
         routingKeys: [],

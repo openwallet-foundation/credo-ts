@@ -201,7 +201,7 @@ describe('Present Proof', () => {
     await faberProofExchangeRecordPromise
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without outbound transport', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
     const { aliceAgent, faberAgent, aliceReplay, credDefId, faberReplay } = await setupProofsTest(

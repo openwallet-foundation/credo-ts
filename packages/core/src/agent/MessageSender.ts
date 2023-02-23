@@ -71,9 +71,9 @@ export class MessageSender {
   public async resetOutboundTransport() {
     // NOTE: we could also make this void instead of an async fct.
     // Maybe void is a bit dirty?
-    this.outboundTransports.forEach(async (obt) => {
-      await obt.stop()
-    })
+    for (const transport of this.outboundTransports) {
+      await transport.stop()
+    }
     this.outboundTransports = []
   }
 
@@ -215,7 +215,7 @@ export class MessageSender {
     if (sessionIdFromInbound) {
       session = this.transportService.findSessionById(sessionIdFromInbound)
     } else if (sessionId) {
-      this.transportService.findSessionById(sessionId)
+      session = this.transportService.findSessionById(sessionId)
     }
     if (!session) {
       // Try to send to already open session
@@ -359,7 +359,7 @@ export class MessageSender {
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
     } catch (error) {
       this.logger.error(
-        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error}`,
+        `Message is undeliverable to service with id ${outboundMessageContext.serviceParams?.service.id}: ${error.message}`,
         {
           message: outboundMessageContext.message,
           error,
@@ -425,7 +425,7 @@ export class MessageSender {
       for (const transport of this.outboundTransports) {
         const protocolScheme = getProtocolScheme(service.serviceEndpoint)
         if (!protocolScheme) {
-          this.logger.warn('Service does not have valid protocolScheme.')
+          this.logger.warn('Service does not have a protocol scheme.')
         } else if (transport.supportedSchemes.includes(protocolScheme)) {
           await transport.sendMessage(outboundPackage)
           return
@@ -450,9 +450,9 @@ export class MessageSender {
         } catch (error) {
           this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
           throw new MessageSendingError(
-            `Unable to send message to service: ${service.serviceEndpoint} ${JSON.stringify(
-              message.threadId
-            )} ${JSON.stringify(session)}`,
+            `Unable to send message to service: ${service.serviceEndpoint} ${message.threadId} ${JSON.stringify(
+              session
+            )}`,
             {
               outboundMessageContext,
             }
@@ -464,11 +464,9 @@ export class MessageSender {
           this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
           return
         } catch (error) {
-          this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
+          this.logger.error(`Sending an outbound message via session failed with error: `, error)
           throw new MessageSendingError(
-            `Unable to send message to service: ${
-              outboundMessageContext.serviceParams?.service.serviceEndpoint
-            } with threadId ${JSON.stringify(message.threadId)} `,
+            `Unable to send message to service: ${outboundMessageContext.serviceParams?.service.serviceEndpoint} with threadId ${message.threadId} `,
             {
               outboundMessageContext,
             }
