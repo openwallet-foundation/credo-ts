@@ -12,12 +12,12 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
+import { generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
-import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
