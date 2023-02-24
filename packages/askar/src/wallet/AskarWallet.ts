@@ -583,9 +583,7 @@ export class AskarWallet implements Wallet {
     const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
 
     const alg = protectedJson.alg
-    const isAuthcrypt = alg === 'Authcrypt'
-
-    if (!isAuthcrypt && alg != 'Anoncrypt') {
+    if (!['Anoncrypt', 'Authcrypt'].includes(alg)) {
       throw new WalletError(`Unsupported pack algorithm: ${alg}`)
     }
 
@@ -645,6 +643,8 @@ export class AskarWallet implements Wallet {
             message: recipient.encrypted_key,
             nonce: recipient.iv,
           })
+        } else {
+          payloadKey = CryptoBox.sealOpen({ ciphertext: recipient.encrypted_key, recipientKey: recip_x })
         }
         break
       }
@@ -653,7 +653,7 @@ export class AskarWallet implements Wallet {
       throw new WalletError('No corresponding recipient key found')
     }
 
-    if (!senderKey && isAuthcrypt) {
+    if (!senderKey && alg === 'Authcrypt') {
       throw new WalletError('Sender public key not provided for Authcrypt')
     }
 
