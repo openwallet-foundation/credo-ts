@@ -1,6 +1,7 @@
 import { Agent, AgentContext, InjectionSymbols } from '@aries-framework/core'
 
-import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests/helpers'
+import { indySdk, getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
+import { IndySdkModule } from '../../../indy-sdk/src'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -15,7 +16,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentOptions = getAgentOptions('TenantsApi')
+const agentOptions = getAgentOptions('TenantsApi', {}, { indySdk: new IndySdkModule({ indySdk }) })
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 

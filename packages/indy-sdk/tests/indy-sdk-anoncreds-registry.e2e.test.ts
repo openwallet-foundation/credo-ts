@@ -1,39 +1,32 @@
-import { Agent } from '@aries-framework/core'
-import indySdk from 'indy-sdk'
-import { Subject } from 'rxjs'
+import { Agent, TypedArrayEncoder } from '@aries-framework/core'
 
-import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
-import { IndySdkModule } from '../src'
+import {
+  agentDependencies,
+  getAgentConfig,
+  importExistingIndyDidFromPrivateKey,
+  publicDidSeed,
+} from '../../core/tests/helpers'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
-import { IndySdkPoolService } from '../src/ledger/IndySdkPoolService'
+
+import { getIndySdkModules } from './setupIndySdkModule'
 
 const agentConfig = getAgentConfig('IndySdkAnonCredsRegistry')
-
-const indySdkPoolService = new IndySdkPoolService(
-  indySdk,
-  agentConfig.logger,
-  new Subject(),
-  new agentConfig.agentDependencies.FileSystem()
-)
+const indySdkModules = getIndySdkModules()
 
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
-  modules: {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
-  },
+  modules: indySdkModules,
 })
 
-agent.dependencyManager.registerInstance(IndySdkPoolService, indySdkPoolService)
-indySdkPoolService.setPools(agentConfig.indyLedgers)
 const indySdkAnonCredsRegistry = new IndySdkAnonCredsRegistry()
 
 describe('IndySdkAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
-    await indySdkPoolService.connectToPools()
+
+    // We need to import the endorser did/key into the wallet
+    await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
   })
 
   afterAll(async () => {
@@ -41,7 +34,8 @@ describe('IndySdkAnonCredsRegistry', () => {
     await agent.wallet.delete()
   })
 
-  test('it works! :)', async () => {
+  // One test as the credential definition depends on the schema
+  test('register and resolve a schema and credential definition', async () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
     const schemaResult = await indySdkAnonCredsRegistry.registerSchema(agent.context, {
@@ -52,7 +46,7 @@ describe('IndySdkAnonCredsRegistry', () => {
         version: dynamicVersion,
       },
       options: {
-        didIndyNamespace: agentConfig.indyLedgers[0].indyNamespace,
+        didIndyNamespace: 'pool:localtest',
       },
     })
 
@@ -73,6 +67,9 @@ describe('IndySdkAnonCredsRegistry', () => {
         didIndyNamespace: 'pool:localtest',
       },
     })
+
+    // Wait some time before resolving credential definition object
+    await new Promise((res) => setTimeout(res, 1000))
 
     const schemaResponse = await indySdkAnonCredsRegistry.getSchema(
       agent.context,
@@ -150,6 +147,9 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       registrationMetadata: {},
     })
+
+    // Wait some time before resolving credential definition object
+    await new Promise((res) => setTimeout(res, 1000))
 
     const credentialDefinitionResponse = await indySdkAnonCredsRegistry.getCredentialDefinition(
       agent.context,

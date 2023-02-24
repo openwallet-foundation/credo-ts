@@ -1,10 +1,11 @@
-import type { FileSystem } from '../../../storage/FileSystem'
-
-import { unlinkSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { IndySdkSymbol } from '../../../../../indy-sdk/src/types'
 import { Agent } from '../../../../src'
+import { indySdk } from '../../../../tests'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import { DependencyManager } from '../../../plugins'
@@ -33,6 +34,9 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
     const agent = new Agent(
       {
@@ -99,6 +103,9 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
     const agent = new Agent(
       {
@@ -143,6 +150,9 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     const agent = new Agent(

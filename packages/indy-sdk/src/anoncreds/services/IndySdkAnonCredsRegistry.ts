@@ -13,6 +13,8 @@ import type {
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
 
+import { DidsApi, getKeyDidMappingByVerificationMethod } from '@aries-framework/core'
+
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkPoolService } from '../../ledger'
 import { IndySdkSymbol } from '../../types'
@@ -139,7 +141,28 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const request = await indySdk.buildSchemaRequest(options.schema.issuerId, schema)
 
-      const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, options.schema.issuerId)
+      // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
+      // from the ledger to know which key is associated with the did
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const didResult = await didsApi.resolve(`did:sov:${options.schema.issuerId}`)
+
+      if (!didResult.didDocument) {
+        return {
+          schemaMetadata: {},
+          registrationMetadata: {},
+          schemaState: {
+            schema: options.schema,
+            state: 'failed',
+            reason: `didNotFound: unable to resolve did did:sov:${options.schema.issuerId}: ${didResult.didResolutionMetadata.message}`,
+          },
+        }
+      }
+
+      const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.schema.issuerId}#key-1`)
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const submitterKey = getKeyFromVerificationMethod(verificationMethod)
+
+      const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, submitterKey)
       agentContext.config.logger.debug(`Registered schema '${schema.id}' on ledger '${pool.didIndyNamespace}'`, {
         response,
         schema,
@@ -322,6 +345,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const request = await indySdk.buildCredDefRequest(options.credentialDefinition.issuerId, {
         id: credentialDefinitionId,
+        // Indy ledger requires the credential schemaId to be a string of the schema seqNo.
         schemaId: schemaMetadata.indyLedgerSeqNo.toString(),
         tag: options.credentialDefinition.tag,
         type: options.credentialDefinition.type,
@@ -329,12 +353,30 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         ver: '1.0',
       })
 
-      const response = await indySdkPoolService.submitWriteRequest(
-        agentContext,
-        pool,
-        request,
-        options.credentialDefinition.issuerId
+      // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
+      // from the ledger to know which key is associated with the did
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const didResult = await didsApi.resolve(`did:sov:${options.credentialDefinition.issuerId}`)
+
+      if (!didResult.didDocument) {
+        return {
+          credentialDefinitionMetadata: {},
+          registrationMetadata: {},
+          credentialDefinitionState: {
+            credentialDefinition: options.credentialDefinition,
+            state: 'failed',
+            reason: `didNotFound: unable to resolve did did:sov:${options.credentialDefinition.issuerId}: ${didResult.didResolutionMetadata.message}`,
+          },
+        }
+      }
+
+      const verificationMethod = didResult.didDocument.dereferenceKey(
+        `did:sov:${options.credentialDefinition.issuerId}#key-1`
       )
+      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+      const submitterKey = getKeyFromVerificationMethod(verificationMethod)
+
+      const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, submitterKey)
 
       agentContext.config.logger.debug(
         `Registered credential definition '${credentialDefinitionId}' on ledger '${pool.didIndyNamespace}'`,
@@ -447,7 +489,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
-        `Using ledger '${pool.id}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
+        `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
       )
 
       // TODO: implement caching for returned deltas

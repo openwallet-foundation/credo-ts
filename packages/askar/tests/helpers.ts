@@ -26,18 +26,8 @@ export function getPostgresAgentOptions(
       key: `Key${name}`,
       storage: storageConfig,
     },
-    connectToIndyLedgersOnStartup: false,
-    publicDidSeed,
     autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
-    indyLedgers: [
-      {
-        id: `pool-${name}`,
-        indyNamespace: `pool:localtest`,
-        isProduction: false,
-        genesisPath,
-      },
-    ],
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
   }

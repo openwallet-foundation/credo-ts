@@ -1,5 +1,5 @@
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
+import type { AgentApi, CustomOrDefaultApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
 import type { CredentialsModule } from '../modules/credentials'
@@ -13,7 +13,6 @@ import { CredentialsApi } from '../modules/credentials'
 import { DidsApi } from '../modules/dids'
 import { DiscoverFeaturesApi } from '../modules/discover-features'
 import { GenericRecordsApi } from '../modules/generic-records'
-import { LedgerApi } from '../modules/ledger'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
 import { MediatorApi, RecipientApi } from '../modules/routing'
@@ -50,7 +49,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mediationRecipient: RecipientApi
   public readonly basicMessages: BasicMessagesApi
   public readonly genericRecords: GenericRecordsApi
-  public readonly ledger: LedgerApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
   public readonly wallet: WalletApi
@@ -94,7 +92,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
     this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
-    this.ledger = this.dependencyManager.resolve(LedgerApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
     this.wallet = this.dependencyManager.resolve(WalletApi)
@@ -108,7 +105,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.mediationRecipient,
       this.basicMessages,
       this.genericRecords,
-      this.ledger,
       this.discovery,
       this.dids,
       this.wallet,
@@ -124,7 +120,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   }
 
   public async initialize() {
-    const { publicDidSeed, walletConfig } = this.agentConfig
+    const { walletConfig } = this.agentConfig
 
     if (this._isInitialized) {
       throw new AriesFrameworkError(
@@ -164,21 +160,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
           `You can also downgrade your version of Aries Framework JavaScript.`
       )
     }
-
-    if (publicDidSeed) {
-      // If an agent has publicDid it will be used as routing key.
-      await this.agentContext.wallet.initPublicDid({ seed: publicDidSeed })
-    }
-  }
-
-  /**
-   * @deprecated The publicDid property has been deprecated in favour of the DidsModule, which can be used to
-   * create and resolve dids. Currently the global agent `publicDid` property is still used by the `LedgerModule`, but
-   * will be removed once the LedgerApi has been refactored. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  public get publicDid() {
-    return this.agentContext.wallet.publicDid
   }
 
   /**
@@ -193,13 +174,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       session,
       contextCorrelationId: this.agentContext.contextCorrelationId,
     })
-  }
-
-  /**
-   * @deprecated The injectionContainer property has been deprecated in favour of the dependencyManager property.
-   */
-  public get injectionContainer() {
-    return this.dependencyManager.container
   }
 
   public get config() {

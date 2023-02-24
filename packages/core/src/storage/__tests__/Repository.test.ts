@@ -1,27 +1,28 @@
 import type { AgentContext } from '../../agent'
 import type { TagsBase } from '../BaseRecord'
 import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
+import type { StorageService } from '../StorageService'
 
 import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError, RecordDuplicateError, RecordNotFoundError } from '../../error'
-import { IndyStorageService } from '../IndyStorageService'
 import { Repository } from '../Repository'
 import { RepositoryEventTypes } from '../RepositoryEvents'
 
 import { TestRecord } from './TestRecord'
 
-jest.mock('../IndyStorageService')
+jest.mock('../../../../../tests/InMemoryStorageService')
 
-const StorageMock = IndyStorageService as unknown as jest.Mock<IndyStorageService<TestRecord>>
+const StorageMock = InMemoryStorageService as unknown as jest.Mock<InMemoryStorageService<TestRecord>>
 
 const config = getAgentConfig('Repository')
 
 describe('Repository', () => {
   let repository: Repository<TestRecord>
-  let storageMock: IndyStorageService<TestRecord>
+  let storageMock: StorageService<TestRecord>
   let agentContext: AgentContext
   let eventEmitter: EventEmitter
 

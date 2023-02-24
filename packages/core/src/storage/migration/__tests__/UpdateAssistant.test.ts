@@ -1,6 +1,9 @@
 import type { BaseRecord } from '../../BaseRecord'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { IndySdkSymbol } from '../../../../../indy-sdk/src/types'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -8,7 +11,7 @@ import { DependencyManager } from '../../../plugins'
 import { UpdateAssistant } from '../UpdateAssistant'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION } from '../updates'
 
-const agentOptions = getAgentOptions('UpdateAssistant')
+const agentOptions = getAgentOptions('UpdateAssistant', {})
 
 describe('UpdateAssistant', () => {
   let updateAssistant: UpdateAssistant
@@ -18,6 +21,9 @@ describe('UpdateAssistant', () => {
   beforeEach(async () => {
     const dependencyManager = new DependencyManager()
     storageService = new InMemoryStorageService()
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 
     agent = new Agent(agentOptions, dependencyManager)

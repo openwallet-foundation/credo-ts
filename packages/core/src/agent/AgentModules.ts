@@ -10,8 +10,6 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
-import { IndyModule } from '../modules/indy'
-import { LedgerModule } from '../modules/ledger'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
 import { MediatorModule, RecipientModule } from '../modules/routing'
@@ -149,16 +147,10 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
       }),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
-    ledger: () =>
-      new LedgerModule({
-        connectToIndyLedgersOnStartup: agentConfig.connectToIndyLedgersOnStartup,
-        indyLedgers: agentConfig.indyLedgers,
-      }),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
-    indy: () => new IndyModule(),
     w3cVc: () => new W3cVcModule(),
     cache: () => new CacheModule(),
   } as const

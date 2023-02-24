@@ -1,8 +1,8 @@
+import type { RegisterCredentialDefinitionReturnStateFinished } from '../../packages/anoncreds/src'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
-import type { CredDef, Schema } from 'indy-sdk'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { utils, V1CredentialPreview, ConnectionEventTypes } from '@aries-framework/core'
+import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -10,17 +10,36 @@ import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export class Faber extends BaseAgent {
   public outOfBandId?: string
-  public credentialDefinition?: CredDef
+  public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
+  public anonCredsIssuerId?: string
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super(port, name)
+    super({ port, name, useLegacyIndySdk: true })
     this.ui = new ui.BottomBar()
   }
 
   public static async build(): Promise<Faber> {
     const faber = new Faber(9001, 'faber')
     await faber.initializeAgent()
+
+    // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
+    // and store the existing did in the wallet
+    const privateKey = TypedArrayEncoder.fromString('afjdemoverysercure00000000000000')
+
+    const key = await faber.agent.wallet.createKey({
+      keyType: KeyType.Ed25519,
+      privateKey,
+    })
+
+    // did is first 16 bytes of public key encoded as base58
+    const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
+    await faber.agent.dids.import({
+      did: `did:sov:${unqualifiedIndyDid}`,
+    })
+
+    faber.anonCredsIssuerId = unqualifiedIndyDid
+
     return faber
   }
 
@@ -102,42 +121,67 @@ export class Faber extends BaseAgent {
   }
 
   private async registerSchema() {
+    if (!this.anonCredsIssuerId) {
+      throw new Error(redText('Missing anoncreds issuerId'))
+    }
     const schemaTemplate = {
       name: 'Faber College' + utils.uuid(),
       version: '1.0.0',
-      attributes: ['name', 'degree', 'date'],
+      attrNames: ['name', 'degree', 'date'],
+      issuerId: this.anonCredsIssuerId,
     }
-    this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attributes)
+    this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
-    const schema = await this.agent.ledger.registerSchema(schemaTemplate)
+
+    const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
+      schema: schemaTemplate,
+      options: {
+        didIndyNamespace: 'bcovrin:test',
+      },
+    })
+
+    if (schemaState.state !== 'finished') {
+      throw new Error(
+        `Error registering schema: ${schemaState.state === 'failed' ? schemaState.reason : 'Not Finished'}`
+      )
+    }
     this.ui.updateBottomBar('\nSchema registered!\n')
-    return schema
+    return schemaState
   }
 
-  private async registerCredentialDefinition(schema: Schema) {
+  private async registerCredentialDefinition(schemaId: string) {
+    if (!this.anonCredsIssuerId) {
+      throw new Error(redText('Missing anoncreds issuerId'))
+    }
+
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
-    this.credentialDefinition = await this.agent.ledger.registerCredentialDefinition({
-      schema,
-      tag: 'latest',
-      supportRevocation: false,
+    const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
+      credentialDefinition: {
+        schemaId,
+        issuerId: this.anonCredsIssuerId,
+        tag: 'latest',
+      },
+      options: {
+        didIndyNamespace: 'bcovrin:test',
+      },
     })
+
+    if (credentialDefinitionState.state !== 'finished') {
+      throw new Error(
+        `Error registering credential definition: ${
+          credentialDefinitionState.state === 'failed' ? credentialDefinitionState.reason : 'Not Finished'
+        }}`
+      )
+    }
+
+    this.credentialDefinition = credentialDefinitionState
     this.ui.updateBottomBar('\nCredential definition registered!!\n')
     return this.credentialDefinition
   }
 
-  private getCredentialPreview() {
-    const credentialPreview = V1CredentialPreview.fromRecord({
-      name: 'Alice Smith',
-      degree: 'Computer Science',
-      date: '01/01/2022',
-    })
-    return credentialPreview
-  }
-
   public async issueCredential() {
     const schema = await this.registerSchema()
-    const credDef = await this.registerCredentialDefinition(schema)
-    const credentialPreview = this.getCredentialPreview()
+    const credentialDefinition = await this.registerCredentialDefinition(schema.schemaId)
     const connectionRecord = await this.getConnectionRecord()
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
@@ -147,8 +191,21 @@ export class Faber extends BaseAgent {
       protocolVersion: 'v1',
       credentialFormats: {
         indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: credDef.id,
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice Smith',
+            },
+            {
+              name: 'degree',
+              value: 'Computer Science',
+            },
+            {
+              name: 'date',
+              value: '01/01/2022',
+            },
+          ],
+          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         },
       },
     })
@@ -169,7 +226,7 @@ export class Faber extends BaseAgent {
         name: 'name',
         restrictions: [
           {
-            credentialDefinitionId: this.credentialDefinition?.id,
+            cred_def_id: this.credentialDefinition?.credentialDefinitionId,
           },
         ],
       },
@@ -190,7 +247,7 @@ export class Faber extends BaseAgent {
         indy: {
           name: 'proof-request',
           version: '1.0',
-          requestedAttributes: proofAttribute,
+          requested_attributes: proofAttribute,
         },
       },
     })

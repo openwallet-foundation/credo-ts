@@ -1,42 +1,44 @@
 import type {
+  Buffer,
   EncryptedMessage,
   KeyDerivationMethod,
-  WalletConfig,
-  Buffer,
-  WalletCreateKeyOptions,
-  DidConfig,
-  DidInfo,
-  WalletSignOptions,
-  UnpackedMessageContext,
-  WalletVerifyOptions,
-  Wallet,
   KeyPair,
-  WalletExportImportConfig,
+  UnpackedMessageContext,
+  Wallet,
+  WalletConfig,
   WalletConfigRekey,
+  WalletCreateKeyOptions,
+  WalletExportImportConfig,
+  WalletSignOptions,
+  WalletVerifyOptions,
 } from '@aries-framework/core'
-import type { WalletStorageConfig, WalletConfig as IndySdkWalletConfig, OpenWalletCredentials } from 'indy-sdk'
+import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, WalletStorageConfig } from 'indy-sdk'
+
+// eslint-disable-next-line import/order
+import {
+  AriesFrameworkError,
+  InjectionSymbols,
+  isValidPrivateKey,
+  isValidSeed,
+  JsonEncoder,
+  Key,
+  KeyType,
+  Logger,
+  RecordNotFoundError,
+  SigningProviderRegistry,
+  TypedArrayEncoder,
+  WalletDuplicateError,
+  WalletError,
+  WalletInvalidKeyError,
+  WalletKeyExistsError,
+  WalletNotFoundError,
+} from '@aries-framework/core'
 
 const isError = (error: unknown): error is Error => error instanceof Error
 
-import {
-  AriesFrameworkError,
-  RecordDuplicateError,
-  RecordNotFoundError,
-  Logger,
-  JsonEncoder,
-  WalletDuplicateError,
-  WalletError,
-  WalletNotFoundError,
-  WalletInvalidKeyError,
-  InjectionSymbols,
-  KeyType,
-  Key,
-  SigningProviderRegistry,
-  TypedArrayEncoder,
-} from '@aries-framework/core'
 import { inject, injectable } from 'tsyringe'
 
-import { isIndyError, IndySdkError } from '../error'
+import { IndySdkError, isIndyError } from '../error'
 import { IndySdk, IndySdkSymbol } from '../types'
 
 @injectable()
@@ -46,7 +48,6 @@ export class IndySdkWallet implements Wallet {
 
   private logger: Logger
   private signingKeyProviderRegistry: SigningProviderRegistry
-  private publicDidInfo: DidInfo | undefined
   private indySdk: IndySdk
 
   public constructor(
@@ -67,10 +68,6 @@ export class IndySdkWallet implements Wallet {
     return this.walletHandle !== undefined
   }
 
-  public get publicDid() {
-    return this.publicDidInfo
-  }
-
   public get handle() {
     if (!this.walletHandle) {
       throw new AriesFrameworkError(
@@ -79,16 +76,6 @@ export class IndySdkWallet implements Wallet {
     }
 
     return this.walletHandle
-  }
-
-  public get masterSecretId() {
-    if (!this.isInitialized || !(this.walletConfig?.id || this.walletConfig?.masterSecretId)) {
-      throw new AriesFrameworkError(
-        'Wallet has not been initialized yet. Make sure to await agent.initialize() before using the agent.'
-      )
-    }
-
-    return this.walletConfig?.masterSecretId ?? this.walletConfig.id
   }
 
   /**
@@ -155,15 +142,8 @@ export class IndySdkWallet implements Wallet {
       await this.indySdk.createWallet(this.walletStorageConfig(walletConfig), this.walletCredentials(walletConfig))
       this.walletConfig = walletConfig
 
-      // We usually want to create master secret only once, therefore, we can to do so when creating a wallet.
       await this.open(walletConfig)
-
-      // We need to open wallet before creating master secret because we need wallet handle here.
-      await this.createMasterSecret(this.handle, this.masterSecretId)
     } catch (error) {
-      // If an error ocurred while creating the master secret, we should close the wallet
-      if (this.isInitialized) await this.close()
-
       if (isIndyError(error, 'WalletAlreadyExistsError')) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
@@ -370,7 +350,6 @@ export class IndySdkWallet implements Wallet {
     try {
       await this.indySdk.closeWallet(this.walletHandle)
       this.walletHandle = undefined
-      this.publicDidInfo = undefined
     } catch (error) {
       if (isIndyError(error, 'WalletInvalidHandle')) {
         const errorMessage = `Error closing wallet: wallet already closed`
@@ -395,107 +374,70 @@ export class IndySdkWallet implements Wallet {
   }
 
   /**
-   * Create master secret with specified id in currently opened wallet.
-   *
-   * If a master secret by this id already exists in the current wallet, the method
-   * will return without doing anything.
-   *
-   * @throws {WalletError} if an error occurs
-   */
-  private async createMasterSecret(walletHandle: number, masterSecretId: string): Promise<string> {
-    this.logger.debug(`Creating master secret with id '${masterSecretId}' in wallet with handle '${walletHandle}'`)
-
-    try {
-      await this.indySdk.proverCreateMasterSecret(walletHandle, masterSecretId)
-
-      return masterSecretId
-    } catch (error) {
-      if (isIndyError(error, 'AnoncredsMasterSecretDuplicateNameError')) {
-        // master secret id is the same as the master secret id passed in the create function
-        // so if it already exists we can just assign it.
-        this.logger.debug(
-          `Master secret with id '${masterSecretId}' already exists in wallet with handle '${walletHandle}'`,
-          {
-            indyError: 'AnoncredsMasterSecretDuplicateNameError',
-          }
-        )
-
-        return masterSecretId
-      } else {
-        if (!isIndyError(error)) {
-          throw new AriesFrameworkError('Attempted to throw Indy error, but it was not an Indy error')
-        }
-
-        this.logger.error(`Error creating master secret with id ${masterSecretId}`, {
-          indyError: error.indyName,
-          error,
-        })
-
-        throw new WalletError(
-          `Error creating master secret with id ${masterSecretId} in wallet with handle '${walletHandle}'`,
-          { cause: error }
-        )
-      }
-    }
-  }
-
-  public async initPublicDid(didConfig: DidConfig) {
-    const { did, verkey } = await this.createDid(didConfig)
-    this.publicDidInfo = {
-      did,
-      verkey,
-    }
-  }
-
-  public async createDid(didConfig?: DidConfig): Promise<DidInfo> {
-    try {
-      const [did, verkey] = await this.indySdk.createAndStoreMyDid(this.handle, didConfig || {})
-
-      return { did, verkey }
-    } catch (error) {
-      if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
-      }
-      throw new WalletError('Error creating Did', { cause: error })
-    }
-  }
-
-  /**
-   * Create a key with an optional seed and keyType.
+   * Create a key with an optional private key and keyType.
    * The keypair is also automatically stored in the wallet afterwards
    *
    * Bls12381g1g2 and X25519 are not supported.
-   *
-   * @param seed string The seed for creating a key
-   * @param keyType KeyType the type of key that should be created
-   *
-   * @returns a Key instance with a publicKeyBase58
-   *
-   * @throws {WalletError} When an unsupported keytype is requested
-   * @throws {WalletError} When the key could not be created
    */
-  public async createKey({ seed, keyType }: WalletCreateKeyOptions): Promise<Key> {
+  public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
+      if (seed && privateKey) {
+        throw new WalletError('Only one of seed and privateKey can be set')
+      }
+
+      if (seed && !isValidSeed(seed, keyType)) {
+        throw new WalletError('Invalid seed provided')
+      }
+
+      if (privateKey && !isValidPrivateKey(privateKey, keyType)) {
+        throw new WalletError('Invalid private key provided')
+      }
+
       // Ed25519 is supported natively in Indy wallet
       if (keyType === KeyType.Ed25519) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        const verkey = await this.indySdk.createKey(this.handle, { seed, crypto_type: 'ed25519' })
-        return Key.fromPublicKeyBase58(verkey, keyType)
+        if (seed) {
+          throw new WalletError(
+            'IndySdkWallet does not support seed. You may rather want to specify a private key for deterministic ed25519 key generation'
+          )
+        }
+        try {
+          const verkey = await this.indySdk.createKey(this.handle, {
+            seed: privateKey?.toString(),
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            //@ts-ignore
+            crypto_type: 'ed25519',
+          })
+
+          return Key.fromPublicKeyBase58(verkey, keyType)
+        } catch (error) {
+          // Handle case where key already exists
+          if (isIndyError(error, 'WalletItemAlreadyExists')) {
+            throw new WalletKeyExistsError('Key already exists')
+          }
+
+          // Otherwise re-throw error
+          throw error
+        }
       }
 
       // Check if there is a signing key provider for the specified key type.
       if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
         const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
-        const keyPair = await signingKeyProvider.createKeyPair({ seed })
+        const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
         return Key.fromPublicKeyBase58(keyPair.publicKeyBase58, keyType)
       }
     } catch (error) {
+      // If already instance of `WalletError`, re-throw
+      if (error instanceof WalletError) throw error
+
       if (!isError(error)) {
-        throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
+        throw new AriesFrameworkError(`Attempted to throw error, but it was not of type Error: ${error}`, {
+          cause: error,
+        })
       }
+
       throw new WalletError(`Error creating key with key type '${keyType}': ${error.message}`, { cause: error })
     }
 
@@ -670,7 +612,7 @@ export class IndySdkWallet implements Wallet {
       )
     } catch (error) {
       if (isIndyError(error, 'WalletItemAlreadyExists')) {
-        throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
+        throw new WalletKeyExistsError('Key already exists')
       }
       throw isIndyError(error) ? new IndySdkError(error) : error
     }

@@ -7,6 +7,9 @@ import type {
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type { ProofFormat } from '@aries-framework/core'
 
+// TODO: Custom restrictions to remove `_id` from restrictions?
+export type LegacyIndyProofRequest = AnonCredsProofRequest
+
 export interface LegacyIndyProofFormat extends ProofFormat {
   formatKey: 'indy'
 
@@ -30,9 +33,8 @@ export interface LegacyIndyProofFormat extends ProofFormat {
   }
 
   formatData: {
-    // TODO: Custom restrictions to remove `_id` from restrictions?
-    proposal: AnonCredsProofRequest
-    request: AnonCredsProofRequest
+    proposal: LegacyIndyProofRequest
+    request: LegacyIndyProofRequest
     presentation: AnonCredsProof
   }
 }

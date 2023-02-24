@@ -52,7 +52,6 @@ describe('AgentConfig', () => {
       const agentConfig = new AgentConfig(
         {
           label: 'hello',
-          publicDidSeed: 'hello',
         },
         agentDependencies
       )
@@ -61,7 +60,6 @@ describe('AgentConfig', () => {
 
       expect(newAgentConfig).toMatchObject({
         label: 'hello',
-        publicDidSeed: 'hello',
       })
     })
 
@@ -69,7 +67,6 @@ describe('AgentConfig', () => {
       const agentConfig = new AgentConfig(
         {
           label: 'hello',
-          publicDidSeed: 'hello',
         },
         agentDependencies
       )
@@ -82,7 +79,6 @@ describe('AgentConfig', () => {
       expect(newAgentConfig).toMatchObject({
         label: 'anotherLabel',
         autoAcceptConnections: true,
-        publicDidSeed: 'hello',
       })
     })
   })

@@ -4,8 +4,10 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
+import { indySdk } from '../../../packages/core/tests'
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
 import testLogger from '../../../packages/core/tests/logger'
+import { IndySdkModule } from '../../../packages/indy-sdk/src'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DummyModule } from '../dummy/DummyModule'
@@ -13,14 +15,17 @@ import { DummyState } from '../dummy/repository'
 
 import { waitForDummyRecord } from './helpers'
 
+const modules = {
+  dummy: new DummyModule(),
+  indySdk: new IndySdkModule({ indySdk }),
+}
+
 const bobAgentOptions = getAgentOptions(
   'Bob Dummy',
   {
     endpoints: ['rxjs:bob'],
   },
-  {
-    dummy: new DummyModule(),
-  }
+  modules
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -28,18 +33,12 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  {
-    dummy: new DummyModule(),
-  }
+  modules
 )
 
 describe('Dummy extension module test', () => {
-  let bobAgent: Agent<{
-    dummy: DummyModule
-  }>
-  let aliceAgent: Agent<{
-    dummy: DummyModule
-  }>
+  let bobAgent: Agent<typeof modules>
+  let aliceAgent: Agent<typeof modules>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
