@@ -1,1 +1,1 @@
-export { CheqdSdkAnonCredsRegistry } from './services/CheqdSdkAnonCredsRegistry'
+export { CheqdAnonCredsRegistry } from './services/CheqdAnonCredsRegistry'

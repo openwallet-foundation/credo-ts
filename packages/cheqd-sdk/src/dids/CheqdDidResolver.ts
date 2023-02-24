@@ -2,9 +2,6 @@ import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
 import type { AgentContext, DidDocument, DidResolutionResult, DidResolver, ParsedDid } from '@aries-framework/core'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
-import { JsonEncoder } from '@aries-framework/core'
-import { toString } from 'uint8arrays'
-
 import {
   cheqdDidMetadataRegex,
   cheqdDidRegex,
@@ -14,7 +11,9 @@ import {
   cheqdResourceRegex,
   parseCheqdDid,
 } from '../anoncreds/utils/identifiers'
-import { CheqdSdkLedgerService } from '../ledger'
+import { CheqdLedgerService } from '../ledger'
+
+import { filterResourcesByNameAndType, getClosestResourceVersion, renderResourceData } from './didCheqdUtil'
 
 export class CheqdDidResolver implements DidResolver {
   public readonly supportedMethods = ['cheqd']
@@ -30,17 +29,17 @@ export class CheqdDidResolver implements DidResolver {
 
       switch (did) {
         case did.match(cheqdDidRegex)?.input:
-          return await this.Resolve(agentContext, parsedDid.did)
+          return await this.resovleDidDoc(agentContext, parsedDid.did)
         case did.match(cheqdDidVersionRegex)?.input: {
-          const version = did.match(cheqdDidVersionRegex)![7]
-          return await this.Resolve(agentContext, parsedDid.did, version)
+          const version = did.split('/')[2]
+          return await this.resovleDidDoc(agentContext, parsedDid.did, version)
         }
         case did.match(cheqdDidVersionsRegex)?.input:
-          return await this.ResolveAllDidDocVersions(agentContext, parsedDid)
+          return await this.resolveAllDidDocVersions(agentContext, parsedDid)
         case did.match(cheqdDidMetadataRegex)?.input:
-          return await this.DereferenceCollectionResources(agentContext, parsedDid)
+          return await this.dereferenceCollectionResources(agentContext, parsedDid)
         case did.match(cheqdResourceMetadataRegex)?.input:
-          return await this.DereferenceResourceMetadata(agentContext, parsedDid)
+          return await this.dereferenceResourceMetadata(agentContext, parsedDid)
         default:
           return {
             didDocument: null,
@@ -64,24 +63,20 @@ export class CheqdDidResolver implements DidResolver {
   }
 
   public async resolveResource(agentContext: AgentContext, did: string): Promise<any> {
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     try {
       const parsedDid = parseCheqdDid(did)
       if (!parsedDid) {
         throw new Error('Invalid DID')
       }
 
-      const { id, params, network } = parsedDid
-      await cheqdSdkLedgerService.connect({ network })
-
+      const { params, id } = parsedDid
       let resourceId: string
       if (did.match(cheqdResourceRegex)?.input) {
         resourceId = did.split('/')[2]
       } else if (params && params.resourceName && params.resourceType) {
-        let resources = (await cheqdSdkLedgerService.resolveCollectionResources(id)).resources
-        resources = resources.filter(
-          (resource) => resource.name == params.resourceName && resource.resourceType == params.resourceType
-        )
+        let resources = (await cheqdLedgerService.resolveCollectionResources(parsedDid.did, id)).resources
+        resources = filterResourcesByNameAndType(resources, params.resourceName, params.resourceType)
         if (!resources.length) {
           throw new Error(`No resources found`)
         }
@@ -91,13 +86,8 @@ export class CheqdDidResolver implements DidResolver {
           resource = resources.find((resource) => resource.version == params.version)
         } else {
           const date = params.time ? new Date(params.time) : new Date()
-          // find the resourceId to the created time
-          resources.sort(function (a, b) {
-            const distancea = Math.abs(date.getTime() - a.created!.getTime())
-            const distanceb = Math.abs(date.getTime() - b.created!.getTime())
-            return distancea - distanceb
-          })
-          resource = resources[0]
+          // find the resourceId closest to the created time
+          resource = getClosestResourceVersion(resources, date)
         }
 
         if (!resource) {
@@ -112,21 +102,12 @@ export class CheqdDidResolver implements DidResolver {
         }
       }
 
-      const { resource, metadata } = await cheqdSdkLedgerService.resolveResource(id, resourceId)
+      const { resource, metadata } = await cheqdLedgerService.resolveResource(parsedDid.did, id, resourceId)
       if (!resource || !metadata) {
         throw new Error('Please try again, Internal error')
       }
 
-      const mimeType = metadata.mediaType
-      let result: any
-      if (mimeType == 'application/json') {
-        result = await JsonEncoder.fromBuffer(resource.data)
-      } else if (mimeType == 'text/plain') {
-        result = toString(resource.data)
-      } else {
-        result = toString(resource.data, 'base64')
-      }
-
+      const result = await renderResourceData(resource.data, metadata.mediaType)
       return {
         resource: result,
         resourceMetadata: metadata,
@@ -140,12 +121,11 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  private async ResolveAllDidDocVersions(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
-    const { did, network } = parsedDid
+  private async resolveAllDidDocVersions(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
+    const { did } = parsedDid
 
-    await cheqdSdkLedgerService.connect({ network })
-    const { didDocumentVersionsMetadata } = await cheqdSdkLedgerService.resolveMetadata(did)
+    const { didDocumentVersionsMetadata } = await cheqdLedgerService.resolveMetadata(did)
     return {
       didDocument: { id: did } as DidDocument,
       didDocumentMetadata: didDocumentVersionsMetadata,
@@ -153,12 +133,11 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  private async DereferenceCollectionResources(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
-    const { did, network } = parsedDid
+  private async dereferenceCollectionResources(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
+    const { did, id } = parsedDid
 
-    await cheqdSdkLedgerService.connect({ network })
-    const metadata = await cheqdSdkLedgerService.resolveCollectionResources(did)
+    const metadata = await cheqdLedgerService.resolveCollectionResources(did, id)
     return {
       didDocument: { id: did } as DidDocument,
       didDocumentMetadata: {
@@ -168,14 +147,13 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  private async DereferenceResourceMetadata(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
-    const { did, network } = parsedDid
+  private async dereferenceResourceMetadata(agentContext: AgentContext, parsedDid: ParsedCheqdDid) {
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
+    const { did, id } = parsedDid
 
     const resourceId = parsedDid.path!.split('/')[2]
 
-    await cheqdSdkLedgerService.connect({ network })
-    const metadata = await cheqdSdkLedgerService.resolveResourceMetadata(did, resourceId)
+    const metadata = await cheqdLedgerService.resolveResourceMetadata(did, id, resourceId)
     return {
       didDocument: { id: did } as DidDocument,
       didDocumentMetadata: {
@@ -185,12 +163,11 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  private async Resolve(agentContext: AgentContext, did: string, version?: string): Promise<DidResolutionResult> {
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
+  private async resovleDidDoc(agentContext: AgentContext, did: string, version?: string): Promise<DidResolutionResult> {
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
-    await cheqdSdkLedgerService.connect({ network: did.split(':')[2] })
-    const { didDocument, didDocumentMetadata } = await cheqdSdkLedgerService.resolve(did, version)
-    const { resources } = await cheqdSdkLedgerService.resolveCollectionResources(did)
+    const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did, version)
+    const { resources } = await cheqdLedgerService.resolveCollectionResources(did, did.split(':')[3])
     didDocumentMetadata.linkedResourceMetadata = resources
 
     return {

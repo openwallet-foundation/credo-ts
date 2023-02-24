@@ -2,8 +2,7 @@
   "name": "@aries-framework/cheqd-sdk",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.3.3",
   "files": [
     "build"
   ],
@@ -33,16 +32,14 @@
     "class-validator": "^0.14.0",
     "rxjs": "^7.2.0",
     "tsyringe": "^4.7.0",
-    "uint8arrays": "*"
+    "@cosmjs/proto-signing": "^0.29.5",
+    "@cosmjs/crypto": "^0.29.5",
+    "@stablelib/ed25519": "^1.0.3"
   },
   "devDependencies": {
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4",
     "@aries-framework/indy-sdk": "*",
-    "@types/indy-sdk": "*",
-    "@cheqd/ts-proto": "*",
-    "@cosmjs/proto-signing": "*",
-    "@cosmjs/crypto": "*",
-    "@types/uuid": "*"
+    "@types/indy-sdk": "*"
   }
 }

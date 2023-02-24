@@ -8,10 +8,10 @@ export {
 } from './dids'
 
 // AnonCreds
-export { CheqdSdkAnonCredsRegistry } from './anoncreds'
+export { CheqdAnonCredsRegistry } from './anoncreds'
 
-export { CheqdSdkLedgerService } from './ledger'
+export { CheqdLedgerService } from './ledger'
 
-export { CheqdSdkModule } from './CheqdSdkModule'
+export { CheqdModule } from './CheqdModule'
 
-export { CheqdSdkModuleConfig, CheqdSdkModuleConfigOptions } from './CheqdSdkModuleConfig'
+export { CheqdModuleConfig, CheqdModuleConfigOptions } from './CheqdModuleConfig'

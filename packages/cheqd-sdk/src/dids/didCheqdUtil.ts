@@ -1,6 +1,8 @@
 import type { DidDocument } from '@aries-framework/core'
 import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
+import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
+import { JsonEncoder, TypedArrayEncoder } from '@aries-framework/core'
 import {
   createDidPayload,
   createDidVerificationMethod,
@@ -9,7 +11,8 @@ import {
   VerificationMethods,
 } from '@cheqd/sdk'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
-import { bases } from 'multiformats/basics'
+import { EnglishMnemonic as _ } from '@cosmjs/crypto'
+import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 
 export function validateSpecCompliantPayload(didDocument: DidDocument): SpecValidationResult {
   // id is required, validated on both compile and runtime
@@ -52,7 +55,7 @@ export function validateSpecCompliantPayload(didDocument: DidDocument): SpecVali
 }
 
 // Create helpers in sdk like MsgCreateDidDocPayload.fromDIDDocument to replace the below
-export async function MsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string) {
+export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string) {
   const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
   return MsgCreateDidDocPayload.encode(
     MsgCreateDidDocPayload.fromPartial({
@@ -72,7 +75,7 @@ export async function MsgCreateDidDocPayloadToSign(didPayload: DIDDocument, vers
   ).finish()
 }
 
-export function MsgDeactivateDidDocPayloadToSign(didPayload: DIDDocument, versionId?: string) {
+export function createMsgDeactivateDidDocPayloadToSign(didPayload: DIDDocument, versionId?: string) {
   return MsgDeactivateDidDocPayload.encode(
     MsgDeactivateDidDocPayload.fromPartial({
       id: didPayload.id,
@@ -89,9 +92,12 @@ export type SpecValidationResult = {
 export function generateDidDoc(options: IDidDocOptions) {
   const { verificationMethod, methodSpecificIdAlgo, verificationMethodId, network, publicKey } = options
   const verificationKeys = createVerificationKeys(publicKey, methodSpecificIdAlgo, verificationMethodId, network)
+  if (!verificationKeys) {
+    throw new Error('Invalid DID options')
+  }
   const verificationMethods = createDidVerificationMethod([verificationMethod], [verificationKeys])
 
-  return createDidPayload(verificationMethods, [verificationKeys])
+  return createDidPayload(verificationMethods, [verificationKeys]) as DidDocument
 }
 
 export interface IDidDocOptions {
@@ -102,9 +108,38 @@ export interface IDidDocOptions {
   publicKey: string
 }
 
-const MULTICODEC_ED25519_HEADER = new Uint8Array([0xed, 0x01])
+export function getClosestResourceVersion(resources: Metadata[], date: Date) {
+  const result = resources.sort(function (a, b) {
+    const distancea = Math.abs(date.getTime() - a.created!.getTime())
+    const distanceb = Math.abs(date.getTime() - b.created!.getTime())
+    return distancea - distanceb
+  })
+  return result[0]
+}
 
-export function fromMultibase(key: string): Uint8Array {
-  const result = bases['base58btc'].decode(key)
-  return result.slice(MULTICODEC_ED25519_HEADER.length)
+export function filterResourcesByNameAndType(resources: Metadata[], name: string, type: string) {
+  return resources.filter((resource) => resource.name == name && resource.resourceType == type)
+}
+
+export async function renderResourceData(data: Uint8Array, mimeType: string) {
+  if (mimeType == 'application/json') {
+    return await JsonEncoder.fromBuffer(data)
+  } else if (mimeType == 'text/plain') {
+    return TypedArrayEncoder.toUtf8String(data)
+  } else {
+    return TypedArrayEncoder.toBase64URL(data)
+  }
+}
+
+export class EnglishMnemonic extends _ {
+  public static readonly _mnemonicMatcher = /^[a-z]+( [a-z]+)*$/
+}
+
+export function getCosmosPayerWallet(cosmosPayerSeed?: string) {
+  if (!cosmosPayerSeed || cosmosPayerSeed === '') {
+    return DirectSecp256k1HdWallet.generate()
+  }
+  return EnglishMnemonic._mnemonicMatcher.test(cosmosPayerSeed)
+    ? DirectSecp256k1HdWallet.fromMnemonic(cosmosPayerSeed, { prefix: 'cheqd' })
+    : DirectSecp256k1Wallet.fromKey(TypedArrayEncoder.fromString(cosmosPayerSeed.replace(/^0x/, '')), 'cheqd')
 }

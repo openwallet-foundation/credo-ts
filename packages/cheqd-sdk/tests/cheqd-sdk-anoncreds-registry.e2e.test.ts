@@ -1,26 +1,23 @@
-import type { CheqdDidCreateOptions } from '../src/dids'
-
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
-import { CheqdNetwork, MethodSpecificIdAlgo, VerificationMethods } from '@cheqd/sdk'
 
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
-import { CheqdSdkAnonCredsRegistry } from '../src/anoncreds'
+import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
-import { getCheqdSdkModules } from './setupCheqdSdkModule'
+import { getCheqdModules } from './setupCheqdModule'
 
-const agentConfig = getAgentConfig('cheqdSdkAnonCredsRegistry')
+const agentConfig = getAgentConfig('cheqdAnonCredsRegistry')
 
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
-  modules: getCheqdSdkModules(),
+  modules: getCheqdModules(),
 })
 
-const cheqdSdkAnonCredsRegistry = new CheqdSdkAnonCredsRegistry()
+const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 
 let issuerId: string
 
-describe('CheqdSdkAnonCredsRegistry', () => {
+describe('cheqdAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
   })
@@ -34,18 +31,18 @@ describe('CheqdSdkAnonCredsRegistry', () => {
   test('register and resolve a schema and credential definition', async () => {
     const privateKey = TypedArrayEncoder.fromString('000000000000000000000000000cheqd')
 
-    const did = await agent.dids.create<CheqdDidCreateOptions>({
+    const did = await agent.dids.create({
       method: 'cheqd',
       secret: {
         verificationMethod: {
-          id: 'key-1',
-          type: VerificationMethods.Ed255192018,
+          id: 'key-10',
+          type: 'Ed25519VerificationKey2020',
           privateKey,
         },
       },
       options: {
-        network: CheqdNetwork.Testnet,
-        methodSpecificIdAlgo: MethodSpecificIdAlgo.Uuid,
+        network: 'testnet',
+        methodSpecificIdAlgo: 'uuid',
       },
     })
     expect(did.didState).toMatchObject({ state: 'finished' })
@@ -53,7 +50,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
 
     const dynamicVersion = `1.${Math.random() * 100}`
 
-    const schemaResult = await cheqdSdkAnonCredsRegistry.registerSchema(agent.context, {
+    const schemaResult = await cheqdAnonCredsRegistry.registerSchema(agent.context, {
       schema: {
         attrNames: ['name'],
         issuerId,
@@ -78,11 +75,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
       schemaMetadata: {},
     })
 
-    const schemaResponse = await cheqdSdkAnonCredsRegistry.getSchema(
-      agent.context,
-      `${schemaResult.schemaState.schemaId}`
-    )
-
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, `${schemaResult.schemaState.schemaId}`)
     expect(schemaResponse).toMatchObject({
       schema: {
         attrNames: ['name'],
@@ -95,7 +88,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
       schemaMetadata: {},
     })
 
-    const credentialDefinitionResult = await cheqdSdkAnonCredsRegistry.registerCredentialDefinition(agent.context, {
+    const credentialDefinitionResult = await cheqdAnonCredsRegistry.registerCredentialDefinition(agent.context, {
       credentialDefinition: {
         issuerId,
         tag: 'TAG',
@@ -146,7 +139,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
       },
     })
 
-    const credentialDefinitionResponse = await cheqdSdkAnonCredsRegistry.getCredentialDefinition(
+    const credentialDefinitionResponse = await cheqdAnonCredsRegistry.getCredentialDefinition(
       agent.context,
       credentialDefinitionResult.credentialDefinitionState.credentialDefinitionId as string
     )
@@ -180,7 +173,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
   test('false test cases', async () => {
     const invalidSchemaResourceId =
       'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c/resources/ffd001c2-1f80-4cd8-84b2-945fba309457'
-    const schemaResponse = await cheqdSdkAnonCredsRegistry.getSchema(agent.context, `${invalidSchemaResourceId}`)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, `${invalidSchemaResourceId}`)
 
     expect(schemaResponse).toMatchObject({
       resolutionMetadata: {
@@ -194,7 +187,7 @@ describe('CheqdSdkAnonCredsRegistry', () => {
   test('resolve query based url', async () => {
     const invalidSchemaResourceId =
       'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdSdkAnonCredsRegistry.getSchema(agent.context, `${invalidSchemaResourceId}`)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, `${invalidSchemaResourceId}`)
 
     expect(schemaResponse).toMatchObject({
       schema: {

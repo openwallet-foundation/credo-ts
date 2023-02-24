@@ -1,9 +1,5 @@
 import type { ParsedDid } from '@aries-framework/core'
 
-/**
- * Extract did from resource url
- */
-
 const UUID = '([a-z,0-9,-]{36,36})'
 const ID_CHAR = `(?:[a-zA-Z0-9]{21,22}|${UUID})`
 const NETWORK = '(testnet|mainnet)'

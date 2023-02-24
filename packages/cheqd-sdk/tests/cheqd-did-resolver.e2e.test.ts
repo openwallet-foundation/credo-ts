@@ -2,9 +2,9 @@ import { Agent, JsonTransformer } from '@aries-framework/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 
-import { getCheqdSdkModules } from './setupCheqdSdkModule'
+import { getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(getAgentOptions('Indy SDK Sov DID resolver', {}, getCheqdSdkModules()))
+const agent = new Agent(getAgentOptions('Indy SDK Sov DID resolver', {}, getCheqdModules()))
 
 describe('Cheqd DID resolver', () => {
   beforeAll(async () => {

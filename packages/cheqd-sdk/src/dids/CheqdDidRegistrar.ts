@@ -20,20 +20,19 @@ import {
   Key,
   Buffer,
   isValidPrivateKey,
+  utils,
+  TypedArrayEncoder,
 } from '@aries-framework/core'
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
-import { fromString, toString } from 'uint8arrays'
-import { v4 } from 'uuid'
 
-import { CheqdSdkLedgerService } from '../ledger'
+import { CheqdLedgerService } from '../ledger'
 
 import {
-  MsgCreateDidDocPayloadToSign,
+  createMsgCreateDidDocPayloadToSign,
   generateDidDoc,
   validateSpecCompliantPayload,
-  fromMultibase,
-  MsgDeactivateDidDocPayloadToSign,
+  createMsgDeactivateDidDocPayloadToSign,
 } from './didCheqdUtil'
 
 export class CheqdDidRegistrar implements DidRegistrar {
@@ -41,57 +40,54 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
-    const { methodSpecificIdAlgo, network, versionId = v4() } = options.options
+    const { methodSpecificIdAlgo, network, versionId = utils.uuid() } = options.options
     const { verificationMethod } = options.secret
     let didDocument: DidDocument
 
-    if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
-      didDocument = options.didDocument
-    } else if (verificationMethod) {
-      const privateKey = verificationMethod.privateKey
-      if (privateKey && !isValidPrivateKey(privateKey, KeyType.Ed25519)) {
+    try {
+      if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
+        didDocument = options.didDocument
+      } else if (verificationMethod) {
+        const privateKey = verificationMethod.privateKey
+        if (privateKey && !isValidPrivateKey(privateKey, KeyType.Ed25519)) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: 'Invalid private key provided',
+            },
+          }
+        }
+
+        const key = await agentContext.wallet.createKey({
+          keyType: KeyType.Ed25519,
+          privateKey: privateKey,
+        })
+        didDocument = generateDidDoc({
+          verificationMethod: verificationMethod.type,
+          verificationMethodId: verificationMethod.id || 'key-1',
+          methodSpecificIdAlgo: methodSpecificIdAlgo || MethodSpecificIdAlgo.Uuid,
+          network,
+          publicKey: TypedArrayEncoder.toHex(key.publicKey),
+        }) as DidDocument
+      } else {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Invalid private key provided',
+            reason: 'Provide a didDocument or atleast one verificationMethod with seed in secret',
           },
         }
       }
 
-      const key = await agentContext.wallet.createKey({
-        keyType: KeyType.Ed25519,
-        privateKey: privateKey,
-      })
+      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
-      didDocument = generateDidDoc({
-        verificationMethod: verificationMethod.type,
-        verificationMethodId: verificationMethod.id || 'key-1',
-        methodSpecificIdAlgo: methodSpecificIdAlgo || MethodSpecificIdAlgo.Uuid,
-        network,
-        publicKey: toString(key.publicKey, 'base64'),
-      }) as DidDocument
-    } else {
-      return {
-        didDocumentMetadata: {},
-        didRegistrationMetadata: {},
-        didState: {
-          state: 'failed',
-          reason: 'Provide a didDocument or atleast one verificationMethod with seed in secret',
-        },
-      }
-    }
-
-    try {
-      const payloadToSign = await MsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod!)
-
-      await cheqdSdkLedgerService.connect({ network })
-      const response = await cheqdSdkLedgerService.create(signInputs, didDocument as DIDDocument, versionId)
-
+      const response = await cheqdLedgerService.create(didDocument as DIDDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -115,6 +111,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      agentContext.config.logger.error(`Error registering DID`, error)
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -128,18 +125,17 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   public async update(agentContext: AgentContext, options: CheqdDidUpdateOptions): Promise<DidUpdateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
-    const { network, versionId = v4() } = options.options
+    const { versionId = utils.uuid() } = options.options
     const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
     let didRecord: DidRecord | null
 
     try {
-      await cheqdSdkLedgerService.connect({ network })
       if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
         didDocument = options.didDocument
-        const resolvedDocument = await cheqdSdkLedgerService.resolve(didDocument.id)
+        const resolvedDocument = await cheqdLedgerService.resolve(didDocument.id)
         didRecord = await didRepository.findCreatedDid(agentContext, didDocument.id)
         if (!resolvedDocument.didDocument || resolvedDocument.didDocumentMetadata.deactivated || !didRecord) {
           return {
@@ -178,7 +174,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
                   methodSpecificId: didDocument.id.split(':')[3],
                   didUrl: didDocument.id,
                   keyId: `${didDocument.id}#${verificationMethod.id}`,
-                  publicKey: toString(key.publicKey, 'base64'),
+                  publicKey: TypedArrayEncoder.toHex(key.publicKey),
                 },
               ]
             )
@@ -195,10 +191,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
 
-      const payloadToSign = await MsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod!)
+      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
-      const response = await cheqdSdkLedgerService.update(signInputs, didDocument as DIDDocument, versionId)
+      const response = await cheqdLedgerService.update(didDocument as DIDDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -218,6 +214,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      agentContext.config.logger.error(`Error updating DID`, error)
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -234,13 +231,13 @@ export class CheqdDidRegistrar implements DidRegistrar {
     options: CheqdDidDeactivateOptions
   ): Promise<DidDeactivateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const did = options.did
-    const { versionId = v4() } = options.options
+    const { versionId = utils.uuid() } = options.options
 
     try {
-      const { didDocument, didDocumentMetadata } = await cheqdSdkLedgerService.resolve(did)
+      const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
       const didRecord = await didRepository.findCreatedDid(agentContext, did)
       if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
         return {
@@ -252,10 +249,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
-      const payloadToSign = MsgDeactivateDidDocPayloadToSign(didDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod!)
-      await cheqdSdkLedgerService.connect({ network: did.split(':')[2] })
-      const response = await cheqdSdkLedgerService.deactivate(signInputs, didDocument, versionId)
+      const payloadToSign = createMsgDeactivateDidDocPayloadToSign(didDocument, versionId)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+      const response = await cheqdLedgerService.deactivate(didDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -274,6 +270,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         },
       }
     } catch (error) {
+      agentContext.config.logger.error(`Error deactivating DID`, error)
       return {
         didDocumentMetadata: {},
         didRegistrationMetadata: {},
@@ -287,9 +284,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   public async createResource(agentContext: AgentContext, did: string, resource: CheqdCreateResourceOptions) {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-    const cheqdSdkLedgerService = agentContext.dependencyManager.resolve(CheqdSdkLedgerService)
-    await cheqdSdkLedgerService.connect({ network: did.split(':')[2] })
-    const { didDocument, didDocumentMetadata } = await cheqdSdkLedgerService.resolve(did)
+    const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
+    const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
     const didRecord = await didRepository.findCreatedDid(agentContext, did)
     if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
       return {
@@ -305,9 +301,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
     try {
       let data: Uint8Array
       if (typeof resource.data === 'string') {
-        data = fromString(resource.data, 'base64')
+        data = TypedArrayEncoder.fromBase64(resource.data)
       } else if (typeof resource.data == 'object') {
-        data = fromString(JSON.stringify(resource.data))
+        data = TypedArrayEncoder.fromString(JSON.stringify(resource.data))
       } else {
         data = resource.data
       }
@@ -322,8 +318,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
         data,
       })
       const payloadToSign = MsgCreateResourcePayload.encode(resourcePayload).finish()
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod!)
-      const response = await cheqdSdkLedgerService.createResource(signInputs, resourcePayload)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+      const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -352,16 +348,22 @@ export class CheqdDidRegistrar implements DidRegistrar {
     }
   }
 
-  private async signPayload(agentContext: AgentContext, payload: Uint8Array, verificationMethod: VerificationMethod[]) {
+  private async signPayload(
+    agentContext: AgentContext,
+    payload: Uint8Array,
+    verificationMethod: VerificationMethod[] = []
+  ) {
     return await Promise.all(
-      verificationMethod!.map(async (method) => {
+      verificationMethod.map(async (method) => {
         let key: Key
         if (method.publicKeyBase58) {
           key = Key.fromPublicKeyBase58(method.publicKeyBase58, KeyType.Ed25519)
         } else if (method.publicKeyJwk) {
           key = Key.fromJwk(method.publicKeyJwk as unknown as Jwk)
+        } else if (method.publicKeyMultibase) {
+          key = Key.fromFingerprint(method.publicKeyMultibase)
         } else {
-          key = new Key(fromMultibase(method.publicKeyMultibase!), KeyType.Ed25519)
+          throw new Error(`Invalid verificationMethod`)
         }
         return {
           verificationMethodId: method.id,

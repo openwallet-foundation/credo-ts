@@ -1,16 +1,14 @@
-import type { CheqdDidCreateOptions } from '../src/dids'
-
 import { Agent, TypedArrayEncoder } from '@aries-framework/core'
-import { CheqdNetwork, MethodSpecificIdAlgo, VerificationMethods } from '@cheqd/sdk'
+import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 
-import { getCheqdSdkModules } from './setupCheqdSdkModule'
+import { getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getCheqdSdkModules())
+const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getCheqdModules())
 
 describe('Cheqd DID registrar', () => {
-  let agent: Agent<ReturnType<typeof getCheqdSdkModules>>
+  let agent: Agent<ReturnType<typeof getCheqdModules>>
 
   beforeAll(async () => {
     agent = new Agent(agentOptions)
@@ -30,20 +28,75 @@ describe('Cheqd DID registrar', () => {
         .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
         .slice(0, 32)
     )
-    const did = await agent.dids.create<CheqdDidCreateOptions>({
+    const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
+    const did = await agent.dids.create({
       method: 'cheqd',
       secret: {
         verificationMethod: {
           id: 'key-1',
-          type: VerificationMethods.Ed255192018,
+          type: 'Ed25519VerificationKey2018',
           privateKey,
         },
       },
       options: {
-        network: CheqdNetwork.Testnet,
-        methodSpecificIdAlgo: MethodSpecificIdAlgo.Uuid,
+        network: 'testnet',
+        methodSpecificIdAlgo: 'base58btc',
+      },
+    })
+    expect(did).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument: {
+          verificationMethod: [
+            {
+              type: 'Ed25519VerificationKey2018',
+              publicKeyBase58: ed25519PublicKeyBase58,
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  it('should create a did:cheqd using Ed25519VerificationKey2020', async () => {
+    const did = await agent.dids.create({
+      method: 'cheqd',
+      secret: {
+        verificationMethod: {
+          id: 'key-1',
+          type: 'Ed25519VerificationKey2020',
+        },
+      },
+      options: {
+        network: 'testnet',
+        methodSpecificIdAlgo: 'uuid',
       },
     })
     expect(did.didState).toMatchObject({ state: 'finished' })
+  })
+
+  it('should create a did:cheqd using JsonWebKey2020', async () => {
+    const did = await agent.dids.create({
+      method: 'cheqd',
+      secret: {
+        verificationMethod: {
+          id: 'key-11',
+          type: 'JsonWebKey2020',
+        },
+      },
+      options: {
+        network: 'testnet',
+        methodSpecificIdAlgo: 'base58btc',
+      },
+    })
+    expect(did).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument: {
+          verificationMethod: [{ type: 'JsonWebKey2020' }],
+        },
+      },
+    })
   })
 })

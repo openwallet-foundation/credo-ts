@@ -12,13 +12,18 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { v4 } from 'uuid'
+import { JsonTransformer, utils } from '@aries-framework/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
-import { Convert } from '../utils/transform'
+import {
+  CheqdCredentialDefinition,
+  CheqdRevocationRegistryDefinition,
+  CheqdRevocationStatusList,
+  CheqdSchema,
+} from '../utils/transform'
 
-export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
+export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
   /**
    * This class supports resolving and registering objects with cheqd identifiers.
    * It needs to include support for the schema, credential definition, revocation registry as well
@@ -37,7 +42,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(`Submitting get schema request for schema '${schemaId}' to ledger`)
 
       const response = await cheqdDidResolver.resolveResource(agentContext, schemaId)
-      const schema = Convert.toCheqdSchema(JSON.stringify(response.resource))
+      const schema = JsonTransformer.fromJSON(response.resource, CheqdSchema)
 
       return {
         schema: {
@@ -77,7 +82,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
 
       const schema = options.schema
       const schemaResource = {
-        id: v4(),
+        id: utils.uuid(),
         name: schema.name,
         resourceType: 'anonCredsSchema',
         data: {
@@ -97,7 +102,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
         schemaState: {
           state: 'finished',
           schema,
-          schemaId: `${schema.issuerId}/resources/${schemaResource.id!}`,
+          schemaId: `${schema.issuerId}/resources/${schemaResource.id}`,
         },
         registrationMetadata: {},
         schemaMetadata: {},
@@ -141,7 +146,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
       const credDefResource = {
-        id: v4(),
+        id: utils.uuid(),
         name: credentialDefinition.tag,
         resourceType: 'anonCredsCredDef',
         data: {
@@ -150,7 +155,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
           value: credentialDefinition.value,
           schemaId: schemaResponse.schemaId,
         },
-        version: v4(),
+        version: utils.uuid(),
       } as CheqdCreateResourceOptions
 
       const response = await cheqdDidRegistrar.createResource(
@@ -166,7 +171,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinitionState: {
           state: 'finished',
           credentialDefinition,
-          credentialDefinitionId: `${schemaResponse.schema.issuerId}/resources/${credDefResource.id!}`,
+          credentialDefinitionId: `${schemaResponse.schema.issuerId}/resources/${credDefResource.id}`,
         },
         registrationMetadata: {},
         credentialDefinitionMetadata: {},
@@ -209,7 +214,7 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const response = await cheqdDidResolver.resolveResource(agentContext, credentialDefinitionId)
-      const credentialDefinition = Convert.toCheqdCredentialDefinition(JSON.stringify(response.resource))
+      const credentialDefinition = JsonTransformer.fromJSON(response.resource, CheqdCredentialDefinition)
       return {
         credentialDefinition: {
           ...credentialDefinition,
@@ -252,8 +257,9 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryDefinitionId)
-      const revocationRegistryDefinition = Convert.toCheqdRevocationRegistryDefinition(
-        JSON.stringify(response.resource)
+      const revocationRegistryDefinition = JsonTransformer.fromJSON(
+        response.resource,
+        CheqdRevocationRegistryDefinition
       )
       return {
         revocationRegistryDefinition: {
@@ -289,12 +295,41 @@ export class CheqdSdkAnonCredsRegistry implements AnonCredsRegistry {
     revocationRegistryId: string,
     timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
-    return {
-      resolutionMetadata: {
-        error: 'notFound',
-        message: `Not implemented yet`,
-      },
-      revocationStatusListMetadata: {},
+    try {
+      const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
+      const parsedDid = parseCheqdDid(revocationRegistryId)
+      if (!parsedDid) {
+        throw new Error(`Invalid revocationRegistryId: ${revocationRegistryId}`)
+      }
+
+      agentContext.config.logger.trace(
+        `Submitting get revocation status request for '${revocationRegistryId}' to ledger`
+      )
+
+      const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryId)
+      const revocationRegistryDefinition = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
+      return {
+        revocationStatusList: {
+          ...revocationRegistryDefinition,
+          issuerId: parsedDid.did,
+          timestamp,
+        },
+        resolutionMetadata: {},
+        revocationStatusListMetadata: response.resourceMetadata,
+      }
+    } catch (error) {
+      agentContext.config.logger.error(`Error retrieving revocation registry status list '${revocationRegistryId}'`, {
+        error,
+        revocationRegistryId,
+      })
+
+      return {
+        resolutionMetadata: {
+          error: 'notFound',
+          message: `unable to resolve revocation registry status list: ${error.message}`,
+        },
+        revocationStatusListMetadata: {},
+      }
     }
   }
 }

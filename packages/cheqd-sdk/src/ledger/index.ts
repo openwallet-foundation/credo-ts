@@ -1,1 +1,1 @@
-export { CheqdSdkLedgerService } from './CheqdSdkLedgerService'
+export { CheqdLedgerService } from './CheqdLedgerService'
