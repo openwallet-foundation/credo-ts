@@ -1,3 +1,5 @@
+import type { AnonCredsCredentialRequest } from '../../models'
+
 import {
   CredentialState,
   CredentialExchangeRecord,
@@ -186,6 +188,9 @@ describe('Legacy indy format services', () => {
       credentialRecord: holderCredentialRecord,
       offerAttachment,
     })
+
+    // Make sure the request contains a prover_did field
+    expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).prover_did).toBeDefined()
 
     // Issuer processes and accepts request
     await indyCredentialFormatService.processRequest(agentContext, {
