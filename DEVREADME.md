@@ -85,7 +85,7 @@ GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=00
 Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
 
 ```sh
-yarn test --testPathIgnorePatterns ./packages/core/tests/postgres.e2e.test.ts -u
+yarn test --testPathIgnorePatterns ./packages/indy-sdk/tests/postgres.e2e.test.ts -u
 ```
 
 In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:
