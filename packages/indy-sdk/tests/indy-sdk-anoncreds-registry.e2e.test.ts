@@ -62,6 +62,9 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
     })
 
+    // Wait some time before resolving credential definition object
+    await new Promise((res) => setTimeout(res, 1000))
+
     const schemaResponse = await indySdkAnonCredsRegistry.getSchema(
       agent.context,
       `TL1EaPFCZ8Si5aUrqScBDt:2:test - 11:${dynamicVersion}`
@@ -138,6 +141,9 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       registrationMetadata: {},
     })
+
+    // Wait some time before resolving credential definition object
+    await new Promise((res) => setTimeout(res, 1000))
 
     const credentialDefinitionResponse = await indySdkAnonCredsRegistry.getCredentialDefinition(
       agent.context,

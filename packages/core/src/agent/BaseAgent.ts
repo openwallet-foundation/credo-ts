@@ -1,5 +1,5 @@
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules, CustomOrDefaultApi } from './AgentModules'
+import type { AgentApi, CustomOrDefaultApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
 import type { CredentialsModule } from '../modules/credentials'
@@ -189,13 +189,6 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       session,
       contextCorrelationId: this.agentContext.contextCorrelationId,
     })
-  }
-
-  /**
-   * @deprecated The injectionContainer property has been deprecated in favour of the dependencyManager property.
-   */
-  public get injectionContainer() {
-    return this.dependencyManager.container
   }
 
   public get config() {

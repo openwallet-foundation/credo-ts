@@ -25,14 +25,13 @@ import type {
   IndyProofRequest,
 } from 'indy-sdk'
 
-import { AnonCredsLinkSecretRepository } from '@aries-framework/anoncreds'
+import { AnonCredsLinkSecretRepository, generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
 import { getIndySeqNoFromUnqualifiedCredentialDefinitionId } from '../utils/identifiers'
-import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 import {
   indySdkCredentialDefinitionFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
