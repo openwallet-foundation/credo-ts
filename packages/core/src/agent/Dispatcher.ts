@@ -92,7 +92,7 @@ class Dispatcher {
     if (outboundMessage) {
       // Store the sessionId of the inbound message, if there is one, so messages can later be send without
       // outbound transport.
-      outboundMessage.sessionIdFromInbound = messageContext.sessionId
+      if (!outboundMessage.sessionId) outboundMessage.sessionId = messageContext.sessionId
       if (outboundMessage.isOutboundServiceMessage()) {
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {

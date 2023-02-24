@@ -1,5 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
-import type { DecryptedMessageContext, EnvelopeKeys } from './EnvelopeService'
+import type { DecryptedMessageContext } from './EnvelopeService'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
@@ -34,7 +34,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  public readonly inboundTransports: InboundTransport[] = []
+  private _inboundTransports: InboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -54,10 +54,20 @@ export class MessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
+    this._inboundTransports = []
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
-    this.inboundTransports.push(inboundTransport)
+    this._inboundTransports.push(inboundTransport)
+  }
+
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   /**
@@ -85,7 +95,7 @@ export class MessageReceiver {
       if (this.isEncryptedMessage(inboundMessage)) {
         await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
       } else if (this.isPlaintextMessage(inboundMessage)) {
-        await this.receivePlaintextMessage(agentContext, inboundMessage, connection, session)
+        await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
       } else {
         throw new AriesFrameworkError('Unable to parse incoming message: unrecognized format')
       }
@@ -98,11 +108,10 @@ export class MessageReceiver {
   private async receivePlaintextMessage(
     agentContext: AgentContext,
     plaintextMessage: PlaintextMessage,
-    connection?: ConnectionRecord,
-    session?: TransportSession
+    connection?: ConnectionRecord
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
-    const messageContext = new InboundMessageContext(message, { connection, agentContext, sessionId: session?.id })
+    const messageContext = new InboundMessageContext(message, { connection, agentContext })
 
     await this.dispatcher.dispatch(messageContext)
   }

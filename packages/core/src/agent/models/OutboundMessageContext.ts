@@ -28,7 +28,6 @@ export interface OutboundMessageContextParams {
 
 export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public message: T
-  public sessionIdFromInbound?: string
   public connection?: ConnectionRecord
   public serviceParams?: ServiceMessageParams
   public outOfBand?: OutOfBandRecord
@@ -36,9 +35,8 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public sessionId?: string
   public readonly agentContext: AgentContext
 
-  public constructor(message: T, context: OutboundMessageContextParams, inboundContext?: InboundMessageContext) {
+  public constructor(message: T, context: OutboundMessageContextParams) {
     this.message = message
-    this.sessionIdFromInbound = inboundContext?.sessionId
     this.connection = context.connection
     this.sessionId = context.sessionId
     this.outOfBand = context.outOfBand
@@ -71,7 +69,6 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     return {
       message: this.message,
       outOfBand: this.outOfBand,
-      sessionIdFromInbound: this.sessionIdFromInbound,
       associatedRecord: this.associatedRecord,
       sessionId: this.sessionId,
       serviceParams: this.serviceParams,

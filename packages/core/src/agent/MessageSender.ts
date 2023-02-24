@@ -43,7 +43,7 @@ export class MessageSender {
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
-  public outboundTransports: OutboundTransport[] = []
+  private _outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -61,20 +61,20 @@ export class MessageSender {
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
-    this.outboundTransports = []
+    this._outboundTransports = []
+  }
+
+  public get outboundTransports() {
+    return this._outboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
-    this.outboundTransports.push(outboundTransport)
+    this._outboundTransports.push(outboundTransport)
   }
 
-  public async resetOutboundTransport() {
-    // NOTE: we could also make this void instead of an async fct.
-    // Maybe void is a bit dirty?
-    for (const transport of this.outboundTransports) {
-      await transport.stop()
-    }
-    this.outboundTransports = []
+  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
+    this._outboundTransports = this.outboundTransports.filter((transport) => transport !== outboundTransport)
+    await outboundTransport.stop()
   }
 
   public async packMessage(
@@ -194,7 +194,7 @@ export class MessageSender {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { agentContext, connection, outOfBand, sessionId, message, sessionIdFromInbound } = outboundMessageContext
+    const { agentContext, connection, outOfBand, sessionId, message } = outboundMessageContext
     const errors: Error[] = []
 
     if (!connection) {
@@ -210,17 +210,9 @@ export class MessageSender {
       connectionId: connection.id,
     })
 
-    let session: TransportSession | undefined
-
-    if (sessionIdFromInbound) {
-      session = this.transportService.findSessionById(sessionIdFromInbound)
-    } else if (sessionId) {
-      session = this.transportService.findSessionById(sessionId)
-    }
-    if (!session) {
-      // Try to send to already open session
-      session = this.transportService.findSessionByConnectionId(connection.id)
-    }
+    const session: TransportSession | undefined = sessionId
+      ? this.transportService.findSessionById(sessionId)
+      : this.transportService.findSessionByConnectionId(connection.id)
 
     if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
       this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
@@ -375,14 +367,14 @@ export class MessageSender {
   }
 
   private async sendToService(outboundMessageContext: OutboundMessageContext) {
-    const { agentContext, message, serviceParams, connection, sessionIdFromInbound, sessionId } = outboundMessageContext
+    const { agentContext, message, serviceParams, connection, sessionId } = outboundMessageContext
 
     if (!serviceParams) {
       throw new AriesFrameworkError('No service parameters found in outbound message context')
     }
     const { service, senderKey, returnRoute } = serviceParams
 
-    if (this.outboundTransports.length === 0 && !sessionIdFromInbound && !sessionId) {
+    if (this.outboundTransports.length === 0 && !sessionId) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
@@ -432,12 +424,8 @@ export class MessageSender {
         }
       }
       // No outbound transport: Try retrieving session-based connection instead
-    } else if (sessionId || sessionIdFromInbound) {
-      const session = sessionIdFromInbound
-        ? this.transportService.findSessionById(sessionIdFromInbound)
-        : sessionId
-        ? this.transportService.findSessionById(sessionId)
-        : undefined
+    } else {
+      const session = sessionId ? this.transportService.findSessionById(sessionId) : undefined
 
       if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
         this.logger.debug(

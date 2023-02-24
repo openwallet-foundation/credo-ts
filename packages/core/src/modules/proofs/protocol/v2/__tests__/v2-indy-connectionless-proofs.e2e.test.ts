@@ -328,8 +328,10 @@ describe('V2 Connectionless Proofs - Indy', () => {
       domain: 'rxjs:faber',
     })
 
-    await faberAgent.resetOutboundTransport()
-    message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
+    for (const transport of faberAgent.outboundTransports) {
+      await faberAgent.unregisterOutboundTransportTransport(transport)
+    }
+    // message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
     await waitForProofExchangeRecordSubject(aliceReplay, {
