@@ -31,6 +31,7 @@ import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { AskarModule } from '../../askar/src'
+import { sleep } from '../../core/src/utils/sleep'
 import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
@@ -453,11 +454,17 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
     issuerId,
   })
 
+  // Wait some time pass to let ledger settle the object
+  await sleep(1000)
+
   const credentialDefinition = await registerCredentialDefinition(agent, {
     schemaId: schema.schemaId,
     issuerId,
     tag: 'default',
   })
+
+  // Wait some time pass to let ledger settle the object
+  await sleep(1000)
 
   return {
     schema,
