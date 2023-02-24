@@ -1,3 +1,4 @@
+import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
 import type { Wallet } from '@aries-framework/core'
 
 import {
@@ -224,6 +225,9 @@ describe('Legacy indy format services using anoncreds-rs', () => {
         },
       },
     })
+
+    // Make sure the request contains a prover_did field
+    expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).prover_did).toBeDefined()
 
     // Issuer processes and accepts request
     await legacyIndyCredentialFormatService.processRequest(agentContext, {
