@@ -1,6 +1,7 @@
 export * from './types'
 export * from './domain'
 export * from './DidsApi'
+export * from './DidsApiOptions'
 export * from './repository'
 export * from './services'
 export * from './DidsModule'

@@ -1,7 +1,12 @@
-import { Agent, DidsModule, Key, KeyType } from '@aries-framework/core'
+import { Agent, DidsModule, Key, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 import { RevocationRegistryDefinitionRequest, RevocationRegistryEntryRequest } from '@hyperledger/indy-vdr-shared'
 
-import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
+import {
+  agentDependencies,
+  getAgentConfig,
+  importExistingIndyDidFromPrivateKey,
+  publicDidSeed,
+} from '../../core/tests/helpers'
 import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrSovDidResolver } from '../src'
@@ -38,6 +43,8 @@ agent.dependencyManager.registerInstance(IndyVdrPoolService, indyVdrPoolService)
 describe('IndyVdrAnonCredsRegistry', () => {
   beforeAll(async () => {
     await agent.initialize()
+
+    await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
   })
 
   afterAll(async () => {

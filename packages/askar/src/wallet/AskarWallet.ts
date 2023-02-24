@@ -2,7 +2,6 @@ import type {
   EncryptedMessage,
   WalletConfig,
   WalletCreateKeyOptions,
-  DidInfo,
   WalletSignOptions,
   UnpackedMessageContext,
   WalletVerifyOptions,
@@ -14,11 +13,11 @@ import type {
 import type { Session } from '@hyperledger/aries-askar-shared'
 
 import {
+  WalletKeyExistsError,
   isValidSeed,
   isValidPrivateKey,
   JsonTransformer,
   RecordNotFoundError,
-  RecordDuplicateError,
   WalletInvalidKeyError,
   WalletDuplicateError,
   JsonEncoder,
@@ -50,7 +49,7 @@ const isError = (error: unknown): error is Error => error instanceof Error
 import { inject, injectable } from 'tsyringe'
 
 import {
-  askarErrors,
+  AskarErrorCode,
   isAskarError,
   keyDerivationMethodToStoreKeyMethod,
   keyTypeSupportedByAskar,
@@ -70,7 +69,6 @@ export class AskarWallet implements Wallet {
   private fileSystem: FileSystem
 
   private signingKeyProviderRegistry: SigningProviderRegistry
-  private publicDidInfo: DidInfo | undefined
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -88,10 +86,6 @@ export class AskarWallet implements Wallet {
 
   public get isInitialized() {
     return this._store !== undefined
-  }
-
-  public get publicDid() {
-    return this.publicDidInfo
   }
 
   public get store() {
@@ -151,7 +145,10 @@ export class AskarWallet implements Wallet {
     } catch (error) {
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
-      if (isAskarError(error) && (error.code === askarErrors.Encryption || error.code === askarErrors.Duplicate)) {
+      if (
+        isAskarError(error) &&
+        (error.code === AskarErrorCode.Encryption || error.code === AskarErrorCode.Duplicate)
+      ) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
 
@@ -234,7 +231,7 @@ export class AskarWallet implements Wallet {
 
       this.walletConfig = walletConfig
     } catch (error) {
-      if (isAskarError(error) && error.code === askarErrors.NotFound) {
+      if (isAskarError(error) && error.code === AskarErrorCode.NotFound) {
         const errorMessage = `Wallet '${walletConfig.id}' not found`
         this.logger.debug(errorMessage)
 
@@ -242,7 +239,7 @@ export class AskarWallet implements Wallet {
           walletType: 'AskarWallet',
           cause: error,
         })
-      } else if (isAskarError(error) && error.code === askarErrors.Encryption) {
+      } else if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
         const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
         this.logger.debug(errorMessage)
         throw new WalletInvalidKeyError(errorMessage, {
@@ -314,7 +311,6 @@ export class AskarWallet implements Wallet {
       await this.store.close()
       this._session = undefined
       this._store = undefined
-      this.publicDidInfo = undefined
     } catch (error) {
       const errorMessage = `Error closing wallet': ${error.message}`
       this.logger.error(errorMessage, {
@@ -326,22 +322,9 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  public async initPublicDid() {
-    // Not implemented, as it does not work with legacy Ledger module
-  }
-
   /**
    * Create a key with an optional seed and keyType.
    * The keypair is also automatically stored in the wallet afterwards
-   *
-   * @param privateKey Buffer Optional privateKey for creating a key
-   * @param seed string Optional seed for creating a key
-   * @param keyType KeyType the type of key that should be created
-   *
-   * @returns a Key instance with a publicKeyBase58
-   *
-   * @throws {WalletError} When an unsupported keytype is requested
-   * @throws {WalletError} When the key could not be created
    */
   public async createKey({ seed, privateKey, keyType }: WalletCreateKeyOptions): Promise<Key> {
     try {
@@ -368,8 +351,18 @@ export class AskarWallet implements Wallet {
           : AskarKey.generate(algorithm)
 
         // Store key
-        await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(key.publicBytes) })
-        return Key.fromPublicKey(key.publicBytes, keyType)
+        try {
+          await this.session.insertKey({ key, name: TypedArrayEncoder.toBase58(key.publicBytes) })
+          return Key.fromPublicKey(key.publicBytes, keyType)
+        } catch (error) {
+          // Handle case where key already exists
+          if (isAskarError(error, AskarErrorCode.Duplicate)) {
+            throw new WalletKeyExistsError('Key already exists')
+          }
+
+          // Otherwise re-throw error
+          throw error
+        }
       } else {
         // Check if there is a signing key provider for the specified key type.
         if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
@@ -382,6 +375,9 @@ export class AskarWallet implements Wallet {
         throw new WalletError(`Unsupported key type: '${keyType}'`)
       }
     } catch (error) {
+      // If already instance of `WalletError`, re-throw
+      if (error instanceof WalletError) throw error
+
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
@@ -721,7 +717,7 @@ export class AskarWallet implements Wallet {
     } catch (error) {
       if (
         isAskarError(error) &&
-        (error.code === askarErrors.NotFound ||
+        (error.code === AskarErrorCode.NotFound ||
           // FIXME: this is current output from askar wrapper but does not describe specifically a not found scenario
           error.message === 'Received null pointer. The native library could not find the value.')
       ) {
@@ -745,8 +741,8 @@ export class AskarWallet implements Wallet {
         },
       })
     } catch (error) {
-      if (isAskarError(error) && error.code === askarErrors.Duplicate) {
-        throw new RecordDuplicateError(`Record already exists`, { recordType: 'KeyPairRecord' })
+      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+        throw new WalletKeyExistsError('Key already exists')
       }
       throw new WalletError('Error saving KeyPair record', { cause: error })
     }

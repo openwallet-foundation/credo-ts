@@ -2,7 +2,7 @@ import type { RegisterCredentialDefinitionReturnStateFinished } from '../../pack
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { utils, ConnectionEventTypes } from '@aries-framework/core'
+import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent } from './BaseAgent'
@@ -11,16 +11,35 @@ import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 export class Faber extends BaseAgent {
   public outOfBandId?: string
   public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
+  public anonCredsIssuerId?: string
   public ui: BottomBar
 
   public constructor(port: number, name: string) {
-    super({ port, name })
+    super({ port, name, useLegacyIndySdk: true })
     this.ui = new ui.BottomBar()
   }
 
   public static async build(): Promise<Faber> {
     const faber = new Faber(9001, 'faber')
     await faber.initializeAgent()
+
+    // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
+    // and store the existing did in the wallet
+    const privateKey = TypedArrayEncoder.fromString('afjdemoverysercure00000000000000')
+
+    const key = await faber.agent.wallet.createKey({
+      keyType: KeyType.Ed25519,
+      privateKey,
+    })
+
+    // did is first 16 bytes of public key encoded as base58
+    const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
+    await faber.agent.dids.import({
+      did: `did:sov:${unqualifiedIndyDid}`,
+    })
+
+    faber.anonCredsIssuerId = unqualifiedIndyDid
+
     return faber
   }
 
@@ -102,6 +121,9 @@ export class Faber extends BaseAgent {
   }
 
   private async registerSchema() {
+    if (!this.anonCredsIssuerId) {
+      throw new Error(redText('Missing anoncreds issuerId'))
+    }
     const schemaTemplate = {
       name: 'Faber College' + utils.uuid(),
       version: '1.0.0',
@@ -120,7 +142,7 @@ export class Faber extends BaseAgent {
 
     if (schemaState.state !== 'finished') {
       throw new Error(
-        `Error registering schema: ${schemaState.state === 'failed' ? schemaState.reason : 'Not Finished'}}`
+        `Error registering schema: ${schemaState.state === 'failed' ? schemaState.reason : 'Not Finished'}`
       )
     }
     this.ui.updateBottomBar('\nSchema registered!\n')
@@ -128,6 +150,10 @@ export class Faber extends BaseAgent {
   }
 
   private async registerCredentialDefinition(schemaId: string) {
+    if (!this.anonCredsIssuerId) {
+      throw new Error(redText('Missing anoncreds issuerId'))
+    }
+
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
     const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
       credentialDefinition: {

@@ -6,6 +6,8 @@ import {
   InMemoryLruCache,
   SigningProviderRegistry,
   AriesFrameworkError,
+  Key,
+  KeyType,
 } from '@aries-framework/core'
 import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
@@ -328,7 +330,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(
         'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["accept"] and version 2.0 in pool.'
@@ -366,7 +368,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(
         'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["decline"] and version 1.0 in pool.'
@@ -406,7 +408,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(/Please, specify a transaction author agreement with version and acceptance mechanism/)
     })
