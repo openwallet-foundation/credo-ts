@@ -105,9 +105,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandRecord.isImplicitInvitation
-      ? outOfBandInvitation.getDidServices()[0]
-      : outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.isImplicitInvitation ? invitationDid : outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -379,7 +377,7 @@ export class DidExchangeProtocol {
 
     const threadId = connectionRecord.threadId
     const parentThreadId = outOfBandRecord.isImplicitInvitation
-      ? outOfBandRecord.outOfBandInvitation.getDidServices()[0]
+      ? outOfBandRecord.outOfBandInvitation.invitationDids[0]
       : outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {

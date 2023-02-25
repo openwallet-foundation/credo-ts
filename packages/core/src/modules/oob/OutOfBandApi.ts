@@ -79,7 +79,8 @@ export interface ReceiveOutOfBandInvitationConfig {
   isImplicit?: boolean
 }
 
-export interface ReceiveOutOfBandImplicitInvitationConfig extends Omit<ReceiveOutOfBandInvitationConfig, 'isImplicit'> {
+export interface ReceiveOutOfBandImplicitInvitationConfig
+  extends Omit<ReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
   did: string
   handshakeProtocols?: HandshakeProtocol[]
 }

@@ -7,9 +7,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getAgentOptions, waitForConnectionRecord } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { sleep } from '../../../utils/sleep'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 
 const faberAgentOptions = getAgentOptions(
@@ -71,64 +70,38 @@ describe('out of band implicit', () => {
     jest.resetAllMocks()
   })
 
-  describe('receiveimplicitInvitation', () => {
-    test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-      const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
-        method: 'sov',
-        options: {
-          submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
-          alias: 'Alias',
-          endpoints: {
-            endpoint: 'rxjs:faber',
-            types: ['DIDComm', 'did-communication', 'endpoint'],
-          },
-        },
-      })
+  test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
+    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
+    expect(publicDid).toBeDefined()
 
-      const publicDid = did.didState.did
-      expect(publicDid).toBeDefined()
-
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
-        did: publicDid!,
-        alias: 'Faber public',
-        label: 'Alice',
-      })
-
-      aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-      expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
-
-      await sleep(1000)
-      // TODO: Wait for a connection event
-      expect((await faberAgent.connections.getAll()).length).toEqual(1)
-      //const [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
-      let [faberAliceConnection] = await faberAgent.connections.getAll()
-      faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
-      expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
-
-      expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
-      expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      expect(faberAliceConnection.theirLabel).toBe('Alice')
-      expect(aliceFaberConnection.alias).toBe('Faber public')
-      expect(aliceFaberConnection.invitationDid).toBe(publicDid)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+      did: publicDid!,
+      alias: 'Faber public',
+      label: 'Alice',
     })
+
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+    // Wait for a connection event in faber agent
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(faberAliceConnection.theirLabel).toBe('Alice')
+    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(aliceFaberConnection.invitationDid).toBe(publicDid)
+
+    // It is possible for an agent to check if it has already a connection to a certain public entity
+    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
+      aliceFaberConnection.id,
+    ])
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-    const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
-      method: 'sov',
-      options: {
-        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
-        alias: 'My defined alias',
-        endpoints: {
-          endpoint: 'rxjs:faber',
-          types: ['DIDComm', 'did-communication', 'endpoint'],
-        },
-      },
-    })
-
-    const publicDid = did.didState.did
+    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
     expect(publicDid).toBeDefined()
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
@@ -141,11 +114,8 @@ describe('out of band implicit', () => {
     aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
-    await sleep(1000)
-    // TODO: Wait for a connection event
-    expect((await faberAgent.connections.getAll()).length).toEqual(1)
-    //const [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
-    let [faberAliceConnection] = await faberAgent.connections.getAll()
+    // Wait for a connection event in faber agent
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
 
@@ -154,32 +124,92 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(publicDid)
+
+    // It is possible for an agent to check if it has already a connection to a certain public entity
+    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
+      aliceFaberConnection.id,
+    ])
   })
 
-  test(`receive an implicit invitation of an unresolvable did`, async () => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-    const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
-      method: 'sov',
-      options: {
-        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
-        alias: 'My defined alias',
-        endpoints: {
-          endpoint: 'rxjs:faber',
-          types: ['DIDComm', 'did-communication', 'endpoint'],
-        },
-      },
-    })
-
-    const publicDid = did.didState.did
-    expect(publicDid).toBeDefined()
-
-    //await expect(
-      await aliceAgent.oob.receiveImplicitInvitation({
+  test(`receive an implicit invitation using an unresolvable did`, async () => {
+    await expect(
+      aliceAgent.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
         alias: 'Faber public',
         label: 'Alice',
         handshakeProtocols: [HandshakeProtocol.DidExchange],
       })
-    //).rejects.toThrowError()
+    ).rejects.toThrowError(/Unable to resolve did/)
+  })
+
+  test(`create two connections using the same implicit invitation`, async () => {
+    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
+    expect(publicDid).toBeDefined()
+
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+      did: publicDid!,
+      alias: 'Faber public',
+      label: 'Alice',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+    // Wait for a connection event in faber agent
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(faberAliceConnection.theirLabel).toBe('Alice')
+    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(aliceFaberConnection.invitationDid).toBe(publicDid)
+
+    // Repeat implicit invitation procedure
+    let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+      did: publicDid!,
+      alias: 'Faber public New',
+      label: 'Alice New',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    aliceFaberNewConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberNewConnection!.id)
+    expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
+
+    // Wait for a connection event in faber agent
+    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {})
+    faberAliceNewConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceNewConnection!.id)
+    expect(faberAliceNewConnection.state).toBe(DidExchangeState.Completed)
+
+    expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
+    expect(faberAliceNewConnection).toBeConnectedWith(aliceFaberNewConnection)
+    expect(faberAliceNewConnection.theirLabel).toBe('Alice New')
+    expect(aliceFaberNewConnection.alias).toBe('Faber public New')
+    expect(aliceFaberNewConnection.invitationDid).toBe(publicDid)
+
+    // Both connections will be associated to the same invitation did
+    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
+      aliceFaberConnection.id,
+      aliceFaberNewConnection.id,
+    ])
   })
 })
+
+async function createPublicDid(agent: Agent, endpoint: string) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
+  const did = await agent.dids.create<IndySdkSovDidCreateOptions>({
+    method: 'sov',
+    options: {
+      submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+      alias: 'Alias',
+      endpoints: {
+        endpoint,
+        types: ['DIDComm', 'did-communication', 'endpoint'],
+      },
+    },
+  })
+
+  return did.didState.did
+}
