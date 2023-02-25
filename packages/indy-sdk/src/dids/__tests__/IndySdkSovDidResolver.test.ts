@@ -23,6 +23,10 @@ mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue({
   config: { indyNamespace: 'pool1' },
 } as IndySdkPool)
 
+mockFunction(indySdkPoolServiceMock.getPoolForDid).mockResolvedValue({
+  pool: { config: { indyNamespace: 'pool1' } } as IndySdkPool,
+})
+
 const agentConfig = getAgentConfig('IndySdkSovDidResolver')
 
 const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))

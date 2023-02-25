@@ -48,7 +48,7 @@ const agentContext = getAgentContext({
 
 describe('AnonCredsRsServices', () => {
   test('issuance flow without revocation', async () => {
-    const issuerId = 'issuer:uri'
+    const issuerId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],

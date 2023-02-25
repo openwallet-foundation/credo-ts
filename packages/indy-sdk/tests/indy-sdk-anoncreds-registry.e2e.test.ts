@@ -1,4 +1,4 @@
-import { Agent, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, Key, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 
 import {
   agentDependencies,
@@ -45,6 +45,7 @@ describe('IndySdkAnonCredsRegistry', () => {
     const dynamicVersion = `1.${Math.random() * 100}`
 
     const legacyIssuerId = 'TL1EaPFCZ8Si5aUrqScBDt'
+    const signingKey = Key.fromPublicKeyBase58('FMGcFuU3QwAQLywxvmEnSorQT3NwU9wgDMMTaDFtvswm', KeyType.Ed25519)
     const didIndyIssuerId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 
     const legacySchemaId = `TL1EaPFCZ8Si5aUrqScBDt:2:test:${dynamicVersion}`
@@ -59,7 +60,6 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       options: {},
     })
-    console.log(schemaResult)
 
     expect(schemaResult).toMatchObject({
       schemaState: {
@@ -212,7 +212,7 @@ describe('IndySdkAnonCredsRegistry', () => {
       ver: '1.0',
     })
 
-    await indySdkPoolService.submitWriteRequest(agent.context, pool, revocationRegistryRequest, legacyIssuerId)
+    await indySdkPoolService.submitWriteRequest(agent.context, pool, revocationRegistryRequest, signingKey)
 
     const legacyRevocationRegistryDefinition = await indySdkAnonCredsRegistry.getRevocationRegistryDefinition(
       agent.context,
@@ -292,7 +292,7 @@ describe('IndySdkAnonCredsRegistry', () => {
         protocolVersion: 2,
         reqId: Math.floor(Math.random() * 1000000),
       },
-      legacyIssuerId
+      signingKey
     )
 
     const legacyRevocationStatusList = await indySdkAnonCredsRegistry.getRevocationStatusList(

@@ -34,8 +34,11 @@ const legacyIndyRevocationRegistryIdRegex =
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indySdkAnonCredsRegexes = [
+  // NOTE: we only include the qualified issuer id here, as we don't support registering objects based on legacy issuer ids.
+  // you can still resolve using legacy issuer ids, but you need to use the full did:indy identifier when registering.
+  // As we find a matching anoncreds registry based on the issuerId only when creating an object, this will make sure
+  // it will throw an no registry found for identifier error.
   // issuer id
-  legacyIndyIssuerIdRegex,
   DID_INDY_REGEX,
 
   // schema

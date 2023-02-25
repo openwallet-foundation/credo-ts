@@ -22,7 +22,9 @@ describe('identifiers', () => {
 
       const anotherId = 'some:id'
 
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(did)).toEqual(true)
+      // unqualified issuerId not in regex on purpose. See note in implementation.
+      expect(indySdkAnonCredsRegistryIdentifierRegex.test(did)).toEqual(false)
+
       expect(indySdkAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
       expect(indySdkAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
       expect(indySdkAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
