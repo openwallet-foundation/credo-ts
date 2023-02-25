@@ -1,4 +1,4 @@
-import type { RegisterCredentialDefinitionReturnStateFinished } from '../../packages/anoncreds/src'
+import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
