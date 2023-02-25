@@ -1,40 +1,34 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { CreateOfferOptions } from '../src/modules/credentials'
-import type { IndyCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { SovDidCreateOptions } from '@aries-framework/core'
+import type { IndySdkSovDidCreateOptions } from '@aries-framework/indy-sdk'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getLegacyAnonCredsModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { sleep } from '../src/utils/sleep'
 
 import { getAgentOptions } from './helpers'
 
-import { ConsoleLogger, LogLevel } from '@aries-framework/core'
-
-const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
-  endpoints: ['rxjs:faber'],
-  logger: new ConsoleLogger(LogLevel.debug),
-})
-const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
-  endpoints: ['rxjs:alice'],
-  logger: new ConsoleLogger(LogLevel.debug),
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber Agent OOB',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getLegacyAnonCredsModules()
+)
+const aliceAgentOptions = getAgentOptions(
+  'Alice Agent OOB',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getLegacyAnonCredsModules()
+)
 
 describe('out of band implicit', () => {
-  const makeConnectionConfig = {
-    goal: 'To make a connection',
-    goalCode: 'p2p-messaging',
-    label: 'Faber College',
-    alias: `Faber's connection with Alice`,
-  }
-
   let faberAgent: Agent
   let aliceAgent: Agent
 
@@ -78,15 +72,13 @@ describe('out of band implicit', () => {
     jest.resetAllMocks()
   })
 
-  describe('receiveInvitation', () => {
-    test.skip('receive implicit OOB invitation', async () => {
+  describe('receiveimplicitInvitation', () => {
+    test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-      const submitterDid = `did:sov:${faberAgent.publicDid?.did!}`
-
-      const did = await faberAgent.dids.create<SovDidCreateOptions>({
+      const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
         method: 'sov',
         options: {
-          submitterDid,
+          submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
           alias: 'Alias',
           endpoints: {
             endpoint: 'rxjs:faber',
@@ -95,38 +87,14 @@ describe('out of band implicit', () => {
         },
       })
 
-      const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } =
-        await aliceAgent.oob.receiveImplicitInvitation(did.didState.did!, {
-          autoAcceptInvitation: false,
-          autoAcceptConnection: false,
-        })
+      const publicDid = did.didState.did
+      expect(publicDid).toBeDefined()
 
-      expect(connectionRecord).not.toBeDefined()
-      expect(receivedOutOfBandRecord.role).toBe(OutOfBandRole.Receiver)
-      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.Initial)
-      //expect(receivedOutOfBandRecord.outOfBandInvitation).toEqual(outOfBandInvitation)
-    })
-
-    test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-      const submitterDid = `did:sov:${faberAgent.publicDid?.did!}`
-
-      const did = await faberAgent.dids.create<SovDidCreateOptions>({
-        method: 'sov',
-        options: {
-          submitterDid,
-          alias: 'Alias',
-          endpoints: {
-            endpoint: 'rxjs:faber',
-            types: ['DIDComm', 'did-communication', 'endpoint'],
-          },
-        },
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+        did: publicDid!,
+        alias: 'Faber public',
+        label: 'Alice',
       })
-
-      let { outOfBandRecord, connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation(
-        did.didState.did!,
-        {}
-      )
 
       aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
       expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -141,7 +109,51 @@ describe('out of band implicit', () => {
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-      expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
+      expect(faberAliceConnection.theirLabel).toBe('Alice')
+      expect(aliceFaberConnection.alias).toBe('Faber public')
+      expect(aliceFaberConnection.invitationDid).toBe(publicDid)
     })
+  })
+
+  test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
+    const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
+      method: 'sov',
+      options: {
+        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        alias: 'Alias',
+        endpoints: {
+          endpoint: 'rxjs:faber',
+          types: ['DIDComm', 'did-communication', 'endpoint'],
+        },
+      },
+    })
+
+    const publicDid = did.didState.did
+    expect(publicDid).toBeDefined()
+
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
+      did: publicDid!,
+      alias: 'Faber public',
+      label: 'Alice',
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
+
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+
+    await sleep(1000)
+    // TODO: Wait for a connection event
+    expect((await faberAgent.connections.getAll()).length).toEqual(1)
+    //const [faberAliceConnection] = await faberAgent.connections.findAllByOutOfBandId(outOfBandRecord!.id)
+    let [faberAliceConnection] = await faberAgent.connections.getAll()
+    faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
+    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+    expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
+    expect(faberAliceConnection.theirLabel).toBe('Alice')
+    expect(aliceFaberConnection.alias).toBe('Faber public')
+    expect(aliceFaberConnection.invitationDid).toBe(publicDid)
   })
 })

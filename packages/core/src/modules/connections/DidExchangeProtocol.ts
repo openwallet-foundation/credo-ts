@@ -26,6 +26,7 @@ import {
   PeerDidNumAlgo,
 } from '../dids'
 import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
+import { tryParseDid } from '../dids/domain/parse'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
@@ -104,7 +105,9 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandInvitation.isImplicit ? 'publicDID' : outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.isImplicitInvitation
+      ? outOfBandInvitation.getDidServices()[0]
+      : outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -146,13 +149,27 @@ export class DidExchangeProtocol {
 
     const { message } = messageContext
 
-    // Check corresponding invitation ID is the request's ~thread.pthid
+    // Check corresponding invitation ID is the request's ~thread.pthid or pthid is a public did
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
+    const parentThreadId = message.thread?.parentThreadId
     if (
-      message.thread?.parentThreadId !== 'publicDID' &&
-      (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId)
+      !parentThreadId ||
+      (!tryParseDid(parentThreadId) && parentThreadId !== outOfBandRecord.getTags().invitationId)
     ) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
+        problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
+      })
+    }
+
+    // If it's a request related to an implicit invitation, make sure destination DID is present in our wallet
+    const publicDid = tryParseDid(parentThreadId)
+    if (
+      publicDid &&
+      !(await messageContext.agentContext.dependencyManager
+        .resolve(DidRepository)
+        .findCreatedDid(messageContext.agentContext, publicDid.did))
+    ) {
+      throw new DidExchangeProblemReportError('Did referenced not found.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
     }
@@ -361,7 +378,9 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.isImplicitInvitation
+      ? outOfBandRecord.outOfBandInvitation.getDidServices()[0]
+      : outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
@@ -405,7 +424,7 @@ export class DidExchangeProtocol {
       })
     }
     const pthid = message.thread?.parentThreadId
-    if (!pthid || (pthid !== outOfBandRecord.getTags().invitationId && pthid !== 'publicDID')) {
+    if (!pthid || (pthid !== outOfBandRecord.getTags().invitationId && !outOfBandRecord.isImplicitInvitation)) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })

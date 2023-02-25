@@ -32,6 +32,7 @@ export interface OutOfBandRecordProps {
   reusable?: boolean
   mediatorId?: string
   reuseConnectionId?: string
+  isImplicitInvitation?: boolean
 }
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
@@ -44,6 +45,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
   public autoAcceptConnection?: boolean
   public mediatorId?: string
   public reuseConnectionId?: string
+  public isImplicitInvitation?: boolean
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -63,6 +65,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
       this._tags = props.tags ?? { recipientKeyFingerprints: [] }
+      this.isImplicitInvitation = props.isImplicitInvitation
     }
   }
 

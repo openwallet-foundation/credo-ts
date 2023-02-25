@@ -76,6 +76,12 @@ export interface ReceiveOutOfBandInvitationConfig {
   reuseConnection?: boolean
   routing?: Routing
   acceptInvitationTimeoutMs?: number
+  isImplicit?: boolean
+}
+
+export interface ReceiveOutOfBandImplicitInvitationConfig extends Omit<ReceiveOutOfBandInvitationConfig, 'isImplicit'> {
+  did: string
+  handshakeProtocols?: HandshakeProtocol[]
 }
 
 @injectable()
@@ -380,6 +386,7 @@ export class OutOfBandApi {
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
       tags: { recipientKeyFingerprints },
+      isImplicitInvitation: config.isImplicit,
     })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
@@ -408,24 +415,23 @@ export class OutOfBandApi {
    * calling `acceptInvitation`.
    *
    * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol).
+   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
+   * (DID Exchange by default)
    *
    * Agent role: receiver (invitee)
    *
-   * @param did public DID
-   * @param config config for handling of invitation
+   * @param config config for creating and handling invitation
    *
    * @returns out-of-band record and connection record if one has been created.
    */
-  public async receiveImplicitInvitation(did: string, config: ReceiveOutOfBandInvitationConfig) {
+  public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
     const invitation = new OutOfBandInvitation({
-      id: 'publicDID',
       label: config.label,
-      services: [did],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      services: [config.did],
+      handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
     })
 
-    return this.receiveInvitation(invitation, config)
+    return this.receiveInvitation(invitation, { ...config, isImplicit: true })
   }
 
   /**

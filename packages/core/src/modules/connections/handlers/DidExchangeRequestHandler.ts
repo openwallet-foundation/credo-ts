@@ -7,6 +7,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { tryParseDid } from '../../dids/domain/parse'
 import { OutOfBandRole } from '../../oob/domain'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../../oob/messages'
@@ -43,7 +44,9 @@ export class DidExchangeRequestHandler implements MessageHandler {
       throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
     }
 
-    if (!message.thread?.parentThreadId) {
+    const parentThreadId = message.thread?.parentThreadId
+
+    if (!parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
 
@@ -57,9 +60,9 @@ export class DidExchangeRequestHandler implements MessageHandler {
       const outOfBandRecord = new OutOfBandRecord({
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,
-        alias: 'config.alias',
         reusable: true,
-        autoAcceptConnection: messageContext.agentContext.config.autoAcceptConnections,
+        autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
+        isImplicitInvitation: true,
         outOfBandInvitation,
       })
 
@@ -68,15 +71,11 @@ export class DidExchangeRequestHandler implements MessageHandler {
       return outOfBandRecord
     }
 
-    const outOfBandRecord =
-      message.thread?.parentThreadId === 'publicDID'
-        ? await createOobRecord('publicDID')
-        : await this.outOfBandService.findByCreatedInvitationId(
-            messageContext.agentContext,
-            message.thread.parentThreadId
-          )
+    const outOfBandRecord = tryParseDid(parentThreadId)
+      ? await createOobRecord(parentThreadId)
+      : await this.outOfBandService.findByCreatedInvitationId(messageContext.agentContext, parentThreadId)
     if (!outOfBandRecord) {
-      throw new AriesFrameworkError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
+      throw new AriesFrameworkError(`OutOfBand record for message ID ${parentThreadId} not found!`)
     }
 
     if (connection && !outOfBandRecord.reusable) {

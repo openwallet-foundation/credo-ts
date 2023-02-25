@@ -24,7 +24,6 @@ export interface OutOfBandInvitationOptions {
   handshakeProtocols?: HandshakeProtocol[]
   services: Array<OutOfBandDidCommService | string>
   imageUrl?: string
-  isImplicit?: boolean
   appendedAttachments?: Attachment[]
 }
 
@@ -41,7 +40,6 @@ export class OutOfBandInvitation extends AgentMessage {
       this.handshakeProtocols = options.handshakeProtocols
       this.services = options.services
       this.imageUrl = options.imageUrl
-      this.isImplicit = options.isImplicit ?? false
       this.appendedAttachments = options.appendedAttachments
     }
   }
@@ -157,12 +155,6 @@ export class OutOfBandInvitation extends AgentMessage {
   @IsOptional()
   @IsUrl()
   public readonly imageUrl?: string
-
-  /**
-   * Indicate if this is an implicit invitation
-   */
-  @Exclude({ toPlainOnly: true })
-  public readonly isImplicit!: boolean
 }
 
 /**
