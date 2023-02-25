@@ -426,7 +426,7 @@ export class OutOfBandApi {
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
     const invitation = new OutOfBandInvitation({
-      label: config.label,
+      label: config.label ?? '',
       services: [config.did],
       handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
     })
