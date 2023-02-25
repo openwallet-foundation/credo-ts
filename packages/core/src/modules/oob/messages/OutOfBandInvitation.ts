@@ -2,7 +2,7 @@ import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
-import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
+import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../../../agent/AgentMessage'
