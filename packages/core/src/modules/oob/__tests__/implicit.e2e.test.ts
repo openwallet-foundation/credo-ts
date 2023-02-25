@@ -1,27 +1,26 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { IndySdkSovDidCreateOptions } from '@aries-framework/indy-sdk'
 
 import { Subject } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getLegacyAnonCredsModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import { Agent } from '../src/agent/Agent'
-import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { sleep } from '../src/utils/sleep'
-
-import { getAgentOptions } from './helpers'
+import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAgentOptions } from '../../../../tests/helpers'
+import { Agent } from '../../../agent/Agent'
+import { sleep } from '../../../utils/sleep'
+import { DidExchangeState, HandshakeProtocol } from '../../connections'
 
 const faberAgentOptions = getAgentOptions(
-  'Faber Agent OOB',
+  'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
   },
   getLegacyAnonCredsModules()
 )
 const aliceAgentOptions = getAgentOptions(
-  'Alice Agent OOB',
+  'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
   },
@@ -121,7 +120,7 @@ describe('out of band implicit', () => {
       method: 'sov',
       options: {
         submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
-        alias: 'Alias',
+        alias: 'My defined alias',
         endpoints: {
           endpoint: 'rxjs:faber',
           types: ['DIDComm', 'did-communication', 'endpoint'],
@@ -155,5 +154,32 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.theirLabel).toBe('Alice')
     expect(aliceFaberConnection.alias).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(publicDid)
+  })
+
+  test(`receive an implicit invitation of an unresolvable did`, async () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
+    const did = await faberAgent.dids.create<IndySdkSovDidCreateOptions>({
+      method: 'sov',
+      options: {
+        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        alias: 'My defined alias',
+        endpoints: {
+          endpoint: 'rxjs:faber',
+          types: ['DIDComm', 'did-communication', 'endpoint'],
+        },
+      },
+    })
+
+    const publicDid = did.didState.did
+    expect(publicDid).toBeDefined()
+
+    //await expect(
+      await aliceAgent.oob.receiveImplicitInvitation({
+        did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
+        alias: 'Faber public',
+        label: 'Alice',
+        handshakeProtocols: [HandshakeProtocol.DidExchange],
+      })
+    //).rejects.toThrowError()
   })
 })

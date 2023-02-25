@@ -59,6 +59,7 @@ export class ConnectionRequestHandler implements MessageHandler {
 
       const outOfBandInvitation = new OutOfBandInvitation({
         id: message.threadId,
+        label: '',
         services: [did],
         handshakeProtocols: [HandshakeProtocol.Connections],
       })

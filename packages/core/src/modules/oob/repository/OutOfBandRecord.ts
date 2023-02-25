@@ -12,7 +12,7 @@ import { OutOfBandInvitation } from '../messages'
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
-  invitationId?: string
+  invitationId: string
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -74,7 +74,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       ...this._tags,
       role: this.role,
       state: this.state,
-      invitationId: this.outOfBandInvitation?.id,
+      invitationId: this.outOfBandInvitation.id,
     }
   }
 
