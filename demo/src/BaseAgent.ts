@@ -1,6 +1,6 @@
-import type { IndySdkPoolConfig } from '../../packages/indy-sdk/src/ledger'
-import type { IndyVdrPoolConfig } from '../../packages/indy-vdr/src/pool'
 import type { InitConfig } from '@aries-framework/core'
+import type { IndySdkPoolConfig } from '@aries-framework/indy-sdk'
+import type { IndyVdrPoolConfig } from '@aries-framework/indy-vdr'
 
 import {
   AnonCredsModule,

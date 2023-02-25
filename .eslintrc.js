@@ -5,8 +5,10 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:@typescript-eslint/recommended',
+    'plugin:workspaces/recommended',
     'plugin:prettier/recommended', // Enables eslint-plugin-prettier and displays prettier errors as ESLint errors. Make sure this is always the last configuration in the extends array.
   ],
+  plugins: ['workspaces'],
   parserOptions: {
     tsconfigRootDir: __dirname,
     project: ['./tsconfig.eslint.json'],
@@ -44,6 +46,7 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
+    'workspaces/no-relative-imports': 'error',
     '@typescript-eslint/no-non-null-assertion': 'error',
     'import/no-extraneous-dependencies': [
       'error',
@@ -120,6 +123,14 @@ module.exports = {
             devDependencies: true,
           },
         ],
+      },
+    },
+    {
+      files: ['*.test.ts', '**/__tests__/**', '**/tests/**', '**/tests/**'],
+      rules: {
+        'workspaces/no-relative-imports': 'off',
+        'workspaces/require-dependency': 'off',
+        'workspaces/no-absolute-imports': 'off',
       },
     },
   ],
