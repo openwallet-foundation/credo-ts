@@ -46,7 +46,6 @@ module.exports = {
         'newlines-between': 'always',
       },
     ],
-    'workspaces/no-relative-imports': 'error',
     '@typescript-eslint/no-non-null-assertion': 'error',
     'import/no-extraneous-dependencies': [
       'error',
