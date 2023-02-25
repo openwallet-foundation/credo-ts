@@ -13,6 +13,7 @@ import type {
   Agent,
   CredentialState,
   ConnectionStateChangedEvent,
+  Buffer,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
@@ -28,6 +29,7 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
   ConnectionEventTypes,
+  TypedArrayEncoder,
   AgentConfig,
   AgentContext,
   BasicMessageEventTypes,
@@ -77,7 +79,6 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
-    publicDidSeed,
     autoAcceptConnections: true,
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
@@ -113,7 +114,6 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
         },
       },
     },
-    publicDidSeed,
     autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
     logger: TestLogger.fromLogger(testLogger, name),
@@ -121,6 +121,21 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
   }
 
   return { config, dependencies: agentDependencies, modules: (modules ?? {}) as AgentModules } as const
+}
+
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
+  const key = await agent.wallet.createKey({
+    keyType: KeyType.Ed25519,
+    privateKey,
+  })
+
+  // did is first 16 bytes of public key encoded as base58
+  const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
+
+  // import the did in the wallet so it can be used
+  await agent.dids.import({ did: `did:sov:${unqualifiedIndyDid}` })
+
+  return unqualifiedIndyDid
 }
 
 export function getAgentConfig(

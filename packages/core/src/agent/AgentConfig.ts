@@ -34,16 +34,6 @@ export class AgentConfig {
   }
 
   /**
-   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
-   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
-   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  public get publicDidSeed() {
-    return this.initConfig.publicDidSeed
-  }
-
-  /**
    * @todo move to context configuration
    */
   public get walletConfig() {

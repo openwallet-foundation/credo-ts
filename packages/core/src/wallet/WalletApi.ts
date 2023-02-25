@@ -1,4 +1,4 @@
-import type { Wallet } from './Wallet'
+import type { Wallet, WalletCreateKeyOptions } from './Wallet'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 
 import { AgentContext } from '../agent'
@@ -115,5 +115,22 @@ export class WalletApi {
 
   public async import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void> {
     await this.wallet.import(walletConfig, importConfig)
+  }
+
+  /**
+   * Create a key for and store it in the wallet. You can optionally provide a `privateKey`
+   * or `seed` for deterministic key generation.
+   *
+   * @param privateKey Buffer Private key (formerly called 'seed')
+   * @param seed Buffer  (formerly called 'seed')
+   * @param keyType KeyType the type of key that should be created
+   *
+   * @returns a `Key` instance
+   *
+   * @throws {WalletError} When an unsupported `KeyType` is provided
+   * @throws {WalletError} When the key could not be created
+   */
+  public async createKey(options: WalletCreateKeyOptions) {
+    return this.wallet.createKey(options)
   }
 }

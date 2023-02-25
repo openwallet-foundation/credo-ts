@@ -1,7 +1,6 @@
-import type { FileSystem } from '../../../../src'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
-import { unlinkSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
@@ -17,7 +16,6 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-const backupIdentifier = backupDate.getTime()
 
 const walletConfig = {
   id: `Wallet: 0.1 Update`,

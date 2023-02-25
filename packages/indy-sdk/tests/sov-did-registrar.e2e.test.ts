@@ -3,7 +3,7 @@ import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegist
 import { Agent, TypedArrayEncoder, convertPublicKeyToX25519, JsonTransformer } from '@aries-framework/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { getIndySdkModules } from './setupIndySdkModule'
@@ -24,6 +24,12 @@ describe('dids', () => {
   })
 
   it('should create a did:sov did', async () => {
+    // Add existing endorser did to the wallet
+    const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
+      agent,
+      TypedArrayEncoder.fromString(publicDidSeed)
+    )
+
     // Generate a seed and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
     const privateKey = TypedArrayEncoder.fromString(
@@ -40,7 +46,7 @@ describe('dids', () => {
     const did = await agent.dids.create<IndySdkSovDidCreateOptions>({
       method: 'sov',
       options: {
-        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        submitterVerificationMethod: `did:sov:${unqualifiedSubmitterDid}#key-1`,
         alias: 'Alias',
         endpoints: {
           endpoint: 'https://example.com/endpoint',

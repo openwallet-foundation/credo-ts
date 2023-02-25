@@ -1,6 +1,4 @@
-import type { FileSystem } from '../../FileSystem'
-
-import { unlinkSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
@@ -16,7 +14,6 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-const backupIdentifier = backupDate.getTime()
 
 const walletConfig = {
   id: `Wallet: 0.3 Update`,
@@ -48,8 +45,6 @@ describe('UpdateAssistant | v0.3 - v0.3.1', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {

@@ -52,7 +52,6 @@ export enum DidCommMimeType {
 export interface InitConfig {
   endpoints?: string[]
   label: string
-  publicDidSeed?: string
   walletConfig?: WalletConfig
   logger?: Logger
   didCommMimeType?: DidCommMimeType

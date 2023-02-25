@@ -1,8 +1,8 @@
 import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegistrar'
 
-import { Agent, AriesFrameworkError, JsonTransformer } from '@aries-framework/core'
+import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests/helpers'
 
 import { getIndySdkModules } from './setupIndySdkModule'
 
@@ -19,10 +19,16 @@ describe('Indy SDK Sov DID resolver', () => {
   })
 
   it('should resolve a did:sov did', async () => {
+    // Add existing endorser did to the wallet
+    const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
+      agent,
+      TypedArrayEncoder.fromString(publicDidSeed)
+    )
+
     const createResult = await agent.dids.create<IndySdkSovDidCreateOptions>({
       method: 'sov',
       options: {
-        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        submitterVerificationMethod: `did:sov:${unqualifiedSubmitterDid}#key-1`,
         alias: 'Alias',
         role: 'TRUSTEE',
       },
