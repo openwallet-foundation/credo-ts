@@ -48,8 +48,9 @@ import {
 import testLogger from '../../core/tests/logger'
 import {
   IndySdkAnonCredsRegistry,
+  IndySdkIndyDidRegistrar,
+  IndySdkIndyDidResolver,
   IndySdkModule,
-  IndySdkSovDidRegistrar,
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
@@ -98,8 +99,8 @@ export const getLegacyAnonCredsModules = ({
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver()],
-      registrars: [new IndySdkSovDidRegistrar()],
+      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
+      registrars: [new IndySdkIndyDidRegistrar()],
     }),
     indySdk: new IndySdkModule(getIndySdkModuleConfig()),
     cache: new CacheModule({

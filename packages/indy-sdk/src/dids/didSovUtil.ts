@@ -9,6 +9,8 @@ import {
 
 import { getFullVerkey } from '../utils/did'
 
+export type DidCommServicesEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
+
 export interface IndyEndpointAttrib {
   endpoint?: string
   types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
@@ -16,6 +18,10 @@ export interface IndyEndpointAttrib {
   [key: string]: unknown
 }
 
+/**
+ * Get a base did:sov did document based on the provided did and verkey
+ * https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html#crud-operation-definitions
+ */
 export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
   const verificationMethodId = `${fullDid}#key-1`
   const keyAgreementId = `${fullDid}#key-agreement-1`

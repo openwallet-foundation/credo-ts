@@ -1,4 +1,5 @@
 import type { IndyEndpointAttrib } from './didSovUtil'
+import type { IndySdkPool } from '../ledger'
 import type { IndySdk } from '../types'
 import type { DidResolutionResult, ParsedDid, DidResolver, AgentContext } from '@aries-framework/core'
 
@@ -15,8 +16,10 @@ export class IndySdkSovDidResolver implements DidResolver {
     const didDocumentMetadata = {}
 
     try {
-      const nym = await this.getPublicDid(agentContext, parsed.id)
-      const endpoints = await this.getEndpointsForDid(agentContext, parsed.id)
+      const poolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
+      const { pool, nymResponse } = await poolService.getPoolForDid(agentContext, parsed.id)
+      const nym = nymResponse ?? (await this.getPublicDid(agentContext, pool, parsed.id))
+      const endpoints = await this.getEndpointsForDid(agentContext, pool, parsed.id)
 
       const keyAgreementId = `${parsed.did}#key-agreement-1`
       const builder = sovDidDocumentFromDid(parsed.did, nym.verkey)
@@ -39,20 +42,19 @@ export class IndySdkSovDidResolver implements DidResolver {
     }
   }
 
-  private async getPublicDid(agentContext: AgentContext, did: string) {
+  private async getPublicDid(agentContext: AgentContext, pool: IndySdkPool, did: string) {
     const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
+    const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
-    // Getting the pool for a did also retrieves the DID. We can just use that
-    const { did: didResponse } = await indySdkPoolService.getPoolForDid(agentContext, did)
+    const request = await indySdk.buildGetNymRequest(null, did)
+    const response = await indySdkPoolService.submitReadRequest(pool, request)
 
-    return didResponse
+    return await indySdk.parseGetNymResponse(response)
   }
 
-  private async getEndpointsForDid(agentContext: AgentContext, did: string) {
+  private async getEndpointsForDid(agentContext: AgentContext, pool: IndySdkPool, did: string) {
     const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
     const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
-
-    const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
     try {
       agentContext.config.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.didIndyNamespace}'`)
