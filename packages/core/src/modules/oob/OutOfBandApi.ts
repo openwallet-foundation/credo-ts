@@ -67,7 +67,7 @@ export interface CreateLegacyInvitationConfig {
   routing?: Routing
 }
 
-export interface ReceiveOutOfBandInvitationConfig {
+interface BaseReceiveOutOfBandInvitationConfig {
   label?: string
   alias?: string
   imageUrl?: string
@@ -79,8 +79,10 @@ export interface ReceiveOutOfBandInvitationConfig {
   isImplicit?: boolean
 }
 
+export type ReceiveOutOfBandInvitationConfig = Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit'>
+
 export interface ReceiveOutOfBandImplicitInvitationConfig
-  extends Omit<ReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
+  extends Omit<BaseReceiveOutOfBandInvitationConfig, 'isImplicit' | 'reuseConnection'> {
   did: string
   handshakeProtocols?: HandshakeProtocol[]
 }
@@ -329,6 +331,43 @@ export class OutOfBandApi {
     invitation: OutOfBandInvitation | ConnectionInvitationMessage,
     config: ReceiveOutOfBandInvitationConfig = {}
   ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+    return this._receiveInvitation(invitation, config)
+  }
+
+  /**
+   * Creates inbound out-of-band record from an implicit invitation, given as a public DID the agent
+   * should be capable of resolving. It automatically passes out-of-band invitation for further
+   * processing to `acceptInvitation` method. If you don't want to do that you can set
+   * `autoAcceptInvitation` attribute in `config` parameter to `false` and accept the message later by
+   * calling `acceptInvitation`.
+   *
+   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
+   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
+   * (DID Exchange by default)
+   *
+   * Agent role: receiver (invitee)
+   *
+   * @param config config for creating and handling invitation
+   *
+   * @returns out-of-band record and connection record if one has been created.
+   */
+  public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
+    const invitation = new OutOfBandInvitation({
+      label: config.label ?? '',
+      services: [config.did],
+      handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
+    })
+
+    return this._receiveInvitation(invitation, { ...config, isImplicit: true })
+  }
+
+  /**
+   * Internal receive invitation method, for both explicit and implicit OOB invitations
+   */
+  private async _receiveInvitation(
+    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
+    config: BaseReceiveOutOfBandInvitationConfig = {}
+  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     // Convert to out of band invitation if needed
     const outOfBandInvitation =
       invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
@@ -409,33 +448,6 @@ export class OutOfBandApi {
   }
 
   /**
-   * Creates inbound out-of-band record from an implicit invitation, given as a public DID the agent
-   * should be capable of resolving. It automatically passes out-of-band invitation for further
-   * processing to `acceptInvitation` method. If you don't want to do that you can set
-   * `autoAcceptInvitation` attribute in `config` parameter to `false` and accept the message later by
-   * calling `acceptInvitation`.
-   *
-   * It supports both OOB (Aries RFC 0434: Out-of-Band Protocol 1.1) and Connection Invitation
-   * (0160: Connection Protocol). Handshake protocol to be used depends on handshakeProtocols
-   * (DID Exchange by default)
-   *
-   * Agent role: receiver (invitee)
-   *
-   * @param config config for creating and handling invitation
-   *
-   * @returns out-of-band record and connection record if one has been created.
-   */
-  public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
-    const invitation = new OutOfBandInvitation({
-      label: config.label ?? '',
-      services: [config.did],
-      handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
-    })
-
-    return this.receiveInvitation(invitation, { ...config, isImplicit: true })
-  }
-
-  /**
    * Creates a connection if the out-of-band invitation message contains `handshake_protocols`
    * attribute, except for the case when connection already exists and `reuseConnection` is enabled.
    *
@@ -471,7 +483,7 @@ export class OutOfBandApi {
 
     const { handshakeProtocols } = outOfBandInvitation
 
-    const existingConnection = outOfBandInvitation ? await this.findExistingConnection(outOfBandInvitation) : undefined
+    const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)
 

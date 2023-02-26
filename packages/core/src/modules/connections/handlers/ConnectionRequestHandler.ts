@@ -37,7 +37,7 @@ export class ConnectionRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<ConnectionRequestHandler>) {
-    const { connection, recipientKey, senderKey, message } = messageContext
+    const { agentContext, connection, recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
@@ -45,46 +45,16 @@ export class ConnectionRequestHandler implements MessageHandler {
 
     const parentThreadId = message.thread?.parentThreadId
 
-    const createOobRecord = async (did: string) => {
-      // If it's a request related to an implicit invitation, make sure destination DID is present in our wallet
-      const publicDid = tryParseDid(did)
-      if (
-        publicDid &&
-        !(await messageContext.agentContext.dependencyManager
-          .resolve(DidRepository)
-          .findCreatedDid(messageContext.agentContext, publicDid.did))
-      ) {
-        throw new AriesFrameworkError(`Referenced public did ${did} not found.`)
-      }
-
-      const outOfBandInvitation = new OutOfBandInvitation({
-        id: message.threadId,
-        label: '',
-        services: [did],
-        handshakeProtocols: [HandshakeProtocol.Connections],
-      })
-
-      const outOfBandRecord = new OutOfBandRecord({
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
-        reusable: true,
-        autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
-        isImplicitInvitation: true,
-        outOfBandInvitation,
-        tags: {
-          recipientKeyFingerprints: [recipientKey.fingerprint],
-        },
-      })
-
-      await this.outOfBandService.save(messageContext.agentContext, outOfBandRecord)
-      this.outOfBandService.emitStateChangedEvent(messageContext.agentContext, outOfBandRecord, null)
-      return outOfBandRecord
-    }
-
     const outOfBandRecord =
       parentThreadId && tryParseDid(parentThreadId)
-        ? await createOobRecord(parentThreadId)
-        : await this.outOfBandService.findCreatedByRecipientKey(messageContext.agentContext, recipientKey)
+        ? await this.outOfBandService.createImplicitInvitation(agentContext, {
+            id: message.threadId,
+            did: parentThreadId,
+            autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
+            recipientKey,
+            handshakeProtocols: [HandshakeProtocol.Connections],
+          })
+        : await this.outOfBandService.findCreatedByRecipientKey(agentContext, recipientKey)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)

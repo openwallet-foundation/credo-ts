@@ -1,22 +1,32 @@
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
-import type { OutOfBandRecord } from './repository'
 import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionRecord } from '../connections'
+import type { HandshakeProtocol } from '../connections/models'
 
 import { EventEmitter } from '../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { JsonTransformer } from '../../utils'
+import { DidsApi } from '../dids'
+import { parseDid } from '../dids/domain/parse'
 
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
-import { HandshakeReuseMessage } from './messages'
+import { HandshakeReuseMessage, OutOfBandInvitation } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
-import { OutOfBandRepository } from './repository'
+import { OutOfBandRecord, OutOfBandRepository } from './repository'
+
+export interface CreateImplicitInvitationConfig {
+  id: string
+  did: string
+  handshakeProtocols: HandshakeProtocol[]
+  autoAcceptConnection: boolean
+  recipientKey: Key
+}
 
 @injectable()
 export class OutOfBandService {
@@ -26,6 +36,42 @@ export class OutOfBandService {
   public constructor(outOfBandRepository: OutOfBandRepository, eventEmitter: EventEmitter) {
     this.outOfBandRepository = outOfBandRepository
     this.eventEmitter = eventEmitter
+  }
+
+  public async createImplicitInvitation(
+    agentContext: AgentContext,
+    config: CreateImplicitInvitationConfig
+  ): Promise<OutOfBandRecord> {
+    const { id, did, handshakeProtocols, autoAcceptConnection, recipientKey } = config
+
+    // Verify it is a valid did and it is present in the wallet
+    const publicDid = parseDid(did)
+    if (!(await agentContext.dependencyManager.resolve(DidsApi).getCreatedDids({ did: publicDid.did }))) {
+      throw new AriesFrameworkError(`Referenced public did ${did} not found.`)
+    }
+
+    const outOfBandInvitation = new OutOfBandInvitation({
+      id,
+      label: '',
+      services: [did],
+      handshakeProtocols,
+    })
+
+    const outOfBandRecord = new OutOfBandRecord({
+      role: OutOfBandRole.Sender,
+      state: OutOfBandState.AwaitResponse,
+      reusable: true,
+      autoAcceptConnection,
+      isImplicitInvitation: true,
+      outOfBandInvitation,
+      tags: {
+        recipientKeyFingerprints: [recipientKey.fingerprint],
+      },
+    })
+
+    await this.save(agentContext, outOfBandRecord)
+    this.emitStateChangedEvent(agentContext, outOfBandRecord, null)
+    return outOfBandRecord
   }
 
   public async processHandshakeReuse(messageContext: InboundMessageContext<HandshakeReuseMessage>) {

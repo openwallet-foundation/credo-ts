@@ -1,20 +1,26 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { IndySdkSovDidCreateOptions } from '@aries-framework/indy-sdk'
 
-import { Subject } from 'rxjs'
-
-import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { getAgentOptions, waitForConnectionRecord } from '../../../../tests/helpers'
+import { setupSubjectTransports } from '../../../../tests'
+import {
+  getAgentOptions,
+  importExistingIndyDidFromPrivateKey,
+  publicDidSeed,
+  waitForConnectionRecord,
+} from '../../../../tests/helpers'
+import { TestLogger } from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
+import { LogLevel } from '../../../logger'
+import { TypedArrayEncoder } from '../../../utils'
+import { sleep } from '../../../utils/sleep'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
+    logger: new TestLogger(LogLevel.debug),
   },
   getLegacyAnonCredsModules()
 )
@@ -29,24 +35,20 @@ const aliceAgentOptions = getAgentOptions(
 describe('out of band implicit', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
+  let unqualifiedSubmitterDid: string
 
   beforeAll(async () => {
-    const faberMessages = new Subject<SubjectMessage>()
-    const aliceMessages = new Subject<SubjectMessage>()
-    const subjectMap = {
-      'rxjs:faber': faberMessages,
-      'rxjs:alice': aliceMessages,
-    }
-
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    await faberAgent.initialize()
-
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+
+    setupSubjectTransports([faberAgent, aliceAgent])
+    await faberAgent.initialize()
     await aliceAgent.initialize()
+
+    unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
+      faberAgent,
+      TypedArrayEncoder.fromString(publicDidSeed)
+    )
   })
 
   afterAll(async () => {
@@ -57,11 +59,6 @@ describe('out of band implicit', () => {
   })
 
   afterEach(async () => {
-    const credentials = await aliceAgent.credentials.getAll()
-    for (const credential of credentials) {
-      await aliceAgent.credentials.deleteById(credential.id)
-    }
-
     const connections = await faberAgent.connections.getAll()
     for (const connection of connections) {
       await faberAgent.connections.deleteById(connection.id)
@@ -71,7 +68,7 @@ describe('out of band implicit', () => {
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
+    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
     expect(publicDid).toBeDefined()
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
@@ -101,7 +98,7 @@ describe('out of band implicit', () => {
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
+    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
     expect(publicDid).toBeDefined()
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
@@ -143,7 +140,7 @@ describe('out of band implicit', () => {
   })
 
   test(`create two connections using the same implicit invitation`, async () => {
-    const publicDid = await createPublicDid(faberAgent, 'rxjs:faber')
+    const publicDid = await createPublicDid(faberAgent, unqualifiedSubmitterDid, 'rxjs:faber')
     expect(publicDid).toBeDefined()
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.oob.receiveImplicitInvitation({
@@ -190,19 +187,18 @@ describe('out of band implicit', () => {
     expect(aliceFaberNewConnection.invitationDid).toBe(publicDid)
 
     // Both connections will be associated to the same invitation did
-    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
-      aliceFaberConnection.id,
-      aliceFaberNewConnection.id,
-    ])
+    expect(await aliceAgent.connections.findByInvitationDid(publicDid!)).toHaveLength(2)
+    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual(
+      expect.arrayContaining([aliceFaberConnection.id, aliceFaberNewConnection.id])
+    )
   })
 })
 
-async function createPublicDid(agent: Agent, endpoint: string) {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain, @typescript-eslint/no-non-null-assertion
-  const did = await agent.dids.create<IndySdkSovDidCreateOptions>({
+async function createPublicDid(agent: Agent, unqualifiedSubmitterDid: string, endpoint: string) {
+  const createResult = await agent.dids.create<IndySdkSovDidCreateOptions>({
     method: 'sov',
     options: {
-      submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+      submitterVerificationMethod: `did:sov:${unqualifiedSubmitterDid}#key-1`,
       alias: 'Alias',
       endpoints: {
         endpoint,
@@ -211,5 +207,7 @@ async function createPublicDid(agent: Agent, endpoint: string) {
     },
   })
 
-  return did.didState.did
+  await sleep(1000)
+
+  return createResult.didState.did
 }

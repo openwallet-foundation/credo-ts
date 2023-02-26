@@ -8,10 +8,7 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { tryParseDid } from '../../dids/domain/parse'
-import { OutOfBandRole } from '../../oob/domain'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../../oob/messages'
-import { OutOfBandRecord } from '../../oob/repository'
 import { DidExchangeRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
@@ -38,7 +35,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
-    const { recipientKey, senderKey, message, connection } = messageContext
+    const { agentContext, recipientKey, senderKey, message, connection } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
@@ -50,31 +47,15 @@ export class DidExchangeRequestHandler implements MessageHandler {
       throw new AriesFrameworkError(`Message does not contain 'pthid' attribute`)
     }
 
-    const createOobRecord = async (did: string) => {
-      const outOfBandInvitation = new OutOfBandInvitation({
-        id: message.threadId,
-        label: '',
-        services: [did],
-        handshakeProtocols: [HandshakeProtocol.DidExchange],
-      })
-
-      const outOfBandRecord = new OutOfBandRecord({
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
-        reusable: true,
-        autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
-        isImplicitInvitation: true,
-        outOfBandInvitation,
-      })
-
-      await this.outOfBandService.save(messageContext.agentContext, outOfBandRecord)
-      this.outOfBandService.emitStateChangedEvent(messageContext.agentContext, outOfBandRecord, null)
-      return outOfBandRecord
-    }
-
     const outOfBandRecord = tryParseDid(parentThreadId)
-      ? await createOobRecord(parentThreadId)
-      : await this.outOfBandService.findByCreatedInvitationId(messageContext.agentContext, parentThreadId)
+      ? await this.outOfBandService.createImplicitInvitation(agentContext, {
+          id: message.threadId,
+          did: parentThreadId,
+          autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
+          recipientKey,
+          handshakeProtocols: [HandshakeProtocol.DidExchange],
+        })
+      : await this.outOfBandService.findByCreatedInvitationId(agentContext, parentThreadId)
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`OutOfBand record for message ID ${parentThreadId} not found!`)
     }
