@@ -105,7 +105,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandRecord.parentThreadId
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -363,7 +363,7 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.parentThreadId
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
@@ -407,7 +407,7 @@ export class DidExchangeProtocol {
       })
     }
     const pthid = message.thread?.parentThreadId
-    if (!pthid || pthid !== outOfBandRecord.parentThreadId) {
+    if (!pthid || pthid !== outOfBandRecord.outOfBandInvitation.id) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })

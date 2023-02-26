@@ -68,10 +68,6 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
     }
   }
 
-  public get parentThreadId() {
-    return this.outOfBandInvitation.id
-  }
-
   public getTags() {
     return {
       ...this._tags,
