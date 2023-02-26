@@ -39,7 +39,8 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     }
     const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
-      tryParseDid(parentThreadId) ? message.threadId : parentThreadId
+      parentThreadId,
+      tryParseDid(parentThreadId) ? message.threadId : undefined
     )
 
     if (!outOfBandRecord) {

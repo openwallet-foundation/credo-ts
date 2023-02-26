@@ -13,6 +13,7 @@ type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
   invitationId: string
+  threadId?: string
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -32,7 +33,7 @@ export interface OutOfBandRecordProps {
   reusable?: boolean
   mediatorId?: string
   reuseConnectionId?: string
-  isImplicitInvitation?: boolean
+  threadId?: string
 }
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
@@ -45,7 +46,6 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
   public autoAcceptConnection?: boolean
   public mediatorId?: string
   public reuseConnectionId?: string
-  public isImplicitInvitation?: boolean
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -65,8 +65,11 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
       this._tags = props.tags ?? { recipientKeyFingerprints: [] }
-      this.isImplicitInvitation = props.isImplicitInvitation
     }
+  }
+
+  public get parentThreadId() {
+    return this.outOfBandInvitation.id
   }
 
   public getTags() {
@@ -75,6 +78,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation.id,
+      threadId: this.outOfBandInvitation.threadId,
     }
   }
 

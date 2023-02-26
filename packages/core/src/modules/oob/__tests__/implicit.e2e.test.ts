@@ -9,9 +9,7 @@ import {
   publicDidSeed,
   waitForConnectionRecord,
 } from '../../../../tests/helpers'
-import { TestLogger } from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
-import { LogLevel } from '../../../logger'
 import { TypedArrayEncoder } from '../../../utils'
 import { sleep } from '../../../utils/sleep'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
@@ -20,7 +18,6 @@ const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
-    logger: new TestLogger(LogLevel.debug),
   },
   getLegacyAnonCredsModules()
 )

@@ -45,8 +45,8 @@ export class ConnectionRequestHandler implements MessageHandler {
     const outOfBandRecord =
       parentThreadId && tryParseDid(parentThreadId)
         ? await this.outOfBandService.createImplicitInvitation(agentContext, {
-            id: message.threadId,
             did: parentThreadId,
+            threadId: message.threadId,
             recipientKey,
             handshakeProtocols: [HandshakeProtocol.Connections],
           })

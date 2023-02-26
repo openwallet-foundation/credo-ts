@@ -105,7 +105,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandRecord.isImplicitInvitation ? invitationDid : outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.parentThreadId
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -155,19 +155,6 @@ export class DidExchangeProtocol {
       (!tryParseDid(parentThreadId) && parentThreadId !== outOfBandRecord.getTags().invitationId)
     ) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
-        problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
-      })
-    }
-
-    // If it's a request related to an implicit invitation, make sure destination DID is present in our wallet
-    const publicDid = tryParseDid(parentThreadId)
-    if (
-      publicDid &&
-      !(await messageContext.agentContext.dependencyManager
-        .resolve(DidRepository)
-        .findCreatedDid(messageContext.agentContext, publicDid.did))
-    ) {
-      throw new DidExchangeProblemReportError('Did referenced not found.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
     }
@@ -376,9 +363,7 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.isImplicitInvitation
-      ? outOfBandRecord.outOfBandInvitation.invitationDids[0]
-      : outOfBandRecord.outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.parentThreadId
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
@@ -422,7 +407,7 @@ export class DidExchangeProtocol {
       })
     }
     const pthid = message.thread?.parentThreadId
-    if (!pthid || (pthid !== outOfBandRecord.getTags().invitationId && !outOfBandRecord.isImplicitInvitation)) {
+    if (!pthid || pthid !== outOfBandRecord.parentThreadId) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })

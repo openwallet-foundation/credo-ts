@@ -119,11 +119,9 @@ export class ConnectionService {
       imageUrl: imageUrl ?? agentContext.config.connectionImageUrl,
     })
 
-    const parentThreadId = outOfBandRecord.isImplicitInvitation ? invitationDid : outOfBandInvitation.id
-
     connectionRequest.setThread({
       threadId: connectionRequest.threadId,
-      parentThreadId,
+      parentThreadId: outOfBandRecord.parentThreadId,
     })
 
     const connectionRecord = await this.createConnection(agentContext, {

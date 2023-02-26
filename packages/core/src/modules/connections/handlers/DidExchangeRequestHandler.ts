@@ -49,8 +49,8 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     const outOfBandRecord = tryParseDid(parentThreadId)
       ? await this.outOfBandService.createImplicitInvitation(agentContext, {
-          id: message.threadId,
           did: parentThreadId,
+          threadId: message.threadId,
           recipientKey,
           handshakeProtocols: [HandshakeProtocol.DidExchange],
         })

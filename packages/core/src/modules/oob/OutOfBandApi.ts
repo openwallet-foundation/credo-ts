@@ -353,6 +353,7 @@ export class OutOfBandApi {
    */
   public async receiveImplicitInvitation(config: ReceiveOutOfBandImplicitInvitationConfig) {
     const invitation = new OutOfBandInvitation({
+      id: config.did,
       label: config.label ?? '',
       services: [config.did],
       handshakeProtocols: config.handshakeProtocols ?? [HandshakeProtocol.DidExchange],
@@ -390,15 +391,19 @@ export class OutOfBandApi {
       )
     }
 
-    // Make sure we haven't received this invitation before. (it's fine if we created it, that means we're connecting with ourselves
-    let [outOfBandRecord] = await this.outOfBandService.findAllByQuery(this.agentContext, {
-      invitationId: outOfBandInvitation.id,
-      role: OutOfBandRole.Receiver,
-    })
-    if (outOfBandRecord) {
-      throw new AriesFrameworkError(
-        `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
-      )
+    // Make sure we haven't received this invitation before
+    // It's fine if we created it (means that we are connnecting to ourselves) or if it's an implicit
+    // invitation (it allows to connect multiple times to the same public did)
+    if (!config.isImplicit) {
+      const existingOobRecordsFromThisId = await this.outOfBandService.findAllByQuery(this.agentContext, {
+        invitationId: outOfBandInvitation.id,
+        role: OutOfBandRole.Receiver,
+      })
+      if (existingOobRecordsFromThisId.length > 0) {
+        throw new AriesFrameworkError(
+          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
+        )
+      }
     }
 
     const recipientKeyFingerprints: string[] = []
@@ -420,13 +425,12 @@ export class OutOfBandApi {
       }
     }
 
-    outOfBandRecord = new OutOfBandRecord({
+    const outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Receiver,
       state: OutOfBandState.Initial,
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
       tags: { recipientKeyFingerprints },
-      isImplicitInvitation: config.isImplicit,
     })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

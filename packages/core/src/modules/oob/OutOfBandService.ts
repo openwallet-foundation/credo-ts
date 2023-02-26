@@ -21,8 +21,8 @@ import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAccepted
 import { OutOfBandRecord, OutOfBandRepository } from './repository'
 
 export interface CreateImplicitInvitationConfig {
-  id: string
   did: string
+  threadId: string
   handshakeProtocols: HandshakeProtocol[]
   autoAcceptConnection?: boolean
   recipientKey: Key
@@ -42,7 +42,7 @@ export class OutOfBandService {
     agentContext: AgentContext,
     config: CreateImplicitInvitationConfig
   ): Promise<OutOfBandRecord> {
-    const { id, did, handshakeProtocols, autoAcceptConnection, recipientKey } = config
+    const { did, threadId, handshakeProtocols, autoAcceptConnection, recipientKey } = config
 
     // Verify it is a valid did and it is present in the wallet
     const publicDid = parseDid(did)
@@ -51,18 +51,19 @@ export class OutOfBandService {
     }
 
     const outOfBandInvitation = new OutOfBandInvitation({
-      id,
+      id: did,
       label: '',
       services: [did],
       handshakeProtocols,
     })
+
+    outOfBandInvitation.setThread({ threadId })
 
     const outOfBandRecord = new OutOfBandRecord({
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
       reusable: true,
       autoAcceptConnection: autoAcceptConnection ?? false,
-      isImplicitInvitation: true,
       outOfBandInvitation,
       tags: {
         recipientKeyFingerprints: [recipientKey.fingerprint],
@@ -218,10 +219,11 @@ export class OutOfBandService {
     })
   }
 
-  public async findByCreatedInvitationId(agentContext: AgentContext, createdInvitationId: string) {
+  public async findByCreatedInvitationId(agentContext: AgentContext, createdInvitationId: string, threadId?: string) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       invitationId: createdInvitationId,
       role: OutOfBandRole.Sender,
+      threadId,
     })
   }
 
