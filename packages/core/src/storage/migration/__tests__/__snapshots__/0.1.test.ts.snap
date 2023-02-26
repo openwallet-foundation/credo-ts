@@ -800,6 +800,7 @@ Object {
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.577Z",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -865,6 +866,7 @@ Object {
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.608Z",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -930,6 +932,7 @@ Object {
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.628Z",
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -995,6 +998,7 @@ Object {
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.635Z",
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -1060,6 +1064,7 @@ Object {
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.641Z",
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -1120,6 +1125,7 @@ Object {
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.646Z",
       "id": "6-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {
@@ -1185,6 +1191,7 @@ Object {
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.653Z",
       "id": "7-4e4f-41d9-94c4-f49351b811f1",
+      "isImplicitInvitation": undefined,
       "mediatorId": undefined,
       "metadata": Object {},
       "outOfBandInvitation": Object {

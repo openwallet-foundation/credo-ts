@@ -24,7 +24,7 @@ export interface CreateImplicitInvitationConfig {
   id: string
   did: string
   handshakeProtocols: HandshakeProtocol[]
-  autoAcceptConnection: boolean
+  autoAcceptConnection?: boolean
   recipientKey: Key
 }
 
@@ -61,7 +61,7 @@ export class OutOfBandService {
       role: OutOfBandRole.Sender,
       state: OutOfBandState.AwaitResponse,
       reusable: true,
-      autoAcceptConnection,
+      autoAcceptConnection: autoAcceptConnection ?? false,
       isImplicitInvitation: true,
       outOfBandInvitation,
       tags: {

@@ -51,7 +51,6 @@ export class DidExchangeRequestHandler implements MessageHandler {
       ? await this.outOfBandService.createImplicitInvitation(agentContext, {
           id: message.threadId,
           did: parentThreadId,
-          autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
           recipientKey,
           handshakeProtocols: [HandshakeProtocol.DidExchange],
         })

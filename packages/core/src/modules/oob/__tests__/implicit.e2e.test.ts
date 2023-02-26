@@ -75,15 +75,18 @@ describe('out of band implicit', () => {
       did: publicDid!,
       alias: 'Faber public',
       label: 'Alice',
+      handshakeProtocols: [HandshakeProtocol.DidExchange],
     })
 
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
-
-    // Wait for a connection event in faber agent
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
+    // Wait for a connection event in faber agent and accept the request
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    // Alice should now be connected
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -92,9 +95,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(publicDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
-      aliceFaberConnection.id,
-    ])
+    expect(await aliceAgent.connections.findByInvitationDid(publicDid!)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
@@ -108,13 +109,15 @@ describe('out of band implicit', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
-
-    // Wait for a connection event in faber agent
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
+    // Wait for a connection event in faber agent and accept the request
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    // Alice should now be connected
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -123,9 +126,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(publicDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual([
-      aliceFaberConnection.id,
-    ])
+    expect(await aliceAgent.connections.findByInvitationDid(publicDid!)).toEqual([aliceFaberConnection])
   })
 
   test(`receive an implicit invitation using an unresolvable did`, async () => {
@@ -150,13 +151,15 @@ describe('out of band implicit', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
-
-    // Wait for a connection event in faber agent
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {})
+    // Wait for a connection event in faber agent and accept the request
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    await faberAgent.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceConnection!.id)
     expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+
+    // Alice should now be connected
+    aliceFaberConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberConnection!.id)
+    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -172,13 +175,15 @@ describe('out of band implicit', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    aliceFaberNewConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberNewConnection!.id)
-    expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
-
     // Wait for a connection event in faber agent
-    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {})
+    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    await faberAgent.connections.acceptRequest(faberAliceNewConnection.id)
     faberAliceNewConnection = await faberAgent.connections.returnWhenIsConnected(faberAliceNewConnection!.id)
     expect(faberAliceNewConnection.state).toBe(DidExchangeState.Completed)
+
+    // Alice should now be connected
+    aliceFaberNewConnection = await aliceAgent.connections.returnWhenIsConnected(aliceFaberNewConnection!.id)
+    expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
 
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
     expect(faberAliceNewConnection).toBeConnectedWith(aliceFaberNewConnection)
@@ -187,9 +192,10 @@ describe('out of band implicit', () => {
     expect(aliceFaberNewConnection.invitationDid).toBe(publicDid)
 
     // Both connections will be associated to the same invitation did
-    expect(await aliceAgent.connections.findByInvitationDid(publicDid!)).toHaveLength(2)
-    expect((await aliceAgent.connections.findByInvitationDid(publicDid!)).map((item) => item.id)).toEqual(
-      expect.arrayContaining([aliceFaberConnection.id, aliceFaberNewConnection.id])
+    const connectionsFromFaberPublicDid = await aliceAgent.connections.findByInvitationDid(publicDid!)
+    expect(connectionsFromFaberPublicDid).toHaveLength(2)
+    expect(connectionsFromFaberPublicDid).toEqual(
+      expect.arrayContaining([aliceFaberConnection, aliceFaberNewConnection])
     )
   })
 })

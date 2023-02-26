@@ -1,4 +1,5 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../agent/MessageHandler'
+import type { DidRepository } from '../../dids/repository'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
@@ -7,10 +8,6 @@ import type { ConnectionService } from '../services/ConnectionService'
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { tryParseDid } from '../../dids/domain/parse'
-import { DidRepository } from '../../dids/repository'
-import { OutOfBandRole, OutOfBandState } from '../../oob/domain'
-import { OutOfBandInvitation } from '../../oob/messages'
-import { OutOfBandRecord } from '../../oob/repository'
 import { ConnectionRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
@@ -50,7 +47,6 @@ export class ConnectionRequestHandler implements MessageHandler {
         ? await this.outOfBandService.createImplicitInvitation(agentContext, {
             id: message.threadId,
             did: parentThreadId,
-            autoAcceptConnection: this.connectionsModuleConfig.autoAcceptConnections,
             recipientKey,
             handshakeProtocols: [HandshakeProtocol.Connections],
           })
