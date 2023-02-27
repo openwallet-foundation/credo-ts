@@ -3,7 +3,7 @@ import type { LdKeyPairOptions } from '../modules/vc/models/LdKeyPair'
 import type { Wallet } from '../wallet'
 
 import { VerificationMethod } from '../modules/dids'
-import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
+import { getKeyFromVerificationMethodViaDidMapping } from '../modules/dids/domain/key-type/keyDidMapping'
 import { LdKeyPair } from '../modules/vc/models/LdKeyPair'
 import { JsonTransformer } from '../utils'
 import { MessageValidator } from '../utils/MessageValidator'
@@ -43,8 +43,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
     public static async from(verificationMethod: VerificationMethod): Promise<WalletKeyPair> {
       const vMethod = JsonTransformer.fromJSON(verificationMethod, VerificationMethod)
       MessageValidator.validateSync(vMethod)
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(vMethod)
-      const key = getKeyFromVerificationMethod(vMethod)
+      const key = getKeyFromVerificationMethodViaDidMapping(vMethod)
 
       return new WalletKeyPair({
         id: vMethod.id,

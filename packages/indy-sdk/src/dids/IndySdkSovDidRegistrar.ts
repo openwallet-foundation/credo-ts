@@ -15,12 +15,12 @@ import type { NymRole } from 'indy-sdk'
 
 import {
   DidsApi,
-  getKeyDidMappingByVerificationMethod,
   KeyType,
   isValidPrivateKey,
   DidDocumentRole,
   DidRecord,
   DidRepository,
+  getKeyFromVerificationMethodViaDidMapping,
 } from '@aries-framework/core'
 
 import { IndySdkError } from '../error'
@@ -89,8 +89,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       }
 
       const verificationMethod = didResult.didDocument.dereferenceKey(submitterVerificationMethod)
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
-      const submitterSigningKey = getKeyFromVerificationMethod(verificationMethod)
+      const submitterSigningKey = getKeyFromVerificationMethodViaDidMapping(verificationMethod)
 
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
       const [unqualifiedSubmitterDid] = submitterVerificationMethod.replace('did:sov:', '').split('#')

@@ -6,7 +6,7 @@ import { Key } from '../../../../crypto'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidCommV1Service, DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { getKeyDidMappingByKeyType, getKeyDidMappingByVerificationMethod } from '../../domain/key-type'
+import { getKeyFromVerificationMethodViaDidMapping, getKeyDidMappingByKeyType } from '../../domain/key-type'
 import { parseDid } from '../../domain/parse'
 import { DidKey } from '../key'
 
@@ -116,8 +116,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 
     // Transform als verification methods into a fingerprint (multibase, multicodec)
     const encoded = dereferenced.map((entry) => {
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(entry)
-      const key = getKeyFromVerificationMethod(entry)
+      const key = getKeyFromVerificationMethodViaDidMapping(entry)
 
       // Encode as '.PurposeFingerprint'
       const encoded = `.${purpose}${key.fingerprint}`
