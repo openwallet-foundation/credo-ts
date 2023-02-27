@@ -10,14 +10,6 @@ import type {
 import type { Buffer } from '../utils/buffer'
 
 export interface Wallet extends Disposable {
-  /**
-   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
-   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
-   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  publicDid: DidInfo | undefined
-
   isInitialized: boolean
   isProvisioned: boolean
 
@@ -30,27 +22,26 @@ export interface Wallet extends Disposable {
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 
+  /**
+   * Create a key with an optional private key and keyType.
+   *
+   * @param options.privateKey Buffer Private key (formerly called 'seed')
+   * @param options.keyType KeyType the type of key that should be created
+   *
+   * @returns a `Key` instance
+   *
+   * @throws {WalletError} When an unsupported keytype is requested
+   * @throws {WalletError} When the key could not be created
+   * @throws {WalletKeyExistsError} When the key already exists in the wallet
+   */
   createKey(options: WalletCreateKeyOptions): Promise<Key>
   sign(options: WalletSignOptions): Promise<Buffer>
   verify(options: WalletVerifyOptions): Promise<boolean>
-
-  /**
-   * @deprecated The public did functionality of the wallet has been deprecated in favour of the DidsModule, which can be
-   * used to create and resolve dids. Currently the global agent public did functionality is still used by the `LedgerModule`, but
-   * will be removed once the `LedgerModule` has been deprecated. Do not use this property for new functionality, but rather
-   * use the `DidsModule`.
-   */
-  initPublicDid(didConfig: DidConfig): Promise<void>
 
   pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
-}
-
-export interface DidInfo {
-  did: string
-  verkey: string
 }
 
 export interface WalletCreateKeyOptions {
@@ -68,10 +59,6 @@ export interface WalletVerifyOptions {
   data: Buffer | Buffer[]
   key: Key
   signature: Buffer
-}
-
-export interface DidConfig {
-  seed?: string
 }
 
 export interface UnpackedMessageContext {

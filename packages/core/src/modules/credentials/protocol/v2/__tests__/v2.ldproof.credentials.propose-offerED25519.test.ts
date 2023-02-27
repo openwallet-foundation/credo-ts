@@ -176,7 +176,6 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
-      issuerId: faberAgent.publicDid?.did as string,
     })
     credentialDefinitionId = credentialDefinition.credentialDefinitionId
 
