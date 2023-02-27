@@ -6,6 +6,8 @@ import { IsValidMessageType, parseMessageType } from '../../../utils/messageType
 import { DateParser } from '../../../utils/transformers'
 
 export class BasicMessage extends AgentMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new BasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed

@@ -8,6 +8,8 @@ export type V1CredentialProblemReportMessageOptions = ProblemReportMessageOption
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
 export class V1CredentialProblemReportMessage extends ProblemReportMessage {
+  public readonly allowDidSovPrefix = true
+
   /**
    * Create new CredentialProblemReportMessage instance.
    * @param options

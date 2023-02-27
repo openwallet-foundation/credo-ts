@@ -1,6 +1,4 @@
-import type { FileSystem } from '../../../storage/FileSystem'
-
-import { unlinkSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'

@@ -26,7 +26,6 @@ export function getPostgresAgentOptions(
       key: `Key${name}`,
       storage: storageConfig,
     },
-    publicDidSeed,
     autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),

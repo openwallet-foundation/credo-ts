@@ -11,6 +11,7 @@ import type {
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
+  TypedArrayEncoder,
   CacheModule,
   InMemoryLruCache,
   Agent,
@@ -28,10 +29,19 @@ import {
 } from '@aries-framework/core'
 import { randomUUID } from 'crypto'
 
+import { AnonCredsRsModule } from '../../anoncreds-rs/src'
+import { AskarModule } from '../../askar/src'
+import { sleep } from '../../core/src/utils/sleep'
+import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
+  importExistingIndyDidFromPrivateKey,
   makeConnection,
+  publicDidSeed,
+  genesisTransactions,
+  taaVersion,
+  taaAcceptanceMechanism,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
@@ -43,6 +53,7 @@ import {
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
+import { IndyVdrAnonCredsRegistry, IndyVdrSovDidResolver, IndyVdrModule } from '../../indy-vdr/src'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -52,7 +63,9 @@ import {
 } from '../src'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+export type AnonCredsTestsAgent =
+  | Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
 export const getLegacyAnonCredsModules = ({
   autoAcceptCredentials,
@@ -89,6 +102,63 @@ export const getLegacyAnonCredsModules = ({
       registrars: [new IndySdkSovDidRegistrar()],
     }),
     indySdk: new IndySdkModule(getIndySdkModuleConfig()),
+    cache: new CacheModule({
+      cache: new InMemoryLruCache({ limit: 100 }),
+    }),
+  } as const
+
+  return modules
+}
+
+export const getAskarAnonCredsIndyModules = ({
+  autoAcceptCredentials,
+  autoAcceptProofs,
+}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
+  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+
+  const indyNetworkConfig = {
+    id: `localhost-${uuid()}`,
+    isProduction: false,
+    genesisTransactions,
+    indyNamespace: 'pool:localtest',
+    transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
+  }
+
+  const modules = {
+    credentials: new CredentialsModule({
+      autoAcceptCredentials,
+      credentialProtocols: [
+        new V1CredentialProtocol({
+          indyCredentialFormat: legacyIndyCredentialFormatService,
+        }),
+        new V2CredentialProtocol({
+          credentialFormats: [legacyIndyCredentialFormatService],
+        }),
+      ],
+    }),
+    proofs: new ProofsModule({
+      autoAcceptProofs,
+      proofProtocols: [
+        new V1ProofProtocol({
+          indyProofFormat: legacyIndyProofFormatService,
+        }),
+        new V2ProofProtocol({
+          proofFormats: [legacyIndyProofFormatService],
+        }),
+      ],
+    }),
+    anoncreds: new AnonCredsModule({
+      registries: [new IndyVdrAnonCredsRegistry()],
+    }),
+    anoncredsRs: new AnonCredsRsModule(),
+    indyVdr: new IndyVdrModule({
+      networks: [indyNetworkConfig],
+    }),
+    dids: new DidsModule({
+      resolvers: [new IndyVdrSovDidResolver()], // TODO: Support Registrar for tests
+    }),
+    askar: new AskarModule(),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -337,9 +407,6 @@ export async function setupAnonCredsTests<
 
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
-    // TODO: replace with more dynamic / generic value We should create a did using the dids module
-    // and use that probably
-    issuerId: issuerAgent.publicDid?.did as string,
   })
 
   let issuerHolderConnection: ConnectionRecord | undefined
@@ -375,10 +442,10 @@ export async function setupAnonCredsTests<
   } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 
-export async function prepareForAnonCredsIssuance(
-  agent: Agent,
-  { attributeNames, issuerId }: { attributeNames: string[]; issuerId: string }
-) {
+export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames }: { attributeNames: string[] }) {
+  // Add existing endorser did to the wallet
+  const issuerId = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
+
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,
@@ -387,11 +454,17 @@ export async function prepareForAnonCredsIssuance(
     issuerId,
   })
 
+  // Wait some time pass to let ledger settle the object
+  await sleep(1000)
+
   const credentialDefinition = await registerCredentialDefinition(agent, {
     schemaId: schema.schemaId,
     issuerId,
     tag: 'default',
   })
+
+  // Wait some time pass to let ledger settle the object
+  await sleep(1000)
 
   return {
     schema,

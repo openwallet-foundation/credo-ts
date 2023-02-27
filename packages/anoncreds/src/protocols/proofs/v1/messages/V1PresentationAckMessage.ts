@@ -3,6 +3,8 @@ import type { AckMessageOptions } from '@aries-framework/core'
 import { AckMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 
 export class V1PresentationAckMessage extends AckMessage {
+  public readonly allowDidSovPrefix = true
+
   public constructor(options: AckMessageOptions) {
     super(options)
   }

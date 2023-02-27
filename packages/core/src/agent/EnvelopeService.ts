@@ -33,7 +33,7 @@ export class EnvelopeService {
     const senderKeyBase58 = senderKey && senderKey.publicKeyBase58
 
     // pass whether we want to use legacy did sov prefix
-    const message = payload.toJSON({ useLegacyDidSovPrefix: agentContext.config.useLegacyDidSovPrefix })
+    const message = payload.toJSON({ useDidSovPrefixWhereAllowed: agentContext.config.useDidSovPrefixWhereAllowed })
 
     this.logger.debug(`Pack outbound message ${message['@type']}`)
 
@@ -49,7 +49,9 @@ export class EnvelopeService {
       recipientKeysBase58 = [routingKeyBase58]
       this.logger.debug('Forward message created', forwardMessage)
 
-      const forwardJson = forwardMessage.toJSON({ useLegacyDidSovPrefix: agentContext.config.useLegacyDidSovPrefix })
+      const forwardJson = forwardMessage.toJSON({
+        useDidSovPrefixWhereAllowed: agentContext.config.useDidSovPrefixWhereAllowed,
+      })
 
       // Forward messages are anon packed
       encryptedMessage = await agentContext.wallet.pack(forwardJson, [routingKeyBase58], undefined)

@@ -52,12 +52,11 @@ export enum DidCommMimeType {
 export interface InitConfig {
   endpoints?: string[]
   label: string
-  publicDidSeed?: string
   walletConfig?: WalletConfig
   logger?: Logger
   didCommMimeType?: DidCommMimeType
   useDidKeyInProtocols?: boolean
-  useLegacyDidSovPrefix?: boolean
+  useDidSovPrefixWhereAllowed?: boolean
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
 

@@ -89,7 +89,6 @@ describe('out of band', () => {
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
-      issuerId: faberAgent.publicDid?.did as string,
     })
 
     credentialTemplate = {

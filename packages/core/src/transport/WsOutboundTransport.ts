@@ -75,7 +75,7 @@ export class WsOutboundTransport implements OutboundTransport {
     // If we already have a socket connection use it
     let socket = this.transportTable.get(socketId)
 
-    if (!socket) {
+    if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
       if (!endpoint) {
         throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }

@@ -56,8 +56,6 @@ export async function e2eTest({
   // Issue credential from sender to recipient
   const { credentialDefinition } = await prepareForAnonCredsIssuance(senderAgent, {
     attributeNames: ['name', 'age', 'dateOfBirth'],
-    // TODO: update to dynamic created did
-    issuerId: senderAgent.publicDid?.did as string,
   })
   const { holderCredentialExchangeRecord, issuerCredentialExchangeRecord } = await issueLegacyAnonCredsCredential({
     issuerAgent: senderAgent,
