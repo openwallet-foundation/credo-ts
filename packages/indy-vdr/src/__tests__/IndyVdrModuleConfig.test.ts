@@ -1,5 +1,7 @@
 import type { IndyVdrPoolConfig } from '../pool'
 
+import { indyVdr } from '@hyperledger/indy-vdr-shared'
+
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 
 describe('IndyVdrModuleConfig', () => {
@@ -7,6 +9,7 @@ describe('IndyVdrModuleConfig', () => {
     const networkConfig = {} as IndyVdrPoolConfig
 
     const config = new IndyVdrModuleConfig({
+      indyVdr,
       networks: [networkConfig],
     })
 

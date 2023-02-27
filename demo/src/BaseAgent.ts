@@ -25,6 +25,7 @@ import {
 import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@aries-framework/indy-sdk'
 import { IndyVdrAnonCredsRegistry, IndyVdrModule, IndyVdrSovDidResolver } from '@aries-framework/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { randomUUID } from 'crypto'
 import indySdk from 'indy-sdk'
 
@@ -127,6 +128,7 @@ function getAskarAnonCredsIndyModules() {
     }),
     anoncredsRs: new AnonCredsRsModule(),
     indyVdr: new IndyVdrModule({
+      indyVdr,
       networks: [indyNetworkConfig],
     }),
     dids: new DidsModule({

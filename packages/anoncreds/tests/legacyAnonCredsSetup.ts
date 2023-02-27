@@ -27,6 +27,7 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-shared'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
@@ -153,6 +154,7 @@ export const getAskarAnonCredsIndyModules = ({
     }),
     anoncredsRs: new AnonCredsRsModule(),
     indyVdr: new IndyVdrModule({
+      indyVdr,
       networks: [indyNetworkConfig],
     }),
     dids: new DidsModule({
