@@ -9,19 +9,20 @@ export const getIndySdkModuleConfig = () =>
     indySdk,
   })
 
-export const getCheqdModuleConfig = () =>
+export const getCheqdModuleConfig = (seed?: string) =>
   new CheqdModuleConfig({
     networks: [
       {
         network: 'testnet',
         cosmosPayerSeed:
+          seed ||
           'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
       },
     ],
   })
 
-export const getCheqdModules = () => ({
-  cheqdSdk: new CheqdModule(getCheqdModuleConfig()),
+export const getCheqdModules = (seed?: string) => ({
+  cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed)),
   dids: new DidsModule({
     registrars: [new CheqdDidRegistrar(), new KeyDidRegistrar()],
     resolvers: [new CheqdDidResolver(), new KeyDidResolver()],

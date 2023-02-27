@@ -10,7 +10,7 @@ const agentConfig = getAgentConfig('cheqdAnonCredsRegistry')
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
-  modules: getCheqdModules(),
+  modules: getCheqdModules('000000000000000000000000000cheqd'),
 })
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
