@@ -62,7 +62,7 @@ export class AgentConfig {
   }
 
   public get didCommMimeType() {
-    return this.initConfig.didCommMimeType ?? DidCommMimeType.V0
+    return this.initConfig.didCommMimeType ?? DidCommMimeType.V1
   }
 
   /**
