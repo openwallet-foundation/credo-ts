@@ -2,7 +2,7 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
@@ -19,7 +19,7 @@ export class BasicMessagesApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     basicMessageService: BasicMessageService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
@@ -29,7 +29,7 @@ export class BasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -91,7 +91,7 @@ export class BasicMessagesApi {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
   }
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }

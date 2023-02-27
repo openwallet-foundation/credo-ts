@@ -10,9 +10,9 @@ import type {
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DiscoverFeaturesServiceOptions'
 
-import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { AriesFrameworkError } from '../../../../error'
@@ -30,13 +30,13 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
     featureRegistry: FeatureRegistry,
     eventEmitter: EventEmitter,
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesConfig: DiscoverFeaturesModuleConfig
   ) {
-    super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesConfig)
+    super(featureRegistry, eventEmitter, logger, discoverFeaturesConfig)
 
-    this.registerMessageHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -44,9 +44,9 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v1'
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new V1DiscloseMessageHandler(this))
-    dispatcher.registerMessageHandler(new V1QueryMessageHandler(this))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new V1DiscloseMessageHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new V1QueryMessageHandler(this))
   }
 
   public async createQuery(
