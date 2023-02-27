@@ -1,6 +1,45 @@
 import type { IndyVdrPoolConfig } from './pool'
+import type { IndyVdr } from '@hyperledger/indy-vdr-shared'
 
 export interface IndyVdrModuleConfigOptions {
+
+    /**
+   *
+   * ## Node.JS
+   *
+   * ```ts
+   * import * as indyVdr from '@hyperledger/indy-vdr-nodejs';
+   * 
+   * const agent = new Agent({
+   *  config: {},
+   *  dependencies: agentDependencies,
+   *  modules: {
+   *   indyVdr: new IndyVdrModule({
+   *      indyVdr,
+   *   }) 
+   *  }
+   * })     
+   * ```
+   *
+   * ## React Native
+   *
+   * ```ts
+   * import * as indyVdr from '@hyperledger/indy-vdr-react-native';
+   * 
+   * const agent = new Agent({
+   *  config: {},
+   *  dependencies: agentDependencies,
+   *  modules: {
+   *   indyVdr: new IndyVdrModule({
+   *      indyVdr,
+   *   }) 
+   *  }
+   * })     
+   * ```
+   * ```
+   */
+    indyVdr: IndyVdr
+
   /**
    * Array of indy networks to connect to.
    *
