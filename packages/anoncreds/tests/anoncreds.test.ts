@@ -1,6 +1,6 @@
-import { Agent, KeyDerivationMethod } from '@aries-framework/core'
+import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import indySdk from 'indy-sdk'
+import * as indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
 import { AnonCredsCredentialDefinitionRepository, AnonCredsModule, AnonCredsSchemaRepository } from '../src'
@@ -186,10 +186,13 @@ describe('AnonCreds API', () => {
   })
 
   test('register a credential definition', async () => {
-    // NOTE: the indy-sdk MUST have a did created, we can't just create a key
-    await agent.context.wallet.initPublicDid({ seed: '00000000000000000000000000000My1' })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const issuerId = agent.context.wallet.publicDid!.did
+    // Create key
+    await agent.wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000My1'),
+      keyType: KeyType.Ed25519,
+    })
+
+    const issuerId = 'VsKV7grR1BUE29mG2Fm2kX'
 
     const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
       credentialDefinition: {

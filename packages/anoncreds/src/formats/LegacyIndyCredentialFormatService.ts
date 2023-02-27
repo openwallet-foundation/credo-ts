@@ -53,6 +53,7 @@ import {
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
+import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 
 const INDY_CRED_ABSTRACT = 'hlindy/cred-abstract@v2.0'
 const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
@@ -243,6 +244,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialDefinition,
       linkSecretId: credentialFormats?.indy?.linkSecretId,
     })
+
+    if (!credentialRequest.prover_did) {
+      // We just generate a prover did like string, as it's not used for anything and we don't need
+      // to prove ownership of the did. It's deprecated in AnonCreds v1, but kept for backwards compatibility
+      credentialRequest.prover_did = generateLegacyProverDidLikeString()
+    }
 
     credentialRecord.metadata.set<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey,
