@@ -64,8 +64,8 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const parsed = parseSchemaId(schemaId)
 
-    const legaycSchemaId = getLegacySchemaId(parsed.didIdentifier, parsed.schemaName, parsed.schemaVersion)
-    const indyLedgerSeqNo = getSeqNoFromSchemaId(legaycSchemaId)
+    const legacySchemaId = getLegacySchemaId(parsed.didIdentifier, parsed.schemaName, parsed.schemaVersion)
+    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     if (!schema) {
       return {
