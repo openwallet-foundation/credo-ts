@@ -1,7 +1,5 @@
 import { DID_INDY_REGEX } from '../../utils/did'
 
-const legacyIndyIssuerIdRegex = /^[a-zA-Z0-9]{21,22}$/
-
 const didIndyAnonCredsBase =
   /(?<did>did:indy:(?<namespace>((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?)):(?<didIdentifier>([1-9A-HJ-NP-Za-km-z]{21,22})))\/anoncreds\/v0/
 
