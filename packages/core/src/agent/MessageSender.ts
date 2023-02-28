@@ -344,9 +344,9 @@ export class MessageSender {
     )
   }
 
-  public async sendMessageToService(outboundMessageContext: OutboundMessageContext, agentContext: AgentContext) {
+  public async sendMessageToService(outboundMessageContext: OutboundMessageContext, agentContext?: AgentContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
-    if (session) {
+    if (session && agentContext) {
       try {
         await this.sendMessageToSession(agentContext, session, outboundMessageContext.message)
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
