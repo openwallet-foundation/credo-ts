@@ -17,6 +17,7 @@ import {
   ProofEventTypes,
   ReturnRouteTypes,
 } from '../../../../../../core/src'
+import { sleep } from '../../../../../../core/src/utils/sleep'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
   testLogger,
@@ -157,7 +158,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
   })
 
-  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled xxx', async () => {
     const {
       holderAgent: aliceAgent,
       issuerAgent: faberAgent,
@@ -234,15 +235,21 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       domain: 'https://a-domain.com',
     })
 
+    // requestMessage.setReturnRouting(ReturnRouteTypes.all, message.threadId)
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: message.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: message.threadId,
     })
+    // FIXME: This should not have to wait here.
+    // But removing the wait throws and error because the wallet context is already closed when receiving the ack
+    await sleep(3000)
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
@@ -330,7 +337,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     for (const transport of faberAgent.outboundTransports) {
       await faberAgent.unregisterOutboundTransportTransport(transport)
     }
-    // message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
+    // requestMessage.setReturnRouting(ReturnRouteTypes.all, requestMessage.threadId)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 

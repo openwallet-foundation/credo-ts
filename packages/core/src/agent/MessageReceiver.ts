@@ -93,6 +93,15 @@ export class MessageReceiver {
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
+        console.log('====================================')
+        console.log('SESSION IN RECEIVE ENCRYPTED')
+        console.log(session)
+        console.log('====================================')
+        console.log('====================================')
+        console.log(agentContext)
+        console.log(inboundMessage)
+        console.log('====================================')
+        // if (agentContext.wallet.isInitialized)
         await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedMessage, session)
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
@@ -143,10 +152,14 @@ export class MessageReceiver {
       agentContext,
     })
 
+    console.log('====================================')
+    console.log('INBOUND MESSAGE CONTEXT RECEIVER')
+    console.log(messageContext.toJSON())
+    console.log('====================================')
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (senderKey && recipientKey && session && (message.hasAnyReturnRoute() || message.service?.serviceEndpoint)) {
+    if (senderKey && recipientKey && session && message.hasReturnRouting()) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],
@@ -160,6 +173,12 @@ export class MessageReceiver {
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
+      console.log('====================================')
+      console.log('SESSION IN RECEIVER')
+      console.log(session.id)
+      console.log('SESSION')
+      console.log(session)
+      console.log('====================================')
       this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.

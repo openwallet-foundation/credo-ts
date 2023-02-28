@@ -52,6 +52,12 @@ class Dispatcher {
 
     let outboundMessage: OutboundMessageContext<AgentMessage> | void
 
+    console.log('====================================')
+    console.log('MESSAGE HANDLER')
+    console.log(messageHandler)
+    console.log('MESSAGE CONTEXT')
+    console.log(messageContext)
+    console.log('====================================')
     try {
       outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
@@ -92,9 +98,15 @@ class Dispatcher {
     if (outboundMessage) {
       // Store the sessionId of the inbound message, if there is one, so messages can later be send without
       // outbound transport.
+      // if (!outboundMessage.sessionId && messageContext.message.hasAnyReturnRoute())
       if (!outboundMessage.sessionId) outboundMessage.sessionId = messageContext.sessionId
+      console.log('====================================')
+      console.log('OUTBOUND MESSAGE AFTER REASSIGN')
+      console.log(outboundMessage)
+      console.log('====================================')
+      // outboundMessage.sessionId = messageContext.sessionId
       if (outboundMessage.isOutboundServiceMessage()) {
-        await this.messageSender.sendMessageToService(outboundMessage)
+        await this.messageSender.sendMessageToService(outboundMessage, agentContext)
       } else {
         outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
