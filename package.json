@@ -46,6 +46,7 @@
     "eslint-import-resolver-typescript": "^2.4.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-workspaces": "^0.7.0",
     "express": "^4.17.1",
     "indy-sdk": "^1.16.0-dev-1655",
     "jest": "^27.0.4",
