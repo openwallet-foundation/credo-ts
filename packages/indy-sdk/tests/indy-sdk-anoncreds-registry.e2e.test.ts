@@ -136,7 +136,7 @@ describe('IndySdkAnonCredsRegistry', () => {
           tag: 'TAG',
           schemaId: didIndySchemaId,
           type: 'CL',
-          value: {},
+          value: credentialDefinitionValue,
         },
         credentialDefinitionId: didIndyCredentialDefinitionId,
         state: 'finished',
@@ -187,8 +187,6 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       resolutionMetadata: {},
     })
-
-    assertIndySdkWallet(agent.context.wallet)
 
     // We don't support creating a revocation registry using AFJ yet, so we directly use indy-sdk to register the revocation registry
     const legacyRevocationRegistryId = `TL1EaPFCZ8Si5aUrqScBDt:4:TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResult.schemaMetadata.indyLedgerSeqNo}:TAG:CL_ACCUM:tag`

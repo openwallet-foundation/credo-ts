@@ -19,7 +19,7 @@ describe('Indy SDK Sov DID resolver', () => {
     await agent.wallet.delete()
   })
 
-  it('should resolve a did:sov did', async () => {
+  test('resolve a did:sov did', async () => {
     // Add existing endorser did to the wallet
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       agent,

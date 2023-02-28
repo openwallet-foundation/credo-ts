@@ -31,12 +31,9 @@ import {
 } from '../utils/identifiers'
 import { anonCredsRevocationStatusListFromIndySdk } from '../utils/transform'
 
-/**
- * TODO: validation of the identifiers. The Indy SDK classes only support the legacy (unqualified) identifiers.
- */
 export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   /**
-   * This class only supports resolving and registering objects with legacy indy identifiers.
+   * This class supports resolving and registering objects with did:indy as well as legacy indy identifiers.
    * It needs to include support for the schema, credential definition, revocation registry as well
    * as the issuer id (which is needed when registering objects).
    */
@@ -290,7 +287,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         options.credentialDefinition
       )
 
-      // TODO: check structure of the schemaId
       // TODO: this will bypass caching if done on a higher level.
       const { schema, schemaMetadata, resolutionMetadata } = await this.getSchema(
         agentContext,
@@ -334,7 +330,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       const submitterKey = await verificationKeyForIndyDid(agentContext, options.credentialDefinition.issuerId)
-
       const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, submitterKey)
 
       agentContext.config.logger.debug(

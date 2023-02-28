@@ -1,6 +1,9 @@
-import { DID_INDY_REGEX } from '../../utils/did'
+/**
+ * NOTE: this file is availalbe in both the indy-sdk and indy-vdr packages. If making changes to
+ * this file, make sure to update both files if applicable.
+ */
 
-const legacyIndyIssuerIdRegex = /^[a-zA-Z0-9]{21,22}$/
+import { DID_INDY_REGEX } from '../../utils/did'
 
 const didIndyAnonCredsBase =
   /(?<did>did:indy:(?<namespace>((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?)):(?<didIdentifier>([1-9A-HJ-NP-Za-km-z]{21,22})))\/anoncreds\/v0/

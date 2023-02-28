@@ -1,8 +1,12 @@
+import type { AgentContext } from '@aries-framework/core'
+
 import {
   AriesFrameworkError,
   convertPublicKeyToX25519,
   DidDocument,
   DidDocumentBuilder,
+  DidsApi,
+  getKeyDidMappingByVerificationMethod,
   Hasher,
   JsonTransformer,
   Key,
@@ -162,4 +166,29 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
   const did = `did:indy:${namespace}:${id}`
 
   return { did, id, verkey }
+}
+
+/**
+ * Fetches the verification key for a given did:indy did and returns the key as a {@link Key} object.
+ *
+ * @throws {@link AriesFrameworkError} if the did could not be resolved or the key could not be extracted
+ */
+export async function verificationKeyForIndyDid(agentContext: AgentContext, did: string) {
+  // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
+  // from the ledger to know which key is associated with the did
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const didResult = await didsApi.resolve(did)
+
+  if (!didResult.didDocument) {
+    throw new AriesFrameworkError(
+      `Could not resolve did ${did}. ${didResult.didResolutionMetadata.error} ${didResult.didResolutionMetadata.message}`
+    )
+  }
+
+  // did:indy dids MUST have a verificationMethod with #verkey
+  const verificationMethod = didResult.didDocument.dereferenceKey(`${did}#verkey`)
+  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
+  const key = getKeyFromVerificationMethod(verificationMethod)
+
+  return key
 }
