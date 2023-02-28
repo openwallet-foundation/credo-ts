@@ -48,7 +48,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
     }
 
     const outOfBandRecord = tryParseDid(parentThreadId)
-      ? await this.outOfBandService.createImplicitInvitation(agentContext, {
+      ? await this.outOfBandService.createFromImplicitInvitation(agentContext, {
           did: parentThreadId,
           threadId: message.threadId,
           recipientKey,

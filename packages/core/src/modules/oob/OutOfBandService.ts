@@ -20,7 +20,7 @@ import { HandshakeReuseMessage, OutOfBandInvitation } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
 import { OutOfBandRecord, OutOfBandRepository } from './repository'
 
-export interface CreateImplicitInvitationConfig {
+export interface CreateFromImplicitInvitationConfig {
   did: string
   threadId: string
   handshakeProtocols: HandshakeProtocol[]
@@ -38,18 +38,26 @@ export class OutOfBandService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createImplicitInvitation(
+  /**
+   * Creates an Out of Band record from a Connection/DIDExchange request started by using
+   * a publicly resolvable DID this agent can control
+   */
+  public async createFromImplicitInvitation(
     agentContext: AgentContext,
-    config: CreateImplicitInvitationConfig
+    config: CreateFromImplicitInvitationConfig
   ): Promise<OutOfBandRecord> {
     const { did, threadId, handshakeProtocols, autoAcceptConnection, recipientKey } = config
 
     // Verify it is a valid did and it is present in the wallet
     const publicDid = parseDid(did)
-    if (!(await agentContext.dependencyManager.resolve(DidsApi).getCreatedDids({ did: publicDid.did }))) {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const [createdDid] = await didsApi.getCreatedDids({ did: publicDid.did })
+    if (!createdDid) {
       throw new AriesFrameworkError(`Referenced public did ${did} not found.`)
     }
 
+    // Recreate an 'implicit invitation' matching the parameters used by the invitee when
+    // initiating the flow
     const outOfBandInvitation = new OutOfBandInvitation({
       id: did,
       label: '',

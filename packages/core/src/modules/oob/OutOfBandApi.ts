@@ -481,8 +481,8 @@ export class OutOfBandApi {
 
     const { outOfBandInvitation } = outOfBandRecord
     const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
-    const services = outOfBandInvitation?.getServices()
-    const messages = outOfBandInvitation?.getRequests()
+    const services = outOfBandInvitation.getServices()
+    const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
 
     const { handshakeProtocols } = outOfBandInvitation
