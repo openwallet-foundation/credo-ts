@@ -2,8 +2,8 @@ import type { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import type { AgentContext, Key } from '@aries-framework/core'
 
 import { KeyType } from '@aries-framework/core'
-import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
+import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { genesisTransactions } from '../../core/tests/helpers'
 import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
