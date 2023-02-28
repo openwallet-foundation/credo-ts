@@ -10,9 +10,6 @@ import { SubjectInboundTransport } from '../../../tests/transport/SubjectInbound
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
-
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
-
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
@@ -25,6 +22,8 @@ import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
+
+import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB',
