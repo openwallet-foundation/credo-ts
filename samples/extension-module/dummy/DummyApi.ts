@@ -5,7 +5,6 @@ import {
   OutboundMessageContext,
   AgentContext,
   ConnectionService,
-  MessageHandlerRegistry,
   injectable,
   MessageSender,
 } from '@aries-framework/core'
@@ -22,7 +21,6 @@ export class DummyApi {
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
     messageSender: MessageSender,
     dummyService: DummyService,
     connectionService: ConnectionService,
@@ -33,7 +31,10 @@ export class DummyApi {
     this.connectionService = connectionService
     this.agentContext = agentContext
 
-    this.registerMessageHandlers(messageHandlerRegistry)
+    this.agentContext.dependencyManager.registerMessageHandlers([
+      new DummyRequestHandler(this.dummyService),
+      new DummyResponseHandler(this.dummyService),
+    ])
   }
 
   /**
@@ -92,10 +93,5 @@ export class DummyApi {
    */
   public findAllByQuery(query: Query<DummyRecord>): Promise<DummyRecord[]> {
     return this.dummyService.findAllByQuery(this.agentContext, query)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DummyRequestHandler(this.dummyService))
-    messageHandlerRegistry.registerMessageHandler(new DummyResponseHandler(this.dummyService))
   }
 }
