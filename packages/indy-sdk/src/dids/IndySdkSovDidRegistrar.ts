@@ -20,7 +20,7 @@ import {
   DidDocumentRole,
   DidRecord,
   DidRepository,
-  getKeyFromVerificationMethodViaDidMapping,
+  getKeyFromVerificationMethod,
 } from '@aries-framework/core'
 
 import { IndySdkError } from '../error'
@@ -89,7 +89,7 @@ export class IndySdkSovDidRegistrar implements DidRegistrar {
       }
 
       const verificationMethod = didResult.didDocument.dereferenceKey(submitterVerificationMethod)
-      const submitterSigningKey = getKeyFromVerificationMethodViaDidMapping(verificationMethod)
+      const submitterSigningKey = getKeyFromVerificationMethod(verificationMethod)
 
       const qualifiedSovDid = `did:sov:${unqualifiedIndyDid}`
       const [unqualifiedSubmitterDid] = submitterVerificationMethod.replace('did:sov:', '').split('#')

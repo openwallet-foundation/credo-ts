@@ -2,7 +2,7 @@ import type { AgentContext, W3cCredentialRecord } from '@aries-framework/core'
 import type { EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
-  getKeyFromVerificationMethodViaDidMapping,
+  getKeyFromVerificationMethod,
   inject,
   InjectionSymbols,
   isJwtAlgorithm,
@@ -85,7 +85,7 @@ export class OpenId4VcClientService {
 
       // TODO: which purposes are allowed?
       const verificationMethod = didResult.didDocument.dereferenceKey(kid, ['authentication'])
-      const key = getKeyFromVerificationMethodViaDidMapping(verificationMethod)
+      const key = getKeyFromVerificationMethod(verificationMethod)
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
 

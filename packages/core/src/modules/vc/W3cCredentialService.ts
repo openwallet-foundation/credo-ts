@@ -18,7 +18,7 @@ import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { JsonTransformer } from '../../utils'
 import { VerificationMethod } from '../dids'
-import { getKeyFromVerificationMethodViaDidMapping } from '../dids/domain/key-type'
+import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { W3cVcModuleConfig } from './W3cVcModuleConfig'
@@ -297,7 +297,7 @@ export class W3cCredentialService {
     const verificationMethodObject = await documentLoader(verificationMethod)
     const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
 
-    const key = getKeyFromVerificationMethodViaDidMapping(verificationMethodClass)
+    const key = getKeyFromVerificationMethod(verificationMethodClass)
     return key
   }
 
