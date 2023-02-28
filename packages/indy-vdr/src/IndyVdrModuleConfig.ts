@@ -20,10 +20,10 @@ export interface IndyVdrModuleConfigOptions {
    * })
    * ```
    *
-   * ## React Nativeß
+   * ## React Native
    *
    * ```ts
-   * import { indyVdr } from '@hyperledger/indy-vdr-nodejs';
+   * import { indyVdr } from '@hyperledger/indy-vdr-react-native';
    *
    * const agent = new Agent({
    *  config: {},
@@ -34,7 +34,6 @@ export interface IndyVdrModuleConfigOptions {
    *   })
    *  }
    * })
-   * ```
    * ```
    */
   indyVdr: IndyVdr
