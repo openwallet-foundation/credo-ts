@@ -517,7 +517,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
     for (const transport of faberAgent.outboundTransports) {
       await faberAgent.unregisterOutboundTransportTransport(transport)
     }
-    requestMessage.setReturnRouting(ReturnRouteTypes.all, message.threadId)
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
     await waitForProofExchangeRecordSubject(aliceReplay, {

@@ -166,20 +166,10 @@ export class IndySdkStorageService<T extends BaseRecord> implements StorageServi
     const tags = this.transformFromRecordTagValues(record.getTags()) as Record<string, string>
 
     try {
-      console.log('====================================')
-      console.log('IS WALLET INITIALISED')
-      console.log(agentContext.wallet.handle.toString())
-      console.log('====================================')
       await this.indySdk.updateWalletRecordValue(agentContext.wallet.handle, record.type, record.id, value)
-      console.log('====================================')
-      console.log('before updateWalletRecordTags')
-      console.log('====================================')
       await this.indySdk.updateWalletRecordTags(agentContext.wallet.handle, record.type, record.id, tags)
     } catch (error) {
       // Record does not exist
-      console.log('====================================')
-      console.log(JSON.stringify(error))
-      console.log('====================================')
       if (isIndyError(error, 'WalletItemNotFound')) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
           recordType: record.type,
