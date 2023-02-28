@@ -251,6 +251,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         schemaName: schema.name,
         schemaIssuerId: schema.issuerId,
         schemaVersion: schema.version,
+        credentialRevocationId: processedCredential.revocationRegistryIndex?.toString(),
       })
     )
 
