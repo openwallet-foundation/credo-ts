@@ -15,7 +15,6 @@ import {
   Attachment,
   AttachmentData,
   ProofEventTypes,
-  ReturnRouteTypes,
 } from '../../../../../../core/src'
 import { sleep } from '../../../../../../core/src/utils/sleep'
 import { uuid } from '../../../../../../core/src/utils/uuid'
