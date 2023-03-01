@@ -85,7 +85,7 @@ export interface CreateProofRequestOptions<PPs extends ProofProtocol[] = ProofPr
  */
 export interface RequestProofOptions<PPs extends ProofProtocol[] = ProofProtocol[]>
   extends BaseOptions,
-    CreateProofRequestOptions<PPs> {
+  CreateProofRequestOptions<PPs> {
   connectionId: string
 }
 
@@ -94,6 +94,11 @@ export interface RequestProofOptions<PPs extends ProofProtocol[] = ProofProtocol
  */
 export interface AcceptProofRequestOptions<PPs extends ProofProtocol[] = ProofProtocol[]> extends BaseOptions {
   proofRecordId: string
+
+/**
+ * whether to enable return routing on the send presentation message. This value only
+ * has an effect for connectionless exchanges.
+ */
   useReturnRoute?: boolean
   proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptRequest'>
 
@@ -118,7 +123,6 @@ export interface NegotiateProofRequestOptions<PPs extends ProofProtocol[] = Proo
  */
 export interface AcceptProofOptions {
   proofRecordId: string
-  useReturnRoute?: boolean
 }
 
 /**
