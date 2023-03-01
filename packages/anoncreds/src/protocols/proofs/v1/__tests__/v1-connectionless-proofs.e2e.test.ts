@@ -15,6 +15,8 @@ import {
   Attachment,
   AttachmentData,
   ProofEventTypes,
+  DidCommMessageRepository,
+  ReturnRouteTypes,
 } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
@@ -32,9 +34,11 @@ import {
   setupAnonCredsTests,
 } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1CredentialPreview } from '../../../credentials/v1'
+import { V1PresentationMessage } from '../messages/V1PresentationMessage'
 
 describe('V1 Proofs - Connectionless - Indy', () => {
   let agents: Agent[]
+  let sentPresentationMessage: V1PresentationMessage | null
 
   afterEach(async () => {
     for (const agent of agents) {
@@ -144,6 +148,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const didCommMessageRepository = aliceAgent.dependencyManager.resolve(DidCommMessageRepository)
+    sentPresentationMessage = await didCommMessageRepository.findAgentMessage(aliceAgent.context, {
+      associatedRecordId: aliceProofExchangeRecord.id,
+      messageClass: V1PresentationMessage,
+    })
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
@@ -159,14 +168,17 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
     await connectionlessTest()
+    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to false', async () => {
     await connectionlessTest(false)
+    expect(sentPresentationMessage?.transport?.returnRoute).toBe(undefined)
   })
 
   test('Faber starts with connection-less proof requests to Alice return route set to true', async () => {
-    await connectionlessTest(false)
+    await connectionlessTest(true)
+    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
