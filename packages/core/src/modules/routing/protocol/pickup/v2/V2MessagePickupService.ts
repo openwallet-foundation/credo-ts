@@ -2,7 +2,7 @@ import type { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMess
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { EncryptedMessage } from '../../../../../types'
 
-import { Dispatcher } from '../../../../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
@@ -23,19 +23,17 @@ import { MessageDeliveryMessage, StatusMessage } from './messages'
 @injectable()
 export class V2MessagePickupService {
   private messageRepository: MessageRepository
-  private dispatcher: Dispatcher
   private mediationRecipientService: MediationRecipientService
 
   public constructor(
     @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     mediationRecipientService: MediationRecipientService
   ) {
     this.messageRepository = messageRepository
-    this.dispatcher = dispatcher
     this.mediationRecipientService = mediationRecipientService
 
-    this.registerMessageHandlers()
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async processStatusRequest(messageContext: InboundMessageContext<StatusRequestMessage>) {
@@ -116,11 +114,11 @@ export class V2MessagePickupService {
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
-  protected registerMessageHandlers() {
-    this.dispatcher.registerMessageHandler(new StatusRequestHandler(this))
-    this.dispatcher.registerMessageHandler(new DeliveryRequestHandler(this))
-    this.dispatcher.registerMessageHandler(new MessagesReceivedHandler(this))
-    this.dispatcher.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
-    this.dispatcher.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
+  protected registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new StatusRequestHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new DeliveryRequestHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new MessagesReceivedHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
   }
 }
