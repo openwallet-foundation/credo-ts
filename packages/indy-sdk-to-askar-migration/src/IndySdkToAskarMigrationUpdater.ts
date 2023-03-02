@@ -1,5 +1,6 @@
-import { Key, KeyAlgs, Store } from '@hyperledger/aries-askar-react-native'
-import bs58 from 'bs58'
+/* eslint-disable no-console */
+import { TypedArrayEncoder } from '@aries-framework/core'
+import { Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
 
 export class IndySdkToAskarMigrationUpdater {
   private store: Store
@@ -22,13 +23,12 @@ export class IndySdkToAskarMigrationUpdater {
 
   private async updateKeys() {
     const category = 'Indy::Key'
-    const categoryMeta = 'Indy::KeyMetadata'
 
     console.log(`Updating ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
-    while (true) {
+    for (;;) {
       const txn = await session.open()
       const keys = await txn.fetchAll({ category, limit: 50 })
       if (!keys || keys.length === 0) {
@@ -38,26 +38,13 @@ export class IndySdkToAskarMigrationUpdater {
 
       for (const row of keys) {
         await txn.remove({ category, name: row.name })
-        let meta
-        try {
-          meta = await txn.fetch({
-            category: categoryMeta,
-            name: row.name,
-          })
-        } catch {}
-        let keyMeta: undefined | string
-        if (meta) {
-          await txn.remove({ category: categoryMeta, name: meta.name })
-          // TODO: confirm type of keyMeta
-          keyMeta = (typeof meta.value === 'string' ? JSON.parse(meta.value) : meta.value).value
-        }
-        const signKey = (typeof row.value === 'string' ? JSON.parse(row.value) : row.value).signkey
-        const keySk = bs58.decode(signKey)
+        const signKey: string = (typeof row.value === 'string' ? JSON.parse(row.value) : row.value).signkey
+        const keySk = TypedArrayEncoder.fromBase58(signKey)
         const key = Key.fromSecretBytes({
           algorithm: KeyAlgs.Ed25519,
           secretKey: keySk.subarray(0, 32),
         })
-        await txn.insertKey({ name: row.name, key, metadata: keyMeta })
+        await txn.insertKey({ name: row.name, key })
         updateCount++
       }
       await txn.commit()

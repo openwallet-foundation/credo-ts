@@ -1,3 +1,1 @@
-import 'text-encoding-polyfill'
-
-export * from './IndySdkToAskarMigrationAssistant'
+export { IndySdkToAskarMigrationUpdater } from './IndySdkToAskarMigrationUpdater'
