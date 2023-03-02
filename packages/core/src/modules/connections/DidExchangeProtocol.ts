@@ -25,7 +25,7 @@ import {
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
 } from '../dids'
-import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
+import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
@@ -523,7 +523,6 @@ export class DidExchangeProtocol {
           typeof authentication === 'string'
             ? didDocument.dereferenceVerificationMethod(authentication)
             : authentication
-        const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
         const key = getKeyFromVerificationMethod(verificationMethod)
         return key.publicKeyBase58
       })

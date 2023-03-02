@@ -13,7 +13,7 @@ import type {
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
 
-import { DidsApi, getKeyDidMappingByVerificationMethod } from '@aries-framework/core'
+import { DidsApi, getKeyFromVerificationMethod } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkPoolService } from '../../ledger'
@@ -159,7 +159,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.schema.issuerId}#key-1`)
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const submitterKey = getKeyFromVerificationMethod(verificationMethod)
 
       const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, submitterKey)
@@ -373,7 +372,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const verificationMethod = didResult.didDocument.dereferenceKey(
         `did:sov:${options.credentialDefinition.issuerId}#key-1`
       )
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const submitterKey = getKeyFromVerificationMethod(verificationMethod)
 
       const response = await indySdkPoolService.submitWriteRequest(agentContext, pool, request, submitterKey)
