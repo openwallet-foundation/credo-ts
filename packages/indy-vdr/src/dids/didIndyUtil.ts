@@ -23,6 +23,7 @@ export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
   const publicKeyBase58 = verKeyBase58
 
   const builder = new DidDocumentBuilder(did)
+    .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
     .addVerificationMethod({
       controller: did,
       id: verificationMethodId,

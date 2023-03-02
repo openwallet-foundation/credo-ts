@@ -18,7 +18,7 @@ const agentConfig = getAgentConfig('IndyVdrSovDidResolver')
 
 const agentContext = getAgentContext({
   agentConfig,
-  registerInstances: [[IndyVdrPoolService, { getPoolForDid: jest.fn().mockReturnValue(poolMock) }]],
+  registerInstances: [[IndyVdrPoolService, { getPoolForDid: jest.fn().mockReturnValue({ pool: poolMock }) }]],
 })
 
 const resolver = new IndyVdrSovDidResolver()

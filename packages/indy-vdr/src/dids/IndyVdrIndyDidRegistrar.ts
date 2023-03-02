@@ -89,7 +89,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             didRegistrationMetadata: {},
             didState: {
               state: 'failed',
-              reason: `Initial verkey ${options.options.verkey} does not match did ˇ${did}`,
+              reason: `Initial verkey ${options.options.verkey} does not match did ${did}`,
             },
           }
         }
@@ -119,7 +119,21 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       // Add services if object was passed
       if (services) {
-        services.forEach((item) => didDocumentBuilder.addService(item))
+        services.forEach((item) => {
+          const prependDidIfNotPresent = (id: string) => {
+            return id.startsWith('#') ? `${did}${id}` : id
+          }
+
+          // Prepend the did to the service id if it is not already there
+          item.id = prependDidIfNotPresent(item.id)
+
+          // TODO: should we also prepend the did to routingKeys?
+          if (item instanceof DidCommV1Service) {
+            item.recipientKeys = item.recipientKeys.map(prependDidIfNotPresent)
+          }
+
+          didDocumentBuilder.addService(item)
+        })
 
         const commTypes = [IndyAgentService.type, DidCommV1Service.type, DidCommV2Service.type]
         const serviceTypes = new Set(services.map((item) => item.type))
@@ -129,6 +143,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         // If there is at least a communication service, add the key agreement key
         if (commTypes.some((type) => serviceTypes.has(type))) {
           didDocumentBuilder
+            .addContext('https://w3id.org/security/suites/x25519-2019/v1')
             .addVerificationMethod({
               controller: did,
               id: keyAgreementId,
@@ -154,9 +169,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
       // Build did document
       const didDocument = didDocumentBuilder.build()
-
       const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(submitterNamespace)
-
       // If there are services and we are using legacy indy endpoint attrib, make sure they are suitable before registering the DID
       if (services && useEndpointAttrib) {
         const endpoints = endpointsAttribFromServices(services)
@@ -284,7 +297,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         response,
       })
 
-      return unqualifiedDid
+      return
     } catch (error) {
       agentContext.config.logger.error(
         `Error registering public did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`,
@@ -345,9 +358,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   }
 }
 
-export interface IndyVdrDidCreateOptions extends DidCreateOptions {
-  method: 'indy'
-  did?: string
+interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
   didDocument?: never // Not yet supported
   options: {
     alias?: string
@@ -363,3 +374,15 @@ export interface IndyVdrDidCreateOptions extends DidCreateOptions {
     privateKey?: Buffer
   }
 }
+
+interface IndyVdrDidCreateOptionsWithDid extends IndyVdrDidCreateOptionsBase {
+  method?: never
+  did: string
+}
+
+interface IndyVdrDidCreateOptionsWithoutDid extends IndyVdrDidCreateOptionsBase {
+  method: 'indy'
+  did?: never
+}
+
+export type IndyVdrDidCreateOptions = IndyVdrDidCreateOptionsWithDid | IndyVdrDidCreateOptionsWithoutDid

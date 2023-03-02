@@ -199,7 +199,7 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  public async registerPublicDid(
+  private async registerPublicDid(
     agentContext: AgentContext,
     pool: IndySdkPool,
     unqualifiedSubmitterDid: string,
@@ -249,7 +249,7 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  public async setEndpointsForDid(
+  private async setEndpointsForDid(
     agentContext: AgentContext,
     pool: IndySdkPool,
     unqualifiedDid: string,
@@ -296,9 +296,7 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
   }
 }
 
-export interface IndySdkIndyDidCreateOptions extends DidCreateOptions {
-  method: 'indy'
-  did?: string
+interface IndySdkIndyDidCreateOptionsBase extends DidCreateOptions {
   // The indy sdk can only publish a very limited did document (what is mostly known as a legacy did:sov did) and thus we require everything
   // needed to construct the did document to be passed through the options object.
   didDocument?: never
@@ -313,3 +311,15 @@ export interface IndySdkIndyDidCreateOptions extends DidCreateOptions {
     privateKey?: Buffer
   }
 }
+
+interface IndySdkIndyDidCreateOptionsWithDid extends IndySdkIndyDidCreateOptionsBase {
+  method?: never
+  did: string
+}
+
+interface IndySdkIndyDidCreateOptionsWithoutDid extends IndySdkIndyDidCreateOptionsBase {
+  method: 'indy'
+  did?: never
+}
+
+export type IndySdkIndyDidCreateOptions = IndySdkIndyDidCreateOptionsWithDid | IndySdkIndyDidCreateOptionsWithoutDid

@@ -60,7 +60,13 @@ import {
   parseSchemaId,
 } from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
-import { IndyVdrAnonCredsRegistry, IndyVdrSovDidResolver, IndyVdrModule } from '../../indy-vdr/src'
+import {
+  IndyVdrAnonCredsRegistry,
+  IndyVdrSovDidResolver,
+  IndyVdrModule,
+  IndyVdrIndyDidResolver,
+  IndyVdrIndyDidRegistrar,
+} from '../../indy-vdr/src'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -163,7 +169,8 @@ export const getAskarAnonCredsIndyModules = ({
       networks: [indyNetworkConfig],
     }),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver()], // TODO: Support Registrar for tests
+      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
+      registrars: [new IndyVdrIndyDidRegistrar()],
     }),
     askar: new AskarModule(),
     cache: new CacheModule({
