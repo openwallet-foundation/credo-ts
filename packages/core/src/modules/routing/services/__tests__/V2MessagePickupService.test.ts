@@ -2,7 +2,7 @@ import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../types'
 
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../tests/helpers'
-import { Dispatcher } from '../../../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { InMemoryMessageRepository } from '../../../../storage/InMemoryMessageRepository'
 import { DidExchangeState } from '../../../connections'
@@ -23,11 +23,11 @@ const mockConnection = getMockConnection({
 // Mock classes
 jest.mock('../MediationRecipientService')
 jest.mock('../../../../storage/InMemoryMessageRepository')
-jest.mock('../../../../agent/Dispatcher')
+jest.mock('../../../../agent/MessageHandlerRegistry')
 
 // Mock typed object
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const InMessageRepositoryMock = InMemoryMessageRepository as jest.Mock<InMemoryMessageRepository>
 
 const agentContext = getAgentContext()
@@ -45,11 +45,11 @@ describe('V2MessagePickupService', () => {
   let messageRepository: MessageRepository
 
   beforeEach(async () => {
-    const dispatcher = new DispatcherMock()
+    const messageHandlerRegistry = new MessageHandlerRegistryMock()
     const mediationRecipientService = new MediationRecipientServiceMock()
 
     messageRepository = new InMessageRepositoryMock()
-    pickupService = new V2MessagePickupService(messageRepository, dispatcher, mediationRecipientService)
+    pickupService = new V2MessagePickupService(messageRepository, messageHandlerRegistry, mediationRecipientService)
   })
 
   describe('processStatusRequest', () => {

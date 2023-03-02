@@ -5,7 +5,6 @@ import {
   AgentContext,
   ConnectionService,
   OutboundMessageContext,
-  Dispatcher,
   injectable,
   MessageSender,
 } from '@aries-framework/core'
@@ -22,7 +21,6 @@ export class QuestionAnswerApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
     questionAnswerService: QuestionAnswerService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
@@ -32,7 +30,11 @@ export class QuestionAnswerApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(dispatcher)
+
+    this.agentContext.dependencyManager.registerMessageHandlers([
+      new QuestionMessageHandler(this.questionAnswerService),
+      new AnswerMessageHandler(this.questionAnswerService),
+    ])
   }
 
   /**
@@ -130,10 +132,5 @@ export class QuestionAnswerApi {
    */
   public findById(questionAnswerId: string) {
     return this.questionAnswerService.findById(this.agentContext, questionAnswerId)
-  }
-
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new QuestionMessageHandler(this.questionAnswerService))
-    dispatcher.registerMessageHandler(new AnswerMessageHandler(this.questionAnswerService))
   }
 }
