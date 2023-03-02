@@ -2,7 +2,7 @@
 export { AskarWallet } from './wallet'
 
 // Storage
-export { AskarStorageService } from './storage'
+export { AskarStorageService, transformToRecordTagValues, transformFromRecordTagValues } from './storage'
 
 // Module
 export { AskarModule } from './AskarModule'
