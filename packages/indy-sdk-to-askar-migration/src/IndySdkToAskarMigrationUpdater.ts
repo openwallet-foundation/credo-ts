@@ -167,14 +167,14 @@ export class IndySdkToAskarMigrationUpdater {
 
   private credentialTags(credentialData: Record<string, unknown>) {
     const schemaId = credentialData.schema_id as string
+    const credentialDefinitionId = credentialData.cred_def_id as string
+
     const { did, schemaName, schemaVersion } =
       /^(?<did>\w+):2:(?<schemaName>[^:]+):(?<schemaVersion>[^:]+)$/.exec(schemaId)?.groups ?? {}
     if (!did || !schemaName || !schemaVersion) throw new Error(`Error parsing credential schema id: ${schemaId}`)
-    const credentialDefinitionId = credentialData.cred_def_id as string
+
     const { issuerId } =
-      /^(?<issuerId>\w+):3:CL:(?<schemaIdOrSeqNo>[^:]+):(?<tag>[^:]+)$/.exec(
-        'Xqxxkqwb6gaCt7wUPwVfGZ:3:CL:620792:default'
-      )?.groups ?? {}
+      /^(?<issuerId>\w+):3:CL:(?<schemaIdOrSeqNo>[^:]+):(?<tag>[^:]+)$/.exec(credentialDefinitionId)?.groups ?? {}
     if (!issuerId) throw new Error(`Error parsing credential definition id: ${credentialDefinitionId}`)
 
     const tags = {
@@ -187,7 +187,7 @@ export class IndySdkToAskarMigrationUpdater {
       rev_reg_id: (credentialData.rev_reg_id as string) ?? 'None',
     } as Record<string, string>
 
-    for (const [k, attrValue] of Object.entries(credentialData.values as Array<any>)) {
+    for (const [k, attrValue] of Object.entries(credentialData.values as Record<string, { raw: string }>)) {
       const attrName = k.replace(' ', '')
       const id = `attr::${attrName}::value`
       tags[id] = attrValue.raw
