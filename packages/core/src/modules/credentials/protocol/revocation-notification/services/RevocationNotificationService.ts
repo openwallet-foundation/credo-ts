@@ -5,8 +5,8 @@ import type { RevocationNotificationReceivedEvent } from '../../../CredentialEve
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 import type { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 
-import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { InjectionSymbols } from '../../../../../constants'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { Logger } from '../../../../../logger'
@@ -22,21 +22,19 @@ import { v1ThreadRegex, v2IndyRevocationFormat, v2IndyRevocationIdentifierRegex 
 export class RevocationNotificationService {
   private credentialRepository: CredentialRepository
   private eventEmitter: EventEmitter
-  private dispatcher: Dispatcher
   private logger: Logger
 
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
-    this.dispatcher = dispatcher
     this.logger = logger
 
-    this.registerMessageHandlers()
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   private async processRevocationNotification(
@@ -147,8 +145,8 @@ export class RevocationNotificationService {
     }
   }
 
-  private registerMessageHandlers() {
-    this.dispatcher.registerMessageHandler(new V1RevocationNotificationHandler(this))
-    this.dispatcher.registerMessageHandler(new V2RevocationNotificationHandler(this))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new V1RevocationNotificationHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new V2RevocationNotificationHandler(this))
   }
 }
