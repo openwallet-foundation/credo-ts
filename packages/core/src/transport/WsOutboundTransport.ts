@@ -47,7 +47,7 @@ export class WsOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
-    const isNewSocket = this.hasOpenSocket(endpoint)
+    const isNewSocket = !this.hasOpenSocket(endpoint)
     const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
 
     socket.send(Buffer.from(JSON.stringify(payload)))
