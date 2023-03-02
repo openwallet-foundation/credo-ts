@@ -24,10 +24,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aries-framework/anoncreds": "0.4.0-alpha.22",
+    "@aries-framework/askar": "0.4.0-alpha.22",
     "@aries-framework/core": "0.3.3",
     "@hyperledger/aries-askar-shared": "0.1.0-dev.3"
   },
   "devDependencies": {
+    "@hyperledger/aries-askar-nodejs": "0.1.0-dev.3",
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4"
   }

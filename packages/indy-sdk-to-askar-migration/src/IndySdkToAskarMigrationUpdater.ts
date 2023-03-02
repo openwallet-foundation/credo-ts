@@ -1,23 +1,25 @@
 /* eslint-disable no-console */
-import { TypedArrayEncoder } from '@aries-framework/core'
-import { Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
+import { AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
+import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 export class IndySdkToAskarMigrationUpdater {
   private store: Store
+  private walletName: string
 
-  private constructor(store: Store) {
+  private constructor(store: Store, walletName: string) {
     this.store = store
+    this.walletName = walletName
   }
 
-  public static async init(uri: string, masterPassword: string) {
-    const store = await Store.open({ uri, passKey: masterPassword })
-    return new IndySdkToAskarMigrationUpdater(store)
+  public static async init(uri: string, walletName: string, masterPassword: string) {
+    const store = await Store.open({ uri, passKey: masterPassword, keyMethod: StoreKeyMethod.Raw })
+    return new IndySdkToAskarMigrationUpdater(store, walletName)
   }
 
   public async update() {
     await this.updateKeys()
     await this.updateMasterSecret()
-    await this.updateDids()
     await this.updateCredentials()
   }
 
@@ -62,68 +64,29 @@ export class IndySdkToAskarMigrationUpdater {
     const session = this.store.transaction()
     for (;;) {
       const txn = await session.open()
-      const ms = await txn.fetchAll({ category, limit: 50 })
-      if (!ms || ms.length === 0) {
-        await txn.close()
-        break
-      }
-      if (ms.length > 1) throw new Error('Multiple Master Secrets found!')
-
-      const row = ms[0]
-      await txn.remove({ category, name: row.name })
-      const value = (typeof row.value === 'string' ? JSON.parse(row.value) : row.value).value
-
-      await txn.insert({ category: 'master_secret', name: row.name, value })
-      updateCount++
-
-      await txn.commit()
-    }
-
-    console.log(`Updated ${updateCount} instances inside ${category}`)
-  }
-
-  private async updateDids() {
-    const category = 'Indy::Did'
-    const categoryMeta = 'Indy::DidMetadata'
-
-    console.log(`Updating ${category}`)
-
-    let updateCount = 0
-    const session = this.store.transaction()
-    for (;;) {
-      const txn = await session.open()
-      const dids = await txn.fetchAll({ category, limit: 50 })
-      if (!dids || dids.length === 0) {
+      const masterSecrets = await txn.fetchAll({ category, limit: 50 })
+      if (!masterSecrets || masterSecrets.length === 0) {
         await txn.close()
         break
       }
 
-      for (const row of dids) {
+      for (const row of masterSecrets) {
         await txn.remove({ category, name: row.name })
-        const info = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
-        console.log(info)
-        let meta
-        try {
-          meta = await txn.fetch({
-            category: categoryMeta,
-            name: row.name,
-          })
-        } catch {}
-        let didMeta
-        if (meta) {
-          await txn.remove({ category: categoryMeta, name: meta.name })
-          didMeta = (typeof meta.value === 'string' ? JSON.parse(meta.value) : meta.value).value
-        }
-        await txn.insert({
-          category: 'did',
-          name: row.name,
-          value: {
-            verkey: info.verkey,
-            did: info.did,
-            metadata: didMeta,
-          },
-          tags: { verkey: info.verkey },
-        })
+
+        const isDefault = row.name === this.walletName
+
+        const {
+          value: { ms },
+        } = JSON.parse(row.value as string) as { value: { ms: string } }
+
+        const record = new AnonCredsLinkSecretRecord({ linkSecretId: row.name, value: ms })
+        record.setTag('isDefault', isDefault)
+        const value = JsonTransformer.serialize(record)
+
+        // TODO: use exported message from askar to transform tags
+        const tags = undefined
+
+        await txn.insert({ category: record.type, name: record.id, value, tags })
         updateCount++
       }
       await txn.commit()
