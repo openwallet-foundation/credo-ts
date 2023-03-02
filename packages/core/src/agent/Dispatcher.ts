@@ -1,6 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { MessageHandler } from './MessageHandler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -33,13 +32,6 @@ class Dispatcher {
     this.eventEmitter = eventEmitter
     this.messageHandlerRegistry = messageHandlerRegistry
     this.logger = logger
-  }
-
-  /**
-   * @deprecated Use {@link MessageHandlerRegistry.registerMessageHandler} directly
-   */
-  public registerMessageHandler(messageHandler: MessageHandler) {
-    this.messageHandlerRegistry.registerMessageHandler(messageHandler)
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
