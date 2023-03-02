@@ -22,6 +22,7 @@ import {
 } from '@aries-framework/core'
 import { Store } from '@hyperledger/aries-askar-shared'
 
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
@@ -35,7 +36,7 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-describe('AskarWallet basic operations', () => {
+describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
   let askarWallet: AskarWallet
 
   const seed = TypedArrayEncoder.fromString('sample-seed-min-of-32-bytes-long')

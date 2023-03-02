@@ -8,6 +8,7 @@ import {
 } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-shared'
 
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AskarWallet } from '../../wallet/AskarWallet'
@@ -16,7 +17,7 @@ import { askarQueryFromSearchQuery } from '../utils'
 
 const startDate = Date.now()
 
-describe('AskarStorageService', () => {
+describeRunInNodeVersion([18], 'AskarStorageService', () => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
   let agentContext: AgentContext
