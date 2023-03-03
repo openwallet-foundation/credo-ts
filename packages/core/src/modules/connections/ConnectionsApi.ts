@@ -5,7 +5,7 @@ import type { Query } from '../../storage/StorageService'
 import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
@@ -55,7 +55,7 @@ export class ConnectionsApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
@@ -78,7 +78,7 @@ export class ConnectionsApi {
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
 
-    this.registerMessageHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async acceptOutOfBandInvitation(
@@ -407,8 +407,8 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
@@ -417,14 +417,16 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
-    dispatcher.registerMessageHandler(new AckMessageHandler(this.connectionService))
-    dispatcher.registerMessageHandler(new TrustPingMessageHandler(this.trustPingService, this.connectionService))
-    dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    messageHandlerRegistry.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    messageHandlerRegistry.registerMessageHandler(
+      new TrustPingMessageHandler(this.trustPingService, this.connectionService)
+    )
+    messageHandlerRegistry.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
 
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -434,7 +436,7 @@ export class ConnectionsApi {
       )
     )
 
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -443,6 +445,8 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerMessageHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
+    )
   }
 }

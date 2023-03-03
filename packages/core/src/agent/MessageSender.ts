@@ -15,7 +15,7 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
-import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
+import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { inject, injectable } from '../plugins'
@@ -508,7 +508,6 @@ function getAuthenticationKeys(didDocument: DidDocument) {
     didDocument.authentication?.map((authentication) => {
       const verificationMethod =
         typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
       return key
     }) ?? []
