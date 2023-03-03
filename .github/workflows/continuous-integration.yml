@@ -111,6 +111,11 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Add ref-napi resolution in Node18
+        run: node ./scripts/add-ref-napi-resolution.js
+        if: matrix.node-version == '18.x'
+
       - name: Install dependencies
         run: yarn install
 
