@@ -1,5 +1,6 @@
 import type { EventReplaySubject } from '../../../../../../tests'
 
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import {
@@ -104,6 +105,7 @@ const getIndyJsonLdModules = () =>
       ],
     }),
     anoncreds: new AnonCredsModule({
+      anoncreds,
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({

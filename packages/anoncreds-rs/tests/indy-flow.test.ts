@@ -27,6 +27,7 @@ import {
   ProofState,
   ProofExchangeRecord,
 } from '@aries-framework/core'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -39,6 +40,7 @@ import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierS
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
+  anoncreds,
   registries: [registry],
 })
 

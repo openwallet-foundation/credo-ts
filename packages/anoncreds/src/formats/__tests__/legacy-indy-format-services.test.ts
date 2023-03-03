@@ -10,6 +10,7 @@ import {
   ProofState,
   EventEmitter,
 } from '@aries-framework/core'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import * as indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
@@ -37,6 +38,7 @@ import { LegacyIndyProofFormatService } from '../LegacyIndyProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
+  anoncreds,
   registries: [registry],
 })
 

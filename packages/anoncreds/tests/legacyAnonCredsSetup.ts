@@ -27,7 +27,8 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
-import { indyVdr } from '@hyperledger/indy-vdr-shared'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
@@ -96,6 +97,7 @@ export const getLegacyAnonCredsModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
+      anoncreds,
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
@@ -150,6 +152,7 @@ export const getAskarAnonCredsIndyModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
+      anoncreds,
       registries: [new IndyVdrAnonCredsRegistry()],
     }),
     anoncredsRs: new AnonCredsRsModule(),
