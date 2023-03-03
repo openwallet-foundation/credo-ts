@@ -15,9 +15,11 @@ import type { AgentContext } from '@aries-framework/core'
 import { generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
 
+import { parseIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
+import { getLegacySchemaId } from '../utils/identifiers'
 import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
@@ -30,11 +32,14 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
   }
 
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
-    const { issuerId, name, version, attrNames } = options
+    // We only support passing qualified did:indy issuer ids in the indy issuer service when creating objects
+    const { id: unqualifiedDid } = parseIndyDid(options.issuerId)
+
+    const { name, version, attrNames, issuerId } = options
     assertIndySdkWallet(agentContext.wallet)
 
     try {
-      const [, schema] = await this.indySdk.issuerCreateSchema(issuerId, name, version, attrNames)
+      const [, schema] = await this.indySdk.issuerCreateSchema(unqualifiedDid, name, version, attrNames)
 
       return {
         issuerId,
@@ -54,6 +59,12 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
   ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
+    // We only support passing qualified did:indy issuer ids in the indy issuer service when creating objects
+    const { id: unqualifiedDid } = parseIndyDid(options.issuerId)
+
+    // parse schema in a way that supports both unqualified and qualified identifiers
+    const legacySchemaId = getLegacySchemaId(unqualifiedDid, schema.name, schema.version)
+
     if (!metadata)
       throw new AriesFrameworkError('The metadata parameter is required when using Indy, but received undefined.')
 
@@ -61,8 +72,8 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
       assertIndySdkWallet(agentContext.wallet)
       const [, credentialDefinition] = await this.indySdk.issuerCreateAndStoreCredentialDef(
         agentContext.wallet.handle,
-        issuerId,
-        indySdkSchemaFromAnonCreds(schemaId, schema, metadata.indyLedgerSchemaSeqNo),
+        unqualifiedDid,
+        indySdkSchemaFromAnonCreds(legacySchemaId, schema, metadata.indyLedgerSchemaSeqNo),
         tag,
         'CL',
         {

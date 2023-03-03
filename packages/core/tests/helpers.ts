@@ -12,6 +12,7 @@ import type {
   Wallet,
   Agent,
   CredentialState,
+  ConnectionStateChangedEvent,
   Buffer,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
@@ -27,6 +28,7 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
+  ConnectionEventTypes,
   TypedArrayEncoder,
   AgentConfig,
   AgentContext,
@@ -189,6 +191,8 @@ const isProofStateChangedEvent = (e: BaseEvent): e is ProofStateChangedEvent =>
   e.type === ProofEventTypes.ProofStateChanged
 const isCredentialStateChangedEvent = (e: BaseEvent): e is CredentialStateChangedEvent =>
   e.type === CredentialEventTypes.CredentialStateChanged
+const isConnectionStateChangedEvent = (e: BaseEvent): e is ConnectionStateChangedEvent =>
+  e.type === ConnectionEventTypes.ConnectionStateChanged
 const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
@@ -365,6 +369,54 @@ export async function waitForCredentialRecord(
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
   return waitForCredentialRecordSubject(observable, options)
+}
+
+export function waitForConnectionRecordSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    state,
+    previousState,
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
+  }: {
+    threadId?: string
+    state?: DidExchangeState
+    previousState?: DidExchangeState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+
+  return firstValueFrom(
+    observable.pipe(
+      filter(isConnectionStateChangedEvent),
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.connectionRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.connectionRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`ConnectionStateChanged event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`)
+      }),
+      map((e) => e.payload.connectionRecord)
+    )
+  )
+}
+
+export async function waitForConnectionRecord(
+  agent: Agent,
+  options: {
+    threadId?: string
+    state?: DidExchangeState
+    previousState?: DidExchangeState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged)
+  return waitForConnectionRecordSubject(observable, options)
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {

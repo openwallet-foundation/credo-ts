@@ -121,7 +121,7 @@ export class ConnectionService {
 
     connectionRequest.setThread({
       threadId: connectionRequest.threadId,
-      parentThreadId: outOfBandInvitation.id,
+      parentThreadId: outOfBandRecord.outOfBandInvitation.id,
     })
 
     const connectionRecord = await this.createConnection(agentContext, {

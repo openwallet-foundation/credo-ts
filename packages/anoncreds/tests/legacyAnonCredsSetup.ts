@@ -48,10 +48,17 @@ import {
 import testLogger from '../../core/tests/logger'
 import {
   IndySdkAnonCredsRegistry,
+  IndySdkIndyDidRegistrar,
+  IndySdkIndyDidResolver,
   IndySdkModule,
-  IndySdkSovDidRegistrar,
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
+import {
+  getLegacyCredentialDefinitionId,
+  getLegacySchemaId,
+  parseCredentialDefinitionId,
+  parseSchemaId,
+} from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrAnonCredsRegistry, IndyVdrSovDidResolver, IndyVdrModule } from '../../indy-vdr/src'
 import {
@@ -98,8 +105,8 @@ export const getLegacyAnonCredsModules = ({
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver()],
-      registrars: [new IndySdkSovDidRegistrar()],
+      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
+      registrars: [new IndySdkIndyDidRegistrar()],
     }),
     indySdk: new IndySdkModule(getIndySdkModuleConfig()),
     cache: new CacheModule({
@@ -444,14 +451,15 @@ export async function setupAnonCredsTests<
 
 export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames }: { attributeNames: string[] }) {
   // Add existing endorser did to the wallet
-  const issuerId = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
+  const unqualifiedDid = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
+  const didIndyDid = `did:indy:pool:localtest:${unqualifiedDid}`
 
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,
     name: `Schema ${randomUUID()}`,
     version: '1.0',
-    issuerId,
+    issuerId: didIndyDid,
   })
 
   // Wait some time pass to let ledger settle the object
@@ -459,16 +467,31 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
 
   const credentialDefinition = await registerCredentialDefinition(agent, {
     schemaId: schema.schemaId,
-    issuerId,
+    issuerId: didIndyDid,
     tag: 'default',
   })
+
+  const s = parseSchemaId(schema.schemaId)
+  const cd = parseCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
+
+  const legacySchemaId = getLegacySchemaId(s.didIdentifier, s.schemaName, s.schemaVersion)
+  const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.didIdentifier, cd.schemaSeqNo, cd.tag)
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
+  // NOTE: we return the legacy schema and credential definition ids here because that's what currently expected
+  // in all tests. If we also support did:indy in tests we probably want to return the qualified identifiers here
+  // and transform them to the legacy variant in the specific tests that need it.
   return {
-    schema,
-    credentialDefinition,
+    schema: {
+      ...schema,
+      schemaId: legacySchemaId,
+    },
+    credentialDefinition: {
+      ...credentialDefinition,
+      credentialDefinitionId: legacyCredentialDefinitionId,
+    },
   }
 }
 
@@ -478,9 +501,7 @@ async function registerSchema(
 ): Promise<RegisterSchemaReturnStateFinished> {
   const { schemaState } = await agent.modules.anoncreds.registerSchema({
     schema,
-    options: {
-      didIndyNamespace: 'pool:localtest',
-    },
+    options: {},
   })
 
   testLogger.test(`created schema with id ${schemaState.schemaId}`, schema)
@@ -500,9 +521,7 @@ async function registerCredentialDefinition(
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
   const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
     credentialDefinition,
-    options: {
-      didIndyNamespace: 'pool:localtest',
-    },
+    options: {},
   })
 
   if (credentialDefinitionState.state !== 'finished') {
