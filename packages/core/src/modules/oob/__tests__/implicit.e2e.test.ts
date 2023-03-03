@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { IndySdkSovDidCreateOptions } from '@aries-framework/indy-sdk'
+import type { IndySdkIndyDidCreateOptions } from '@aries-framework/indy-sdk'
 
 import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupSubjectTransports } from '../../../../tests'
@@ -198,10 +198,10 @@ describe('out of band implicit', () => {
 })
 
 async function createPublicDid(agent: Agent, unqualifiedSubmitterDid: string, endpoint: string) {
-  const createResult = await agent.dids.create<IndySdkSovDidCreateOptions>({
-    method: 'sov',
+  const createResult = await agent.dids.create<IndySdkIndyDidCreateOptions>({
+    method: 'indy',
     options: {
-      submitterVerificationMethod: `did:sov:${unqualifiedSubmitterDid}#key-1`,
+      submitterDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
       alias: 'Alias',
       endpoints: {
         endpoint,

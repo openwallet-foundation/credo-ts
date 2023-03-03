@@ -19,6 +19,7 @@ import { Buffer, TypedArrayEncoder } from '@aries-framework/core'
 
 export const FULL_VERKEY_REGEX = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
+export const DID_INDY_REGEX = /^did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22})$/
 
 /**
  * Check whether the did is a self certifying did. If the verkey is abbreviated this method
@@ -27,14 +28,14 @@ export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
  *
  * @return Boolean indicating whether the did is self certifying
  */
-export function isSelfCertifiedDid(did: string, verkey: string): boolean {
+export function isLegacySelfCertifiedDid(did: string, verkey: string): boolean {
   // If the verkey is Abbreviated, it means the full verkey
   // is the did + the verkey
   if (isAbbreviatedVerkey(verkey)) {
     return true
   }
 
-  const didFromVerkey = indyDidFromPublicKeyBase58(verkey)
+  const didFromVerkey = legacyIndyDidFromPublicKeyBase58(verkey)
 
   if (didFromVerkey === did) {
     return true
@@ -43,7 +44,7 @@ export function isSelfCertifiedDid(did: string, verkey: string): boolean {
   return false
 }
 
-export function indyDidFromPublicKeyBase58(publicKeyBase58: string): string {
+export function legacyIndyDidFromPublicKeyBase58(publicKeyBase58: string): string {
   const buffer = TypedArrayEncoder.fromBase58(publicKeyBase58)
 
   const did = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
