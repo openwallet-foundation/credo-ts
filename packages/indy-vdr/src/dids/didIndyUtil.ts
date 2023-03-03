@@ -1,12 +1,12 @@
 import type { AgentContext } from '@aries-framework/core'
 
 import {
+  getKeyFromVerificationMethod,
   AriesFrameworkError,
   convertPublicKeyToX25519,
   DidDocument,
   DidDocumentBuilder,
   DidsApi,
-  getKeyDidMappingByVerificationMethod,
   Hasher,
   JsonTransformer,
   Key,
@@ -188,7 +188,6 @@ export async function verificationKeyForIndyDid(agentContext: AgentContext, did:
 
   // did:indy dids MUST have a verificationMethod with #verkey
   const verificationMethod = didResult.didDocument.dereferenceKey(`${did}#verkey`)
-  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
   const key = getKeyFromVerificationMethod(verificationMethod)
 
   return key

@@ -287,6 +287,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         options.credentialDefinition
       )
 
+      // TODO: check structure of the schemaId
       // TODO: this will bypass caching if done on a higher level.
       const { schema, schemaMetadata, resolutionMetadata } = await this.getSchema(
         agentContext,

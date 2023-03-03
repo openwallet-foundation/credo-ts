@@ -8,7 +8,6 @@ import {
 } from '../../core/tests/helpers'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
 import { IndySdkPoolService } from '../src/ledger'
-import { assertIndySdkWallet } from '../src/utils/assertIndySdkWallet'
 
 import { credentialDefinitionValue } from './__fixtures__/anoncreds'
 import { getIndySdkModules, indySdk } from './setupIndySdkModule'
