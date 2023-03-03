@@ -3,8 +3,6 @@ import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
 import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
 import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
-import { request, response } from 'express'
-import { async } from 'rxjs'
 
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
