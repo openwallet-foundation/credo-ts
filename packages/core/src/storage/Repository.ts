@@ -73,8 +73,14 @@ export class Repository<T extends BaseRecord<any, any, any>> {
    * @returns
    */
   public async deleteById(agentContext: AgentContext, id: string): Promise<void> {
-    const record = await this.getById(agentContext, id)
-    await this.delete(agentContext, record)
+    await this.storageService.deleteById(agentContext, this.recordClass, id)
+
+    this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
+      type: RepositoryEventTypes.RecordDeleted,
+      payload: {
+        record: { id, type: this.recordClass.type },
+      },
+    })
   }
 
   /** @inheritDoc {StorageService#getById} */

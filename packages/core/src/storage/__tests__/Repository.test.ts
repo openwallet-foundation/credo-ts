@@ -142,12 +142,9 @@ describe('Repository', () => {
 
   describe('deleteById()', () => {
     it('should delete the record by record id', async () => {
-      const record = getRecord({ id: 'test-id' })
-      mockFunction(storageMock.getById).mockResolvedValueOnce(record)
+      await repository.deleteById(agentContext, 'test-id')
 
-      await repository.deleteById(agentContext, record.id)
-
-      expect(storageMock.delete).toBeCalledWith(agentContext, record)
+      expect(storageMock.deleteById).toBeCalledWith(agentContext, TestRecord, 'test-id')
     })
 
     it(`should emit deleted event`, async () => {
@@ -155,7 +152,6 @@ describe('Repository', () => {
       eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
 
       const record = getRecord({ id: 'test-id' })
-      mockFunction(storageMock.getById).mockResolvedValueOnce(record)
 
       await repository.deleteById(agentContext, record.id)
 
@@ -167,6 +163,7 @@ describe('Repository', () => {
         payload: {
           record: expect.objectContaining({
             id: record.id,
+            type: record.type,
           }),
         },
       })
