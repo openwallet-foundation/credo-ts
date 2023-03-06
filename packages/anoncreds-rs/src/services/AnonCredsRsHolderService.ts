@@ -372,12 +372,12 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       for (const [attributeName, attributeValue] of Object.entries(parsedRestriction.attributeValues)) {
-        queryElements[`attr::${attributeName}:value`] = attributeValue
+        queryElements[`attr::${attributeName}::value`] = attributeValue
       }
 
       for (const [attributeName, isAvailable] of Object.entries(parsedRestriction.attributeMarkers)) {
         if (isAvailable) {
-          queryElements[`attr::${attributeName}:marker`] = isAvailable
+          queryElements[`attr::${attributeName}::marker`] = isAvailable
         }
       }
 
