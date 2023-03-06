@@ -150,7 +150,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
-    // Alice waits till it receives presentation ack
+    // Alice waits until it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
