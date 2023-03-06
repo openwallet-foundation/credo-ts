@@ -115,12 +115,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       }
       return recordToInstance(record, recordClass)
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.NotFound)) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: recordClass.type,
-          cause: error,
-        })
-      }
+      if (error instanceof RecordNotFoundError) throw error
       throw new WalletError(`Error getting record`, { cause: error })
     }
   }
