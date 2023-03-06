@@ -44,6 +44,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     }
   })
 
+  // new method to test the return route and mediator together
   const connectionlessTest = async (returnRoute?: boolean) => {
     const {
       holderAgent: aliceAgent,
