@@ -1,0 +1,50 @@
+{
+  "@context": [
+    "https://w3id.org/did/v1",
+    "https://w3id.org/security/suites/ed25519-2018/v1",
+    "https://w3id.org/security/suites/x25519-2019/v1"
+  ],
+  "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ",
+  "verificationMethod": [
+    {
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ",
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#verkey",
+      "publicKeyBase58": "E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"
+    },
+    {
+      "type": "X25519KeyAgreementKey2019",
+      "controller": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ",
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#key-agreement-1",
+      "publicKeyBase58": "Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt"
+    }
+  ],
+  "authentication": ["did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#verkey"],
+  "keyAgreement": ["did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#key-agreement-1"],
+  "service": [
+    {
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#endpoint",
+      "type": "endpoint",
+      "serviceEndpoint": "https://ssi.com"
+    },
+    {
+      "accept": ["didcomm/aip2;env=rfc19"],
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#did-communication",
+      "priority": 0,
+      "recipientKeys": ["did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#key-agreement-1"],
+      "routingKeys": [],
+      "serviceEndpoint": "https://ssi.com",
+      "type": "did-communication"
+    },
+    {
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#profile",
+      "serviceEndpoint": "https://profile.com",
+      "type": "profile"
+    },
+    {
+      "id": "did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#hub",
+      "serviceEndpoint": "https://hub.com",
+      "type": "hub"
+    }
+  ]
+}

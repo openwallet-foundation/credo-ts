@@ -1,7 +1,3 @@
-export {
-  IndySdkSovDidRegistrar,
-  IndySdkSovDidCreateOptions,
-  IndySdkSovDidDeactivateOptions,
-  IndySdkSovDidUpdateOptions,
-} from './IndySdkSovDidRegistrar'
+export { IndySdkIndyDidRegistrar, IndySdkIndyDidCreateOptions } from './IndySdkIndyDidRegistrar'
 export { IndySdkSovDidResolver } from './IndySdkSovDidResolver'
+export { IndySdkIndyDidResolver } from './IndySdkIndyDidResolver'

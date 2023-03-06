@@ -17,7 +17,7 @@ import { Subject } from 'rxjs'
 import { IndySdkModuleConfig } from '../IndySdkModuleConfig'
 import { IndySdkError, isIndyError } from '../error'
 import { assertIndySdkWallet } from '../utils/assertIndySdkWallet'
-import { isSelfCertifiedDid } from '../utils/did'
+import { DID_INDY_REGEX, isLegacySelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
 import { IndySdkPool } from './IndySdkPool'
@@ -56,13 +56,39 @@ export class IndySdkPoolService {
   }
 
   /**
-   * Get the most appropriate pool for the given did. The algorithm is based on the approach as described in this document:
+   * Get the most appropriate pool for the given did.
+   * If the did is a qualified indy did, the pool will be determined based on the namespace.
+   * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
+   *
+   * This method will optionally return a nym response when the did has been resolved to determine the ledger
+   * either now or in the past. The nymResponse can be used to prevent multiple ledger quries fetching the same
+   * did
    */
   public async getPoolForDid(
     agentContext: AgentContext,
     did: string
-  ): Promise<{ pool: IndySdkPool; did: GetNymResponse }> {
+  ): Promise<{ pool: IndySdkPool; nymResponse?: GetNymResponse }> {
+    // Check if the did starts with did:indy
+    const match = did.match(DID_INDY_REGEX)
+
+    if (match) {
+      const [, namespace] = match
+
+      const pool = this.getPoolForNamespace(namespace)
+
+      if (pool) return { pool }
+
+      throw new IndySdkPoolError(`Pool for indy namespace '${namespace}' not found`)
+    } else {
+      return await this.getPoolForLegacyDid(agentContext, did)
+    }
+  }
+
+  private async getPoolForLegacyDid(
+    agentContext: AgentContext,
+    did: string
+  ): Promise<{ pool: IndySdkPool; nymResponse: GetNymResponse }> {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -78,7 +104,7 @@ export class IndySdkPoolService {
     // If we have the nym response with associated pool in the cache, we'll use that
     if (cachedNymResponse && pool) {
       this.logger.trace(`Found ledger '${pool.didIndyNamespace}' for did '${did}' in cache`)
-      return { did: cachedNymResponse.nymResponse, pool }
+      return { nymResponse: cachedNymResponse.nymResponse, pool }
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
@@ -103,7 +129,7 @@ export class IndySdkPoolService {
     // We take the first self certifying DID as we take the order in the
     // indyLedgers config as the order of preference of ledgers
     let value = successful.find((response) =>
-      isSelfCertifiedDid(response.value.did.did, response.value.did.verkey)
+      isLegacySelfCertifiedDid(response.value.did.did, response.value.did.verkey)
     )?.value
 
     if (!value) {
@@ -123,7 +149,8 @@ export class IndySdkPoolService {
       nymResponse: value.did,
       indyNamespace: value.pool.didIndyNamespace,
     } satisfies CachedDidResponse)
-    return { pool: value.pool, did: value.did }
+
+    return { pool: value.pool, nymResponse: value.did }
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndySdkPool[]) {

@@ -10,6 +10,7 @@ import {
   InjectionSymbols,
   Logger,
   WalletApi,
+  WalletError,
 } from '@aries-framework/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
@@ -180,7 +181,16 @@ export class TenantSessionCoordinator {
 
   private async createAgentContext(tenantRecord: TenantRecord) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
-    const tenantConfig = this.rootAgentContext.config.extend(tenantRecord.config)
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, key, keyDerivationMethod, ...strippedWalletConfig } = this.rootAgentContext.config?.walletConfig ?? {}
+    const tenantConfig = this.rootAgentContext.config.extend({
+      ...tenantRecord.config,
+      walletConfig: {
+        ...strippedWalletConfig,
+        ...tenantRecord.config.walletConfig,
+      },
+    })
 
     const agentContext = new AgentContext({
       contextCorrelationId: tenantRecord.id,
@@ -194,7 +204,11 @@ export class TenantSessionCoordinator {
     // and will also write the storage version to the storage, which is needed by the update assistant. We either
     // need to move this out of the module, or just keep using the module here.
     const walletApi = agentContext.dependencyManager.resolve(WalletApi)
-    await walletApi.initialize(tenantRecord.config.walletConfig)
+
+    if (!tenantConfig.walletConfig) {
+      throw new WalletError('Cannot initialize tenant without Wallet config.')
+    }
+    await walletApi.initialize(tenantConfig.walletConfig)
 
     return agentContext
   }

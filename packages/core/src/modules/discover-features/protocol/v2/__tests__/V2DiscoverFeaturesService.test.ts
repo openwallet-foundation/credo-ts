@@ -7,9 +7,9 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DiscoverFea
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../tests/helpers'
-import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { FeatureRegistry } from '../../../../../agent/FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { InboundMessageContext, Protocol, GoalCode } from '../../../../../agent/models'
 import { ConsoleLogger } from '../../../../../logger/ConsoleLogger'
 import { DidExchangeState } from '../../../../connections'
@@ -18,8 +18,8 @@ import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleCon
 import { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 import { V2DisclosuresMessage, V2QueriesMessage } from '../messages'
 
-jest.mock('../../../../../agent/Dispatcher')
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+jest.mock('../../../../../agent/MessageHandlerRegistry')
+const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new FeatureRegistry()
 featureRegistry.register(new Protocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -38,7 +38,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new V2DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new DispatcherMock(),
+    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -250,7 +250,7 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new V2DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new DispatcherMock(),
+    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )

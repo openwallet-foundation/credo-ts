@@ -11,7 +11,7 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { DidsApi, getKeyDidMappingByVerificationMethod } from '@aries-framework/core'
+import { getKeyFromVerificationMethod, DidsApi } from '@aries-framework/core'
 import {
   GetSchemaRequest,
   SchemaRequest,
@@ -154,7 +154,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const verificationMethod = didResult.didDocument.dereferenceKey(`did:sov:${options.schema.issuerId}#key-1`)
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
 
       const response = await pool.submitWriteRequest(agentContext, schemaRequest, key)
@@ -348,7 +347,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       const verificationMethod = didResult.didDocument.dereferenceKey(
         `did:sov:${options.credentialDefinition.issuerId}#key-1`
       )
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
 
       const response = await pool.submitWriteRequest(agentContext, credentialDefinitionRequest, key)

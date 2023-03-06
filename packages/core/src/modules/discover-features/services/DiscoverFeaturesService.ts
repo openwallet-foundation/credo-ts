@@ -1,5 +1,4 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { Dispatcher } from '../../../agent/Dispatcher'
 import type { EventEmitter } from '../../../agent/EventEmitter'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
@@ -14,20 +13,17 @@ import type {
 export abstract class DiscoverFeaturesService {
   protected featureRegistry: FeatureRegistry
   protected eventEmitter: EventEmitter
-  protected dispatcher: Dispatcher
   protected logger: Logger
   protected discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
 
   public constructor(
     featureRegistry: FeatureRegistry,
     eventEmitter: EventEmitter,
-    dispatcher: Dispatcher,
     logger: Logger,
     discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
   ) {
     this.featureRegistry = featureRegistry
     this.eventEmitter = eventEmitter
-    this.dispatcher = dispatcher
     this.logger = logger
     this.discoverFeaturesModuleConfig = discoverFeaturesModuleConfig
   }
