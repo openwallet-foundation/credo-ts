@@ -24,7 +24,8 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
 } from '@aries-framework/anoncreds'
-import { utils, injectable } from '@aries-framework/core'
+import { AnonCredsRestriction } from '@aries-framework/anoncreds/src/models/AnonCredsRestriction'
+import { JsonTransformer, utils, injectable } from '@aries-framework/core'
 import {
   CredentialRequestMetadata,
   Credential,
@@ -340,32 +341,44 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     for (const restriction of restrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
-      if (restriction.cred_def_id) {
-        queryElements.credentialDefinitionId = restriction.cred_def_id
+      const parsedRestriction = JsonTransformer.fromJSON(restriction, AnonCredsRestriction)
+
+      if (parsedRestriction.credentialDefinitionId) {
+        queryElements.credentialDefinitionId = parsedRestriction.credentialDefinitionId
       }
 
-      if (restriction.issuer_id || restriction.issuer_did) {
-        queryElements.issuerId = restriction.issuer_id ?? restriction.issuer_did
+      if (parsedRestriction.issuerId || parsedRestriction.issuerDid) {
+        queryElements.issuerId = parsedRestriction.issuerId ?? parsedRestriction.issuerDid
       }
 
-      if (restriction.rev_reg_id) {
-        queryElements.revocationRegistryId = restriction.rev_reg_id
+      if (parsedRestriction.revocationRegistryId) {
+        queryElements.revocationRegistryId = parsedRestriction.revocationRegistryId
       }
 
-      if (restriction.schema_id) {
-        queryElements.schemaId = restriction.schema_id
+      if (parsedRestriction.schemaId) {
+        queryElements.schemaId = parsedRestriction.schemaId
       }
 
-      if (restriction.schema_issuer_id || restriction.schema_issuer_did) {
-        queryElements.schemaIssuerId = restriction.schema_issuer_id ?? restriction.schema_issuer_did
+      if (parsedRestriction.schemaIssuerId || parsedRestriction.schemaIssuerDid) {
+        queryElements.schemaIssuerId = parsedRestriction.schemaIssuerId ?? parsedRestriction.issuerDid
       }
 
-      if (restriction.schema_name) {
-        queryElements.schemaName = restriction.schema_name
+      if (parsedRestriction.schemaName) {
+        queryElements.schemaName = parsedRestriction.schemaName
       }
 
-      if (restriction.schema_version) {
-        queryElements.schemaVersion = restriction.schema_version
+      if (parsedRestriction.schemaVersion) {
+        queryElements.schemaVersion = parsedRestriction.schemaVersion
+      }
+
+      for (const [attributeName, attributeValue] of Object.entries(parsedRestriction.attributeValues)) {
+        queryElements[`attr::${attributeName}:value`] = attributeValue
+      }
+
+      for (const [attributeName, isAvailable] of Object.entries(parsedRestriction.attributeMarkers)) {
+        if (isAvailable) {
+          queryElements[`attr::${attributeName}:marker`] = isAvailable
+        }
       }
 
       query.push(queryElements)
