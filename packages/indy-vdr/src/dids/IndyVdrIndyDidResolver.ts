@@ -37,25 +37,25 @@ export class IndyVdrIndyDidResolver implements DidResolver {
   }
 
   private async buildDidDocument(agentContext: AgentContext, did: string) {
-    const { id: unqualifiedDid, namespace } = parseIndyDid(did)
+    const { namespaceIdentifier, namespace } = parseIndyDid(did)
 
     const poolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
     const pool = poolService.getPoolForNamespace(namespace)
 
-    const nym = await this.getPublicDid(pool, unqualifiedDid)
+    const nym = await this.getPublicDid(pool, namespaceIdentifier)
 
     // Create base Did Document
 
     // For modern did:indy DIDs, we assume that GET_NYM is always a full verkey in base58.
     // For backwards compatibility, we accept a shortened verkey and convert it using previous convention
-    const verkey = getFullVerkey(unqualifiedDid, nym.verkey)
+    const verkey = getFullVerkey(namespaceIdentifier, nym.verkey)
 
     const builder = indyDidDocumentFromDid(did, verkey)
 
     // If GET_NYM does not return any diddocContent, fallback to legacy GET_ATTRIB endpoint
     if (!nym.diddocContent) {
       const keyAgreementId = `${did}#key-agreement-1`
-      const endpoints = await this.getEndpointsForDid(agentContext, pool, unqualifiedDid)
+      const endpoints = await this.getEndpointsForDid(agentContext, pool, namespaceIdentifier)
 
       if (endpoints) {
         builder

@@ -33,7 +33,7 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
 
     const { alias, role, submitterDid, endpoints } = options.options
     let did = options.did
-    let didIdentifier: string
+    let namespaceIdentifier: string
     let verificationKey: Key
     const privateKey = options.secret?.privateKey
 
@@ -52,7 +52,8 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
       assertIndySdkWallet(agentContext.wallet)
 
       // Parse submitterDid and extract namespace based on the submitter did
-      const { namespace: submitterNamespace, id: submitterDidIdentifier } = parseIndyDid(submitterDid)
+      const { namespace: submitterNamespace, namespaceIdentifier: submitterNamespaceIdentifier } =
+        parseIndyDid(submitterDid)
       const submitterSigningKey = await verificationKeyForIndyDid(agentContext, submitterDid)
 
       // Only supports version 1 did identifier (which is same as did:sov)
@@ -68,11 +69,12 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
           }
         }
 
-        const { namespace, id } = parseIndyDid(did)
-        didIdentifier = id
+        const { namespace, namespaceIdentifier: _namespaceIdentifier } = parseIndyDid(did)
+        namespaceIdentifier = _namespaceIdentifier
+
         verificationKey = Key.fromPublicKeyBase58(options.options.verkey, KeyType.Ed25519)
 
-        if (!isLegacySelfCertifiedDid(didIdentifier, options.options.verkey)) {
+        if (!isLegacySelfCertifiedDid(namespaceIdentifier, options.options.verkey)) {
           return {
             didDocumentMetadata: {},
             didRegistrationMetadata: {},
@@ -96,17 +98,17 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
       } else {
         // Create a new key and calculate did according to the rules for indy did method
         verificationKey = await agentContext.wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
-        didIdentifier = legacyIndyDidFromPublicKeyBase58(verificationKey.publicKeyBase58)
-        did = `did:indy:${submitterNamespace}:${didIdentifier}`
+        namespaceIdentifier = legacyIndyDidFromPublicKeyBase58(verificationKey.publicKeyBase58)
+        did = `did:indy:${submitterNamespace}:${namespaceIdentifier}`
       }
 
       const pool = indySdkPoolService.getPoolForNamespace(submitterNamespace)
       await this.registerPublicDid(
         agentContext,
         pool,
-        submitterDidIdentifier,
+        submitterNamespaceIdentifier,
         submitterSigningKey,
-        didIdentifier,
+        namespaceIdentifier,
         verificationKey,
         alias,
         role
@@ -119,7 +121,7 @@ export class IndySdkIndyDidRegistrar implements DidRegistrar {
       if (endpoints) {
         const keyAgreementId = `${did}#key-agreement-1`
 
-        await this.setEndpointsForDid(agentContext, pool, didIdentifier, verificationKey, endpoints)
+        await this.setEndpointsForDid(agentContext, pool, namespaceIdentifier, verificationKey, endpoints)
 
         didDocumentBuilder
           .addContext('https://w3id.org/security/suites/x25519-2019/v1')

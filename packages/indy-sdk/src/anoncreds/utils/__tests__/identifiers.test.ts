@@ -114,7 +114,7 @@ describe('identifiers', () => {
     test('parses legacy schema id', () => {
       expect(parseSchemaId('SDqTzbVuCowusqGBNbNDjH:2:schema-name:1.0')).toEqual({
         did: 'SDqTzbVuCowusqGBNbNDjH',
-        didIdentifier: 'SDqTzbVuCowusqGBNbNDjH',
+        namespaceIdentifier: 'SDqTzbVuCowusqGBNbNDjH',
         schemaName: 'schema-name',
         schemaVersion: '1.0',
       })
@@ -123,7 +123,7 @@ describe('identifiers', () => {
     test('parses did:indy schema id', () => {
       expect(parseSchemaId('did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH/anoncreds/v0/SCHEMA/schema-name/1.0')).toEqual(
         {
-          didIdentifier: 'SDqTzbVuCowusqGBNbNDjH',
+          namespaceIdentifier: 'SDqTzbVuCowusqGBNbNDjH',
           did: 'did:indy:bcovrin:test:SDqTzbVuCowusqGBNbNDjH',
           schemaName: 'schema-name',
           schemaVersion: '1.0',
@@ -137,7 +137,7 @@ describe('identifiers', () => {
     test('parses legacy credential definition id', () => {
       expect(parseCredentialDefinitionId('TL1EaPFCZ8Si5aUrqScBDt:3:CL:10:TAG')).toEqual({
         did: 'TL1EaPFCZ8Si5aUrqScBDt',
-        didIdentifier: 'TL1EaPFCZ8Si5aUrqScBDt',
+        namespaceIdentifier: 'TL1EaPFCZ8Si5aUrqScBDt',
         schemaSeqNo: '10',
         tag: 'TAG',
       })
@@ -147,7 +147,7 @@ describe('identifiers', () => {
       expect(
         parseCredentialDefinitionId('did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/CLAIM_DEF/10/TAG')
       ).toEqual({
-        didIdentifier: 'TL1EaPFCZ8Si5aUrqScBDt',
+        namespaceIdentifier: 'TL1EaPFCZ8Si5aUrqScBDt',
         did: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
         namespace: 'pool:localtest',
         schemaSeqNo: '10',
@@ -162,7 +162,7 @@ describe('identifiers', () => {
         parseRevocationRegistryId('5nDyJVP1NrcPAttP3xwMB9:4:5nDyJVP1NrcPAttP3xwMB9:3:CL:56495:npdb:CL_ACCUM:TAG1')
       ).toEqual({
         did: '5nDyJVP1NrcPAttP3xwMB9',
-        didIdentifier: '5nDyJVP1NrcPAttP3xwMB9',
+        namespaceIdentifier: '5nDyJVP1NrcPAttP3xwMB9',
         schemaSeqNo: '56495',
         credentialDefinitionTag: 'npdb',
         revocationRegistryTag: 'TAG1',
@@ -174,7 +174,7 @@ describe('identifiers', () => {
         parseRevocationRegistryId('did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9/anoncreds/v0/REV_REG_DEF/56495/npdb/TAG1')
       ).toEqual({
         namespace: 'sovrin',
-        didIdentifier: '5nDyJVP1NrcPAttP3xwMB9',
+        namespaceIdentifier: '5nDyJVP1NrcPAttP3xwMB9',
         did: 'did:indy:sovrin:5nDyJVP1NrcPAttP3xwMB9',
         schemaSeqNo: '56495',
         credentialDefinitionTag: 'npdb',

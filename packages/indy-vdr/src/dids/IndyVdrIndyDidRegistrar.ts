@@ -47,7 +47,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
     const { alias, role, submitterDid, services, useEndpointAttrib } = options.options
     let did = options.did
-    let didIdentifier: string
+    let namespaceIdentifier: string
     let verificationKey: Key
 
     const allowOne = [privateKey, seed, did].filter((e) => e !== undefined)
@@ -64,7 +64,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
     try {
       // Parse submitterDid and extract namespace based on the submitter did
-      const { namespace: submitterNamespace, id: submitterDidIdentifier } = parseIndyDid(submitterDid)
+      const { namespace: submitterNamespace, namespaceIdentifier: submitterNamespaceIdentifier } =
+        parseIndyDid(submitterDid)
       const submitterSigningKey = await verificationKeyForIndyDid(agentContext, submitterDid)
 
       if (did) {
@@ -79,8 +80,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           }
         }
 
-        const { namespace, id } = parseIndyDid(did)
-        didIdentifier = id
+        const { namespace, namespaceIdentifier: _namespaceIdentifier } = parseIndyDid(did)
+        namespaceIdentifier = _namespaceIdentifier
         verificationKey = Key.fromPublicKeyBase58(options.options.verkey, KeyType.Ed25519)
 
         if (!isSelfCertifiedIndyDid(did, options.options.verkey)) {
@@ -109,8 +110,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         verificationKey = await agentContext.wallet.createKey({ privateKey, seed, keyType: KeyType.Ed25519 })
         const buffer = Hasher.hash(verificationKey.publicKey, 'sha2-256')
 
-        didIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-        did = `did:indy:${submitterNamespace}:${didIdentifier}`
+        namespaceIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+        did = `did:indy:${submitterNamespace}:${namespaceIdentifier}`
       }
 
       // Create base did document
@@ -176,21 +177,21 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         await this.registerPublicDid(
           agentContext,
           pool,
-          submitterDidIdentifier,
+          submitterNamespaceIdentifier,
           submitterSigningKey,
-          didIdentifier,
+          namespaceIdentifier,
           verificationKey,
           alias,
           role
         )
-        await this.setEndpointsForDid(agentContext, pool, didIdentifier, verificationKey, endpoints)
+        await this.setEndpointsForDid(agentContext, pool, namespaceIdentifier, verificationKey, endpoints)
       } else {
         await this.registerPublicDid(
           agentContext,
           pool,
-          submitterDidIdentifier,
+          submitterNamespaceIdentifier,
           submitterSigningKey,
-          didIdentifier,
+          namespaceIdentifier,
           verificationKey,
           alias,
           role,

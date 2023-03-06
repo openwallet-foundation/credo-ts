@@ -88,8 +88,8 @@ describe('Indy VDR Sov DID Resolver', () => {
 
     // First we need to create a new DID and add ATTRIB endpoint to it
     const { did } = await createDidOnLedger(agent, `did:indy:pool:localtest:${unqualifiedSubmitterDid}`)
-    const { id: unqualifiedDid } = parseIndyDid(did)
-    const sovDid = `did:sov:${unqualifiedDid}`
+    const { namespaceIdentifier } = parseIndyDid(did)
+    const sovDid = `did:sov:${namespaceIdentifier}`
 
     // DID created. Now resolve it
     const didResult = await agent.dids.resolve(sovDid)

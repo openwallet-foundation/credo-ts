@@ -481,8 +481,8 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
   const s = parseSchemaId(schema.schemaId)
   const cd = parseCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
 
-  const legacySchemaId = getLegacySchemaId(s.didIdentifier, s.schemaName, s.schemaVersion)
-  const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.didIdentifier, cd.schemaSeqNo, cd.tag)
+  const legacySchemaId = getLegacySchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
+  const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.namespaceIdentifier, cd.schemaSeqNo, cd.tag)
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
