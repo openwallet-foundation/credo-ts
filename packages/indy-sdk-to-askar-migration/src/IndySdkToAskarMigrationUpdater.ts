@@ -1,7 +1,11 @@
 /* eslint-disable no-console */
-import { AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
+import type { AnonCredsCredentialValue } from '@aries-framework/anoncreds'
+
+import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
 import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 import { Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+
+import { transformFromRecordTagValues } from './utils'
 
 export class IndySdkToAskarMigrationUpdater {
   private store: Store
@@ -70,6 +74,7 @@ export class IndySdkToAskarMigrationUpdater {
         break
       }
 
+      let id = ''
       for (const row of masterSecrets) {
         await txn.remove({ category, name: row.name })
 
@@ -83,9 +88,9 @@ export class IndySdkToAskarMigrationUpdater {
         record.setTag('isDefault', isDefault)
         const value = JsonTransformer.serialize(record)
 
-        // TODO: use exported message from askar to transform tags
-        const tags = undefined
+        const tags = transformFromRecordTagValues(record.getTags())
 
+        id = record.id
         await txn.insert({ category: record.type, name: record.id, value, tags })
         updateCount++
       }
@@ -112,14 +117,33 @@ export class IndySdkToAskarMigrationUpdater {
 
       for (const row of credentials) {
         await txn.remove({ category, name: row.name })
-        const credentialData = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
-        const tags = this.credentialTags(credentialData)
-        await txn.insert({
-          category: 'credential',
-          name: row.name,
-          value: row.value,
-          tags,
+        const data = JSON.parse(row.value as string) as {
+          schema_id: string
+          cred_def_id: string
+          rev_reg_id?: string
+          values: Record<string, AnonCredsCredentialValue>
+          signature: Record<string, unknown>
+          signature_correctness_proof: Record<string, unknown>
+          rev_reg?: Record<string, unknown>
+          witness?: Record<string, unknown>
+        }
+        const [issuerId] = data.cred_def_id.split(':')
+        const [schemaIssuerId, , schemaName, schemaVersion] = data.schema_id.split(':')
+
+        const record = new AnonCredsCredentialRecord({
+          credential: data,
+          issuerId,
+          schemaName,
+          schemaIssuerId,
+          schemaVersion,
+          credentialId: 'TODO',
+          linkSecretId: 'TODO',
         })
+
+        const tags = { ...this.credentialTags(data), ...transformFromRecordTagValues(record.getTags()) }
+        const value = JsonTransformer.serialize(record)
+
+        await txn.insert({ category: record.type, name: record.id, value, tags })
         updateCount++
       }
       await txn.commit()

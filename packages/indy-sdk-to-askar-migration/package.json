@@ -3,9 +3,7 @@
   "main": "build/index",
   "types": "build/index",
   "version": "0.3.3",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
@@ -25,7 +23,6 @@
   },
   "dependencies": {
     "@aries-framework/anoncreds": "0.4.0-alpha.22",
-    "@aries-framework/askar": "0.4.0-alpha.22",
     "@aries-framework/core": "0.3.3",
     "@hyperledger/aries-askar-shared": "0.1.0-dev.3"
   },
