@@ -13,6 +13,7 @@ export interface AnonCredsCredentialRecordProps {
   schemaVersion: string
   schemaIssuerId: string
   issuerId: string
+  
 }
 
 export type DefaultAnonCredsCredentialTags = {
@@ -20,13 +21,12 @@ export type DefaultAnonCredsCredentialTags = {
   linkSecretId: string
   credentialDefinitionId: string
   credentialRevocationId?: string
-  revocationRegistryId?: string
   schemaId: string
   attributes: string[]
 
-  // the following keys can be used for every `attribute name` in credential.
-  [key: `attr::${string}::marker`]: true | undefined
-  [key: `attr::${string}::value`]: string | undefined
+    // the following keys can be used for every `attribute name` in credential.
+    [key: `attr::${string}::marker`]: true | undefined
+    [key: `attr::${string}::value`]: string | undefined
 }
 
 export type CustomAnonCredsCredentialTags = {
@@ -52,6 +52,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
     super()
 
     if (props) {
+      
       this.id = props.id ?? utils.uuid()
       this.credentialId = props.credentialId
       this.credential = props.credential
@@ -73,7 +74,6 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       schemaId: this.credential.schema_id,
       credentialId: this.credentialId,
       credentialRevocationId: this.credentialRevocationId,
-      revocationRegistryId: this.credential.rev_reg_id,
       linkSecretId: this.linkSecretId,
       attributes: Object.keys(this.credential.values),
     }
