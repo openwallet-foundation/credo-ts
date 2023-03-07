@@ -1,13 +1,22 @@
-import type { AnonCredsCredentialInfo } from '@aries-framework/anoncreds'
+import type {
+  AnonCredsCredential,
+  AnonCredsCredentialDefinition,
+  AnonCredsCredentialInfo,
+  AnonCredsCredentialOffer,
+} from '@aries-framework/anoncreds'
+import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {
   anoncreds,
+  Credential,
   CredentialDefinition,
-  CredentialDefinitionPrivate,
   CredentialOffer,
   CredentialRequest,
-  KeyCorrectnessProof,
+  CredentialRevocationConfig,
   MasterSecret,
+  RevocationRegistryDefinition,
+  RevocationRegistryDefinitionPrivate,
+  RevocationStatusList,
   Schema,
 } from '@hyperledger/anoncreds-shared'
 
@@ -35,23 +44,23 @@ export function createCredentialDefinition(options: { attributeNames: string[]; 
   })
 
   return {
-    credentialDefinition: JSON.parse(credentialDefinition.toJson()),
-    credentialDefinitionPrivate: JSON.parse(credentialDefinitionPrivate.toJson()),
-    keyCorrectnessProof: JSON.parse(keyCorrectnessProof.toJson()),
-    schema: JSON.parse(schema.toJson()),
+    credentialDefinition: credentialDefinition.toJson() as unknown as AnonCredsCredentialDefinition,
+    credentialDefinitionPrivate: credentialDefinitionPrivate.toJson() as unknown as JsonObject,
+    keyCorrectnessProof: keyCorrectnessProof.toJson() as unknown as JsonObject,
+    schema: schema.toJson() as unknown as Schema,
   }
 }
 
 /**
  * Creates a valid credential offer and returns itsf
  */
-export function createCredentialOffer(kcp: Record<string, unknown>) {
+export function createCredentialOffer(keyCorrectnessProof: Record<string, unknown>) {
   const credentialOffer = CredentialOffer.create({
     credentialDefinitionId: 'creddef:uri',
-    keyCorrectnessProof: KeyCorrectnessProof.load(JSON.stringify(kcp)),
+    keyCorrectnessProof,
     schemaId: 'schema:uri',
   })
-  return JSON.parse(credentialOffer.toJson())
+  return credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
 }
 
 /**
@@ -59,13 +68,13 @@ export function createCredentialOffer(kcp: Record<string, unknown>) {
  * @returns Creates a valid link secret value for anoncreds-rs
  */
 export function createLinkSecret() {
-  return JSON.parse(MasterSecret.create().toJson()).value.ms as string
+  return (MasterSecret.create().toJson() as { value: { ms: string } }).value.ms as string
 }
 
 export function createCredentialForHolder(options: {
-  credentialDefinition: Record<string, unknown>
-  credentialDefinitionPrivate: Record<string, unknown>
-  keyCorrectnessProof: Record<string, unknown>
+  credentialDefinition: JsonObject
+  credentialDefinitionPrivate: JsonObject
+  keyCorrectnessProof: JsonObject
   schemaId: string
   credentialDefinitionId: string
   attributes: Record<string, string>
@@ -89,18 +98,17 @@ export function createCredentialForHolder(options: {
 
   const credentialOffer = CredentialOffer.create({
     credentialDefinitionId,
-    keyCorrectnessProof: KeyCorrectnessProof.load(JSON.stringify(keyCorrectnessProof)),
+    keyCorrectnessProof,
     schemaId,
   })
 
   const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
-    credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
+    entropy: 'some-entropy',
+    credentialDefinition,
     credentialOffer,
-    masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecret } })),
+    masterSecret: { value: { ms: linkSecret } },
     masterSecretId: linkSecretId,
   })
-
-  // FIXME: Revocation config should not be mandatory but current anoncreds-rs is requiring it
 
   const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate, tailsPath } =
     createRevocationRegistryDefinition({
@@ -109,30 +117,29 @@ export function createCredentialForHolder(options: {
     })
 
   const timeCreateRevStatusList = 12
-  const revocationStatusList = anoncreds.createRevocationStatusList({
+  const revocationStatusList = RevocationStatusList.create({
+    issuerId: credentialDefinition.issuerId as string,
     timestamp: timeCreateRevStatusList,
     issuanceByDefault: true,
-    revocationRegistryDefinition,
-    revocationRegistryDefinitionId: revocationRegistryDefinitionId,
+    revocationRegistryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
+    revocationRegistryDefinitionId: 'mock:uri',
   })
 
-  // TODO: Use Credential.create (needs to update the paramters in anoncreds-rs)
-  const credentialObj = anoncreds.createCredential({
-    credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)).handle,
-    credentialDefinitionPrivate: CredentialDefinitionPrivate.load(JSON.stringify(credentialDefinitionPrivate)).handle,
-    credentialOffer: credentialOffer.handle,
-    credentialRequest: credentialRequest.handle,
+  const credentialObj = Credential.create({
+    credentialDefinition,
+    credentialDefinitionPrivate,
+    credentialOffer,
+    credentialRequest,
     attributeRawValues: attributes,
     revocationRegistryId: revocationRegistryDefinitionId,
     revocationStatusList,
-    revocationConfiguration: {
+    revocationConfiguration: new CredentialRevocationConfig({
+      registryDefinition: new RevocationRegistryDefinition(revocationRegistryDefinition.handle),
+      registryDefinitionPrivate: new RevocationRegistryDefinitionPrivate(revocationRegistryDefinitionPrivate.handle),
       registryIndex: 9,
-      revocationRegistryDefinition,
-      revocationRegistryDefinitionPrivate,
       tailsPath,
-    },
+    }),
   })
-  const credential = anoncreds.getJson({ objectHandle: credentialObj })
 
   const credentialInfo: AnonCredsCredentialInfo = {
     attributes,
@@ -141,7 +148,7 @@ export function createCredentialForHolder(options: {
     schemaId,
   }
   return {
-    credential: JSON.parse(credential),
+    credential: credentialObj.toJson() as unknown as AnonCredsCredential,
     credentialInfo,
     revocationRegistryDefinition,
     tailsPath,
@@ -157,8 +164,8 @@ export function createRevocationRegistryDefinition(options: {
   const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
     anoncreds.createRevocationRegistryDefinition({
       credentialDefinitionId,
-      credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)).handle,
-      issuerId: 'mock:uri',
+      credentialDefinition: CredentialDefinition.fromJson(credentialDefinition).handle,
+      issuerId: credentialDefinition.issuerId as string,
       tag: 'some_tag',
       revocationRegistryType: 'CL_ACCUM',
       maximumCredentialNumber: 10,

@@ -15,9 +15,11 @@ import type {
   AnonCredsCredential,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicateMatch,
+  AnonCredsCredentialRequest,
+  AnonCredsCredentialRequestMetadata,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
-import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
+import type { CredentialEntry, CredentialProve, JsonObject } from '@hyperledger/anoncreds-shared'
 
 import {
   AnonCredsCredentialRecord,
@@ -26,18 +28,14 @@ import {
 } from '@aries-framework/anoncreds'
 import { utils, injectable } from '@aries-framework/core'
 import {
-  CredentialRequestMetadata,
+  anoncreds,
   Credential,
-  CredentialDefinition,
-  CredentialOffer,
   CredentialRequest,
   CredentialRevocationState,
   MasterSecret,
   Presentation,
-  PresentationRequest,
   RevocationRegistryDefinition,
   RevocationStatusList,
-  Schema,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
@@ -49,12 +47,17 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
     try {
+      const masterSecret = MasterSecret.create()
+
+      // FIXME: This is a very specific format of anoncreds-rs. I think it should be simply a string
+      const linkSecretJson = masterSecret.toJson() as { value: { ms: string } }
+
       return {
         linkSecretId: options?.linkSecretId ?? utils.uuid(),
-        linkSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
+        linkSecretValue: linkSecretJson.value.ms,
       }
     } catch (error) {
-      agentContext.config.logger.error(`Error creating Link Secret`, {
+      agentContext.config.logger.error(`Error creating Link Secret ${error}`, {
         error,
       })
       throw new AnonCredsRsError('Error creating Link Secret', { cause: error })
@@ -65,14 +68,14 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     const { credentialDefinitions, proofRequest, selectedCredentials, schemas } = options
 
     try {
-      const rsCredentialDefinitions: Record<string, CredentialDefinition> = {}
+      const rsCredentialDefinitions: Record<string, JsonObject> = {}
       for (const credDefId in credentialDefinitions) {
-        rsCredentialDefinitions[credDefId] = CredentialDefinition.load(JSON.stringify(credentialDefinitions[credDefId]))
+        rsCredentialDefinitions[credDefId] = credentialDefinitions[credDefId] as unknown as JsonObject
       }
 
-      const rsSchemas: Record<string, Schema> = {}
+      const rsSchemas: Record<string, JsonObject> = {}
       for (const schemaId in schemas) {
-        rsSchemas[schemaId] = Schema.load(JSON.stringify(schemas[schemaId]))
+        rsSchemas[schemaId] = schemas[schemaId] as unknown as JsonObject
       }
 
       const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
@@ -89,10 +92,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           retrievedCredentials.set(attribute.credentialId, credentialRecord)
         }
 
-        const credential = Credential.load(JSON.stringify(credentialRecord.credential))
-
-        const revocationRegistryDefinitionId = credential.revocationRegistryId
-        const revocationRegistryIndex = credential.revocationRegistryIndex
+        const revocationRegistryDefinitionId = credentialRecord.credential.rev_reg_id
+        const revocationRegistryIndex = credentialRecord.credentialRevocationId
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -100,19 +101,22 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
         let revocationState
         if (timestamp) {
-          if (revocationRegistryIndex) {
+          if (revocationRegistryIndex && revocationRegistryDefinitionId) {
             if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
               throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
             }
 
             const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
 
-            const revocationRegistryDefinition = RevocationRegistryDefinition.load(JSON.stringify(definition))
+            const revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(
+              definition as unknown as JsonObject
+            )
             revocationState = CredentialRevocationState.create({
-              revocationRegistryIndex,
+              revocationRegistryIndex: Number(revocationRegistryIndex),
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
               revocationStatusList: RevocationStatusList.create({
+                issuerId: definition.issuerId,
                 issuanceByDefault: true,
                 revocationRegistryDefinition,
                 revocationRegistryDefinitionId,
@@ -124,7 +128,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         return {
           linkSecretId: credentialRecord.linkSecretId,
           credentialEntry: {
-            credential,
+            credential: credentialRecord.credential as unknown as JsonObject,
             revocationState,
             timestamp,
           },
@@ -166,14 +170,14 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       const presentation = Presentation.create({
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,
-        presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
+        presentationRequest: proofRequest as unknown as JsonObject,
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
         selfAttest: selectedCredentials.selfAttestedAttributes,
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+        masterSecret: { value: { ms: linkSecretRecord.value } },
       })
 
-      return JSON.parse(presentation.toJson())
+      return presentation.toJson() as unknown as AnonCredsProof
     } catch (error) {
       agentContext.config.logger.error(`Error creating AnonCreds Proof`, {
         error,
@@ -205,15 +209,16 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
-        credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
-        credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+        entropy: anoncreds.generateNonce(), // FIXME: find a better source of entropy
+        credentialDefinition: credentialDefinition as unknown as JsonObject,
+        credentialOffer: credentialOffer as unknown as JsonObject,
+        masterSecret: { value: { ms: linkSecretRecord.value } },
         masterSecretId: linkSecretRecord.linkSecretId,
       })
 
       return {
-        credentialRequest: JSON.parse(credentialRequest.toJson()),
-        credentialRequestMetadata: JSON.parse(credentialRequestMetadata.toJson()),
+        credentialRequest: credentialRequest.toJson() as unknown as AnonCredsCredentialRequest,
+        credentialRequestMetadata: credentialRequestMetadata.toJson() as unknown as AnonCredsCredentialRequestMetadata,
       }
     } catch (error) {
       throw new AnonCredsRsError(`Error creating credential request: ${error}`, { cause: error })
@@ -227,15 +232,13 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       .resolve(AnonCredsLinkSecretRepository)
       .getByLinkSecretId(agentContext, credentialRequestMetadata.master_secret_name)
 
-    const revocationRegistryDefinition = revocationRegistry?.definition
-      ? RevocationRegistryDefinition.load(JSON.stringify(revocationRegistry.definition))
-      : undefined
+    const revocationRegistryDefinition = revocationRegistry?.definition as unknown as JsonObject
 
     const credentialId = options.credentialId ?? utils.uuid()
-    const processedCredential = Credential.load(JSON.stringify(credential)).process({
-      credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
-      credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(credentialRequestMetadata)),
-      masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+    const processedCredential = Credential.fromJson(credential as unknown as JsonObject).process({
+      credentialDefinition: credentialDefinition as unknown as JsonObject,
+      credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
+      masterSecret: { value: { ms: linkSecretRecord.value } },
       revocationRegistryDefinition,
     })
 
@@ -244,7 +247,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     await credentialRepository.save(
       agentContext,
       new AnonCredsCredentialRecord({
-        credential: JSON.parse(processedCredential.toJson()) as AnonCredsCredential,
+        credential: processedCredential.toJson() as unknown as AnonCredsCredential,
         credentialId,
         linkSecretId: linkSecretRecord.linkSecretId,
         issuerId: options.credentialDefinition.issuerId,
