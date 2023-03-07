@@ -70,4 +70,8 @@ export class IndyVdrModuleConfig {
   public get networks() {
     return this.options.networks
   }
+
+  public get indyVdr() {
+    return this.options.indyVdr
+  }
 }

@@ -1,6 +1,6 @@
 import type { DependencyManager } from '@aries-framework/core'
 
-import { indyVdr } from '@hyperledger/indy-vdr-shared'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { IndyVdrModule } from '../IndyVdrModule'
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'

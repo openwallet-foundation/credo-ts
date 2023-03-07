@@ -1,10 +1,5 @@
-import type { AskarWalletPostgresConfig } from './wallet'
 import type { AriesAskar } from '@hyperledger/aries-askar-shared'
 
-/**
- * @public
- * AnonCredsModuleConfigOptions defines the interface for the options of the AnonCredsModuleConfig class.
- */
 export interface AskarModuleConfigOptions {
   /**
    *
@@ -45,7 +40,6 @@ export interface AskarModuleConfigOptions {
   /**
    * A list of Askar wallets to connect to.
    */
-  wallets: [AskarWalletPostgresConfig, ...AskarWalletPostgresConfig[]]
 }
 
 /**
@@ -58,8 +52,7 @@ export class AskarModuleConfig {
     this.options = options
   }
 
-  /** See {@link AskarModuleConfigOptions.wallets} */
-  public get wallets() {
-    return this.options.wallets
+  public get ariesAskar() {
+    return this.options.ariesAskar
   }
 }

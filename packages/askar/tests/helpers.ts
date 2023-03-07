@@ -2,11 +2,15 @@ import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import type { InitConfig } from '@aries-framework/core'
 
 import { LogLevel } from '@aries-framework/core'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import path from 'path'
 
 import { TestLogger } from '../../core/tests/logger'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
+import { AskarModuleConfig } from '../src/AskarModuleConfig'
+
+export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -34,6 +38,6 @@ export function getPostgresAgentOptions(
   return {
     config,
     dependencies: agentDependencies,
-    modules: { askar: new AskarModule() },
+    modules: { askar: new AskarModule(askarModuleConfig) },
   } as const
 }
