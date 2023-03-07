@@ -116,7 +116,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     }
 
     const proofRecord = new ProofExchangeRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: uuid(),
       parentThreadId,
       state: ProofState.ProposalSent,
@@ -395,6 +395,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       requestMessage.threadId,
       connection?.id
     )
+
+    if (!proofRecord) {
+      // Proof request not bound to any connection: requests_attach in OOB msg
+      proofRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
+    }
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {

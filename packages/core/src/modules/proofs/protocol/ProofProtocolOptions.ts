@@ -79,7 +79,7 @@ interface BaseOptions {
 }
 
 export interface CreateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  connectionRecord: ConnectionRecord
+  connectionRecord?: ConnectionRecord
   proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
   parentThreadId?: string
 }

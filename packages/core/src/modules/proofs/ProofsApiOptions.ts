@@ -39,6 +39,17 @@ export interface ProposeProofOptions<PPs extends ProofProtocol[] = ProofProtocol
 }
 
 /**
+ * Interface for ProofsApi.createProofProposal. Will create an out of band request.
+ */
+export interface CreateProofProposalOptions<PPs extends ProofProtocol[] = ProofProtocol[]> extends BaseOptions {
+  protocolVersion: ProofsProtocolVersionType<PPs>
+  proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
+
+  goalCode?: string
+  parentThreadId?: string
+}
+
+/**
  * Interface for ProofsApi.acceptProposal. Will send a request
  *
  * proofFormats is optional because this is an accept method

@@ -2,6 +2,7 @@ import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
   AcceptProofRequestOptions,
+  CreateProofProposalOptions,
   CreateProofRequestOptions,
   DeleteProofOptions,
   FindProofPresentationMessageReturn,
@@ -162,6 +163,26 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
     await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
+  }
+
+  /**
+   * Initiate a new presentation exchange as prover by sending an out of band proof proposal message
+   *
+   * @param options multiple properties like protocol version, proof Formats to build the proof request
+   * @returns the message itself and the proof record associated with the sent request message
+   */
+  public async createProofProposal(options: CreateProofProposalOptions<PPs>): Promise<{
+    message: AgentMessage
+    proofRecord: ProofExchangeRecord
+  }> {
+    const protocol = this.getProtocol(options.protocolVersion)
+    return await protocol.createProposal(this.agentContext, {
+      proofFormats: options.proofFormats,
+      autoAcceptProof: options.autoAcceptProof,
+      goalCode: options.goalCode,
+      comment: options.comment,
+      parentThreadId: options.parentThreadId,
+    })
   }
 
   /**

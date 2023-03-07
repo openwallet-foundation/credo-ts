@@ -135,7 +135,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Create record
     const proofRecord = new ProofExchangeRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
       state: ProofState.ProposalSent,
