@@ -17,7 +17,6 @@ import {
   isValidSeed,
   isValidPrivateKey,
   JsonTransformer,
-  RecordNotFoundError,
   WalletInvalidKeyError,
   WalletDuplicateError,
   JsonEncoder,
