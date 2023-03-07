@@ -10,7 +10,6 @@ export interface AnonCredsRestrictionOptions {
   issuerDid?: string
   issuerId?: string
   credentialDefinitionId?: string
-  revocationRegistryId: string
   attributeMarkers?: Record<string, true>
   attributeValues?: Record<string, string>
 }
@@ -26,7 +25,6 @@ export class AnonCredsRestriction {
       this.issuerDid = options.issuerDid
       this.issuerId = options.issuerId
       this.credentialDefinitionId = options.credentialDefinitionId
-      this.revocationRegistryId = options.revocationRegistryId
       this.attributeMarkers = options.attributeMarkers ?? {}
       this.attributeValues = options.attributeValues ?? {}
     }
@@ -71,11 +69,6 @@ export class AnonCredsRestriction {
   @IsOptional()
   @IsString()
   public credentialDefinitionId?: string
-
-  @Expose({ name: 'rev_reg_id' })
-  @IsOptional()
-  @IsString()
-  public revocationRegistryId?: string
 
   @Exclude()
   public attributeMarkers: Record<string, boolean> = {}

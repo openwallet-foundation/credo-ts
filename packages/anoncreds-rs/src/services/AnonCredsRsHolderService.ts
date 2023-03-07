@@ -351,10 +351,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         queryElements.issuerId = parsedRestriction.issuerId ?? parsedRestriction.issuerDid
       }
 
-      if (parsedRestriction.revocationRegistryId) {
-        queryElements.revocationRegistryId = parsedRestriction.revocationRegistryId
-      }
-
       if (parsedRestriction.schemaId) {
         queryElements.schemaId = parsedRestriction.schemaId
       }
