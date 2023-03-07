@@ -1,8 +1,6 @@
 import type { AnonCredsRegistry } from '../services'
 import type { DependencyManager } from '@aries-framework/core'
 
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-
 import { AnonCredsModule } from '../AnonCredsModule'
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import {
@@ -24,7 +22,6 @@ const registry = {} as AnonCredsRegistry
 describe('AnonCredsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const anonCredsModule = new AnonCredsModule({
-      anoncreds,
       registries: [registry],
     })
     anonCredsModule.register(dependencyManager)

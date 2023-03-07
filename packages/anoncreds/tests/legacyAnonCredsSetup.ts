@@ -28,11 +28,11 @@ import {
   DidsModule,
 } from '@aries-framework/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { AskarModule } from '../../askar/src'
+import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
@@ -56,6 +56,7 @@ import {
 } from '../../indy-sdk/src'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrAnonCredsRegistry, IndyVdrSovDidResolver, IndyVdrModule } from '../../indy-vdr/src'
+import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -97,7 +98,6 @@ export const getLegacyAnonCredsModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
-      anoncreds,
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
@@ -152,18 +152,16 @@ export const getAskarAnonCredsIndyModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
-      anoncreds,
       registries: [new IndyVdrAnonCredsRegistry()],
     }),
-    anoncredsRs: new AnonCredsRsModule(),
-    indyVdr: new IndyVdrModule({
-      indyVdr,
-      networks: [indyNetworkConfig],
+    anoncredsRs: new AnonCredsRsModule({
+      anoncreds,
     }),
+    indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
       resolvers: [new IndyVdrSovDidResolver()], // TODO: Support Registrar for tests
     }),
-    askar: new AskarModule(),
+    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),

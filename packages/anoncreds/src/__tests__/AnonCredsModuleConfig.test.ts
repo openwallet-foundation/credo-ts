@@ -1,7 +1,5 @@
 import type { AnonCredsRegistry } from '../services'
 
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 
 describe('AnonCredsModuleConfig', () => {
@@ -9,7 +7,6 @@ describe('AnonCredsModuleConfig', () => {
     const registry = {} as AnonCredsRegistry
 
     const config = new AnonCredsModuleConfig({
-      anoncreds,
       registries: [registry],
     })
 

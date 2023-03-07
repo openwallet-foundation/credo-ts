@@ -1,7 +1,5 @@
 import type { AnonCredsRegistry } from '../AnonCredsRegistry'
 
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-
 import { getAgentContext } from '../../../../../core/tests/helpers'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsError } from '../../../error'
@@ -20,7 +18,6 @@ const agentContext = getAgentContext({
     [
       AnonCredsModuleConfig,
       new AnonCredsModuleConfig({
-        anoncreds,
         registries: [registryOne, registryTwo],
       }),
     ],

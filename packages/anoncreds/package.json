@@ -31,7 +31,6 @@
   },
   "devDependencies": {
     "@aries-framework/node": "0.3.3",
-    "@hyperledger/indy-vdr-nodejs": "^0.1.0-dev.6",
     "@hyperledger/anoncreds-nodejs": "^0.1.0-dev.6",
     "indy-sdk": "^1.16.0-dev-1636",
     "rimraf": "^4.0.7",
