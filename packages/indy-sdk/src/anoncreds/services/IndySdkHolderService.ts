@@ -25,14 +25,13 @@ import type {
   IndyProofRequest,
 } from 'indy-sdk'
 
-import { AnonCredsLinkSecretRepository } from '@aries-framework/anoncreds'
+import { AnonCredsLinkSecretRepository, generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
-import { getIndySeqNoFromUnqualifiedCredentialDefinitionId } from '../utils/identifiers'
-import { generateLegacyProverDidLikeString } from '../utils/proverDid'
+import { parseCredentialDefinitionId } from '../utils/identifiers'
 import {
   indySdkCredentialDefinitionFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
@@ -106,8 +105,8 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         )
 
         // Get the seqNo for the schemas so we can use it when transforming the schemas
-        const schemaSeqNo = getIndySeqNoFromUnqualifiedCredentialDefinitionId(credentialDefinitionId)
-        seqNoMap[credentialDefinition.schemaId] = schemaSeqNo
+        const { schemaSeqNo } = parseCredentialDefinitionId(credentialDefinitionId)
+        seqNoMap[credentialDefinition.schemaId] = Number(schemaSeqNo)
       }
 
       // Convert AnonCreds schemas to Indy schemas

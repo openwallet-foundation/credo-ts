@@ -6,6 +6,8 @@ import {
   InMemoryLruCache,
   SigningProviderRegistry,
   AriesFrameworkError,
+  Key,
+  KeyType,
 } from '@aries-framework/core'
 import indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
@@ -111,6 +113,12 @@ describe('IndySdkPoolService', () => {
       })
 
       expect(poolService.getPoolForDid(agentContext, did)).rejects.toThrowError(IndySdkPoolNotFoundError)
+    })
+
+    it('should return the pool based on namespace if did is a valid did:indy did', async () => {
+      const { pool } = await poolService.getPoolForDid(agentContext, 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx')
+
+      expect(pool.didIndyNamespace).toBe('sovrin')
     })
 
     it('should return the pool if the did was only found on one ledger', async () => {
@@ -328,7 +336,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(
         'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["accept"] and version 2.0 in pool.'
@@ -366,7 +374,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(
         'Unable to satisfy matching TAA with mechanism "accept" and version "1" in pool.\n Found ["decline"] and version 1.0 in pool.'
@@ -406,7 +414,7 @@ describe('IndySdkPoolService', () => {
             },
             protocolVersion: 2,
           },
-          'GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf'
+          Key.fromPublicKeyBase58('GAb4NUvpBcHVCvtP45vTVa5Bp74vFg3iXzdp1Gbd68Wf', KeyType.Ed25519)
         )
       ).rejects.toThrowError(/Please, specify a transaction author agreement with version and acceptance mechanism/)
     })

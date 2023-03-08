@@ -73,7 +73,6 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
-      issuerId: faberAgent.publicDid?.did as string,
       attributeNames: ['name', 'age'],
     })
     credentialDefinitionId = credentialDefinition.credentialDefinitionId

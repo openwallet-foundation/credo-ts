@@ -3,6 +3,7 @@ import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { AriesFrameworkError } from '../../../error'
+import { tryParseDid } from '../../dids/domain/parse'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
@@ -32,12 +33,14 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     }
 
     const { message } = messageContext
-    if (!message.thread?.parentThreadId) {
+    const parentThreadId = message.thread?.parentThreadId
+    if (!parentThreadId) {
       throw new AriesFrameworkError(`Message does not contain pthid attribute`)
     }
     const outOfBandRecord = await this.outOfBandService.findByCreatedInvitationId(
       messageContext.agentContext,
-      message.thread?.parentThreadId
+      parentThreadId,
+      tryParseDid(parentThreadId) ? message.threadId : undefined
     )
 
     if (!outOfBandRecord) {

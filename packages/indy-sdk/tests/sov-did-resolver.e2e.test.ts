@@ -1,8 +1,9 @@
-import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegistrar'
+import type { IndySdkIndyDidCreateOptions } from '../src'
 
-import { Agent, AriesFrameworkError, JsonTransformer } from '@aries-framework/core'
+import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 
-import { getAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests/helpers'
+import { parseIndyDid } from '../src/dids/didIndyUtil'
 
 import { getIndySdkModules } from './setupIndySdkModule'
 
@@ -19,12 +20,21 @@ describe('Indy SDK Sov DID resolver', () => {
   })
 
   it('should resolve a did:sov did', async () => {
-    const createResult = await agent.dids.create<IndySdkSovDidCreateOptions>({
-      method: 'sov',
+    // Add existing endorser did to the wallet
+    const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
+      agent,
+      TypedArrayEncoder.fromString(publicDidSeed)
+    )
+
+    const createResult = await agent.dids.create<IndySdkIndyDidCreateOptions>({
+      method: 'indy',
       options: {
-        submitterDid: 'did:sov:TL1EaPFCZ8Si5aUrqScBDt',
+        submitterDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
         alias: 'Alias',
         role: 'TRUSTEE',
+        endpoints: {
+          endpoint: 'http://localhost:3000',
+        },
       },
     })
 
@@ -32,7 +42,10 @@ describe('Indy SDK Sov DID resolver', () => {
     await new Promise((res) => setTimeout(res, 1000))
 
     if (!createResult.didState.did) throw new AriesFrameworkError('Unable to register did')
-    const didResult = await agent.dids.resolve(createResult.didState.did)
+
+    const { id: unqualifiedDid } = parseIndyDid(createResult.didState.did)
+    const sovDid = `did:sov:${unqualifiedDid}`
+    const didResult = await agent.dids.resolve(sovDid)
 
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
@@ -41,29 +54,44 @@ describe('Indy SDK Sov DID resolver', () => {
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
-        id: createResult.didState.did,
+        id: sovDid,
         alsoKnownAs: undefined,
         controller: undefined,
         verificationMethod: [
           {
             type: 'Ed25519VerificationKey2018',
-            controller: createResult.didState.did,
-            id: `${createResult.didState.did}#key-1`,
+            controller: sovDid,
+            id: `${sovDid}#key-1`,
             publicKeyBase58: expect.any(String),
           },
           {
-            controller: createResult.didState.did,
+            controller: sovDid,
             type: 'X25519KeyAgreementKey2019',
-            id: `${createResult.didState.did}#key-agreement-1`,
+            id: `${sovDid}#key-agreement-1`,
             publicKeyBase58: expect.any(String),
           },
         ],
         capabilityDelegation: undefined,
         capabilityInvocation: undefined,
-        authentication: [`${createResult.didState.did}#key-1`],
-        assertionMethod: [`${createResult.didState.did}#key-1`],
-        keyAgreement: [`${createResult.didState.did}#key-agreement-1`],
-        service: undefined,
+        authentication: [`${sovDid}#key-1`],
+        assertionMethod: [`${sovDid}#key-1`],
+        keyAgreement: [`${sovDid}#key-agreement-1`],
+        service: [
+          {
+            id: `${sovDid}#endpoint`,
+            serviceEndpoint: 'http://localhost:3000',
+            type: 'endpoint',
+          },
+          {
+            id: `${sovDid}#did-communication`,
+            accept: ['didcomm/aip2;env=rfc19'],
+            priority: 0,
+            recipientKeys: [`${sovDid}#key-agreement-1`],
+            routingKeys: [],
+            serviceEndpoint: 'http://localhost:3000',
+            type: 'did-communication',
+          },
+        ],
       },
       didDocumentMetadata: {},
       didResolutionMetadata: {

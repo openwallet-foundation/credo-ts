@@ -10,6 +10,7 @@ import {
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
+import { describeRunInNodeVersion } from './runInVersion'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
@@ -46,7 +47,8 @@ const senderAgentOptions = getAgentOptions(
   })
 )
 
-describe.skip('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
+// Performance issues outside of Node 18
+describeRunInNodeVersion([18], 'E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent
   let senderAgent: AnonCredsTestsAgent

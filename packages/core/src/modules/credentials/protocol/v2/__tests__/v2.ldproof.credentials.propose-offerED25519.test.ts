@@ -12,8 +12,9 @@ import {
 import { prepareForAnonCredsIssuance } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   IndySdkAnonCredsRegistry,
+  IndySdkIndyDidRegistrar,
+  IndySdkIndyDidResolver,
   IndySdkModule,
-  IndySdkSovDidRegistrar,
   IndySdkSovDidResolver,
 } from '../../../../../../../indy-sdk/src'
 import { indySdk } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
@@ -107,8 +108,8 @@ const getIndyJsonLdModules = () =>
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
-      registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
+      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver(), new KeyDidResolver()],
+      registrars: [new IndySdkIndyDidRegistrar(), new KeyDidRegistrar()],
     }),
     indySdk: new IndySdkModule({
       indySdk,
@@ -176,7 +177,6 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
-      issuerId: faberAgent.publicDid?.did as string,
     })
     credentialDefinitionId = credentialDefinition.credentialDefinitionId
 

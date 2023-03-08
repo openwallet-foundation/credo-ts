@@ -6,12 +6,12 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { CredDef, RevocReg, RevocRegDef, RevocRegDelta, Schema } from 'indy-sdk'
 
-import { didFromCredentialDefinitionId, didFromRevocationRegistryDefinitionId, didFromSchemaId } from './identifiers'
+import { parseCredentialDefinitionId, parseSchemaId } from './identifiers'
 
 export function anonCredsSchemaFromIndySdk(schema: Schema): AnonCredsSchema {
-  const issuerId = didFromSchemaId(schema.id)
+  const { did } = parseSchemaId(schema.id)
   return {
-    issuerId,
+    issuerId: did,
     name: schema.name,
     version: schema.version,
     attrNames: schema.attrNames,
@@ -30,10 +30,10 @@ export function indySdkSchemaFromAnonCreds(schemaId: string, schema: AnonCredsSc
 }
 
 export function anonCredsCredentialDefinitionFromIndySdk(credentialDefinition: CredDef): AnonCredsCredentialDefinition {
-  const issuerId = didFromCredentialDefinitionId(credentialDefinition.id)
+  const { did } = parseCredentialDefinitionId(credentialDefinition.id)
 
   return {
-    issuerId,
+    issuerId: did,
     schemaId: credentialDefinition.schemaId,
     tag: credentialDefinition.tag,
     type: 'CL',
@@ -52,25 +52,6 @@ export function indySdkCredentialDefinitionFromAnonCreds(
     type: credentialDefinition.type,
     value: credentialDefinition.value,
     ver: '1.0',
-  }
-}
-
-export function anonCredsRevocationRegistryDefinitionFromIndySdk(
-  revocationRegistryDefinition: RevocRegDef
-): AnonCredsRevocationRegistryDefinition {
-  const issuerId = didFromRevocationRegistryDefinitionId(revocationRegistryDefinition.id)
-
-  return {
-    issuerId,
-    credDefId: revocationRegistryDefinition.credDefId,
-    value: {
-      maxCredNum: revocationRegistryDefinition.value.maxCredNum,
-      publicKeys: revocationRegistryDefinition.value.publicKeys,
-      tailsHash: revocationRegistryDefinition.value.tailsHash,
-      tailsLocation: revocationRegistryDefinition.value.tailsLocation,
-    },
-    tag: revocationRegistryDefinition.tag,
-    revocDefType: 'CL_ACCUM',
   }
 }
 

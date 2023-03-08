@@ -1,8 +1,9 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { SigningProvider, WalletConfig } from '@aries-framework/core'
 
 import {
+  Key,
+  WalletKeyExistsError,
   KeyType,
-  WalletError,
   SigningProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
@@ -20,6 +21,11 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
+const signingProvider = {
+  keyType: KeyType.X25519,
+  createKeyPair: () => Promise.resolve({ keyType: KeyType.X25519, privateKeyBase58: 'b', publicKeyBase58: 'a' }),
+} satisfies Partial<SigningProvider>
+
 describe('IndySdkWallet', () => {
   let indySdkWallet: IndySdkWallet
 
@@ -27,7 +33,11 @@ describe('IndySdkWallet', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    indySdkWallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
+    indySdkWallet = new IndySdkWallet(
+      indySdk,
+      testLogger,
+      new SigningProviderRegistry([signingProvider as unknown as SigningProvider])
+    )
     await indySdkWallet.createAndOpen(walletConfig)
   })
 
@@ -35,25 +45,8 @@ describe('IndySdkWallet', () => {
     await indySdkWallet.delete()
   })
 
-  test('Get the public DID', async () => {
-    await indySdkWallet.initPublicDid({ seed: '000000000000000000000000Trustee9' })
-    expect(indySdkWallet.publicDid).toMatchObject({
-      did: expect.any(String),
-      verkey: expect.any(String),
-    })
-  })
-
   test('Get the wallet handle', () => {
     expect(indySdkWallet.handle).toEqual(expect.any(Number))
-  })
-
-  test('Initializes a public did', async () => {
-    await indySdkWallet.initPublicDid({ seed: '00000000000000000000000Forward01' })
-
-    expect(indySdkWallet.publicDid).toEqual({
-      did: 'DtWRdd6C5dN5vpcN6XRAvu',
-      verkey: '82RBSn3heLgXzZd74UsMC8Q8YRfEEhQoAM7LUqE6bevJ',
-    })
   })
 
   test('Generate Nonce', async () => {
@@ -71,12 +64,29 @@ describe('IndySdkWallet', () => {
     })
   })
 
-  test('Fail to create ed25519 keypair from seed', async () => {
-    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(WalletError)
+  test('throws WalletKeyExistsError when a key already exists', async () => {
+    const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b68')
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).resolves.toEqual(expect.any(Key))
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(
+      WalletKeyExistsError
+    )
+
+    // This should result in the signign provider being called twice, resulting in the record
+    // being stored twice
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.X25519 })).resolves.toEqual(expect.any(Key))
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.X25519 })).rejects.toThrowError(
+      WalletKeyExistsError
+    )
+  })
+
+  test('Fail to create ed25519 keypair from invalid private key', async () => {
+    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).rejects.toThrowError(
+      /Invalid private key provided/
+    )
   })
 
   test('Fail to create x25519 keypair', async () => {
-    await expect(indySdkWallet.createKey({ privateKey, keyType: KeyType.X25519 })).rejects.toThrowError(WalletError)
+    await expect(indySdkWallet.createKey({ keyType: KeyType.Bls12381g1 })).rejects.toThrowError(/Unsupported key type/)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {
