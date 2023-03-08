@@ -140,9 +140,9 @@ export class MessageSender {
       options?.transportPriority
     )
 
-    // if (this.outboundTransports.length === 0 && !queueService) {
-    //   throw new AriesFrameworkError('Agent has no outbound transport!')
-    // }
+    if (this.outboundTransports.length === 0 && !queueService) {
+      throw new AriesFrameworkError('Agent has no outbound transport!')
+    }
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
@@ -278,7 +278,6 @@ export class MessageSender {
     // an incoming message.
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
-    // const shouldAddReturnRoute = true
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
 
@@ -380,14 +379,14 @@ export class MessageSender {
   }
 
   private async sendToService(outboundMessageContext: OutboundMessageContext) {
-    const { agentContext, message, serviceParams, connection, sessionId } = outboundMessageContext
+    const { agentContext, message, serviceParams, connection } = outboundMessageContext
 
     if (!serviceParams) {
       throw new AriesFrameworkError('No service parameters found in outbound message context')
     }
     const { service, senderKey, returnRoute } = serviceParams
 
-    if (this.outboundTransports.length === 0 && !sessionId) {
+    if (this.outboundTransports.length === 0) {
       throw new AriesFrameworkError('Agent has no outbound transport!')
     }
 
@@ -403,7 +402,7 @@ export class MessageSender {
     }
 
     // Set return routing for message if requested
-    if (returnRoute || sessionId) {
+    if (returnRoute) {
       message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
     }
 
@@ -425,18 +424,19 @@ export class MessageSender {
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
 
-    // Outbound transport is present
-    if (this.outboundTransports.length !== 0) {
-      for (const transport of this.outboundTransports) {
-        const protocolScheme = getProtocolScheme(service.serviceEndpoint)
-        if (!protocolScheme) {
-          this.logger.warn('Service does not have a protocol scheme.')
-        } else if (transport.supportedSchemes.includes(protocolScheme)) {
-          await transport.sendMessage(outboundPackage)
-          return
-        }
+    for (const transport of this.outboundTransports) {
+      const protocolScheme = getProtocolScheme(service.serviceEndpoint)
+      if (!protocolScheme) {
+        this.logger.warn('Service does not have a protocol scheme.')
+      } else if (transport.supportedSchemes.includes(protocolScheme)) {
+        await transport.sendMessage(outboundPackage)
+        return
       }
     }
+
+    throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
+      outboundMessageContext,
+    })
   }
 
   private findSessionForOutboundContext(outboundContext: OutboundMessageContext) {
