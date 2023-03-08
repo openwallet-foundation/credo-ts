@@ -211,6 +211,27 @@ describe('IndySdkAnonCredsRegistry', () => {
 
     await indySdkPoolService.submitWriteRequest(agent.context, pool, revocationRegistryRequest, signingKey)
 
+    // indySdk.buildRevRegEntry panics, so we just pass a custom request directly
+    const entryResponse = await indySdkPoolService.submitWriteRequest(
+      agent.context,
+      pool,
+      {
+        identifier: legacyIssuerId,
+        operation: {
+          revocDefType: 'CL_ACCUM',
+          revocRegDefId: legacyRevocationRegistryId,
+          type: '114',
+          value: {
+            accum:
+              '1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000',
+          },
+        },
+        protocolVersion: 2,
+        reqId: Math.floor(Math.random() * 1000000),
+      },
+      signingKey
+    )
+
     const legacyRevocationRegistryDefinition = await indySdkAnonCredsRegistry.getRevocationRegistryDefinition(
       agent.context,
       legacyRevocationRegistryId
@@ -270,27 +291,6 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       resolutionMetadata: {},
     })
-
-    // indySdk.buildRevRegEntry panics, so we just pass a custom request directly
-    const entryResponse = await indySdkPoolService.submitWriteRequest(
-      agent.context,
-      pool,
-      {
-        identifier: legacyIssuerId,
-        operation: {
-          revocDefType: 'CL_ACCUM',
-          revocRegDefId: legacyRevocationRegistryId,
-          type: '114',
-          value: {
-            accum:
-              '1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000',
-          },
-        },
-        protocolVersion: 2,
-        reqId: Math.floor(Math.random() * 1000000),
-      },
-      signingKey
-    )
 
     const legacyRevocationStatusList = await indySdkAnonCredsRegistry.getRevocationStatusList(
       agent.context,
