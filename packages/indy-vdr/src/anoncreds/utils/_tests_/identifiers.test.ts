@@ -5,14 +5,14 @@ import {
   getLegacyCredentialDefinitionId,
   getLegacyRevocationRegistryId,
   getLegacySchemaId,
-  indySdkAnonCredsRegistryIdentifierRegex,
+  indyVdrAnonCredsRegistryIdentifierRegex,
   parseCredentialDefinitionId,
   parseRevocationRegistryId,
   parseSchemaId,
 } from '../identifiers'
 
 describe('identifiers', () => {
-  describe('indySdkAnonCredsRegistryIdentifierRegex', () => {
+  describe('indyVdrAnonCredsRegistryIdentifierRegex', () => {
     test('matches against a legacy indy did, schema id, credential definition id and revocation registry id', () => {
       const did = '7Tqg6BwSSWapxgUDm9KKgg'
       const schemaId = 'BQ42WeE24jFHeyGg8x9XAz:2:Medical Bill:1.0'
@@ -23,12 +23,12 @@ describe('identifiers', () => {
       const anotherId = 'some:id'
 
       // unqualified issuerId not in regex on purpose. See note in implementation.
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(did)).toEqual(false)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(did)).toEqual(false)
 
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(anotherId)).toEqual(false)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(anotherId)).toEqual(false)
     })
 
     test('matches against a did indy did, schema id, credential definition id and revocation registry id', () => {
@@ -41,11 +41,11 @@ describe('identifiers', () => {
 
       const anotherId = 'did:indy:local:N7baRMcyvPwWc8v85CtZ6e/anoncreds/v0/SOME_DEF'
 
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(did)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
-      expect(indySdkAnonCredsRegistryIdentifierRegex.test(anotherId)).toEqual(false)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(did)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(schemaId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(credentialDefinitionId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(revocationRegistryId)).toEqual(true)
+      expect(indyVdrAnonCredsRegistryIdentifierRegex.test(anotherId)).toEqual(false)
     })
   })
 

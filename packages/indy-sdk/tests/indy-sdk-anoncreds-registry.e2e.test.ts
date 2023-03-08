@@ -8,7 +8,6 @@ import {
 } from '../../core/tests/helpers'
 import { IndySdkAnonCredsRegistry } from '../src/anoncreds/services/IndySdkAnonCredsRegistry'
 import { IndySdkPoolService } from '../src/ledger'
-import { assertIndySdkWallet } from '../src/utils/assertIndySdkWallet'
 
 import { credentialDefinitionValue } from './__fixtures__/anoncreds'
 import { getIndySdkModules, indySdk } from './setupIndySdkModule'
@@ -136,7 +135,7 @@ describe('IndySdkAnonCredsRegistry', () => {
           tag: 'TAG',
           schemaId: didIndySchemaId,
           type: 'CL',
-          value: {},
+          value: credentialDefinitionValue,
         },
         credentialDefinitionId: didIndyCredentialDefinitionId,
         state: 'finished',
@@ -188,8 +187,6 @@ describe('IndySdkAnonCredsRegistry', () => {
       resolutionMetadata: {},
     })
 
-    assertIndySdkWallet(agent.context.wallet)
-
     // We don't support creating a revocation registry using AFJ yet, so we directly use indy-sdk to register the revocation registry
     const legacyRevocationRegistryId = `TL1EaPFCZ8Si5aUrqScBDt:4:TL1EaPFCZ8Si5aUrqScBDt:3:CL:${schemaResult.schemaMetadata.indyLedgerSeqNo}:TAG:CL_ACCUM:tag`
     const didIndyRevocationRegistryId = `did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt/anoncreds/v0/REV_REG_DEF/${schemaResult.schemaMetadata.indyLedgerSeqNo}/TAG/tag`
@@ -213,6 +210,27 @@ describe('IndySdkAnonCredsRegistry', () => {
     })
 
     await indySdkPoolService.submitWriteRequest(agent.context, pool, revocationRegistryRequest, signingKey)
+
+    // indySdk.buildRevRegEntry panics, so we just pass a custom request directly
+    const entryResponse = await indySdkPoolService.submitWriteRequest(
+      agent.context,
+      pool,
+      {
+        identifier: legacyIssuerId,
+        operation: {
+          revocDefType: 'CL_ACCUM',
+          revocRegDefId: legacyRevocationRegistryId,
+          type: '114',
+          value: {
+            accum:
+              '1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000',
+          },
+        },
+        protocolVersion: 2,
+        reqId: Math.floor(Math.random() * 1000000),
+      },
+      signingKey
+    )
 
     const legacyRevocationRegistryDefinition = await indySdkAnonCredsRegistry.getRevocationRegistryDefinition(
       agent.context,
@@ -273,27 +291,6 @@ describe('IndySdkAnonCredsRegistry', () => {
       },
       resolutionMetadata: {},
     })
-
-    // indySdk.buildRevRegEntry panics, so we just pass a custom request directly
-    const entryResponse = await indySdkPoolService.submitWriteRequest(
-      agent.context,
-      pool,
-      {
-        identifier: legacyIssuerId,
-        operation: {
-          revocDefType: 'CL_ACCUM',
-          revocRegDefId: legacyRevocationRegistryId,
-          type: '114',
-          value: {
-            accum:
-              '1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 2 095E45DDF417D05FB10933FFC63D474548B7FFFF7888802F07FFFFFF7D07A8A8 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000 1 0000000000000000000000000000000000000000000000000000000000000000',
-          },
-        },
-        protocolVersion: 2,
-        reqId: Math.floor(Math.random() * 1000000),
-      },
-      signingKey
-    )
 
     const legacyRevocationStatusList = await indySdkAnonCredsRegistry.getRevocationStatusList(
       agent.context,

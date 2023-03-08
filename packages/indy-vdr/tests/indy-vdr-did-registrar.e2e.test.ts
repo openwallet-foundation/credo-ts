@@ -1,94 +1,81 @@
+import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
+
 import {
   Key,
-  InjectionSymbols,
-  CacheModuleConfig,
-  InMemoryLruCache,
   JsonTransformer,
   KeyType,
-  SigningProviderRegistry,
   TypedArrayEncoder,
   DidCommV1Service,
   DidCommV2Service,
   DidDocumentService,
+  Agent,
+  DidsModule,
 } from '@aries-framework/core'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
-import { Subject } from 'rxjs'
 
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import testLogger from '../../core/tests/logger'
-import { IndySdkWallet } from '../../indy-sdk/src'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
+import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
-import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { DID_INDY_REGEX } from '../src/utils/did'
 
 import { indyVdrModuleConfig } from './helpers'
 
-const logger = testLogger
-const wallet = new IndySdkWallet(indySdk, logger, new SigningProviderRegistry([]))
+const agent = new Agent(
+  getAgentOptions(
+    'Indy VDR Indy DID Registrar',
+    {},
+    {
+      indyVdr: new IndyVdrModule({
+        networks: indyVdrModuleConfig.networks,
+      }),
+      indySdk: new IndySdkModule({
+        indySdk,
+      }),
+      dids: new DidsModule({
+        registrars: [new IndyVdrIndyDidRegistrar()],
+        resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
+      }),
+    }
+  )
+)
 
-const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar E2E', { logger })
+describe('Indy VDR Indy Did Registrar', () => {
+  let submitterDid: string
 
-const cache = new InMemoryLruCache({ limit: 200 })
-const indyVdrIndyDidResolver = new IndyVdrIndyDidResolver()
-const indyVdrIndyDidRegistrar = new IndyVdrIndyDidRegistrar()
-
-let signerKey: Key
-
-const agentContext = getAgentContext({
-  wallet,
-  agentConfig,
-  registerInstances: [
-    [InjectionSymbols.Stop$, new Subject<boolean>()],
-    [InjectionSymbols.AgentDependencies, agentDependencies],
-    [InjectionSymbols.StorageService, new InMemoryStorageService()],
-    [IndyVdrPoolService, new IndyVdrPoolService(logger, indyVdrModuleConfig)],
-    [CacheModuleConfig, new CacheModuleConfig({ cache })],
-  ],
-})
-
-const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
-
-describe('Indy VDR registrar E2E', () => {
   beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-
-    signerKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
-      keyType: KeyType.Ed25519,
-    })
+    await agent.initialize()
+    const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
+      agent,
+      TypedArrayEncoder.fromString('000000000000000000000000Trustee9')
+    )
+    submitterDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
   })
 
   afterAll(async () => {
-    for (const pool of indyVdrPoolService.pools) {
-      pool.close()
-    }
-
-    await wallet.delete()
+    await agent.shutdown()
+    await agent.wallet.delete()
   })
 
   test('can register a did:indy without services', async () => {
-    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
+    const didRegistrationResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
-        submitterVerkey: signerKey.publicKeyBase58,
+        submitterDid,
       },
     })
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {},
-      didRegistrationMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
+      didRegistrationMetadata: {},
       didState: {
         state: 'finished',
         did: expect.stringMatching(DID_INDY_REGEX),
         didDocument: {
-          '@context': ['https://w3id.org/did/v1'],
+          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
           id: expect.stringMatching(DID_INDY_REGEX),
           alsoKnownAs: undefined,
           controller: undefined,
@@ -109,14 +96,12 @@ describe('Indy VDR registrar E2E', () => {
     })
 
     const did = didRegistrationResult.didState.did
-    if (!did) {
-      throw Error('did not defined')
-    }
+    if (!did) throw Error('did not defined')
 
-    const didResolutionResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    const didResolutionResult = await agent.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
       didDocument: {
-        '@context': ['https://w3id.org/did/v1'],
+        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
         id: did,
         alsoKnownAs: undefined,
         controller: undefined,
@@ -154,26 +139,22 @@ describe('Indy VDR registrar E2E', () => {
       'pool:localtest',
       Key.fromPublicKey(keyPair.publicKey, KeyType.Ed25519)
     )
-    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
+    const didRegistrationResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
-        submitterVerkey: signerKey.publicKeyBase58,
+        submitterDid,
         verkey,
       },
     })
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {},
-      didRegistrationMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
+      didRegistrationMetadata: {},
       didState: {
         state: 'finished',
         did,
         didDocument: {
-          '@context': ['https://w3id.org/did/v1'],
+          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
           id: did,
           alsoKnownAs: undefined,
           controller: undefined,
@@ -193,10 +174,10 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    const didResult = await agent.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
-        '@context': ['https://w3id.org/did/v1'],
+        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
         id: did,
         alsoKnownAs: undefined,
         controller: undefined,
@@ -229,7 +210,7 @@ describe('Indy VDR registrar E2E', () => {
         .slice(0, 32)
     )
 
-    const key = await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
+    const key = await agent.wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
     const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(key.publicKey))
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(key.publicKey)
 
@@ -238,12 +219,10 @@ describe('Indy VDR registrar E2E', () => {
       Key.fromPublicKey(key.publicKey, KeyType.Ed25519)
     )
 
-    const didRegistrationResult = await indyVdrIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
+    const didRegistrationResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        submitterDid: 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt',
-        submitterVerkey: signerKey.publicKeyBase58,
+        submitterDid,
         useEndpointAttrib: true,
         verkey,
         services: [
@@ -271,7 +250,12 @@ describe('Indy VDR registrar E2E', () => {
     })
 
     const expectedDidDocument = {
-      '@context': ['https://w3id.org/did/v1', 'https://didcomm.org/messaging/contexts/v2'],
+      '@context': [
+        'https://w3id.org/did/v1',
+        'https://w3id.org/security/suites/ed25519-2018/v1',
+        'https://w3id.org/security/suites/x25519-2019/v1',
+        'https://didcomm.org/messaging/contexts/v2',
+      ],
       id: did,
       alsoKnownAs: undefined,
       controller: undefined,
@@ -319,9 +303,7 @@ describe('Indy VDR registrar E2E', () => {
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {},
-      didRegistrationMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
+      didRegistrationMetadata: {},
       didState: {
         state: 'finished',
         did,
@@ -329,7 +311,7 @@ describe('Indy VDR registrar E2E', () => {
       },
     })
 
-    const didResult = await indyVdrIndyDidResolver.resolve(agentContext, did)
+    const didResult = await agent.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: expectedDidDocument,
       didDocumentMetadata: {},
