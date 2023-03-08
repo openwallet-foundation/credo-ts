@@ -43,12 +43,19 @@ export function createCredentialDefinition(options: { attributeNames: string[]; 
     tag: 'TAG',
   })
 
-  return {
+  const returnObj = {
     credentialDefinition: credentialDefinition.toJson() as unknown as AnonCredsCredentialDefinition,
     credentialDefinitionPrivate: credentialDefinitionPrivate.toJson() as unknown as JsonObject,
     keyCorrectnessProof: keyCorrectnessProof.toJson() as unknown as JsonObject,
     schema: schema.toJson() as unknown as Schema,
   }
+
+  credentialDefinition.handle.clear()
+  credentialDefinitionPrivate.handle.clear()
+  keyCorrectnessProof.handle.clear()
+  schema.handle.clear()
+
+  return returnObj
 }
 
 /**
@@ -60,7 +67,9 @@ export function createCredentialOffer(keyCorrectnessProof: Record<string, unknow
     keyCorrectnessProof,
     schemaId: 'schema:uri',
   })
-  return credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
+  const credentialOfferJson = credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
+  credentialOffer.handle.clear()
+  return credentialOfferJson
 }
 
 /**
@@ -68,7 +77,10 @@ export function createCredentialOffer(keyCorrectnessProof: Record<string, unknow
  * @returns Creates a valid link secret value for anoncreds-rs
  */
 export function createLinkSecret() {
-  return (MasterSecret.create().toJson() as { value: { ms: string } }).value.ms as string
+  const masterSecret = MasterSecret.create()
+  const ms = (masterSecret.toJson() as { value: { ms: string } }).value.ms as string
+  masterSecret.handle.clear()
+  return ms
 }
 
 export function createCredentialForHolder(options: {
@@ -101,7 +113,7 @@ export function createCredentialForHolder(options: {
     keyCorrectnessProof,
     schemaId,
   })
-
+  
   const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
     entropy: 'some-entropy',
     credentialDefinition,
@@ -147,13 +159,23 @@ export function createCredentialForHolder(options: {
     credentialId,
     schemaId,
   }
-  return {
+  const returnObj = {
     credential: credentialObj.toJson() as unknown as AnonCredsCredential,
     credentialInfo,
     revocationRegistryDefinition,
     tailsPath,
     credentialRequestMetadata,
   }
+
+  credentialObj.handle.clear()
+  credentialOffer.handle.clear()
+  credentialRequest.handle.clear()
+  credentialRequestMetadata.handle.clear()
+  revocationRegistryDefinition.clear()
+  revocationRegistryDefinitionPrivate.clear()
+  revocationStatusList.handle.clear()
+
+  return returnObj
 }
 
 export function createRevocationRegistryDefinition(options: {

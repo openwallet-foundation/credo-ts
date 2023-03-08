@@ -5,15 +5,14 @@ import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import { injectable } from '@aries-framework/core'
 import { Presentation, RevocationRegistryDefinition, RevocationStatusList } from '@hyperledger/anoncreds-shared'
 
-import { AnonCredsRsError } from '../errors/AnonCredsRsError'
-
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
   public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
     const { credentialDefinitions, proof, proofRequest, revocationRegistries, schemas } = options
 
+    let presentation: Presentation | undefined
     try {
-      const presentation = Presentation.fromJson(proof as unknown as JsonObject)
+      presentation = Presentation.fromJson(proof as unknown as JsonObject)
 
       const rsCredentialDefinitions: Record<string, JsonObject> = {}
       for (const credDefId in credentialDefinitions) {
@@ -55,8 +54,8 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
         revocationRegistryDefinitions,
         revocationStatusLists: lists,
       })
-    } catch (error) {
-      throw new AnonCredsRsError('Error verifying proof', { cause: error })
+    } finally {
+      presentation?.handle.clear()
     }
   }
 }
