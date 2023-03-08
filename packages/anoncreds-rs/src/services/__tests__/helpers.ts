@@ -113,7 +113,7 @@ export function createCredentialForHolder(options: {
     keyCorrectnessProof,
     schemaId,
   })
-  
+
   const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
     entropy: 'some-entropy',
     credentialDefinition,
@@ -170,8 +170,6 @@ export function createCredentialForHolder(options: {
   credentialObj.handle.clear()
   credentialOffer.handle.clear()
   credentialRequest.handle.clear()
-  credentialRequestMetadata.handle.clear()
-  revocationRegistryDefinition.clear()
   revocationRegistryDefinitionPrivate.clear()
   revocationStatusList.handle.clear()
 

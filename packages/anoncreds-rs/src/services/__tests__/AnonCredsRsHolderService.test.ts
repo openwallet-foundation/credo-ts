@@ -59,7 +59,7 @@ const agentContext = getAgentContext({
 describe('AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
 
-  afterEach(() => {
+  beforeEach(() => {
     getByCredentialIdMock.mockClear()
   })
 
