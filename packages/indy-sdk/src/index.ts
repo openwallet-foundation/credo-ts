@@ -1,11 +1,5 @@
 // Dids
-export {
-  IndySdkSovDidRegistrar,
-  IndySdkSovDidCreateOptions,
-  IndySdkSovDidDeactivateOptions,
-  IndySdkSovDidUpdateOptions,
-  IndySdkSovDidResolver,
-} from './dids'
+export * from './dids'
 
 // Ledger
 export { IndySdkPoolConfig } from './ledger'

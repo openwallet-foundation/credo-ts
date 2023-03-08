@@ -69,7 +69,7 @@ const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService(
 const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
-const indyDid = 'TL1EaPFCZ8Si5aUrqScBDt'
+const indyDid = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 
 describe('Legacy indy format services using anoncreds-rs', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {

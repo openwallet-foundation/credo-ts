@@ -7,7 +7,9 @@ import type { ConnectionService } from '../services/ConnectionService'
 
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { tryParseDid } from '../../dids/domain/parse'
 import { ConnectionRequestMessage } from '../messages'
+import { HandshakeProtocol } from '../models'
 
 export class ConnectionRequestHandler implements MessageHandler {
   private connectionService: ConnectionService
@@ -32,16 +34,23 @@ export class ConnectionRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<ConnectionRequestHandler>) {
-    const { connection, recipientKey, senderKey } = messageContext
+    const { agentContext, connection, recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientKey(
-      messageContext.agentContext,
-      recipientKey
-    )
+    const parentThreadId = message.thread?.parentThreadId
+
+    const outOfBandRecord =
+      parentThreadId && tryParseDid(parentThreadId)
+        ? await this.outOfBandService.createFromImplicitInvitation(agentContext, {
+            did: parentThreadId,
+            threadId: message.threadId,
+            recipientKey,
+            handshakeProtocols: [HandshakeProtocol.Connections],
+          })
+        : await this.outOfBandService.findCreatedByRecipientKey(agentContext, recipientKey)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
