@@ -344,17 +344,20 @@ export class MessageSender {
     )
   }
 
-  public async sendMessageToService(outboundMessageContext: OutboundMessageContext, agentContext?: AgentContext) {
+  public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
-    if (session && agentContext) {
+
+    if (session) {
+      this.logger.debug(`Found session with return routing for message '${outboundMessageContext.message.id}'`)
       try {
-        await this.sendMessageToSession(agentContext, session, outboundMessageContext.message)
-        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
-      } catch (_) {
-        this.logger.error('Failed to send message to session.')
-        this.logger.info('Attempting to send to Service instead.')
+        await this.sendMessageToSession(outboundMessageContext.agentContext, session, outboundMessageContext.message)
+        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+        return
+      } catch (error) {
+        this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
       }
     }
+
     // If there is no session try sending to service instead
     try {
       await this.sendToService(outboundMessageContext)
@@ -437,12 +440,22 @@ export class MessageSender {
   }
 
   private findSessionForOutboundContext(outboundContext: OutboundMessageContext) {
-    const session = outboundContext.sessionId
-      ? this.transportService.findSessionById(outboundContext.sessionId)
-      : outboundContext.connection?.id
-      ? this.transportService.findSessionByConnectionId(outboundContext.connection.id)
-      : undefined
-    if (session && session.inboundMessage?.hasAnyReturnRoute()) return session
+    let session: TransportSession | undefined = undefined
+
+    // Use session id from outbound context if present, or use the session from the inbound message context
+    const sessionId = outboundContext.sessionId ?? outboundContext.inboundMessageContext?.sessionId
+
+    // Try to find session by id
+    if (sessionId) {
+      session = this.transportService.findSessionById(sessionId)
+    }
+
+    // Try to find session by connection id
+    if (!session && outboundContext.connection?.id) {
+      session = this.transportService.findSessionByConnectionId(outboundContext.connection.id)
+    }
+
+    return session && session.inboundMessage?.hasAnyReturnRoute() ? session : null
   }
 
   private async retrieveServicesByConnection(

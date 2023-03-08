@@ -48,6 +48,7 @@ class Dispatcher {
       outboundMessage = await messageHandler.handle(messageContext)
     } catch (error) {
       const problemReportMessage = error.problemReport
+
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
         const { protocolUri: problemReportProtocolUri } = parseMessageType(problemReportMessage.type)
         const { protocolUri: inboundProtocolUri } = parseMessageType(messageContext.message.type)
@@ -67,6 +68,7 @@ class Dispatcher {
         outboundMessage = new OutboundMessageContext(problemReportMessage, {
           agentContext,
           connection: messageContext.connection,
+          inboundMessageContext: messageContext,
         })
       } else {
         this.logger.error(`Error handling message with type ${message.type}`, {
@@ -82,13 +84,14 @@ class Dispatcher {
     }
 
     if (outboundMessage) {
-      // Store the sessionId of the inbound message, if there is one, so messages can later be send without
-      // outbound transport.
-      if (!outboundMessage.sessionId) outboundMessage.sessionId = messageContext.sessionId
+      // set the inbound message context, if not already defined
+      if (!outboundMessage.inboundMessageContext) {
+        outboundMessage.inboundMessageContext = messageContext
+      }
+
       if (outboundMessage.isOutboundServiceMessage()) {
-        await this.messageSender.sendMessageToService(outboundMessage, agentContext)
+        await this.messageSender.sendMessageToService(outboundMessage)
       } else {
-        outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
       }
     }
