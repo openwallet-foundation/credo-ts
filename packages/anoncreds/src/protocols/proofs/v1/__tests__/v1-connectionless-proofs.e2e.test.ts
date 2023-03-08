@@ -16,7 +16,6 @@ import {
   AttachmentData,
   ProofEventTypes,
 } from '../../../../../../core/src'
-import { sleep } from '../../../../../../core/src/utils/sleep'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
   testLogger,
@@ -245,9 +244,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       state: ProofState.Done,
       threadId: message.threadId,
     })
-    // FIXME: This should not have to wait here.
-    // But removing the wait throws and error because the wallet context is already closed when receiving the ack
-    await sleep(3000)
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
@@ -321,11 +317,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    message.setService({
-      recipientKeys: [faberAgent.config.walletConfig?.key ?? ''],
-      serviceEndpoint: message.service?.serviceEndpoint ?? 'rxjs:faber',
-    })
-
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
@@ -333,17 +324,19 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
 
     for (const transport of faberAgent.outboundTransports) {
-      await faberAgent.unregisterOutboundTransportTransport(transport)
+      await faberAgent.unregisterOutboundTransport(transport)
     }
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
   })
 
@@ -467,14 +460,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
     // eslint-disable-next-line prefer-const
     let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
@@ -530,9 +515,15 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
 
-    await faberProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
 
     await aliceAgent.mediationRecipient.stopMessagePickup()
     await faberAgent.mediationRecipient.stopMessagePickup()

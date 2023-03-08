@@ -20,9 +20,7 @@ import {
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
-import { sleep } from '../../../../../utils/sleep'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
 import { CredentialEventTypes } from '../../../../credentials'
@@ -238,14 +236,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
-    // FIXME: This should not have to wait here.
-    // But removing the wait throws and error because the wallet context is already closed when receiving the ack
-    await sleep(3000)
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
@@ -423,12 +420,15 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
   })
+
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
@@ -503,10 +503,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    message.setService({
-      recipientKeys: [faberAgent.config.walletConfig?.key ?? ''],
-      serviceEndpoint: message.service?.serviceEndpoint ?? 'rxjs:faber',
-    })
     const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
@@ -514,16 +510,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     for (const transport of faberAgent.outboundTransports) {
-      await faberAgent.unregisterOutboundTransportTransport(transport)
+      await faberAgent.unregisterOutboundTransport(transport)
     }
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
   })
 })
