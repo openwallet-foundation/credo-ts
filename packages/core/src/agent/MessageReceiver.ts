@@ -112,7 +112,6 @@ export class MessageReceiver {
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
     const messageContext = new InboundMessageContext(message, { connection, agentContext })
-
     await this.dispatcher.dispatch(messageContext)
   }
 
@@ -146,7 +145,7 @@ export class MessageReceiver {
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
     // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
-    if (senderKey && recipientKey && session && message.hasReturnRouting()) {
+    if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
         recipientKeys: [senderKey],
@@ -165,6 +164,7 @@ export class MessageReceiver {
       // No need to wait for session to stay open if we're not actually going to respond to the message.
       await session.close()
     }
+
     await this.dispatcher.dispatch(messageContext)
   }
 
