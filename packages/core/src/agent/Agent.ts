@@ -136,6 +136,10 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
+  }
+
   public get inboundTransports() {
     return this.messageReceiver.inboundTransports
   }
@@ -144,7 +148,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     this.messageSender.registerOutboundTransport(outboundTransport)
   }
 
-  public async unregisterOutboundTransportTransport(outboundTransport: OutboundTransport) {
+  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
     await this.messageSender.unregisterOutboundTransport(outboundTransport)
   }
 
