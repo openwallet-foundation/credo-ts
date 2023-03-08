@@ -403,7 +403,7 @@ export class MessageSender {
 
     // Set return routing for message if requested
     if (returnRoute) {
-      message.setReturnRouting(ReturnRouteTypes.all, message.threadId)
+      message.setReturnRouting(ReturnRouteTypes.all)
     }
 
     try {
@@ -423,7 +423,6 @@ export class MessageSender {
     const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
-
     for (const transport of this.outboundTransports) {
       const protocolScheme = getProtocolScheme(service.serviceEndpoint)
       if (!protocolScheme) {
@@ -433,7 +432,6 @@ export class MessageSender {
         return
       }
     }
-
     throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
       outboundMessageContext,
     })
