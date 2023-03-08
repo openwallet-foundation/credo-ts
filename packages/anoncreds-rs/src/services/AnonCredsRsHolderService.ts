@@ -222,7 +222,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       }
 
       createReturnObj = CredentialRequest.create({
-        entropy: useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined, // FIXME: find a better source of entropy
+        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined, // FIXME: find a better source of entropy
         proverDid: useLegacyProverDid ? generateLegacyProverDidLikeString() : undefined,
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
