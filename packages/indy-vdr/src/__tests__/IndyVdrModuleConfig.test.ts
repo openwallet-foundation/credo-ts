@@ -1,6 +1,6 @@
 import type { IndyVdrPoolConfig } from '../pool'
 
-import { indyVdr } from '@hyperledger/indy-vdr-shared'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 

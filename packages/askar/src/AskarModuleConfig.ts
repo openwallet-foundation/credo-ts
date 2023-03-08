@@ -36,10 +36,6 @@ export interface AskarModuleConfigOptions {
    * ```
    */
   ariesAskar: AriesAskar
-
-  /**
-   * A list of Askar wallets to connect to.
-   */
 }
 
 /**

@@ -120,14 +120,6 @@ export const getAskarAnonCredsIndyModules = ({
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
-  const indyNetworkConfig = {
-    id: `localhost-${uuid()}`,
-    isProduction: false,
-    genesisTransactions,
-    indyNamespace: 'pool:localtest',
-    transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-  }
-
   const modules = {
     credentials: new CredentialsModule({
       autoAcceptCredentials,

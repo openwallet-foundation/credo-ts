@@ -16,8 +16,6 @@ export class AskarModule implements Module {
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
-    dependencyManager.registerSingleton(AskarStorageService)
-
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new AriesFrameworkError('There is an instance of Wallet already registered')
     } else {
