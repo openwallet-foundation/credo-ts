@@ -876,12 +876,12 @@
   resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.6.tgz#2e6afb4641cc25daef4074a32990ec078d2fd94e"
   integrity sha512-4YZ2kzhOOrGRL//n/Qe/A+yyGsbnHqojQW6vGEZQpZ9bf4ir+QaZLRHijgXFmffMA+SRONfdlnxhLJ6/b6ZaMg==
 
-"@hyperledger/aries-askar-nodejs@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.3.tgz#19ecff41f81525efea8212a3ad6b8c3db11950c4"
-  integrity sha512-9hnCNWxIRkLP793P4DuZAJRWfxf1v6NdQyEgoMdNletcP7KAf/YfBqySTYGqA6TIiMu/abNrmq+WsHkK0yyZ+g==
+"@hyperledger/aries-askar-nodejs@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.4.tgz#016f89886732366eff9cba54eb6fcbf02cc5a212"
+  integrity sha512-Wh1SoxakBpQvgbFrLq+NIJ0l02N8SjBRDZBs/c55gIeenXzDJY/ZgfM6faLdDv4XeE6agXd4yl35f4s7+3zK+Q==
   dependencies:
-    "@hyperledger/aries-askar-shared" "0.1.0-dev.3"
+    "@hyperledger/aries-askar-shared" "0.1.0-dev.4"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "^4.0.3"
     node-cache "^5.1.2"
@@ -889,10 +889,10 @@
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/aries-askar-shared@0.1.0-dev.3", "@hyperledger/aries-askar-shared@^0.1.0-dev.3":
-  version "0.1.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.3.tgz#2056db8c0671ec4b1e926e1491fdca9357ede633"
-  integrity sha512-LIRyCg2PK6wN483Bdzq4eJmQ2LNCCRq2g7GF4yv+H+V04ky7hdeoJbSKN8lYr/OQn1tS6ALx9p2ArvAt7pTfVw==
+"@hyperledger/aries-askar-shared@0.1.0-dev.4", "@hyperledger/aries-askar-shared@^0.1.0-dev.4":
+  version "0.1.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.4.tgz#439fbaa3911be56c134cbacfddd1553eb0b06dde"
+  integrity sha512-z+bWVbFD3S7IuYlG2XTxCjyaJWmS/wiHtYRxgWXjF6o4iR2vW+/y0NhTpiX2gO4Gx62zxFfh50b0oQTOM6/XqQ==
   dependencies:
     fast-text-encoding "^1.0.3"
 

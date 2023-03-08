@@ -73,7 +73,7 @@ describeRunInNodeVersion([18], 'AskarStorageService', () => {
         forUpdate: false,
       })
 
-      expect(JSON.parse(retrieveRecord.getTags(0))).toEqual({
+      expect(JSON.parse(retrieveRecord?.getTags(0) ?? '{}')).toEqual({
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',
