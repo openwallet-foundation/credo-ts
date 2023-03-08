@@ -34,16 +34,12 @@ import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
-import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
-  genesisTransactions,
-  taaVersion,
-  taaAcceptanceMechanism,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
