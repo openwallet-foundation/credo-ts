@@ -462,6 +462,24 @@ describe('MessageSender', () => {
       expect(sendToServiceSpy).toHaveBeenCalledTimes(2)
       expect(sendMessageSpy).toHaveBeenCalledTimes(2)
     })
+
+    test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
+      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
+        /Message is undeliverable to connection/
+      )
+
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: AgentEventTypes.AgentMessageSent,
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
+        payload: {
+          message: outboundMessageContext,
+          status: OutboundMessageSendStatus.Undeliverable,
+        },
+      })
+    })
   })
 
   describe('sendMessageToService', () => {
@@ -586,6 +604,31 @@ describe('MessageSender', () => {
         responseRequested: true,
       })
       expect(sendMessageSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
+      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      outboundMessageContext = new OutboundMessageContext(new TestMessage(), {
+        agentContext,
+        serviceParams: {
+          senderKey,
+          service,
+        },
+      })
+
+      await expect(messageSender.sendMessageToService(outboundMessageContext)).rejects.toThrow(
+        /Unable to send message to service/
+      )
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: AgentEventTypes.AgentMessageSent,
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
+        payload: {
+          message: outboundMessageContext,
+          status: OutboundMessageSendStatus.Undeliverable,
+        },
+      })
     })
   })
 
