@@ -115,6 +115,12 @@ describe('IndySdkPoolService', () => {
       expect(poolService.getPoolForDid(agentContext, did)).rejects.toThrowError(IndySdkPoolNotFoundError)
     })
 
+    it('should return the pool based on namespace if did is a valid did:indy did', async () => {
+      const { pool } = await poolService.getPoolForDid(agentContext, 'did:indy:sovrin:Y5bj4SjCiTM9PgeheKAiXx')
+
+      expect(pool.didIndyNamespace).toBe('sovrin')
+    })
+
     it('should return the pool if the did was only found on one ledger', async () => {
       const did = 'TL1EaPFCZ8Si5aUrqScBDt'
       // Only found on one ledger

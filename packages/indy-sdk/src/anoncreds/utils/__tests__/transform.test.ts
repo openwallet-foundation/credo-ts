@@ -12,7 +12,7 @@ describe('transform', () => {
   it('anonCredsSchemaFromIndySdk should return a valid anoncreds schema', () => {
     const schema: Schema = {
       attrNames: ['hello'],
-      id: '12345:2:Example Schema:1.0.0',
+      id: 'TL1EaPFCZ8Si5aUrqScBDt:2:Example Schema:1.0.0',
       name: 'Example Schema',
       seqNo: 150,
       ver: '1.0',
@@ -21,24 +21,24 @@ describe('transform', () => {
 
     expect(anonCredsSchemaFromIndySdk(schema)).toEqual({
       attrNames: ['hello'],
-      issuerId: '12345',
+      issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
       name: 'Example Schema',
       version: '1.0.0',
     })
   })
 
   it('indySdkSchemaFromAnonCreds should return a valid indy sdk schema', () => {
-    const schemaId = '12345:2:Example Schema:1.0.0'
+    const schemaId = 'TL1EaPFCZ8Si5aUrqScBDt:2:Example Schema:1.0.0'
     const schema: AnonCredsSchema = {
       attrNames: ['hello'],
-      issuerId: '12345',
+      issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
       name: 'Example Schema',
       version: '1.0.0',
     }
 
     expect(indySdkSchemaFromAnonCreds(schemaId, schema, 150)).toEqual({
       attrNames: ['hello'],
-      id: '12345:2:Example Schema:1.0.0',
+      id: 'TL1EaPFCZ8Si5aUrqScBDt:2:Example Schema:1.0.0',
       name: 'Example Schema',
       seqNo: 150,
       ver: '1.0',
@@ -48,7 +48,7 @@ describe('transform', () => {
 
   it('anonCredsCredentialDefinitionFromIndySdk should return a valid anoncreds credential definition', () => {
     const credDef: CredDef = {
-      id: '12345:3:CL:420:someTag',
+      id: 'TL1EaPFCZ8Si5aUrqScBDt:3:CL:420:someTag',
       schemaId: '8910:2:Example Schema:1.0.0',
       tag: 'someTag',
       type: 'CL',
@@ -61,7 +61,7 @@ describe('transform', () => {
     }
 
     expect(anonCredsCredentialDefinitionFromIndySdk(credDef)).toEqual({
-      issuerId: '12345',
+      issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
       schemaId: '8910:2:Example Schema:1.0.0',
       tag: 'someTag',
       type: 'CL',
@@ -74,9 +74,9 @@ describe('transform', () => {
   })
 
   it('indySdkCredentialDefinitionFromAnonCreds should return a valid indy sdk credential definition', () => {
-    const credentialDefinitionId = '12345:3:CL:420:someTag'
+    const credentialDefinitionId = 'TL1EaPFCZ8Si5aUrqScBDt:3:CL:420:someTag'
     const credentialDefinition: AnonCredsCredentialDefinition = {
-      issuerId: '12345',
+      issuerId: 'TL1EaPFCZ8Si5aUrqScBDt',
       schemaId: '8910:2:Example Schema:1.0.0',
       tag: 'someTag',
       type: 'CL',
@@ -88,7 +88,7 @@ describe('transform', () => {
     }
 
     expect(indySdkCredentialDefinitionFromAnonCreds(credentialDefinitionId, credentialDefinition)).toEqual({
-      id: '12345:3:CL:420:someTag',
+      id: 'TL1EaPFCZ8Si5aUrqScBDt:3:CL:420:someTag',
       schemaId: '8910:2:Example Schema:1.0.0',
       tag: 'someTag',
       type: 'CL',

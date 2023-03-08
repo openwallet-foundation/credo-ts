@@ -2,7 +2,13 @@ import { DidsModule, KeyDidRegistrar, KeyDidResolver, utils } from '@aries-frame
 import indySdk from 'indy-sdk'
 
 import { genesisPath, taaVersion, taaAcceptanceMechanism } from '../../core/tests/helpers'
-import { IndySdkModule, IndySdkModuleConfig, IndySdkSovDidRegistrar, IndySdkSovDidResolver } from '../src'
+import {
+  IndySdkModule,
+  IndySdkModuleConfig,
+  IndySdkIndyDidRegistrar,
+  IndySdkSovDidResolver,
+  IndySdkIndyDidResolver,
+} from '../src'
 
 export { indySdk }
 
@@ -23,7 +29,7 @@ export const getIndySdkModuleConfig = () =>
 export const getIndySdkModules = () => ({
   indySdk: new IndySdkModule(getIndySdkModuleConfig()),
   dids: new DidsModule({
-    registrars: [new IndySdkSovDidRegistrar(), new KeyDidRegistrar()],
-    resolvers: [new IndySdkSovDidResolver(), new KeyDidResolver()],
+    registrars: [new IndySdkIndyDidRegistrar(), new KeyDidRegistrar()],
+    resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver(), new KeyDidResolver()],
   }),
 })

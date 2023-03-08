@@ -1,14 +1,14 @@
-import type { IndySdkSovDidCreateOptions } from '../src/dids/IndySdkSovDidRegistrar'
+import type { IndySdkIndyDidCreateOptions } from '../src'
 
 import { Agent, TypedArrayEncoder, convertPublicKeyToX25519, JsonTransformer } from '@aries-framework/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests'
-import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
+import { legacyIndyDidFromPublicKeyBase58 } from '../src/utils/did'
 
 import { getIndySdkModules } from './setupIndySdkModule'
 
-const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getIndySdkModules())
+const agentOptions = getAgentOptions('Indy Sdk Indy Did Registrar', {}, getIndySdkModules())
 
 describe('dids', () => {
   let agent: Agent<ReturnType<typeof getIndySdkModules>>
@@ -23,7 +23,7 @@ describe('dids', () => {
     await agent.wallet.delete()
   })
 
-  it('should create a did:sov did', async () => {
+  it('should create a did:indy did', async () => {
     // Add existing endorser did to the wallet
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       agent,
@@ -41,12 +41,12 @@ describe('dids', () => {
     const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
     const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicKeyEd25519))
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
-    const indyDid = indyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
+    const unqualifiedDid = legacyIndyDidFromPublicKeyBase58(ed25519PublicKeyBase58)
 
-    const did = await agent.dids.create<IndySdkSovDidCreateOptions>({
-      method: 'sov',
+    const did = await agent.dids.create<IndySdkIndyDidCreateOptions>({
+      method: 'indy',
       options: {
-        submitterVerificationMethod: `did:sov:${unqualifiedSubmitterDid}#key-1`,
+        submitterDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
         alias: 'Alias',
         endpoints: {
           endpoint: 'https://example.com/endpoint',
@@ -60,15 +60,11 @@ describe('dids', () => {
     })
 
     expect(JsonTransformer.toJSON(did)).toMatchObject({
-      didDocumentMetadata: {
-        qualifiedIndyDid: `did:indy:pool:localtest:${indyDid}`,
-      },
-      didRegistrationMetadata: {
-        didIndyNamespace: 'pool:localtest',
-      },
+      didDocumentMetadata: {},
+      didRegistrationMetadata: {},
       didState: {
         state: 'finished',
-        did: `did:sov:${indyDid}`,
+        did: `did:indy:pool:localtest:${unqualifiedDid}`,
         didDocument: {
           '@context': [
             'https://w3id.org/did/v1',
@@ -80,47 +76,47 @@ describe('dids', () => {
           controller: undefined,
           verificationMethod: [
             {
-              id: `did:sov:${indyDid}#key-1`,
+              id: `did:indy:pool:localtest:${unqualifiedDid}#verkey`,
               type: 'Ed25519VerificationKey2018',
-              controller: `did:sov:${indyDid}`,
+              controller: `did:indy:pool:localtest:${unqualifiedDid}`,
               publicKeyBase58: ed25519PublicKeyBase58,
             },
             {
-              id: `did:sov:${indyDid}#key-agreement-1`,
+              id: `did:indy:pool:localtest:${unqualifiedDid}#key-agreement-1`,
               type: 'X25519KeyAgreementKey2019',
-              controller: `did:sov:${indyDid}`,
+              controller: `did:indy:pool:localtest:${unqualifiedDid}`,
               publicKeyBase58: x25519PublicKeyBase58,
             },
           ],
           service: [
             {
-              id: `did:sov:${indyDid}#endpoint`,
+              id: `did:indy:pool:localtest:${unqualifiedDid}#endpoint`,
               serviceEndpoint: 'https://example.com/endpoint',
               type: 'endpoint',
             },
             {
               accept: ['didcomm/aip2;env=rfc19'],
-              id: `did:sov:${indyDid}#did-communication`,
+              id: `did:indy:pool:localtest:${unqualifiedDid}#did-communication`,
               priority: 0,
-              recipientKeys: [`did:sov:${indyDid}#key-agreement-1`],
+              recipientKeys: [`did:indy:pool:localtest:${unqualifiedDid}#key-agreement-1`],
               routingKeys: ['a-routing-key'],
               serviceEndpoint: 'https://example.com/endpoint',
               type: 'did-communication',
             },
             {
               accept: ['didcomm/v2'],
-              id: `did:sov:${indyDid}#didcomm-1`,
+              id: `did:indy:pool:localtest:${unqualifiedDid}#didcomm-1`,
               routingKeys: ['a-routing-key'],
               serviceEndpoint: 'https://example.com/endpoint',
               type: 'DIDComm',
             },
           ],
-          authentication: [`did:sov:${indyDid}#key-1`],
-          assertionMethod: [`did:sov:${indyDid}#key-1`],
-          keyAgreement: [`did:sov:${indyDid}#key-agreement-1`],
+          authentication: [`did:indy:pool:localtest:${unqualifiedDid}#verkey`],
+          assertionMethod: undefined,
+          keyAgreement: [`did:indy:pool:localtest:${unqualifiedDid}#key-agreement-1`],
           capabilityInvocation: undefined,
           capabilityDelegation: undefined,
-          id: `did:sov:${indyDid}`,
+          id: `did:indy:pool:localtest:${unqualifiedDid}`,
         },
         secret: {
           privateKey,
