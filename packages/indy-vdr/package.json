@@ -26,10 +26,10 @@
   "dependencies": {
     "@aries-framework/anoncreds": "0.3.3",
     "@aries-framework/core": "0.3.3",
-    "@hyperledger/indy-vdr-shared": "^0.1.0-dev.6"
+    "@hyperledger/indy-vdr-shared": "^0.1.0-dev.10"
   },
   "devDependencies": {
-    "@hyperledger/indy-vdr-nodejs": "^0.1.0-dev.6",
+    "@hyperledger/indy-vdr-nodejs": "^0.1.0-dev.10",
     "@stablelib/ed25519": "^1.0.2",
     "rimraf": "^4.0.7",
     "rxjs": "^7.2.0",

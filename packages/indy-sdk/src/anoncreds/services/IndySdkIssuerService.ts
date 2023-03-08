@@ -33,13 +33,13 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
 
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
     // We only support passing qualified did:indy issuer ids in the indy issuer service when creating objects
-    const { id: unqualifiedDid } = parseIndyDid(options.issuerId)
+    const { namespaceIdentifier } = parseIndyDid(options.issuerId)
 
     const { name, version, attrNames, issuerId } = options
     assertIndySdkWallet(agentContext.wallet)
 
     try {
-      const [, schema] = await this.indySdk.issuerCreateSchema(unqualifiedDid, name, version, attrNames)
+      const [, schema] = await this.indySdk.issuerCreateSchema(namespaceIdentifier, name, version, attrNames)
 
       return {
         issuerId,
@@ -60,10 +60,10 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
     // We only support passing qualified did:indy issuer ids in the indy issuer service when creating objects
-    const { id: unqualifiedDid } = parseIndyDid(options.issuerId)
+    const { namespaceIdentifier } = parseIndyDid(options.issuerId)
 
     // parse schema in a way that supports both unqualified and qualified identifiers
-    const legacySchemaId = getLegacySchemaId(unqualifiedDid, schema.name, schema.version)
+    const legacySchemaId = getLegacySchemaId(namespaceIdentifier, schema.name, schema.version)
 
     if (!metadata)
       throw new AriesFrameworkError('The metadata parameter is required when using Indy, but received undefined.')
@@ -72,7 +72,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
       assertIndySdkWallet(agentContext.wallet)
       const [, credentialDefinition] = await this.indySdk.issuerCreateAndStoreCredentialDef(
         agentContext.wallet.handle,
-        unqualifiedDid,
+        namespaceIdentifier,
         indySdkSchemaFromAnonCreds(legacySchemaId, schema, metadata.indyLedgerSchemaSeqNo),
         tag,
         'CL',
