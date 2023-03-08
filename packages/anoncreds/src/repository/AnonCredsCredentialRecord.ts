@@ -34,7 +34,7 @@ export type CustomAnonCredsCredentialTags = {
   schemaVersion: string
   schemaIssuerId: string
   issuerId: string
-} & TagsBase
+}
 
 export class AnonCredsCredentialRecord extends BaseRecord<
   DefaultAnonCredsCredentialTags,
