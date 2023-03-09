@@ -61,6 +61,10 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
     message: AgentMessage
     proofRecord: ProofExchangeRecord
   }>
+  createProofProposal(options: CreateProofProposalOptions<PPs>): Promise<{
+    message: AgentMessage
+    proofRecord: ProofExchangeRecord
+  }>
 
   // Auto Select
   selectCredentialsForRequest(

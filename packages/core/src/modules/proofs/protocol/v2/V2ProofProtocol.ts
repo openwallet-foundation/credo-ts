@@ -399,6 +399,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     if (!proofRecord) {
       // Proof request not bound to any connection: requests_attach in OOB msg
       proofRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
+      if (proofRecord) proofRecord.connectionId = connection?.id
     }
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
