@@ -6,6 +6,7 @@ import type { ConnectionRecord } from '@aries-framework/core'
 import { Agent, HandshakeProtocol } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
+import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { waitForBasicMessage } from '../../core/tests/helpers'
@@ -31,7 +32,7 @@ const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', storageConf
 })
 
 // FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describe.skip('Askar Postgres agents', () => {
+describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
   let aliceConnection: ConnectionRecord

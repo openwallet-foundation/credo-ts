@@ -17,7 +17,6 @@ import {
   isValidSeed,
   isValidPrivateKey,
   JsonTransformer,
-  RecordNotFoundError,
   WalletInvalidKeyError,
   WalletDuplicateError,
   JsonEncoder,
@@ -715,17 +714,6 @@ export class AskarWallet implements Wallet {
         throw new WalletError(`No content found for record with public key: ${publicKeyBase58}`)
       }
     } catch (error) {
-      if (
-        isAskarError(error) &&
-        (error.code === AskarErrorCode.NotFound ||
-          // FIXME: this is current output from askar wrapper but does not describe specifically a not found scenario
-          error.message === 'Received null pointer. The native library could not find the value.')
-      ) {
-        throw new RecordNotFoundError(`KeyPairRecord not found for public key: ${publicKeyBase58}.`, {
-          recordType: 'KeyPairRecord',
-          cause: error,
-        })
-      }
       throw new WalletError('Error retrieving KeyPair record', { cause: error })
     }
   }

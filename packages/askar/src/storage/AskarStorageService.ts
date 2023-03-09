@@ -115,17 +115,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       }
       return recordToInstance(record, recordClass)
     } catch (error) {
-      if (
-        isAskarError(error) &&
-        (error.code === AskarErrorCode.NotFound ||
-          // FIXME: this is current output from askar wrapper but does not describe specifically a not found scenario
-          error.message === 'Received null pointer. The native library could not find the value.')
-      ) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: recordClass.type,
-          cause: error,
-        })
-      }
+      if (error instanceof RecordNotFoundError) throw error
       throw new WalletError(`Error getting record`, { cause: error })
     }
   }
@@ -169,12 +159,6 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       }
       return instances
     } catch (error) {
-      if (
-        isAskarError(error) && // FIXME: this is current output from askar wrapper but does not describe specifically a 0 length scenario
-        error.message === 'Received null pointer. The native library could not find the value.'
-      ) {
-        return instances
-      }
       throw new WalletError(`Error executing query`, { cause: error })
     }
   }

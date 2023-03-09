@@ -133,7 +133,7 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
   const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
 
   // import the did in the wallet so it can be used
-  await agent.dids.import({ did: `did:sov:${unqualifiedIndyDid}` })
+  await agent.dids.import({ did: `did:indy:pool:localtest:${unqualifiedIndyDid}` })
 
   return unqualifiedIndyDid
 }
