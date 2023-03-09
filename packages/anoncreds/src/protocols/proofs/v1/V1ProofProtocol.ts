@@ -416,6 +416,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     let proofRecord = await this.findByThreadAndConnectionId(agentContext, proofRequestMessage.threadId, connection?.id)
 
+    if (!proofRecord) {
+      // Proof request not bound to any connection: requests_attach in OOB msg
+      proofRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, proofRequestMessage.threadId)
+      if (proofRecord) proofRecord.connectionId = connection?.id
+    }
+
     const requestAttachment = proofRequestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
       throw new AriesFrameworkError(
