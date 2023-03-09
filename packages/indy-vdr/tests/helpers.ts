@@ -1,8 +1,8 @@
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
 import type { Agent } from '@aries-framework/core'
 
-import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { genesisTransactions } from '../../core/tests/helpers'
 import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
