@@ -163,10 +163,10 @@ describe('Legacy indy format services', () => {
     ]
 
     const cd = parseCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
-    const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.didIdentifier, cd.schemaSeqNo, cd.tag)
+    const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.namespaceIdentifier, cd.schemaSeqNo, cd.tag)
 
     const s = parseSchemaId(schemaState.schemaId)
-    const legacySchemaId = getLegacySchemaId(s.didIdentifier, s.schemaName, s.schemaVersion)
+    const legacySchemaId = getLegacySchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
 
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes

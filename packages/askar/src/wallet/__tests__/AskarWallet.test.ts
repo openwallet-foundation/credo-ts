@@ -212,7 +212,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
   })
 })
 
-describe('AskarWallet management', () => {
+describeRunInNodeVersion([18], 'AskarWallet management', () => {
   let askarWallet: AskarWallet
 
   afterEach(async () => {
