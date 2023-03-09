@@ -23,7 +23,10 @@ export class IndySdkSovDidResolver implements DidResolver {
 
       const keyAgreementId = `${parsed.did}#key-agreement-1`
       const builder = sovDidDocumentFromDid(parsed.did, nym.verkey)
-      addServicesFromEndpointsAttrib(builder, parsed.did, endpoints, keyAgreementId)
+
+      if (endpoints) {
+        addServicesFromEndpointsAttrib(builder, parsed.did, endpoints, keyAgreementId)
+      }
 
       return {
         didDocument: builder.build(),
@@ -52,35 +55,39 @@ export class IndySdkSovDidResolver implements DidResolver {
     return await indySdk.parseGetNymResponse(response)
   }
 
-  private async getEndpointsForDid(agentContext: AgentContext, pool: IndySdkPool, did: string) {
+  private async getEndpointsForDid(agentContext: AgentContext, pool: IndySdkPool, unqualifiedDid: string) {
     const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
     const indySdkPoolService = agentContext.dependencyManager.resolve(IndySdkPoolService)
 
     try {
-      agentContext.config.logger.debug(`Get endpoints for did '${did}' from ledger '${pool.didIndyNamespace}'`)
+      agentContext.config.logger.debug(
+        `Get endpoints for did '${unqualifiedDid}' from ledger '${pool.didIndyNamespace}'`
+      )
 
-      const request = await indySdk.buildGetAttribRequest(null, did, 'endpoint', null, null)
+      const request = await indySdk.buildGetAttribRequest(null, unqualifiedDid, 'endpoint', null, null)
 
       agentContext.config.logger.debug(
-        `Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.didIndyNamespace}'`
+        `Submitting get endpoint ATTRIB request for did '${unqualifiedDid}' to ledger '${pool.didIndyNamespace}'`
       )
       const response = await indySdkPoolService.submitReadRequest(pool, request)
 
-      if (!response.result.data) return {}
+      if (!response.result.data) return null
 
       const endpoints = JSON.parse(response.result.data as string)?.endpoint as IndyEndpointAttrib
       agentContext.config.logger.debug(
-        `Got endpoints '${JSON.stringify(endpoints)}' for did '${did}' from ledger '${pool.didIndyNamespace}'`,
+        `Got endpoints '${JSON.stringify(endpoints)}' for did '${unqualifiedDid}' from ledger '${
+          pool.didIndyNamespace
+        }'`,
         {
           response,
           endpoints,
         }
       )
 
-      return endpoints ?? {}
+      return endpoints ?? null
     } catch (error) {
       agentContext.config.logger.error(
-        `Error retrieving endpoints for did '${did}' from ledger '${pool.didIndyNamespace}'`,
+        `Error retrieving endpoints for did '${unqualifiedDid}' from ledger '${pool.didIndyNamespace}'`,
         {
           error,
         }

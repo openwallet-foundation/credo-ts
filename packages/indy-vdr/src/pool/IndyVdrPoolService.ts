@@ -36,8 +36,15 @@ export class IndyVdrPoolService {
    * If the did is a qualified indy did, the pool will be determined based on the namespace.
    * If it is a legacy unqualified indy did, the pool will be determined based on the algorithm as described in this document:
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
+   *
+   * This method will optionally return a nym response when the did has been resolved to determine the ledger
+   * either now or in the past. The nymResponse can be used to prevent multiple ledger quries fetching the same
+   * did
    */
-  public async getPoolForDid(agentContext: AgentContext, did: string): Promise<IndyVdrPool> {
+  public async getPoolForDid(
+    agentContext: AgentContext,
+    did: string
+  ): Promise<{ pool: IndyVdrPool; nymResponse?: CachedDidResponse['nymResponse'] }> {
     // Check if the did starts with did:indy
     const match = did.match(DID_INDY_REGEX)
 
@@ -46,7 +53,7 @@ export class IndyVdrPoolService {
 
       const pool = this.getPoolForNamespace(namespace)
 
-      if (pool) return pool
+      if (pool) return { pool }
 
       throw new IndyVdrError(`Pool for indy namespace '${namespace}' not found`)
     } else {
@@ -54,7 +61,10 @@ export class IndyVdrPoolService {
     }
   }
 
-  private async getPoolForLegacyDid(agentContext: AgentContext, did: string): Promise<IndyVdrPool> {
+  private async getPoolForLegacyDid(
+    agentContext: AgentContext,
+    did: string
+  ): Promise<{ pool: IndyVdrPool; nymResponse?: CachedDidResponse['nymResponse'] }> {
     const pools = this.pools
 
     if (pools.length === 0) {
@@ -71,7 +81,7 @@ export class IndyVdrPoolService {
     // If we have the nym response with associated pool in the cache, we'll use that
     if (cachedNymResponse && pool) {
       this.logger.trace(`Found ledger id '${pool.indyNamespace}' for did '${did}' in cache`)
-      return pool
+      return { pool, nymResponse: cachedNymResponse.nymResponse }
     }
 
     const { successful, rejected } = await this.getSettledDidResponsesFromPools(did, pools)
@@ -119,7 +129,7 @@ export class IndyVdrPoolService {
       },
       indyNamespace: value.did.indyNamespace,
     })
-    return value.pool
+    return { pool: value.pool, nymResponse: value.did.nymResponse }
   }
 
   private async getSettledDidResponsesFromPools(did: string, pools: IndyVdrPool[]) {
@@ -159,7 +169,7 @@ export class IndyVdrPoolService {
   private async getDidFromPool(did: string, pool: IndyVdrPool): Promise<PublicDidRequest> {
     try {
       this.logger.trace(`Get public did '${did}' from ledger '${pool.indyNamespace}'`)
-      const request = await new GetNymRequest({ dest: did })
+      const request = new GetNymRequest({ dest: did })
 
       this.logger.trace(`Submitting get did request for did '${did}' to ledger '${pool.indyNamespace}'`)
       const response = await pool.submitReadRequest(request)

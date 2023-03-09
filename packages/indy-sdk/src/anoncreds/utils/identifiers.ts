@@ -1,34 +1,39 @@
+/**
+ * NOTE: this file is availalbe in both the indy-sdk and indy-vdr packages. If making changes to
+ * this file, make sure to update both files if applicable.
+ */
+
 import { DID_INDY_REGEX } from '../../utils/did'
 
 const didIndyAnonCredsBase =
-  /(?<did>did:indy:(?<namespace>((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?)):(?<didIdentifier>([1-9A-HJ-NP-Za-km-z]{21,22})))\/anoncreds\/v0/
+  /(?<did>did:indy:(?<namespace>((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?)):(?<namespaceIdentifier>([1-9A-HJ-NP-Za-km-z]{21,22})))\/anoncreds\/v0/
 
-// did:indy:<namespace>:<didIdentifier>/anoncreds/v0/SCHEMA/<schemaName>/<schemaVersion>
+// did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/SCHEMA/<schemaName>/<schemaVersion>
 const didIndySchemaIdRegex = new RegExp(
   `^${didIndyAnonCredsBase.source}/SCHEMA/(?<schemaName>.+)/(?<schemaVersion>[0-9.]+)$`
 )
 
-// <didIdentifier>:2:<schemaName>:<schemaVersion>
+// <namespaceIdentifier>:2:<schemaName>:<schemaVersion>
 const legacyIndySchemaIdRegex =
-  /^(?<did>(?<didIdentifier>[a-zA-Z0-9]{21,22})):2:(?<schemaName>.+):(?<schemaVersion>[0-9.]+)$/
+  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):2:(?<schemaName>.+):(?<schemaVersion>[0-9.]+)$/
 
-// did:indy:<namespace>:<didIdentifier>/anoncreds/v0/CLAIM_DEF/<schemaSeqNo>/<tag>
+// did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/CLAIM_DEF/<schemaSeqNo>/<tag>
 const didIndyCredentialDefinitionIdRegex = new RegExp(
   `^${didIndyAnonCredsBase.source}/CLAIM_DEF/(?<schemaSeqNo>[1-9][0-9]*)/(?<tag>.+)$`
 )
 
-// <didIdentifier>:3:CL:<schemaSeqNo>:<tag>
+// <namespaceIdentifier>:3:CL:<schemaSeqNo>:<tag>
 const legacyIndyCredentialDefinitionIdRegex =
-  /^(?<did>(?<didIdentifier>[a-zA-Z0-9]{21,22})):3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<tag>.+)$/
+  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<tag>.+)$/
 
-// did:indy:<namespace>:<didIdentifier>/anoncreds/v0/REV_REG_DEF/<schemaSeqNo>/<credentialDefinitionTag>/<revocationRegistryTag>
+// did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/REV_REG_DEF/<schemaSeqNo>/<credentialDefinitionTag>/<revocationRegistryTag>
 const didIndyRevocationRegistryIdRegex = new RegExp(
   `^${didIndyAnonCredsBase.source}/REV_REG_DEF/(?<schemaSeqNo>[1-9][0-9]*)/(?<credentialDefinitionTag>.+)/(?<revocationRegistryTag>.+)$`
 )
 
-// <didIdentifier>:4:<schemaSeqNo>:3:CL:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
+// <namespaceIdentifier>:4:<schemaSeqNo>:3:CL:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
 const legacyIndyRevocationRegistryIdRegex =
-  /^(?<did>(?<didIdentifier>[a-zA-Z0-9]{21,22})):4:[a-zA-Z0-9]{21,22}:3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<credentialDefinitionTag>.+):CL_ACCUM:(?<revocationRegistryTag>.+)$/
+  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):4:[a-zA-Z0-9]{21,22}:3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<credentialDefinitionTag>.+):CL_ACCUM:(?<revocationRegistryTag>.+)$/
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indySdkAnonCredsRegexes = [
@@ -99,7 +104,7 @@ export function getDidIndyRevocationRegistryId(
 
 interface ParsedSchemaId {
   did: string
-  didIdentifier: string
+  namespaceIdentifier: string
   schemaName: string
   schemaVersion: string
   namespace?: string
@@ -115,7 +120,7 @@ export function parseSchemaId(schemaId: string) {
 
 interface ParsedCredentialDefinitionId {
   did: string
-  didIdentifier: string
+  namespaceIdentifier: string
   schemaSeqNo: string
   tag: string
   namespace?: string
@@ -133,7 +138,7 @@ export function parseCredentialDefinitionId(credentialDefinitionId: string) {
 
 interface ParsedRevocationRegistryId {
   did: string
-  didIdentifier: string
+  namespaceIdentifier: string
   schemaSeqNo: string
   credentialDefinitionTag: string
   revocationRegistryTag: string

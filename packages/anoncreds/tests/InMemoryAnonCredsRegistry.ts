@@ -64,7 +64,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const parsed = parseSchemaId(schemaId)
 
-    const legacySchemaId = getLegacySchemaId(parsed.didIdentifier, parsed.schemaName, parsed.schemaVersion)
+    const legacySchemaId = getLegacySchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     if (!schema) {
@@ -94,16 +94,21 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    const { id: didIdentifier, namespace } = parseIndyDid(options.schema.issuerId)
-    const didIndySchemaId = getDidIndySchemaId(namespace, didIdentifier, options.schema.name, options.schema.version)
-    const legacySchemaId = getLegacySchemaId(didIdentifier, options.schema.name, options.schema.version)
+    const { namespaceIdentifier, namespace } = parseIndyDid(options.schema.issuerId)
+    const didIndySchemaId = getDidIndySchemaId(
+      namespace,
+      namespaceIdentifier,
+      options.schema.name,
+      options.schema.version
+    )
+    const legacySchemaId = getLegacySchemaId(namespaceIdentifier, options.schema.name, options.schema.version)
 
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     this.schemas[didIndySchemaId] = options.schema
     this.schemas[legacySchemaId] = {
       ...options.schema,
-      issuerId: didIdentifier,
+      issuerId: namespaceIdentifier,
     }
 
     return {
@@ -152,22 +157,22 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterCredentialDefinitionReturn> {
     const parsedSchema = parseSchemaId(options.credentialDefinition.schemaId)
     const legacySchemaId = getLegacySchemaId(
-      parsedSchema.didIdentifier,
+      parsedSchema.namespaceIdentifier,
       parsedSchema.schemaName,
       parsedSchema.schemaVersion
     )
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    const { id: didIdentifier, namespace } = parseIndyDid(options.credentialDefinition.issuerId)
+    const { namespaceIdentifier, namespace } = parseIndyDid(options.credentialDefinition.issuerId)
 
     const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
       namespace,
-      didIdentifier,
+      namespaceIdentifier,
       indyLedgerSeqNo,
       options.credentialDefinition.tag
     )
     const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(
-      didIdentifier,
+      namespaceIdentifier,
       indyLedgerSeqNo,
       options.credentialDefinition.tag
     )
@@ -175,7 +180,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     this.credentialDefinitions[didIndyCredentialDefinitionId] = options.credentialDefinition
     this.credentialDefinitions[legacyCredentialDefinitionId] = {
       ...options.credentialDefinition,
-      issuerId: didIdentifier,
+      issuerId: namespaceIdentifier,
       schemaId: legacySchemaId,
     }
 
