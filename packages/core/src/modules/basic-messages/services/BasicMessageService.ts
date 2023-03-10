@@ -22,7 +22,12 @@ export class BasicMessageService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createMessage(agentContext: AgentContext, message: string, connectionRecord: ConnectionRecord) {
+  public async createMessage(
+    agentContext: AgentContext,
+    message: string,
+    connectionRecord: ConnectionRecord,
+    threadId?: string
+  ) {
     const basicMessage = new BasicMessage({ content: message })
 
     const basicMessageRecord = new BasicMessageRecord({
@@ -30,7 +35,12 @@ export class BasicMessageService {
       content: basicMessage.content,
       connectionId: connectionRecord.id,
       role: BasicMessageRole.Sender,
+      threadId,
     })
+
+    if (threadId) {
+      basicMessage.setThread({ threadId })
+    }
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
     this.emitStateChangedEvent(agentContext, basicMessageRecord, basicMessage)
@@ -47,6 +57,7 @@ export class BasicMessageService {
       content: message.content,
       connectionId: connection.id,
       role: BasicMessageRole.Receiver,
+      threadId: message.id !== message.threadId ? message.threadId : undefined,
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)

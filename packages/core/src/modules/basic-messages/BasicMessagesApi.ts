@@ -41,13 +41,14 @@ export class BasicMessagesApi {
    * @throws {MessageSendingError} If message is undeliverable
    * @returns the created record
    */
-  public async sendMessage(connectionId: string, message: string) {
+  public async sendMessage(connectionId: string, message: string, threadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
       this.agentContext,
       message,
-      connection
+      connection,
+      threadId
     )
     const outboundMessageContext = new OutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,
