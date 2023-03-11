@@ -24,14 +24,16 @@ export class HttpInboundTransport implements InboundTransport {
     this.app = app ?? express()
     this.path = path ?? '/'
 
-    this.app.use((req: Request, res: Response) => {
+    this.app.use((req, res, next) => {
       const contentType = req.headers['content-type']
 
       if (!contentType || !supportedContentTypes.includes(contentType)) {
-        res
+        return res
           .status(415)
           .send('Unsupported content-type. Supported content-types are: ' + supportedContentTypes.join(', '))
       }
+
+      return next()
     })
 
     this.app.use(text({ type: supportedContentTypes, limit: '5mb' }))
