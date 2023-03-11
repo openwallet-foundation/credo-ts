@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { InboundMessageContext } from './InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
@@ -17,6 +18,7 @@ export interface ServiceMessageParams {
 
 export interface OutboundMessageContextParams {
   agentContext: AgentContext
+  inboundMessageContext?: InboundMessageContext
   associatedRecord?: BaseRecord<any, any, any>
   connection?: ConnectionRecord
   serviceParams?: ServiceMessageParams
@@ -31,6 +33,7 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public outOfBand?: OutOfBandRecord
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
+  public inboundMessageContext?: InboundMessageContext
   public readonly agentContext: AgentContext
 
   public constructor(message: T, context: OutboundMessageContextParams) {
@@ -40,6 +43,7 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.outOfBand = context.outOfBand
     this.serviceParams = context.serviceParams
     this.associatedRecord = context.associatedRecord
+    this.inboundMessageContext = context.inboundMessageContext
     this.agentContext = context.agentContext
   }
 

@@ -43,6 +43,10 @@ export class ReactNativeFileSystem implements FileSystem {
     await RNFS.mkdir(getDirFromFilePath(path))
   }
 
+  public async copyFile(sourcePath: string, destinationPath: string): Promise<void> {
+    await RNFS.copyFile(sourcePath, destinationPath)
+  }
+
   public async write(path: string, data: string): Promise<void> {
     // Make sure parent directories exist
     await RNFS.mkdir(getDirFromFilePath(path))
