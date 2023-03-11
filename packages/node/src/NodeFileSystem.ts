@@ -8,7 +8,7 @@ import https from 'https'
 import { tmpdir, homedir } from 'os'
 import { dirname } from 'path'
 
-const { access, readFile, writeFile, mkdir, rm, unlink } = promises
+const { access, readFile, writeFile, mkdir, rm, unlink, copyFile } = promises
 
 export class NodeFileSystem implements FileSystem {
   public readonly dataPath
@@ -42,6 +42,10 @@ export class NodeFileSystem implements FileSystem {
 
   public async createDirectory(path: string): Promise<void> {
     await mkdir(dirname(path), { recursive: true })
+  }
+
+  public async copyFile(sourcePath: string, destinationPath: string): Promise<void> {
+    await copyFile(sourcePath, destinationPath)
   }
 
   public async write(path: string, data: string): Promise<void> {
