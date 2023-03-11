@@ -267,7 +267,13 @@ describeRunInNodeVersion([18], 'AskarWallet management', () => {
     await askarWallet.close()
 
     const newKey = Store.generateRawKey()
-    await askarWallet.rotateKey({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey, rekey: newKey })
+    await askarWallet.rotateKey({
+      ...walletConfig,
+      id: 'AskarWallet Key Rotation',
+      key: initialKey,
+      rekey: newKey,
+      rekeyDerivationMethod: KeyDerivationMethod.Raw,
+    })
 
     await askarWallet.close()
 
