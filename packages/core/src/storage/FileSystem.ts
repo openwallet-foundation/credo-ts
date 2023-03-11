@@ -11,6 +11,7 @@ export interface FileSystem {
 
   exists(path: string): Promise<boolean>
   createDirectory(path: string): Promise<void>
+  copyFile(sourcePath: string, destinationPath: string): Promise<void>
   write(path: string, data: string): Promise<void>
   read(path: string): Promise<string>
   delete(path: string): Promise<void>

@@ -41,7 +41,7 @@ export interface IndyVdrModuleConfigOptions {
   /**
    * Array of indy networks to connect to.
    *
-   * [@default](https://github.com/default) []
+   * @default []
    *
    * @example
    * ```

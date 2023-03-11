@@ -6,7 +6,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@aries-framework/core'
-import { ariesAskar } from '@hyperledger/aries-askar-shared'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
@@ -30,8 +30,7 @@ describeRunInNodeVersion([18], 'AskarStorageService', () => {
       wallet,
       agentConfig,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig)
     storageService = new AskarStorageService<TestRecord>()
   })
 
