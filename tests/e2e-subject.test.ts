@@ -7,11 +7,10 @@ import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAno
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
-
-import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
-
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
+
+import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',

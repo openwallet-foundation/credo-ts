@@ -8,9 +8,9 @@ import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/docume
 import { getAgentOptions, indySdk } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
-
 import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
+
+import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),
