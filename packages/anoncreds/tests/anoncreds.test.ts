@@ -123,7 +123,7 @@ describe('AnonCreds API', () => {
       options: {},
       schema: {
         attrNames: ['name', 'age'],
-        issuerId: '6xDN7v3AiGgusRp4bqZACZ',
+        issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
         name: 'Employee Credential',
         version: '1.0.0',
       },
@@ -136,11 +136,11 @@ describe('AnonCreds API', () => {
         state: 'finished',
         schema: {
           attrNames: ['name', 'age'],
-          issuerId: '6xDN7v3AiGgusRp4bqZACZ',
+          issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
           name: 'Employee Credential',
           version: '1.0.0',
         },
-        schemaId: '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0',
+        schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
       },
     })
 
@@ -148,22 +148,22 @@ describe('AnonCreds API', () => {
     const anonCredsSchemaRepository = agent.dependencyManager.resolve(AnonCredsSchemaRepository)
     const schemaRecord = await anonCredsSchemaRepository.getBySchemaId(
       agent.context,
-      '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0'
+      'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0'
     )
 
     expect(schemaRecord).toMatchObject({
-      schemaId: '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0',
+      schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
       schema: {
         attrNames: ['name', 'age'],
-        issuerId: '6xDN7v3AiGgusRp4bqZACZ',
+        issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
         name: 'Employee Credential',
         version: '1.0.0',
       },
     })
 
     expect(schemaRecord.getTags()).toEqual({
-      schemaId: '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0',
-      issuerId: '6xDN7v3AiGgusRp4bqZACZ',
+      schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
+      issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
       schemaName: 'Employee Credential',
       schemaVersion: '1.0.0',
     })
@@ -192,7 +192,7 @@ describe('AnonCreds API', () => {
       keyType: KeyType.Ed25519,
     })
 
-    const issuerId = 'VsKV7grR1BUE29mG2Fm2kX'
+    const issuerId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX'
 
     const credentialDefinitionResult = await agent.modules.anoncreds.registerCredentialDefinition({
       credentialDefinition: {
@@ -209,7 +209,7 @@ describe('AnonCreds API', () => {
       credentialDefinitionState: {
         state: 'finished',
         credentialDefinition: {
-          issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+          issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
           tag: 'TAG',
           schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
           type: 'CL',
@@ -227,7 +227,7 @@ describe('AnonCreds API', () => {
             },
           },
         },
-        credentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+        credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
       },
     })
 
@@ -237,13 +237,13 @@ describe('AnonCreds API', () => {
     )
     const credentialDefinitionRecord = await anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(
       agent.context,
-      'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG'
+      'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG'
     )
 
     expect(credentialDefinitionRecord).toMatchObject({
-      credentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
       credentialDefinition: {
-        issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+        issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
         tag: 'TAG',
         schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
         type: 'CL',
@@ -264,9 +264,9 @@ describe('AnonCreds API', () => {
     })
 
     expect(credentialDefinitionRecord.getTags()).toEqual({
-      credentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
       schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
-      issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
+      issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
       tag: 'TAG',
     })
   })

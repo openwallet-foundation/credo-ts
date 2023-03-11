@@ -1,7 +1,7 @@
 import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import type { DependencyManager } from '@aries-framework/core'
 
-import { AgentContext, AgentConfig, WalletApi } from '@aries-framework/core'
+import { AgentConfig, AgentContext, WalletApi } from '@aries-framework/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
@@ -91,10 +91,8 @@ describe('TenantSessionCoordinator', () => {
         registerInstance: jest.fn(),
         resolve: jest.fn(() => wallet),
       } as unknown as DependencyManager
-      const mockConfig = jest.fn() as unknown as AgentConfig
 
       createChildSpy.mockReturnValue(tenantDependencyManager)
-      extendSpy.mockReturnValue(mockConfig)
 
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
 
@@ -103,7 +101,7 @@ describe('TenantSessionCoordinator', () => {
       expect(extendSpy).toHaveBeenCalledWith(tenantRecord.config)
       expect(createChildSpy).toHaveBeenCalledWith()
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
-      expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, mockConfig)
+      expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))
 
       expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
         agentContext: tenantAgentContext,
@@ -194,8 +192,8 @@ describe('TenantSessionCoordinator', () => {
       })
 
       // Initialize should only be called once
-      expect(wallet.initialize).toHaveBeenCalledTimes(1)
       expect(wallet.initialize).toHaveBeenCalledWith(tenantRecord.config.walletConfig)
+      expect(wallet.initialize).toHaveBeenCalledTimes(1)
 
       expect(tenantAgentContext1).toBe(tenantAgentContext2)
     })

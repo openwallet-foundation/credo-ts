@@ -6,7 +6,7 @@ import { inject, injectable } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
-import { getIndySeqNoFromUnqualifiedCredentialDefinitionId } from '../utils/identifiers'
+import { parseCredentialDefinitionId } from '../utils/identifiers'
 import {
   indySdkCredentialDefinitionFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
@@ -39,8 +39,8 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
         )
 
         // Get the seqNo for the schemas so we can use it when transforming the schemas
-        const schemaSeqNo = getIndySeqNoFromUnqualifiedCredentialDefinitionId(credentialDefinitionId)
-        seqNoMap[credentialDefinition.schemaId] = schemaSeqNo
+        const { schemaSeqNo } = parseCredentialDefinitionId(credentialDefinitionId)
+        seqNoMap[credentialDefinition.schemaId] = Number(schemaSeqNo)
       }
 
       // Convert AnonCreds schemas to Indy schemas

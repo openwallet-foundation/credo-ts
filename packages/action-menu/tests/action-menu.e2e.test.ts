@@ -5,6 +5,8 @@ import { Agent } from '@aries-framework/core'
 import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports, indySdk } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
+import { waitForActionMenuRecord } from './helpers'
+
 import {
   ActionMenu,
   ActionMenuModule,
@@ -12,8 +14,6 @@ import {
   ActionMenuRole,
   ActionMenuState,
 } from '@aries-framework/action-menu'
-
-import { waitForActionMenuRecord } from './helpers'
 
 const modules = {
   actionMenu: new ActionMenuModule(),

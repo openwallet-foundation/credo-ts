@@ -1,6 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { MessageHandler } from './MessageHandler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -33,13 +32,6 @@ class Dispatcher {
     this.eventEmitter = eventEmitter
     this.messageHandlerRegistry = messageHandlerRegistry
     this.logger = logger
-  }
-
-  /**
-   * @deprecated Use {@link MessageHandlerRegistry.registerMessageHandler} directly
-   */
-  public registerMessageHandler(messageHandler: MessageHandler) {
-    this.messageHandlerRegistry.registerMessageHandler(messageHandler)
   }
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
@@ -76,6 +68,7 @@ class Dispatcher {
         outboundMessage = new OutboundMessageContext(problemReportMessage, {
           agentContext,
           connection: messageContext.connection,
+          inboundMessageContext: messageContext,
         })
       } else {
         this.logger.error(`Error handling message with type ${message.type}`, {
@@ -91,10 +84,14 @@ class Dispatcher {
     }
 
     if (outboundMessage) {
+      // set the inbound message context, if not already defined
+      if (!outboundMessage.inboundMessageContext) {
+        outboundMessage.inboundMessageContext = messageContext
+      }
+
       if (outboundMessage.isOutboundServiceMessage()) {
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {
-        outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
       }
     }
