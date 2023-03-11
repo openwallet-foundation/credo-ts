@@ -13,7 +13,7 @@ import {
 
 describe('identifiers', () => {
   describe('indySdkAnonCredsRegistryIdentifierRegex', () => {
-    test('matches against a legacy indy did, schema id, credential definition id and revocation registry id', () => {
+    test('matches against a legacy schema id, credential definition id and revocation registry id', () => {
       const did = '7Tqg6BwSSWapxgUDm9KKgg'
       const schemaId = 'BQ42WeE24jFHeyGg8x9XAz:2:Medical Bill:1.0'
       const credentialDefinitionId = 'N7baRMcyvPwWc8v85CtZ6e:3:CL:100669:SCH Employee ID'
