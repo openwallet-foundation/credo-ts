@@ -1,34 +1,27 @@
 import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import { injectable } from '@aries-framework/core'
-import {
-  CredentialDefinition,
-  Presentation,
-  PresentationRequest,
-  RevocationRegistryDefinition,
-  RevocationStatusList,
-  Schema,
-} from '@hyperledger/anoncreds-shared'
-
-import { AnonCredsRsError } from '../errors/AnonCredsRsError'
+import { Presentation, RevocationRegistryDefinition, RevocationStatusList } from '@hyperledger/anoncreds-shared'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
   public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
     const { credentialDefinitions, proof, proofRequest, revocationRegistries, schemas } = options
 
+    let presentation: Presentation | undefined
     try {
-      const presentation = Presentation.load(JSON.stringify(proof))
+      presentation = Presentation.fromJson(proof as unknown as JsonObject)
 
-      const rsCredentialDefinitions: Record<string, CredentialDefinition> = {}
+      const rsCredentialDefinitions: Record<string, JsonObject> = {}
       for (const credDefId in credentialDefinitions) {
-        rsCredentialDefinitions[credDefId] = CredentialDefinition.load(JSON.stringify(credentialDefinitions[credDefId]))
+        rsCredentialDefinitions[credDefId] = credentialDefinitions[credDefId] as unknown as JsonObject
       }
 
-      const rsSchemas: Record<string, Schema> = {}
+      const rsSchemas: Record<string, JsonObject> = {}
       for (const schemaId in schemas) {
-        rsSchemas[schemaId] = Schema.load(JSON.stringify(schemas[schemaId]))
+        rsSchemas[schemaId] = schemas[schemaId] as unknown as JsonObject
       }
 
       const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
@@ -37,13 +30,14 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       for (const revocationRegistryDefinitionId in revocationRegistries) {
         const { definition, revocationStatusLists } = options.revocationRegistries[revocationRegistryDefinitionId]
 
-        revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.load(
-          JSON.stringify(definition)
+        revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.fromJson(
+          definition as unknown as JsonObject
         )
 
         for (const timestamp in revocationStatusLists) {
           lists.push(
             RevocationStatusList.create({
+              issuerId: definition.issuerId,
               issuanceByDefault: true,
               revocationRegistryDefinition: revocationRegistryDefinitions[revocationRegistryDefinitionId],
               revocationRegistryDefinitionId,
@@ -54,14 +48,14 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       }
 
       return presentation.verify({
-        presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
+        presentationRequest: proofRequest as unknown as JsonObject,
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,
         revocationRegistryDefinitions,
         revocationStatusLists: lists,
       })
-    } catch (error) {
-      throw new AnonCredsRsError('Error verifying proof', { cause: error })
+    } finally {
+      presentation?.handle.clear()
     }
   }
 }
