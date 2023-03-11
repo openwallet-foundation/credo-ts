@@ -9,8 +9,10 @@ import type {
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
   CreateCredentialDefinitionReturn,
+  AnonCredsCredential,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
+import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
 import {
   AnonCredsKeyCorrectnessProofRepository,
@@ -18,15 +20,7 @@ import {
   AnonCredsCredentialDefinitionRepository,
 } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError } from '@aries-framework/core'
-import {
-  Credential,
-  CredentialDefinition,
-  CredentialDefinitionPrivate,
-  CredentialRequest,
-  CredentialOffer,
-  KeyCorrectnessProof,
-  Schema,
-} from '@hyperledger/anoncreds-shared'
+import { Credential, CredentialDefinition, CredentialOffer, Schema } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
@@ -35,6 +29,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   public async createSchema(agentContext: AgentContext, options: CreateSchemaOptions): Promise<AnonCredsSchema> {
     const { issuerId, name, version, attrNames: attributeNames } = options
 
+    let schema: Schema | undefined
     try {
       const schema = Schema.create({
         issuerId,
@@ -43,9 +38,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         attributeNames,
       })
 
-      return JSON.parse(schema.toJson()) as AnonCredsSchema
-    } catch (error) {
-      throw new AnonCredsRsError('Error creating schema', { cause: error })
+      return schema.toJson() as unknown as AnonCredsSchema
+    } finally {
+      schema?.handle.clear()
     }
   }
 
@@ -55,9 +50,16 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   ): Promise<CreateCredentialDefinitionReturn> {
     const { tag, supportRevocation, schema, issuerId, schemaId } = options
 
+    let createReturnObj:
+      | {
+          credentialDefinition: CredentialDefinition
+          credentialDefinitionPrivate: CredentialDefinitionPrivate
+          keyCorrectnessProof: KeyCorrectnessProof
+        }
+      | undefined
     try {
-      const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } = CredentialDefinition.create({
-        schema: Schema.load(JSON.stringify(schema)),
+      createReturnObj = CredentialDefinition.create({
+        schema: schema as unknown as JsonObject,
         issuerId,
         schemaId,
         tag,
@@ -66,12 +68,14 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       })
 
       return {
-        credentialDefinition: JSON.parse(credentialDefinition.toJson()) as AnonCredsCredentialDefinition,
-        credentialDefinitionPrivate: JSON.parse(credentialDefinitionPrivate.toJson()),
-        keyCorrectnessProof: JSON.parse(keyCorrectnessProof.toJson()),
+        credentialDefinition: createReturnObj.credentialDefinition.toJson() as unknown as AnonCredsCredentialDefinition,
+        credentialDefinitionPrivate: createReturnObj.credentialDefinitionPrivate.toJson(),
+        keyCorrectnessProof: createReturnObj.keyCorrectnessProof.toJson(),
       }
-    } catch (error) {
-      throw new AnonCredsRsError('Error creating credential definition', { cause: error })
+    } finally {
+      createReturnObj?.credentialDefinition.handle.clear()
+      createReturnObj?.credentialDefinitionPrivate.handle.clear()
+      createReturnObj?.keyCorrectnessProof.handle.clear()
     }
   }
 
@@ -81,6 +85,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   ): Promise<AnonCredsCredentialOffer> {
     const { credentialDefinitionId } = options
 
+    let credentialOffer: CredentialOffer | undefined
     try {
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)
@@ -94,15 +99,15 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         throw new AnonCredsRsError(`Credential Definition ${credentialDefinitionId} not found`)
       }
 
-      const credentialOffer = CredentialOffer.create({
+      credentialOffer = CredentialOffer.create({
         credentialDefinitionId,
-        keyCorrectnessProof: KeyCorrectnessProof.load(JSON.stringify(keyCorrectnessProofRecord?.value)),
+        keyCorrectnessProof: keyCorrectnessProofRecord?.value,
         schemaId: credentialDefinitionRecord.credentialDefinition.schemaId,
       })
 
-      return JSON.parse(credentialOffer.toJson()) as AnonCredsCredentialOffer
-    } catch (error) {
-      throw new AnonCredsRsError(`Error creating credential offer: ${error}`, { cause: error })
+      return credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
+    } finally {
+      credentialOffer?.handle.clear()
     }
   }
 
@@ -112,6 +117,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   ): Promise<CreateCredentialReturn> {
     const { tailsFilePath, credentialOffer, credentialRequest, credentialValues, revocationRegistryId } = options
 
+    let credential: Credential | undefined
     try {
       if (revocationRegistryId || tailsFilePath) {
         throw new AriesFrameworkError('Revocation not supported yet')
@@ -133,26 +139,22 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         .resolve(AnonCredsCredentialDefinitionPrivateRepository)
         .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
 
-      const credential = Credential.create({
-        credentialDefinition: CredentialDefinition.load(
-          JSON.stringify(credentialDefinitionRecord.credentialDefinition)
-        ),
-        credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
-        credentialRequest: CredentialRequest.load(JSON.stringify(credentialRequest)),
+      credential = Credential.create({
+        credentialDefinition: credentialDefinitionRecord.credentialDefinition as unknown as JsonObject,
+        credentialOffer: credentialOffer as unknown as JsonObject,
+        credentialRequest: credentialRequest as unknown as JsonObject,
         revocationRegistryId,
         attributeEncodedValues,
         attributeRawValues,
-        credentialDefinitionPrivate: CredentialDefinitionPrivate.load(
-          JSON.stringify(credentialDefinitionPrivateRecord.value)
-        ),
+        credentialDefinitionPrivate: credentialDefinitionPrivateRecord.value,
       })
 
       return {
-        credential: JSON.parse(credential.toJson()),
+        credential: credential.toJson() as unknown as AnonCredsCredential,
         credentialRevocationId: credential.revocationRegistryIndex?.toString(),
       }
-    } catch (error) {
-      throw new AnonCredsRsError(`Error creating credential: ${error}`, { cause: error })
+    } finally {
+      credential?.handle.clear()
     }
   }
 }
