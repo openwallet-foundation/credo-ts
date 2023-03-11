@@ -1,4 +1,5 @@
 import { JsonTransformer } from '@aries-framework/core'
+
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
 import { IndyVdrPool } from '../../pool/IndyVdrPool'
