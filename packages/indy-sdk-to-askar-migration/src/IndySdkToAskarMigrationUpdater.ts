@@ -1,36 +1,69 @@
-/* eslint-disable no-console */
 import type { AnonCredsCredentialValue } from '@aries-framework/anoncreds'
+import type { Agent, FileSystem } from '@aries-framework/core'
+import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
-import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
+import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 import { Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
+import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
 import { transformFromRecordTagValues } from './utils'
 
 export class IndySdkToAskarMigrationUpdater {
   private store: Store
   private walletName: string
+  private defaultLinkSecretId: string
+  private agent: Agent
 
-  private constructor(store: Store, walletName: string) {
+  private constructor(store: Store, walletName: string, agent: Agent, defaultLinkSecretId?: string) {
     this.store = store
     this.walletName = walletName
+    this.agent = agent
+    this.defaultLinkSecretId = defaultLinkSecretId ?? walletName
   }
 
-  public static async init(uri: string, walletName: string, masterPassword: string) {
-    const store = await Store.open({ uri, passKey: masterPassword, keyMethod: StoreKeyMethod.Raw })
-    return new IndySdkToAskarMigrationUpdater(store, walletName)
+  public static async initialize({ uri, agent }: { uri: string; agent: Agent }) {
+    const {
+      config: { walletConfig },
+    } = agent
+    if (!walletConfig) throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
+
+    const keyMethod =
+      walletConfig.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
+    const store = await Store.open({ uri, passKey: walletConfig.key, keyMethod })
+    return new IndySdkToAskarMigrationUpdater(store, walletConfig.id, agent)
+  }
+
+  private async backupDatabase() {
+    const fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+  }
+
+  private async revertDatabase() {
+    const fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+  }
+
+  private async cleanBackup() {
+    const fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
   }
 
   public async update() {
-    await this.updateKeys()
-    await this.updateMasterSecret()
-    await this.updateCredentials()
+    try {
+      await this.updateKeys()
+      await this.updateMasterSecret()
+      await this.updateCredentials()
+    } catch (e) {
+      this.agent.config.logger?.error('Migration failed. Reverting state.')
+
+      await this.revertDatabase()
+    } finally {
+      await this.cleanBackup()
+    }
   }
 
   private async updateKeys() {
     const category = 'Indy::Key'
 
-    console.log(`Updating ${category}`)
+    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -56,16 +89,19 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    console.log(`Updated ${updateCount} instances inside ${category}`)
+    this.agent.config.logger?.trace(
+      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
+    )
   }
 
   private async updateMasterSecret() {
     const category = 'Indy::MasterSecret'
 
-    console.log(`Updating ${category}`)
+    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
+
     for (;;) {
       const txn = await session.open()
       const masterSecrets = await txn.fetchAll({ category, limit: 50 })
@@ -74,11 +110,13 @@ export class IndySdkToAskarMigrationUpdater {
         break
       }
 
-      let id = ''
-      for (const row of masterSecrets) {
-        await txn.remove({ category, name: row.name })
+      if (!masterSecrets.some((ms: EntryObject) => ms.name === this.defaultLinkSecretId)) {
+        throw new IndySdkToAskarMigrationError('defaultLinkSecretId can not be established')
+      }
 
-        const isDefault = row.name === this.walletName
+      for (const row of masterSecrets) {
+        const isDefault = masterSecrets.length === 0 ?? row.name === this.walletName
+        await txn.remove({ category, name: row.name })
 
         const {
           value: { ms },
@@ -90,20 +128,21 @@ export class IndySdkToAskarMigrationUpdater {
 
         const tags = transformFromRecordTagValues(record.getTags())
 
-        id = record.id
         await txn.insert({ category: record.type, name: record.id, value, tags })
         updateCount++
       }
       await txn.commit()
     }
 
-    console.log(`Updated ${updateCount} instances inside ${category}`)
+    this.agent.config.logger?.trace(
+      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
+    )
   }
 
   private async updateCredentials() {
     const category = 'Indy::Credential'
 
-    console.log(`Updating ${category}`)
+    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -136,11 +175,11 @@ export class IndySdkToAskarMigrationUpdater {
           schemaName,
           schemaIssuerId,
           schemaVersion,
-          credentialId: 'TODO',
-          linkSecretId: 'TODO',
+          credentialId: row.name,
+          linkSecretId: this.defaultLinkSecretId,
         })
 
-        const tags = { ...this.credentialTags(data), ...transformFromRecordTagValues(record.getTags()) }
+        const tags = transformFromRecordTagValues(record.getTags())
         const value = JsonTransformer.serialize(record)
 
         await txn.insert({ category: record.type, name: record.id, value, tags })
@@ -149,37 +188,8 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    console.log(`Updated ${updateCount} instances inside ${category}`)
-  }
-
-  private credentialTags(credentialData: Record<string, unknown>) {
-    const schemaId = credentialData.schema_id as string
-    const credentialDefinitionId = credentialData.cred_def_id as string
-
-    const { did, schemaName, schemaVersion } =
-      /^(?<did>\w+):2:(?<schemaName>[^:]+):(?<schemaVersion>[^:]+)$/.exec(schemaId)?.groups ?? {}
-    if (!did || !schemaName || !schemaVersion) throw new Error(`Error parsing credential schema id: ${schemaId}`)
-
-    const { issuerId } =
-      /^(?<issuerId>\w+):3:CL:(?<schemaIdOrSeqNo>[^:]+):(?<tag>[^:]+)$/.exec(credentialDefinitionId)?.groups ?? {}
-    if (!issuerId) throw new Error(`Error parsing credential definition id: ${credentialDefinitionId}`)
-
-    const tags = {
-      schema_id: schemaId,
-      schema_issuer_did: did,
-      schema_name: schemaName,
-      schema_version: schemaVersion,
-      issuer_did: issuerId,
-      cred_def_id: credentialDefinitionId,
-      rev_reg_id: (credentialData.rev_reg_id as string) ?? 'None',
-    } as Record<string, string>
-
-    for (const [k, attrValue] of Object.entries(credentialData.values as Record<string, { raw: string }>)) {
-      const attrName = k.replace(' ', '')
-      const id = `attr::${attrName}::value`
-      tags[id] = attrValue.raw
-    }
-
-    return tags
+    this.agent.config.logger?.trace(
+      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
+    )
   }
 }
