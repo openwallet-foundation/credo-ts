@@ -3,10 +3,9 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnon
 import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
-import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
-
 import { e2eTest } from './e2e-test'
 
+import { Agent, WsOutboundTransport, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
 
 const recipientOptions = getAgentOptions(
