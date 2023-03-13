@@ -1,3 +1,4 @@
+import type { GenerateAuthorizationUrlOptions, RequestCredentialOptions } from './OpenId4VcClientService'
 import type { W3cCredentialRecord } from '@aries-framework/core'
 
 import { AgentContext, injectable } from '@aries-framework/core'
@@ -31,5 +32,17 @@ export class OpenId4VcClientApi {
       ...options,
       checkRevocationState: checkRevocationState,
     })
+  }
+
+  public async generateCodeVerifier(): Promise<string> {
+    return this.openId4VcClientService.generateCodeVerifier()
+  }
+
+  public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
+    return this.openId4VcClientService.generateAuthorizationUrl(options)
+  }
+
+  public async requestCredential(options: RequestCredentialOptions) {
+    return this.openId4VcClientService.requestCredential(this.agentContext, options)
   }
 }

@@ -3,32 +3,58 @@ import type { EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
   getKeyFromVerificationMethod,
+  AriesFrameworkError,
+  Buffer,
+  DidsApi,
   inject,
+  injectable,
   InjectionSymbols,
   isJwtAlgorithm,
-  Logger,
-  DidsApi,
-  AriesFrameworkError,
-  injectable,
   JsonEncoder,
   JsonTransformer,
-  W3cCredentialService,
-  W3cVerifiableCredential,
   JwsService,
   jwtKeyAlgMapping,
+  Logger,
+  TypedArrayEncoder,
+  W3cCredentialService,
+  W3cVerifiableCredential,
 } from '@aries-framework/core'
 import {
   Alg,
   AuthzFlowType,
+  CodeChallengeMethod,
   CredentialRequestClientBuilder,
   OpenID4VCIClient,
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
+import { randomStringForEntropy } from '@stablelib/random'
+import { hash as sha256 } from '@stablelib/sha256'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
   kid: string
   checkRevocationState: boolean
+}
+
+export interface RequestCredentialOptions {
+  clientId: string
+  code: string
+  codeVerifier: string
+  issuerUri: string
+  kid: string
+  redirectUri: string
+  checkRevocationState: boolean
+}
+
+// The code_challenge_method is omitted here
+// because we assume it will always be SHA256
+// as clear text code_challenges are unsafe
+export interface GenerateAuthorizationUrlOptions {
+  initiationUri: string
+  clientId: string
+  codeVerifier: string
+  redirectUri: string
+  scope?: string[]
 }
 
 @injectable()
@@ -134,6 +160,42 @@ export class OpenId4VcClientService {
     }
   }
 
+  public generateCodeVerifier(): string {
+    return randomStringForEntropy(256)
+  }
+
+  public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
+    this.logger.debug('Generating authorization url')
+
+    if (!options.scope || options.scope.length === 0) {
+      throw new AriesFrameworkError(
+        'Only scoped based authorization requests are supported at this time. Please provide at least one scope'
+      )
+    }
+
+    const client = await OpenID4VCIClient.initiateFromURI({
+      issuanceInitiationURI: options.initiationUri,
+      flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
+    })
+
+    const hashed = sha256(TypedArrayEncoder.fromString(options.codeVerifier))
+    const base64Url = TypedArrayEncoder.toBase64URL(Buffer.from(hashed))
+
+    this.logger.debug('Converted code_verifier to code_challenge', {
+      codeVerifier: options.codeVerifier.toString(),
+      sha256: hashed.toString(),
+      base64Url: base64Url,
+    })
+
+    return client.createAuthorizationRequestUrl({
+      clientId: options.clientId,
+      codeChallengeMethod: CodeChallengeMethod.SHA256,
+      codeChallenge: base64Url,
+      redirectUri: options.redirectUri,
+      scope: options.scope?.join(' '),
+    })
+  }
+
   public async requestCredentialPreAuthorized(
     agentContext: AgentContext,
     options: PreAuthorizedOptions
@@ -165,6 +227,91 @@ export class OpenId4VcClientService {
 
     const serverMetadata = await client.retrieveServerMetadata()
 
+    // @ts-ignore
+    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
+
+    this.logger.info('Fetched server metadata', {
+      issuer: serverMetadata.issuer,
+      credentialEndpoint: serverMetadata.credential_endpoint,
+      tokenEndpoint: serverMetadata.token_endpoint,
+    })
+
+    this.logger.debug('Full server metadata', serverMetadata)
+
+    // proof of possession
+    const callbacks = this.getSignCallback(agentContext)
+
+    const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
+      accessTokenResponse: accessToken,
+      callbacks: callbacks,
+    })
+      .withEndpointMetadata(serverMetadata)
+      .withAlg(Alg.EdDSA)
+      .withKid(options.kid)
+      .build()
+
+    this.logger.debug('Generated JWS', proofInput)
+
+    const credentialRequestClient = CredentialRequestClientBuilder.fromIssuanceInitiationURI({
+      uri: options.issuerUri,
+      metadata: serverMetadata,
+    })
+      .withTokenFromResponse(accessToken)
+      .build()
+
+    const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
+      proofInput,
+      // @ts-ignore
+      credentialType: accessToken.scope,
+      format: 'ldp_vc', // Allows us to override the format
+    })
+
+    this.logger.debug('Credential request response', credentialResponse)
+
+    if (!credentialResponse.successBody) {
+      throw new AriesFrameworkError('Did not receive a successful credential response')
+    }
+
+    const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
+
+    // verify the signature
+    const result = await this.w3cCredentialService.verifyCredential(
+      agentContext,
+      { credential },
+      options.checkRevocationState
+    )
+
+    if (result && !result.verified) {
+      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
+    }
+
+    const storedCredential = await this.w3cCredentialService.storeCredential(agentContext, {
+      credential,
+    })
+
+    this.logger.info(`Stored credential with id: ${storedCredential.id}`)
+    this.logger.debug('Full credential', storedCredential)
+
+    return storedCredential
+  }
+
+  public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {
+    const credentialFormat = 'ldp_vc'
+    const client = await OpenID4VCIClient.initiateFromURI({
+      issuanceInitiationURI: options.issuerUri,
+      kid: options.kid,
+      flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
+      alg: Alg.EdDSA,
+    })
+
+    const accessToken = await client.acquireAccessToken({
+      clientId: options.clientId,
+      code: options.code,
+      codeVerifier: options.codeVerifier,
+      redirectUri: options.redirectUri,
+    })
+
+    const serverMetadata = await client.retrieveServerMetadata()
     // @ts-ignore
     this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
