@@ -5,7 +5,10 @@ import type {
   AnonCredsCredential,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsCredentialRequestMetadata,
 } from '@aries-framework/anoncreds'
+import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {
   AnonCredsHolderServiceSymbol,
@@ -56,7 +59,7 @@ const agentContext = getAgentContext({
 describe('AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
 
-  afterEach(() => {
+  beforeEach(() => {
     getByCredentialIdMock.mockClear()
   })
 
@@ -160,7 +163,7 @@ describe('AnonCredsRsHolderService', () => {
         height: '179',
         age: '19',
       },
-      credentialDefinition: personCredentialDefinition,
+      credentialDefinition: personCredentialDefinition as unknown as JsonObject,
       schemaId: 'personschema:uri',
       credentialDefinitionId: 'personcreddef:uri',
       credentialDefinitionPrivate: personCredentialDefinitionPrivate,
@@ -180,7 +183,7 @@ describe('AnonCredsRsHolderService', () => {
       attributes: {
         phoneNumber: 'linkSecretId56',
       },
-      credentialDefinition: phoneCredentialDefinition,
+      credentialDefinition: phoneCredentialDefinition as unknown as JsonObject,
       schemaId: 'phoneschema:uri',
       credentialDefinitionId: 'phonecreddef:uri',
       credentialDefinitionPrivate: phoneCredentialDefinitionPrivate,
@@ -454,7 +457,7 @@ describe('AnonCredsRsHolderService', () => {
         height: '179',
         age: '19',
       },
-      credentialDefinition,
+      credentialDefinition: credentialDefinition as unknown as JsonObject,
       schemaId: 'personschema:uri',
       credentialDefinitionId: 'personcreddef:uri',
       credentialDefinitionPrivate,
@@ -474,11 +477,13 @@ describe('AnonCredsRsHolderService', () => {
       credentialDefinition,
       schema,
       credentialDefinitionId: 'personcreddefid:uri',
-      credentialRequestMetadata: JSON.parse(credentialRequestMetadata.toJson()),
+      credentialRequestMetadata: credentialRequestMetadata.toJson() as unknown as AnonCredsCredentialRequestMetadata,
       credentialId: 'personCredId',
       revocationRegistry: {
         id: 'personrevregid:uri',
-        definition: JSON.parse(new RevocationRegistryDefinition(revocationRegistryDefinition.handle).toJson()),
+        definition: new RevocationRegistryDefinition(
+          revocationRegistryDefinition.handle
+        ).toJson() as unknown as AnonCredsRevocationRegistryDefinition,
       },
     })
 

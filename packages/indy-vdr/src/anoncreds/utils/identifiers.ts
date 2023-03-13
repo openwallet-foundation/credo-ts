@@ -6,34 +6,28 @@
 import { DID_INDY_REGEX } from '../../utils/did'
 
 const didIndyAnonCredsBase =
-  /(?<did>did:indy:(?<namespace>((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?)):(?<namespaceIdentifier>([1-9A-HJ-NP-Za-km-z]{21,22})))\/anoncreds\/v0/
+  /(did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22}))\/anoncreds\/v0/
 
 // did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/SCHEMA/<schemaName>/<schemaVersion>
-const didIndySchemaIdRegex = new RegExp(
-  `^${didIndyAnonCredsBase.source}/SCHEMA/(?<schemaName>.+)/(?<schemaVersion>[0-9.]+)$`
-)
+const didIndySchemaIdRegex = new RegExp(`^${didIndyAnonCredsBase.source}/SCHEMA/(.+)/([0-9.]+)$`)
 
 // <namespaceIdentifier>:2:<schemaName>:<schemaVersion>
-const legacyIndySchemaIdRegex =
-  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):2:(?<schemaName>.+):(?<schemaVersion>[0-9.]+)$/
+const legacyIndySchemaIdRegex = /^([a-zA-Z0-9]{21,22}):2:(.+):([0-9.]+)$/
 
 // did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/CLAIM_DEF/<schemaSeqNo>/<tag>
-const didIndyCredentialDefinitionIdRegex = new RegExp(
-  `^${didIndyAnonCredsBase.source}/CLAIM_DEF/(?<schemaSeqNo>[1-9][0-9]*)/(?<tag>.+)$`
-)
+const didIndyCredentialDefinitionIdRegex = new RegExp(`^${didIndyAnonCredsBase.source}/CLAIM_DEF/([1-9][0-9]*)/(.+)$`)
 
 // <namespaceIdentifier>:3:CL:<schemaSeqNo>:<tag>
-const legacyIndyCredentialDefinitionIdRegex =
-  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<tag>.+)$/
+const legacyIndyCredentialDefinitionIdRegex = /^([a-zA-Z0-9]{21,22}):3:CL:([1-9][0-9]*):(.+)$/
 
 // did:indy:<namespace>:<namespaceIdentifier>/anoncreds/v0/REV_REG_DEF/<schemaSeqNo>/<credentialDefinitionTag>/<revocationRegistryTag>
 const didIndyRevocationRegistryIdRegex = new RegExp(
-  `^${didIndyAnonCredsBase.source}/REV_REG_DEF/(?<schemaSeqNo>[1-9][0-9]*)/(?<credentialDefinitionTag>.+)/(?<revocationRegistryTag>.+)$`
+  `^${didIndyAnonCredsBase.source}/REV_REG_DEF/([1-9][0-9]*)/(.+)/(.+)$`
 )
 
 // <namespaceIdentifier>:4:<schemaSeqNo>:3:CL:<credentialDefinitionTag>:CL_ACCUM:<revocationRegistryTag>
 const legacyIndyRevocationRegistryIdRegex =
-  /^(?<did>(?<namespaceIdentifier>[a-zA-Z0-9]{21,22})):4:[a-zA-Z0-9]{21,22}:3:CL:(?<schemaSeqNo>[1-9][0-9]*):(?<credentialDefinitionTag>.+):CL_ACCUM:(?<revocationRegistryTag>.+)$/
+  /^([a-zA-Z0-9]{21,22}):4:[a-zA-Z0-9]{21,22}:3:CL:([1-9][0-9]*):(.+):CL_ACCUM:(.+)$/
 
 // combines both legacy and did:indy anoncreds identifiers and also the issuer id
 const indyVdrAnonCredsRegexes = [
@@ -58,7 +52,7 @@ const indyVdrAnonCredsRegexes = [
 ]
 
 export const indyVdrAnonCredsRegistryIdentifierRegex = new RegExp(
-  indyVdrAnonCredsRegexes.map((r) => r.source.replace(/(\?<[a-zA-Z]+>)?/g, '')).join('|')
+  indyVdrAnonCredsRegexes.map((r) => r.source).join('|')
 )
 
 export function getDidIndySchemaId(namespace: string, unqualifiedDid: string, name: string, version: string) {
@@ -110,12 +104,33 @@ interface ParsedSchemaId {
   namespace?: string
 }
 
-export function parseSchemaId(schemaId: string) {
-  const match = schemaId.match(didIndySchemaIdRegex) ?? schemaId.match(legacyIndySchemaIdRegex)
+export function parseSchemaId(schemaId: string): ParsedSchemaId {
+  const didIndyMatch = schemaId.match(didIndySchemaIdRegex)
+  if (didIndyMatch) {
+    const [, did, namespace, namespaceIdentifier, schemaName, schemaVersion] = didIndyMatch
 
-  if (!match) throw new Error(`Invalid schema id: ${schemaId}`)
+    return {
+      did,
+      namespaceIdentifier,
+      schemaName,
+      schemaVersion,
+      namespace,
+    }
+  }
 
-  return match.groups as unknown as ParsedSchemaId
+  const legacyMatch = schemaId.match(legacyIndySchemaIdRegex)
+  if (legacyMatch) {
+    const [, did, schemaName, schemaVersion] = legacyMatch
+
+    return {
+      did,
+      namespaceIdentifier: did,
+      schemaName,
+      schemaVersion,
+    }
+  }
+
+  throw new Error(`Invalid schema id: ${schemaId}`)
 }
 
 interface ParsedCredentialDefinitionId {
@@ -126,14 +141,33 @@ interface ParsedCredentialDefinitionId {
   namespace?: string
 }
 
-export function parseCredentialDefinitionId(credentialDefinitionId: string) {
-  const match =
-    credentialDefinitionId.match(didIndyCredentialDefinitionIdRegex) ??
-    credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)
+export function parseCredentialDefinitionId(credentialDefinitionId: string): ParsedCredentialDefinitionId {
+  const didIndyMatch = credentialDefinitionId.match(didIndyCredentialDefinitionIdRegex)
+  if (didIndyMatch) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, tag] = didIndyMatch
 
-  if (!match) throw new Error(`Invalid credential definition id: ${credentialDefinitionId}`)
+    return {
+      did,
+      namespaceIdentifier,
+      schemaSeqNo,
+      tag,
+      namespace,
+    }
+  }
 
-  return match.groups as unknown as ParsedCredentialDefinitionId
+  const legacyMatch = credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)
+  if (legacyMatch) {
+    const [, did, schemaSeqNo, tag] = legacyMatch
+
+    return {
+      did,
+      namespaceIdentifier: did,
+      schemaSeqNo,
+      tag,
+    }
+  }
+
+  throw new Error(`Invalid credential definition id: ${credentialDefinitionId}`)
 }
 
 interface ParsedRevocationRegistryId {
@@ -145,12 +179,34 @@ interface ParsedRevocationRegistryId {
   namespace?: string
 }
 
-export function parseRevocationRegistryId(revocationRegistryId: string) {
-  const match =
-    revocationRegistryId.match(didIndyRevocationRegistryIdRegex) ??
-    revocationRegistryId.match(legacyIndyRevocationRegistryIdRegex)
+export function parseRevocationRegistryId(revocationRegistryId: string): ParsedRevocationRegistryId {
+  const didIndyMatch = revocationRegistryId.match(didIndyRevocationRegistryIdRegex)
+  if (didIndyMatch) {
+    const [, did, namespace, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag] =
+      didIndyMatch
 
-  if (!match) throw new Error(`Invalid revocation registry id: ${revocationRegistryId}`)
+    return {
+      did,
+      namespaceIdentifier,
+      schemaSeqNo,
+      credentialDefinitionTag,
+      revocationRegistryTag,
+      namespace,
+    }
+  }
 
-  return match.groups as unknown as ParsedRevocationRegistryId
+  const legacyMatch = revocationRegistryId.match(legacyIndyRevocationRegistryIdRegex)
+  if (legacyMatch) {
+    const [, did, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag] = legacyMatch
+
+    return {
+      did,
+      namespaceIdentifier: did,
+      schemaSeqNo,
+      credentialDefinitionTag,
+      revocationRegistryTag,
+    }
+  }
+
+  throw new Error(`Invalid revocation registry id: ${revocationRegistryId}`)
 }
