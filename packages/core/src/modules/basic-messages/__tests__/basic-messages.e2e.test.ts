@@ -87,7 +87,7 @@ describe('Basic Messages E2E', () => {
     })
   })
 
-  test.only('Alice and Faber exchange messages using threadId', async () => {
+  test('Alice and Faber exchange messages using threadId', async () => {
     testLogger.test('Alice sends message to Faber')
     const helloRecord = await aliceAgent.basicMessages.sendMessage(aliceConnection.id, 'Hello')
 
@@ -101,25 +101,39 @@ describe('Basic Messages E2E', () => {
     testLogger.test('Faber sends message to Alice')
     const replyRecord = await faberAgent.basicMessages.sendMessage(faberConnection.id, 'How are you?', helloMessage.id)
     expect(replyRecord.content).toBe('How are you?')
-    expect(replyRecord.threadId).toBe(helloMessage.id)
+    expect(replyRecord.parentThreadId).toBe(helloMessage.id)
 
     testLogger.test('Alice waits until she receives message from faber')
     const replyMessage = await waitForBasicMessage(aliceAgent, {
       content: 'How are you?',
     })
     expect(replyMessage.content).toBe('How are you?')
-    expect(replyMessage.threadId).toBe(helloMessage.id)
+    expect(replyMessage.thread?.parentThreadId).toBe(helloMessage.id)
 
-    // Both sender and recipient shall be able to find the threaded message
-    const aliceThreadedMessages = await aliceAgent.basicMessages.findAllByQuery({ threadId: helloMessage.id })
-    const faberThreadedMessages = await faberAgent.basicMessages.findAllByQuery({ threadId: helloMessage.id })
+    // Both sender and recipient shall be able to find the threaded messages
+    // Hello message
+    const aliceHelloMessage = await aliceAgent.basicMessages.getByThreadId(helloMessage.id)
+    const faberHelloMessage = await faberAgent.basicMessages.getByThreadId(helloMessage.id)
+    expect(aliceHelloMessage).toMatchObject({
+      content: helloRecord.content,
+      threadId: helloRecord.threadId,
+    })
+    expect(faberHelloMessage).toMatchObject({
+      content: helloRecord.content,
+      threadId: helloRecord.threadId,
+    })
 
-    for (const msg of faberThreadedMessages) {
-      console.log(`${JSON.stringify(msg)}`)
-    }
-    expect(aliceThreadedMessages.length).toBe(1)
-    expect(faberThreadedMessages.length).toBe(1)
-    expect(faberThreadedMessages[0]).toEqual(replyRecord)
+    // Reply message
+    const aliceReplyMessages = await aliceAgent.basicMessages.findAllByQuery({ parentThreadId: helloMessage.id })
+    const faberReplyMessages = await faberAgent.basicMessages.findAllByQuery({ parentThreadId: helloMessage.id })
+    expect(aliceReplyMessages.length).toBe(1)
+    expect(aliceReplyMessages[0]).toMatchObject({
+      content: replyRecord.content,
+      parentThreadId: replyRecord.parentThreadId,
+      threadId: replyRecord.threadId,
+    })
+    expect(faberReplyMessages.length).toBe(1)
+    expect(faberReplyMessages[0]).toMatchObject(replyRecord)
   })
 
   test('Alice is unable to send a message', async () => {

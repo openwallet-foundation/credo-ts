@@ -9,6 +9,7 @@ export type DefaultBasicMessageTags = {
   connectionId: string
   role: BasicMessageRole
   threadId?: string
+  parentThreadId?: string
 }
 
 export type BasicMessageTags = RecordTags<BasicMessageRecord>
@@ -20,6 +21,7 @@ export interface BasicMessageStorageProps {
   role: BasicMessageRole
   tags?: CustomBasicMessageTags
   threadId?: string
+  parentThreadId?: string
   content: string
   sentTime: string
 }
@@ -30,6 +32,7 @@ export class BasicMessageRecord extends BaseRecord<DefaultBasicMessageTags, Cust
   public connectionId!: string
   public role!: BasicMessageRole
   public threadId?: string
+  public parentThreadId?: string
 
   public static readonly type = 'BasicMessageRecord'
   public readonly type = BasicMessageRecord.type
@@ -46,6 +49,7 @@ export class BasicMessageRecord extends BaseRecord<DefaultBasicMessageTags, Cust
       this._tags = props.tags ?? {}
       this.role = props.role
       this.threadId = props.threadId
+      this.parentThreadId = props.parentThreadId
     }
   }
 
@@ -55,6 +59,7 @@ export class BasicMessageRecord extends BaseRecord<DefaultBasicMessageTags, Cust
       connectionId: this.connectionId,
       role: this.role,
       threadId: this.threadId,
+      parentThreadId: this.parentThreadId,
     }
   }
 }

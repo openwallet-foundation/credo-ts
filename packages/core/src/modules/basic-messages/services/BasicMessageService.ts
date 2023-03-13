@@ -26,21 +26,23 @@ export class BasicMessageService {
     agentContext: AgentContext,
     message: string,
     connectionRecord: ConnectionRecord,
-    threadId?: string
+    parentThreadId?: string
   ) {
     const basicMessage = new BasicMessage({ content: message })
+
+    // If no parentThreadid is defined, there is no need to explicitly send a thread decorator
+    if (parentThreadId) {
+      basicMessage.setThread({ parentThreadId })
+    }
 
     const basicMessageRecord = new BasicMessageRecord({
       sentTime: basicMessage.sentTime.toISOString(),
       content: basicMessage.content,
       connectionId: connectionRecord.id,
       role: BasicMessageRole.Sender,
-      threadId,
+      threadId: basicMessage.threadId,
+      parentThreadId,
     })
-
-    if (threadId) {
-      basicMessage.setThread({ threadId })
-    }
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
     this.emitStateChangedEvent(agentContext, basicMessageRecord, basicMessage)
@@ -57,7 +59,8 @@ export class BasicMessageService {
       content: message.content,
       connectionId: connection.id,
       role: BasicMessageRole.Receiver,
-      threadId: message.id !== message.threadId ? message.threadId : undefined,
+      threadId: message.threadId,
+      parentThreadId: message.thread?.parentThreadId,
     })
 
     await this.basicMessageRepository.save(agentContext, basicMessageRecord)
@@ -82,6 +85,14 @@ export class BasicMessageService {
 
   public async getById(agentContext: AgentContext, basicMessageRecordId: string) {
     return this.basicMessageRepository.getById(agentContext, basicMessageRecordId)
+  }
+
+  public async getByThreadId(agentContext: AgentContext, threadId: string) {
+    return this.basicMessageRepository.getSingleByQuery(agentContext, { threadId })
+  }
+
+  public async findAllByParentThreadId(agentContext: AgentContext, parentThreadId: string) {
+    return this.basicMessageRepository.findByQuery(agentContext, { parentThreadId })
   }
 
   public async deleteById(agentContext: AgentContext, basicMessageRecordId: string) {
