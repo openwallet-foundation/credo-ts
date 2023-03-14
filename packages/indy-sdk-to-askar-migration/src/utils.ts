@@ -1,5 +1,8 @@
 import type { TagsBase } from '@aries-framework/core'
 
+/**
+* Adopted from `AskarStorageService` implementation and should be kept in sync.
+*/
 export const transformFromRecordTagValues = (tags: TagsBase): { [key: string]: string | undefined } => {
   const transformedTags: { [key: string]: string | undefined } = {}
 
