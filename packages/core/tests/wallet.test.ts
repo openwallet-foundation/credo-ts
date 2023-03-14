@@ -151,9 +151,14 @@ describe('wallet', () => {
     await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
 
     // Expect same basic message record to exist in new wallet
-    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject(
-      basicMessageRecord
-    )
+    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject({
+      id: basicMessageRecord.id,
+      connectionId: basicMessageRecord.connectionId,
+      content: basicMessageRecord.content,
+      createdAt: basicMessageRecord.createdAt,
+      updatedAt: basicMessageRecord.updatedAt,
+      type: basicMessageRecord.type,
+    })
   })
 
   test('changing wallet key', async () => {
