@@ -134,7 +134,7 @@ export class IndySdkToAskarMigrationUpdater {
   private async backupDatabase() {
     const src = this.dbPath
     const dest = this.backupFile
-    this.agent.config.logger?.trace(`Creating backup from '${src}' to '${dest}'`)
+    this.agent.config.logger.trace(`Creating backup from '${src}' to '${dest}'`)
 
     // Create the directories for the backup
     await this.fs.createDirectory(dest)
@@ -167,12 +167,12 @@ export class IndySdkToAskarMigrationUpdater {
     if (!(await this.fs.exists(this.dbPath))) {
       return
     } else {
-      this.agent.config.logger?.trace(`Moving '${this.backupFile}' back to the original path: '${this.dbPath}`)
+      this.agent.config.logger.trace(`Moving '${this.backupFile}' back to the original path: '${this.dbPath}`)
 
       // Move the backedup file back to the original path
       await this.fs.copyFile(this.backupFile, this.dbPath)
 
-      this.agent.config.logger?.trace(`Cleaned up the backed up file at '${this.backupFile}'`)
+      this.agent.config.logger.trace(`Cleaned up the backed up file at '${this.backupFile}'`)
     }
   }
 
@@ -181,7 +181,7 @@ export class IndySdkToAskarMigrationUpdater {
   // e.g. cron-job and system restart (depending on the os) we could omit
   // this call `await this.fs.delete(this.backupFile)`.
   private async cleanBackup() {
-    this.agent.config.logger?.trace(`Deleting the backup file at '${this.backupFile}'`)
+    this.agent.config.logger.trace(`Deleting the backup file at '${this.backupFile}'`)
     await this.fs.delete(this.backupFile)
   }
 
@@ -197,7 +197,7 @@ export class IndySdkToAskarMigrationUpdater {
     // create the wallet directory
     await this.fs.createDirectory(dest)
 
-    this.agent.config.logger?.trace(`Moving upgraded database from ${src} to ${dest}`)
+    this.agent.config.logger.trace(`Moving upgraded database from ${src} to ${dest}`)
 
     // Copy the file from the database path to the new location
     await this.fs.copyFile(src, dest)
@@ -229,7 +229,7 @@ export class IndySdkToAskarMigrationUpdater {
 
       await this.moveToNewLocation()
     } catch (cause) {
-      this.agent.config.logger?.error('Migration failed. Reverting state.')
+      this.agent.config.logger.error('Migration failed. Reverting state.')
 
       await this.restoreDatabase()
 
@@ -242,7 +242,7 @@ export class IndySdkToAskarMigrationUpdater {
   private async updateKeys() {
     const category = 'Indy::Key'
 
-    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -268,15 +268,13 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    this.agent.config.logger?.trace(
-      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
-    )
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
   }
 
   private async updateMasterSecret() {
     const category = 'Indy::MasterSecret'
 
-    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -313,15 +311,13 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    this.agent.config.logger?.trace(
-      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
-    )
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
   }
 
   private async updateCredentials() {
     const category = 'Indy::Credential'
 
-    this.agent.config.logger?.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -367,8 +363,6 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    this.agent.config.logger?.trace(
-      `[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`
-    )
+    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
   }
 }
