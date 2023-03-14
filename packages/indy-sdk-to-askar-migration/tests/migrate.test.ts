@@ -17,7 +17,6 @@ describe('Migrate', () => {
       key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
-    logger: new ConsoleLogger(LogLevel.trace),
   }
 
   const oldAgent = new Agent({
