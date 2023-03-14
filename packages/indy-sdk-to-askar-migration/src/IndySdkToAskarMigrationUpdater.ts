@@ -63,10 +63,21 @@ export class IndySdkToAskarMigrationUpdater {
     const {
       config: { walletConfig },
     } = agent
-    if (!walletConfig) throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
+    if (typeof process?.versions?.node !== 'undefined') {
+      throw new IndySdkToAskarMigrationError('Node.js is currently not officialy supported')
+    }
 
-    if (agent.isInitialized)
+    if (!walletConfig) {
+      throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
+    }
+
+    if (walletConfig.storage && walletConfig.storage.type !== 'sqlite') {
+      throw new IndySdkToAskarMigrationError('Only sqlite wallets are supported, right now')
+    }
+
+    if (agent.isInitialized) {
       throw new IndySdkToAskarMigrationError('Wallet migration can not be done on an initialized agent')
+    }
 
     if (!(agent.dependencyManager.resolve(InjectionSymbols.Wallet) instanceof AskarWallet)) {
       throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
@@ -141,12 +152,12 @@ export class IndySdkToAskarMigrationUpdater {
    * deletes the backup. We do some additional, possible redundant, exists checks
    * here to be extra sure that only a happy flow occurs.
    */
-  private async revertDatabase() {
+  private async restoreDatabase() {
     // "Impossible" state. Since we do not continue if `this.backupDatabase()`
     // fails, this file should always be there. If this error is thrown, we
-    // cannot correctly revert the state.
+    // cannot correctly restore the state.
     if (!(await this.fs.exists(this.backupFile))) {
-      throw new IndySdkToAskarMigrationError('Backup file could not be found while trying to revert the state')
+      throw new IndySdkToAskarMigrationError('Backup file could not be found while trying to restore the state')
     }
 
     /**
@@ -220,7 +231,7 @@ export class IndySdkToAskarMigrationUpdater {
     } catch (cause) {
       this.agent.config.logger?.error('Migration failed. Reverting state.')
 
-      await this.revertDatabase()
+      await this.restoreDatabase()
 
       throw new IndySdkToAskarMigrationError('Migration failed. State has been reverted.', { cause })
     } finally {
