@@ -1,5 +1,5 @@
 import { AskarModule } from '@aries-framework/askar'
-import { ConsoleLogger, LogLevel, utils, KeyDerivationMethod, Agent } from '@aries-framework/core'
+import { utils, KeyDerivationMethod, Agent, ConsoleLogger, LogLevel } from '@aries-framework/core'
 import { IndySdkModule } from '@aries-framework/indy-sdk'
 import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar, Migration } from '@hyperledger/aries-askar-nodejs'
@@ -17,6 +17,7 @@ describe('Migrate', () => {
       key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
+    logger: new ConsoleLogger(LogLevel.trace),
   }
 
   const oldAgent = new Agent({
@@ -47,13 +48,6 @@ describe('Migrate', () => {
     const record = await oldAgent.genericRecords.save({ content: genericRecordContent })
 
     await oldAgent.shutdown()
-
-    await Migration.migrate({
-      walletName: config.walletConfig.id,
-      walletKey: config.walletConfig.key,
-      kdfLevel: config.walletConfig.keyDerivationMethod,
-      specUri: oldDbPath,
-    })
 
     const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: oldDbPath, agent: newAgent })
     await updater.update()

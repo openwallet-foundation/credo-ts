@@ -1,11 +1,11 @@
 import type { AnonCredsCredentialValue } from '@aries-framework/anoncreds'
-import type { Agent, FileSystem } from '@aries-framework/core'
+import type { Agent, FileSystem, WalletConfig } from '@aries-framework/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
 import { AskarWallet } from '@aries-framework/askar'
 import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
-import { Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { Migration, Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
 import { transformFromRecordTagValues } from './utils'
@@ -24,8 +24,8 @@ import { transformFromRecordTagValues } from './utils'
  *
  */
 export class IndySdkToAskarMigrationUpdater {
-  private store: Store
-  private walletId: string
+  private store?: Store
+  private walletConfig: WalletConfig
   private defaultLinkSecretId: string
   private agent: Agent
   private dbPath: string
@@ -33,19 +33,17 @@ export class IndySdkToAskarMigrationUpdater {
   private deleteOnFinish: boolean
 
   private constructor(
-    store: Store,
-    walletId: string,
+    walletConfig: WalletConfig,
     agent: Agent,
     dbPath: string,
     deleteOnFinish = false,
     defaultLinkSecretId?: string
   ) {
-    this.store = store
-    this.walletId = walletId
+    this.walletConfig = walletConfig
     this.dbPath = dbPath
     this.agent = agent
     this.fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    this.defaultLinkSecretId = defaultLinkSecretId ?? walletId
+    this.defaultLinkSecretId = defaultLinkSecretId ?? walletConfig.id
     this.deleteOnFinish = deleteOnFinish
   }
 
@@ -64,7 +62,7 @@ export class IndySdkToAskarMigrationUpdater {
       config: { walletConfig },
     } = agent
     // if (typeof process?.versions?.node !== 'undefined') {
-    //   throw new IndySdkToAskarMigrationError('Node.js is currently not officialy supported')
+    //   throw new IndySdkToAskarMigrationError('Node.js is currently not  supported')
     // }
 
     if (!walletConfig) {
@@ -83,17 +81,31 @@ export class IndySdkToAskarMigrationUpdater {
       throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
     }
 
-    const keyMethod =
-      walletConfig.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
-    const store = await Store.open({ uri: `sqlite://${dbPath}`, passKey: walletConfig.key, keyMethod })
-    return new IndySdkToAskarMigrationUpdater(
-      store,
-      walletConfig.id,
-      agent,
-      dbPath,
-      deleteOnFinish,
-      defaultLinkSecretId
-    )
+    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, deleteOnFinish, defaultLinkSecretId)
+  }
+
+  /**
+   * This function migrates the old database to the new structure.
+   *
+   * This doubles checks some fields as later it might be possiblt to run this function
+   */
+  private async migrate() {
+    const specUri = this.dbPath
+    const kdfLevel = this.walletConfig.keyDerivationMethod ?? 'ARGON2I_MOD'
+    const walletName = this.walletConfig.id
+    const walletKey = this.walletConfig.key
+    const storageType = this.walletConfig.storage?.type ?? 'sqlite'
+
+    if (storageType !== 'sqlite') {
+      throw new IndySdkToAskarMigrationError("Storage type defined and not of type 'sqlite'")
+    }
+
+    if (!walletKey) {
+      throw new IndySdkToAskarMigrationError('Wallet key is not defined in the wallet configuration')
+    }
+
+    this.agent.config.logger.info('Migration indy-sdk database structure to askar')
+    await Migration.migrate({ specUri, walletKey, kdfLevel, walletName })
   }
 
   /*
@@ -116,14 +128,14 @@ export class IndySdkToAskarMigrationUpdater {
    * Location of the new wallet
    */
   private get newWalletPath() {
-    return `${this.fs.dataPath}/wallet/${this.walletId}/sqlite.db`
+    return `${this.fs.dataPath}/wallet/${this.walletConfig.id}/sqlite.db`
   }
 
   /**
    * Temporary backup location of the pre-migrated script
    */
   private get backupFile() {
-    return `${this.fs.tempPath}/${this.walletId}.bak.db`
+    return `${this.fs.tempPath}/${this.walletConfig.id}.bak.db`
   }
 
   /**
@@ -211,6 +223,7 @@ export class IndySdkToAskarMigrationUpdater {
    *
    * - Assert that the paths that will be used are free
    * - Create a backup of the database
+   * - Migrate the database to askar structure
    * - Update the Keys
    * - Update the Master Secret (Link Sercet)
    * - Update the credentials
@@ -223,10 +236,19 @@ export class IndySdkToAskarMigrationUpdater {
 
     await this.backupDatabase()
     try {
+      // Migrate the database
+      await this.migrate()
+
+      const keyMethod =
+        this.walletConfig?.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
+      this.store = await Store.open({ uri: `sqlite://${this.dbPath}`, passKey: this.walletConfig.key, keyMethod })
+
+      // Update the values to reflect the new structure
       await this.updateKeys()
       await this.updateMasterSecret()
       await this.updateCredentials()
 
+      // Move the migrated and updated file to the expected location for afj
       await this.moveToNewLocation()
     } catch (cause) {
       this.agent.config.logger.error('Migration failed. Reverting state.')
@@ -240,6 +262,10 @@ export class IndySdkToAskarMigrationUpdater {
   }
 
   private async updateKeys() {
+    if (!this.store) {
+      throw new IndySdkToAskarMigrationError('Update keys can not be called outside of the `update()` function')
+    }
+
     const category = 'Indy::Key'
 
     this.agent.config.logger.trace(`Migrating category: ${category}`)
@@ -274,6 +300,12 @@ export class IndySdkToAskarMigrationUpdater {
   }
 
   private async updateMasterSecret() {
+    if (!this.store) {
+      throw new IndySdkToAskarMigrationError(
+        'Update master sercet can not be called outside of the `update()` function'
+      )
+    }
+
     const category = 'Indy::MasterSecret'
 
     this.agent.config.logger.trace(`Migrating category: ${category}`)
@@ -296,7 +328,7 @@ export class IndySdkToAskarMigrationUpdater {
       for (const row of masterSecrets) {
         this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
 
-        const isDefault = masterSecrets.length === 0 ?? row.name === this.walletId
+        const isDefault = masterSecrets.length === 0 ?? row.name === this.walletConfig.id
 
         const {
           value: { ms },
@@ -320,6 +352,10 @@ export class IndySdkToAskarMigrationUpdater {
   }
 
   private async updateCredentials() {
+    if (!this.store) {
+      throw new IndySdkToAskarMigrationError('Update credentials can not be called outside of the `update()` function')
+    }
+
     const category = 'Indy::Credential'
 
     this.agent.config.logger.trace(`Migrating category: ${category}`)
