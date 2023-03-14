@@ -123,14 +123,15 @@ export function endpointsAttribFromServices(services: DidDocumentService[]): Ind
     const commServiceType = commService.type as CommEndpointType
     if (types.includes(commServiceType)) {
       throw new AriesFrameworkError('Only a single communication service per type is supported')
-    } else {
-      types.push(commServiceType)
     }
 
-    if (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) {
-      if (commService.routingKeys) {
-        commService.routingKeys.forEach((item) => routingKeys.add(item))
-      }
+    types.push(commServiceType)
+
+    if (
+      (commService instanceof DidCommV1Service || commService instanceof DidCommV2Service) &&
+      commService.routingKeys
+    ) {
+      commService.routingKeys.forEach((item) => routingKeys.add(item))
     }
   }
 

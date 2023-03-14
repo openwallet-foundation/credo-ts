@@ -34,7 +34,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  public readonly inboundTransports: InboundTransport[] = []
+  private _inboundTransports: InboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -54,10 +54,20 @@ export class MessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
+    this._inboundTransports = []
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
-    this.inboundTransports.push(inboundTransport)
+    this._inboundTransports.push(inboundTransport)
+  }
+
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   /**

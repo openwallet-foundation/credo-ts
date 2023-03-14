@@ -237,10 +237,106 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
+      threadId: message.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: message.threadId,
+    })
+  })
+
+  test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and without an outbound transport', async () => {
+    const {
+      holderAgent: aliceAgent,
+      issuerAgent: faberAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerReplay: faberReplay,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber v1 connection-less Proofs - Always',
+      holderName: 'Alice v1 connection-less Proofs - Always',
+      autoAcceptProofs: AutoAcceptProof.Always,
+      attributeNames: ['name', 'age'],
+    })
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      holderAgent: aliceAgent,
+      issuerReplay: faberReplay,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'John',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
+
+    agents = [aliceAgent, faberAgent]
+
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+      protocolVersion: 'v1',
+      proofFormats: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {
+            age: {
+              name: 'age',
+              p_type: '>=',
+              p_value: 50,
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+        },
+      },
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
+    })
+
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofExchangeRecord.id,
+      message,
+      domain: 'https://a-domain.com',
+    })
+
+    for (const transport of faberAgent.outboundTransports) {
+      await faberAgent.unregisterOutboundTransport(transport)
+    }
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
+
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
+
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
     })
   })
 
@@ -364,14 +460,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
-    })
-
-    const faberProofExchangeRecordPromise = waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
-    })
-
     // eslint-disable-next-line prefer-const
     let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
@@ -427,9 +515,15 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await aliceAgent.receiveMessage(requestMessage.toJSON())
 
-    await aliceProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
 
-    await faberProofExchangeRecordPromise
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
 
     await aliceAgent.mediationRecipient.stopMessagePickup()
     await faberAgent.mediationRecipient.stopMessagePickup()

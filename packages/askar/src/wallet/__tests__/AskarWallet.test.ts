@@ -212,7 +212,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
   })
 })
 
-describe('AskarWallet management', () => {
+describeRunInNodeVersion([18], 'AskarWallet management', () => {
   let askarWallet: AskarWallet
 
   afterEach(async () => {
@@ -267,7 +267,13 @@ describe('AskarWallet management', () => {
     await askarWallet.close()
 
     const newKey = Store.generateRawKey()
-    await askarWallet.rotateKey({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey, rekey: newKey })
+    await askarWallet.rotateKey({
+      ...walletConfig,
+      id: 'AskarWallet Key Rotation',
+      key: initialKey,
+      rekey: newKey,
+      rekeyDerivationMethod: KeyDerivationMethod.Raw,
+    })
 
     await askarWallet.close()
 

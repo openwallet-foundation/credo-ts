@@ -20,11 +20,31 @@ export function getPostgresAgentOptions(
   extraConfig: Partial<InitConfig> = {}
 ) {
   const config: InitConfig = {
-    label: `Agent: ${name}`,
+    label: `Agent: ${name} Postgres`,
     walletConfig: {
       id: `Wallet${name}`,
       key: `Key${name}`,
       storage: storageConfig,
+    },
+    autoAcceptConnections: true,
+    autoUpdateStorageOnStartup: false,
+    logger: new TestLogger(LogLevel.off, name),
+    ...extraConfig,
+  }
+  return {
+    config,
+    dependencies: agentDependencies,
+    modules: { askar: new AskarModule() },
+  } as const
+}
+
+export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const config: InitConfig = {
+    label: `Agent: ${name} SQLite`,
+    walletConfig: {
+      id: `Wallet${name}`,
+      key: `Key${name}`,
+      storage: { type: 'sqlite' },
     },
     autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,

@@ -108,28 +108,26 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         let revocationState: CredentialRevocationState | undefined
         let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
         try {
-          if (timestamp) {
-            if (revocationRegistryIndex && revocationRegistryDefinitionId) {
-              if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
-                throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
-              }
-
-              const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
-
-              revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
-              revocationState = CredentialRevocationState.create({
-                revocationRegistryIndex: Number(revocationRegistryIndex),
-                revocationRegistryDefinition,
-                tailsPath: tailsFilePath,
-                revocationStatusList: RevocationStatusList.create({
-                  issuerId: definition.issuerId,
-                  issuanceByDefault: true,
-                  revocationRegistryDefinition,
-                  revocationRegistryDefinitionId,
-                  timestamp,
-                }),
-              })
+          if (timestamp && revocationRegistryIndex && revocationRegistryDefinitionId) {
+            if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
+              throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
             }
+
+            const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
+
+            revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
+            revocationState = CredentialRevocationState.create({
+              revocationRegistryIndex: Number(revocationRegistryIndex),
+              revocationRegistryDefinition,
+              tailsPath: tailsFilePath,
+              revocationStatusList: RevocationStatusList.create({
+                issuerId: definition.issuerId,
+                issuanceByDefault: true,
+                revocationRegistryDefinition,
+                revocationRegistryDefinitionId,
+                timestamp,
+              }),
+            })
           }
           return {
             linkSecretId: credentialRecord.linkSecretId,

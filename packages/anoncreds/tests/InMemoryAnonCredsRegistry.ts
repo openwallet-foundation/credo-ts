@@ -68,7 +68,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     const parsed = parseSchemaId(schemaId)
 
-    const legacySchemaId = getLegacySchemaId(parsed.didIdentifier, parsed.schemaName, parsed.schemaVersion)
+    const legacySchemaId = getLegacySchemaId(parsed.namespaceIdentifier, parsed.schemaName, parsed.schemaVersion)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     if (!schema) {
@@ -98,23 +98,23 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    let didIdentifier
+    let legacyIssuerId
     let didIndySchemaId = ''
     if (this.useLegacyIdentifiers) {
-      didIdentifier = options.schema.issuerId
+      legacyIssuerId = options.schema.issuerId
     } else {
-      const { id: namespaceId, namespace } = parseIndyDid(options.schema.issuerId)
-      didIdentifier = namespaceId
-      didIndySchemaId = getDidIndySchemaId(namespace, namespaceId, options.schema.name, options.schema.version)
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
+      legacyIssuerId = namespaceIdentifier
+      didIndySchemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
       this.schemas[didIndySchemaId] = options.schema
     }
 
-    const legacySchemaId = getLegacySchemaId(didIdentifier, options.schema.name, options.schema.version)
+    const legacySchemaId = getLegacySchemaId(legacyIssuerId, options.schema.name, options.schema.version)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
     this.schemas[legacySchemaId] = {
       ...options.schema,
-      issuerId: didIdentifier,
+      issuerId: legacyIssuerId,
     }
 
     return {
@@ -163,39 +163,38 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterCredentialDefinitionReturn> {
     const parsedSchema = parseSchemaId(options.credentialDefinition.schemaId)
     const legacySchemaId = getLegacySchemaId(
-      parsedSchema.didIdentifier,
+      parsedSchema.namespaceIdentifier,
       parsedSchema.schemaName,
       parsedSchema.schemaVersion
     )
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    let didIdentifier
+    let legacyIssuerId
     let didIndyCredentialDefinitionId = ''
     if (this.useLegacyIdentifiers) {
-      didIdentifier = options.credentialDefinition.issuerId
+      legacyIssuerId = options.credentialDefinition.issuerId
     } else {
-      const parsed = parseIndyDid(options.credentialDefinition.issuerId)
-      const { id: namespaceId, namespace } = parseIndyDid(options.credentialDefinition.issuerId)
-      didIdentifier = namespaceId
-
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.credentialDefinition.issuerId)
+      legacyIssuerId = namespaceIdentifier
       didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
         namespace,
-        namespaceId,
+        namespaceIdentifier,
         indyLedgerSeqNo,
         options.credentialDefinition.tag
       )
+
       this.credentialDefinitions[didIndyCredentialDefinitionId] = options.credentialDefinition
     }
 
     const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(
-      didIdentifier,
+      legacyIssuerId,
       indyLedgerSeqNo,
       options.credentialDefinition.tag
     )
 
     this.credentialDefinitions[legacyCredentialDefinitionId] = {
       ...options.credentialDefinition,
-      issuerId: didIdentifier,
+      issuerId: legacyIssuerId,
       schemaId: legacySchemaId,
     }
 
