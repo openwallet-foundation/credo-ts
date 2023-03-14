@@ -78,6 +78,13 @@ describe('E2E Pick Up protocol', () => {
 
     mediatorRecipientConnection = await mediatorAgent.connections.returnWhenIsConnected(mediatorRecipientConnection!.id)
 
+    // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
+    await recipientAgent.shutdown()
+
+    recipientAgent = new Agent(recipientOptions)
+    recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    await recipientAgent.initialize()
+
     const message = 'hello pickup V1'
     await mediatorAgent.basicMessages.sendMessage(mediatorRecipientConnection.id, message)
 
