@@ -219,13 +219,13 @@ export class IndySdkToAskarMigrationUpdater {
   }
 
   /**
-   * Function that updates the values from an indy-sdk structure to the new askar stucture.
+   * Function that updates the values from an indy-sdk structure to the new askar structure.
    *
    * - Assert that the paths that will be used are free
    * - Create a backup of the database
    * - Migrate the database to askar structure
    * - Update the Keys
-   * - Update the Master Secret (Link Sercet)
+   * - Update the Master Secret (Link Secret)
    * - Update the credentials
    * If any of those failed:
    *   - Revert the database
@@ -302,7 +302,7 @@ export class IndySdkToAskarMigrationUpdater {
   private async updateMasterSecret() {
     if (!this.store) {
       throw new IndySdkToAskarMigrationError(
-        'Update master sercet can not be called outside of the `update()` function'
+        'Update master secret can not be called outside of the `update()` function'
       )
     }
 
