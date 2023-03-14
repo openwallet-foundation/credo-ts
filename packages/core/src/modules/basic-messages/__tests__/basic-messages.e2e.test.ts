@@ -11,7 +11,6 @@ import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../.
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
 import { MessageSendingError, RecordNotFoundError } from '../../../error'
-import { ConsoleLogger, LogLevel } from '../../../logger'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
@@ -19,7 +18,6 @@ const faberConfig = getAgentOptions(
   'Faber Basic Messages',
   {
     endpoints: ['rxjs:faber'],
-    logger: new ConsoleLogger(LogLevel.debug),
   },
   getIndySdkModules()
 )
@@ -28,7 +26,6 @@ const aliceConfig = getAgentOptions(
   'Alice Basic Messages',
   {
     endpoints: ['rxjs:alice'],
-    logger: new ConsoleLogger(LogLevel.debug),
   },
   getIndySdkModules()
 )
