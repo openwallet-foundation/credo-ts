@@ -253,11 +253,11 @@ export class IndySdkToAskarMigrationUpdater {
       // Move the migrated and updated file to the expected location for afj
       await this.moveToNewLocation()
     } catch (cause) {
-      this.agent.config.logger.error('Migration failed. Reverting state.')
+      this.agent.config.logger.error('Migration failed. Restoring state.')
 
       await this.restoreDatabase()
 
-      throw new IndySdkToAskarMigrationError('Migration failed. State has been reverted.', { cause })
+      throw new IndySdkToAskarMigrationError('Migration failed. State has been restored.', { cause })
     } finally {
       await this.cleanBackup()
     }
@@ -270,7 +270,7 @@ export class IndySdkToAskarMigrationUpdater {
 
     const category = 'Indy::Key'
 
-    this.agent.config.logger.trace(`Migrating category: ${category}`)
+    this.agent.config.logger.info(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -283,7 +283,7 @@ export class IndySdkToAskarMigrationUpdater {
       }
 
       for (const row of keys) {
-        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
+        this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
         const signKey: string = JSON.parse(row.value as string).signkey
         const keySk = TypedArrayEncoder.fromBase58(signKey)
         const key = Key.fromSecretBytes({
@@ -293,12 +293,13 @@ export class IndySdkToAskarMigrationUpdater {
         await txn.insertKey({ name: row.name, key })
 
         await txn.remove({ category, name: row.name })
+        key.handle.free()
         updateCount++
       }
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
+    this.agent.config.logger.info(`Migrated ${updateCount} records of type ${category}`)
   }
 
   private async updateMasterSecret() {
@@ -310,7 +311,7 @@ export class IndySdkToAskarMigrationUpdater {
 
     const category = 'Indy::MasterSecret'
 
-    this.agent.config.logger.trace(`Migrating category: ${category}`)
+    this.agent.config.logger.info(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -327,8 +328,10 @@ export class IndySdkToAskarMigrationUpdater {
         throw new IndySdkToAskarMigrationError('defaultLinkSecretId can not be established.')
       }
 
+      this.agent.config.logger.info(`Default link secret id for migration is ${this.defaultLinkSecretId}`)
+
       for (const row of masterSecrets) {
-        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
+        this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
 
         const isDefault = masterSecrets.length === 0 ?? row.name === this.walletConfig.id
 
@@ -350,7 +353,7 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
+    this.agent.config.logger.info(`Migrated ${updateCount} records of type ${category}`)
   }
 
   private async updateCredentials() {
@@ -360,7 +363,7 @@ export class IndySdkToAskarMigrationUpdater {
 
     const category = 'Indy::Credential'
 
-    this.agent.config.logger.trace(`Migrating category: ${category}`)
+    this.agent.config.logger.info(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -373,7 +376,7 @@ export class IndySdkToAskarMigrationUpdater {
       }
 
       for (const row of credentials) {
-        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
+        this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
         const data = JSON.parse(row.value as string) as {
           schema_id: string
           cred_def_id: string
@@ -408,6 +411,6 @@ export class IndySdkToAskarMigrationUpdater {
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
+    this.agent.config.logger.info(`Migrated ${updateCount} records of type ${category}`)
   }
 }
