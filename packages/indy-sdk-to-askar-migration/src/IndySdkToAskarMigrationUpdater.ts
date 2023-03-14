@@ -61,9 +61,11 @@ export class IndySdkToAskarMigrationUpdater {
     const {
       config: { walletConfig },
     } = agent
-    // if (typeof process?.versions?.node !== 'undefined') {
-    //   throw new IndySdkToAskarMigrationError('Node.js is currently not  supported')
-    // }
+    if (typeof process?.versions?.node !== 'undefined') {
+      agent.config.logger.warn(
+        'Node.JS is not fully supported. Using this will likely leave the wallet in a half-migrated state'
+      )
+    }
 
     if (!walletConfig) {
       throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
