@@ -63,9 +63,9 @@ export class IndySdkToAskarMigrationUpdater {
     const {
       config: { walletConfig },
     } = agent
-    if (typeof process?.versions?.node !== 'undefined') {
-      throw new IndySdkToAskarMigrationError('Node.js is currently not officialy supported')
-    }
+    // if (typeof process?.versions?.node !== 'undefined') {
+    //   throw new IndySdkToAskarMigrationError('Node.js is currently not officialy supported')
+    // }
 
     if (!walletConfig) {
       throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
@@ -242,7 +242,7 @@ export class IndySdkToAskarMigrationUpdater {
   private async updateKeys() {
     const category = 'Indy::Key'
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -255,7 +255,7 @@ export class IndySdkToAskarMigrationUpdater {
       }
 
       for (const row of keys) {
-        await txn.remove({ category, name: row.name })
+        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
         const signKey: string = JSON.parse(row.value as string).signkey
         const keySk = TypedArrayEncoder.fromBase58(signKey)
         const key = Key.fromSecretBytes({
@@ -263,18 +263,20 @@ export class IndySdkToAskarMigrationUpdater {
           secretKey: keySk.subarray(0, 32),
         })
         await txn.insertKey({ name: row.name, key })
+
+        await txn.remove({ category, name: row.name })
         updateCount++
       }
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
+    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
   }
 
   private async updateMasterSecret() {
     const category = 'Indy::MasterSecret'
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -292,8 +294,9 @@ export class IndySdkToAskarMigrationUpdater {
       }
 
       for (const row of masterSecrets) {
+        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
+
         const isDefault = masterSecrets.length === 0 ?? row.name === this.walletId
-        await txn.remove({ category, name: row.name })
 
         const {
           value: { ms },
@@ -306,18 +309,20 @@ export class IndySdkToAskarMigrationUpdater {
         const tags = transformFromRecordTagValues(record.getTags())
 
         await txn.insert({ category: record.type, name: record.id, value, tags })
+
+        await txn.remove({ category, name: row.name })
         updateCount++
       }
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
+    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
   }
 
   private async updateCredentials() {
     const category = 'Indy::Credential'
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updating category: ${category}`)
+    this.agent.config.logger.trace(`Migrating category: ${category}`)
 
     let updateCount = 0
     const session = this.store.transaction()
@@ -330,7 +335,7 @@ export class IndySdkToAskarMigrationUpdater {
       }
 
       for (const row of credentials) {
-        await txn.remove({ category, name: row.name })
+        this.agent.config.logger.trace(`Migrating ${row.name} to the new askar format`)
         const data = JSON.parse(row.value as string) as {
           schema_id: string
           cred_def_id: string
@@ -358,11 +363,13 @@ export class IndySdkToAskarMigrationUpdater {
         const value = JsonTransformer.serialize(record)
 
         await txn.insert({ category: record.type, name: record.id, value, tags })
+
+        await txn.remove({ category, name: row.name })
         updateCount++
       }
       await txn.commit()
     }
 
-    this.agent.config.logger.trace(`[indy-sdk-to-askar-migration]: Updated ${updateCount} instances inside ${category}`)
+    this.agent.config.logger.trace(`Migrated ${updateCount} records of type ${category}`)
   }
 }
