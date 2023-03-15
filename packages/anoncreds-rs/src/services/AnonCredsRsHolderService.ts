@@ -24,7 +24,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
 } from '@aries-framework/anoncreds'
-import { AnonCredsRestriction } from '@aries-framework/anoncreds/src/models/AnonCredsRestriction'
+import { AnonCredsRestriction } from '../../../anoncreds/src/models/AnonCredsRestriction'
 import { JsonTransformer, utils, injectable } from '@aries-framework/core'
 import {
   CredentialRequestMetadata,

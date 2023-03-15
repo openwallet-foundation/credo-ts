@@ -286,6 +286,10 @@ describe('AnonCredsRsHolderService', () => {
           names: ['name', 'height'],
           restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }],
         },
+        attr5_referent: {
+          names: ['name'],
+          restrictions: [{'attr::name::value': 'Alice'}, { 'attr::name::marker': '1' }],
+        },
       },
       requested_predicates: {
         predicate1_referent: { name: 'age', p_type: '>=' as const, p_value: 18 },
@@ -341,6 +345,18 @@ describe('AnonCredsRsHolderService', () => {
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         attributes: ['age'],
         $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+      })
+    })
+
+    test('referent with attribute values', async () => {
+      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
+        proofRequest,
+        attributeReferent: 'attr5_referent',
+      })
+
+      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+        attributes: ['name'],
+        $or: [{'attr::name::value': 'Alice'}, {'attr::name::marker': '1'}],
       })
     })
 
@@ -417,6 +433,8 @@ describe('AnonCredsRsHolderService', () => {
     ).rejects.toThrowError()
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
+
+    console.log(credentialInfo)
 
     expect(credentialInfo).toMatchObject({
       attributes: { attr1: 'value1', attr2: 'value2' },
