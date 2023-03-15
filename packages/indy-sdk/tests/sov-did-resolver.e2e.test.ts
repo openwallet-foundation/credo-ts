@@ -19,7 +19,7 @@ describe('Indy SDK Sov DID resolver', () => {
     await agent.wallet.delete()
   })
 
-  it('should resolve a did:sov did', async () => {
+  test('resolve a did:sov did', async () => {
     // Add existing endorser did to the wallet
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       agent,
@@ -43,8 +43,8 @@ describe('Indy SDK Sov DID resolver', () => {
 
     if (!createResult.didState.did) throw new AriesFrameworkError('Unable to register did')
 
-    const { id: unqualifiedDid } = parseIndyDid(createResult.didState.did)
-    const sovDid = `did:sov:${unqualifiedDid}`
+    const { namespaceIdentifier } = parseIndyDid(createResult.didState.did)
+    const sovDid = `did:sov:${namespaceIdentifier}`
     const didResult = await agent.dids.resolve(sovDid)
 
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({

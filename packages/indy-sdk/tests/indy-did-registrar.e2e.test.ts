@@ -9,12 +9,10 @@ import { legacyIndyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { getIndySdkModules } from './setupIndySdkModule'
 
 const agentOptions = getAgentOptions('Indy Sdk Indy Did Registrar', {}, getIndySdkModules())
+const agent = new Agent(agentOptions)
 
-describe('dids', () => {
-  let agent: Agent<ReturnType<typeof getIndySdkModules>>
-
+describe('Indy SDK Indy Did Registrar', () => {
   beforeAll(async () => {
-    agent = new Agent(agentOptions)
     await agent.initialize()
   })
 

@@ -78,7 +78,6 @@ describe('IndySdkIndyDidRegistrar', () => {
 
   test('returns an error state if both did and privateKey are provided', async () => {
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'did:indy:pool1:did-value',
       options: {
         submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -120,7 +119,6 @@ describe('IndySdkIndyDidRegistrar', () => {
 
   test('returns an error state if did is provided, but it is not a valid did:indy did', async () => {
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
         submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -141,7 +139,6 @@ describe('IndySdkIndyDidRegistrar', () => {
 
   test('returns an error state if did is provided, but no verkey', async () => {
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
         submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -161,7 +158,6 @@ describe('IndySdkIndyDidRegistrar', () => {
 
   test('returns an error state if did and verkey are provided, but the did is not self certifying', async () => {
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       options: {
         submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -182,7 +178,6 @@ describe('IndySdkIndyDidRegistrar', () => {
 
   test('returns an error state if did is provided, but does not match with the namespace from the submitterDid', async () => {
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'did:indy:pool2:R1xKJw17sUoXhejEpugMYJ',
       options: {
         submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -205,7 +200,9 @@ describe('IndySdkIndyDidRegistrar', () => {
   test('creates a did:indy document without services', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    const registerPublicDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'registerPublicDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
@@ -264,11 +261,12 @@ describe('IndySdkIndyDidRegistrar', () => {
   })
 
   test('creates a did:indy document by passing did', async () => {
-    const registerPublicDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'registerPublicDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
       did: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ',
       options: {
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
@@ -323,10 +321,14 @@ describe('IndySdkIndyDidRegistrar', () => {
   test('creates a did:indy document with services', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    const registerPublicDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'registerPublicDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    const setEndpointsForDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'setEndpointsForDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'setEndpointsForDid')
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const result = await indySdkIndyDidRegistrar.create(agentContext, {
@@ -427,10 +429,14 @@ describe('IndySdkIndyDidRegistrar', () => {
   test('stores the did document', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    const registerPublicDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'registerPublicDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    const setEndpointsForDidSpy = jest.spyOn(indySdkIndyDidRegistrar, 'setEndpointsForDid')
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore method is private
+    const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indySdkIndyDidRegistrar, 'setEndpointsForDid')
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const saveCalled = jest.fn()

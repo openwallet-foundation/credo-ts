@@ -14,8 +14,8 @@ import { DID_INDY_REGEX } from '../utils/did'
 export function parseIndyDid(did: string) {
   const match = did.match(DID_INDY_REGEX)
   if (match) {
-    const [, namespace, id] = match
-    return { namespace, id }
+    const [, namespace, namespaceIdentifier] = match
+    return { namespace, namespaceIdentifier }
   } else {
     throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
   }

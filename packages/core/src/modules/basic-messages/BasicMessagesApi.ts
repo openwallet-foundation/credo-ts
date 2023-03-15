@@ -41,13 +41,14 @@ export class BasicMessagesApi {
    * @throws {MessageSendingError} If message is undeliverable
    * @returns the created record
    */
-  public async sendMessage(connectionId: string, message: string) {
+  public async sendMessage(connectionId: string, message: string, parentThreadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
       this.agentContext,
       message,
-      connection
+      connection,
+      parentThreadId
     )
     const outboundMessageContext = new OutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,
@@ -79,6 +80,18 @@ export class BasicMessagesApi {
    */
   public async getById(basicMessageRecordId: string) {
     return this.basicMessageService.getById(this.agentContext, basicMessageRecordId)
+  }
+
+  /**
+   * Retrieve a basic message record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The connection record
+   */
+  public async getByThreadId(basicMessageRecordId: string) {
+    return this.basicMessageService.getByThreadId(this.agentContext, basicMessageRecordId)
   }
 
   /**

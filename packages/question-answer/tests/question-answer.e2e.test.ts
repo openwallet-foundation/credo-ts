@@ -5,9 +5,9 @@ import { Agent } from '@aries-framework/core'
 import { indySdk, setupSubjectTransports, testLogger, getAgentOptions, makeConnection } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
-import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
-
 import { waitForQuestionAnswerRecord } from './helpers'
+
+import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@aries-framework/question-answer'
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),

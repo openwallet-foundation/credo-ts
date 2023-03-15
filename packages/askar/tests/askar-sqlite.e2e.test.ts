@@ -1,21 +1,29 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import {
+  Agent,
+  BasicMessageRecord,
+  BasicMessageRepository,
+  BasicMessageRole,
+  KeyDerivationMethod,
+  TypedArrayEncoder,
+  utils,
+  WalletDuplicateError,
+  WalletInvalidKeyError,
+  WalletNotFoundError,
+} from '@aries-framework/core'
+import { Store } from '@hyperledger/aries-askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
-import { Agent } from '../src/agent/Agent'
-import { BasicMessageRepository, BasicMessageRecord, BasicMessageRole } from '../src/modules/basic-messages'
-import { KeyDerivationMethod } from '../src/types'
-import { uuid } from '../src/utils/uuid'
-import { WalletInvalidKeyError } from '../src/wallet/error'
-import { WalletDuplicateError } from '../src/wallet/error/WalletDuplicateError'
-import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
+import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 
-import { getAgentOptions } from './helpers'
+import { getSqliteAgentOptions } from './helpers'
 
-const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, getIndySdkModules())
-const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, getIndySdkModules())
+const aliceAgentOptions = getSqliteAgentOptions('AgentsAlice')
+const bobAgentOptions = getSqliteAgentOptions('AgentsBob')
 
-describe('wallet', () => {
+// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'Askar SQLite agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
@@ -31,7 +39,6 @@ describe('wallet', () => {
     if (aliceAgent.wallet.isProvisioned) {
       await aliceAgent.wallet.delete()
     }
-
     if (bobAgent.wallet.isProvisioned) {
       await bobAgent.wallet.delete()
     }
@@ -40,7 +47,7 @@ describe('wallet', () => {
   test('open, create and open wallet with different wallet key that it is in agent config', async () => {
     const walletConfig = {
       id: 'mywallet',
-      key: 'mysecretwalletkey',
+      key: 'mysecretwalletkey-0',
     }
 
     try {
@@ -57,40 +64,19 @@ describe('wallet', () => {
     expect(aliceAgent.isInitialized).toBe(true)
   })
 
-  test('when creating already existing wallet throw WalletDuplicateError', async () => {
-    const walletConfig = {
-      id: 'mywallet',
-      key: 'mysecretwalletkey',
-    }
-
-    await aliceAgent.wallet.create(walletConfig)
-
-    await expect(aliceAgent.wallet.create(walletConfig)).rejects.toThrowError(WalletDuplicateError)
-  })
-
   test('when opening non-existing wallet throw WalletNotFoundError', async () => {
     const walletConfig = {
       id: 'mywallet',
-      key: 'mysecretwalletkey',
+      key: 'mysecretwalletkey-1',
     }
 
     await expect(aliceAgent.wallet.open(walletConfig)).rejects.toThrowError(WalletNotFoundError)
   })
 
-  test('when opening wallet with invalid key throw WalletInvalidKeyError', async () => {
-    const walletConfig = {
-      id: 'mywallet',
-      key: 'mysecretwalletkey',
-    }
-
-    await aliceAgent.wallet.create(walletConfig)
-    await expect(aliceAgent.wallet.open({ ...walletConfig, key: 'abcd' })).rejects.toThrowError(WalletInvalidKeyError)
-  })
-
   test('when create wallet and shutdown, wallet is closed', async () => {
     const walletConfig = {
       id: 'mywallet',
-      key: 'mysecretwalletkey',
+      key: 'mysecretwalletkey-2',
     }
 
     await aliceAgent.wallet.create(walletConfig)
@@ -103,8 +89,8 @@ describe('wallet', () => {
   test('create wallet with custom key derivation method', async () => {
     const walletConfig = {
       id: 'mywallet',
-      key: 'mysecretwalletkey',
-      keyDerivationMethod: KeyDerivationMethod.Argon2IInt,
+      key: Store.generateRawKey(TypedArrayEncoder.fromString('mysecretwalletkey')),
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     }
 
     await aliceAgent.wallet.createAndOpen(walletConfig)
@@ -132,7 +118,7 @@ describe('wallet', () => {
     }
 
     const backupKey = 'someBackupKey'
-    const backupWalletName = `backup-${uuid()}`
+    const backupWalletName = `backup-${utils.uuid()}`
     const backupPath = path.join(tmpdir(), backupWalletName)
 
     // Create backup and delete wallet
@@ -182,5 +168,25 @@ describe('wallet', () => {
     await aliceAgent.initialize()
 
     expect(aliceAgent.isInitialized).toBe(true)
+  })
+
+  test('when creating already existing wallet throw WalletDuplicateError', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey-2',
+    }
+
+    await aliceAgent.wallet.create(walletConfig)
+    await expect(aliceAgent.wallet.create(walletConfig)).rejects.toThrowError(WalletDuplicateError)
+  })
+
+  test('when opening wallet with invalid key throw WalletInvalidKeyError', async () => {
+    const walletConfig = {
+      id: 'mywallet',
+      key: 'mysecretwalletkey-3',
+    }
+
+    await aliceAgent.wallet.create(walletConfig)
+    await expect(aliceAgent.wallet.open({ ...walletConfig, key: 'abcd' })).rejects.toThrowError(WalletInvalidKeyError)
   })
 })
