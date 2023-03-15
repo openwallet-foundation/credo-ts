@@ -30,6 +30,7 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -71,7 +72,8 @@ const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
 const indyDid = 'LjgpST2rjsoxYegQDRm7EL'
 
-describe('Legacy indy format services using anoncreds-rs', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],
