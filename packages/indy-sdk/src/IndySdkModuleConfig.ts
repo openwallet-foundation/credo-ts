@@ -22,7 +22,7 @@ export interface IndySdkModuleConfigOptions {
    * ## React Native
    *
    * ```ts
-   * import * as indySdk from 'indy-sdk-react-native'
+   * import indySdk from 'indy-sdk-react-native'
    *
    * const indySdkModule = new IndySdkModule({
    *   indySdk
