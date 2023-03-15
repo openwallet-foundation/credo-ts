@@ -417,7 +417,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     let proofRecord = await this.findByThreadAndConnectionId(agentContext, proofRequestMessage.threadId, connection?.id)
 
     if (!proofRecord) {
-      // Proof request not bound to any connection: requests_attach in OOB msg
+      // Proof request bound to a proofRecord by threadId: proof proposal in OOB msg
+      // TODO integrate with oob module
       proofRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, proofRequestMessage.threadId)
       if (proofRecord) proofRecord.connectionId = connection?.id
     }

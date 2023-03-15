@@ -2,7 +2,7 @@ import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { ProofState } from '../../../../../../core/src'
-import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import { waitForProofExchangeRecordSubject, testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
 
@@ -166,7 +166,7 @@ describe('Present Proof', () => {
     })
     await faberAgent.oob.receiveInvitation(outOfBandInvitation)
     testLogger.test('Faber waits for proof proposal message from Alice')
-    let faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
+    let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.ProposalReceived,
     })
 
@@ -178,7 +178,7 @@ describe('Present Proof', () => {
 
     // ALice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
-    let aliceProofExchangeRecord = await waitForProofExchangeRecord(aliceAgent, {
+    let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.RequestReceived,
     })
     expect(aliceProofExchangeRecord.connectionId).not.toBeNull()
@@ -195,7 +195,7 @@ describe('Present Proof', () => {
 
     // Faber waits for the presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
-    faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
+    faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.PresentationReceived,
     })
@@ -208,7 +208,7 @@ describe('Present Proof', () => {
 
     // Alice waits utils she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
-    aliceProofExchangeRecord = await waitForProofExchangeRecord(aliceAgent, {
+    aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })

@@ -39,7 +39,7 @@ export interface ProposeProofOptions<PPs extends ProofProtocol[] = ProofProtocol
 }
 
 /**
- * Interface for ProofsApi.createProofProposal. Will create an out of band request.
+ * Interface for ProofsApi.createProofProposal. Will create an out of band proposal.
  */
 export interface CreateProofProposalOptions<PPs extends ProofProtocol[] = ProofProtocol[]> extends BaseOptions {
   protocolVersion: ProofsProtocolVersionType<PPs>

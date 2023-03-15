@@ -397,7 +397,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     )
 
     if (!proofRecord) {
-      // Proof request not bound to any connection: requests_attach in OOB msg
+      // Proof request bound to a proofRecord by threadId: proof proposal in OOB msg
+      // TODO integrate with oob module
       proofRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
       if (proofRecord) proofRecord.connectionId = connection?.id
     }
