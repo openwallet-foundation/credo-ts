@@ -437,8 +437,6 @@ describe('AnonCredsRsHolderService', () => {
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { credentialId: 'myCredentialId' })
 
-    console.log(credentialInfo)
-
     expect(credentialInfo).toMatchObject({
       attributes: { attr1: 'value1', attr2: 'value2' },
       credentialDefinitionId: 'credDefId',
