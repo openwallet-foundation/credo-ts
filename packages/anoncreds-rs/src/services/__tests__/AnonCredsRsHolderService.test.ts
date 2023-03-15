@@ -291,7 +291,7 @@ describe('AnonCredsRsHolderService', () => {
         },
         attr5_referent: {
           names: ['name'],
-          restrictions: [{'attr::name::value': 'Alice'}, { 'attr::name::marker': '1' }],
+          restrictions: [{ 'attr::name::value': 'Alice' }, { 'attr::name::marker': '1' }],
         },
       },
       requested_predicates: {
@@ -359,7 +359,7 @@ describe('AnonCredsRsHolderService', () => {
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         attributes: ['name'],
-        $or: [{'attr::name::value': 'Alice'}, {'attr::name::marker': '1'}],
+        $or: [{ 'attr::name::value': 'Alice' }, { 'attr::name::marker': '1' }],
       })
     })
 

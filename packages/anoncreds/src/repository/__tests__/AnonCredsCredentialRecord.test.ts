@@ -20,12 +20,12 @@ describe('AnoncredsCredentialRecords', () => {
       schemaIssuerId: 'schemaIssuerDid',
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
-    });
+    })
 
     const tags = anoncredsCredentialRecords.getTags()
 
     expect(tags).toMatchObject({
-        issuerId: 'issuerDid',
+      issuerId: 'issuerDid',
       schemaIssuerId: 'schemaIssuerDid',
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
@@ -34,12 +34,11 @@ describe('AnoncredsCredentialRecords', () => {
       credentialId: 'myCredentialId',
       credentialRevocationId: 'credentialRevocationId',
       linkSecretId: 'linkSecretId',
-      attributes: [ 'attr1', 'attr2' ],
+      attributes: ['attr1', 'attr2'],
       'attr::attr1::value': 'value1',
       'attr::attr1::marker': true,
       'attr::attr2::value': 'value2',
-      'attr::attr2::marker': true
+      'attr::attr2::marker': true,
     })
-
   })
 })

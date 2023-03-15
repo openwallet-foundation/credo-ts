@@ -1,5 +1,5 @@
 import type { AnonCredsCredential } from '../models'
-import type { TagsBase, Tags } from '@aries-framework/core'
+import type { Tags } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
@@ -13,7 +13,6 @@ export interface AnonCredsCredentialRecordProps {
   schemaVersion: string
   schemaIssuerId: string
   issuerId: string
-  
 }
 
 export type DefaultAnonCredsCredentialTags = {
@@ -24,9 +23,9 @@ export type DefaultAnonCredsCredentialTags = {
   schemaId: string
   attributes: string[]
 
-    // the following keys can be used for every `attribute name` in credential.
-    [key: `attr::${string}::marker`]: true | undefined
-    [key: `attr::${string}::value`]: string | undefined
+  // the following keys can be used for every `attribute name` in credential.
+  [key: `attr::${string}::marker`]: true | undefined
+  [key: `attr::${string}::value`]: string | undefined
 }
 
 export type CustomAnonCredsCredentialTags = {
@@ -52,7 +51,6 @@ export class AnonCredsCredentialRecord extends BaseRecord<
     super()
 
     if (props) {
-      
       this.id = props.id ?? utils.uuid()
       this.credentialId = props.credentialId
       this.credential = props.credential
