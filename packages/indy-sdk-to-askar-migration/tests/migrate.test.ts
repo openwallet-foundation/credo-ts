@@ -1,7 +1,7 @@
 import type { InitConfig } from '@aries-framework/core'
 
 import { AskarModule } from '@aries-framework/askar'
-import { HttpOutboundTransport, WsOutboundTransport, utils, KeyDerivationMethod, Agent } from '@aries-framework/core'
+import { utils, KeyDerivationMethod, Agent } from '@aries-framework/core'
 import { IndySdkModule } from '@aries-framework/indy-sdk'
 import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
@@ -10,6 +10,7 @@ import indy from 'indy-sdk'
 import { homedir } from 'os'
 
 import { IndySdkToAskarMigrationUpdater } from '../src'
+import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'
 
 describe('Migrate', () => {
   const config: InitConfig = {
@@ -20,6 +21,30 @@ describe('Migrate', () => {
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
   }
+
+  const invalidConfig: InitConfig = {
+    label: 'invalid-test-agent',
+    walletConfig: {
+      id: `walletwallet.1-${utils.uuid()}`,
+      key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
+      keyDerivationMethod: KeyDerivationMethod.Raw,
+    },
+  }
+
+  const invalidAgent = new Agent({
+    config: invalidConfig,
+    modules: {
+      indySdk: new IndySdkModule({ indySdk: indy }),
+    },
+    dependencies: agentDependencies,
+  })
+
+  const invalidNewAgent = new Agent({
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    config: { ...invalidConfig, walletConfig: { ...invalidConfig.walletConfig!, key: 'wrong-key' } },
+    modules: { askar: new AskarModule() },
+    dependencies: agentDependencies,
+  })
 
   const oldAgent = new Agent({
     config,
@@ -35,7 +60,8 @@ describe('Migrate', () => {
     dependencies: agentDependencies,
   })
 
-  const oldDbPath = `${homedir()}/.indy_client/wallet/${oldAgent.config.walletConfig?.id}/sqlite.db`
+  const oldAgentDbPath = `${homedir()}/.indy_client/wallet/${oldAgent.config.walletConfig?.id}/sqlite.db`
+  const invalidAgentDbPath = `${homedir()}/.indy_client/wallet/${invalidAgent.config.walletConfig?.id}/sqlite.db`
 
   beforeAll(() => {
     registerAriesAskar({ askar: ariesAskar })
@@ -44,24 +70,13 @@ describe('Migrate', () => {
   test('indy-sdk sqlite to aries-askar sqlite', async () => {
     const genericRecordContent = { foo: 'bar' }
 
-    oldAgent.registerOutboundTransport(new WsOutboundTransport())
-    oldAgent.registerOutboundTransport(new HttpOutboundTransport())
     await oldAgent.initialize()
 
     const record = await oldAgent.genericRecords.save({ content: genericRecordContent })
 
     await oldAgent.shutdown()
 
-    // We remove the `process.versions.node` here as do check that in the
-    // updater if its a node.js environment. This is only done for testing and
-    // must not be done in production, as quite some edge cases are not
-    // handled, yet.
-    //
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    // process.versions.node = undefined
-
-    const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: oldDbPath, agent: newAgent })
+    const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: oldAgentDbPath, agent: newAgent })
     await updater.update()
 
     await newAgent.initialize()
@@ -69,5 +84,35 @@ describe('Migrate', () => {
     await expect(newAgent.genericRecords.findById(record.id)).resolves.toMatchObject({ content: genericRecordContent })
 
     await newAgent.shutdown()
+  })
+
+  /*
+   * - Initialize an agent
+   * - Save a generic record
+   * - try to migrate with invalid state (wrong key)
+   *     - Migration will be attempted, fails, and restores
+   *  - Check if the record can still be accessed
+   */
+  test('indy-sdk sqlite to aries-askar sqlite fails and restores', async () => {
+    const genericRecordContent = { foo: 'bar' }
+
+    await invalidAgent.initialize()
+
+    const record = await invalidAgent.genericRecords.save({ content: genericRecordContent })
+
+    await invalidAgent.shutdown()
+
+    const updater = await IndySdkToAskarMigrationUpdater.initialize({
+      dbPath: invalidAgentDbPath,
+      agent: invalidNewAgent,
+    })
+
+    await expect(updater.update()).rejects.toThrowError(IndySdkToAskarMigrationError)
+
+    await invalidAgent.initialize()
+
+    await expect(invalidAgent.genericRecords.findById(record.id)).resolves.toMatchObject({
+      content: genericRecordContent,
+    })
   })
 })
