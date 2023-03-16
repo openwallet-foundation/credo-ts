@@ -29,10 +29,10 @@
     "@aries-framework/core": "^0.4.0-alpha.71",
     "@aries-framework/indy-sdk": "^0.4.0-alpha.71",
     "@aries-framework/node": "^0.4.0-alpha.71",
-    "@hyperledger/aries-askar-shared": "file:/Users/beri/Developer/work/hyperledger/aries-askar/wrappers/javascript/aries-askar-shared"
+    "@hyperledger/aries-askar-shared": "^0.1.0-dev.5"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "file:/Users/beri/Developer/work/hyperledger/aries-askar/wrappers/javascript/aries-askar-nodejs",
+    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.5",
     "indy-sdk": "^1.16.0-dev-1655",
     "rimraf": "^4.0.7",
     "typescript": "~4.9.4"

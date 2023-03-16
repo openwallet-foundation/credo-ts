@@ -1,8 +1,8 @@
 import { AskarModule } from '@aries-framework/askar'
-import { utils, KeyDerivationMethod, Agent, ConsoleLogger, LogLevel } from '@aries-framework/core'
+import { utils, KeyDerivationMethod, Agent } from '@aries-framework/core'
 import { IndySdkModule } from '@aries-framework/indy-sdk'
 import { agentDependencies } from '@aries-framework/node'
-import { ariesAskar, Migration } from '@hyperledger/aries-askar-nodejs'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import indy from 'indy-sdk'
 import { homedir } from 'os'
@@ -17,7 +17,6 @@ describe('Migrate', () => {
       key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
       keyDerivationMethod: KeyDerivationMethod.Raw,
     },
-    logger: new ConsoleLogger(LogLevel.trace),
   }
 
   const oldAgent = new Agent({
@@ -38,8 +37,6 @@ describe('Migrate', () => {
     registerAriesAskar({ askar: ariesAskar })
   })
 
-  // TODO: update with an aca-py issued revokable credential
-  // community agent MIGHT have revocrevoc
   test('indy-sdk sqlite to aries-askar sqlite', async () => {
     const genericRecordContent = { foo: 'bar' }
 

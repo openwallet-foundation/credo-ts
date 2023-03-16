@@ -29,27 +29,3 @@
 <br />
 
 Indy SDK to Askar migration module for [Aries Framework JavaScript](https://github.com/hyperledger/aries-framework-javascript.git).
-
-### Installation
-
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@aries-framework/core`.
-
-```sh
-npm info "@aries-framework/indy-sdk-to-askar-migration" peerDependencies
-```
-
-Then add the indy-sdk-toaskar-migration module to your project.
-
-```sh
-yarn add @aries-framework/indy-sdk-to-askar-migration
-```
-
-### Quick start
-
-In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
-
-### Example of usage
-
-```ts
-// TODO
-```
