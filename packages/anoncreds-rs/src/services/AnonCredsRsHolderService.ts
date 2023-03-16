@@ -30,10 +30,9 @@ import {
   AnonCredsCredentialRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
-  generateLegacyProverDidLikeString,
   legacyIndyCredentialDefinitionIdRegex,
 } from '@aries-framework/anoncreds'
-import { AriesFrameworkError, utils, injectable } from '@aries-framework/core'
+import { TypedArrayEncoder, AriesFrameworkError, utils, injectable } from '@aries-framework/core'
 import {
   anoncreds,
   Credential,
@@ -218,10 +217,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       if (!isLegacyIdentifier && useLegacyProverDid) {
         throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
       }
-
       createReturnObj = CredentialRequest.create({
-        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined, // FIXME: find a better source of entropy
-        proverDid: useLegacyProverDid ? generateLegacyProverDidLikeString() : undefined,
+        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,
+        proverDid: useLegacyProverDid
+          ? TypedArrayEncoder.toBase58(TypedArrayEncoder.fromString(anoncreds.generateNonce().slice(0, 16)))
+          : undefined,
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         masterSecret: { value: { ms: linkSecretRecord.value } },
