@@ -24,11 +24,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "^0.4.0-alpha.71",
-    "@aries-framework/askar": "^0.4.0-alpha.71",
-    "@aries-framework/core": "^0.4.0-alpha.71",
-    "@aries-framework/indy-sdk": "^0.4.0-alpha.71",
-    "@aries-framework/node": "^0.4.0-alpha.71",
+    "@aries-framework/anoncreds": "^0.3.3",
+    "@aries-framework/askar": "^0.3.3",
+    "@aries-framework/core": "^0.3.3",
+    "@aries-framework/indy-sdk": "^0.3.3",
+    "@aries-framework/node": "^0.3.3",
     "@hyperledger/aries-askar-shared": "^0.1.0-dev.5"
   },
   "devDependencies": {
