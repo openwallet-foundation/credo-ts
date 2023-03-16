@@ -61,11 +61,11 @@ export class IndySdkToAskarMigrationUpdater {
     const {
       config: { walletConfig },
     } = agent
-    //if (typeof process?.versions?.node !== 'undefined') {
-    //  throw new IndySdkToAskarMigrationError(
-    //    'Node.JS is not fully supported. Using this will likely leave the wallet in a half-migrated state'
-    //  )
-    //}
+    if (typeof process?.versions?.node !== 'undefined') {
+      agent.config.logger.warn(
+        'Node.JS is not fully supported. Using this will likely leave the wallet in a half-migrated state'
+      )
+    }
 
     if (!walletConfig) {
       throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
@@ -247,17 +247,20 @@ export class IndySdkToAskarMigrationUpdater {
 
       // Update the values to reflect the new structure
       await this.updateKeys()
+      await this.updateCredentialDefinitions()
       await this.updateMasterSecret()
       await this.updateCredentials()
 
       // Move the migrated and updated file to the expected location for afj
       await this.moveToNewLocation()
-    } catch (cause) {
+    } catch (err) {
       this.agent.config.logger.error('Migration failed. Restoring state.')
 
       await this.restoreDatabase()
 
-      throw new IndySdkToAskarMigrationError('Migration failed. State has been restored.', { cause })
+      throw new IndySdkToAskarMigrationError(`Migration failed. State has been restored. ${err.message}`, {
+        cause: err.cause,
+      })
     } finally {
       await this.cleanBackup()
     }
@@ -300,6 +303,30 @@ export class IndySdkToAskarMigrationUpdater {
     }
 
     this.agent.config.logger.info(`Migrated ${updateCount} records of type ${category}`)
+  }
+
+  private async updateCredentialDefinitions() {
+    if (!this.store) {
+      throw new IndySdkToAskarMigrationError('Update keys can not be called outside of the `update()` function')
+    }
+
+    const category = 'Indy::CredentialDefinition'
+
+    this.agent.config.logger.info(`Migrating category: ${category}`)
+
+    const session = this.store.transaction()
+    for (;;) {
+      const txn = await session.open()
+      const keys = await txn.fetchAll({ category, limit: 50 })
+      if (!keys || keys.length === 0) {
+        await txn.close()
+        break
+      } else {
+        // This will be entered if there are credential definitions in the wallet
+        await txn.close()
+        throw new IndySdkToAskarMigrationError('Migration of Credential Definitions is not yet supported')
+      }
+    }
   }
 
   private async updateMasterSecret() {
