@@ -290,8 +290,8 @@ describe('AnonCredsRsHolderService', () => {
           restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }],
         },
         attr5_referent: {
-          names: ['name'],
-          restrictions: [{ 'attr::name::value': 'Alice' }, { 'attr::name::marker': '1' }],
+          name: 'name',
+          restrictions: [{ 'attr::name::value': 'Alice', 'attr::name::marker': '1' }],
         },
       },
       requested_predicates: {
@@ -351,7 +351,20 @@ describe('AnonCredsRsHolderService', () => {
       })
     })
 
-    test('referent with attribute values', async () => {
+    test('referent with multiple names and restrictions', async () => {
+      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
+        proofRequest,
+        attributeReferent: 'attr4_referent',
+      })
+
+      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+        attributes: ['name', 'height'],
+        credentialDefinitionId: 'crededefid:uri',
+        issuerId: 'issuerid:uri',
+      })
+    })
+
+    test('referent with attribute values and marker restriction', async () => {
       await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
         proofRequest,
         attributeReferent: 'attr5_referent',
@@ -359,7 +372,8 @@ describe('AnonCredsRsHolderService', () => {
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
         attributes: ['name'],
-        $or: [{ 'attr::name::value': 'Alice' }, { 'attr::name::marker': '1' }],
+        'attr::name::value': 'Alice',
+        'attr::name::marker': true,
       })
     })
 
