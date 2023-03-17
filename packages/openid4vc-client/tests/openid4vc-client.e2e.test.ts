@@ -120,7 +120,7 @@ describe('OpenId4VcClient', () => {
         .reply(200, getMetadataResponse)
 
       // setup access token response
-      httpMock.post('/oidc/v1/auth/token').reply(200, aquireAccessTokenResponse)
+      httpMock.post('/oidc/v1/auth/token').reply(200, acquireAccessTokenResponse)
 
       // setup credential request response
       httpMock.post('/oidc/v1/auth/credential').reply(200, credentialRequestResponse)
@@ -196,7 +196,7 @@ describe('OpenId4VcClient', () => {
           keyType: KeyType.Ed25519,
         },
         secret: {
-          seed: '96213c3d7fc8d4d6754c7a0fd969598e',
+          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
         },
       })
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
