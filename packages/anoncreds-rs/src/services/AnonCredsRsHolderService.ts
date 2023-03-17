@@ -361,8 +361,6 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
-      // const parsedRestriction = JsonTransformer.fromJSON(restriction, AnonCredsRestriction)
-
       if (restriction.credentialDefinitionId) {
         queryElements.credentialDefinitionId = restriction.credentialDefinitionId
       }
