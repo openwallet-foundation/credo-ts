@@ -20,8 +20,8 @@ export type DefaultAnonCredsCredentialTags = {
   linkSecretId: string
   credentialDefinitionId: string
   credentialRevocationId?: string
+  revocationRegistryId?: string
   schemaId: string
-  attributes: string[]
 
   // the following keys can be used for every `attribute name` in credential.
   [key: `attr::${string}::marker`]: true | undefined
@@ -72,8 +72,8 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       schemaId: this.credential.schema_id,
       credentialId: this.credentialId,
       credentialRevocationId: this.credentialRevocationId,
+      revocationRegistryId: this.credential.rev_reg_id,
       linkSecretId: this.linkSecretId,
-      attributes: Object.keys(this.credential.values),
     }
 
     for (const [key, value] of Object.entries(this.credential.values)) {

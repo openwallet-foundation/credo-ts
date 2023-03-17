@@ -30,8 +30,8 @@ import {
   AnonCredsCredentialRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
+  AnonCredsRestrictionWrapper,
 } from '@aries-framework/anoncreds'
-import { AnonCredsRestrictionWrapper } from '@aries-framework/anoncreds/src/models/AnonCredsRestrictionWrapper'
 import { JsonTransformer, utils, injectable } from '@aries-framework/core'
 import {
   anoncreds,

@@ -377,19 +377,6 @@ describe('AnonCredsRsHolderService', () => {
       })
     })
 
-    test('referent with multiple names and restrictions', async () => {
-      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
-        proofRequest,
-        attributeReferent: 'attr4_referent',
-      })
-
-      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['name', 'height'],
-        credentialDefinitionId: 'crededefid:uri',
-        issuerId: 'issuerid:uri',
-      })
-    })
-
     test('predicate referent', async () => {
       await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
         proofRequest,
