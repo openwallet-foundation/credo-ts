@@ -30,8 +30,9 @@ import {
   AnonCredsCredentialRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
+  legacyIndyCredentialDefinitionIdRegex,
 } from '@aries-framework/anoncreds'
-import { utils, injectable } from '@aries-framework/core'
+import { TypedArrayEncoder, AriesFrameworkError, utils, injectable } from '@aries-framework/core'
 import {
   anoncreds,
   Credential,
@@ -193,7 +194,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
-    const { credentialDefinition, credentialOffer } = options
+    const { useLegacyProverDid, credentialDefinition, credentialOffer } = options
     let createReturnObj:
       | { credentialRequest: CredentialRequest; credentialRequestMetadata: CredentialRequestMetadata }
       | undefined
@@ -212,8 +213,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         )
       }
 
+      const isLegacyIdentifier = credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
+      if (!isLegacyIdentifier && useLegacyProverDid) {
+        throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
+      }
       createReturnObj = CredentialRequest.create({
-        entropy: anoncreds.generateNonce(), // FIXME: find a better source of entropy
+        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,
+        proverDid: useLegacyProverDid
+          ? TypedArrayEncoder.toBase58(TypedArrayEncoder.fromString(anoncreds.generateNonce().slice(0, 16)))
+          : undefined,
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         masterSecret: { value: { ms: linkSecretRecord.value } },

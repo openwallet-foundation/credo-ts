@@ -10,3 +10,4 @@ export { AnonCredsModuleConfig, AnonCredsModuleConfigOptions } from './AnonCreds
 export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { generateLegacyProverDidLikeString } from './utils/proverDid'
+export * from './utils/legacyIndyIdentifiers'

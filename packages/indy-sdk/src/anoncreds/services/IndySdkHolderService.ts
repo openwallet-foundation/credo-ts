@@ -211,6 +211,10 @@ export class IndySdkHolderService implements AnonCredsHolderService {
   ): Promise<CreateCredentialRequestReturn> {
     assertIndySdkWallet(agentContext.wallet)
 
+    if (!options.useLegacyProverDid) {
+      throw new AriesFrameworkError('Indy SDK only supports legacy prover did for credential requests')
+    }
+
     const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 
     // We just generate a prover did like string, as it's not used for anything and we don't need
