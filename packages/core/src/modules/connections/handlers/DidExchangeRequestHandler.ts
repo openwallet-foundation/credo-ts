@@ -5,6 +5,7 @@ import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
+import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
 import { tryParseDid } from '../../dids/domain/parse'
@@ -35,7 +36,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
-    const { agentContext, recipientKey, senderKey, message, connection } = messageContext
+    const { agentContext, recipientKey, senderKey, message, connection, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection request without senderKey or recipientKey')
@@ -65,10 +66,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
       )
     }
 
-    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
-      messageContext.agentContext,
-      senderKey
-    )
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (receivedDidRecord) {
       throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
@@ -83,21 +81,25 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     const connectionRecord = await this.didExchangeProtocol.processRequest(messageContext, outOfBandRecord)
 
+    // Associate the new connection with the session created for the inbound message
+    if (sessionId) {
+      const transportService = agentContext.dependencyManager.resolve(TransportService)
+      transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+    }
+
     if (connectionRecord.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable
-        ? await this.routingService.getRouting(messageContext.agentContext)
-        : undefined
+      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(agentContext) : undefined
 
       const message = await this.didExchangeProtocol.createResponse(
-        messageContext.agentContext,
+        agentContext,
         connectionRecord,
         outOfBandRecord,
         routing
       )
       return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
+        agentContext,
         connection: connectionRecord,
         outOfBand: outOfBandRecord,
       })
