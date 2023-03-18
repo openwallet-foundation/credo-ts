@@ -17,6 +17,7 @@ import type {
   AnonCredsRequestedPredicateMatch,
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
+  GetCredentialsOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
 import type {
@@ -304,6 +305,33 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialRevocationId: credentialRecord.credentialRevocationId,
       revocationRegistryId: credentialRecord.credential.rev_reg_id,
     }
+  }
+
+  public async getCredentials(
+    agentContext: AgentContext,
+    options: GetCredentialsOptions
+  ): Promise<AnonCredsCredentialInfo[]> {
+    const credentialRecords = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, {
+        credentialDefinitionId: options.credentialDefinitionId,
+        schemaId: options.schemaId,
+        issuerId: options.issuerId,
+        schemaName: options.schemaName,
+        schemaVersion: options.schemaVersion,
+        schemaIssuerId: options.schemaIssuerId,
+      })
+
+    return credentialRecords.map((credentialRecord) => ({
+      attributes: Object.fromEntries(
+        Object.entries(credentialRecord.credential.values).map(([key, value]) => [key, value.raw])
+      ),
+      credentialDefinitionId: credentialRecord.credential.cred_def_id,
+      credentialId: credentialRecord.credentialId,
+      schemaId: credentialRecord.credential.schema_id,
+      credentialRevocationId: credentialRecord.credentialRevocationId,
+      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+    }))
   }
 
   public async deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void> {
