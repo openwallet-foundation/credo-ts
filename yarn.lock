@@ -893,7 +893,7 @@
     node-cache "^5.1.2"
     ref-array-di "^1.2.2"
     ref-napi "^3.0.3"
-    ref-struct-di "^1.1.1"
+    ref-struct-di "^1.1.1
 
 "@hyperledger/aries-askar-shared@0.1.0-dev.6", "@hyperledger/aries-askar-shared@^0.1.0-dev.6":
   version "0.1.0-dev.6"

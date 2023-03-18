@@ -1,0 +1,40 @@
+{
+  "name": "@aries-framework/indy-sdk-to-askar-migration",
+  "main": "build/index",
+  "types": "build/index",
+  "version": "0.3.3",
+  "files": [
+    "build"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/indy-sdk-to-askar-migration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperledger/aries-framework-javascript",
+    "directory": "packages/indy-sdk-to-askar-migration"
+  },
+  "scripts": {
+    "build": "yarn run clean && yarn run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "yarn run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aries-framework/anoncreds": "^0.3.3",
+    "@aries-framework/askar": "^0.3.3",
+    "@aries-framework/core": "^0.3.3",
+    "@aries-framework/indy-sdk": "^0.3.3",
+    "@aries-framework/node": "^0.3.3",
+    "@hyperledger/aries-askar-shared": "^0.1.0-dev.5"
+  },
+  "devDependencies": {
+    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.5",
+    "indy-sdk": "^1.16.0-dev-1655",
+    "rimraf": "^4.0.7",
+    "typescript": "~4.9.4"
+  }
+}
