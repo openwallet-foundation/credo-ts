@@ -13,6 +13,7 @@ import type {
   AnonCredsCredentialRequestMetadata,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
+  GetCredentialsOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
@@ -195,6 +196,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         schemaId: result.schema_id,
         credentialRevocationId: result.cred_rev_id,
         revocationRegistryId: result.rev_reg_id,
+        methodName: 'indy',
       }
     } catch (error) {
       agentContext.config.logger.error(`Error getting Indy Credential '${options.credentialId}'`, {
@@ -203,6 +205,34 @@ export class IndySdkHolderService implements AnonCredsHolderService {
 
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
+  }
+
+  public async getCredentials(agentContext: AgentContext, options: GetCredentialsOptions) {
+    assertIndySdkWallet(agentContext.wallet)
+
+    // Indy SDK only supports indy credentials
+    if (options.methodName && options.methodName !== 'indy') {
+      return []
+    }
+
+    const credentials = await this.indySdk.proverGetCredentials(agentContext.wallet.handle, {
+      cred_def_id: options.credentialDefinitionId,
+      schema_id: options.schemaId,
+      schema_issuer_did: options.schemaIssuerId,
+      schema_name: options.schemaName,
+      schema_version: options.schemaVersion,
+      issuer_did: options.issuerId,
+    })
+
+    return credentials.map((credential) => ({
+      credentialDefinitionId: credential.cred_def_id,
+      attributes: credential.attrs,
+      credentialId: credential.referent,
+      schemaId: credential.schema_id,
+      credentialRevocationId: credential.cred_rev_id,
+      revocationRegistryId: credential.rev_reg_id,
+      methodName: 'indy',
+    }))
   }
 
   public async createCredentialRequest(
@@ -312,6 +342,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
             schemaId: credential.cred_info.schema_id,
             revocationRegistryId: credential.cred_info.rev_reg_id,
             credentialRevocationId: credential.cred_info.cred_rev_id,
+            methodName: 'indy',
           },
           interval: credential.interval,
         }))

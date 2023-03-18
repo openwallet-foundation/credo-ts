@@ -60,6 +60,7 @@ const agentContext = getAgentContext({
 // FIXME: Re-include in tests when NodeJS wrapper performance is improved
 describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
+  const findByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
     getByCredentialIdMock.mockClear()
@@ -435,6 +436,58 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       schemaId: 'schemaId',
       credentialRevocationId: 'credentialRevocationId',
     })
+  })
+
+  test('getCredentials', async () => {
+    findByQueryMock.mockResolvedValueOnce([
+      new AnonCredsCredentialRecord({
+        credential: {
+          cred_def_id: 'credDefId',
+          schema_id: 'schemaId',
+          signature: 'signature',
+          signature_correctness_proof: 'signatureCorrectnessProof',
+          values: { attr1: { raw: 'value1', encoded: 'encvalue1' }, attr2: { raw: 'value2', encoded: 'encvalue2' } },
+          rev_reg_id: 'revRegId',
+        } as AnonCredsCredential,
+        credentialId: 'myCredentialId',
+        credentialRevocationId: 'credentialRevocationId',
+        linkSecretId: 'linkSecretId',
+        issuerId: 'issuerDid',
+        schemaIssuerId: 'schemaIssuerDid',
+        schemaName: 'schemaName',
+        schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
+      }),
+    ])
+
+    const credentialInfo = await anonCredsHolderService.getCredentials(agentContext, {
+      credentialDefinitionId: 'credDefId',
+      schemaId: 'schemaId',
+      schemaIssuerId: 'schemaIssuerDid',
+      schemaName: 'schemaName',
+      schemaVersion: 'schemaVersion',
+      issuerId: 'issuerDid',
+      methodName: 'inMemory',
+    })
+
+    expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+      credentialDefinitionId: 'credDefId',
+      schemaId: 'schemaId',
+      schemaIssuerId: 'schemaIssuerDid',
+      schemaName: 'schemaName',
+      schemaVersion: 'schemaVersion',
+      issuerId: 'issuerDid',
+    })
+    expect(credentialInfo).toMatchObject([
+      {
+        attributes: { attr1: 'value1', attr2: 'value2' },
+        credentialDefinitionId: 'credDefId',
+        credentialId: 'myCredentialId',
+        revocationRegistryId: 'revRegId',
+        schemaId: 'schemaId',
+        credentialRevocationId: 'credentialRevocationId',
+      },
+    ])
   })
 
   test('storeCredential', async () => {

@@ -60,6 +60,16 @@ export interface GetCredentialOptions {
   credentialId: string
 }
 
+export interface GetCredentialsOptions {
+  credentialDefinitionId: string
+  schemaId: string
+  schemaIssuerId: string
+  schemaName: string
+  schemaVersion: string
+  issuerId: string
+  methodName: string
+}
+
 // TODO: Maybe we can make this a bit more specific?
 export type WalletQuery = Record<string, unknown>
 export interface ReferentWalletQuery {

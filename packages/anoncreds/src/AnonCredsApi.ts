@@ -11,6 +11,7 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
   AnonCredsRegistry,
+  GetCredentialsOptions,
 } from './services'
 import type { Extensible } from './services/registry/base'
 import type { SimpleQuery } from '@aries-framework/core'
@@ -355,6 +356,14 @@ export class AnonCredsApi {
       failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
       return failedReturnBase
     }
+  }
+
+  public async getCredential(credentialId: string) {
+    return this.anonCredsHolderService.getCredential(this.agentContext, { credentialId })
+  }
+
+  public async getCredentials(options: GetCredentialsOptions) {
+    return this.anonCredsHolderService.getCredentials(this.agentContext, options)
   }
 
   private async storeCredentialDefinitionRecord(
