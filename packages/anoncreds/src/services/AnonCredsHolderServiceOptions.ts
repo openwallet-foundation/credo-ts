@@ -83,6 +83,7 @@ export interface CreateCredentialRequestOptions {
   credentialOffer: AnonCredsCredentialOffer
   credentialDefinition: AnonCredsCredentialDefinition
   linkSecretId?: string
+  useLegacyProverDid?: boolean
 }
 
 export interface CreateCredentialRequestReturn {
