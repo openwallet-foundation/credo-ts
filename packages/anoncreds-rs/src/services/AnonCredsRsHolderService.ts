@@ -16,6 +16,7 @@ import type {
   GetCredentialOptions,
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
+  GetCredentialsOptions,
   StoreCredentialOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
@@ -27,15 +28,14 @@ import type {
 } from '@hyperledger/anoncreds-shared'
 
 import {
-  legacyIndyCredentialDefinitionIdRegex,
   AnonCredsCredentialRecord,
   AnonCredsCredentialRepository,
   AnonCredsLinkSecretRepository,
   AnonCredsRestrictionWrapper,
+  legacyIndyCredentialDefinitionIdRegex,
 } from '@aries-framework/anoncreds'
-import { AriesFrameworkError, injectable, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
+import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
 import {
-  anoncreds,
   Credential,
   CredentialRequest,
   CredentialRevocationState,
@@ -43,6 +43,7 @@ import {
   Presentation,
   RevocationRegistryDefinition,
   RevocationStatusList,
+  anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
@@ -305,6 +306,33 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       credentialRevocationId: credentialRecord.credentialRevocationId,
       revocationRegistryId: credentialRecord.credential.rev_reg_id,
     }
+  }
+
+  public async getCredentials(
+    agentContext: AgentContext,
+    options: GetCredentialsOptions
+  ): Promise<AnonCredsCredentialInfo[]> {
+    const credentialRecords = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, {
+        credentialDefinitionId: options.credentialDefinitionId,
+        schemaId: options.schemaId,
+        issuerId: options.issuerId,
+        schemaName: options.schemaName,
+        schemaVersion: options.schemaVersion,
+        schemaIssuerId: options.schemaIssuerId,
+      })
+
+    return credentialRecords.map((credentialRecord) => ({
+      attributes: Object.fromEntries(
+        Object.entries(credentialRecord.credential.values).map(([key, value]) => [key, value.raw])
+      ),
+      credentialDefinitionId: credentialRecord.credential.cred_def_id,
+      credentialId: credentialRecord.credentialId,
+      schemaId: credentialRecord.credential.schema_id,
+      credentialRevocationId: credentialRecord.credentialRevocationId,
+      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+    }))
   }
 
   public async deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void> {
