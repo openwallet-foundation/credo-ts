@@ -71,6 +71,7 @@ export class IndyVdrModuleConfig {
     return this.options.networks
   }
 
+  /** See {@link IndyVdrModuleConfigOptions.indyVdr} */
   public get indyVdr() {
     return this.options.indyVdr
   }

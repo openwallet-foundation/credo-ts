@@ -13,6 +13,7 @@ export class AskarModule implements Module {
   public constructor(config: AskarModuleConfigOptions) {
     this.config = new AskarModuleConfig(config)
   }
+
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 

@@ -51,4 +51,8 @@ export class AnonCredsRsModuleConfig {
   public constructor(options: AnonCredsRsModuleConfigOptions) {
     this.options = options
   }
+
+  public get anoncreds() {
+    return this.options.anoncreds
+  }
 }
