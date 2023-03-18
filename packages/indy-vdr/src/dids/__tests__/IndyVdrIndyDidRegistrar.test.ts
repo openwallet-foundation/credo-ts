@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
@@ -199,9 +200,9 @@ describe('IndyVdrIndyDidRegistrar', () => {
   test('creates a did:indy document without services', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -261,9 +262,9 @@ describe('IndyVdrIndyDidRegistrar', () => {
   })
 
   test('creates a did:indy document by passing did', async () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const registerPublicDidSpy = jest.spyOn(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -322,9 +323,9 @@ describe('IndyVdrIndyDidRegistrar', () => {
   test('creates a did:indy document with services using diddocContent', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const registerPublicDidSpy = jest.spyOn(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -483,14 +484,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
   test('creates a did:indy document with services using attrib', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
+    // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -619,14 +620,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
   test('stores the did document', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
+    // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const saveCalled = jest.fn()

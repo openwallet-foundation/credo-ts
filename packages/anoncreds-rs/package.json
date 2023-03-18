@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@hyperledger/anoncreds-nodejs": "^0.1.0-dev.10",
-    "rimraf": "^4.0.7",
-    "typescript": "~4.9.4"
+    "rimraf": "^4.4.0",
+    "typescript": "~4.9.5"
   }
 }

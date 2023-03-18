@@ -31,8 +31,8 @@
   "devDependencies": {
     "@hyperledger/indy-vdr-nodejs": "^0.1.0-dev.10",
     "@stablelib/ed25519": "^1.0.2",
-    "rimraf": "^4.0.7",
+    "rimraf": "^4.4.0",
     "rxjs": "^7.2.0",
-    "typescript": "~4.9.4"
+    "typescript": "~4.9.5"
   }
 }
