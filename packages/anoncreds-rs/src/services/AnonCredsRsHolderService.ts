@@ -32,6 +32,7 @@ import {
   AnonCredsCredentialRepository,
   legacyIndyCredentialDefinitionIdRegex,
 } from '@aries-framework/anoncreds'
+import { AnonCredsRegistryService } from '@aries-framework/anoncreds/src/services/registry/AnonCredsRegistryService'
 import { TypedArrayEncoder, AriesFrameworkError, utils, injectable } from '@aries-framework/core'
 import {
   anoncreds,
@@ -263,6 +264,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
 
+      const methodName = agentContext.dependencyManager
+        .resolve(AnonCredsRegistryService)
+        .getRegistryForIdentifier(agentContext, credential.cred_def_id).methodName
+
       await credentialRepository.save(
         agentContext,
         new AnonCredsCredentialRecord({
@@ -274,6 +279,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           schemaIssuerId: schema.issuerId,
           schemaVersion: schema.version,
           credentialRevocationId: processedCredential.revocationRegistryIndex?.toString(),
+          methodName,
         })
       )
 

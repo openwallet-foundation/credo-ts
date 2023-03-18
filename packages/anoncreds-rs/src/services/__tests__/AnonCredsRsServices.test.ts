@@ -96,6 +96,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
       new AnonCredsSchemaRecord({
         schema: schemaState.schema,
         schemaId: schemaState.schemaId,
+        methodName: 'inMemory',
       })
     )
 
@@ -104,6 +105,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
       new AnonCredsCredentialDefinitionRecord({
         credentialDefinition: credentialDefinitionState.credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'inMemory',
       })
     )
 

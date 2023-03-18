@@ -127,6 +127,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       new AnonCredsSchemaRecord({
         schema: schemaState.schema,
         schemaId: schemaState.schemaId,
+        methodName: 'inMemory',
       })
     )
 
@@ -135,6 +136,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       new AnonCredsCredentialDefinitionRecord({
         credentialDefinition: credentialDefinitionState.credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'inMemory',
       })
     )
 

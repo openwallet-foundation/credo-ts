@@ -218,6 +218,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     getByCredentialIdMock.mockResolvedValueOnce(
@@ -229,6 +230,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -385,6 +387,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -415,6 +418,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     expect(

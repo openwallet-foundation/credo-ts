@@ -425,6 +425,8 @@ export class IndySdkToAskarMigrationUpdater {
           schemaVersion,
           credentialId: row.name,
           linkSecretId: this.defaultLinkSecretId,
+          // Hardcode methodName to indy as all IndySDK credentials are indy credentials
+          methodName: 'indy',
         })
 
         const tags = transformFromRecordTagValues(record.getTags())

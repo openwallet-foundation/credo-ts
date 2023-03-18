@@ -12,6 +12,7 @@ export interface AnonCredsCredentialRecordProps {
   schemaVersion: string
   schemaIssuerId: string
   issuerId: string
+  methodName: string
 }
 
 export type DefaultAnonCredsCredentialTags = {
@@ -22,6 +23,7 @@ export type DefaultAnonCredsCredentialTags = {
   revocationRegistryId?: string
   schemaId: string
   attributes: string[]
+  methodName: string
 }
 
 export type CustomAnonCredsCredentialTags = {
@@ -43,6 +45,12 @@ export class AnonCredsCredentialRecord extends BaseRecord<
   public readonly linkSecretId!: string
   public readonly credential!: AnonCredsCredential
 
+  /**
+   * AnonCreds method name. We don't use names explicitly from the registry (there's no identifier for a registry)
+   * @see https://hyperledger.github.io/anoncreds-methods-registry/
+   */
+  public readonly methodName!: string
+
   public constructor(props: AnonCredsCredentialRecordProps) {
     super()
 
@@ -52,6 +60,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       this.credential = props.credential
       this.credentialRevocationId = props.credentialRevocationId
       this.linkSecretId = props.linkSecretId
+      this.methodName = props.methodName
       this.setTags({
         issuerId: props.issuerId,
         schemaIssuerId: props.schemaIssuerId,
@@ -71,6 +80,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       revocationRegistryId: this.credential.rev_reg_id,
       linkSecretId: this.linkSecretId,
       attributes: Object.keys(this.credential.values),
+      methodName: this.methodName,
     }
   }
 }
