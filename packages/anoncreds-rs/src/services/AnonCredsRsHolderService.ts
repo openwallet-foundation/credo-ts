@@ -326,21 +326,35 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     if (!requestedAttribute) {
       throw new AnonCredsRsError(`Referent not found in proof request`)
     }
-    const attributes = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
 
-    const restrictionQuery = requestedAttribute.restrictions
-      ? this.queryFromRestrictions(requestedAttribute.restrictions)
-      : undefined
+    const $and = []
 
-    const query: Query<AnonCredsCredentialRecord> = {
-      attributes,
-      ...restrictionQuery,
-      ...options.extraQuery,
+    // Make sure the attribute(s) that are requested are present using the marker tag
+    const attributes = requestedAttribute.names ?? [requestedAttribute.name]
+    const attributeQuery: SimpleQuery<AnonCredsCredentialRecord> = {}
+    for (const attribute of attributes) {
+      attributeQuery[`attr::${attribute}::marker`] = true
+    }
+    $and.push(attributeQuery)
+
+    // Add query for proof request restrictions
+    if (requestedAttribute.restrictions) {
+      const restrictionQuery = this.queryFromRestrictions(requestedAttribute.restrictions)
+      $and.push(restrictionQuery)
+    }
+
+    // Add extra query
+    // TODO: we're not really typing the extraQuery, and it will work differently based on the anoncreds implmentation
+    // We should make the allowed properties more strict
+    if (options.extraQuery) {
+      $and.push(options.extraQuery)
     }
 
     const credentials = await agentContext.dependencyManager
       .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, query)
+      .findByQuery(agentContext, {
+        $and,
+      })
 
     return credentials.map((credentialRecord) => {
       const attributes: { [key: string]: string } = {}
