@@ -32,8 +32,8 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
   legacyIndyCredentialDefinitionIdRegex,
+  AnonCredsRegistryService,
 } from '@aries-framework/anoncreds'
-import { AnonCredsRegistryService } from '@aries-framework/anoncreds/src/services/registry/AnonCredsRegistryService'
 import { TypedArrayEncoder, AriesFrameworkError, utils, injectable } from '@aries-framework/core'
 import {
   anoncreds,
