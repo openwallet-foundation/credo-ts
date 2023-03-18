@@ -3,6 +3,7 @@ import type { DependencyManager, Module } from '../../plugins'
 import type { Optional } from '../../utils'
 
 import { CacheModuleConfig } from './CacheModuleConfig'
+import { InMemoryLruCache } from './InMemoryLruCache'
 import { SingleContextLruCacheRepository } from './singleContextLruCache/SingleContextLruCacheRepository'
 import { SingleContextStorageLruCache } from './singleContextLruCache/SingleContextStorageLruCache'
 
@@ -17,7 +18,7 @@ export class CacheModule implements Module {
       ...config,
       cache:
         config?.cache ??
-        new SingleContextStorageLruCache({
+        new InMemoryLruCache({
           limit: 500,
         }),
     })
