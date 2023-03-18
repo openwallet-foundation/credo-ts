@@ -8,6 +8,7 @@ import type {
   GetCredentialsForProofRequestReturn,
   CreateLinkSecretReturn,
   CreateLinkSecretOptions,
+  GetCredentialsOptions,
 } from './AnonCredsHolderServiceOptions'
 import type { AnonCredsCredentialInfo } from '../models'
 import type { AnonCredsProof } from '../models/exchange'
@@ -29,6 +30,7 @@ export interface AnonCredsHolderService {
   // We could come up with a hack (as we've received the credential at one point), but for
   // now I think it's not that much of an issue
   getCredential(agentContext: AgentContext, options: GetCredentialOptions): Promise<AnonCredsCredentialInfo>
+  getCredentials(agentContext: AgentContext, options: GetCredentialsOptions): Promise<AnonCredsCredentialInfo[]>
 
   createCredentialRequest(
     agentContext: AgentContext,
