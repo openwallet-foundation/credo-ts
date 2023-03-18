@@ -10,6 +10,7 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
+  GetCredentialsOptions,
 } from './services'
 import type { Extensible } from './services/registry/base'
 
@@ -345,6 +346,14 @@ export class AnonCredsApi {
       failedReturnBase.resolutionMetadata.message = `Unable to resolve revocation status list for revocation registry ${revocationRegistryDefinitionId}: ${error.message}`
       return failedReturnBase
     }
+  }
+
+  public async getCredential(credentialId: string) {
+    return this.anonCredsHolderService.getCredential(this.agentContext, { credentialId })
+  }
+
+  public async getCredentials(options: GetCredentialsOptions) {
+    return this.anonCredsHolderService.getCredentials(this.agentContext, options)
   }
 
   private async storeCredentialDefinitionRecord(
