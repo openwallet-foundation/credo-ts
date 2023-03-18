@@ -34,6 +34,7 @@ export interface AnonCredsCredentialOffer {
 export interface AnonCredsCredentialRequest {
   // prover_did is deprecated, however it is kept for backwards compatibility with legacy anoncreds implementations
   prover_did?: string
+  entropy?: string
   cred_def_id: string
   blinded_ms: Record<string, unknown>
   blinded_ms_correctness_proof: Record<string, unknown>
