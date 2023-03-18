@@ -17,6 +17,7 @@ import {
 } from '@aries-framework/anoncreds'
 import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
 
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsCredentialRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
@@ -56,7 +57,8 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-describe('AnonCredsRsHolderService', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
 
   beforeEach(() => {

@@ -45,6 +45,7 @@ import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
+import { legacyIndyCredentialDefinitionIdRegex, legacyIndySchemaIdRegex } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -146,8 +147,12 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     if (!credentialDefinitionId) {
       throw new AriesFrameworkError(
-        'No credentialDefinitionId in proposal or provided as input to accept proposal method.'
+        'No credential definition id in proposal or provided as input to accept proposal method.'
       )
+    }
+
+    if (!credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)) {
+      throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
     }
 
     if (!attributes) {
@@ -205,7 +210,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
-    if (!credOffer.schema_id || !credOffer.cred_def_id) {
+    if (
+      !credOffer.schema_id.match(legacyIndySchemaIdRegex) ||
+      !credOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
+    ) {
       throw new ProblemReportError('Invalid credential offer', {
         problemCode: CredentialProblemReportReason.IssuanceAbandoned,
       })
@@ -226,6 +234,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
+    if (!credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)) {
+      throw new AriesFrameworkError(
+        `${credentialOffer.cred_def_id} is not a valid legacy indy credential definition id`
+      )
+    }
     // Get credential definition
     const registry = registryService.getRegistryForIdentifier(agentContext, credentialOffer.cred_def_id)
     const { credentialDefinition, resolutionMetadata } = await registry.getCredentialDefinition(
@@ -243,6 +256,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialOffer,
       credentialDefinition,
       linkSecretId: credentialFormats?.indy?.linkSecretId,
+      useLegacyProverDid: true,
     })
 
     if (!credentialRequest.prover_did) {
