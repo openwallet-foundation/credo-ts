@@ -1,22 +1,22 @@
 import type {
-  AnonCredsHolderService,
-  AnonCredsProof,
-  CreateCredentialRequestOptions,
-  CreateCredentialRequestReturn,
-  CreateProofOptions,
-  GetCredentialOptions,
-  StoreCredentialOptions,
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
-  AnonCredsCredentialInfo,
-  CreateLinkSecretOptions,
-  CreateLinkSecretReturn,
-  AnonCredsProofRequestRestriction,
   AnonCredsCredential,
-  AnonCredsRequestedAttributeMatch,
-  AnonCredsRequestedPredicateMatch,
+  AnonCredsCredentialInfo,
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
+  AnonCredsHolderService,
+  AnonCredsProof,
+  AnonCredsProofRequestRestriction,
+  AnonCredsRequestedAttributeMatch,
+  AnonCredsRequestedPredicateMatch,
+  CreateCredentialRequestOptions,
+  CreateCredentialRequestReturn,
+  CreateLinkSecretOptions,
+  CreateLinkSecretReturn,
+  CreateProofOptions,
+  GetCredentialOptions,
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
+  StoreCredentialOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
 import type {
@@ -27,12 +27,13 @@ import type {
 } from '@hyperledger/anoncreds-shared'
 
 import {
+  legacyIndyCredentialDefinitionIdRegex,
   AnonCredsCredentialRecord,
-  AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
+  AnonCredsLinkSecretRepository,
   AnonCredsRestrictionWrapper,
 } from '@aries-framework/anoncreds'
-import { JsonTransformer, utils, injectable } from '@aries-framework/core'
+import { AriesFrameworkError, injectable, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
 import {
   anoncreds,
   Credential,
@@ -194,7 +195,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
-    const { credentialDefinition, credentialOffer } = options
+    const { useLegacyProverDid, credentialDefinition, credentialOffer } = options
     let createReturnObj:
       | { credentialRequest: CredentialRequest; credentialRequestMetadata: CredentialRequestMetadata }
       | undefined
@@ -213,8 +214,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         )
       }
 
+      const isLegacyIdentifier = credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
+      if (!isLegacyIdentifier && useLegacyProverDid) {
+        throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
+      }
       createReturnObj = CredentialRequest.create({
-        entropy: anoncreds.generateNonce(), // FIXME: find a better source of entropy
+        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,
+        proverDid: useLegacyProverDid
+          ? TypedArrayEncoder.toBase58(TypedArrayEncoder.fromString(anoncreds.generateNonce().slice(0, 16)))
+          : undefined,
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
         masterSecret: { value: { ms: linkSecretRecord.value } },
