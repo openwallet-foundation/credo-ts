@@ -1,5 +1,6 @@
-import type { UpdateConfig, UpdateToVersion } from './updates'
+import type { Update, UpdateConfig, UpdateToVersion } from './updates'
 import type { BaseAgent } from '../../agent/BaseAgent'
+import type { Module } from '../../plugins'
 import type { FileSystem } from '../FileSystem'
 
 import { InjectionSymbols } from '../../constants'
@@ -146,10 +147,41 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
 
       try {
         for (const update of neededUpdates) {
+          const registeredModules = Object.values(this.agent.dependencyManager.registeredModules)
+          const modulesWithUpdate: Array<{ module: Module; update: Update }> = []
+
+          // Filter modules that have an update script for the current update
+          for (const registeredModule of registeredModules) {
+            const moduleUpdate = registeredModule.updates?.find(
+              (module) => module.fromVersion === update.fromVersion && module.toVersion === update.toVersion
+            )
+
+            if (moduleUpdate) {
+              modulesWithUpdate.push({
+                module: registeredModule,
+                update: moduleUpdate,
+              })
+            }
+          }
+
           this.agent.config.logger.info(
-            `Starting update of agent storage from version ${update.fromVersion} to version ${update.toVersion}`
+            `Starting update of agent storage from version ${update.fromVersion} to version ${update.toVersion}. Found ${modulesWithUpdate.length} extension module(s) with update scripts`
           )
           await update.doUpdate(this.agent, this.updateConfig)
+
+          this.agent.config.logger.info(
+            `Finished update of core agent storage from version ${update.fromVersion} to version ${update.toVersion}. Starting update of extension modules`
+          )
+
+          for (const moduleWithUpdate of modulesWithUpdate) {
+            this.agent.config.logger.info(
+              `Starting update of extension module ${moduleWithUpdate.module.constructor.name} from version ${moduleWithUpdate.update.fromVersion} to version ${moduleWithUpdate.update.toVersion}`
+            )
+            await update.doUpdate(this.agent, this.updateConfig)
+            this.agent.config.logger.info(
+              `Finished update of extension module ${moduleWithUpdate.module.constructor.name} from version ${moduleWithUpdate.update.fromVersion} to version ${moduleWithUpdate.update.toVersion}`
+            )
+          }
 
           // Update the framework version in storage
           await this.storageUpdateService.setCurrentStorageVersion(this.agent.context, update.toVersion)
