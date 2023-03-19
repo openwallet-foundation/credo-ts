@@ -27,21 +27,19 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { AskarModule } from '../../askar/src'
+import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
-import { uuid } from '../../core/src/utils/uuid'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
-  genesisTransactions,
-  taaVersion,
-  taaAcceptanceMechanism,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
@@ -67,6 +65,7 @@ import {
   IndyVdrIndyDidResolver,
   IndyVdrIndyDidRegistrar,
 } from '../../indy-vdr/src'
+import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
   V1CredentialProtocol,
   V1ProofProtocol,
@@ -130,14 +129,6 @@ export const getAskarAnonCredsIndyModules = ({
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
-  const indyNetworkConfig = {
-    id: `localhost-${uuid()}`,
-    isProduction: false,
-    genesisTransactions,
-    indyNamespace: 'pool:localtest',
-    transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-  }
-
   const modules = {
     credentials: new CredentialsModule({
       autoAcceptCredentials,
@@ -164,15 +155,15 @@ export const getAskarAnonCredsIndyModules = ({
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry()],
     }),
-    anoncredsRs: new AnonCredsRsModule(),
-    indyVdr: new IndyVdrModule({
-      networks: [indyNetworkConfig],
+    anoncredsRs: new AnonCredsRsModule({
+      anoncreds,
     }),
+    indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
       resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
       registrars: [new IndyVdrIndyDidRegistrar()],
     }),
-    askar: new AskarModule(),
+    askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),

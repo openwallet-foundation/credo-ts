@@ -11,6 +11,7 @@ import {
   Agent,
   DidsModule,
 } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
@@ -30,6 +31,7 @@ const agent = new Agent(
     {},
     {
       indyVdr: new IndyVdrModule({
+        indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
       indySdk: new IndySdkModule({

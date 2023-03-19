@@ -1,4 +1,5 @@
 import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndySdkModule } from '../../indy-sdk/src'
@@ -15,6 +16,7 @@ const agent = new Agent(
     {},
     {
       indyVdr: new IndyVdrModule({
+        indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
       indySdk: new IndySdkModule({
