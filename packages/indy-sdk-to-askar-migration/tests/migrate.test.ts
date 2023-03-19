@@ -44,7 +44,11 @@ describeRunInNodeVersion([18], 'Indy SDK To Askar Migration', () => {
   const invalidNewAgent = new Agent({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     config: { ...invalidConfig, walletConfig: { ...invalidConfig.walletConfig!, key: 'wrong-key' } },
-    modules: { askar: new AskarModule() },
+    modules: {
+      askar: new AskarModule({
+        ariesAskar,
+      }),
+    },
     dependencies: agentDependencies,
   })
 
@@ -58,7 +62,11 @@ describeRunInNodeVersion([18], 'Indy SDK To Askar Migration', () => {
 
   const newAgent = new Agent({
     config,
-    modules: { askar: new AskarModule() },
+    modules: {
+      askar: new AskarModule({
+        ariesAskar,
+      }),
+    },
     dependencies: agentDependencies,
   })
 

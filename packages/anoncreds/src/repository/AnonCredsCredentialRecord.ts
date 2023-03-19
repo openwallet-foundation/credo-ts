@@ -1,4 +1,5 @@
 import type { AnonCredsCredential } from '../models'
+import type { Tags } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
@@ -22,8 +23,11 @@ export type DefaultAnonCredsCredentialTags = {
   credentialRevocationId?: string
   revocationRegistryId?: string
   schemaId: string
-  attributes: string[]
   methodName: string
+
+  // the following keys can be used for every `attribute name` in credential.
+  [key: `attr::${string}::marker`]: true | undefined
+  [key: `attr::${string}::value`]: string | undefined
 }
 
 export type CustomAnonCredsCredentialTags = {
@@ -71,7 +75,7 @@ export class AnonCredsCredentialRecord extends BaseRecord<
   }
 
   public getTags() {
-    return {
+    const tags: Tags<DefaultAnonCredsCredentialTags, CustomAnonCredsCredentialTags> = {
       ...this._tags,
       credentialDefinitionId: this.credential.cred_def_id,
       schemaId: this.credential.schema_id,
@@ -79,8 +83,14 @@ export class AnonCredsCredentialRecord extends BaseRecord<
       credentialRevocationId: this.credentialRevocationId,
       revocationRegistryId: this.credential.rev_reg_id,
       linkSecretId: this.linkSecretId,
-      attributes: Object.keys(this.credential.values),
       methodName: this.methodName,
     }
+
+    for (const [key, value] of Object.entries(this.credential.values)) {
+      tags[`attr::${key}::value`] = value.raw
+      tags[`attr::${key}::marker`] = true
+    }
+
+    return tags
   }
 }

@@ -302,6 +302,10 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
           names: ['name', 'height'],
           restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }],
         },
+        attr5_referent: {
+          name: 'name',
+          restrictions: [{ 'attr::name::value': 'Alice', 'attr::name::marker': '1' }],
+        },
       },
       requested_predicates: {
         predicate1_referent: { name: 'age', p_type: '>=' as const, p_value: 18 },
@@ -332,8 +336,14 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['name'],
-        issuerId: 'issuer:uri',
+        $and: [
+          {
+            'attr::name::marker': true,
+          },
+          {
+            issuerId: 'issuer:uri',
+          },
+        ],
       })
     })
 
@@ -344,7 +354,11 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['phoneNumber'],
+        $and: [
+          {
+            'attr::phoneNumber::marker': true,
+          },
+        ],
       })
     })
 
@@ -355,8 +369,14 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['age'],
-        $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+        $and: [
+          {
+            'attr::age::marker': true,
+          },
+          {
+            $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+          },
+        ],
       })
     })
 
@@ -367,9 +387,35 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['name', 'height'],
-        credentialDefinitionId: 'crededefid:uri',
-        issuerId: 'issuerid:uri',
+        $and: [
+          {
+            'attr::name::marker': true,
+            'attr::height::marker': true,
+          },
+          {
+            credentialDefinitionId: 'crededefid:uri',
+            issuerId: 'issuerid:uri',
+          },
+        ],
+      })
+    })
+
+    test('referent with attribute values and marker restriction', async () => {
+      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
+        proofRequest,
+        attributeReferent: 'attr5_referent',
+      })
+
+      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+        $and: [
+          {
+            'attr::name::marker': true,
+          },
+          {
+            'attr::name::value': 'Alice',
+            'attr::name::marker': true,
+          },
+        ],
       })
     })
 
@@ -380,7 +426,11 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['age'],
+        $and: [
+          {
+            'attr::age::marker': true,
+          },
+        ],
       })
     })
   })

@@ -1,23 +1,23 @@
 import type {
-  AnonCredsHolderService,
-  AnonCredsProof,
-  CreateCredentialRequestOptions,
-  CreateCredentialRequestReturn,
-  CreateProofOptions,
-  GetCredentialOptions,
-  StoreCredentialOptions,
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
-  AnonCredsCredentialInfo,
-  CreateLinkSecretOptions,
-  CreateLinkSecretReturn,
-  AnonCredsProofRequestRestriction,
   AnonCredsCredential,
-  AnonCredsRequestedAttributeMatch,
-  AnonCredsRequestedPredicateMatch,
+  AnonCredsCredentialInfo,
   AnonCredsCredentialRequest,
   AnonCredsCredentialRequestMetadata,
+  AnonCredsHolderService,
+  AnonCredsProof,
+  AnonCredsProofRequestRestriction,
+  AnonCredsRequestedAttributeMatch,
+  AnonCredsRequestedPredicateMatch,
+  CreateCredentialRequestOptions,
+  CreateCredentialRequestReturn,
+  CreateLinkSecretOptions,
+  CreateLinkSecretReturn,
+  CreateProofOptions,
+  GetCredentialOptions,
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
   GetCredentialsOptions,
+  StoreCredentialOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
 import type {
@@ -29,14 +29,14 @@ import type {
 
 import {
   AnonCredsCredentialRecord,
-  AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
+  AnonCredsLinkSecretRepository,
+  AnonCredsRestrictionWrapper,
   legacyIndyCredentialDefinitionIdRegex,
   AnonCredsRegistryService,
 } from '@aries-framework/anoncreds'
-import { TypedArrayEncoder, AriesFrameworkError, utils, injectable } from '@aries-framework/core'
+import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
 import {
-  anoncreds,
   Credential,
   CredentialRequest,
   CredentialRevocationState,
@@ -44,6 +44,7 @@ import {
   Presentation,
   RevocationRegistryDefinition,
   RevocationStatusList,
+  anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
@@ -362,21 +363,35 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     if (!requestedAttribute) {
       throw new AnonCredsRsError(`Referent not found in proof request`)
     }
-    const attributes = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
 
-    const restrictionQuery = requestedAttribute.restrictions
-      ? this.queryFromRestrictions(requestedAttribute.restrictions)
-      : undefined
+    const $and = []
 
-    const query: Query<AnonCredsCredentialRecord> = {
-      attributes,
-      ...restrictionQuery,
-      ...options.extraQuery,
+    // Make sure the attribute(s) that are requested are present using the marker tag
+    const attributes = requestedAttribute.names ?? [requestedAttribute.name]
+    const attributeQuery: SimpleQuery<AnonCredsCredentialRecord> = {}
+    for (const attribute of attributes) {
+      attributeQuery[`attr::${attribute}::marker`] = true
+    }
+    $and.push(attributeQuery)
+
+    // Add query for proof request restrictions
+    if (requestedAttribute.restrictions) {
+      const restrictionQuery = this.queryFromRestrictions(requestedAttribute.restrictions)
+      $and.push(restrictionQuery)
+    }
+
+    // Add extra query
+    // TODO: we're not really typing the extraQuery, and it will work differently based on the anoncreds implmentation
+    // We should make the allowed properties more strict
+    if (options.extraQuery) {
+      $and.push(options.extraQuery)
     }
 
     const credentials = await agentContext.dependencyManager
       .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, query)
+      .findByQuery(agentContext, {
+        $and,
+      })
 
     return credentials.map((credentialRecord) => {
       const attributes: { [key: string]: string } = {}
@@ -401,35 +416,43 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   private queryFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
     const query: Query<AnonCredsCredentialRecord>[] = []
 
-    for (const restriction of restrictions) {
+    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
+
+    for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
-      if (restriction.cred_def_id) {
-        queryElements.credentialDefinitionId = restriction.cred_def_id
+      if (restriction.credentialDefinitionId) {
+        queryElements.credentialDefinitionId = restriction.credentialDefinitionId
       }
 
-      if (restriction.issuer_id || restriction.issuer_did) {
-        queryElements.issuerId = restriction.issuer_id ?? restriction.issuer_did
+      if (restriction.issuerId || restriction.issuerDid) {
+        queryElements.issuerId = restriction.issuerId ?? restriction.issuerDid
       }
 
-      if (restriction.rev_reg_id) {
-        queryElements.revocationRegistryId = restriction.rev_reg_id
+      if (restriction.schemaId) {
+        queryElements.schemaId = restriction.schemaId
       }
 
-      if (restriction.schema_id) {
-        queryElements.schemaId = restriction.schema_id
+      if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
+        queryElements.schemaIssuerId = restriction.schemaIssuerId ?? restriction.issuerDid
       }
 
-      if (restriction.schema_issuer_id || restriction.schema_issuer_did) {
-        queryElements.schemaIssuerId = restriction.schema_issuer_id ?? restriction.schema_issuer_did
+      if (restriction.schemaName) {
+        queryElements.schemaName = restriction.schemaName
       }
 
-      if (restriction.schema_name) {
-        queryElements.schemaName = restriction.schema_name
+      if (restriction.schemaVersion) {
+        queryElements.schemaVersion = restriction.schemaVersion
       }
 
-      if (restriction.schema_version) {
-        queryElements.schemaVersion = restriction.schema_version
+      for (const [attributeName, attributeValue] of Object.entries(restriction.attributeValues)) {
+        queryElements[`attr::${attributeName}::value`] = attributeValue
+      }
+
+      for (const [attributeName, isAvailable] of Object.entries(restriction.attributeMarkers)) {
+        if (isAvailable) {
+          queryElements[`attr::${attributeName}::marker`] = isAvailable
+        }
       }
 
       query.push(queryElements)

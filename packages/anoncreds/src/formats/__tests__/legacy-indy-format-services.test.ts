@@ -242,6 +242,7 @@ describe('Legacy indy format services', () => {
       credentialDefinitionId: legacyCredentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
+      methodName: 'indy',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
