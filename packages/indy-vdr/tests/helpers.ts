@@ -2,11 +2,13 @@ import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistra
 import type { Agent } from '@aries-framework/core'
 
 import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { genesisTransactions } from '../../core/tests/helpers'
 import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
 
 export const indyVdrModuleConfig = new IndyVdrModuleConfig({
+  indyVdr,
   networks: [
     {
       genesisTransactions,
