@@ -34,7 +34,6 @@ describe('AnoncredsCredentialRecords', () => {
       credentialId: 'myCredentialId',
       credentialRevocationId: 'credentialRevocationId',
       linkSecretId: 'linkSecretId',
-      attributes: ['attr1', 'attr2'],
       'attr::attr1::value': 'value1',
       'attr::attr1::marker': true,
       'attr::attr2::value': 'value2',
