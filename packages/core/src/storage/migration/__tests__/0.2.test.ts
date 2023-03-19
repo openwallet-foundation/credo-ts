@@ -62,7 +62,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     storageService.records = JSON.parse(aliceCredentialRecordsString)
 
     expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.getNeededUpdates('0.3.1')).toEqual([
       {
         fromVersion: '0.2',
         toVersion: '0.3',

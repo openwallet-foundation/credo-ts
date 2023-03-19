@@ -5,8 +5,8 @@ import type { FileSystem } from '../FileSystem'
 
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
-import { isIndyError } from '../../utils/indyError'
 import { isFirstVersionEqualToSecond, isFirstVersionHigherThanSecond, parseVersionString } from '../../utils/version'
+import { WalletExportPathExistsError } from '../../wallet/error'
 import { WalletError } from '../../wallet/error/WalletError'
 
 import { StorageUpdateService } from './StorageUpdateService'
@@ -177,7 +177,7 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
             this.agent.config.logger.info(
               `Starting update of extension module ${moduleWithUpdate.module.constructor.name} from version ${moduleWithUpdate.update.fromVersion} to version ${moduleWithUpdate.update.toVersion}`
             )
-            await update.doUpdate(this.agent, this.updateConfig)
+            await moduleWithUpdate.update.doUpdate(this.agent, this.updateConfig)
             this.agent.config.logger.info(
               `Finished update of extension module ${moduleWithUpdate.module.constructor.name} from version ${moduleWithUpdate.update.fromVersion} to version ${moduleWithUpdate.update.toVersion}`
             )
@@ -205,9 +205,9 @@ export class UpdateAssistant<Agent extends BaseAgent<any> = BaseAgent> {
       }
     } catch (error) {
       // Backup already exists at path
-      if (error instanceof AriesFrameworkError && isIndyError(error.cause, 'CommonIOError')) {
+      if (error instanceof WalletExportPathExistsError) {
         const backupPath = this.getBackupPath(updateIdentifier)
-        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because of an IO error. This is probably because the backup at path ${backupPath} already exists`
+        const errorMessage = `Error updating storage with updateIdentifier ${updateIdentifier} because the backup at path ${backupPath} already exists`
         this.agent.config.logger.fatal(errorMessage, {
           error,
           updateIdentifier,

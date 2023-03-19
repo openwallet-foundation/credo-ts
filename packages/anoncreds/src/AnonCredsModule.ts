@@ -1,5 +1,5 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
-import type { DependencyManager, Module } from '@aries-framework/core'
+import type { DependencyManager, Module, Update } from '@aries-framework/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
@@ -11,6 +11,7 @@ import {
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
+import { updateAnonCredsModuleV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
 
 /**
  * @public
@@ -36,4 +37,12 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsKeyCorrectnessProofRepository)
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
   }
+
+  public updates = [
+    {
+      fromVersion: '0.3.1',
+      toVersion: '0.4',
+      doUpdate: updateAnonCredsModuleV0_3_1ToV0_4,
+    },
+  ] satisfies Update[]
 }
