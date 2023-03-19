@@ -2,6 +2,24 @@
 
 exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the credential exchange records for holders 1`] = `
 Object {
+  "1-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
+    "tags": Object {
+      "isDefault": true,
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
+    },
+    "type": "AnonCredsLinkSecretRecord",
+    "value": Object {
+      "_tags": Object {
+        "isDefault": true,
+      },
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
+      "metadata": Object {},
+      "updatedAt": "2023-03-19T22:50:20.522Z",
+      "value": undefined,
+    },
+  },
   "2c250bf3-da8b-46ac-999d-509e4e6daafa": Object {
     "id": "2c250bf3-da8b-46ac-999d-509e4e6daafa",
     "tags": Object {
@@ -316,31 +334,13 @@ Object {
       "updatedAt": "2023-03-18T18:54:01.099Z",
     },
   },
-  "f058efb3-e9b8-4f82-83ac-48605edbeb0d": Object {
-    "id": "f058efb3-e9b8-4f82-83ac-48605edbeb0d",
-    "tags": Object {
-      "isDefault": true,
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
-    },
-    "type": "AnonCredsLinkSecretRecord",
-    "value": Object {
-      "_tags": Object {
-        "isDefault": true,
-      },
-      "id": "f058efb3-e9b8-4f82-83ac-48605edbeb0d",
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder",
-      "metadata": Object {},
-      "updatedAt": "2023-03-19T22:50:20.522Z",
-      "value": undefined,
-    },
-  },
 }
 `;
 
 exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the schema and credential definition, and create link secret records for issuers 1`] = `
 Object {
-  "03aef42b-8662-43c3-b175-ff3efd39d10a": Object {
-    "id": "03aef42b-8662-43c3-b175-ff3efd39d10a",
+  "1-4e4f-41d9-94c4-f49351b811f1": Object {
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": Object {
       "isDefault": true,
       "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer",
@@ -350,7 +350,7 @@ Object {
       "_tags": Object {
         "isDefault": true,
       },
-      "id": "03aef42b-8662-43c3-b175-ff3efd39d10a",
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
       "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer",
       "metadata": Object {},
       "updatedAt": "2023-03-19T22:50:20.522Z",
