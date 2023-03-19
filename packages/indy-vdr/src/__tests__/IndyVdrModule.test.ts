@@ -1,5 +1,7 @@
 import type { DependencyManager } from '@aries-framework/core'
 
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
+
 import { IndyVdrModule } from '../IndyVdrModule'
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrPoolService } from '../pool'
@@ -12,6 +14,7 @@ const dependencyManager = {
 describe('IndyVdrModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const indyVdrModule = new IndyVdrModule({
+      indyVdr,
       networks: [
         {
           isProduction: false,
