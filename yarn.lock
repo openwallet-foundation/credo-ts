@@ -882,12 +882,12 @@
   resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.10.tgz#9d67f64e98ff41971644c95b03dabafd741df4df"
   integrity sha512-POvcwQrUcPrwoZehQa38pN1dnjyeUlrQ6VlksbBRS8SUHJuyixZsD+d3XoumqaNfl9Z1DCjfuOgEiPlec01gXQ==
 
-"@hyperledger/aries-askar-nodejs@^0.1.0-dev.4":
-  version "0.1.0-dev.4"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.4.tgz#016f89886732366eff9cba54eb6fcbf02cc5a212"
-  integrity sha512-Wh1SoxakBpQvgbFrLq+NIJ0l02N8SjBRDZBs/c55gIeenXzDJY/ZgfM6faLdDv4XeE6agXd4yl35f4s7+3zK+Q==
+"@hyperledger/aries-askar-nodejs@^0.1.0-dev.5":
+  version "0.1.0-dev.5"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-nodejs/-/aries-askar-nodejs-0.1.0-dev.5.tgz#602db32f49dd1f9e7f83d378a9813d2bde5886f8"
+  integrity sha512-38lXtmnhhca+s14V3zTefAyZGIg6nRpKi4Emnr1q5hQXmn1WZn7/ybYJbcI/VHoAPNLA+DydSI99U5KuPkrC1w==
   dependencies:
-    "@hyperledger/aries-askar-shared" "0.1.0-dev.4"
+    "@hyperledger/aries-askar-shared" "0.1.0-dev.5"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "^4.0.3"
     node-cache "^5.1.2"
@@ -895,10 +895,10 @@
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/aries-askar-shared@0.1.0-dev.4", "@hyperledger/aries-askar-shared@^0.1.0-dev.4":
-  version "0.1.0-dev.4"
-  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.4.tgz#439fbaa3911be56c134cbacfddd1553eb0b06dde"
-  integrity sha512-z+bWVbFD3S7IuYlG2XTxCjyaJWmS/wiHtYRxgWXjF6o4iR2vW+/y0NhTpiX2gO4Gx62zxFfh50b0oQTOM6/XqQ==
+"@hyperledger/aries-askar-shared@0.1.0-dev.5", "@hyperledger/aries-askar-shared@^0.1.0-dev.5":
+  version "0.1.0-dev.5"
+  resolved "https://registry.yarnpkg.com/@hyperledger/aries-askar-shared/-/aries-askar-shared-0.1.0-dev.5.tgz#06ae815b873693b7b483004d027059d50f24fb60"
+  integrity sha512-nufXqMslytelijC0uXBTuaj9OHjHo5mJe0hABKfYJqe9p1RYmmKlnqi+B/mjWrr2R8yG8NLrNnHbwPcBArLrPA==
   dependencies:
     fast-text-encoding "^1.0.3"
 
