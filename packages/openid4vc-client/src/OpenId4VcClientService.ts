@@ -182,7 +182,7 @@ export class OpenId4VcClientService {
     const base64Url = TypedArrayEncoder.toBase64URL(Buffer.from(hashed))
 
     this.logger.debug('Converted code_verifier to code_challenge', {
-      codeVerifier: options.codeVerifier.toString(),
+      codeVerifier: options.codeVerifier,
       sha256: hashed.toString(),
       base64Url: base64Url,
     })
