@@ -258,7 +258,6 @@ export class OpenId4VcClientService {
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      // @ts-ignore
       credentialType: accessToken.scope,
       format: credentialFormat,
     })
