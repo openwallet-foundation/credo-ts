@@ -201,7 +201,7 @@ export class OpenId4VcClientService {
     })
   }
 
-  public async requestCredential2(agentContext: AgentContext, options: RequestCredentialOptions) {
+  public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {
     const credentialFormat = 'ldp_vc'
 
     let flowType: AuthzFlowType
