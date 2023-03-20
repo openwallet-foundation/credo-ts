@@ -18,6 +18,7 @@ import {
   TypedArrayEncoder,
   W3cCredentialService,
   W3cVerifiableCredential,
+  Hasher,
 } from '@aries-framework/core'
 import {
   Alg,
@@ -28,7 +29,6 @@ import {
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
 import { randomStringForEntropy } from '@stablelib/random'
-import { hash as sha256 } from '@stablelib/sha256'
 
 export interface PreAuthorizedOptions {
   issuerUri: string
@@ -178,7 +178,7 @@ export class OpenId4VcClientService {
       flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
     })
 
-    const hashed = sha256(TypedArrayEncoder.fromString(options.codeVerifier))
+    const hashed = Hasher.hash(TypedArrayEncoder.fromString(options.codeVerifier), 'sha2-256')
     const base64Url = TypedArrayEncoder.toBase64URL(Buffer.from(hashed))
 
     this.logger.debug('Converted code_verifier to code_challenge', {
