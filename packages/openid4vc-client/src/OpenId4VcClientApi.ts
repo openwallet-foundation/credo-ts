@@ -53,8 +53,4 @@ export class OpenId4VcClientApi {
   public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
     return this.openId4VcClientService.generateAuthorizationUrl(options)
   }
-
-  public async requestCredential(options: RequestCredentialOptions) {
-    return this.openId4VcClientService.requestCredential(this.agentContext, options)
-  }
 }

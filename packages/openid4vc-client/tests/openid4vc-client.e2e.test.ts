@@ -83,8 +83,7 @@ describe('OpenId4VcClient', () => {
 
       const kid = `${did.didState.did as string}#${keyInstance.fingerprint as string}`
 
-      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredential({
-        flowType: AuthFlowType.PRE_AUTHORIZED_CODE_FLOW,
+      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialUsingPreAuthorizedCode({
         issuerUri,
         kid,
         checkRevocationState: false,
@@ -210,8 +209,7 @@ describe('OpenId4VcClient', () => {
       const initiationUri =
         'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
 
-      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredential({
-        flowType: AuthFlowType.AUTHORIZATION_CODE_FLOW,
+      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialUsingAuthorizationCode({
         clientId: clientId,
         authorizationCode: 'test-code',
         codeVerifier: codeVerifier,
