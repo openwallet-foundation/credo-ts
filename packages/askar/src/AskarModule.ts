@@ -1,22 +1,21 @@
+import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
 
+import { AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
 import { AskarWallet } from './wallet'
 
 export class AskarModule implements Module {
+  public readonly config: AskarModuleConfig
+
+  public constructor(config: AskarModuleConfigOptions) {
+    this.config = new AskarModuleConfig(config)
+  }
+
   public register(dependencyManager: DependencyManager) {
-    try {
-      // eslint-disable-next-line import/no-extraneous-dependencies
-      require('@hyperledger/aries-askar-nodejs')
-    } catch (error) {
-      try {
-        require('@hyperledger/aries-askar-react-native')
-      } catch (error) {
-        throw new Error('Could not load aries-askar bindings')
-      }
-    }
+    dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new AriesFrameworkError('There is an instance of Wallet already registered')

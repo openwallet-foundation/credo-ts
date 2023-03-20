@@ -11,6 +11,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -154,6 +155,10 @@ describe('mediator establishment', () => {
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
     })
+
+    // polling interval is 100ms, so 500ms should be enough to make sure no messages are sent
+    await recipientAgent.mediationRecipient.stopMessagePickup()
+    await sleep(500)
 
     expect(basicMessage.content).toBe(message)
   }

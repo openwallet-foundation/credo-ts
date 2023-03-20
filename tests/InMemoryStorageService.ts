@@ -2,13 +2,7 @@ import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type { StorageService, BaseRecordConstructor, Query } from '../packages/core/src/storage/StorageService'
 
-import {
-  RecordNotFoundError,
-  RecordDuplicateError,
-  JsonTransformer,
-  AriesFrameworkError,
-  injectable,
-} from '@aries-framework/core'
+import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@aries-framework/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -17,14 +11,18 @@ interface StorageRecord {
   id: string
 }
 
+interface InMemoryRecords {
+  [id: string]: StorageRecord
+}
+
 @injectable()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {
-  public records: { [id: string]: StorageRecord }
+  public records: InMemoryRecords
 
-  public constructor(records: { [id: string]: StorageRecord } = {}) {
+  public constructor(records: InMemoryRecords = {}) {
     this.records = records
   }
 
@@ -127,32 +125,55 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>
   ): Promise<T[]> {
-    if (query.$and || query.$or || query.$not) {
-      throw new AriesFrameworkError(
-        'Advanced wallet query features $and, $or or $not not supported in in memory storage'
-      )
-    }
-
     const records = Object.values(this.records)
       .filter((record) => record.type === recordClass.type)
-      .filter((record) => {
-        const tags = record.tags as TagsBase
-
-        for (const [key, value] of Object.entries(query)) {
-          if (Array.isArray(value)) {
-            const tagValue = tags[key]
-            if (!Array.isArray(tagValue) || !value.every((v) => tagValue.includes(v))) {
-              return false
-            }
-          } else if (tags[key] !== value) {
-            return false
-          }
-        }
-
-        return true
-      })
+      .filter((record) => filterByQuery(record, query))
       .map((record) => this.recordToInstance(record, recordClass))
 
     return records
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
+  const { $and, $or, $not, ...restQuery } = query
+
+  if ($not) {
+    throw new Error('$not query not supported in in memory storage')
+  }
+
+  // Top level query
+  if (!matchSimpleQuery(record, restQuery)) return false
+
+  // All $and queries MUST match
+  if ($and) {
+    const allAndMatch = ($and as Query<T>[]).every((and) => filterByQuery(record, and))
+    if (!allAndMatch) return false
+  }
+
+  // Only one $or queries has to match
+  if ($or) {
+    const oneOrMatch = ($or as Query<T>[]).some((or) => filterByQuery(record, or))
+    if (!oneOrMatch) return false
+  }
+
+  return true
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function matchSimpleQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
+  const tags = record.tags as TagsBase
+
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value)) {
+      const tagValue = tags[key]
+      if (!Array.isArray(tagValue) || !value.every((v) => tagValue.includes(v))) {
+        return false
+      }
+    } else if (tags[key] !== value) {
+      return false
+    }
+  }
+
+  return true
 }

@@ -46,7 +46,8 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  // new method to test the return route and mediator together
+  const connectionlessTest = async (returnRoute?: boolean) => {
     const {
       holderAgent: aliceAgent,
       issuerAgent: faberAgent,
@@ -137,6 +138,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
+      useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -146,6 +148,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const sentPresentationMessage = aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
@@ -157,6 +160,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
+    return sentPresentationMessage
+  }
+
+  test('Faber starts with connection-less proof requests to Alice', async () => {
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
