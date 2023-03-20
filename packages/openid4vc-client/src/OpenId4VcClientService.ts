@@ -260,7 +260,7 @@ export class OpenId4VcClientService {
       proofInput,
       // @ts-ignore
       credentialType: accessToken.scope,
-      format: 'ldp_vc', // Allows us to override the format
+      format: credentialFormat,
     })
 
     this.logger.debug('Credential request response', credentialResponse)
@@ -349,7 +349,7 @@ export class OpenId4VcClientService {
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
       credentialType: accessToken.scope,
-      format: 'ldp_vc', // Allows us to override the format
+      format: credentialFormat,
     })
 
     this.logger.debug('Credential request response', credentialResponse)
