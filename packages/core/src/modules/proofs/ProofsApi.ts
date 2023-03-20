@@ -343,6 +343,11 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       })
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: proofRecord.id,
+      })
       await this.messageSender.sendMessageToService(
         new OutboundMessageContext(message, {
           agentContext: this.agentContext,
@@ -353,11 +358,6 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           },
         })
       )
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: proofRecord.id,
-      })
       return proofRecord
     }
     // Cannot send message without connectionId or ~service decorator

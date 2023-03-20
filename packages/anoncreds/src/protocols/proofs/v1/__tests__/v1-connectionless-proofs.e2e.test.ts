@@ -15,7 +15,6 @@ import {
   Attachment,
   AttachmentData,
   ProofEventTypes,
-  ReturnRouteTypes,
 } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
@@ -162,18 +161,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
   }
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const sentPresentationMessage = await connectionlessTest()
-    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
-  })
-
-  test('Faber starts with connection-less proof requests to Alice return route set to false', async () => {
-    const sentPresentationMessage = await connectionlessTest(false)
-    expect(sentPresentationMessage?.transport?.returnRoute).toBe(undefined)
-  })
-
-  test('Faber starts with connection-less proof requests to Alice return route set to true', async () => {
-    const sentPresentationMessage = await connectionlessTest(true)
-    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {

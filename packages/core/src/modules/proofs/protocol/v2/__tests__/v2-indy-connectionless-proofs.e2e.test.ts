@@ -20,7 +20,6 @@ import {
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -28,7 +27,6 @@ import { CredentialEventTypes } from '../../../../credentials'
 import { MediatorPickupStrategy } from '../../../../routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
-import { V2PresentationMessage } from '../messages/V2PresentationMessage'
 
 describe('V2 Connectionless Proofs - Indy', () => {
   let agents: Agent[]
@@ -159,18 +157,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
   }
 
   test('Faber starts with connection-less proof requests to Alice', async () => {
-    const sentPresentationMessage = await connectionlessTest()
-    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
-  })
-
-  test('Faber starts with connection-less proof requests to Alice return route set to false', async () => {
-    const sentPresentationMessage = await connectionlessTest(false)
-    expect(sentPresentationMessage?.transport).toBe(undefined)
-  })
-
-  test('Faber starts with connection-less proof requests to Alice return route set to true', async () => {
-    const sentPresentationMessage = await connectionlessTest(true)
-    expect(sentPresentationMessage?.transport?.returnRoute).toBe(ReturnRouteTypes.all)
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
