@@ -360,11 +360,10 @@ export class OpenId4VcClientService {
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
 
     // verify the signature
-    const result = await this.w3cCredentialService.verifyCredential(
-      agentContext,
-      { credential },
-      options.checkRevocationState
-    )
+    const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+      credential,
+      verifyRevocationState: options.checkRevocationState,
+    })
 
     if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
