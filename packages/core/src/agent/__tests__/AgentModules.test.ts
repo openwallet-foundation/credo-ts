@@ -1,6 +1,5 @@
 import type { Module } from '../../plugins'
 
-import { getAgentConfig } from '../../../tests/helpers'
 import { BasicMessagesModule } from '../../modules/basic-messages'
 import { CacheModule } from '../../modules/cache'
 import { ConnectionsModule } from '../../modules/connections'
@@ -15,8 +14,6 @@ import { W3cVcModule } from '../../modules/vc'
 import { DependencyManager, injectable } from '../../plugins'
 import { WalletModule } from '../../wallet'
 import { extendModulesWithDefaultModules, getAgentApi } from '../AgentModules'
-
-const agentConfig = getAgentConfig('AgentModules Test')
 
 @injectable()
 class MyApi {}
@@ -54,7 +51,7 @@ describe('AgentModules', () => {
 
   describe('extendModulesWithDefaultModules', () => {
     test('returns default modules if no modules were provided', () => {
-      const extendedModules = extendModulesWithDefaultModules(agentConfig)
+      const extendedModules = extendModulesWithDefaultModules()
 
       expect(extendedModules).toEqual({
         connections: expect.any(ConnectionsModule),
@@ -75,7 +72,7 @@ describe('AgentModules', () => {
 
     test('returns custom and default modules if custom modules are provided', () => {
       const myModule = new MyModuleWithApi()
-      const extendedModules = extendModulesWithDefaultModules(agentConfig, {
+      const extendedModules = extendModulesWithDefaultModules({
         myModule,
       })
 
@@ -100,7 +97,7 @@ describe('AgentModules', () => {
     test('does not override default module if provided as custom module', () => {
       const myModule = new MyModuleWithApi()
       const connections = new ConnectionsModule()
-      const extendedModules = extendModulesWithDefaultModules(agentConfig, {
+      const extendedModules = extendModulesWithDefaultModules({
         myModule,
         connections,
       })

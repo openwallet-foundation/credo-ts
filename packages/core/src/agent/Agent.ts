@@ -45,7 +45,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
-    const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
+    const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
 
     // Register internal dependencies
     dependencyManager.registerSingleton(MessageHandlerRegistry)

@@ -12,6 +12,7 @@ import {
 import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
 import { AskarModule } from '@aries-framework/askar'
 import {
+  ConnectionsModule,
   DidsModule,
   V2ProofProtocol,
   V2CredentialProtocol,
@@ -72,7 +73,6 @@ export class BaseAgent {
         key: name,
       },
       endpoints: [`http://localhost:${this.port}`],
-      autoAcceptConnections: true,
     } satisfies InitConfig
 
     this.config = config
@@ -100,6 +100,9 @@ function getAskarAnonCredsIndyModules() {
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
     credentials: new CredentialsModule({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       credentialProtocols: [
@@ -141,6 +144,9 @@ function getLegacyIndySdkModules() {
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
     credentials: new CredentialsModule({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       credentialProtocols: [

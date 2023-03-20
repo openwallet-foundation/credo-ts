@@ -88,18 +88,6 @@ export class RecipientApi {
   }
 
   public async initialize() {
-    const { defaultMediatorId, clearDefaultMediator } = this.agentContext.config
-
-    // Set default mediator by id
-    if (defaultMediatorId) {
-      const mediatorRecord = await this.mediationRecipientService.getById(this.agentContext, defaultMediatorId)
-      await this.mediationRecipientService.setDefaultMediator(this.agentContext, mediatorRecord)
-    }
-    // Clear the stored default mediator
-    else if (clearDefaultMediator) {
-      await this.mediationRecipientService.clearDefaultMediator(this.agentContext)
-    }
-
     // Poll for messages from mediator
     const defaultMediator = await this.findDefaultMediator()
     if (defaultMediator) {

@@ -21,6 +21,8 @@ import { Server } from 'ws'
 import { TestLogger } from '../packages/core/tests/logger'
 
 import {
+  ConnectionsModule,
+  MediatorModule,
   HttpOutboundTransport,
   Agent,
   ConnectionInvitationMessage,
@@ -47,13 +49,23 @@ const agentConfig: InitConfig = {
     id: process.env.WALLET_NAME || 'AriesFrameworkJavaScript',
     key: process.env.WALLET_KEY || 'AriesFrameworkJavaScript',
   },
-  autoAcceptConnections: true,
-  autoAcceptMediationRequests: true,
+
   logger,
 }
 
 // Set up agent
-const agent = new Agent({ config: agentConfig, dependencies: agentDependencies })
+const agent = new Agent({
+  config: agentConfig,
+  dependencies: agentDependencies,
+  modules: {
+    mediator: new MediatorModule({
+      autoAcceptMediationRequests: true,
+    }),
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
+  },
+})
 const config = agent.config
 
 // Create all transports
