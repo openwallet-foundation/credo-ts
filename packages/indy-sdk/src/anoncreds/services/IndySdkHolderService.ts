@@ -13,6 +13,7 @@ import type {
   AnonCredsCredentialRequestMetadata,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
+  GetCredentialsOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
@@ -205,11 +206,37 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     }
   }
 
+  public async getCredentials(agentContext: AgentContext, options: GetCredentialsOptions) {
+    assertIndySdkWallet(agentContext.wallet)
+
+    const credentials = await this.indySdk.proverGetCredentials(agentContext.wallet.handle, {
+      cred_def_id: options.credentialDefinitionId,
+      schema_id: options.schemaId,
+      schema_issuer_did: options.schemaIssuerId,
+      schema_name: options.schemaName,
+      schema_version: options.schemaVersion,
+      issuer_did: options.issuerId,
+    })
+
+    return credentials.map((credential) => ({
+      credentialDefinitionId: credential.cred_def_id,
+      attributes: credential.attrs,
+      credentialId: credential.referent,
+      schemaId: credential.schema_id,
+      credentialRevocationId: credential.cred_rev_id,
+      revocationRegistryId: credential.rev_reg_id,
+    }))
+  }
+
   public async createCredentialRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
     assertIndySdkWallet(agentContext.wallet)
+
+    if (!options.useLegacyProverDid) {
+      throw new AriesFrameworkError('Indy SDK only supports legacy prover did for credential requests')
+    }
 
     const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 

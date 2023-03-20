@@ -15,17 +15,6 @@ export class IndyVdrModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
-    try {
-      // eslint-disable-next-line import/no-extraneous-dependencies
-      require('@hyperledger/indy-vdr-nodejs')
-    } catch (error) {
-      try {
-        require('@hyperledger/indy-vdr-react-native')
-      } catch (error) {
-        throw new Error('Error registering bindings for Indy VDR')
-      }
-    }
-
     // Config
     dependencyManager.registerInstance(IndyVdrModuleConfig, this.config)
 

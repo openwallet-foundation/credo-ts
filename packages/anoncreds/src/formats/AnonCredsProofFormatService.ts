@@ -1,8 +1,8 @@
 import type {
+  AnonCredsProofFormat,
   AnonCredsCredentialsForProofRequest,
   AnonCredsGetCredentialsForProofRequestOptions,
 } from './AnonCredsProofFormat'
-import type { LegacyIndyProofFormat } from './LegacyIndyProofFormat'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
@@ -62,36 +62,34 @@ import {
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
-  legacyIndyCredentialDefinitionIdRegex,
-  legacyIndySchemaIdRegex,
 } from '../utils'
 
-const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
-const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
-const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
+const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
+const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
+const ANONCREDS_PRESENTATION = 'anoncreds/proof@v1.0'
 
-export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIndyProofFormat> {
-  public readonly formatKey = 'indy' as const
+export class AnonCredsProofFormatService implements ProofFormatService<AnonCredsProofFormat> {
+  public readonly formatKey = 'anoncreds' as const
 
   public async createProposal(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyProofFormat>
+    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new ProofFormatSpec({
-      format: V2_INDY_PRESENTATION_PROPOSAL,
+      format: ANONCREDS_PRESENTATION_PROPOSAL,
       attachmentId,
     })
 
-    const indyFormat = proofFormats.indy
-    if (!indyFormat) {
-      throw Error('Missing indy format to create proposal attachment format')
+    const anoncredsFormat = proofFormats.anoncreds
+    if (!anoncredsFormat) {
+      throw Error('Missing anoncreds format to create proposal attachment format')
     }
 
     const proofRequest = createRequestFromPreview({
-      attributes: indyFormat.attributes ?? [],
-      predicates: indyFormat.predicates ?? [],
-      name: indyFormat.name ?? 'Proof request',
-      version: indyFormat.version ?? '1.0',
+      attributes: anoncredsFormat.attributes ?? [],
+      predicates: anoncredsFormat.predicates ?? [],
+      name: anoncredsFormat.name ?? 'Proof request',
+      version: anoncredsFormat.version ?? '1.0',
       nonce: await agentContext.wallet.generateNonce(),
     })
     const attachment = this.getFormatData(proofRequest, format.attachmentId)
@@ -111,10 +109,10 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyProofFormat>
+    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new ProofFormatSpec({
-      format: V2_INDY_PRESENTATION_REQUEST,
+      format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
     })
 
@@ -133,25 +131,25 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyProofFormat>
+    { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new ProofFormatSpec({
-      format: V2_INDY_PRESENTATION_REQUEST,
+      format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
     })
 
-    const indyFormat = proofFormats.indy
-    if (!indyFormat) {
-      throw Error('Missing indy format in create request attachment format')
+    const anoncredsFormat = proofFormats.anoncreds
+    if (!anoncredsFormat) {
+      throw Error('Missing anoncreds format in create request attachment format')
     }
 
     const request = {
-      name: indyFormat.name,
-      version: indyFormat.version,
+      name: anoncredsFormat.name,
+      version: anoncredsFormat.version,
       nonce: await agentContext.wallet.generateNonce(),
-      requested_attributes: indyFormat.requested_attributes ?? {},
-      requested_predicates: indyFormat.requested_predicates ?? {},
-      non_revoked: indyFormat.non_revoked,
+      requested_attributes: anoncredsFormat.requested_attributes ?? {},
+      requested_predicates: anoncredsFormat.requested_predicates ?? {},
+      non_revoked: anoncredsFormat.non_revoked,
     } satisfies AnonCredsProofRequest
 
     // Assert attribute and predicate (group) names do not match
@@ -174,18 +172,18 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<LegacyIndyProofFormat>
+    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new ProofFormatSpec({
-      format: V2_INDY_PRESENTATION,
+      format: ANONCREDS_PRESENTATION,
       attachmentId,
     })
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
-    const indyFormat = proofFormats?.indy
+    const anoncredsFormat = proofFormats?.anoncreds
 
     const selectedCredentials =
-      indyFormat ??
+      anoncredsFormat ??
       (await this._selectCredentialsForRequest(agentContext, requestJson, {
         filterByNonRevocationRequirements: true,
       }))
@@ -236,10 +234,6 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       }
     }
 
-    // TODO: pre verify proof json
-    // I'm not 100% sure how much indy does. Also if it checks whether the proof requests matches the proof
-    // @see https://github.com/hyperledger/aries-cloudagent-python/blob/master/aries_cloudagent/indy/sdk/verifier.py#L79-L164
-
     const schemas = await this.getSchemas(agentContext, new Set(proofJson.identifiers.map((i) => i.schema_id)))
     const credentialDefinitions = await this.getCredentialDefinitions(
       agentContext,
@@ -259,12 +253,12 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<LegacyIndyProofFormat>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<LegacyIndyProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<AnonCredsProofFormat>
+  ): Promise<ProofFormatGetCredentialsForRequestReturn<AnonCredsProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
-    const { filterByNonRevocationRequirements = true } = proofFormats?.indy ?? {}
+    const { filterByNonRevocationRequirements = true } = proofFormats?.anoncreds ?? {}
 
     const credentialsForRequest = await this._getCredentialsForRequest(agentContext, proofRequestJson, {
       filterByNonRevocationRequirements,
@@ -275,12 +269,12 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<LegacyIndyProofFormat>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<LegacyIndyProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<AnonCredsProofFormat>
+  ): Promise<ProofFormatSelectCredentialsForRequestReturn<AnonCredsProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
-    const { filterByNonRevocationRequirements = true } = proofFormats?.indy ?? {}
+    const { filterByNonRevocationRequirements = true } = proofFormats?.anoncreds ?? {}
 
     const selectedCredentials = this._selectCredentialsForRequest(agentContext, proofRequestJson, {
       filterByNonRevocationRequirements,
@@ -327,7 +321,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
   }
 
   public supportsFormat(formatIdentifier: string): boolean {
-    const supportedFormats = [V2_INDY_PRESENTATION_PROPOSAL, V2_INDY_PRESENTATION_REQUEST, V2_INDY_PRESENTATION]
+    const supportedFormats = [ANONCREDS_PRESENTATION_PROPOSAL, ANONCREDS_PRESENTATION_REQUEST, ANONCREDS_PRESENTATION]
     return supportedFormats.includes(formatIdentifier)
   }
 
@@ -473,10 +467,6 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      if (!schemaId.match(legacyIndySchemaIdRegex)) {
-        throw new AriesFrameworkError(`${schemaId} is not a valid legacy indy schema id`)
-      }
-
       const schemaRegistry = registryService.getRegistryForIdentifier(agentContext, schemaId)
       const schemaResult = await schemaRegistry.getSchema(agentContext, schemaId)
 
@@ -505,10 +495,6 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      if (!credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)) {
-        throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
-      }
-
       const credentialDefinitionRegistry = registryService.getRegistryForIdentifier(
         agentContext,
         credentialDefinitionId
@@ -585,11 +571,11 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
   }
 
   /**
-   * Create indy proof from a given proof request and requested credential object.
+   * Create anoncreds proof from a given proof request and requested credential object.
    *
    * @param proofRequest The proof request to create the proof for
    * @param requestedCredentials The requested credentials object specifying which credentials to use for the proof
-   * @returns indy proof object
+   * @returns anoncreds proof object
    */
   private async createProof(
     agentContext: AgentContext,
@@ -700,7 +686,6 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
             const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
             const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
 
-            // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
             revocationRegistries[revocationRegistryId] = {
               definition: revocationRegistryDefinition,
               tailsFilePath,

@@ -41,22 +41,26 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   private credentialDefinitions: Record<string, AnonCredsCredentialDefinition>
   private revocationRegistryDefinitions: Record<string, AnonCredsRevocationRegistryDefinition>
   private revocationStatusLists: Record<string, Record<string, AnonCredsRevocationStatusList>>
+  private useLegacyIdentifiers: boolean
 
   public constructor({
     existingSchemas = {},
     existingCredentialDefinitions = {},
     existingRevocationRegistryDefinitions = {},
     existingRevocationStatusLists = {},
+    useLegacyIdentifiers = false,
   }: {
     existingSchemas?: Record<string, AnonCredsSchema>
     existingCredentialDefinitions?: Record<string, AnonCredsCredentialDefinition>
     existingRevocationRegistryDefinitions?: Record<string, AnonCredsRevocationRegistryDefinition>
     existingRevocationStatusLists?: Record<string, Record<string, AnonCredsRevocationStatusList>>
+    useLegacyIdentifiers?: boolean
   } = {}) {
     this.schemas = existingSchemas
     this.credentialDefinitions = existingCredentialDefinitions
     this.revocationRegistryDefinitions = existingRevocationRegistryDefinitions
     this.revocationStatusLists = existingRevocationStatusLists
+    this.useLegacyIdentifiers = useLegacyIdentifiers
   }
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
@@ -94,21 +98,23 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    const { namespaceIdentifier, namespace } = parseIndyDid(options.schema.issuerId)
-    const didIndySchemaId = getDidIndySchemaId(
-      namespace,
-      namespaceIdentifier,
-      options.schema.name,
-      options.schema.version
-    )
-    const legacySchemaId = getLegacySchemaId(namespaceIdentifier, options.schema.name, options.schema.version)
+    let legacyIssuerId
+    let didIndySchemaId = ''
+    if (this.useLegacyIdentifiers) {
+      legacyIssuerId = options.schema.issuerId
+    } else {
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.schema.issuerId)
+      legacyIssuerId = namespaceIdentifier
+      didIndySchemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
+      this.schemas[didIndySchemaId] = options.schema
+    }
 
+    const legacySchemaId = getLegacySchemaId(legacyIssuerId, options.schema.name, options.schema.version)
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    this.schemas[didIndySchemaId] = options.schema
     this.schemas[legacySchemaId] = {
       ...options.schema,
-      issuerId: namespaceIdentifier,
+      issuerId: legacyIssuerId,
     }
 
     return {
@@ -121,7 +127,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       schemaState: {
         state: 'finished',
         schema: options.schema,
-        schemaId: didIndySchemaId,
+        schemaId: this.useLegacyIdentifiers ? legacySchemaId : didIndySchemaId,
       },
     }
   }
@@ -163,24 +169,32 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     )
     const indyLedgerSeqNo = getSeqNoFromSchemaId(legacySchemaId)
 
-    const { namespaceIdentifier, namespace } = parseIndyDid(options.credentialDefinition.issuerId)
+    let legacyIssuerId
+    let didIndyCredentialDefinitionId = ''
+    if (this.useLegacyIdentifiers) {
+      legacyIssuerId = options.credentialDefinition.issuerId
+    } else {
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.credentialDefinition.issuerId)
+      legacyIssuerId = namespaceIdentifier
+      didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
+        namespace,
+        namespaceIdentifier,
+        indyLedgerSeqNo,
+        options.credentialDefinition.tag
+      )
 
-    const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
-      namespace,
-      namespaceIdentifier,
-      indyLedgerSeqNo,
-      options.credentialDefinition.tag
-    )
+      this.credentialDefinitions[didIndyCredentialDefinitionId] = options.credentialDefinition
+    }
+
     const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(
-      namespaceIdentifier,
+      legacyIssuerId,
       indyLedgerSeqNo,
       options.credentialDefinition.tag
     )
 
-    this.credentialDefinitions[didIndyCredentialDefinitionId] = options.credentialDefinition
     this.credentialDefinitions[legacyCredentialDefinitionId] = {
       ...options.credentialDefinition,
-      issuerId: namespaceIdentifier,
+      issuerId: legacyIssuerId,
       schemaId: legacySchemaId,
     }
 
@@ -190,7 +204,9 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       credentialDefinitionState: {
         state: 'finished',
         credentialDefinition: options.credentialDefinition,
-        credentialDefinitionId: didIndyCredentialDefinitionId,
+        credentialDefinitionId: this.useLegacyIdentifiers
+          ? legacyCredentialDefinitionId
+          : didIndyCredentialDefinitionId,
       },
     }
   }
