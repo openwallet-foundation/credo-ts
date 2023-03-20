@@ -20,6 +20,7 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -46,9 +47,10 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-describe('AnonCredsRsServices', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
   test('issuance flow without revocation', async () => {
-    const issuerId = 'issuer:uri'
+    const issuerId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],

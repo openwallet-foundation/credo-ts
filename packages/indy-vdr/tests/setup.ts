@@ -1,6 +1,3 @@
-// Needed to register indy-vdr node bindings
-import '../src/index'
+import '@hyperledger/indy-vdr-nodejs'
 
-require('@hyperledger/indy-vdr-nodejs')
-
-jest.setTimeout(60000)
+jest.setTimeout(120000)

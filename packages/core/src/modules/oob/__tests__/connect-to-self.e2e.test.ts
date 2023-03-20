@@ -8,10 +8,9 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { HandshakeProtocol, DidExchangeState } from '../../connections'
+import { OutOfBandState } from '../domain/OutOfBandState'
 
 import { Agent } from '@aries-framework/core'
-
-import { OutOfBandState } from '../domain/OutOfBandState'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Connect to Self',

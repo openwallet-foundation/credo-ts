@@ -1,43 +1,49 @@
 import type {
+  AnonCredsCredential,
+  AnonCredsCredentialInfo,
+  AnonCredsCredentialRequest,
+  AnonCredsCredentialRequestMetadata,
   AnonCredsHolderService,
   AnonCredsProof,
-  CreateCredentialRequestOptions,
-  CreateCredentialRequestReturn,
-  CreateProofOptions,
-  GetCredentialOptions,
-  StoreCredentialOptions,
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
-  AnonCredsCredentialInfo,
-  CreateLinkSecretOptions,
-  CreateLinkSecretReturn,
   AnonCredsProofRequestRestriction,
-  AnonCredsCredential,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicateMatch,
+  CreateCredentialRequestOptions,
+  CreateCredentialRequestReturn,
+  CreateLinkSecretOptions,
+  CreateLinkSecretReturn,
+  CreateProofOptions,
+  GetCredentialOptions,
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
+  GetCredentialsOptions,
+  StoreCredentialOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext, Query, SimpleQuery } from '@aries-framework/core'
-import type { CredentialEntry, CredentialProve } from '@hyperledger/anoncreds-shared'
+import type {
+  CredentialEntry,
+  CredentialProve,
+  CredentialRequestMetadata,
+  JsonObject,
+} from '@hyperledger/anoncreds-shared'
 
 import {
   AnonCredsCredentialRecord,
-  AnonCredsLinkSecretRepository,
   AnonCredsCredentialRepository,
+  AnonCredsLinkSecretRepository,
+  AnonCredsRestrictionWrapper,
+  legacyIndyCredentialDefinitionIdRegex,
 } from '@aries-framework/anoncreds'
-import { utils, injectable } from '@aries-framework/core'
+import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
 import {
-  CredentialRequestMetadata,
   Credential,
-  CredentialDefinition,
-  CredentialOffer,
   CredentialRequest,
   CredentialRevocationState,
   MasterSecret,
   Presentation,
-  PresentationRequest,
   RevocationRegistryDefinition,
   RevocationStatusList,
-  Schema,
+  anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
@@ -48,31 +54,35 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
+    let masterSecret: MasterSecret | undefined
     try {
+      masterSecret = MasterSecret.create()
+
+      // FIXME: This is a very specific format of anoncreds-rs. I think it should be simply a string
+      const linkSecretJson = masterSecret.toJson() as { value: { ms: string } }
+
       return {
         linkSecretId: options?.linkSecretId ?? utils.uuid(),
-        linkSecretValue: JSON.parse(MasterSecret.create().toJson()).value.ms,
+        linkSecretValue: linkSecretJson.value.ms,
       }
-    } catch (error) {
-      agentContext.config.logger.error(`Error creating Link Secret`, {
-        error,
-      })
-      throw new AnonCredsRsError('Error creating Link Secret', { cause: error })
+    } finally {
+      masterSecret?.handle.clear()
     }
   }
 
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {
     const { credentialDefinitions, proofRequest, selectedCredentials, schemas } = options
 
+    let presentation: Presentation | undefined
     try {
-      const rsCredentialDefinitions: Record<string, CredentialDefinition> = {}
+      const rsCredentialDefinitions: Record<string, JsonObject> = {}
       for (const credDefId in credentialDefinitions) {
-        rsCredentialDefinitions[credDefId] = CredentialDefinition.load(JSON.stringify(credentialDefinitions[credDefId]))
+        rsCredentialDefinitions[credDefId] = credentialDefinitions[credDefId] as unknown as JsonObject
       }
 
-      const rsSchemas: Record<string, Schema> = {}
+      const rsSchemas: Record<string, JsonObject> = {}
       for (const schemaId in schemas) {
-        rsSchemas[schemaId] = Schema.load(JSON.stringify(schemas[schemaId]))
+        rsSchemas[schemaId] = schemas[schemaId] as unknown as JsonObject
       }
 
       const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
@@ -89,30 +99,30 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           retrievedCredentials.set(attribute.credentialId, credentialRecord)
         }
 
-        const credential = Credential.load(JSON.stringify(credentialRecord.credential))
-
-        const revocationRegistryDefinitionId = credential.revocationRegistryId
-        const revocationRegistryIndex = credential.revocationRegistryIndex
+        const revocationRegistryDefinitionId = credentialRecord.credential.rev_reg_id
+        const revocationRegistryIndex = credentialRecord.credentialRevocationId
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
         const timestamp = attribute.timestamp
 
-        let revocationState
-        if (timestamp) {
-          if (revocationRegistryIndex) {
+        let revocationState: CredentialRevocationState | undefined
+        let revocationRegistryDefinition: RevocationRegistryDefinition | undefined
+        try {
+          if (timestamp && revocationRegistryIndex && revocationRegistryDefinitionId) {
             if (!options.revocationRegistries[revocationRegistryDefinitionId]) {
               throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
             }
 
             const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
 
-            const revocationRegistryDefinition = RevocationRegistryDefinition.load(JSON.stringify(definition))
+            revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
             revocationState = CredentialRevocationState.create({
-              revocationRegistryIndex,
+              revocationRegistryIndex: Number(revocationRegistryIndex),
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
               revocationStatusList: RevocationStatusList.create({
+                issuerId: definition.issuerId,
                 issuanceByDefault: true,
                 revocationRegistryDefinition,
                 revocationRegistryDefinitionId,
@@ -120,14 +130,17 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
               }),
             })
           }
-        }
-        return {
-          linkSecretId: credentialRecord.linkSecretId,
-          credentialEntry: {
-            credential,
-            revocationState,
-            timestamp,
-          },
+          return {
+            linkSecretId: credentialRecord.linkSecretId,
+            credentialEntry: {
+              credential: credentialRecord.credential as unknown as JsonObject,
+              revocationState: revocationState?.toJson(),
+              timestamp,
+            },
+          }
+        } finally {
+          revocationState?.handle.clear()
+          revocationRegistryDefinition?.handle.clear()
         }
       }
 
@@ -163,24 +176,19 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         throw new AnonCredsRsError('Link Secret value not stored')
       }
 
-      const presentation = Presentation.create({
+      presentation = Presentation.create({
         credentialDefinitions: rsCredentialDefinitions,
         schemas: rsSchemas,
-        presentationRequest: PresentationRequest.load(JSON.stringify(proofRequest)),
+        presentationRequest: proofRequest as unknown as JsonObject,
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
         selfAttest: selectedCredentials.selfAttestedAttributes,
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+        masterSecret: { value: { ms: linkSecretRecord.value } },
       })
 
-      return JSON.parse(presentation.toJson())
-    } catch (error) {
-      agentContext.config.logger.error(`Error creating AnonCreds Proof`, {
-        error,
-        proofRequest,
-        selectedCredentials,
-      })
-      throw new AnonCredsRsError(`Error creating proof: ${error}`, { cause: error })
+      return presentation.toJson() as unknown as AnonCredsProof
+    } finally {
+      presentation?.handle.clear()
     }
   }
 
@@ -188,7 +196,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
-    const { credentialDefinition, credentialOffer } = options
+    const { useLegacyProverDid, credentialDefinition, credentialOffer } = options
+    let createReturnObj:
+      | { credentialRequest: CredentialRequest; credentialRequestMetadata: CredentialRequestMetadata }
+      | undefined
     try {
       const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 
@@ -204,19 +215,29 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         )
       }
 
-      const { credentialRequest, credentialRequestMetadata } = CredentialRequest.create({
-        credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
-        credentialOffer: CredentialOffer.load(JSON.stringify(credentialOffer)),
-        masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
+      const isLegacyIdentifier = credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
+      if (!isLegacyIdentifier && useLegacyProverDid) {
+        throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
+      }
+      createReturnObj = CredentialRequest.create({
+        entropy: !useLegacyProverDid || !isLegacyIdentifier ? anoncreds.generateNonce() : undefined,
+        proverDid: useLegacyProverDid
+          ? TypedArrayEncoder.toBase58(TypedArrayEncoder.fromString(anoncreds.generateNonce().slice(0, 16)))
+          : undefined,
+        credentialDefinition: credentialDefinition as unknown as JsonObject,
+        credentialOffer: credentialOffer as unknown as JsonObject,
+        masterSecret: { value: { ms: linkSecretRecord.value } },
         masterSecretId: linkSecretRecord.linkSecretId,
       })
 
       return {
-        credentialRequest: JSON.parse(credentialRequest.toJson()),
-        credentialRequestMetadata: JSON.parse(credentialRequestMetadata.toJson()),
+        credentialRequest: createReturnObj.credentialRequest.toJson() as unknown as AnonCredsCredentialRequest,
+        credentialRequestMetadata:
+          createReturnObj.credentialRequestMetadata.toJson() as unknown as AnonCredsCredentialRequestMetadata,
       }
-    } catch (error) {
-      throw new AnonCredsRsError(`Error creating credential request: ${error}`, { cause: error })
+    } finally {
+      createReturnObj?.credentialRequest.handle.clear()
+      createReturnObj?.credentialRequestMetadata.handle.clear()
     }
   }
 
@@ -227,34 +248,42 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       .resolve(AnonCredsLinkSecretRepository)
       .getByLinkSecretId(agentContext, credentialRequestMetadata.master_secret_name)
 
-    const revocationRegistryDefinition = revocationRegistry?.definition
-      ? RevocationRegistryDefinition.load(JSON.stringify(revocationRegistry.definition))
-      : undefined
+    const revocationRegistryDefinition = revocationRegistry?.definition as unknown as JsonObject
 
     const credentialId = options.credentialId ?? utils.uuid()
-    const processedCredential = Credential.load(JSON.stringify(credential)).process({
-      credentialDefinition: CredentialDefinition.load(JSON.stringify(credentialDefinition)),
-      credentialRequestMetadata: CredentialRequestMetadata.load(JSON.stringify(credentialRequestMetadata)),
-      masterSecret: MasterSecret.load(JSON.stringify({ value: { ms: linkSecretRecord.value } })),
-      revocationRegistryDefinition,
-    })
 
-    const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
-
-    await credentialRepository.save(
-      agentContext,
-      new AnonCredsCredentialRecord({
-        credential: JSON.parse(processedCredential.toJson()) as AnonCredsCredential,
-        credentialId,
-        linkSecretId: linkSecretRecord.linkSecretId,
-        issuerId: options.credentialDefinition.issuerId,
-        schemaName: schema.name,
-        schemaIssuerId: schema.issuerId,
-        schemaVersion: schema.version,
+    let credentialObj: Credential | undefined
+    let processedCredential: Credential | undefined
+    try {
+      credentialObj = Credential.fromJson(credential as unknown as JsonObject)
+      processedCredential = credentialObj.process({
+        credentialDefinition: credentialDefinition as unknown as JsonObject,
+        credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
+        masterSecret: { value: { ms: linkSecretRecord.value } },
+        revocationRegistryDefinition,
       })
-    )
 
-    return credentialId
+      const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
+
+      await credentialRepository.save(
+        agentContext,
+        new AnonCredsCredentialRecord({
+          credential: processedCredential.toJson() as unknown as AnonCredsCredential,
+          credentialId,
+          linkSecretId: linkSecretRecord.linkSecretId,
+          issuerId: options.credentialDefinition.issuerId,
+          schemaName: schema.name,
+          schemaIssuerId: schema.issuerId,
+          schemaVersion: schema.version,
+          credentialRevocationId: processedCredential.revocationRegistryIndex?.toString(),
+        })
+      )
+
+      return credentialId
+    } finally {
+      credentialObj?.handle.clear()
+      processedCredential?.handle.clear()
+    }
   }
 
   public async getCredential(
@@ -279,6 +308,33 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
+  public async getCredentials(
+    agentContext: AgentContext,
+    options: GetCredentialsOptions
+  ): Promise<AnonCredsCredentialInfo[]> {
+    const credentialRecords = await agentContext.dependencyManager
+      .resolve(AnonCredsCredentialRepository)
+      .findByQuery(agentContext, {
+        credentialDefinitionId: options.credentialDefinitionId,
+        schemaId: options.schemaId,
+        issuerId: options.issuerId,
+        schemaName: options.schemaName,
+        schemaVersion: options.schemaVersion,
+        schemaIssuerId: options.schemaIssuerId,
+      })
+
+    return credentialRecords.map((credentialRecord) => ({
+      attributes: Object.fromEntries(
+        Object.entries(credentialRecord.credential.values).map(([key, value]) => [key, value.raw])
+      ),
+      credentialDefinitionId: credentialRecord.credential.cred_def_id,
+      credentialId: credentialRecord.credentialId,
+      schemaId: credentialRecord.credential.schema_id,
+      credentialRevocationId: credentialRecord.credentialRevocationId,
+      revocationRegistryId: credentialRecord.credential.rev_reg_id,
+    }))
+  }
+
   public async deleteCredential(agentContext: AgentContext, credentialId: string): Promise<void> {
     const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
     const credentialRecord = await credentialRepository.getByCredentialId(agentContext, credentialId)
@@ -298,21 +354,35 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     if (!requestedAttribute) {
       throw new AnonCredsRsError(`Referent not found in proof request`)
     }
-    const attributes = requestedAttribute.name ? [requestedAttribute.name] : requestedAttribute.names
 
-    const restrictionQuery = requestedAttribute.restrictions
-      ? this.queryFromRestrictions(requestedAttribute.restrictions)
-      : undefined
+    const $and = []
 
-    const query: Query<AnonCredsCredentialRecord> = {
-      attributes,
-      ...restrictionQuery,
-      ...options.extraQuery,
+    // Make sure the attribute(s) that are requested are present using the marker tag
+    const attributes = requestedAttribute.names ?? [requestedAttribute.name]
+    const attributeQuery: SimpleQuery<AnonCredsCredentialRecord> = {}
+    for (const attribute of attributes) {
+      attributeQuery[`attr::${attribute}::marker`] = true
+    }
+    $and.push(attributeQuery)
+
+    // Add query for proof request restrictions
+    if (requestedAttribute.restrictions) {
+      const restrictionQuery = this.queryFromRestrictions(requestedAttribute.restrictions)
+      $and.push(restrictionQuery)
+    }
+
+    // Add extra query
+    // TODO: we're not really typing the extraQuery, and it will work differently based on the anoncreds implmentation
+    // We should make the allowed properties more strict
+    if (options.extraQuery) {
+      $and.push(options.extraQuery)
     }
 
     const credentials = await agentContext.dependencyManager
       .resolve(AnonCredsCredentialRepository)
-      .findByQuery(agentContext, query)
+      .findByQuery(agentContext, {
+        $and,
+      })
 
     return credentials.map((credentialRecord) => {
       const attributes: { [key: string]: string } = {}
@@ -336,35 +406,43 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
   private queryFromRestrictions(restrictions: AnonCredsProofRequestRestriction[]) {
     const query: Query<AnonCredsCredentialRecord>[] = []
 
-    for (const restriction of restrictions) {
+    const { restrictions: parsedRestrictions } = JsonTransformer.fromJSON({ restrictions }, AnonCredsRestrictionWrapper)
+
+    for (const restriction of parsedRestrictions) {
       const queryElements: SimpleQuery<AnonCredsCredentialRecord> = {}
 
-      if (restriction.cred_def_id) {
-        queryElements.credentialDefinitionId = restriction.cred_def_id
+      if (restriction.credentialDefinitionId) {
+        queryElements.credentialDefinitionId = restriction.credentialDefinitionId
       }
 
-      if (restriction.issuer_id || restriction.issuer_did) {
-        queryElements.issuerId = restriction.issuer_id ?? restriction.issuer_did
+      if (restriction.issuerId || restriction.issuerDid) {
+        queryElements.issuerId = restriction.issuerId ?? restriction.issuerDid
       }
 
-      if (restriction.rev_reg_id) {
-        queryElements.revocationRegistryId = restriction.rev_reg_id
+      if (restriction.schemaId) {
+        queryElements.schemaId = restriction.schemaId
       }
 
-      if (restriction.schema_id) {
-        queryElements.schemaId = restriction.schema_id
+      if (restriction.schemaIssuerId || restriction.schemaIssuerDid) {
+        queryElements.schemaIssuerId = restriction.schemaIssuerId ?? restriction.issuerDid
       }
 
-      if (restriction.schema_issuer_id || restriction.schema_issuer_did) {
-        queryElements.schemaIssuerId = restriction.schema_issuer_id ?? restriction.schema_issuer_did
+      if (restriction.schemaName) {
+        queryElements.schemaName = restriction.schemaName
       }
 
-      if (restriction.schema_name) {
-        queryElements.schemaName = restriction.schema_name
+      if (restriction.schemaVersion) {
+        queryElements.schemaVersion = restriction.schemaVersion
       }
 
-      if (restriction.schema_version) {
-        queryElements.schemaVersion = restriction.schema_version
+      for (const [attributeName, attributeValue] of Object.entries(restriction.attributeValues)) {
+        queryElements[`attr::${attributeName}::value`] = attributeValue
+      }
+
+      for (const [attributeName, isAvailable] of Object.entries(restriction.attributeMarkers)) {
+        if (isAvailable) {
+          queryElements[`attr::${attributeName}::marker`] = isAvailable
+        }
       }
 
       query.push(queryElements)

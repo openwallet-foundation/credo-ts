@@ -31,6 +31,7 @@ describe('OutOfBandRecord', () => {
         state: OutOfBandState.Done,
         role: OutOfBandRole.Receiver,
         invitationId: 'a-message-id',
+        threadId: 'a-message-id',
         recipientKeyFingerprints: ['z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
       })
     })

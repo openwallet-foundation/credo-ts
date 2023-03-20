@@ -27,6 +27,6 @@ export interface RecordUpdatedEvent<T extends BaseRecord<any, any, any>> extends
 export interface RecordDeletedEvent<T extends BaseRecord<any, any, any>> extends BaseEvent {
   type: typeof RepositoryEventTypes.RecordDeleted
   payload: {
-    record: T
+    record: T | { id: string; type: string }
   }
 }

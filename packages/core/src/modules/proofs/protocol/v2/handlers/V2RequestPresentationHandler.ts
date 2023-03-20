@@ -71,6 +71,7 @@ export class V2RequestPresentationHandler implements MessageHandler {
         serviceParams: {
           service: recipientService.resolvedDidCommService,
           senderKey: message.service.resolvedDidCommService.recipientKeys[0],
+          returnRoute: true,
         },
       })
     }

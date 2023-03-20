@@ -7,9 +7,9 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DiscoverFea
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../tests/helpers'
-import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { FeatureRegistry } from '../../../../../agent/FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { Protocol } from '../../../../../agent/models'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { ConsoleLogger } from '../../../../../logger/ConsoleLogger'
@@ -19,8 +19,8 @@ import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleCon
 import { V1DiscoverFeaturesService } from '../V1DiscoverFeaturesService'
 import { V1DiscloseMessage, V1QueryMessage } from '../messages'
 
-jest.mock('../../../../../agent/Dispatcher')
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+jest.mock('../../../../../agent/MessageHandlerRegistry')
+const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new FeatureRegistry()
 featureRegistry.register(new Protocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -36,7 +36,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new V1DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new DispatcherMock(),
+    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -239,7 +239,7 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new V1DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new DispatcherMock(),
+    new MessageHandlerRegistry(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )

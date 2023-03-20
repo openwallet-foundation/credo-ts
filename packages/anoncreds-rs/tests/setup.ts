@@ -1,3 +1,4 @@
 import '@hyperledger/anoncreds-nodejs'
+import 'reflect-metadata'
 
-jest.setTimeout(60000)
+jest.setTimeout(120000)

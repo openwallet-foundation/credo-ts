@@ -60,6 +60,15 @@ export interface GetCredentialOptions {
   credentialId: string
 }
 
+export interface GetCredentialsOptions {
+  credentialDefinitionId: string
+  schemaId: string
+  schemaIssuerId: string
+  schemaName: string
+  schemaVersion: string
+  issuerId: string
+}
+
 // TODO: Maybe we can make this a bit more specific?
 export type WalletQuery = Record<string, unknown>
 export interface ReferentWalletQuery {
@@ -83,6 +92,7 @@ export interface CreateCredentialRequestOptions {
   credentialOffer: AnonCredsCredentialOffer
   credentialDefinition: AnonCredsCredentialDefinition
   linkSecretId?: string
+  useLegacyProverDid?: boolean
 }
 
 export interface CreateCredentialRequestReturn {

@@ -13,6 +13,7 @@ import type {
   AnonCredsCredentialRequestMetadata,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
+  GetCredentialsOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
@@ -31,7 +32,7 @@ import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
-import { getIndySeqNoFromUnqualifiedCredentialDefinitionId } from '../utils/identifiers'
+import { parseCredentialDefinitionId } from '../utils/identifiers'
 import {
   indySdkCredentialDefinitionFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
@@ -105,8 +106,8 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         )
 
         // Get the seqNo for the schemas so we can use it when transforming the schemas
-        const schemaSeqNo = getIndySeqNoFromUnqualifiedCredentialDefinitionId(credentialDefinitionId)
-        seqNoMap[credentialDefinition.schemaId] = schemaSeqNo
+        const { schemaSeqNo } = parseCredentialDefinitionId(credentialDefinitionId)
+        seqNoMap[credentialDefinition.schemaId] = Number(schemaSeqNo)
       }
 
       // Convert AnonCreds schemas to Indy schemas
@@ -205,11 +206,37 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     }
   }
 
+  public async getCredentials(agentContext: AgentContext, options: GetCredentialsOptions) {
+    assertIndySdkWallet(agentContext.wallet)
+
+    const credentials = await this.indySdk.proverGetCredentials(agentContext.wallet.handle, {
+      cred_def_id: options.credentialDefinitionId,
+      schema_id: options.schemaId,
+      schema_issuer_did: options.schemaIssuerId,
+      schema_name: options.schemaName,
+      schema_version: options.schemaVersion,
+      issuer_did: options.issuerId,
+    })
+
+    return credentials.map((credential) => ({
+      credentialDefinitionId: credential.cred_def_id,
+      attributes: credential.attrs,
+      credentialId: credential.referent,
+      schemaId: credential.schema_id,
+      credentialRevocationId: credential.cred_rev_id,
+      revocationRegistryId: credential.rev_reg_id,
+    }))
+  }
+
   public async createCredentialRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
     assertIndySdkWallet(agentContext.wallet)
+
+    if (!options.useLegacyProverDid) {
+      throw new AriesFrameworkError('Indy SDK only supports legacy prover did for credential requests')
+    }
 
     const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 

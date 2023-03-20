@@ -89,9 +89,13 @@ module.exports = {
       },
     },
     {
-      files: ['jest.config.ts', '.eslintrc.js'],
+      files: ['jest.config.ts', '.eslintrc.js', './scripts/**'],
       env: {
         node: true,
+      },
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+        'no-undef': 'off',
       },
     },
     {

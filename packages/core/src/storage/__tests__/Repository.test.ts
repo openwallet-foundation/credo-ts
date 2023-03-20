@@ -146,6 +146,28 @@ describe('Repository', () => {
 
       expect(storageMock.deleteById).toBeCalledWith(agentContext, TestRecord, 'test-id')
     })
+
+    it(`should emit deleted event`, async () => {
+      const eventListenerMock = jest.fn()
+      eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
+
+      const record = getRecord({ id: 'test-id' })
+
+      await repository.deleteById(agentContext, record.id)
+
+      expect(eventListenerMock).toHaveBeenCalledWith({
+        type: 'RecordDeleted',
+        metadata: {
+          contextCorrelationId: 'mock',
+        },
+        payload: {
+          record: expect.objectContaining({
+            id: record.id,
+            type: record.type,
+          }),
+        },
+      })
+    })
   })
 
   describe('getById()', () => {

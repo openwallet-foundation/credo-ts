@@ -6,8 +6,9 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@aries-framework/core'
-import { ariesAskar } from '@hyperledger/aries-askar-shared'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { AskarWallet } from '../../wallet/AskarWallet'
@@ -16,7 +17,7 @@ import { askarQueryFromSearchQuery } from '../utils'
 
 const startDate = Date.now()
 
-describe('AskarStorageService', () => {
+describeRunInNodeVersion([18], 'AskarStorageService', () => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
   let agentContext: AgentContext
@@ -29,8 +30,7 @@ describe('AskarStorageService', () => {
       wallet,
       agentConfig,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig)
     storageService = new AskarStorageService<TestRecord>()
   })
 
@@ -72,7 +72,7 @@ describe('AskarStorageService', () => {
         forUpdate: false,
       })
 
-      expect(JSON.parse(retrieveRecord.getTags(0))).toEqual({
+      expect(JSON.parse(retrieveRecord?.getTags(0) ?? '{}')).toEqual({
         someBoolean: '1',
         someOtherBoolean: '0',
         someStringValue: 'string',

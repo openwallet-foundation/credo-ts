@@ -2,7 +2,7 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
@@ -19,7 +19,7 @@ export class BasicMessagesApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     basicMessageService: BasicMessageService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
@@ -29,7 +29,7 @@ export class BasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -41,13 +41,14 @@ export class BasicMessagesApi {
    * @throws {MessageSendingError} If message is undeliverable
    * @returns the created record
    */
-  public async sendMessage(connectionId: string, message: string) {
+  public async sendMessage(connectionId: string, message: string, parentThreadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
     const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
       this.agentContext,
       message,
-      connection
+      connection,
+      parentThreadId
     )
     const outboundMessageContext = new OutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,
@@ -82,6 +83,18 @@ export class BasicMessagesApi {
   }
 
   /**
+   * Retrieve a basic message record by thread id
+   *
+   * @param threadId The thread id
+   * @throws {RecordNotFoundError} If no record is found
+   * @throws {RecordDuplicateError} If multiple records are found
+   * @returns The connection record
+   */
+  public async getByThreadId(basicMessageRecordId: string) {
+    return this.basicMessageService.getByThreadId(this.agentContext, basicMessageRecordId)
+  }
+
+  /**
    * Delete a basic message record by id
    *
    * @param connectionId the basic message record id
@@ -91,7 +104,7 @@ export class BasicMessagesApi {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
   }
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }
