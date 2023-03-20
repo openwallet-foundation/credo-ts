@@ -346,7 +346,6 @@ export class OpenId4VcClientService {
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      // @ts-ignore
       credentialType: accessToken.scope,
       format: 'ldp_vc', // Allows us to override the format
     })
