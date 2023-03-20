@@ -10,7 +10,7 @@ import { IndySdkModule } from '../../indy-sdk/src'
 
 import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
-import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+import { AuthFlowType, OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),
@@ -78,13 +78,13 @@ describe('OpenId4VcClient', () => {
           privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
         },
       })
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
+      const keyInstance = didKeyToInstanceOfKey(did.didState.did as string)
 
-      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialPreAuthorized({
+      const kid = `${did.didState.did as string}#${keyInstance.fingerprint as string}`
+
+      const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredential({
+        flowType: AuthFlowType.PRE_AUTHORIZED_CODE_FLOW,
         issuerUri,
         kid,
         checkRevocationState: false,
@@ -199,11 +199,10 @@ describe('OpenId4VcClient', () => {
           privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
         },
       })
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const keyInstance = didKeyToInstanceOfKey(did.didState.did!)
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const kid = `${did.didState.did!}#${keyInstance.fingerprint}`
+      const keyInstance = didKeyToInstanceOfKey(did.didState.did as string)
+
+      const kid = `${did.didState.did as string}#${keyInstance.fingerprint as string}`
 
       const clientId = 'test-client'
       const codeVerifier = await agent.modules.openId4VcClient.generateCodeVerifier()
@@ -212,8 +211,9 @@ describe('OpenId4VcClient', () => {
         'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
 
       const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredential({
+        flowType: AuthFlowType.AUTHORIZATION_CODE_FLOW,
         clientId: clientId,
-        code: 'test-code',
+        authorizationCode: 'test-code',
         codeVerifier: codeVerifier,
         checkRevocationState: false,
         kid: kid,
