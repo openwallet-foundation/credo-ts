@@ -73,9 +73,10 @@ export class IndyVdrPoolService {
       )
     }
 
-    const didCache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    const cacheKey = `IndyVdrPoolService:${did}`
 
-    const cachedNymResponse = await didCache.get<CachedDidResponse>(agentContext, `IndyVdrPoolService:${did}`)
+    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, cacheKey)
     const pool = this.pools.find((pool) => pool.indyNamespace === cachedNymResponse?.indyNamespace)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -122,7 +123,7 @@ export class IndyVdrPoolService {
       value = productionOrNonProduction[0].value
     }
 
-    await didCache.set(agentContext, did, {
+    await cache.set(agentContext, cacheKey, {
       nymResponse: {
         did: value.did.nymResponse.did,
         verkey: value.did.nymResponse.verkey,

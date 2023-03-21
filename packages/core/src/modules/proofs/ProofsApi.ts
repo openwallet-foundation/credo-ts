@@ -341,7 +341,6 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
         autoAcceptProof: options.autoAcceptProof,
         goalCode: options.goalCode,
       })
-
       // Set and save ~service decorator to record (to remember our verkey)
       message.service = ourService
       await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
@@ -349,18 +348,16 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
         role: DidCommMessageRole.Sender,
         associatedRecordId: proofRecord.id,
       })
-
       await this.messageSender.sendMessageToService(
         new OutboundMessageContext(message, {
           agentContext: this.agentContext,
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
+            returnRoute: options.useReturnRoute ?? true, // defaults to true if missing
           },
         })
       )
-
       return proofRecord
     }
     // Cannot send message without connectionId or ~service decorator
@@ -495,7 +492,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
+            returnRoute: false, // hard wire to be false since it's the end of the protocol so not needed here
           },
         })
       )
