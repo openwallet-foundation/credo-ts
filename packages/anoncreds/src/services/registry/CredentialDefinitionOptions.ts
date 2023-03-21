@@ -41,5 +41,5 @@ export interface RegisterCredentialDefinitionReturn {
     | RegisterCredentialDefinitionReturnStateFinished
     | RegisterCredentialDefinitionReturnStateFailed
   credentialDefinitionMetadata: Extensible
-  registrationMetadata: AnonCredsResolutionMetadata
+  registrationMetadata: Extensible
 }
