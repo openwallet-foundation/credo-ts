@@ -93,7 +93,7 @@ export class IndySdkPoolService {
 
     if (pools.length === 0) {
       throw new IndySdkPoolNotConfiguredError(
-        "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
+        'No indy ledgers configured. Provide at least one pool configuration in IndySdkModuleConfigOptions.networks'
       )
     }
 
@@ -129,7 +129,7 @@ export class IndySdkPoolService {
 
     // If there are self certified DIDs we always prefer it over non self certified DIDs
     // We take the first self certifying DID as we take the order in the
-    // indyLedgers config as the order of preference of ledgers
+    // IndySdkModuleConfigOptions.networks config as the order of preference of ledgers
     let value = successful.find((response) =>
       isLegacySelfCertifiedDid(response.value.did.did, response.value.did.verkey)
     )?.value
@@ -142,8 +142,8 @@ export class IndySdkPoolService {
       const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
       const productionOrNonProduction = production.length >= 1 ? production : nonProduction
 
-      // We take the first value as we take the order in the indyLedgers config as
-      // the order of preference of ledgers
+      // We take the first value as we take the order in the IndySdkModuleConfigOptions.networks
+      // config as the order of preference of ledgers
       value = productionOrNonProduction[0].value
     }
 
@@ -176,7 +176,7 @@ export class IndySdkPoolService {
   public getPoolForNamespace(indyNamespace?: string) {
     if (this.pools.length === 0) {
       throw new IndySdkPoolNotConfiguredError(
-        "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
+        'No indy ledgers configured. Provide at least one pool configuration in IndySdkModuleConfigOptions.networks'
       )
     }
 
