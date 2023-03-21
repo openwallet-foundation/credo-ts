@@ -123,23 +123,23 @@ export function migrateIndyCredentialMetadataToAnonCredsMetadata<Agent extends B
     `Migrating credential record with id ${credentialRecord.id} to anoncreds metadata for version 0.4`
   )
 
-  const INDY_CREDENTIAL_REQUEST_METADATA = '_internal/indyRequest'
-  const INDY_CREDENTIAL_METADATA = '_internal/indyCredential'
+  const indyCredentialRequestMetadataKey = '_internal/indyRequest'
+  const indyCredentialMetadataKey = '_internal/indyCredential'
 
   const ANONCREDS_CREDENTIAL_REQUEST_METADATA = '_anoncreds/credentialRequest'
   const ANONCREDS_CREDENTIAL_METADATA = '_anoncreds/credential'
 
-  const indyCredentialRequestMetadata = credentialRecord.metadata.get(INDY_CREDENTIAL_REQUEST_METADATA)
+  const indyCredentialRequestMetadata = credentialRecord.metadata.get(indyCredentialRequestMetadataKey)
   if (indyCredentialRequestMetadata) {
     // TODO: we if we choose to rename master secret to link secret in anoncreds-rs we should also rename it in the request
     credentialRecord.metadata.set(ANONCREDS_CREDENTIAL_REQUEST_METADATA, indyCredentialRequestMetadata)
-    credentialRecord.metadata.delete(INDY_CREDENTIAL_REQUEST_METADATA)
+    credentialRecord.metadata.delete(indyCredentialRequestMetadataKey)
   }
 
-  const indyCredentialMetadata = credentialRecord.metadata.get(INDY_CREDENTIAL_METADATA)
+  const indyCredentialMetadata = credentialRecord.metadata.get(indyCredentialMetadataKey)
   if (indyCredentialMetadata) {
     credentialRecord.metadata.set(ANONCREDS_CREDENTIAL_METADATA, indyCredentialMetadata)
-    credentialRecord.metadata.delete(INDY_CREDENTIAL_METADATA)
+    credentialRecord.metadata.delete(indyCredentialMetadataKey)
   }
 
   agent.config.logger.debug(

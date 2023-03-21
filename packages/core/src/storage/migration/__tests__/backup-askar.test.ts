@@ -6,6 +6,7 @@ import path from 'path'
 
 import { describeRunInNodeVersion } from '../../../../../../tests/runInVersion'
 import { AskarModule } from '../../../../../askar/src'
+import { askarModuleConfig } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -19,7 +20,7 @@ const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup | Aries Askar',
   {},
   {
-    askar: new AskarModule(),
+    askar: new AskarModule(askarModuleConfig),
   }
 )
 
