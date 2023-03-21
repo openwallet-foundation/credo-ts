@@ -98,7 +98,7 @@ export function migrateIndyCredentialTypeToAnonCredsCredential<Agent extends Bas
 /**
  * Migrates the indy credential metadata type to anoncreds credential metadata type.
  *
- * The following 0.3.1 creedential metadata structure (unrelated keys omitted):
+ * The following 0.3.1 credential metadata structure (unrelated keys omitted):
  *
  * ```json
  * {
