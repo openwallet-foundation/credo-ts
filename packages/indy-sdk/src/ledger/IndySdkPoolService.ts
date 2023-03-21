@@ -142,7 +142,7 @@ export class IndySdkPoolService {
       const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
       const productionOrNonProduction = production.length >= 1 ? production : nonProduction
 
-      // We take the first value as we take the order in the IndySdkModuleConfigOptions.networks 
+      // We take the first value as we take the order in the IndySdkModuleConfigOptions.networks
       // config as the order of preference of ledgers
       value = productionOrNonProduction[0].value
     }
