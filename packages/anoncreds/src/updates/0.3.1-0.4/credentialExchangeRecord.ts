@@ -39,7 +39,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
 /**
  * Migrates the indy credential record binding to anoncreds credential record binding.
  *
- * The following 0.3.1 creedential record structure (unrelated keys omitted):
+ * The following 0.3.1 credential record structure (unrelated keys omitted):
  *
  * ```json
  * {
