@@ -46,7 +46,7 @@ export function validateSpecCompliantPayload(didDocument: DidDocument): SpecVali
 
   const isValidService = didDocument.service
     ? didDocument?.service?.every((s) => {
-        return Array.isArray(s?.serviceEndpoint) && s?.id && s?.type
+        return s?.serviceEndpoint && s?.id && s?.type
       })
     : true
 
@@ -56,6 +56,12 @@ export function validateSpecCompliantPayload(didDocument: DidDocument): SpecVali
 
 // Create helpers in sdk like MsgCreateDidDocPayload.fromDIDDocument to replace the below
 export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument, versionId: string) {
+  didPayload.service = didPayload.service?.map((e) => {
+    return {
+      ...e,
+      serviceEndpoint: Array.isArray(e.serviceEndpoint) ? e.serviceEndpoint : [e.serviceEndpoint],
+    }
+  })
   const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
   return MsgCreateDidDocPayload.encode(
     MsgCreateDidDocPayload.fromPartial({

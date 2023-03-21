@@ -3,6 +3,7 @@ import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 
+import { validService } from './setup'
 import { getCheqdModules } from './setupCheqdModule'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar', {}, getCheqdModules())
@@ -77,7 +78,7 @@ describe('Cheqd DID registrar', () => {
   })
 
   it('should create a did:cheqd using JsonWebKey2020', async () => {
-    const did = await agent.dids.create({
+    const createResult = await agent.dids.create({
       method: 'cheqd',
       secret: {
         verificationMethod: {
@@ -90,7 +91,7 @@ describe('Cheqd DID registrar', () => {
         methodSpecificIdAlgo: 'base58btc',
       },
     })
-    expect(did).toMatchObject({
+    expect(createResult).toMatchObject({
       didState: {
         state: 'finished',
         didDocument: {
@@ -98,5 +99,31 @@ describe('Cheqd DID registrar', () => {
         },
       },
     })
+    expect(createResult.didState.did).toBeDefined()
+    const did = createResult.didState.did!
+    const didDocument = createResult.didState.didDocument!
+    didDocument.service = [validService(did)]
+
+    const updateResult = await agent.dids.update({
+      did,
+      didDocument,
+    })
+    expect(updateResult).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument,
+      },
+    })
+
+    const deactivateResult = await agent.dids.deactivate({ did })
+    expect(deactivateResult).toMatchObject({
+      didState: {
+        state: 'finished',
+        didDocument,
+      },
+    })
+
+    const resolvedDocument = await agent.dids.resolve(did)
+    expect(resolvedDocument.didDocumentMetadata.deactivated).toBe(true)
   })
 })

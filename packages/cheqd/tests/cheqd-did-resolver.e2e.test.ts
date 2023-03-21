@@ -1,6 +1,7 @@
 import { Agent, JsonTransformer } from '@aries-framework/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
+import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
 import { getCheqdModules } from './setupCheqdModule'
 
@@ -41,6 +42,28 @@ describe('Cheqd DID resolver', () => {
         nextVersionId: '',
       },
       didResolutionMetadata: {},
+    })
+  })
+
+  it('should getClosestResourceVersion', async () => {
+    const did = await agent.dids.resolve('did:cheqd:testnet:SiVQgrFZ7jFZFrTGstT4ZD')
+    let resource = getClosestResourceVersion(did.didDocumentMetadata.linkedResourceMetadata, new Date())
+    expect(resource).toMatchObject({
+      id: '0b02ebf4-07c4-4df7-9015-e93c21108240',
+    })
+    resource = getClosestResourceVersion(
+      did.didDocumentMetadata.linkedResourceMetadata,
+      new Date('2022-11-16T10:56:34Z')
+    )
+    expect(resource).toMatchObject({
+      id: '8140ec3a-d8bb-4f59-9784-a1cbf91a4a35',
+    })
+    resource = getClosestResourceVersion(
+      did.didDocumentMetadata.linkedResourceMetadata,
+      new Date('2022-11-16T11:41:48Z')
+    )
+    expect(resource).toMatchObject({
+      id: 'a20aa56a-a76f-4828-8a98-4c85d9494545',
     })
   })
 })

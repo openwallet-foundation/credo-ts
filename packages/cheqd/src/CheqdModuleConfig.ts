@@ -2,10 +2,10 @@
  * CheqdModuleConfigOptions defines the interface for the options of the CheqdModuleConfig class.
  */
 export interface CheqdModuleConfigOptions {
-  networks: INetworkConfig[]
+  networks: NetworkConfig[]
 }
 
-export interface INetworkConfig {
+export interface NetworkConfig {
   rpcUrl?: string
   cosmosPayerSeed: string
   network: string

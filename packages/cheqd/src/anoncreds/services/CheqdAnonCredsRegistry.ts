@@ -76,7 +76,6 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    //TODO: Handle validations
     try {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
 
@@ -91,7 +90,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           attrNames: schema.attrNames,
         },
         version: schema.version,
-      } as CheqdCreateResourceOptions
+      } satisfies CheqdCreateResourceOptions
 
       const response = await cheqdDidRegistrar.createResource(agentContext, schema.issuerId, schemaResource)
       if (response.resourceState.state !== 'finished') {
@@ -156,7 +155,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           schemaId: schemaResponse.schemaId,
         },
         version: utils.uuid(),
-      } as CheqdCreateResourceOptions
+      } satisfies CheqdCreateResourceOptions
 
       const response = await cheqdDidRegistrar.createResource(
         agentContext,

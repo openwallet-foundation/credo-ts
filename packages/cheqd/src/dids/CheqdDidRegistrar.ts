@@ -6,7 +6,6 @@ import type {
   DidDeactivateResult,
   DidUpdateResult,
   DidDocument,
-  Jwk,
   VerificationMethod,
 } from '@aries-framework/core'
 import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
@@ -17,11 +16,11 @@ import {
   DidRecord,
   DidRepository,
   KeyType,
-  Key,
   Buffer,
   isValidPrivateKey,
   utils,
   TypedArrayEncoder,
+  getKeyFromVerificationMethod,
 } from '@aries-framework/core'
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
@@ -43,7 +42,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const { methodSpecificIdAlgo, network, versionId = utils.uuid() } = options.options
-    const { verificationMethod } = options.secret
+    const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
 
     try {
@@ -72,7 +71,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           methodSpecificIdAlgo: methodSpecificIdAlgo || MethodSpecificIdAlgo.Uuid,
           network,
           publicKey: TypedArrayEncoder.toHex(key.publicKey),
-        }) as DidDocument
+        }) satisfies DidDocument
       } else {
         return {
           didDocumentMetadata: {},
@@ -127,7 +126,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
-    const { versionId = utils.uuid() } = options.options
+    const versionId = options.options?.versionId || utils.uuid()
     const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
     let didRecord: DidRecord | null
@@ -201,7 +200,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
       // Save the did so we know we created it and can issue with it
       didRecord.didDocument = didDocument
-      await didRepository.save(agentContext, didRecord)
+      await didRepository.update(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},
@@ -234,7 +233,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const did = options.did
-    const { versionId = utils.uuid() } = options.options
+    const versionId = options.options?.versionId || utils.uuid()
 
     try {
       const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
@@ -256,8 +255,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         throw new Error(`${response.rawLog}`)
       }
 
-      didRecord.role = DidDocumentRole.Deactivated
-      await didRepository.save(agentContext, didRecord)
+      await didRepository.update(agentContext, didRecord)
 
       return {
         didDocumentMetadata: {},
@@ -324,9 +322,6 @@ export class CheqdDidRegistrar implements DidRegistrar {
         throw new Error(`${response.rawLog}`)
       }
 
-      // TODO: add resource to didRecord
-      // await didRepository.save(agentContext, didRecord)
-
       return {
         resourceMetadata: {},
         resourceRegistrationMetadata: {},
@@ -355,20 +350,11 @@ export class CheqdDidRegistrar implements DidRegistrar {
   ) {
     return await Promise.all(
       verificationMethod.map(async (method) => {
-        let key: Key
-        if (method.publicKeyBase58) {
-          key = Key.fromPublicKeyBase58(method.publicKeyBase58, KeyType.Ed25519)
-        } else if (method.publicKeyJwk) {
-          key = Key.fromJwk(method.publicKeyJwk as unknown as Jwk)
-        } else if (method.publicKeyMultibase) {
-          key = Key.fromFingerprint(method.publicKeyMultibase)
-        } else {
-          throw new Error(`Invalid verificationMethod`)
-        }
+        const key = getKeyFromVerificationMethod(method)
         return {
           verificationMethodId: method.id,
           signature: await agentContext.wallet.sign({ data: Buffer.from(payload), key }),
-        } as SignInfo
+        } satisfies SignInfo
       })
     )
   }
@@ -393,7 +379,7 @@ export interface CheqdDidUpdateOptions extends DidCreateOptions {
   did: string
   didDocument: DidDocument
   options: {
-    network: CheqdNetwork
+    network?: CheqdNetwork
     rpcUrl?: string
     fee?: DidStdFee
     versionId?: string
@@ -407,7 +393,7 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
   method: 'cheqd'
   did: string
   options: {
-    network: CheqdNetwork
+    network?: CheqdNetwork
     rpcUrl?: string
     fee?: DidStdFee
     versionId?: string

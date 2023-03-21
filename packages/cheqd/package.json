@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/cheqd-sdk",
+  "name": "@aries-framework/cheqd",
   "main": "build/index",
   "types": "build/index",
   "version": "0.3.3",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/cheqd-sdk",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/cheqd",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/cheqd-sdk"
+    "directory": "packages/cheqd"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",

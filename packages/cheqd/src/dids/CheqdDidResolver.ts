@@ -104,7 +104,7 @@ export class CheqdDidResolver implements DidResolver {
 
       const { resource, metadata } = await cheqdLedgerService.resolveResource(parsedDid.did, id, resourceId)
       if (!resource || !metadata) {
-        throw new Error('Please try again, Internal error')
+        throw new Error('resolver_error: Unable to resolve resource, Please try again')
       }
 
       const result = await renderResourceData(resource.data, metadata.mediaType)

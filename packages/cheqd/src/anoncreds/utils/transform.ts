@@ -8,10 +8,12 @@ import type {
   AnonCredsSchema,
 } from '@aries-framework/anoncreds'
 
+import { Type } from 'class-transformer'
 import {
   ArrayMinSize,
   Contains,
   IsArray,
+  IsInstance,
   IsNumber,
   IsObject,
   IsOptional,
@@ -68,8 +70,9 @@ export class CheqdCredentialDefinition {
   @IsString()
   public tag!: string
 
-  @IsObject()
   @ValidateNested()
+  @IsInstance(CheqdCredentialDefinitionValue)
+  @Type(() => CheqdCredentialDefinitionValue)
   public value!: CheqdCredentialDefinitionValue
 }
 
@@ -80,11 +83,15 @@ export class AccumKey {
 
 export class PublicKeys {
   @ValidateNested()
+  @IsInstance(AccumKey)
+  @Type(() => AccumKey)
   public accumKey!: AccumKey
 }
 
 export class CheqdRevocationRegistryDefinitionValue {
   @ValidateNested()
+  @IsInstance(PublicKeys)
+  @Type(() => PublicKeys)
   public publicKeys!: PublicKeys
 
   @IsNumber()
@@ -117,6 +124,8 @@ export class CheqdRevocationRegistryDefinition {
   public tag!: string
 
   @ValidateNested()
+  @IsInstance(CheqdRevocationRegistryDefinitionValue)
+  @Type(() => CheqdRevocationRegistryDefinitionValue)
   public value!: CheqdRevocationRegistryDefinitionValue
 }
 
