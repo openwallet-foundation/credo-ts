@@ -16,7 +16,8 @@
   "dependencies": {
     "@hyperledger/indy-vdr-nodejs": "0.1.0-dev.12",
     "@hyperledger/anoncreds-nodejs": "^0.1.0-dev.11",
-    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.6"
+    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.6",
+    "inquirer": "^8.2.5"
   },
   "devDependencies": {
     "@aries-framework/anoncreds": "*",
@@ -32,8 +33,5 @@
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
     "ts-node": "^10.4.0"
-  },
-  "dependencies": {
-    "inquirer": "^8.2.5"
   }
 }
