@@ -1,14 +1,13 @@
+import type {
+  GenerateAuthorizationUrlOptions,
+  PreAuthCodeFlowOptions,
+  AuthCodeFlowOptions,
+} from './OpenId4VcClientService'
 import type { W3cCredentialRecord } from '@aries-framework/core'
 
 import { AgentContext, injectable } from '@aries-framework/core'
 
-import { OpenId4VcClientService } from './OpenId4VcClientService'
-
-interface PreAuthorizedOptions {
-  issuerUri: string
-  kid: string
-  checkRevocationState?: boolean // default = true
-}
+import { AuthFlowType, OpenId4VcClientService } from './OpenId4VcClientService'
 
 /**
  * @public
@@ -23,13 +22,29 @@ export class OpenId4VcClientApi {
     this.openId4VcClientService = openId4VcClientService
   }
 
-  public async requestCredentialPreAuthorized(options: PreAuthorizedOptions): Promise<W3cCredentialRecord> {
+  public async requestCredentialUsingPreAuthorizedCode(options: PreAuthCodeFlowOptions): Promise<W3cCredentialRecord> {
     // set defaults
-    const checkRevocationState = options.checkRevocationState ?? true
+    const verifyRevocationState = options.verifyRevocationState ?? true
 
-    return this.openId4VcClientService.requestCredentialPreAuthorized(this.agentContext, {
+    return this.openId4VcClientService.requestCredential(this.agentContext, {
       ...options,
-      checkRevocationState: checkRevocationState,
+      verifyRevocationState: verifyRevocationState,
+      flowType: AuthFlowType.PreAuthorizedCodeFlow,
     })
+  }
+
+  public async requestCredentialUsingAuthorizationCode(options: AuthCodeFlowOptions): Promise<W3cCredentialRecord> {
+    // set defaults
+    const checkRevocationState = options.verifyRevocationState ?? true
+
+    return this.openId4VcClientService.requestCredential(this.agentContext, {
+      ...options,
+      verifyRevocationState: checkRevocationState,
+      flowType: AuthFlowType.AuthorizationCodeFlow,
+    })
+  }
+
+  public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
+    return this.openId4VcClientService.generateAuthorizationUrl(options)
   }
 }
