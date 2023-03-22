@@ -17,7 +17,7 @@ export interface SignCredentialOptions {
 export interface VerifyCredentialOptions {
   credential: W3cVerifiableCredential
   proofPurpose?: ProofPurpose
-  verifyRevocationState: boolean
+  verifyRevocationState?: boolean
 }
 
 export interface StoreCredentialOptions {
