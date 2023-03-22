@@ -32,7 +32,7 @@ import { randomStringForEntropy } from '@stablelib/random'
 export interface PreAuthCodeFlowOptions {
   issuerUri: string
   kid: string
-  checkRevocationState: boolean
+  verifyRevocationState: boolean
 }
 
 export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
@@ -43,8 +43,8 @@ export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
 }
 
 export enum AuthFlowType {
-  AUTHORIZATION_CODE_FLOW = 'Authorization Code Flow',
-  PRE_AUTHORIZED_CODE_FLOW = 'Pre-Authorized Code Flow',
+  AuthorizationCodeFlow,
+  PreAuthorizedCodeFlow,
 }
 
 export type RequestCredentialOptions = { flowType: AuthFlowType } & PreAuthCodeFlowOptions &
@@ -185,7 +185,7 @@ export class OpenId4VcClientService {
     const base64Url = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
     this.logger.debug('Converted code_verifier to code_challenge', {
-      codeVerifier: options.codeVerifier,
+      codeVerifier: codeVerifier,
       sha256: codeVerifierSha256.toString(),
       base64Url: base64Url,
     })
@@ -208,9 +208,9 @@ export class OpenId4VcClientService {
     const credentialFormat = 'ldp_vc'
 
     let flowType: AuthzFlowType
-    if (options.flowType === AuthFlowType.AUTHORIZATION_CODE_FLOW) {
+    if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
       flowType = AuthzFlowType.AUTHORIZATION_CODE_FLOW
-    } else if (options.flowType === AuthFlowType.PRE_AUTHORIZED_CODE_FLOW) {
+    } else if (options.flowType === AuthFlowType.PreAuthorizedCodeFlow) {
       flowType = AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW
     } else {
       throw new AriesFrameworkError(
@@ -227,7 +227,7 @@ export class OpenId4VcClientService {
 
     let accessToken: AccessTokenResponse
 
-    if (options.flowType === AuthFlowType.AUTHORIZATION_CODE_FLOW) {
+    if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
       if (!options.authorizationCode)
         throw new AriesFrameworkError(
           `The 'authorizationCode' parameter is required when 'flowType' is ${options.flowType}`
@@ -302,7 +302,7 @@ export class OpenId4VcClientService {
     // verify the signature
     const result = await this.w3cCredentialService.verifyCredential(agentContext, {
       credential,
-      verifyRevocationState: options.checkRevocationState,
+      verifyRevocationState: options.verifyRevocationState,
     })
 
     if (result && !result.verified) {

@@ -24,23 +24,23 @@ export class OpenId4VcClientApi {
 
   public async requestCredentialUsingPreAuthorizedCode(options: PreAuthCodeFlowOptions): Promise<W3cCredentialRecord> {
     // set defaults
-    const checkRevocationState = options.checkRevocationState ?? true
+    const verifyRevocationState = options.verifyRevocationState ?? true
 
     return this.openId4VcClientService.requestCredential(this.agentContext, {
       ...options,
-      checkRevocationState: checkRevocationState,
-      flowType: AuthFlowType.PRE_AUTHORIZED_CODE_FLOW,
+      verifyRevocationState: verifyRevocationState,
+      flowType: AuthFlowType.PreAuthorizedCodeFlow,
     })
   }
 
   public async requestCredentialUsingAuthorizationCode(options: AuthCodeFlowOptions): Promise<W3cCredentialRecord> {
     // set defaults
-    const checkRevocationState = options.checkRevocationState ?? true
+    const checkRevocationState = options.verifyRevocationState ?? true
 
     return this.openId4VcClientService.requestCredential(this.agentContext, {
       ...options,
-      checkRevocationState: checkRevocationState,
-      flowType: AuthFlowType.AUTHORIZATION_CODE_FLOW,
+      verifyRevocationState: checkRevocationState,
+      flowType: AuthFlowType.AuthorizationCodeFlow,
     })
   }
 

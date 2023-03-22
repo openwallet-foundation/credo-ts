@@ -86,7 +86,7 @@ describe('OpenId4VcClient', () => {
       const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialUsingPreAuthorizedCode({
         issuerUri,
         kid,
-        checkRevocationState: false,
+        verifyRevocationState: false,
       })
 
       expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
@@ -220,7 +220,7 @@ describe('OpenId4VcClient', () => {
         clientId: clientId,
         authorizationCode: 'test-code',
         codeVerifier: codeVerifier,
-        checkRevocationState: false,
+        verifyRevocationState: false,
         kid: kid,
         issuerUri: initiationUri,
         redirectUri: redirectUri,

@@ -105,7 +105,7 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     options: VerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
-    options.verifyRevocationState = options.verifyRevocationState ?? true
+    const verifyRevocationState = options.verifyRevocationState ?? true
 
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
@@ -114,7 +114,7 @@ export class W3cCredentialService {
       suite: suites,
       documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
       checkStatus: () => {
-        if (options.verifyRevocationState) {
+        if (verifyRevocationState) {
           throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
         }
         return {
