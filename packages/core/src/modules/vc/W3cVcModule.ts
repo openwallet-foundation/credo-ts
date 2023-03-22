@@ -8,6 +8,7 @@ import {
 } from '../dids/domain/key-type/ed25519'
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
+import { W3cCredentialApi } from './W3cCredentialApi'
 import { W3cCredentialService } from './W3cCredentialService'
 import { W3cVcModuleConfig } from './W3cVcModuleConfig'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
@@ -15,6 +16,7 @@ import { Ed25519Signature2018 } from './signature-suites'
 
 export class W3cVcModule implements Module {
   public readonly config: W3cVcModuleConfig
+  public readonly api = W3cCredentialApi
 
   public constructor(config?: W3cVcModuleConfigOptions) {
     this.config = new W3cVcModuleConfig(config)
@@ -23,6 +25,8 @@ export class W3cVcModule implements Module {
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
+
+    dependencyManager.registerContextScoped(W3cCredentialApi)
 
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
