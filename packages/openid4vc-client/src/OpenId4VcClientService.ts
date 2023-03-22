@@ -1,11 +1,11 @@
-import type { AgentContext, W3cCredentialRecord } from '@aries-framework/core'
+import type { AgentContext } from '@aries-framework/core'
 import type { AccessTokenResponse, EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
-  getKeyFromVerificationMethod,
   AriesFrameworkError,
-  Buffer,
   DidsApi,
+  getKeyFromVerificationMethod,
+  Hasher,
   inject,
   injectable,
   InjectionSymbols,
@@ -18,7 +18,6 @@ import {
   TypedArrayEncoder,
   W3cCredentialService,
   W3cVerifiableCredential,
-  Hasher,
 } from '@aries-framework/core'
 import {
   Alg,
@@ -57,7 +56,6 @@ export type RequestCredentialOptions = { flowType: AuthFlowType } & PreAuthCodeF
 export interface GenerateAuthorizationUrlOptions {
   initiationUri: string
   clientId: string
-  codeVerifier: string
   redirectUri: string
   scope?: string[]
 }
@@ -165,7 +163,7 @@ export class OpenId4VcClientService {
     }
   }
 
-  public generateCodeVerifier(): string {
+  private generateCodeVerifier(): string {
     return randomStringForEntropy(256)
   }
 
@@ -182,8 +180,8 @@ export class OpenId4VcClientService {
       issuanceInitiationURI: options.initiationUri,
       flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
     })
-
-    const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(options.codeVerifier), 'sha2-256')
+    const codeVerifier = this.generateCodeVerifier()
+    const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
     const base64Url = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
 
     this.logger.debug('Converted code_verifier to code_challenge', {
@@ -192,13 +190,18 @@ export class OpenId4VcClientService {
       base64Url: base64Url,
     })
 
-    return client.createAuthorizationRequestUrl({
+    const authorizationUrl = client.createAuthorizationRequestUrl({
       clientId: options.clientId,
       codeChallengeMethod: CodeChallengeMethod.SHA256,
       codeChallenge: base64Url,
       redirectUri: options.redirectUri,
       scope: options.scope?.join(' '),
     })
+
+    return {
+      authorizationUrl,
+      codeVerifier,
+    }
   }
 
   public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {

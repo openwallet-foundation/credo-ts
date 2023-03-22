@@ -1,6 +1,6 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
-import { Agent, KeyType, W3cCredentialRecord, W3cVcModule, TypedArrayEncoder } from '@aries-framework/core'
+import { Agent, KeyType, TypedArrayEncoder, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
@@ -10,7 +10,7 @@ import { IndySdkModule } from '../../indy-sdk/src'
 
 import { acquireAccessTokenResponse, credentialRequestResponse, getMetadataResponse } from './fixtures'
 
-import { AuthFlowType, OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
+import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),
@@ -97,6 +97,7 @@ describe('OpenId4VcClient', () => {
         'OpenBadgeCredential',
       ])
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       expect(w3cCredentialRecord.credential.credentialSubject.id).toEqual(did.didState.did)
     })
@@ -130,33 +131,24 @@ describe('OpenId4VcClient', () => {
       enableNetConnect()
     })
 
-    it('should generate a correct code verifier', async () => {
-      const codeVerifier = await agent.modules.openId4VcClient.generateCodeVerifier()
-
-      expect(typeof codeVerifier).toBe('string')
-
-      // length restrictions are specified here https://www.rfc-editor.org/rfc/rfc7636#section-4.1
-      expect(codeVerifier.length).toBeGreaterThanOrEqual(43)
-      expect(codeVerifier.length).toBeLessThanOrEqual(128)
-    })
-
     it('should generate a valid authorization url', async () => {
       const clientId = 'test-client'
-      const codeVerifier = await agent.modules.openId4VcClient.generateCodeVerifier()
+
       const redirectUri = 'https://example.com/cb'
       const scope = ['TestCredential']
       const initiationUri =
         'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
-      const authUrl = await agent.modules.openId4VcClient.generateAuthorizationUrl({
+      const { authorizationUrl } = await agent.modules.openId4VcClient.generateAuthorizationUrl({
         clientId,
-        codeVerifier,
         redirectUri,
         scope,
         initiationUri,
       })
 
-      const parsedUrl = new URL(authUrl)
-      expect(authUrl.startsWith('https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/authorize')).toBe(true)
+      const parsedUrl = new URL(authorizationUrl)
+      expect(authorizationUrl.startsWith('https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/authorize')).toBe(
+        true
+      )
       expect(parsedUrl.searchParams.get('response_type')).toBe('code')
       expect(parsedUrl.searchParams.get('client_id')).toBe(clientId)
       expect(parsedUrl.searchParams.get('code_challenge_method')).toBe('S256')
@@ -174,14 +166,12 @@ describe('OpenId4VcClient', () => {
         .reply(200, getMetadataResponse)
 
       const clientId = 'test-client'
-      const codeVerifier = await agent.modules.openId4VcClient.generateCodeVerifier()
       const redirectUri = 'https://example.com/cb'
       const initiationUri =
         'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
       expect(
         agent.modules.openId4VcClient.generateAuthorizationUrl({
           clientId,
-          codeVerifier,
           redirectUri,
           scope: [],
           initiationUri,
@@ -189,6 +179,16 @@ describe('OpenId4VcClient', () => {
       ).rejects.toThrow()
     })
     it('should successfully execute request a credential', async () => {
+      // setup temporary redirect mock
+      nock('https://launchpad.mattrlabs.com').get('/.well-known/openid-credential-issuer').reply(307, undefined, {
+        Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
+      })
+
+      // setup server metadata response
+      nock('https://launchpad.vii.electron.mattrlabs.io')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, getMetadataResponse)
+
       const did = await agent.dids.create<KeyDidCreateOptions>({
         method: 'key',
         options: {
@@ -204,11 +204,18 @@ describe('OpenId4VcClient', () => {
       const kid = `${did.didState.did as string}#${keyInstance.fingerprint as string}`
 
       const clientId = 'test-client'
-      const codeVerifier = await agent.modules.openId4VcClient.generateCodeVerifier()
+
       const redirectUri = 'https://example.com/cb'
       const initiationUri =
         'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
 
+      const scope = ['TestCredential']
+      const { codeVerifier } = await agent.modules.openId4VcClient.generateAuthorizationUrl({
+        clientId,
+        redirectUri,
+        scope,
+        initiationUri,
+      })
       const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialUsingAuthorizationCode({
         clientId: clientId,
         authorizationCode: 'test-code',
@@ -227,6 +234,7 @@ describe('OpenId4VcClient', () => {
         'OpenBadgeCredential',
       ])
 
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       expect(w3cCredentialRecord.credential.credentialSubject.id).toEqual(did.didState.did)
     })

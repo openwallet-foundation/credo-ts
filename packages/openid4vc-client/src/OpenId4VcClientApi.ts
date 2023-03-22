@@ -1,15 +1,13 @@
-import {
-  AuthCodeFlowOptions,
-  AuthFlowType,
+import type {
   GenerateAuthorizationUrlOptions,
   PreAuthCodeFlowOptions,
-  RequestCredentialOptions,
+  AuthCodeFlowOptions,
 } from './OpenId4VcClientService'
 import type { W3cCredentialRecord } from '@aries-framework/core'
 
 import { AgentContext, injectable } from '@aries-framework/core'
 
-import { OpenId4VcClientService } from './OpenId4VcClientService'
+import { AuthFlowType, OpenId4VcClientService } from './OpenId4VcClientService'
 
 /**
  * @public
@@ -44,10 +42,6 @@ export class OpenId4VcClientApi {
       checkRevocationState: checkRevocationState,
       flowType: AuthFlowType.AUTHORIZATION_CODE_FLOW,
     })
-  }
-
-  public async generateCodeVerifier(): Promise<string> {
-    return this.openId4VcClientService.generateCodeVerifier()
   }
 
   public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
