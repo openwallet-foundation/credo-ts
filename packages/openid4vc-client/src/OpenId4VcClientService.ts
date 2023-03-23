@@ -1,34 +1,63 @@
-import type { AgentContext, W3cCredentialRecord } from '@aries-framework/core'
-import type { EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
+import type { AgentContext } from '@aries-framework/core'
+import type { AccessTokenResponse, EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
 
 import {
+  AriesFrameworkError,
+  DidsApi,
   getKeyFromVerificationMethod,
+  Hasher,
   inject,
+  injectable,
   InjectionSymbols,
   isJwtAlgorithm,
-  Logger,
-  DidsApi,
-  AriesFrameworkError,
-  injectable,
   JsonEncoder,
   JsonTransformer,
-  W3cCredentialService,
-  W3cVerifiableCredential,
   JwsService,
   jwtKeyAlgMapping,
+  Logger,
+  TypedArrayEncoder,
+  W3cCredentialService,
+  W3cVerifiableCredential,
 } from '@aries-framework/core'
 import {
   Alg,
   AuthzFlowType,
+  CodeChallengeMethod,
   CredentialRequestClientBuilder,
   OpenID4VCIClient,
   ProofOfPossessionBuilder,
 } from '@sphereon/openid4vci-client'
+import { randomStringForEntropy } from '@stablelib/random'
 
-export interface PreAuthorizedOptions {
+export interface PreAuthCodeFlowOptions {
   issuerUri: string
   kid: string
-  checkRevocationState: boolean
+  verifyRevocationState: boolean
+}
+
+export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
+  clientId: string
+  authorizationCode: string
+  codeVerifier: string
+  redirectUri: string
+}
+
+export enum AuthFlowType {
+  AuthorizationCodeFlow,
+  PreAuthorizedCodeFlow,
+}
+
+export type RequestCredentialOptions = { flowType: AuthFlowType } & PreAuthCodeFlowOptions &
+  Partial<AuthCodeFlowOptions>
+
+// The code_challenge_method is omitted here
+// because we assume it will always be SHA256
+// as clear text code_challenges are unsafe
+export interface GenerateAuthorizationUrlOptions {
+  initiationUri: string
+  clientId: string
+  redirectUri: string
+  scope?: string[]
 }
 
 @injectable()
@@ -134,39 +163,91 @@ export class OpenId4VcClientService {
     }
   }
 
-  public async requestCredentialPreAuthorized(
-    agentContext: AgentContext,
-    options: PreAuthorizedOptions
-  ): Promise<W3cCredentialRecord> {
-    this.logger.debug('Running pre-authorized flow with options', options)
+  private generateCodeVerifier(): string {
+    return randomStringForEntropy(256)
+  }
 
-    // this value is hardcoded as it's the only supported format at this point
+  public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
+    this.logger.debug('Generating authorization url')
+
+    if (!options.scope || options.scope.length === 0) {
+      throw new AriesFrameworkError(
+        'Only scoped based authorization requests are supported at this time. Please provide at least one scope'
+      )
+    }
+
+    const client = await OpenID4VCIClient.initiateFromURI({
+      issuanceInitiationURI: options.initiationUri,
+      flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
+    })
+    const codeVerifier = this.generateCodeVerifier()
+    const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
+    const base64Url = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
+
+    this.logger.debug('Converted code_verifier to code_challenge', {
+      codeVerifier: codeVerifier,
+      sha256: codeVerifierSha256.toString(),
+      base64Url: base64Url,
+    })
+
+    const authorizationUrl = client.createAuthorizationRequestUrl({
+      clientId: options.clientId,
+      codeChallengeMethod: CodeChallengeMethod.SHA256,
+      codeChallenge: base64Url,
+      redirectUri: options.redirectUri,
+      scope: options.scope?.join(' '),
+    })
+
+    return {
+      authorizationUrl,
+      codeVerifier,
+    }
+  }
+
+  public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {
     const credentialFormat = 'ldp_vc'
+
+    let flowType: AuthzFlowType
+    if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
+      flowType = AuthzFlowType.AUTHORIZATION_CODE_FLOW
+    } else if (options.flowType === AuthFlowType.PreAuthorizedCodeFlow) {
+      flowType = AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW
+    } else {
+      throw new AriesFrameworkError(
+        `Unsupported flowType ${options.flowType}. Valid values are ${Object.values(AuthFlowType)}`
+      )
+    }
 
     const client = await OpenID4VCIClient.initiateFromURI({
       issuanceInitiationURI: options.issuerUri,
-      flowType: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
+      flowType,
       kid: options.kid,
       alg: Alg.EdDSA,
     })
 
-    const accessToken = await client.acquireAccessToken({})
+    let accessToken: AccessTokenResponse
 
-    this.logger.info('Fetched server accessToken', accessToken)
+    if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
+      if (!options.authorizationCode)
+        throw new AriesFrameworkError(
+          `The 'authorizationCode' parameter is required when 'flowType' is ${options.flowType}`
+        )
+      if (!options.codeVerifier)
+        throw new AriesFrameworkError(`The 'codeVerifier' parameter is required when 'flowType' is ${options.flowType}`)
+      if (!options.redirectUri)
+        throw new AriesFrameworkError(`The 'redirectUri' parameter is required when 'flowType' is ${options.flowType}`)
 
-    // We currently need the ts-ignore because the type
-    // inside of OpenID4VCIClient needs to be updated.
-    // @ts-ignore
-    if (!accessToken.scope) {
-      throw new AriesFrameworkError(
-        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
-      )
+      accessToken = await client.acquireAccessToken({
+        clientId: options.clientId,
+        code: options.authorizationCode,
+        codeVerifier: options.codeVerifier,
+        redirectUri: options.redirectUri,
+      })
+    } else {
+      accessToken = await client.acquireAccessToken({})
     }
 
     const serverMetadata = await client.retrieveServerMetadata()
-
-    // @ts-ignore
-    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
     this.logger.info('Fetched server metadata', {
       issuer: serverMetadata.issuer,
@@ -175,6 +256,13 @@ export class OpenId4VcClientService {
     })
 
     this.logger.debug('Full server metadata', serverMetadata)
+
+    if (!accessToken.scope) {
+      throw new AriesFrameworkError(
+        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
+      )
+    }
+    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
     // proof of possession
     const callbacks = this.getSignCallback(agentContext)
@@ -199,9 +287,8 @@ export class OpenId4VcClientService {
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      // @ts-ignore
       credentialType: accessToken.scope,
-      format: 'ldp_vc', // Allows us to override the format
+      format: credentialFormat,
     })
 
     this.logger.debug('Credential request response', credentialResponse)
@@ -213,11 +300,10 @@ export class OpenId4VcClientService {
     const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
 
     // verify the signature
-    const result = await this.w3cCredentialService.verifyCredential(
-      agentContext,
-      { credential },
-      options.checkRevocationState
-    )
+    const result = await this.w3cCredentialService.verifyCredential(agentContext, {
+      credential,
+      verifyRevocationState: options.verifyRevocationState,
+    })
 
     if (result && !result.verified) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
