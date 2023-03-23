@@ -103,9 +103,10 @@ export class W3cCredentialService {
    */
   public async verifyCredential(
     agentContext: AgentContext,
-    options: VerifyCredentialOptions,
-    verifyRevocationState = true
+    options: VerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
+    const verifyRevocationState = options.verifyRevocationState ?? true
+
     const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
 
     const verifyOptions: Record<string, unknown> = {
