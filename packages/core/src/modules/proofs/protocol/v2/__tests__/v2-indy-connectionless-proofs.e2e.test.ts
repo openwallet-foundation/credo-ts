@@ -38,7 +38,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  const connectionlessTest = async (returnRoute?: boolean) => {
     const {
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
@@ -128,8 +128,9 @@ describe('V2 Connectionless Proofs - Indy', () => {
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    await aliceAgent.proofs.acceptRequest({
+    aliceProofExchangeRecord = await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
+      useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -139,17 +140,24 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const sentPresentationMessage = aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
+
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
     await faberAgent.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
-    // Alice waits till it receives presentation ack
+    // Alice waits until it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
+    return sentPresentationMessage
+  }
+
+  test('Faber starts with connection-less proof requests to Alice', async () => {
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {

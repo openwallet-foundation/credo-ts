@@ -69,13 +69,14 @@ export class IndyVdrPoolService {
 
     if (pools.length === 0) {
       throw new IndyVdrNotConfiguredError(
-        "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
+        'No indy ledgers configured. Provide at least one pool configuration in IndyVdrModuleConfigOptions.networks'
       )
     }
 
-    const didCache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    const cache = agentContext.dependencyManager.resolve(CacheModuleConfig).cache
+    const cacheKey = `IndyVdrPoolService:${did}`
 
-    const cachedNymResponse = await didCache.get<CachedDidResponse>(agentContext, `IndyVdrPoolService:${did}`)
+    const cachedNymResponse = await cache.get<CachedDidResponse>(agentContext, cacheKey)
     const pool = this.pools.find((pool) => pool.indyNamespace === cachedNymResponse?.indyNamespace)
 
     // If we have the nym response with associated pool in the cache, we'll use that
@@ -104,7 +105,7 @@ export class IndyVdrPoolService {
 
     // If there are self certified DIDs we always prefer it over non self certified DIDs
     // We take the first self certifying DID as we take the order in the
-    // indyLedgers config as the order of preference of ledgers
+    // IndyVdrModuleConfigOptions.networks config as the order of preference of ledgers
     let value = successful.find((response) =>
       isSelfCertifiedDid(response.value.did.nymResponse.did, response.value.did.nymResponse.verkey)
     )?.value
@@ -117,12 +118,12 @@ export class IndyVdrPoolService {
       const nonProduction = successful.filter((s) => !s.value.pool.config.isProduction)
       const productionOrNonProduction = production.length >= 1 ? production : nonProduction
 
-      // We take the first value as we take the order in the indyLedgers config as
-      // the order of preference of ledgers
+      // We take the first value as we take the order in the IndyVdrModuleConfigOptions.networks
+      // config as the order of preference of ledgers
       value = productionOrNonProduction[0].value
     }
 
-    await didCache.set(agentContext, did, {
+    await cache.set(agentContext, cacheKey, {
       nymResponse: {
         did: value.did.nymResponse.did,
         verkey: value.did.nymResponse.verkey,
@@ -153,7 +154,7 @@ export class IndyVdrPoolService {
   public getPoolForNamespace(indyNamespace: string) {
     if (this.pools.length === 0) {
       throw new IndyVdrNotConfiguredError(
-        "No indy ledgers configured. Provide at least one pool configuration in the 'indyLedgers' agent configuration"
+        'No indy ledgers configured. Provide at least one pool configuration in IndyVdrModuleConfigOptions.networks'
       )
     }
 

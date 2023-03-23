@@ -550,7 +550,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
+            returnRoute: false, // hard wire to be false since it's the end of the protocol so not needed here
           },
         })
       )
