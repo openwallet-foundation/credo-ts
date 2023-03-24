@@ -129,7 +129,7 @@ function getDefaultAgentModules() {
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
-    w3cVc: () => new W3cVcModule(),
+    // w3cVc: () => new W3cVcModule(),
     cache: () => new CacheModule(),
   } as const
 }

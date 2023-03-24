@@ -29,6 +29,7 @@ describe('OpenId4VcClient', () => {
     const agentOptions = getAgentOptions('OpenId4VcClient Agent', {}, modules)
 
     agent = new Agent(agentOptions)
+
     await agent.initialize()
   })
 

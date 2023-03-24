@@ -8,8 +8,11 @@ import { injectable } from '../../plugins'
 
 import { W3cCredentialService } from './W3cCredentialService'
 
+/**
+ * @public
+ */
 @injectable()
-export class W3cCredentialApi {
+export class W3cVcApi {
   private agentContext: AgentContext
   private w3cCredentialService: W3cCredentialService
 

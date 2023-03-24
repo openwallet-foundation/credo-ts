@@ -1,7 +1,7 @@
 import { KeyType } from '../../../crypto'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { SignatureSuiteRegistry, SignatureSuiteToken } from '../SignatureSuiteRegistry'
-import { W3cCredentialApi } from '../W3cCredentialApi'
+import { W3cVcApi } from '../W3cCredentialApi'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cVcModule } from '../W3cVcModule'
 import { W3cVcModuleConfig } from '../W3cVcModuleConfig'
@@ -20,7 +20,7 @@ describe('W3cVcModule', () => {
     module.register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
-    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(W3cCredentialApi)
+    expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(W3cVcApi)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(W3cCredentialRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SignatureSuiteRegistry)
