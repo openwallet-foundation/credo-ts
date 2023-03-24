@@ -37,10 +37,4 @@ export class W3cCredentialApi {
   public async findCredentialRecordsByQuery(query: Query<W3cCredentialRecord>): Promise<W3cVerifiableCredential[]> {
     return this.w3cCredentialService.findCredentialsByQuery(this.agentContext, query)
   }
-
-  public async findCredentialRecordByQuery(
-    query: Query<W3cCredentialRecord>
-  ): Promise<W3cVerifiableCredential | undefined> {
-    return this.w3cCredentialService.findCredentialRecordByQuery(this.agentContext, query)
-  }
 }
