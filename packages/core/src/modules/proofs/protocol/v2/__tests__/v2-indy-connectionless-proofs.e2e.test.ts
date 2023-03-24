@@ -25,7 +25,7 @@ import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
 import { CredentialEventTypes } from '../../../../credentials'
-import { MediatorModule, MediatorPickupStrategy, RecipientModule } from '../../../../routing'
+import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
 
@@ -305,7 +305,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getLegacyAnonCredsModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),
@@ -321,7 +321,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getLegacyAnonCredsModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),

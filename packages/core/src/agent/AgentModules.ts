@@ -11,7 +11,7 @@ import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
-import { MediatorModule, RecipientModule } from '../modules/routing'
+import { MediatorModule, MediationRecipientModule } from '../modules/routing'
 import { W3cVcModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
 
@@ -120,7 +120,7 @@ function getDefaultAgentModules() {
     credentials: () => new CredentialsModule(),
     proofs: () => new ProofsModule(),
     mediator: () => new MediatorModule(),
-    mediationRecipient: () => new RecipientModule(),
+    mediationRecipient: () => new MediationRecipientModule(),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),

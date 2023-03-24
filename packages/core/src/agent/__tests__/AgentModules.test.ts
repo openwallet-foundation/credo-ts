@@ -9,7 +9,7 @@ import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
 import { OutOfBandModule } from '../../modules/oob'
 import { ProofsModule } from '../../modules/proofs'
-import { MediatorModule, RecipientModule } from '../../modules/routing'
+import { MediatorModule, MediationRecipientModule } from '../../modules/routing'
 import { W3cVcModule } from '../../modules/vc'
 import { DependencyManager, injectable } from '../../plugins'
 import { WalletModule } from '../../wallet'
@@ -58,7 +58,7 @@ describe('AgentModules', () => {
         credentials: expect.any(CredentialsModule),
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(RecipientModule),
+        mediationRecipient: expect.any(MediationRecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -81,7 +81,7 @@ describe('AgentModules', () => {
         credentials: expect.any(CredentialsModule),
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(RecipientModule),
+        mediationRecipient: expect.any(MediationRecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -107,7 +107,7 @@ describe('AgentModules', () => {
         credentials: expect.any(CredentialsModule),
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
-        mediationRecipient: expect.any(RecipientModule),
+        mediationRecipient: expect.any(MediationRecipientModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),

@@ -1,10 +1,10 @@
 import type { MediatorPickupStrategy } from './MediatorPickupStrategy'
 
 /**
- * RecipientModuleConfigOptions defines the interface for the options of the RecipientModuleConfig class.
+ * MediationRecipientModuleConfigOptions defines the interface for the options of the MediationRecipientModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
-export interface RecipientModuleConfigOptions {
+export interface MediationRecipientModuleConfigOptions {
   /**
    * Strategy to use for picking up messages from the mediator. If no strategy is provided, the agent will use the discover
    * features protocol to determine the best strategy.
@@ -68,39 +68,39 @@ export interface RecipientModuleConfigOptions {
   mediatorInvitationUrl?: string
 }
 
-export class RecipientModuleConfig {
-  private options: RecipientModuleConfigOptions
+export class MediationRecipientModuleConfig {
+  private options: MediationRecipientModuleConfigOptions
 
-  public constructor(options?: RecipientModuleConfigOptions) {
+  public constructor(options?: MediationRecipientModuleConfigOptions) {
     this.options = options ?? {}
   }
 
-  /** See {@link RecipientModuleConfigOptions.mediatorPollingInterval} */
+  /** See {@link MediationRecipientModuleConfigOptions.mediatorPollingInterval} */
   public get mediatorPollingInterval() {
     return this.options.mediatorPollingInterval ?? 5000
   }
 
-  /** See {@link RecipientModuleConfigOptions.mediatorPickupStrategy} */
+  /** See {@link MediationRecipientModuleConfigOptions.mediatorPickupStrategy} */
   public get mediatorPickupStrategy() {
     return this.options.mediatorPickupStrategy
   }
 
-  /** See {@link RecipientModuleConfigOptions.maximumMessagePickup} */
+  /** See {@link MediationRecipientModuleConfigOptions.maximumMessagePickup} */
   public get maximumMessagePickup() {
     return this.options.maximumMessagePickup ?? 10
   }
 
-  /** See {@link RecipientModuleConfigOptions.baseMediatorReconnectionIntervalMs} */
+  /** See {@link MediationRecipientModuleConfigOptions.baseMediatorReconnectionIntervalMs} */
   public get baseMediatorReconnectionIntervalMs() {
     return this.options.baseMediatorReconnectionIntervalMs ?? 100
   }
 
-  /** See {@link RecipientModuleConfigOptions.maximumMediatorReconnectionIntervalMs} */
+  /** See {@link MediationRecipientModuleConfigOptions.maximumMediatorReconnectionIntervalMs} */
   public get maximumMediatorReconnectionIntervalMs() {
     return this.options.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
   }
 
-  /** See {@link RecipientModuleConfigOptions.mediatorInvitationUrl} */
+  /** See {@link MediationRecipientModuleConfigOptions.mediatorInvitationUrl} */
   public get mediatorInvitationUrl() {
     return this.options.mediatorInvitationUrl
   }

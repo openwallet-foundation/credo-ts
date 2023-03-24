@@ -18,7 +18,7 @@ import {
   KeylistUpdateAction,
   MediationState,
   MediatorPickupStrategy,
-  RecipientModule,
+  MediationRecipientModule,
   MediatorModule,
 } from '../src/modules/routing'
 
@@ -38,7 +38,7 @@ const aliceAgentOptions = getAgentOptions(
   },
   {
     ...getIndySdkModules(),
-    mediationRecipient: new RecipientModule({
+    mediationRecipient: new MediationRecipientModule({
       // FIXME: discover features returns that we support this protocol, but we don't support all roles
       // we should return that we only support the mediator role so we don't have to explicitly declare this
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,

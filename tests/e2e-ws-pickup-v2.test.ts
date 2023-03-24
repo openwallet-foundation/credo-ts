@@ -10,7 +10,7 @@ import {
   WsOutboundTransport,
   AutoAcceptCredential,
   MediatorPickupStrategy,
-  RecipientModule,
+  MediationRecipientModule,
   MediatorModule,
 } from '@aries-framework/core'
 import { WsInboundTransport } from '@aries-framework/node'
@@ -22,7 +22,7 @@ const recipientOptions = getAgentOptions(
     ...getLegacyAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new RecipientModule({
+    mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
     }),
   }
@@ -53,7 +53,7 @@ const senderOptions = getAgentOptions(
     ...getLegacyAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new RecipientModule({
+    mediationRecipient: new MediationRecipientModule({
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),

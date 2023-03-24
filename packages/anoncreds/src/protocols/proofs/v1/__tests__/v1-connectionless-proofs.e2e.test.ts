@@ -17,7 +17,7 @@ import {
   AttachmentData,
   ProofEventTypes,
   MediatorModule,
-  RecipientModule,
+  MediationRecipientModule,
 } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
@@ -400,7 +400,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         ...getLegacyAnonCredsModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),
@@ -416,7 +416,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         ...getLegacyAnonCredsModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),

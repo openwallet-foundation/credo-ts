@@ -13,9 +13,9 @@ import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
+import { MediationRecipientModule } from '../MediationRecipientModule'
 import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
-import { RecipientModule } from '../RecipientModule'
 import { MediationState } from '../models/MediationState'
 
 const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, getIndySdkModules())
@@ -93,7 +93,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       modules: {
         ...recipientAgentOptions.modules,
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
           mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com/ssi',
@@ -218,7 +218,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       modules: {
         ...recipientAgentOptions.modules,
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com/ssi',
           }),
@@ -251,7 +251,7 @@ describe('mediator establishment', () => {
       ...recipientAgentOptions,
       modules: {
         ...recipientAgentOptions.modules,
-        mediationRecipient: new RecipientModule({
+        mediationRecipient: new MediationRecipientModule({
           mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com/ssi',
           }),

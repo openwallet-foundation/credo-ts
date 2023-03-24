@@ -4,7 +4,12 @@ import type { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { MediationState, MediatorModule, MediatorPickupStrategy, RecipientModule } from '../src/modules/routing'
+import {
+  MediationState,
+  MediatorModule,
+  MediatorPickupStrategy,
+  MediationRecipientModule,
+} from '../src/modules/routing'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
@@ -23,7 +28,7 @@ const aliceAgentOptions = getAgentOptions(
   },
   {
     ...getIndySdkModules(),
-    mediationRecipient: new RecipientModule({
+    mediationRecipient: new MediationRecipientModule({
       // FIXME: discover features returns that we support this protocol, but we don't support all roles
       // we should return that we only support the mediator role so we don't have to explicitly declare this
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
