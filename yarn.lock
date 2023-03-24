@@ -2322,20 +2322,20 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/openid4vci-client@^0.3.6":
-  version "0.3.6"
-  resolved "https://registry.yarnpkg.com/@sphereon/openid4vci-client/-/openid4vci-client-0.3.6.tgz#70bd76bb888b458274007170e2bb7e784849cbbe"
-  integrity sha512-C336F3VPMu1LSQAv1rn1KkXOVC3JxbrUzMzOBFlJfSKfnSxfqTqGSK0NTJLnAwGNOEAQ1M4Q/2KIXbDIaTU4Ww==
+"@sphereon/openid4vci-client@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/openid4vci-client/-/openid4vci-client-0.4.0.tgz#f48c2bb42041b9eab13669de23ba917785c83b24"
+  integrity sha512-N9ytyV3DHAjBjd67jMowmBMmD9/4Sxkehsrpd1I9Hxg5TO1K+puUPsPXj8Zh4heIWSzT5xBsGTSqXdF0LlrDwQ==
   dependencies:
-    "@sphereon/ssi-types" "^0.8.1-next.123"
+    "@sphereon/ssi-types" "^0.9.0"
     cross-fetch "^3.1.5"
     debug "^4.3.4"
     uint8arrays "^3.1.1"
 
-"@sphereon/ssi-types@^0.8.1-next.123":
-  version "0.8.1-unstable.242"
-  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.1-unstable.242.tgz#cf958a3f6ae0cae5e2b5175616edd158170a65ac"
-  integrity sha512-/Dy7WuT78gWOChhe4YTbDhr9xly1rxajPnGyPaYmeKOleY8c3az2zU2pRcAiL5nqFN0DkVnT0ncYeeENr9NzOw==
+"@sphereon/ssi-types@^0.9.0":
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.9.0.tgz#d140eb6abd77381926d0da7ac51b3c4b96a31b4b"
+  integrity sha512-umCr/syNcmvMMbQ+i/r/mwjI1Qw2aFPp9AwBTvTo1ailAVaaJjJGPkkVz1K9/2NZATNdDiQ3A8yGzdVJoKh9pA==
   dependencies:
     jwt-decode "^3.1.2"
 
