@@ -270,6 +270,7 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: undefined, // FIXME: should be null?
+      methodName: 'inMemory',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
