@@ -99,7 +99,7 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
     label: `Agent: ${name} - ${random}`,
     walletConfig: {
       // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
-      id: `PostGresWallet${name} - ${random}`,
+      id: `PostgresWallet${name}${random}`,
       key: `Key${name}`,
       storage: {
         type: 'postgres_storage',

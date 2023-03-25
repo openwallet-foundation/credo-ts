@@ -27,7 +27,7 @@ export function getPostgresAgentOptions(
   const config: InitConfig = {
     label: `PostgresAgent: ${name} - ${random}`,
     walletConfig: {
-      id: `PostgresWallet${name} - ${random}`,
+      id: `PostgresWallet${name}${random}`,
       key: `Key${name}`,
       storage: storageConfig,
     },
