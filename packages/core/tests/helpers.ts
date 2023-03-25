@@ -94,11 +94,12 @@ export function getPostgresAgentOptions<AgentModules extends AgentModulesInput |
   extraConfig: Partial<InitConfig> = {},
   modules?: AgentModules
 ) {
+  const random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name}`,
+    label: `Agent: ${name} - ${random}`,
     walletConfig: {
       // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
-      id: `PostGresWallet${name}`,
+      id: `PostGresWallet${name} - ${random}`,
       key: `Key${name}`,
       storage: {
         type: 'postgres_storage',
