@@ -153,7 +153,8 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
-    await new Promise((res) => setTimeout(res, 1000))
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     expect(JsonTransformer.toJSON(didRegistrationResult)).toMatchObject({
       didDocumentMetadata: {},
