@@ -17,6 +17,7 @@ import type {
   SelectCredentialsForProofRequestOptions,
   SelectCredentialsForProofRequestReturn,
   SendProofProblemReportOptions,
+  DeclineProofRequestOptions,
 } from './ProofsApiOptions'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
@@ -49,7 +50,7 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
   // Request methods
   requestProof(options: RequestProofOptions<PPs>): Promise<ProofExchangeRecord>
   acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
-  declineRequest(proofRecordId: string): Promise<ProofExchangeRecord>
+  declineRequest(options: DeclineProofRequestOptions): Promise<ProofExchangeRecord>
   negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
 
   // Present
@@ -368,15 +369,15 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     }
   }
 
-  public async declineRequest(proofRecordId: string, sendProblemReport?: boolean): Promise<ProofExchangeRecord> {
-    const proofRecord = await this.getById(proofRecordId)
+  public async declineRequest(options: DeclineProofRequestOptions): Promise<ProofExchangeRecord> {
+    const proofRecord = await this.getById(options.proofRecordId)
     proofRecord.assertState(ProofState.RequestReceived)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
     await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
 
-    if (sendProblemReport) {
-      await this.sendProblemReport({ proofRecordId, description: 'Request declined' })
+    if (options.sendProblemReport) {
+      await this.sendProblemReport({ proofRecordId: options.proofRecordId, description: 'Request declined' })
     }
 
     return proofRecord
@@ -599,7 +600,6 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
           serviceParams: {
             service: recipientService.resolvedDidCommService,
             senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: options.useReturnRoute ?? true, // defaults to true if missing
           },
         })
       )

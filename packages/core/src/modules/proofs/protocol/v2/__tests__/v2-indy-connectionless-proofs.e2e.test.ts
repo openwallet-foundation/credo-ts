@@ -615,7 +615,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     await aliceAgent.receiveMessage(requestMessage.toJSON())
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    await aliceAgent.proofs.declineRequest(aliceProofExchangeRecord.id, true)
+    await aliceAgent.proofs.declineRequest({ proofRecordId: aliceProofExchangeRecord.id, sendProblemReport: true })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Declined,

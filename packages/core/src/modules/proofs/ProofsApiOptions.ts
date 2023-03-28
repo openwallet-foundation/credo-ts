@@ -172,5 +172,12 @@ export interface SelectCredentialsForProofRequestReturn<PPs extends ProofProtoco
 export interface SendProofProblemReportOptions {
   proofRecordId: string
   description: string
-  useReturnRoute?: boolean
+}
+
+/**
+ * Interface for ProofsApi.declineRequest. Decline a received proof request and optionally send a problem-report message to Verifier
+ */
+export interface DeclineProofRequestOptions {
+  proofRecordId: string
+  sendProblemReport?: boolean
 }
