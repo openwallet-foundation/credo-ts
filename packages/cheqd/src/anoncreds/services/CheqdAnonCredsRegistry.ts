@@ -132,18 +132,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const { credentialDefinition } = options
-      const schemaResponse = await this.getSchema(agentContext, credentialDefinition.schemaId)
-      if (!schemaResponse.schema) {
-        return {
-          credentialDefinitionMetadata: {},
-          registrationMetadata: {},
-          credentialDefinitionState: {
-            state: 'failed',
-            credentialDefinition: options.credentialDefinition,
-            reason: `Schema Id not found`,
-          },
-        }
-      }
+
       const credDefResource = {
         id: utils.uuid(),
         name: credentialDefinition.tag,
@@ -152,7 +141,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           type: credentialDefinition.type,
           tag: credentialDefinition.tag,
           value: credentialDefinition.value,
-          schemaId: schemaResponse.schemaId,
+          schemaId: credentialDefinition.schemaId,
         },
         version: utils.uuid(),
       } satisfies CheqdCreateResourceOptions
@@ -170,7 +159,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         credentialDefinitionState: {
           state: 'finished',
           credentialDefinition,
-          credentialDefinitionId: `${schemaResponse.schema.issuerId}/resources/${credDefResource.id}`,
+          credentialDefinitionId: `${credentialDefinition.issuerId}/resources/${credDefResource.id}`,
         },
         registrationMetadata: {},
         credentialDefinitionMetadata: {},

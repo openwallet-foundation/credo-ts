@@ -1,7 +1,7 @@
 import type { AbstractCheqdSDKModule, CheqdSDK, DidStdFee, DIDDocument } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
-import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
+import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs-rn/proto-signing'
 
 import { injectable } from '@aries-framework/core'
 import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
