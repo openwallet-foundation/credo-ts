@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.3.3",
-    "@sphereon/openid4vci-client": "^0.3.6"
+    "@sphereon/openid4vci-client": "^0.4.0",
+    "@stablelib/random": "^1.0.2"
   },
   "devDependencies": {
     "@aries-framework/node": "0.3.3",
