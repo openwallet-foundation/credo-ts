@@ -172,4 +172,5 @@ export interface SelectCredentialsForProofRequestReturn<PPs extends ProofProtoco
 export interface SendProofProblemReportOptions {
   proofRecordId: string
   description: string
+  useReturnRoute?: boolean
 }

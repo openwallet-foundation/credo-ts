@@ -368,12 +368,16 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     }
   }
 
-  public async declineRequest(proofRecordId: string): Promise<ProofExchangeRecord> {
+  public async declineRequest(proofRecordId: string, sendProblemReport?: boolean): Promise<ProofExchangeRecord> {
     const proofRecord = await this.getById(proofRecordId)
     proofRecord.assertState(ProofState.RequestReceived)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
     await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
+
+    if (sendProblemReport) {
+      await this.sendProblemReport({ proofRecordId, description: 'Request declined' })
+    }
 
     return proofRecord
   }
@@ -555,29 +559,59 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    */
   public async sendProblemReport(options: SendProofProblemReportOptions): Promise<ProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
-    if (!proofRecord.connectionId) {
-      throw new AriesFrameworkError(`No connectionId found for proof record '${proofRecord.id}'.`)
-    }
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
-    const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
-    // Assert
-    connectionRecord.assertReady()
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
 
     const { message: problemReport } = await protocol.createProblemReport(this.agentContext, {
       proofRecord,
       description: options.description,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(problemReport, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
-      associatedRecord: proofRecord,
-    })
+    if (proofRecord.connectionId) {
+      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
 
-    await this.messageSender.sendMessage(outboundMessageContext)
-    return proofRecord
+      // Assert
+      connectionRecord.assertReady()
+
+      const outboundMessageContext = new OutboundMessageContext(problemReport, {
+        agentContext: this.agentContext,
+        connection: connectionRecord,
+        associatedRecord: proofRecord,
+      })
+
+      await this.messageSender.sendMessage(outboundMessageContext)
+      return proofRecord
+    } else if (requestMessage?.service) {
+      // Create ~service decorator
+      const routing = await this.routingService.getRouting(this.agentContext)
+      const ourService = new ServiceDecorator({
+        serviceEndpoint: routing.endpoints[0],
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+      })
+      const recipientService = requestMessage.service
+
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(problemReport, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: options.useReturnRoute ?? true, // defaults to true if missing
+          },
+        })
+      )
+
+      return proofRecord
+    }
+    // Cannot send message without connectionId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot send problem report without connectionId or ~service decorator on presentation request.`
+      )
+    }
   }
 
   public async getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>> {

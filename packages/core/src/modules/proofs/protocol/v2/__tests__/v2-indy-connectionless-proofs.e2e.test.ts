@@ -17,6 +17,7 @@ import {
   makeConnection,
   testLogger,
   setupEventReplaySubjects,
+  waitForProofExchangeRecord,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
@@ -529,6 +530,100 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     await waitForProofExchangeRecordSubject(faberReplay, {
       state: ProofState.Done,
+      threadId: requestMessage.threadId,
+    })
+  })
+
+  test('Faber starts with connection-less proof requests to Alice but gets Problem Reported', async () => {
+    testLogger.test('Faber sends presentation request to Alice')
+
+    const {
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber connection-less Proofs v2 - Reject Request',
+      holderName: 'Alice connection-less Proofs v2 - Reject Request',
+      autoAcceptProofs: AutoAcceptProof.Never,
+      attributeNames: ['name', 'age'],
+    })
+
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
+
+    agents = [aliceAgent, faberAgent]
+
+    // eslint-disable-next-line prefer-const
+    // eslint-disable-next-line prefer-const
+    let { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+      protocolVersion: 'v2',
+      proofFormats: {
+        indy: {
+          name: 'test-proof-request',
+          version: '1.0',
+          requested_attributes: {
+            name: {
+              name: 'name',
+              restrictions: [
+                {
+                  cred_def_id: credentialDefinitionId,
+                },
+              ],
+            },
+          },
+          requested_predicates: {},
+        },
+      },
+      autoAcceptProof: AutoAcceptProof.ContentApproved,
+    })
+
+    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+      recordId: faberProofExchangeRecord.id,
+      message,
+      domain: 'rxjs:faber',
+    })
+
+    for (const transport of faberAgent.outboundTransports) {
+      await faberAgent.unregisterOutboundTransport(transport)
+    }
+
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+
+    await aliceAgent.proofs.declineRequest(aliceProofExchangeRecord.id, true)
+
+    await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: ProofState.Declined,
+      threadId: requestMessage.threadId,
+    })
+
+    await waitForProofExchangeRecordSubject(faberReplay, {
+      state: ProofState.Abandoned,
       threadId: requestMessage.threadId,
     })
   })
