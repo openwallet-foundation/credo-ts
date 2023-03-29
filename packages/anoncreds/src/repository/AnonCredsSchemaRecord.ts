@@ -27,8 +27,8 @@ export class AnonCredsSchemaRecord extends BaseRecord<
   public static readonly type = 'AnonCredsSchemaRecord'
   public readonly type = AnonCredsSchemaRecord.type
 
-  public readonly schemaId!: string
-  public readonly schema!: AnonCredsSchema
+  public schemaId!: string
+  public schema!: AnonCredsSchema
 
   /**
    * AnonCreds method name. We don't use names explicitly from the registry (there's no identifier for a registry)

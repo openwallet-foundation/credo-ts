@@ -274,11 +274,11 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: schemaState.schemaId,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
-      '_anonCreds/anonCredsCredentialRequest': {
+      '_anoncreds/credentialRequest': {
         master_secret_blinding_data: expect.any(Object),
         master_secret_name: expect.any(String),
         nonce: expect.any(String),
@@ -286,7 +286,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
     })
 
     expect(issuerCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: schemaState.schemaId,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },

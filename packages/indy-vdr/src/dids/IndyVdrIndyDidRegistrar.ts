@@ -205,7 +205,6 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         role: DidDocumentRole.Created,
         tags: {
           recipientKeyFingerprints: didDocument.recipientKeys.map((key: Key) => key.fingerprint),
-          qualifiedIndyDid: did,
         },
       })
 

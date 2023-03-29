@@ -27,8 +27,8 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
 
-  public readonly credentialDefinitionId!: string
-  public readonly credentialDefinition!: AnonCredsCredentialDefinition
+  public credentialDefinitionId!: string
+  public credentialDefinition!: AnonCredsCredentialDefinition
 
   /**
    * AnonCreds method name. We don't use names explicitly from the registry (there's no identifier for a registry)

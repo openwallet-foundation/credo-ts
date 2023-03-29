@@ -1,0 +1,76 @@
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import { AnonCredsLinkSecretRecord } from '../../../repository'
+import { AnonCredsLinkSecretRepository } from '../../../repository/AnonCredsLinkSecretRepository'
+import * as testModule from '../linkSecret'
+
+const agentConfig = getAgentConfig('AnonCreds Migration - Link Secret - 0.3.1-0.4.0')
+const agentContext = getAgentContext()
+
+jest.mock('../../../repository/AnonCredsLinkSecretRepository')
+const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
+const linkSecretRepository = new AnonCredsLinkSecretRepositoryMock()
+
+jest.mock('../../../../../core/src/agent/Agent', () => {
+  return {
+    Agent: jest.fn(() => ({
+      config: agentConfig,
+      context: agentContext,
+      wallet: {
+        walletConfig: {
+          id: 'wallet-id',
+        },
+      },
+      dependencyManager: {
+        resolve: jest.fn(() => linkSecretRepository),
+      },
+    })),
+  }
+})
+
+// Mock typed object
+const AgentMock = Agent as jest.Mock<Agent>
+
+describe('0.3.1-0.4.0 | AnonCreds Migration | Link Secret', () => {
+  let agent: Agent
+
+  beforeEach(() => {
+    agent = new AgentMock()
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('migrateLinkSecretToV0_4()', () => {
+    test('creates default link secret record based on wallet id if no default link secret exists', async () => {
+      mockFunction(linkSecretRepository.findDefault).mockResolvedValue(null)
+
+      await testModule.migrateLinkSecretToV0_4(agent)
+
+      expect(linkSecretRepository.findDefault).toHaveBeenCalledTimes(1)
+      expect(linkSecretRepository.save).toHaveBeenCalledTimes(1)
+
+      const [, linkSecretRecord] = mockFunction(linkSecretRepository.save).mock.calls[0]
+      expect(linkSecretRecord.toJSON()).toMatchObject({
+        linkSecretId: 'wallet-id',
+      })
+      expect(linkSecretRecord.getTags()).toMatchObject({
+        isDefault: true,
+      })
+    })
+
+    test('does not create default link secret record if default link secret record already exists', async () => {
+      mockFunction(linkSecretRepository.findDefault).mockResolvedValue(
+        new AnonCredsLinkSecretRecord({
+          linkSecretId: 'some-link-secret-id',
+        })
+      )
+
+      await testModule.migrateLinkSecretToV0_4(agent)
+
+      expect(linkSecretRepository.findDefault).toHaveBeenCalledTimes(1)
+      expect(linkSecretRepository.update).toHaveBeenCalledTimes(0)
+    })
+  })
+})
