@@ -5,6 +5,8 @@ import type {
   CreateCredentialReturn,
   CreateCredentialOptions,
   CreateCredentialDefinitionReturn,
+  CreateRevocationRegistryDefinitionOptions,
+  CreateRevocationRegistryDefinitionReturn,
 } from './AnonCredsIssuerServiceOptions'
 import type { AnonCredsCredentialOffer } from '../models/exchange'
 import type { AnonCredsSchema } from '../models/registry'
@@ -22,6 +24,11 @@ export interface AnonCredsIssuerService {
     options: CreateCredentialDefinitionOptions,
     metadata?: Record<string, unknown>
   ): Promise<CreateCredentialDefinitionReturn>
+
+  createRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    options: CreateRevocationRegistryDefinitionOptions
+  ): Promise<CreateRevocationRegistryDefinitionReturn>
 
   createCredentialOffer(
     agentContext: AgentContext,

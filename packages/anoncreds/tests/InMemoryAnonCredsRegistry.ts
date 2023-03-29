@@ -13,6 +13,8 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturn,
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -20,10 +22,13 @@ import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
 import {
+  getDidIndyRevocationRegistryId,
   getDidIndyCredentialDefinitionId,
   getDidIndySchemaId,
+  getLegacyRevocationRegistryId,
   getLegacyCredentialDefinitionId,
   getLegacySchemaId,
+  parseCredentialDefinitionId,
   parseSchemaId,
 } from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import { parseIndyDid } from '../../indy-sdk/src/dids/didIndyUtil'
@@ -233,6 +238,62 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
       revocationRegistryDefinitionMetadata: {},
+    }
+  }
+
+  public async registerRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
+  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    const parsedCredentialDefinition = parseCredentialDefinitionId(options.revocationRegistryDefinition.credDefId)
+    const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(
+      parsedCredentialDefinition.namespaceIdentifier,
+      parsedCredentialDefinition.schemaSeqNo,
+      parsedCredentialDefinition.tag
+    )
+    const indyLedgerSeqNo = getSeqNoFromSchemaId(legacyCredentialDefinitionId)
+
+    let legacyIssuerId
+    let didIndyRevocationRegistryDefinitionId = ''
+    if (this.useLegacyIdentifiers) {
+      legacyIssuerId = options.revocationRegistryDefinition.issuerId
+    } else {
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.revocationRegistryDefinition.issuerId)
+      legacyIssuerId = namespaceIdentifier
+      didIndyRevocationRegistryDefinitionId = getDidIndyRevocationRegistryId(
+        namespace,
+        namespaceIdentifier,
+        indyLedgerSeqNo,
+        parsedCredentialDefinition.tag,
+        options.revocationRegistryDefinition.tag
+      )
+
+      this.revocationRegistryDefinitions[didIndyRevocationRegistryDefinitionId] = options.revocationRegistryDefinition
+    }
+
+    const legacyRevocationRegistryDefinitionId = getLegacyRevocationRegistryId(
+      legacyIssuerId,
+      indyLedgerSeqNo,
+      parsedCredentialDefinition.tag,
+      options.revocationRegistryDefinition.tag
+    )
+
+    this.revocationRegistryDefinitions[legacyRevocationRegistryDefinitionId] = {
+      ...options.revocationRegistryDefinition,
+      issuerId: legacyIssuerId,
+      credDefId: legacyCredentialDefinitionId,
+    }
+
+    return {
+      registrationMetadata: {},
+      revocationRegistryDefinitionMetadata: {},
+      revocationRegistryDefinitionState: {
+        state: 'finished',
+        revocationRegistryDefinition: options.revocationRegistryDefinition,
+        revocationRegistryDefinitionId: this.useLegacyIdentifiers
+          ? legacyRevocationRegistryDefinitionId
+          : didIndyRevocationRegistryDefinitionId,
+      },
     }
   }
 

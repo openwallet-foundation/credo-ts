@@ -5,4 +5,18 @@ export interface AnonCredsCreateLinkSecretOptions {
   setAsDefault?: boolean
 }
 
-export type AnonCredsRegisterCredentialDefinitionOptions = Omit<AnonCredsCredentialDefinition, 'value' | 'type'>
+export interface AnonCredsRegisterCredentialDefinitionOptions {
+  issuerId: string
+  schemaId: string
+  tag?: string
+  supportRevocation?: boolean
+}
+
+export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
+  issuerId: string
+  tag: string
+  credentialDefinitionId: string
+  credentialDefinition: AnonCredsCredentialDefinition
+  tailsDirectoryPath: string
+  maximumCredentialNumber: number
+}

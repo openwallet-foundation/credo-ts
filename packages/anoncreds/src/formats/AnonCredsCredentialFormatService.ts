@@ -303,6 +303,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
     if (!credentialRequest) throw new AriesFrameworkError('Missing anoncreds credential request in createCredential')
 
+    // TODO: Check if credential definition supports revocation, fetch current revocation registry id and tailsFilePath,
+    // and current revocation status list
+
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest,

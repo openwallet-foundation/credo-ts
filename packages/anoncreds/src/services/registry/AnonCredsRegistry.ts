@@ -3,7 +3,11 @@ import type {
   RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
 } from './CredentialDefinitionOptions'
-import type { GetRevocationRegistryDefinitionReturn } from './RevocationRegistryDefinitionOptions'
+import type {
+  GetRevocationRegistryDefinitionReturn,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturn,
+} from './RevocationRegistryDefinitionOptions'
 import type { GetRevocationStatusListReturn } from './RevocationStatusListOptions'
 import type { GetSchemaReturn, RegisterSchemaOptions, RegisterSchemaReturn } from './SchemaOptions'
 import type { AgentContext } from '@aries-framework/core'
@@ -31,11 +35,10 @@ export interface AnonCredsRegistry {
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn>
 
-  // TODO: issuance of revocable credentials
-  // registerRevocationRegistryDefinition(
-  //   agentContext: AgentContext,
-  //   options: RegisterRevocationRegistryDefinitionOptions
-  // ): Promise<RegisterRevocationRegistryDefinitionReturn>
+  registerRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
+  ): Promise<RegisterRevocationRegistryDefinitionReturn>
 
   getRevocationStatusList(
     agentContext: AgentContext,

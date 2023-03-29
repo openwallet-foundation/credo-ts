@@ -10,6 +10,8 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
+  RegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
@@ -428,6 +430,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           issuerId: did,
           credDefId: credentialDefinitionId,
           value: {
+            issuanceType: revocationRegistryDefinition.value.issuanceType,
             maxCredNum: revocationRegistryDefinition.value.maxCredNum,
             publicKeys: revocationRegistryDefinition.value.publicKeys,
             tailsHash: revocationRegistryDefinition.value.tailsHash,
@@ -460,6 +463,10 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         revocationRegistryDefinitionMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    throw new Error('Method not implemented.')
   }
 
   public async getRevocationStatusList(
