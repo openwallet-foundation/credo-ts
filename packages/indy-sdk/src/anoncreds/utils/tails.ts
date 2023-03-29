@@ -1,9 +1,9 @@
 import type { IndySdk } from '../../types'
 import type { AgentContext, FileSystem } from '@aries-framework/core'
 
-import { AriesFrameworkError, getDirFromFilePath, IndySdkError, InjectionSymbols } from '@aries-framework/core'
+import { AriesFrameworkError, getDirFromFilePath, InjectionSymbols } from '@aries-framework/core'
 
-import { isIndyError } from '../../error'
+import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkSymbol } from '../../types'
 
 /**
