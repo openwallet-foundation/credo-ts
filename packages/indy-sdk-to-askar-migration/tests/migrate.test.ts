@@ -15,85 +15,52 @@ import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrat
 
 // FIXME: Re-include in tests when NodeJS wrapper performance is improved
 describeRunInNodeVersion([18], 'Indy SDK To Askar Migration', () => {
-  const config: InitConfig = {
-    label: 'test-agent',
-    walletConfig: {
-      id: `walletwallet.0-${utils.uuid()}`,
-      key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
-  }
-
-  const invalidConfig: InitConfig = {
-    label: 'invalid-test-agent',
-    walletConfig: {
-      id: `walletwallet.1-${utils.uuid()}`,
-      key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
-  }
-
-  const invalidAgent = new Agent({
-    config: invalidConfig,
-    modules: {
-      indySdk: new IndySdkModule({ indySdk: indy }),
-    },
-    dependencies: agentDependencies,
-  })
-
-  const invalidNewAgent = new Agent({
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    config: { ...invalidConfig, walletConfig: { ...invalidConfig.walletConfig!, key: 'wrong-key' } },
-    modules: {
-      askar: new AskarModule({
-        ariesAskar,
-      }),
-    },
-    dependencies: agentDependencies,
-  })
-
-  const oldAgent = new Agent({
-    config,
-    modules: {
-      indySdk: new IndySdkModule({ indySdk: indy }),
-    },
-    dependencies: agentDependencies,
-  })
-
-  const newAgent = new Agent({
-    config,
-    modules: {
-      askar: new AskarModule({
-        ariesAskar,
-      }),
-    },
-    dependencies: agentDependencies,
-  })
-
-  const oldAgentDbPath = `${homedir()}/.indy_client/wallet/${oldAgent.config.walletConfig?.id}/sqlite.db`
-  const invalidAgentDbPath = `${homedir()}/.indy_client/wallet/${invalidAgent.config.walletConfig?.id}/sqlite.db`
-
   beforeAll(() => {
     registerAriesAskar({ askar: ariesAskar })
   })
 
-  test('indy-sdk sqlite to aries-askar sqlite', async () => {
+  test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
+    const indySdkAndAskarConfig: InitConfig = {
+      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration | ${utils.uuid()}`,
+      walletConfig: {
+        id: `indy-sdk sqlite to aries-askar sqlite successful migration | ${utils.uuid()}`,
+        key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
+        keyDerivationMethod: KeyDerivationMethod.Raw,
+      },
+    }
+
+    const indySdkAgent = new Agent({
+      config: indySdkAndAskarConfig,
+      modules: { indySdk: new IndySdkModule({ indySdk: indy }) },
+      dependencies: agentDependencies,
+    })
+
+    const indySdkAgentDbPath = `${homedir()}/.indy_client/wallet/${indySdkAndAskarConfig.walletConfig?.id}/sqlite.db`
+
     const genericRecordContent = { foo: 'bar' }
 
-    await oldAgent.initialize()
+    await indySdkAgent.initialize()
 
-    const record = await oldAgent.genericRecords.save({ content: genericRecordContent })
+    const record = await indySdkAgent.genericRecords.save({ content: genericRecordContent })
 
-    await oldAgent.shutdown()
+    await indySdkAgent.shutdown()
 
-    const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: oldAgentDbPath, agent: newAgent })
+    const askarAgent = new Agent({
+      config: indySdkAndAskarConfig,
+      modules: { askar: new AskarModule({ ariesAskar }) },
+      dependencies: agentDependencies,
+    })
+
+    const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: indySdkAgentDbPath, agent: askarAgent })
     await updater.update()
 
-    await newAgent.initialize()
+    await askarAgent.initialize()
 
-    await expect(newAgent.genericRecords.findById(record.id)).resolves.toMatchObject({ content: genericRecordContent })
+    await expect(askarAgent.genericRecords.findById(record.id)).resolves.toMatchObject({
+      content: genericRecordContent,
+    })
 
-    await newAgent.shutdown()
+    await askarAgent.shutdown()
   })
 
   /*
@@ -104,24 +71,52 @@ describeRunInNodeVersion([18], 'Indy SDK To Askar Migration', () => {
    *  - Check if the record can still be accessed
    */
   test('indy-sdk sqlite to aries-askar sqlite fails and restores', async () => {
+    const indySdkAndAskarConfig: InitConfig = {
+      label: `indy | indy-sdk sqlite to aries-askar sqlite fails and restores | ${utils.uuid()}`,
+      walletConfig: {
+        id: `indy-sdk sqlite to aries-askar sqlite fails and restores | ${utils.uuid()}`,
+        key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
+        keyDerivationMethod: KeyDerivationMethod.Raw,
+      },
+    }
+
+    const indySdkAgent = new Agent({
+      config: indySdkAndAskarConfig,
+      modules: { indySdk: new IndySdkModule({ indySdk: indy }) },
+      dependencies: agentDependencies,
+    })
+
+    const indySdkAgentDbPath = `${homedir()}/.indy_client/wallet/${indySdkAndAskarConfig.walletConfig?.id}/sqlite.db`
+
     const genericRecordContent = { foo: 'bar' }
 
-    await invalidAgent.initialize()
+    await indySdkAgent.initialize()
 
-    const record = await invalidAgent.genericRecords.save({ content: genericRecordContent })
+    const record = await indySdkAgent.genericRecords.save({ content: genericRecordContent })
 
-    await invalidAgent.shutdown()
+    await indySdkAgent.shutdown()
+
+    const askarAgent = new Agent({
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      config: { ...indySdkAndAskarConfig, walletConfig: { ...indySdkAndAskarConfig.walletConfig!, key: 'wrong-key' } },
+      modules: {
+        askar: new AskarModule({
+          ariesAskar,
+        }),
+      },
+      dependencies: agentDependencies,
+    })
 
     const updater = await IndySdkToAskarMigrationUpdater.initialize({
-      dbPath: invalidAgentDbPath,
-      agent: invalidNewAgent,
+      dbPath: indySdkAgentDbPath,
+      agent: askarAgent,
     })
 
     await expect(updater.update()).rejects.toThrowError(IndySdkToAskarMigrationError)
 
-    await invalidAgent.initialize()
+    await indySdkAgent.initialize()
 
-    await expect(invalidAgent.genericRecords.findById(record.id)).resolves.toMatchObject({
+    await expect(indySdkAgent.genericRecords.findById(record.id)).resolves.toMatchObject({
       content: genericRecordContent,
     })
   })
