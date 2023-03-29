@@ -245,11 +245,11 @@ describe('Legacy indy format services', () => {
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: legacySchemaId,
         credentialDefinitionId: legacyCredentialDefinitionId,
       },
-      '_anonCreds/anonCredsCredentialRequest': {
+      '_anoncreds/credentialRequest': {
         master_secret_blinding_data: expect.any(Object),
         master_secret_name: expect.any(String),
         nonce: expect.any(String),
@@ -257,7 +257,7 @@ describe('Legacy indy format services', () => {
     })
 
     expect(issuerCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: legacySchemaId,
         credentialDefinitionId: legacyCredentialDefinitionId,
       },

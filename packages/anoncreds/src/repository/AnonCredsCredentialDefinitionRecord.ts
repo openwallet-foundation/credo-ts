@@ -25,8 +25,8 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
 
-  public readonly credentialDefinitionId!: string
-  public readonly credentialDefinition!: AnonCredsCredentialDefinition
+  public credentialDefinitionId!: string
+  public credentialDefinition!: AnonCredsCredentialDefinition
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()
