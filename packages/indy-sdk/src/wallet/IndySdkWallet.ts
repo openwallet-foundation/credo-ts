@@ -29,6 +29,7 @@ import {
   TypedArrayEncoder,
   WalletDuplicateError,
   WalletError,
+  WalletExportPathExistsError,
   WalletInvalidKeyError,
   WalletKeyExistsError,
   WalletNotFoundError,
@@ -308,6 +309,15 @@ export class IndySdkWallet implements Wallet {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
+
+      // Export path already exists
+      if (isIndyError(error, 'CommonIOError')) {
+        throw new WalletExportPathExistsError(
+          `Unable to create export, wallet export at path '${exportConfig.path}' already exists`,
+          { cause: error }
+        )
+      }
+
       const errorMessage = `Error exporting wallet: ${error.message}`
       this.logger.error(errorMessage, {
         error,

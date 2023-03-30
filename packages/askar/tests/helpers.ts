@@ -1,7 +1,7 @@
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import type { InitConfig } from '@aries-framework/core'
 
-import { ConnectionsModule, LogLevel } from '@aries-framework/core'
+import { ConnectionsModule, LogLevel, utils } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import path from 'path'
 
@@ -23,10 +23,11 @@ export function getPostgresAgentOptions(
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {
+  const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} Postgres`,
+    label: `PostgresAgent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      id: `PostgresWallet${name}${random}`,
       key: `Key${name}`,
       storage: storageConfig,
     },
@@ -47,10 +48,11 @@ export function getPostgresAgentOptions(
 }
 
 export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} SQLite`,
+    label: `SQLiteAgent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      id: `SQLiteWallet${name} - ${random}`,
       key: `Key${name}`,
       storage: { type: 'sqlite' },
     },
