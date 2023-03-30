@@ -34,7 +34,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
    * AnonCreds method name. We don't use names explicitly from the registry (there's no identifier for a registry)
    * @see https://hyperledger.github.io/anoncreds-methods-registry/
    */
-  public readonly methodName!: string
+  public methodName!: string
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()

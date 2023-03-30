@@ -40,6 +40,7 @@ export async function migrateAnonCredsSchemaRecordToV0_4<Agent extends BaseAgent
 
     schemaRecord.schema = newSchema
     schemaRecord.schemaId = oldSchema.id
+    schemaRecord.methodName = 'indy'
 
     // schemaIssuerDid was set as tag, but is now replaced by issuerId. It was also always set
     // to the value `did` as it incorrectly parsed the schemaId.
