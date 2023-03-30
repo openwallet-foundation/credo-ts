@@ -1,4 +1,5 @@
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
+import type { MessageRepository } from '../../storage/MessageRepository'
 
 /**
  * MessagePickupModuleConfigOptions defines the interface for the options of the MessagePickupModuleConfig class.
@@ -24,6 +25,12 @@ export interface MessagePickupModuleConfigOptions<MessagePickupProtocols extends
    * ```
    */
   protocols: MessagePickupProtocols
+
+  /**
+   * Allows to specify a custom pickup message queue. It defaults to an in-memory repository
+   *
+   */
+  messageRepository?: MessageRepository
 }
 
 export class MessagePickupModuleConfig<MessagePickupProtocols extends MessagePickupProtocol[]> {
@@ -41,5 +48,10 @@ export class MessagePickupModuleConfig<MessagePickupProtocols extends MessagePic
   /** See {@link MessagePickupModuleConfig.protocols} */
   public get protocols() {
     return this.options.protocols
+  }
+
+  /** See {@link MessagePickupModuleConfig.protocols} */
+  public get messageRepository() {
+    return this.options.messageRepository
   }
 }

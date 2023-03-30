@@ -6,10 +6,12 @@ import type {
 } from './MessagePickupApiOptions'
 import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
+import type { MessageRepository } from '../../storage/MessageRepository'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
+import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
@@ -17,7 +19,7 @@ import { ConnectionService } from '../connections/services'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
 
 export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
-  queueMessage(options: QueueMessageOptions<MPPs>): Promise<QueueMessageReturnType>
+  queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType>
   pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType>
 }
 
@@ -53,14 +55,27 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     return protocol
   }
 
-  public async queueMessage(options: QueueMessageOptions<MPPs>): Promise<QueueMessageReturnType> {
+  /**
+   * Add an encrypted message to the message pickup queue
+   *
+   * @param options: connectionId associated to the message and the encrypted message itself
+   */
+  public async queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
-    const protocol = this.getProtocol(options.protocolVersion)
+    const messageRepository = this.agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
 
-    await protocol.queueMessage(this.agentContext, { connectionRecord, message: options.message })
+    await messageRepository.add(connectionRecord.id, options.message)
   }
 
+  /**
+   * Pickup queued messages from a message holder. It attempts to retrieve all current messages from the
+   * queue, receiving up to `batchSize` messages per batch retrieval.
+   *
+   * @param options connectionId, protocol version to use and batch size
+   */
   public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 

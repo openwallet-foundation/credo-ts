@@ -1,20 +1,12 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { EncryptedMessage } from '../../../types'
-import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
+import type { ConnectionRecord } from '../../connections'
 
-export interface QueueMessageOptions {
-  connectionRecord: ConnectionRecord
-  message: EncryptedMessage
-}
-
-export interface PickupMessagesOptions {
+export interface PickupMessagesProtocolOptions {
   connectionRecord: ConnectionRecord
   recipientKey?: string
   batchSize?: number
 }
 
-export type QueueMessageReturnType = void
-
-export type PickupMessagesReturnType<MessageType extends AgentMessage> = {
+export type PickupMessagesProtocolReturnType<MessageType extends AgentMessage> = {
   message: MessageType
 }

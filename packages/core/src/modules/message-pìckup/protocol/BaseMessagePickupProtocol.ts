@@ -1,10 +1,5 @@
 import type { MessagePickupProtocol } from './MessagePickupProtocol'
-import type {
-  PickupMessagesOptions,
-  PickupMessagesReturnType,
-  QueueMessageOptions,
-  QueueMessageReturnType,
-} from './MessagePickupProtocolOptions'
+import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from './MessagePickupProtocolOptions'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
@@ -17,14 +12,10 @@ import type { DependencyManager } from '../../../plugins'
 export abstract class BaseMessagePickupProtocol implements MessagePickupProtocol {
   public abstract readonly version: string
 
-  public abstract queueMessage(
-    agentContext: AgentContext,
-    options: QueueMessageOptions
-  ): Promise<QueueMessageReturnType>
   public abstract pickupMessages(
     agentContext: AgentContext,
-    options: PickupMessagesOptions
-  ): Promise<PickupMessagesReturnType<AgentMessage>>
+    options: PickupMessagesProtocolOptions
+  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>>
 
   public abstract register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void
 }

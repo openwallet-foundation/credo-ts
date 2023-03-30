@@ -6,9 +6,8 @@ import type { EncryptedMessage } from '../../types'
  */
 export type MessagePickupProtocolVersionType<MPPs extends MessagePickupProtocol[]> = MPPs[number]['version']
 
-export interface QueueMessageOptions<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> {
+export interface QueueMessageOptions {
   connectionId: string
-  protocolVersion: MessagePickupProtocolVersionType<MPPs>
   message: EncryptedMessage
 }
 

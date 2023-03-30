@@ -4,11 +4,7 @@ import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
-import type {
-  PickupMessagesOptions,
-  PickupMessagesReturnType,
-  QueueMessageOptions,
-} from '../MessagePickupProtocolOptions'
+import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
 
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
@@ -46,8 +42,8 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
 
   public async pickupMessages(
     agentContext: AgentContext,
-    options: PickupMessagesOptions
-  ): Promise<PickupMessagesReturnType<AgentMessage>> {
+    options: PickupMessagesProtocolOptions
+  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
     const { connectionRecord, batchSize } = options
     connectionRecord.assertReady()
 
@@ -57,13 +53,6 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     })
 
     return { message }
-  }
-
-  public async queueMessage(agentContext: AgentContext, options: QueueMessageOptions) {
-    const messageRepository = agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
-    )
-    await messageRepository.add(options.connectionRecord.id, options.message)
   }
 
   public async processBatchPickup(messageContext: InboundMessageContext<V1BatchPickupMessage>) {

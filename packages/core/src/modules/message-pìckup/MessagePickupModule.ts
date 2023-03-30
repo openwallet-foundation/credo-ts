@@ -5,6 +5,8 @@ import type { ApiModule, DependencyManager } from '../../plugins'
 import type { Optional } from '../../utils'
 import type { Constructor } from '../../utils/mixins'
 
+import { InjectionSymbols } from '../../constants'
+
 import { MessagePickupApi } from './MessagePickupApi'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
 import { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
@@ -44,6 +46,11 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
 
     // Config
     dependencyManager.registerInstance(MessagePickupModuleConfig, this.config)
+
+    // Message repository
+    if (this.config.messageRepository) {
+      dependencyManager.registerInstance(InjectionSymbols.MessageRepository, this.config.messageRepository)
+    }
 
     // Protocol needs to register feature registry items and handlers
     for (const protocol of this.config.protocols) {

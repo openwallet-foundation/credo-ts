@@ -1,4 +1,5 @@
 import type { MediationRecord } from './repository'
+import type { EncryptedMessage } from '../../types'
 
 import { AgentContext } from '../../agent'
 import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
@@ -6,6 +7,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
+import { MessagePickupApi } from '../message-pìckup'
 
 import { MediatorModuleConfig } from './MediatorModuleConfig'
 import { ForwardHandler, KeylistUpdateHandler } from './handlers'
@@ -67,6 +69,14 @@ export class MediatorApi {
     await this.messageSender.sendMessage(outboundMessageContext)
 
     return mediationRecord
+  }
+
+  /**
+   * @deprecated Use `MessagePickupApi.queueMessage` instead.
+   * */
+  public queueMessage(connectionId: string, message: EncryptedMessage) {
+    const messagePickupApi = this.agentContext.dependencyManager.resolve(MessagePickupApi)
+    return messagePickupApi.queueMessage({ connectionId, message })
   }
 
   private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {

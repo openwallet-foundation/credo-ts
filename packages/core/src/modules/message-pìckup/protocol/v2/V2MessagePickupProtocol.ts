@@ -6,11 +6,7 @@ import type { InboundMessageContext } from '../../../../agent/models/InboundMess
 import type { DependencyManager } from '../../../../plugins'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../types'
-import type {
-  PickupMessagesOptions,
-  PickupMessagesReturnType,
-  QueueMessageOptions,
-} from '../MessagePickupProtocolOptions'
+import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../agent/Events'
@@ -74,8 +70,8 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
 
   public async pickupMessages(
     agentContext: AgentContext,
-    options: PickupMessagesOptions
-  ): Promise<PickupMessagesReturnType<AgentMessage>> {
+    options: PickupMessagesProtocolOptions
+  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
     const { connectionRecord, recipientKey } = options
     connectionRecord.assertReady()
 
@@ -84,14 +80,6 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     })
 
     return { message }
-  }
-
-  public async queueMessage(agentContext: AgentContext, options: QueueMessageOptions) {
-    const messageRepository = agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
-    )
-
-    await messageRepository.add(options.connectionRecord.id, options.message)
   }
 
   public async processStatusRequest(messageContext: InboundMessageContext<V2StatusRequestMessage>) {

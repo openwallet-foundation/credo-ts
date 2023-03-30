@@ -341,6 +341,20 @@ export class RecipientApi {
     return this.mediationRecipientService.discoverMediation(this.agentContext)
   }
 
+  /**
+   * @deprecated Use `MessagePickupApi.pickupMessages` instead.
+   * */
+  public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
+    mediatorConnection.assertReady()
+
+    const messagePickupApi = this.agentContext.dependencyManager.resolve(MessagePickupApi)
+
+    await messagePickupApi.pickupMessages({
+      connectionId: mediatorConnection.id,
+      protocolVersion: pickupStrategy === MediatorPickupStrategy.PickUpV2 ? 'v2' : 'v1',
+    })
+  }
+
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
     return this.mediationRecipientService.setDefaultMediator(this.agentContext, mediatorRecord)
   }
