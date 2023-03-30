@@ -59,6 +59,7 @@ export interface InitConfig {
   useDidSovPrefixWhereAllowed?: boolean
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
+  processMessagesConcurrently?: boolean
 
   /**
    * @deprecated configure `autoAcceptConnections` on the `ConnectionsModule` class

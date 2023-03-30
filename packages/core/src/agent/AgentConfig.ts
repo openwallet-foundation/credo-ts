@@ -166,6 +166,10 @@ export class AgentConfig {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 
+  public get processMessagesConcurrently() {
+    return this.initConfig.processMessagesConcurrently ?? false
+  }
+
   public extend(config: Partial<InitConfig>): AgentConfig {
     return new AgentConfig(
       { ...this.initConfig, logger: this.logger, label: this.label, ...config },
