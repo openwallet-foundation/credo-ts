@@ -7,6 +7,7 @@ export interface AnonCredsCredentialInfo {
   credentialDefinitionId: string
   revocationRegistryId?: string | undefined
   credentialRevocationId?: string | undefined
+  methodName: string
 }
 
 export interface AnonCredsRequestedAttributeMatch {

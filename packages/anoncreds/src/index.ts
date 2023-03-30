@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+
 export * from './models'
 export * from './services'
 export * from './error'

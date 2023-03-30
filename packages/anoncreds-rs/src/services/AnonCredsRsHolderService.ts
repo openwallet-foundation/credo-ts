@@ -33,6 +33,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsRestrictionWrapper,
   legacyIndyCredentialDefinitionIdRegex,
+  AnonCredsRegistryService,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
 import {
@@ -265,6 +266,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       const credentialRepository = agentContext.dependencyManager.resolve(AnonCredsCredentialRepository)
 
+      const methodName = agentContext.dependencyManager
+        .resolve(AnonCredsRegistryService)
+        .getRegistryForIdentifier(agentContext, credential.cred_def_id).methodName
+
       await credentialRepository.save(
         agentContext,
         new AnonCredsCredentialRecord({
@@ -276,6 +281,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           schemaIssuerId: schema.issuerId,
           schemaVersion: schema.version,
           credentialRevocationId: processedCredential.revocationRegistryIndex?.toString(),
+          methodName,
         })
       )
 
@@ -305,6 +311,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       schemaId: credentialRecord.credential.schema_id,
       credentialRevocationId: credentialRecord.credentialRevocationId,
       revocationRegistryId: credentialRecord.credential.rev_reg_id,
+      methodName: credentialRecord.methodName,
     }
   }
 
@@ -321,6 +328,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         schemaName: options.schemaName,
         schemaVersion: options.schemaVersion,
         schemaIssuerId: options.schemaIssuerId,
+        methodName: options.methodName,
       })
 
     return credentialRecords.map((credentialRecord) => ({
@@ -332,6 +340,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       schemaId: credentialRecord.credential.schema_id,
       credentialRevocationId: credentialRecord.credentialRevocationId,
       revocationRegistryId: credentialRecord.credential.rev_reg_id,
+      methodName: credentialRecord.methodName,
     }))
   }
 
@@ -397,6 +406,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           schemaId: credentialRecord.credential.schema_id,
           credentialRevocationId: credentialRecord.credentialRevocationId,
           revocationRegistryId: credentialRecord.credential.rev_reg_id,
+          methodName: credentialRecord.methodName,
         },
         interval: proofRequest.non_revoked,
       }

@@ -32,6 +32,8 @@ import {
 import { anonCredsRevocationStatusListFromIndySdk } from '../utils/transform'
 
 export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
+  public readonly methodName = 'indy'
+
   /**
    * This class supports resolving and registering objects with did:indy as well as legacy indy identifiers.
    * It needs to include support for the schema, credential definition, revocation registry as well

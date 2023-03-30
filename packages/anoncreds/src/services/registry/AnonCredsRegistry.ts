@@ -12,6 +12,13 @@ import type { AgentContext } from '@aries-framework/core'
  * @public
  */
 export interface AnonCredsRegistry {
+  /**
+   * A name to identify the registry. This will be stored as part of the reigstered anoncreds objects to allow querying
+   * for created objects using a specific registry. Multilpe implementations can use the same name, but they should in that
+   * case also reference objects on the same networks.
+   */
+  methodName: string
+
   supportedIdentifier: RegExp
 
   getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn>

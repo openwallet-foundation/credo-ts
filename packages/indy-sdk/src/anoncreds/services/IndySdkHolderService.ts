@@ -196,6 +196,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         schemaId: result.schema_id,
         credentialRevocationId: result.cred_rev_id,
         revocationRegistryId: result.rev_reg_id,
+        methodName: 'indy',
       }
     } catch (error) {
       agentContext.config.logger.error(`Error getting Indy Credential '${options.credentialId}'`, {
@@ -208,6 +209,11 @@ export class IndySdkHolderService implements AnonCredsHolderService {
 
   public async getCredentials(agentContext: AgentContext, options: GetCredentialsOptions) {
     assertIndySdkWallet(agentContext.wallet)
+
+    // Indy SDK only supports indy credentials
+    if (options.methodName && options.methodName !== 'indy') {
+      return []
+    }
 
     const credentials = await this.indySdk.proverGetCredentials(agentContext.wallet.handle, {
       cred_def_id: options.credentialDefinitionId,
@@ -225,6 +231,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       schemaId: credential.schema_id,
       credentialRevocationId: credential.cred_rev_id,
       revocationRegistryId: credential.rev_reg_id,
+      methodName: 'indy',
     }))
   }
 
@@ -335,6 +342,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
             schemaId: credential.cred_info.schema_id,
             revocationRegistryId: credential.cred_info.rev_reg_id,
             credentialRevocationId: credential.cred_info.cred_rev_id,
+            methodName: 'indy',
           },
           interval: credential.interval,
         }))

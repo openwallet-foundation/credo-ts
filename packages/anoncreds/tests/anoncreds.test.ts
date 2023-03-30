@@ -3,7 +3,7 @@ import { agentDependencies } from '@aries-framework/node'
 import * as indySdk from 'indy-sdk'
 
 import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
-import { AnonCredsCredentialDefinitionRepository, AnonCredsModule, AnonCredsSchemaRepository } from '../src'
+import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
@@ -145,14 +145,12 @@ describe('AnonCreds API', () => {
     })
 
     // Check if record was created
-    const anonCredsSchemaRepository = agent.dependencyManager.resolve(AnonCredsSchemaRepository)
-    const schemaRecord = await anonCredsSchemaRepository.getBySchemaId(
-      agent.context,
-      'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0'
-    )
-
+    const [schemaRecord] = await agent.modules.anoncreds.getCreatedSchemas({
+      schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
+    })
     expect(schemaRecord).toMatchObject({
       schemaId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ/anoncreds/v0/SCHEMA/Employee Credential/1.0.0',
+      methodName: 'inMemory',
       schema: {
         attrNames: ['name', 'age'],
         issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
@@ -166,6 +164,7 @@ describe('AnonCreds API', () => {
       issuerId: 'did:indy:pool:localtest:6xDN7v3AiGgusRp4bqZACZ',
       schemaName: 'Employee Credential',
       schemaVersion: '1.0.0',
+      methodName: 'inMemory',
     })
   })
 
@@ -231,17 +230,12 @@ describe('AnonCreds API', () => {
       },
     })
 
-    // Check if record was created
-    const anonCredsCredentialDefinitionRepository = agent.dependencyManager.resolve(
-      AnonCredsCredentialDefinitionRepository
-    )
-    const credentialDefinitionRecord = await anonCredsCredentialDefinitionRepository.getByCredentialDefinitionId(
-      agent.context,
-      'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG'
-    )
-
+    const [credentialDefinitionRecord] = await agent.modules.anoncreds.getCreatedCredentialDefinitions({
+      credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
+    })
     expect(credentialDefinitionRecord).toMatchObject({
       credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
+      methodName: 'inMemory',
       credentialDefinition: {
         issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
         tag: 'TAG',
@@ -264,6 +258,7 @@ describe('AnonCreds API', () => {
     })
 
     expect(credentialDefinitionRecord.getTags()).toEqual({
+      methodName: 'inMemory',
       credentialDefinitionId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX/anoncreds/v0/CLAIM_DEF/75206/TAG',
       schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
       issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
