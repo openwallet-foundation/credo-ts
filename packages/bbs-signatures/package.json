@@ -2,8 +2,7 @@
   "name": "@aries-framework/bbs-signatures",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.3.0",
-  "private": true,
+  "version": "0.3.3",
   "files": [
     "build"
   ],
