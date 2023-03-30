@@ -32,6 +32,8 @@ import { parseIndyDid } from '../../indy-sdk/src/dids/didIndyUtil'
  * In memory implementation of the {@link AnonCredsRegistry} interface. Useful for testing.
  */
 export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
+  public readonly methodName = 'inMemory'
+
   // Roughly match that the identifier starts with an unqualified indy did. Once the
   // anoncreds tests are not based on the indy-sdk anymore, we can use any identifier
   // we want, but the indy-sdk is picky about the identifier format.

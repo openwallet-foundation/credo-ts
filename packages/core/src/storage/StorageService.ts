@@ -4,7 +4,7 @@ import type { AgentContext } from '../agent'
 import type { Constructor } from '../utils/mixins'
 
 // https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
-export type SimpleQuery<T extends BaseRecord> = Partial<ReturnType<T['getTags']>> & TagsBase
+export type SimpleQuery<T extends BaseRecord<any, any, any>> = Partial<ReturnType<T['getTags']>> & TagsBase
 
 interface AdvancedQuery<T extends BaseRecord> {
   $and?: Query<T>[]
