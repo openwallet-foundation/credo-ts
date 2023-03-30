@@ -8,6 +8,7 @@ import { CredentialsModule } from '../../modules/credentials'
 import { DidsModule } from '../../modules/dids'
 import { DiscoverFeaturesModule } from '../../modules/discover-features'
 import { GenericRecordsModule } from '../../modules/generic-records'
+import { MessagePickupModule } from '../../modules/message-pìckup'
 import { OutOfBandModule } from '../../modules/oob'
 import { ProofsModule } from '../../modules/proofs'
 import { MediatorModule, RecipientModule } from '../../modules/routing'
@@ -62,6 +63,7 @@ describe('AgentModules', () => {
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
+        messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -85,6 +87,7 @@ describe('AgentModules', () => {
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
+        messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),
@@ -111,6 +114,7 @@ describe('AgentModules', () => {
         proofs: expect.any(ProofsModule),
         mediator: expect.any(MediatorModule),
         mediationRecipient: expect.any(RecipientModule),
+        messagePickup: expect.any(MessagePickupModule),
         basicMessages: expect.any(BasicMessagesModule),
         genericRecords: expect.any(GenericRecordsModule),
         discovery: expect.any(DiscoverFeaturesModule),

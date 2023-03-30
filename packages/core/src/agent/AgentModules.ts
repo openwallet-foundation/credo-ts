@@ -10,6 +10,7 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
+import { MessagePickupModule } from '../modules/message-pìckup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
 import { MediatorModule, RecipientModule } from '../modules/routing'
@@ -145,6 +146,7 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
         maximumMediatorReconnectionIntervalMs: agentConfig.maximumMediatorReconnectionIntervalMs,
         mediatorPollingInterval: agentConfig.mediatorPollingInterval,
       }),
+    messagePickup: () => new MessagePickupModule({ maximumMessagePickup: agentConfig.maximumMessagePickup }),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
