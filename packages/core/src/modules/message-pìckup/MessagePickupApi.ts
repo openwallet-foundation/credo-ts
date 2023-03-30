@@ -1,63 +1,78 @@
-import type { EncryptedMessage } from '../../types'
+import type {
+  PickupMessagesOptions,
+  PickupMessagesReturnType,
+  QueueMessageOptions,
+  QueueMessageReturnType,
+} from './MessagePickupApiOptions'
+import type { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
+import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
+import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
-import { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
+
+export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
+  queueMessage(options: QueueMessageOptions<MPPs>): Promise<QueueMessageReturnType>
+  pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType>
+}
 
 @injectable()
-export class MessagePickupApi {
-  public config: MessagePickupModuleConfig
+export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessagePickupProtocol, V2MessagePickupProtocol]>
+  implements MessagePickupApi<MPPs>
+{
+  public config: MessagePickupModuleConfig<MPPs>
 
-  private v1MessagePickupService: V1MessagePickupProtocol
-  private v2MessagePickupService: V2MessagePickupProtocol
   private messageSender: MessageSender
   private agentContext: AgentContext
   private connectionService: ConnectionService
 
   public constructor(
-    messagePickupService: V1MessagePickupProtocol,
-    v2MessagePickupService: V2MessagePickupProtocol,
     messageSender: MessageSender,
     agentContext: AgentContext,
     connectionService: ConnectionService,
-    config: MessagePickupModuleConfig
+    config: MessagePickupModuleConfig<MPPs>
   ) {
-    this.v1MessagePickupService = messagePickupService
-    this.v2MessagePickupService = v2MessagePickupService
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
     this.config = config
   }
 
-  public async queueMessage(connectionId: string, message: EncryptedMessage) {
-    return this.v1MessagePickupService.queueMessage(connectionId, message)
+  private getProtocol<MPP extends MPPs[number]['version']>(protocolVersion: MPP): MessagePickupProtocol {
+    const protocol = this.config.protocols.find((protocol) => protocol.version === protocolVersion)
+
+    if (!protocol) {
+      throw new AriesFrameworkError(`No message pickup protocol registered for protocol version ${protocolVersion}`)
+    }
+
+    return protocol
   }
 
-  public async pickupMessages(options: {
-    connectionId: string
-    recipientKey?: string
-    protocolVersion?: 'v1' | 'v2'
-    batchSize?: number
-  }) {
+  public async queueMessage(options: QueueMessageOptions<MPPs>): Promise<QueueMessageReturnType> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
-    const pickupMessage =
-      options.protocolVersion === 'v2'
-        ? await this.v2MessagePickupService.createStatusRequest(connectionRecord, {
-            recipientKey: options.recipientKey,
-          })
-        : await this.v1MessagePickupService.createBatchPickupMessage(connectionRecord, {
-            batchSize: options.batchSize ?? this.config.maximumMessagePickup,
-          })
+    const protocol = this.getProtocol(options.protocolVersion)
+
+    await protocol.queueMessage(this.agentContext, { connectionRecord, message: options.message })
+  }
+
+  public async pickupMessages(options: PickupMessagesOptions<MPPs>): Promise<PickupMessagesReturnType> {
+    const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+
+    const protocol = this.getProtocol(options.protocolVersion)
+    const { message } = await protocol.pickupMessages(this.agentContext, {
+      connectionRecord,
+      batchSize: options.batchSize,
+      recipientKey: options.recipientKey,
+    })
 
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(pickupMessage, {
+      new OutboundMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       })

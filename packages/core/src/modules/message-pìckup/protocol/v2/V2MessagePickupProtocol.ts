@@ -1,23 +1,30 @@
+import type { AgentContext } from '../../../../agent'
+import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../../agent/Events'
+import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { DependencyManager } from '../../../../plugins'
+import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../types'
-import type { ConnectionRecord } from '../../../connections'
+import type {
+  PickupMessagesOptions,
+  PickupMessagesReturnType,
+  QueueMessageOptions,
+} from '../MessagePickupProtocolOptions'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../agent/Events'
-import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../error'
-import { inject, injectable } from '../../../../plugins'
-import { MessageRepository } from '../../../../storage/MessageRepository'
+import { injectable } from '../../../../plugins'
 import { ConnectionService } from '../../../connections'
 import { ProblemReportError } from '../../../problem-reports'
 import { RoutingProblemReportReason } from '../../../routing/error'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
+import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
 
 import {
   V2DeliveryRequestHandler,
@@ -35,29 +42,27 @@ import {
 } from './messages'
 
 @injectable()
-export class V2MessagePickupProtocol {
-  private messageRepository: MessageRepository
-  private connectionService: ConnectionService
-  private eventEmitter: EventEmitter
-  private messageSender: MessageSender
-  private messagePickupModuleConfig: MessagePickupModuleConfig
+export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
+  public constructor() {
+    super()
+  }
 
-  public constructor(
-    @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
-    messagePickupModuleConfig: MessagePickupModuleConfig,
-    messageHandlerRegistry: MessageHandlerRegistry,
-    connectionService: ConnectionService,
-    eventEmitter: EventEmitter,
-    messageSender: MessageSender,
-    featureRegistry: FeatureRegistry
-  ) {
-    this.messageRepository = messageRepository
-    this.connectionService = connectionService
-    this.eventEmitter = eventEmitter
-    this.messageSender = messageSender
-    this.messagePickupModuleConfig = messagePickupModuleConfig
+  /**
+   * The version of the message pickup protocol this class supports
+   */
+  public readonly version = 'v2' as const
 
-    this.registerMessageHandlers(messageHandlerRegistry)
+  /**
+   * Registers the protocol implementation (handlers, feature registry) on the agent.
+   */
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void {
+    dependencyManager.registerMessageHandlers([
+      new V2StatusRequestHandler(this),
+      new V2DeliveryRequestHandler(this),
+      new V2MessagesReceivedHandler(this),
+      new V2StatusHandler(this),
+      new V2MessageDeliveryHandler(this),
+    ])
 
     featureRegistry.register(
       new Protocol({
@@ -67,9 +72,35 @@ export class V2MessagePickupProtocol {
     )
   }
 
+  public async pickupMessages(
+    agentContext: AgentContext,
+    options: PickupMessagesOptions
+  ): Promise<PickupMessagesReturnType<AgentMessage>> {
+    const { connectionRecord, recipientKey } = options
+    connectionRecord.assertReady()
+
+    const message = new V2StatusRequestMessage({
+      recipientKey,
+    })
+
+    return { message }
+  }
+
+  public async queueMessage(agentContext: AgentContext, options: QueueMessageOptions) {
+    const messageRepository = agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
+
+    await messageRepository.add(options.connectionRecord.id, options.message)
+  }
+
   public async processStatusRequest(messageContext: InboundMessageContext<V2StatusRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
+
+    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
 
     if (messageContext.message.recipientKey) {
       throw new AriesFrameworkError('recipient_key parameter not supported')
@@ -77,14 +108,10 @@ export class V2MessagePickupProtocol {
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
+      messageCount: await messageRepository.getAvailableMessageCount(connection.id),
     })
 
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
-  }
-
-  public async queueMessage(connectionId: string, message: EncryptedMessage) {
-    await this.messageRepository.add(connectionId, message)
   }
 
   public async processDeliveryRequest(messageContext: InboundMessageContext<V2DeliveryRequestMessage>) {
@@ -97,8 +124,12 @@ export class V2MessagePickupProtocol {
 
     const { message } = messageContext
 
+    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
+
     // Get available messages from queue, but don't delete them
-    const messages = await this.messageRepository.takeFromQueue(connection.id, message.limit, true)
+    const messages = await messageRepository.takeFromQueue(connection.id, message.limit, true)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of delivery message
@@ -131,34 +162,22 @@ export class V2MessagePickupProtocol {
 
     const { message } = messageContext
 
+    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
+
     // TODO: Add Queued Message ID
-    await this.messageRepository.takeFromQueue(
+    await messageRepository.takeFromQueue(
       connection.id,
       message.messageIdList ? message.messageIdList.length : undefined
     )
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await this.messageRepository.getAvailableMessageCount(connection.id),
+      messageCount: await messageRepository.getAvailableMessageCount(connection.id),
     })
 
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
-  }
-
-  public async createStatusRequest(
-    connectionRecord: ConnectionRecord,
-    config: {
-      recipientKey?: string
-    } = {}
-  ) {
-    connectionRecord.assertReady()
-
-    const { recipientKey } = config
-    const statusRequest = new V2StatusRequestMessage({
-      recipientKey,
-    })
-
-    return statusRequest
   }
 
   public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
@@ -166,9 +185,13 @@ export class V2MessagePickupProtocol {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
+    const connectionService = messageContext.agentContext.dependencyManager.resolve(ConnectionService)
+    const messageSender = messageContext.agentContext.dependencyManager.resolve(MessageSender)
+    const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
+
     //No messages to be sent
     if (messageCount === 0) {
-      const { message, connectionRecord } = await this.connectionService.createTrustPing(
+      const { message, connectionRecord } = await connectionService.createTrustPing(
         messageContext.agentContext,
         connection,
         {
@@ -179,7 +202,7 @@ export class V2MessagePickupProtocol {
       // FIXME: check where this flow fits, as it seems very particular for the AFJ-ACA-Py combination
       const websocketSchemes = ['ws', 'wss']
 
-      await this.messageSender.sendMessage(
+      await messageSender.sendMessage(
         new OutboundMessageContext(message, {
           agentContext: messageContext.agentContext,
           connection: connectionRecord,
@@ -199,7 +222,7 @@ export class V2MessagePickupProtocol {
 
       return null
     }
-    const { maximumMessagePickup } = this.messagePickupModuleConfig
+    const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
     const deliveryRequestMessage = new V2DeliveryRequestMessage({
@@ -215,6 +238,8 @@ export class V2MessagePickupProtocol {
 
     const { appendedAttachments } = messageContext.message
 
+    const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
+
     if (!appendedAttachments)
       throw new ProblemReportError('Error processing attachments', {
         problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
@@ -224,7 +249,7 @@ export class V2MessagePickupProtocol {
     for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
 
-      this.eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
+      eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
           message: attachment.getDataAsJson<EncryptedMessage>(),
@@ -236,13 +261,5 @@ export class V2MessagePickupProtocol {
     return new V2MessagesReceivedMessage({
       messageIdList: ids,
     })
-  }
-
-  protected registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new V2StatusRequestHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2DeliveryRequestHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2MessagesReceivedHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2StatusHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2MessageDeliveryHandler(this))
   }
 }

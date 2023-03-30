@@ -146,7 +146,7 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
         maximumMediatorReconnectionIntervalMs: agentConfig.maximumMediatorReconnectionIntervalMs,
         mediatorPollingInterval: agentConfig.mediatorPollingInterval,
       }),
-    messagePickup: () => new MessagePickupModule({ maximumMessagePickup: agentConfig.maximumMessagePickup }),
+    messagePickup: () => new MessagePickupModule({ maximumBatchSize: agentConfig.maximumMessagePickup }),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),

@@ -1,33 +1,40 @@
+import type { AgentContext } from '../../../../agent'
+import type { AgentMessage } from '../../../../agent/AgentMessage'
+import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../../types'
-import type { ConnectionRecord } from '../../../connections'
+import type { DependencyManager } from '../../../../plugins'
+import type { MessageRepository } from '../../../../storage/MessageRepository'
+import type {
+  PickupMessagesOptions,
+  PickupMessagesReturnType,
+  QueueMessageOptions,
+} from '../MessagePickupProtocolOptions'
 
-import { EventEmitter } from '../../../../agent/EventEmitter'
-import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
-import { inject, injectable } from '../../../../plugins'
-import { MessageRepository } from '../../../../storage/MessageRepository'
+import { injectable } from '../../../../plugins'
+import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
+import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
 
 import { V1BatchHandler, V1BatchPickupHandler } from './handlers'
 import { V1BatchMessage, BatchMessageMessage, V1BatchPickupMessage } from './messages'
 
 @injectable()
-export class V1MessagePickupProtocol {
-  private messageRepository: MessageRepository
-  private eventEmitter: EventEmitter
+export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
+  public constructor() {
+    super()
+  }
 
-  public constructor(
-    @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
-    messageHandlerRegistry: MessageHandlerRegistry,
-    eventEmitter: EventEmitter,
-    featureRegistry: FeatureRegistry
-  ) {
-    this.messageRepository = messageRepository
-    this.eventEmitter = eventEmitter
+  /**
+   * The version of the message pickup protocol this class supports
+   */
+  public readonly version = 'v1' as const
 
-    this.registerMessageHandlers(messageHandlerRegistry)
+  /**
+   * Registers the protocol implementation (handlers, feature registry) on the agent.
+   */
+  public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry): void {
+    dependencyManager.registerMessageHandlers([new V1BatchPickupHandler(this), new V1BatchHandler()])
 
     featureRegistry.register(
       new Protocol({
@@ -37,26 +44,39 @@ export class V1MessagePickupProtocol {
     )
   }
 
-  public async createBatchPickupMessage(
-    connectionRecord: ConnectionRecord,
-    config: {
-      batchSize: number
-    }
-  ) {
+  public async pickupMessages(
+    agentContext: AgentContext,
+    options: PickupMessagesOptions
+  ): Promise<PickupMessagesReturnType<AgentMessage>> {
+    const { connectionRecord, batchSize } = options
     connectionRecord.assertReady()
 
-    const batchMessage = new V1BatchPickupMessage({
-      batchSize: config.batchSize,
+    const config = agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
+    const message = new V1BatchPickupMessage({
+      batchSize: batchSize ?? config.maximumBatchSize,
     })
 
-    return batchMessage
+    return { message }
   }
-  public async batch(messageContext: InboundMessageContext<V1BatchPickupMessage>) {
+
+  public async queueMessage(agentContext: AgentContext, options: QueueMessageOptions) {
+    const messageRepository = agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
+    await messageRepository.add(options.connectionRecord.id, options.message)
+  }
+
+  public async processBatchPickup(messageContext: InboundMessageContext<V1BatchPickupMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    const messages = await this.messageRepository.takeFromQueue(connection.id, message.batchSize)
+
+    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
+      InjectionSymbols.MessageRepository
+    )
+
+    const messages = await messageRepository.takeFromQueue(connection.id, message.batchSize)
 
     // TODO: each message should be stored with an id. to be able to conform to the id property
     // of batch message
@@ -72,14 +92,5 @@ export class V1MessagePickupProtocol {
     })
 
     return new OutboundMessageContext(batchMessage, { agentContext: messageContext.agentContext, connection })
-  }
-
-  public async queueMessage(connectionId: string, message: EncryptedMessage) {
-    await this.messageRepository.add(connectionId, message)
-  }
-
-  protected registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new V1BatchPickupHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V1BatchHandler(this.eventEmitter))
   }
 }

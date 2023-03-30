@@ -14,6 +14,6 @@ export class V1BatchPickupHandler implements MessageHandler {
   public async handle(messageContext: MessageHandlerInboundMessage<V1BatchPickupHandler>) {
     messageContext.assertReadyConnection()
 
-    return this.messagePickupService.batch(messageContext)
+    return this.messagePickupService.processBatchPickup(messageContext)
   }
 }

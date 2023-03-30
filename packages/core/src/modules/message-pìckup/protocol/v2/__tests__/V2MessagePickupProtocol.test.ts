@@ -1,13 +1,11 @@
-import type { MessageRepository } from '../../../../../storage/MessageRepository'
 import type { EncryptedMessage } from '../../../../../types'
 
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../../agent/Events'
-import { FeatureRegistry } from '../../../../../agent/FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
+import { InjectionSymbols } from '../../../../../constants'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { InMemoryMessageRepository } from '../../../../../storage/InMemoryMessageRepository'
@@ -15,6 +13,7 @@ import { uuid } from '../../../../../utils/uuid'
 import { DidExchangeState, TrustPingMessage } from '../../../../connections'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { MessagePickupModuleConfig } from '../../../MessagePickupModuleConfig'
+import { V1MessagePickupProtocol } from '../../v1'
 import { V2MessagePickupProtocol } from '../V2MessagePickupProtocol'
 import {
   V2DeliveryRequestMessage,
@@ -30,21 +29,34 @@ const mockConnection = getMockConnection({
 
 // Mock classes
 jest.mock('../../../../../storage/InMemoryMessageRepository')
-jest.mock('../../../../../agent/MessageHandlerRegistry')
-jest.mock('../../../../../agent/FeatureRegistry')
 jest.mock('../../../../../agent/EventEmitter')
 jest.mock('../../../../../agent/MessageSender')
 jest.mock('../../../../connections/services/ConnectionService')
 
 // Mock typed object
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const InMessageRepositoryMock = InMemoryMessageRepository as jest.Mock<InMemoryMessageRepository>
-const FeatureRegistryMock = FeatureRegistry as jest.Mock<FeatureRegistry>
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
-const agentContext = getAgentContext()
+const messagePickupModuleConfig = new MessagePickupModuleConfig({
+  maximumBatchSize: 10,
+  protocols: [new V1MessagePickupProtocol(), new V2MessagePickupProtocol()],
+})
+const messageSender = new MessageSenderMock()
+const eventEmitter = new EventEmitterMock()
+const connectionService = new ConnectionServiceMock()
+const messageRepository = new InMessageRepositoryMock()
+
+const agentContext = getAgentContext({
+  registerInstances: [
+    [InjectionSymbols.MessageRepository, messageRepository],
+    [EventEmitter, eventEmitter],
+    [MessageSender, messageSender],
+    [ConnectionService, connectionService],
+    [MessagePickupModuleConfig, messagePickupModuleConfig],
+  ],
+})
 
 const encryptedMessage: EncryptedMessage = {
   protected: 'base64url',
@@ -56,27 +68,9 @@ const queuedMessages = [encryptedMessage, encryptedMessage, encryptedMessage]
 
 describe('V2MessagePickupService', () => {
   let pickupProtocol: V2MessagePickupProtocol
-  let messageRepository: MessageRepository
-  let eventEmitter: EventEmitter
-  let connectionService: ConnectionService
 
   beforeEach(async () => {
-    const messageHandlerRegistry = new MessageHandlerRegistryMock()
-    const messagePickupModuleConfig = new MessagePickupModuleConfig({ maximumMessagePickup: 10 })
-    const featureRegistry = new FeatureRegistryMock()
-    const messageSender = new MessageSenderMock()
-    eventEmitter = new EventEmitterMock()
-    connectionService = new ConnectionServiceMock()
-    messageRepository = new InMessageRepositoryMock()
-    pickupProtocol = new V2MessagePickupProtocol(
-      messageRepository,
-      messagePickupModuleConfig,
-      messageHandlerRegistry,
-      connectionService,
-      eventEmitter,
-      messageSender,
-      featureRegistry
-    )
+    pickupProtocol = new V2MessagePickupProtocol()
   })
 
   describe('processStatusRequest', () => {
@@ -136,7 +130,7 @@ describe('V2MessagePickupService', () => {
 
   describe('processDeliveryRequest', () => {
     test('no available messages in queue', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue([])
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue([])
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 10 })
 
@@ -156,7 +150,7 @@ describe('V2MessagePickupService', () => {
     })
 
     test('less messages in queue than limit', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue(queuedMessages)
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 10 })
 
@@ -183,7 +177,7 @@ describe('V2MessagePickupService', () => {
     })
 
     test('more messages in queue than limit', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue(queuedMessages.slice(0, 2))
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue(queuedMessages.slice(0, 2))
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 2 })
 
@@ -210,7 +204,7 @@ describe('V2MessagePickupService', () => {
     })
 
     test('delivery request specifying recipient key', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue(queuedMessages)
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue(queuedMessages)
 
       const statusRequest = new V2DeliveryRequestMessage({
         limit: 10,
@@ -227,7 +221,7 @@ describe('V2MessagePickupService', () => {
 
   describe('processMessagesReceived', () => {
     test('messages received partially', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue(queuedMessages)
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue(queuedMessages)
       mockFunction(messageRepository.getAvailableMessageCount).mockResolvedValue(4)
 
       const messagesReceived = new V2MessagesReceivedMessage({
@@ -251,7 +245,7 @@ describe('V2MessagePickupService', () => {
     })
 
     test('all messages have been received', async () => {
-      mockFunction(messageRepository.takeFromQueue).mockResolvedValue(queuedMessages)
+      mockFunction(messageRepository.takeFromQueue).mockReturnValue(queuedMessages)
       mockFunction(messageRepository.getAvailableMessageCount).mockResolvedValue(0)
 
       const messagesReceived = new V2MessagesReceivedMessage({
@@ -276,9 +270,10 @@ describe('V2MessagePickupService', () => {
     })
   })
 
-  describe('createStatusRequest', () => {
+  describe('pickupMessages', () => {
     it('creates a status request message', async () => {
-      const statusRequestMessage = await pickupProtocol.createStatusRequest(mockConnection, {
+      const { message: statusRequestMessage } = await pickupProtocol.pickupMessages(agentContext, {
+        connectionRecord: mockConnection,
         recipientKey: 'a-key',
       })
 
@@ -361,6 +356,9 @@ describe('V2MessagePickupService', () => {
     })
 
     it('calls the event emitter for each message', async () => {
+      // This is to not take into account events previously emitted
+      jest.clearAllMocks()
+
       const messageDeliveryMessage = new V2MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
