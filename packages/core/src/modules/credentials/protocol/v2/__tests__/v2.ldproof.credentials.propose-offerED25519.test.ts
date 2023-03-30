@@ -322,7 +322,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       formats: [
         {
           attach_id: expect.any(String),
-          format: 'aries/ld-proof-vc@1.0',
+          format: 'aries/ld-proof-vc@v1.0',
         },
       ],
       'credentials~attach': [
@@ -593,7 +593,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         },
         {
           attach_id: expect.any(String),
-          format: 'aries/ld-proof-vc@1.0',
+          format: 'aries/ld-proof-vc@v1.0',
         },
       ],
       'credentials~attach': [
