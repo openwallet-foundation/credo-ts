@@ -14,6 +14,7 @@ import type {
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
 import {
+  WalletExportPathExistsError,
   WalletKeyExistsError,
   isValidSeed,
   isValidPrivateKey,
@@ -317,6 +318,13 @@ export class AskarWallet implements Wallet {
       // Close this wallet before copying
       await this.close()
 
+      // Export path already exists
+      if (await this.fileSystem.exists(destinationPath)) {
+        throw new WalletExportPathExistsError(
+          `Unable to create export, wallet export at path '${exportConfig.path}' already exists`
+        )
+      }
+
       // Copy wallet to the destination path
       await this.fileSystem.copyFile(sourcePath, destinationPath)
 
@@ -332,6 +340,8 @@ export class AskarWallet implements Wallet {
 
       await this._open(this.walletConfig)
     } catch (error) {
+      if (error instanceof WalletExportPathExistsError) throw error
+
       const errorMessage = `Error exporting wallet '${this.walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
         error,

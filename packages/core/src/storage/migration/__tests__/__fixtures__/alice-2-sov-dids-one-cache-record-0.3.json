@@ -1,0 +1,87 @@
+{
+  "STORAGE_VERSION_RECORD_ID": {
+    "value": {
+      "_tags": {},
+      "metadata": {},
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "createdAt": "2023-03-18T18:35:02.888Z",
+      "storageVersion": "0.3.1",
+      "updatedAt": "2023-03-18T18:35:02.888Z"
+    },
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "type": "StorageVersionRecord",
+    "tags": {}
+  },
+  "DID_POOL_CACHE": {
+    "value": {
+      "metadata": {},
+      "id": "DID_POOL_CACHE",
+      "createdAt": "2023-03-18T18:53:44.165Z",
+      "entries": [
+        {
+          "key": "A4CYPASJYRZRt98YWrac3H",
+          "value": {
+            "nymResponse": {
+              "did": "A4CYPASJYRZRt98YWrac3H",
+              "verkey": "5wFaN9wUdLipt6rFjhep9pp2aanJKqe5MywkEAHqhRNS",
+              "role": "101"
+            },
+            "poolId": "bcovrin:test2"
+          }
+        }
+      ],
+      "updatedAt": "2023-03-18T18:53:44.166Z"
+    },
+    "id": "DID_POOL_CACHE",
+    "type": "CacheRecord",
+    "tags": {}
+  },
+  "8168612b-73d1-4917-9a61-84e8102988f0": {
+    "value": {
+      "_tags": {
+        "recipientKeyFingerprints": [],
+        "qualifiedIndyDid": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k"
+      },
+      "metadata": {},
+      "id": "8168612b-73d1-4917-9a61-84e8102988f0",
+      "did": "did:sov:8DFqUo6UtQLLZETE7Gm29k",
+      "role": "created",
+      "createdAt": "2023-03-18T18:35:04.191Z",
+      "updatedAt": "2023-03-18T18:35:04.191Z"
+    },
+    "id": "8168612b-73d1-4917-9a61-84e8102988f0",
+    "type": "DidRecord",
+    "tags": {
+      "recipientKeyFingerprints": [],
+      "qualifiedIndyDid": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
+      "role": "created",
+      "method": "sov",
+      "did": "did:sov:8DFqUo6UtQLLZETE7Gm29k",
+      "methodSpecificIdentifier": "8DFqUo6UtQLLZETE7Gm29k"
+    }
+  },
+  "4993c740-5cd9-4c79-a7d8-23d1266d31be": {
+    "value": {
+      "_tags": {
+        "recipientKeyFingerprints": [],
+        "qualifiedIndyDid": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c"
+      },
+      "metadata": {},
+      "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
+      "did": "did:sov:Pow4pdnPgTS7JAXvWkoF2c",
+      "role": "created",
+      "createdAt": "2023-03-18T18:35:07.208Z",
+      "updatedAt": "2023-03-18T18:35:07.208Z"
+    },
+    "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
+    "type": "DidRecord",
+    "tags": {
+      "recipientKeyFingerprints": [],
+      "qualifiedIndyDid": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
+      "role": "created",
+      "method": "sov",
+      "did": "did:sov:Pow4pdnPgTS7JAXvWkoF2c",
+      "methodSpecificIdentifier": "Pow4pdnPgTS7JAXvWkoF2c"
+    }
+  }
+}
