@@ -11,6 +11,7 @@ import type {
 import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {
+  AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsLinkSecretRecord,
   AnonCredsCredentialRecord,
@@ -21,6 +22,7 @@ import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsCredentialRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
+import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
@@ -53,6 +55,12 @@ const agentContext = getAgentContext({
     [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
     [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
+    [
+      AnonCredsModuleConfig,
+      new AnonCredsModuleConfig({
+        registries: [new InMemoryAnonCredsRegistry({})],
+      }),
+    ],
   ],
   agentConfig,
 })
@@ -219,6 +227,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     getByCredentialIdMock.mockResolvedValueOnce(
@@ -230,6 +239,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -436,6 +446,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -466,6 +477,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     expect(
@@ -502,6 +514,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       }),
     ])
 
@@ -512,6 +525,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
       issuerId: 'issuerDid',
+      methodName: 'inMemory',
     })
 
     expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
@@ -521,6 +535,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
       issuerId: 'issuerDid',
+      methodName: 'inMemory',
     })
     expect(credentialInfo).toMatchObject([
       {
