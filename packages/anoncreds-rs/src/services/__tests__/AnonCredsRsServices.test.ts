@@ -1,6 +1,7 @@
 import type { AnonCredsProofRequest } from '@aries-framework/anoncreds'
 
 import {
+  AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
@@ -43,6 +44,12 @@ const agentContext = getAgentContext({
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
+    [
+      AnonCredsModuleConfig,
+      new AnonCredsModuleConfig({
+        registries: [registry],
+      }),
+    ],
   ],
   agentConfig,
 })
@@ -96,6 +103,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
       new AnonCredsSchemaRecord({
         schema: schemaState.schema,
         schemaId: schemaState.schemaId,
+        methodName: 'inMemory',
       })
     )
 
@@ -104,6 +112,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
       new AnonCredsCredentialDefinitionRecord({
         credentialDefinition: credentialDefinitionState.credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'inMemory',
       })
     )
 
@@ -180,6 +189,7 @@ describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: undefined, // Should it be null in this case?
+      methodName: 'inMemory',
     })
 
     const proofRequest: AnonCredsProofRequest = {

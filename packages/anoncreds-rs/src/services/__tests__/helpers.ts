@@ -158,6 +158,7 @@ export function createCredentialForHolder(options: {
     credentialDefinitionId,
     credentialId,
     schemaId,
+    methodName: 'inMemory',
   }
   const returnObj = {
     credential: credentialObj.toJson() as unknown as AnonCredsCredential,

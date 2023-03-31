@@ -362,6 +362,7 @@ Object {
     "tags": Object {
       "credentialDefinitionId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/CLAIM_DEF/728266/TAG2222",
       "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
+      "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/AnotherSchema/5.12",
       "tag": "TAG2222",
     },
@@ -403,6 +404,7 @@ Object {
       "credentialDefinitionId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/CLAIM_DEF/728266/TAG2222",
       "id": "1545e17d-fc88-4020-a1f7-e6dbcf1e5266",
       "metadata": Object {},
+      "methodName": "indy",
       "updatedAt": "2023-03-19T22:50:20.522Z",
     },
   },
@@ -458,6 +460,7 @@ Object {
     "tags": Object {
       "credentialDefinitionId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/CLAIM_DEF/728265/TAG",
       "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
+      "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/Test Schema/5.0",
       "tag": "TAG",
     },
@@ -485,6 +488,7 @@ Object {
       "credentialDefinitionId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/CLAIM_DEF/728265/TAG",
       "id": "6ef35f59-a732-42f0-9c5e-4540cd3a672f",
       "metadata": Object {},
+      "methodName": "indy",
       "updatedAt": "2023-03-19T22:50:20.522Z",
     },
   },
@@ -690,6 +694,7 @@ Object {
     "id": "de4c170b-b277-4220-b9dc-7e645ff4f041",
     "tags": Object {
       "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
+      "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/AnotherSchema/5.12",
       "schemaIssuerDid": undefined,
       "schemaName": "AnotherSchema",
@@ -699,6 +704,7 @@ Object {
     "value": Object {
       "id": "de4c170b-b277-4220-b9dc-7e645ff4f041",
       "metadata": Object {},
+      "methodName": "indy",
       "schema": Object {
         "attrNames": Array [
           "name",
@@ -786,6 +792,7 @@ Object {
     "id": "fcdba9cd-3132-4e46-9677-f78c5a146cf0",
     "tags": Object {
       "issuerId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H",
+      "methodName": "indy",
       "schemaId": "did:indy:bcovrin:test:A4CYPASJYRZRt98YWrac3H/anoncreds/v0/SCHEMA/Test Schema/5.0",
       "schemaIssuerDid": undefined,
       "schemaName": "Test Schema",
@@ -795,6 +802,7 @@ Object {
     "value": Object {
       "id": "fcdba9cd-3132-4e46-9677-f78c5a146cf0",
       "metadata": Object {},
+      "methodName": "indy",
       "schema": Object {
         "attrNames": Array [
           "name",
