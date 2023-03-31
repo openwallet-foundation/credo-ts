@@ -24,4 +24,8 @@ export class AnonCredsRevocationRegistryDefinitionRepository extends Repository<
   ) {
     return this.findSingleByQuery(agentContext, { revocationRegistryDefinitionId })
   }
+
+  public async findAllByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
+    return this.findByQuery(agentContext, { credentialDefinitionId })
+  }
 }

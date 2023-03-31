@@ -9,6 +9,18 @@ export interface AnonCredsModuleConfigOptions {
    * A list of AnonCreds registries to make available to the AnonCreds module.
    */
   registries: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+
+  /**
+   * Maximum credential number per revocation registry
+   * @default 1000
+   */
+  maximumCredentialNumberPerRevocationRegistry?: number
+
+  /**
+   * Maximum credential number per revocation registry
+   * @default agent's data path
+   */
+  tailsDirectoryPath?: string
 }
 
 /**
@@ -24,5 +36,15 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.registries} */
   public get registries() {
     return this.options.registries
+  }
+
+  /** See {@link AnonCredsModuleConfigOptions.maximumCredentialNumberPerRevocationRegistry} */
+  public get maximumCredentialNumberPerRevocationRegistry() {
+    return this.options.maximumCredentialNumberPerRevocationRegistry ?? 1000
+  }
+
+  /** See {@link AnonCredsModuleConfigOptions.tailsDirectoryPath} */
+  public get tailsDirectoryPath() {
+    return this.options.tailsDirectoryPath
   }
 }

@@ -1,4 +1,4 @@
-import type { AnonCredsCredentialDefinition } from './models'
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from './models'
 
 export interface AnonCredsCreateLinkSecretOptions {
   linkSecretId?: string
@@ -19,4 +19,11 @@ export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
   credentialDefinition: AnonCredsCredentialDefinition
   tailsDirectoryPath: string
   maximumCredentialNumber: number
+}
+
+export interface AnonCredsRegisterRevocationStatusListOptions {
+  issuerId: string
+  issuanceByDefault: true
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+  revocationRegistryDefinitionId: string
 }

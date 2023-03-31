@@ -2,6 +2,13 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
+export enum RevocationRegistryState {
+  Created = 'created',
+  Published = 'published',
+  Active = 'active',
+  Full = 'full',
+}
+
 export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   id?: string
   revocationRegistryDefinitionId: string
@@ -11,6 +18,7 @@ export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
 
 export type DefaultAnonCredsRevocationRegistryPrivateTags = {
   revocationRegistryDefinitionId: string
+  state: RevocationRegistryState
 }
 
 export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseRecord<
@@ -24,6 +32,9 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
   public readonly value!: Record<string, unknown> // TODO: Define structure
 
   public currentIndex!: number
+
+  public state!: RevocationRegistryState
+
   public constructor(props: AnonCredsRevocationRegistryDefinitionPrivateRecordProps) {
     super()
 
@@ -32,6 +43,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
       this.value = props.value
       this.currentIndex = props.index ?? 0
+      this.state = RevocationRegistryState.Created
     }
   }
 
@@ -39,6 +51,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
     return {
       ...this._tags,
       revocationRegistryDefinitionId: this.revocationRegistryDefinitionId,
+      state: this.state,
     }
   }
 }

@@ -1,3 +1,4 @@
+import type { AnonCredsRevocationRegistryDefinitionRecordMetadata } from './anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 import type { AnonCredsRevocationRegistryDefinition } from '../models'
 import type { TagsBase } from '@aries-framework/core'
 
@@ -12,11 +13,13 @@ export interface AnonCredsRevocationRegistryDefinitionRecordProps {
 
 export type DefaultAnonCredsRevocationRegistryDefinitionTags = {
   revocationRegistryDefinitionId: string
+  credentialDefinitionId: string
 }
 
 export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<
   DefaultAnonCredsRevocationRegistryDefinitionTags,
-  TagsBase
+  TagsBase,
+  AnonCredsRevocationRegistryDefinitionRecordMetadata
 > {
   public static readonly type = 'AnonCredsRevocationRegistryDefinitionRecord'
   public readonly type = AnonCredsRevocationRegistryDefinitionRecord.type
@@ -40,6 +43,7 @@ export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<
     return {
       ...this._tags,
       revocationRegistryDefinitionId: this.revocationRegistryDefinitionId,
+      credentialDefinitionId: this.revocationRegistryDefinition.credDefId,
     }
   }
 }

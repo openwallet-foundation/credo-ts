@@ -2,6 +2,7 @@ import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
+  AnonCredsRegisterRevocationStatusListOptions,
 } from './AnonCredsApiOptions'
 import type {
   GetCredentialDefinitionReturn,
@@ -14,6 +15,7 @@ import type {
   AnonCredsRegistry,
   GetCredentialsOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
 import type { SimpleQuery } from '@aries-framework/core'
@@ -33,15 +35,15 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
+  AnonCredsRevocationStatusListRecord,
+  AnonCredsRevocationStatusListRepository,
 } from './repository'
 import { AnonCredsCredentialDefinitionRecord } from './repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRecord } from './repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
-import {
-  AnonCredsCredentialDefinitionRecordMetadataKeys,
-  AnonCredsCredentialDefinitionRecordMetadataKeys as AnonCredsRevocationRegistryDefinitionRecordMetadataKeys,
-} from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
+import { AnonCredsCredentialDefinitionRecordMetadataKeys } from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
+import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from './repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -61,6 +63,7 @@ export class AnonCredsApi {
   private anonCredsCredentialDefinitionPrivateRepository: AnonCredsCredentialDefinitionPrivateRepository
   private anonCredsRevocationRegistryDefinitionRepository: AnonCredsRevocationRegistryDefinitionRepository
   private anonCredsRevocationRegistryDefinitionPrivateRepository: AnonCredsRevocationRegistryDefinitionPrivateRepository
+  private anonCredsRevocationStatusListRepository: AnonCredsRevocationStatusListRepository
   private anonCredsKeyCorrectnessProofRepository: AnonCredsKeyCorrectnessProofRepository
   private anonCredsLinkSecretRepository: AnonCredsLinkSecretRepository
   private anonCredsIssuerService: AnonCredsIssuerService
@@ -73,6 +76,7 @@ export class AnonCredsApi {
     @inject(AnonCredsIssuerServiceSymbol) anonCredsIssuerService: AnonCredsIssuerService,
     @inject(AnonCredsHolderServiceSymbol) anonCredsHolderService: AnonCredsHolderService,
     anonCredsSchemaRepository: AnonCredsSchemaRepository,
+    anonCredsRevocationStatusListRepository: AnonCredsRevocationStatusListRepository,
     anonCredsRevocationRegistryDefinitionRepository: AnonCredsRevocationRegistryDefinitionRepository,
     anonCredsRevocationRegistryDefinitionPrivateRepository: AnonCredsRevocationRegistryDefinitionPrivateRepository,
     anonCredsCredentialDefinitionRepository: AnonCredsCredentialDefinitionRepository,
@@ -88,6 +92,7 @@ export class AnonCredsApi {
     this.anonCredsSchemaRepository = anonCredsSchemaRepository
     this.anonCredsRevocationRegistryDefinitionRepository = anonCredsRevocationRegistryDefinitionRepository
     this.anonCredsRevocationRegistryDefinitionPrivateRepository = anonCredsRevocationRegistryDefinitionPrivateRepository
+    this.anonCredsRevocationStatusListRepository = anonCredsRevocationStatusListRepository
     this.anonCredsCredentialDefinitionRepository = anonCredsCredentialDefinitionRepository
     this.anonCredsCredentialDefinitionPrivateRepository = anonCredsCredentialDefinitionPrivateRepository
     this.anonCredsKeyCorrectnessProofRepository = anonCredsKeyCorrectnessProofRepository
@@ -289,6 +294,32 @@ export class AnonCredsApi {
 
       await this.storeCredentialDefinitionRecord(registry, result, credentialDefinitionPrivate, keyCorrectnessProof)
 
+      // If it supports revocation, create the first revocation registry definition
+      if (options.credentialDefinition.supportRevocation && result.credentialDefinitionState.credentialDefinitionId) {
+        const { revocationRegistryDefinitionState } = await this.registerRevocationRegistryDefinition({
+          credentialDefinition,
+          credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+          issuerId: options.credentialDefinition.issuerId,
+          maximumCredentialNumber: this.config.maximumCredentialNumberPerRevocationRegistry,
+          tailsDirectoryPath:
+            this.config.tailsDirectoryPath ?? new this.agentContext.config.agentDependencies.FileSystem().dataPath,
+          tag: '', // TODO: define tags
+        })
+
+        if (
+          revocationRegistryDefinitionState.revocationRegistryDefinition &&
+          revocationRegistryDefinitionState.revocationRegistryDefinitionId
+        ) {
+          // Create and register an initial revocation status list
+          await this.registerRevocationStatusList({
+            issuanceByDefault: true,
+            issuerId: options.credentialDefinition.issuerId,
+            revocationRegistryDefinition: revocationRegistryDefinitionState.revocationRegistryDefinition,
+            revocationRegistryDefinitionId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
+          })
+        }
+      }
+
       return result
     } catch (error) {
       // Storage failed
@@ -427,6 +458,54 @@ export class AnonCredsApi {
     }
   }
 
+  public async registerRevocationStatusList(
+    options: AnonCredsRegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    const { issuanceByDefault, issuerId, revocationRegistryDefinition, revocationRegistryDefinitionId } = options
+
+    const failedReturnBase = {
+      revocationStatusListState: {
+        state: 'failed' as const,
+        reason: `Error registering revocation status list for issuerId ${options.issuerId}`,
+      },
+      registrationMetadata: {},
+      revocationStatusListMetadata: {},
+    }
+
+    const registry = this.findRegistryForIdentifier(options.issuerId)
+    if (!registry) {
+      failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No registry found for issuerId ${options.issuerId}`
+      return failedReturnBase
+    }
+
+    try {
+      const { revocationStatusList } = await this.anonCredsIssuerService.createRevocationStatusList(this.agentContext, {
+        issuanceByDefault,
+        issuerId,
+        revocationRegistryDefinition,
+        revocationRegistryDefinitionId,
+      })
+
+      const result = await registry.registerRevocationStatusList(this.agentContext, {
+        revocationStatusList,
+        options: {},
+      })
+
+      await this.storeRevocationStatusListRecord(result, options.revocationRegistryDefinition.credDefId)
+
+      return result
+    } catch (error) {
+      // Storage failed
+      if (error instanceof AnonCredsStoreRecordError) {
+        failedReturnBase.revocationStatusListState.reason = `Error storing revocation status list records: ${error.message}`
+        return failedReturnBase
+      }
+
+      failedReturnBase.revocationStatusListState.reason = `Error registering revocation status list: ${error.message}`
+      return failedReturnBase
+    }
+  }
+
   public async getCredential(credentialId: string) {
     return this.anonCredsHolderService.getCredential(this.agentContext, { credentialId })
   }
@@ -458,11 +537,11 @@ export class AnonCredsApi {
         // the indyLedgerSeqNo and the didIndyNamespace, but it can get quite big if complete transactions
         // are stored in the metadata
         revocationRegistryDefinitionRecord.metadata.set(
-          AnonCredsRevocationRegistryDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
+          AnonCredsRevocationRegistryDefinitionRecordMetadataKeys.RevocationRegistryDefinitionMetadata,
           result.revocationRegistryDefinitionMetadata
         )
         revocationRegistryDefinitionRecord.metadata.set(
-          AnonCredsRevocationRegistryDefinitionRecordMetadataKeys.CredentialDefinitionRegistrationMetadata,
+          AnonCredsRevocationRegistryDefinitionRecordMetadataKeys.RevocationRegistryDefinitionRegistrationMetadata,
           result.registrationMetadata
         )
 
@@ -485,6 +564,24 @@ export class AnonCredsApi {
       }
     } catch (error) {
       throw new AnonCredsStoreRecordError(`Error storing revocation registry definition records`, { cause: error })
+    }
+  }
+
+  private async storeRevocationStatusListRecord(
+    result: RegisterRevocationStatusListReturn,
+    credentialDefinitionId: string
+  ): Promise<void> {
+    try {
+      if (result.revocationStatusListState.revocationStatusList && result.revocationStatusListState.timestamp) {
+        const revocationStatusListRecord = new AnonCredsRevocationStatusListRecord({
+          revocationStatusList: result.revocationStatusListState.revocationStatusList,
+          credentialDefinitionId,
+        })
+
+        await this.anonCredsRevocationStatusListRepository.save(this.agentContext, revocationStatusListRecord)
+      }
+    } catch (error) {
+      throw new AnonCredsStoreRecordError(`Error storing revocation status list record`, { cause: error })
     }
   }
 

@@ -11,9 +11,12 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationListOptions,
+  RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
+import { AriesFrameworkError } from '@aries-framework/core'
 import {
   GetSchemaRequest,
   SchemaRequest,
@@ -692,6 +695,13 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    options: RegisterRevocationListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    throw new AriesFrameworkError('Not implemented!')
   }
 
   private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, seqNo: number, did: string) {

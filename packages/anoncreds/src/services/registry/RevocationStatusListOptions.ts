@@ -17,6 +17,7 @@ export interface RegisterRevocationListOptions {
   // Timestamp is often calculated by the ledger, otherwise method should just take current time
   // Return type does include the timestamp.
   revocationStatusList: Omit<AnonCredsRevocationStatusList, 'timestamp'>
+  options: Extensible
 }
 
 export interface RegisterRevocationStatusListReturnStateFailed extends AnonCredsOperationStateFailed {

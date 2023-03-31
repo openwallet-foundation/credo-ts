@@ -10,11 +10,13 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
-  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
+
+import { AriesFrameworkError } from '@aries-framework/core'
 
 import { parseIndyDid, verificationKeyForIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
@@ -468,7 +470,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationRegistryDefinition(): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    throw new Error('Method not implemented.')
+    throw new AriesFrameworkError('Not implemented!')
   }
 
   public async getRevocationStatusList(
@@ -570,6 +572,10 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         revocationStatusListMetadata: {},
       }
     }
+  }
+
+  public async registerRevocationStatusList(): Promise<RegisterRevocationStatusListReturn> {
+    throw new AriesFrameworkError('Not implemented!')
   }
 
   private async fetchIndySchemaWithSeqNo(agentContext: AgentContext, pool: IndySdkPool, seqNo: number) {

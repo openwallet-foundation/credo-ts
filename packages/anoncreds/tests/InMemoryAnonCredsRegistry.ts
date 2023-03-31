@@ -15,6 +15,8 @@ import type {
   AnonCredsCredentialDefinition,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
+  RegisterRevocationListOptions as RegisterRevocationStatusListOptions,
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -320,6 +322,28 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       resolutionMetadata: {},
       revocationStatusList: revocationStatusLists[timestamp],
       revocationStatusListMetadata: {},
+    }
+  }
+
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    options: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    const timestamp = (options.options.timestamp as number) ?? new Date().getTime()
+    const revocationStatusList = {
+      ...options.revocationStatusList,
+      timestamp,
+    } satisfies AnonCredsRevocationStatusList
+    this.revocationStatusLists[options.revocationStatusList.revRegId][timestamp.toString()] = revocationStatusList
+
+    return {
+      registrationMetadata: {},
+      revocationStatusListMetadata: {},
+      revocationStatusListState: {
+        state: 'finished',
+        revocationStatusList,
+        timestamp: timestamp.toString(),
+      },
     }
   }
 }
