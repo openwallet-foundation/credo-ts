@@ -6,14 +6,14 @@
  *
  * MUST be used with {@link AnonCredsCredentialMetadata}
  */
-export const AnonCredsCredentialMetadataKey = '_anonCreds/anonCredsCredential'
+export const AnonCredsCredentialMetadataKey = '_anoncreds/credential'
 
 /**
  * Metadata key for strong metadata on an AnonCreds credential request.
  *
  * MUST be used with {@link AnonCredsCredentialRequestMetadata}
  */
-export const AnonCredsCredentialRequestMetadataKey = '_anonCreds/anonCredsCredentialRequest'
+export const AnonCredsCredentialRequestMetadataKey = '_anoncreds/credentialRequest'
 
 /**
  * Metadata for an AnonCreds credential that will be stored

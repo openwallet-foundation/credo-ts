@@ -11,17 +11,10 @@ import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 
-const recipientOptions = getAgentOptions(
-  'Mediation: Recipient Pickup',
-  {
-    autoAcceptConnections: true,
-  },
-  getIndySdkModules()
-)
+const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
 const mediatorOptions = getAgentOptions(
   'Mediation: Mediator Pickup',
   {
-    autoAcceptConnections: true,
     endpoints: ['wss://mediator'],
   },
   getIndySdkModules()

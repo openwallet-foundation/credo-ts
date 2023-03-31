@@ -11,10 +11,12 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
+  AnonCredsRegistry,
   GetCredentialsOptions,
   RegisterRevocationRegistryDefinitionReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
+import type { SimpleQuery } from '@aries-framework/core'
 
 import { AgentContext, inject, injectable } from '@aries-framework/core'
 
@@ -178,7 +180,7 @@ export class AnonCredsApi {
 
     try {
       const result = await registry.registerSchema(this.agentContext, options)
-      await this.storeSchemaRecord(result)
+      await this.storeSchemaRecord(registry, result)
 
       return result
     } catch (error) {
@@ -192,6 +194,10 @@ export class AnonCredsApi {
       failedReturnBase.schemaState.reason = `Error registering schema: ${error.message}`
       return failedReturnBase
     }
+  }
+
+  public async getCreatedSchemas(query: SimpleQuery<AnonCredsSchemaRecord>) {
+    return this.anonCredsSchemaRepository.findByQuery(this.agentContext, query)
   }
 
   /**
@@ -281,7 +287,7 @@ export class AnonCredsApi {
         options: {},
       })
 
-      await this.storeCredentialDefinitionRecord(result, credentialDefinitionPrivate, keyCorrectnessProof)
+      await this.storeCredentialDefinitionRecord(registry, result, credentialDefinitionPrivate, keyCorrectnessProof)
 
       return result
     } catch (error) {
@@ -347,6 +353,10 @@ export class AnonCredsApi {
       failedReturnBase.revocationRegistryDefinitionState.reason = `Error registering revocation registry definition: ${error.message}`
       return failedReturnBase
     }
+  }
+
+  public async getCreatedCredentialDefinitions(query: SimpleQuery<AnonCredsCredentialDefinitionRecord>) {
+    return this.anonCredsCredentialDefinitionRepository.findByQuery(this.agentContext, query)
   }
 
   /**
@@ -479,6 +489,7 @@ export class AnonCredsApi {
   }
 
   private async storeCredentialDefinitionRecord(
+    registry: AnonCredsRegistry,
     result: RegisterCredentialDefinitionReturn,
     credentialDefinitionPrivate?: Record<string, unknown>,
     keyCorrectnessProof?: Record<string, unknown>
@@ -493,6 +504,7 @@ export class AnonCredsApi {
         const credentialDefinitionRecord = new AnonCredsCredentialDefinitionRecord({
           credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
           credentialDefinition: result.credentialDefinitionState.credentialDefinition,
+          methodName: registry.methodName,
         })
 
         // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
@@ -534,7 +546,7 @@ export class AnonCredsApi {
     }
   }
 
-  private async storeSchemaRecord(result: RegisterSchemaReturn): Promise<void> {
+  private async storeSchemaRecord(registry: AnonCredsRegistry, result: RegisterSchemaReturn): Promise<void> {
     try {
       // If we have both the schema and the schemaId we will store a copy of the schema. We may need to handle an
       // edge case in the future where we e.g. don't have the id yet, and it is registered through a different channel
@@ -542,6 +554,7 @@ export class AnonCredsApi {
         const schemaRecord = new AnonCredsSchemaRecord({
           schemaId: result.schemaState.schemaId,
           schema: result.schemaState.schema,
+          methodName: registry.methodName,
         })
 
         await this.anonCredsSchemaRepository.save(this.agentContext, schemaRecord)

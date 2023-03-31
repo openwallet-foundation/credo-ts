@@ -67,6 +67,7 @@ export interface GetCredentialsOptions {
   schemaName: string
   schemaVersion: string
   issuerId: string
+  methodName: string
 }
 
 // TODO: Maybe we can make this a bit more specific?

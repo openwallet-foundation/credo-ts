@@ -28,7 +28,7 @@ import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidKey } from '../../dids'
 import { didKeyToVerkey, isDidKey } from '../../dids/helpers'
 import { ProblemReportError } from '../../problem-reports'
-import { RecipientModuleConfig } from '../RecipientModuleConfig'
+import { MediationRecipientModuleConfig } from '../MediationRecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
 import { RoutingProblemReportReason } from '../error'
 import {
@@ -49,20 +49,20 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private recipientModuleConfig: RecipientModuleConfig
+  private mediationRecipientModuleConfig: MediationRecipientModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter,
-    recipientModuleConfig: RecipientModuleConfig
+    mediationRecipientModuleConfig: MediationRecipientModuleConfig
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.recipientModuleConfig = recipientModuleConfig
+    this.mediationRecipientModuleConfig = mediationRecipientModuleConfig
   }
 
   public async createStatusRequest(
@@ -344,7 +344,7 @@ export class MediationRecipientService {
 
       return null
     }
-    const { maximumMessagePickup } = this.recipientModuleConfig
+    const { maximumMessagePickup } = this.mediationRecipientModuleConfig
     const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
 
     const deliveryRequestMessage = new DeliveryRequestMessage({
