@@ -47,7 +47,7 @@ export class MediationRecipientService {
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter,
+    eventEmitter: EventEmitter
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
