@@ -76,8 +76,8 @@ import {
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent =
-  | Agent<ReturnType<typeof getLegacyAnonCredsModules>>
-  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
+  | Agent<ReturnType<typeof getLegacyAnonCredsModules> & { mediationRecipient?: any; mediator?: any }>
+  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }>
 
 export const getLegacyAnonCredsModules = ({
   autoAcceptCredentials,

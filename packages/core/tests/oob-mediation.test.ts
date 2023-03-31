@@ -18,6 +18,8 @@ import {
   KeylistUpdateAction,
   MediationState,
   MediatorPickupStrategy,
+  MediationRecipientModule,
+  MediatorModule,
 } from '../src/modules/routing'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
@@ -33,19 +35,22 @@ const aliceAgentOptions = getAgentOptions(
   'OOB mediation - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
-    // FIXME: discover features returns that we support this protocol, but we don't support all roles
-    // we should return that we only support the mediator role so we don't have to explicitly declare this
-    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  getIndySdkModules()
+  {
+    ...getIndySdkModules(),
+    mediationRecipient: new MediationRecipientModule({
+      // FIXME: discover features returns that we support this protocol, but we don't support all roles
+      // we should return that we only support the mediator role so we don't have to explicitly declare this
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    }),
+  }
 )
 const mediatorAgentOptions = getAgentOptions(
   'OOB mediation - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
-    autoAcceptMediationRequests: true,
   },
-  getIndySdkModules()
+  { ...getIndySdkModules(), mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
 describe('out of band with mediation', () => {

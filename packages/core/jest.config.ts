@@ -8,7 +8,6 @@ process.env.TZ = 'GMT'
 
 const config: Config.InitialOptions = {
   ...base,
-  name: packageJson.name,
   displayName: packageJson.name,
   setupFilesAfterEnv: ['./tests/setup.ts'],
 }
