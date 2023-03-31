@@ -70,6 +70,7 @@ export async function migrateAnonCredsCredentialDefinitionRecordToV0_4<Agent ext
 
     credentialDefinitionRecord.credentialDefinition = newCredentialDefinition
     credentialDefinitionRecord.credentialDefinitionId = oldCredentialDefinition.id
+    credentialDefinitionRecord.methodName = 'indy'
 
     // Save updated credentialDefinition record
     await credentialDefinitionRepository.update(agent.context, credentialDefinitionRecord)
