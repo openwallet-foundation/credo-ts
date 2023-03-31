@@ -13,14 +13,21 @@ export interface ConnectionsModuleConfigOptions {
 }
 
 export class ConnectionsModuleConfig {
+  #autoAcceptConnections?: boolean
   private options: ConnectionsModuleConfigOptions
 
   public constructor(options?: ConnectionsModuleConfigOptions) {
     this.options = options ?? {}
+    this.#autoAcceptConnections = this.options.autoAcceptConnections
   }
 
   /** See {@link ConnectionsModuleConfigOptions.autoAcceptConnections} */
   public get autoAcceptConnections() {
-    return this.options.autoAcceptConnections ?? false
+    return this.#autoAcceptConnections ?? false
+  }
+
+  /** See {@link ConnectionsModuleConfigOptions.autoAcceptConnections} */
+  public set autoAcceptConnections(autoAcceptConnections: boolean) {
+    this.#autoAcceptConnections = autoAcceptConnections
   }
 }

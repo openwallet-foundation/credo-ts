@@ -9,6 +9,7 @@ import { setupSubjectTransports } from '../../../../tests'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ConnectionEventTypes } from '../ConnectionEvents'
+import { ConnectionsModule } from '../ConnectionsModule'
 import { DidExchangeState } from '../models'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
@@ -49,27 +50,39 @@ describe('Manual Connection Flow', () => {
       'Manual Connection Flow Alice',
       {
         label: 'alice',
-        autoAcceptConnections: false,
         endpoints: ['rxjs:alice'],
       },
-      getIndySdkModules()
+      {
+        ...getIndySdkModules(),
+        connections: new ConnectionsModule({
+          autoAcceptConnections: false,
+        }),
+      }
     )
     const bobAgentOptions = getAgentOptions(
       'Manual Connection Flow Bob',
       {
         label: 'bob',
-        autoAcceptConnections: false,
         endpoints: ['rxjs:bob'],
       },
-      getIndySdkModules()
+      {
+        ...getIndySdkModules(),
+        connections: new ConnectionsModule({
+          autoAcceptConnections: false,
+        }),
+      }
     )
     const faberAgentOptions = getAgentOptions(
       'Manual Connection Flow Faber',
       {
-        autoAcceptConnections: false,
         endpoints: ['rxjs:faber'],
       },
-      getIndySdkModules()
+      {
+        ...getIndySdkModules(),
+        connections: new ConnectionsModule({
+          autoAcceptConnections: false,
+        }),
+      }
     )
 
     const aliceAgent = new Agent(aliceAgentOptions)

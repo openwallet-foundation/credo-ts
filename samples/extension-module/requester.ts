@@ -7,6 +7,7 @@ import {
   ConsoleLogger,
   LogLevel,
   WsOutboundTransport,
+  ConnectionsModule,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
@@ -28,10 +29,12 @@ const run = async () => {
         key: 'requester',
       },
       logger: new ConsoleLogger(LogLevel.info),
-      autoAcceptConnections: true,
     },
     modules: {
       dummy: new DummyModule(),
+      connections: new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
     },
     dependencies: agentDependencies,
   })
