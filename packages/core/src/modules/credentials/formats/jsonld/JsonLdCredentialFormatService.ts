@@ -356,6 +356,10 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       )
     }
 
+    if (credential.proof.type !== request.options.proofType) {
+      throw new AriesFrameworkError('Received credential proof type does not match proof type from credential request')
+    }
+
     if (credential.proof.proofPurpose !== request.options.proofPurpose) {
       throw new AriesFrameworkError(
         'Received credential proof purpose does not match proof purpose from credential request'
