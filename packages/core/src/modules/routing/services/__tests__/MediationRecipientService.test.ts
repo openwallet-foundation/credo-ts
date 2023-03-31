@@ -97,8 +97,7 @@ describe('MediationRecipientService', () => {
       connectionService,
       messageSender,
       mediationRepository,
-      eventEmitter,
-      new MediationRecipientModuleConfig()
+      eventEmitter
     )
   })
 
