@@ -1,12 +1,9 @@
-import type { AgentContext } from '../../../agent'
-
 import { IndySdkModule } from '../../../../../indy-sdk/src'
 import { getAgentOptions, indySdk } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { JsonTransformer } from '../../../utils'
-import { W3cCredentialsService } from '../W3cCredentialsService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'
+import { W3cCredentialsService } from '../W3cCredentialsService'
 import { W3cVerifiableCredential } from '../models'
 import { W3cCredentialsRepository } from '../repository'
 

@@ -9,8 +9,8 @@ import {
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
 import { W3cVcApi } from './W3cCredentialsApi'
-import { W3cCredentialsService } from './W3cCredentialsService'
 import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
+import { W3cCredentialsService } from './W3cCredentialsService'
 import { W3cCredentialsRepository } from './repository/W3cCredentialsRepository'
 import { Ed25519Signature2018 } from './signature-suites'
 

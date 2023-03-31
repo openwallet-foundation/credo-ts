@@ -1,4 +1,4 @@
-import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository'
+import type { W3cCredentialsRepository } from '../../core/src/modules/vc/repository'
 import type { AgentContext, Wallet } from '@aries-framework/core'
 
 import {
@@ -8,7 +8,7 @@ import {
   DidKey,
   SigningProviderRegistry,
   W3cVerifiableCredential,
-  W3cCredentialService,
+  W3cCredentialsService,
   W3cCredential,
   CredentialIssuancePurpose,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
@@ -22,7 +22,7 @@ import {
 } from '@aries-framework/core'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
-import { W3cVcModuleConfig } from '../../core/src/modules/vc/W3cVcModuleConfig'
+import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndySdkWallet } from '../../indy-sdk/src'
@@ -63,7 +63,7 @@ const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
-  let w3cCredentialService: W3cCredentialService
+  let w3cCredentialService: W3cCredentialsService
   const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
@@ -74,10 +74,10 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
       agentConfig,
       wallet,
     })
-    w3cCredentialService = new W3cCredentialService(
-      {} as unknown as W3cCredentialRepository,
+    w3cCredentialService = new W3cCredentialsService(
+      {} as unknown as W3cCredentialsRepository,
       signatureSuiteRegistry,
-      new W3cVcModuleConfig({
+      new W3cCredentialsModuleConfig({
         documentLoader: customDocumentLoader,
       })
     )

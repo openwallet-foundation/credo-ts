@@ -15,8 +15,8 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids/domain/key-type/ed25519'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
-import { W3cCredentialsService } from '../W3cCredentialsService'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
+import { W3cCredentialsService } from '../W3cCredentialsService'
 import { orArrayToArray } from '../jsonldUtil'
 import jsonld from '../libraries/jsonld'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
