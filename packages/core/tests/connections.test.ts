@@ -5,6 +5,7 @@ import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
+  MediatorModule,
   Key,
   AgentEventTypes,
   KeylistUpdateMessage,
@@ -51,9 +52,13 @@ describe('connections', () => {
       'Mediator Agent Connections',
       {
         endpoints: ['rxjs:mediator'],
-        autoAcceptMediationRequests: true,
       },
-      getIndySdkModules()
+      {
+        ...getIndySdkModules(),
+        mediator: new MediatorModule({
+          autoAcceptMediationRequests: true,
+        }),
+      }
     )
 
     faberAgent = new Agent(faberAgentOptions)

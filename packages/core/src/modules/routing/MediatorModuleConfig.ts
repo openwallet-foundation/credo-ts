@@ -1,5 +1,5 @@
 /**
- * MediatorModuleConfigOptions defines the interface for the options of the RecipientModuleConfig class.
+ * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
 export interface MediatorModuleConfigOptions {
@@ -18,7 +18,7 @@ export class MediatorModuleConfig {
     this.options = options ?? {}
   }
 
-  /** See {@link RecipientModuleConfigOptions.autoAcceptMediationRequests} */
+  /** See {@link MediatorModuleConfigOptions.autoAcceptMediationRequests} */
   public get autoAcceptMediationRequests() {
     return this.options.autoAcceptMediationRequests ?? false
   }

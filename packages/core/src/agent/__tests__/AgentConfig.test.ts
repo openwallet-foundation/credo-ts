@@ -73,12 +73,10 @@ describe('AgentConfig', () => {
 
       const newAgentConfig = agentConfig.extend({
         label: 'anotherLabel',
-        autoAcceptConnections: true,
       })
 
       expect(newAgentConfig).toMatchObject({
         label: 'anotherLabel',
-        autoAcceptConnections: true,
       })
     })
   })

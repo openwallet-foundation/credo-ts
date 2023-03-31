@@ -24,8 +24,8 @@ import { DidsApi } from '../dids'
 import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
 
+import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
-import { RecipientModuleConfig } from './RecipientModuleConfig'
 import { RoutingEventTypes } from './RoutingEvents'
 import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
 import { MediationDenyHandler } from './handlers/MediationDenyHandler'
@@ -39,8 +39,8 @@ import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
 
 @injectable()
-export class RecipientApi {
-  public config: RecipientModuleConfig
+export class MediationRecipientApi {
+  public config: MediationRecipientModuleConfig
 
   private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
@@ -70,7 +70,7 @@ export class RecipientApi {
     @inject(InjectionSymbols.Logger) logger: Logger,
     agentContext: AgentContext,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
-    recipientModuleConfig: RecipientModuleConfig
+    mediationRecipientModuleConfig: MediationRecipientModuleConfig
   ) {
     this.connectionService = connectionService
     this.dids = dids
@@ -83,23 +83,11 @@ export class RecipientApi {
     this.routingService = routingService
     this.agentContext = agentContext
     this.stop$ = stop$
-    this.config = recipientModuleConfig
+    this.config = mediationRecipientModuleConfig
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async initialize() {
-    const { defaultMediatorId, clearDefaultMediator } = this.agentContext.config
-
-    // Set default mediator by id
-    if (defaultMediatorId) {
-      const mediatorRecord = await this.mediationRecipientService.getById(this.agentContext, defaultMediatorId)
-      await this.mediationRecipientService.setDefaultMediator(this.agentContext, mediatorRecord)
-    }
-    // Clear the stored default mediator
-    else if (clearDefaultMediator) {
-      await this.mediationRecipientService.clearDefaultMediator(this.agentContext)
-    }
-
     // Poll for messages from mediator
     const defaultMediator = await this.findDefaultMediator()
     if (defaultMediator) {
