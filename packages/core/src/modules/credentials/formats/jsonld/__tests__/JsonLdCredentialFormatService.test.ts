@@ -10,7 +10,7 @@ import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { DidDocument } from '../../../../dids'
 import { DidResolverService } from '../../../../dids/services/DidResolverService'
-import { W3cCredentialRecord, W3cCredentialService } from '../../../../vc'
+import { W3cCredentialRecord, W3cCredentialsService } from '../../../../vc'
 import { Ed25519Signature2018Fixtures } from '../../../../vc/__tests__/fixtures'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { W3cVerifiableCredential } from '../../../../vc/models'
@@ -22,7 +22,7 @@ import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
 jest.mock('../../../../vc/W3cCredentialService')
 jest.mock('../../../../dids/services/DidResolverService')
 
-const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
+const W3cCredentialServiceMock = W3cCredentialsService as jest.Mock<W3cCredentialsService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 const didDocument = JsonTransformer.fromJSON(
@@ -148,7 +148,7 @@ const requestAttachment = new Attachment({
   }),
 })
 let jsonLdFormatService: CredentialFormatService<JsonLdCredentialFormat>
-let w3cCredentialService: W3cCredentialService
+let w3cCredentialService: W3cCredentialsService
 let didResolver: DidResolverService
 
 describe('JsonLd CredentialFormatService', () => {
@@ -161,7 +161,7 @@ describe('JsonLd CredentialFormatService', () => {
     agentContext = getAgentContext({
       registerInstances: [
         [DidResolverService, didResolver],
-        [W3cCredentialService, w3cCredentialService],
+        [W3cCredentialsService, w3cCredentialService],
       ],
       agentConfig,
     })

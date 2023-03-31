@@ -10,8 +10,8 @@ import { GenericRecordsModule } from '../../modules/generic-records'
 import { MessagePickupModule } from '../../modules/message-pìckup'
 import { OutOfBandModule } from '../../modules/oob'
 import { ProofsModule } from '../../modules/proofs'
-import { MediatorModule, MediationRecipientModule } from '../../modules/routing'
-import { W3cVcModule } from '../../modules/vc'
+import { MediationRecipientModule, MediatorModule } from '../../modules/routing'
+import { W3cCredentialsModule } from '../../modules/vc'
 import { DependencyManager, injectable } from '../../plugins'
 import { WalletModule } from '../../wallet'
 import { extendModulesWithDefaultModules, getAgentApi } from '../AgentModules'
@@ -67,7 +67,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cVcModule),
+        w3cVc: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
       })
     })
@@ -91,7 +91,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cVcModule),
+        w3cVc: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         myModule,
       })
@@ -118,7 +118,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cVcModule),
+        w3cVc: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         myModule,
       })

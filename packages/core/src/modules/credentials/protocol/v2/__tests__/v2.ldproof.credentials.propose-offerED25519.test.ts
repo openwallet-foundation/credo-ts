@@ -36,7 +36,7 @@ import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CacheModule, InMemoryLruCache } from '../../../../cache'
 import { DidsModule, KeyDidRegistrar, KeyDidResolver } from '../../../../dids'
 import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
-import { W3cVcModule } from '../../../../vc'
+import { W3cCredentialsModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/__tests__/documentLoader'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { CredentialsModule } from '../../../CredentialsModule'
@@ -126,7 +126,7 @@ const getIndyJsonLdModules = () =>
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    w3cVc: new W3cVcModule({
+    w3cVc: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
     }),
   } as const)

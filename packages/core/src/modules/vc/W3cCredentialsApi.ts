@@ -6,7 +6,7 @@ import type { Query } from '../../storage/StorageService'
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
-import { W3cCredentialService } from './W3cCredentialService'
+import { W3cCredentialsService } from './W3cCredentialsService'
 
 /**
  * @public
@@ -14,9 +14,9 @@ import { W3cCredentialService } from './W3cCredentialService'
 @injectable()
 export class W3cVcApi {
   private agentContext: AgentContext
-  private w3cCredentialService: W3cCredentialService
+  private w3cCredentialService: W3cCredentialsService
 
-  public constructor(agentContext: AgentContext, w3cCredentialService: W3cCredentialService) {
+  public constructor(agentContext: AgentContext, w3cCredentialService: W3cCredentialsService) {
     this.agentContext = agentContext
     this.w3cCredentialService = w3cCredentialService
   }

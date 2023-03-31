@@ -21,7 +21,7 @@ import { VerificationMethod } from '../dids'
 import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
-import { W3cVcModuleConfig } from './W3cVcModuleConfig'
+import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 import { deriveProof } from './deriveProof'
 import { orArrayToArray, w3cDate } from './jsonldUtil'
 import jsonld from './libraries/jsonld'
@@ -29,18 +29,18 @@ import vc from './libraries/vc'
 import { W3cVerifiableCredential } from './models'
 import { W3cPresentation } from './models/presentation/W3cPresentation'
 import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
-import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
+import { W3cCredentialRecord, W3cCredentialsRepository } from './repository'
 
 @injectable()
-export class W3cCredentialService {
-  private w3cCredentialRepository: W3cCredentialRepository
+export class W3cCredentialsService {
+  private w3cCredentialRepository: W3cCredentialsRepository
   private signatureSuiteRegistry: SignatureSuiteRegistry
-  private w3cVcModuleConfig: W3cVcModuleConfig
+  private w3cVcModuleConfig: W3cCredentialsModuleConfig
 
   public constructor(
-    w3cCredentialRepository: W3cCredentialRepository,
+    w3cCredentialRepository: W3cCredentialsRepository,
     signatureSuiteRegistry: SignatureSuiteRegistry,
-    w3cVcModuleConfig: W3cVcModuleConfig
+    w3cVcModuleConfig: W3cCredentialsModuleConfig
   ) {
     this.w3cCredentialRepository = w3cCredentialRepository
     this.signatureSuiteRegistry = signatureSuiteRegistry

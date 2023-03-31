@@ -5,16 +5,16 @@ import { getAgentOptions, indySdk } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { JsonTransformer } from '../../../utils'
-import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cVcModule } from '../W3cVcModule'
+import { W3cCredentialsService } from '../W3cCredentialsService'
+import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { W3cVerifiableCredential } from '../models'
-import { W3cCredentialRepository } from '../repository'
+import { W3cCredentialsRepository } from '../repository'
 
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
 const modules = {
-  w3cVc: new W3cVcModule({
+  w3cVc: new W3cCredentialsModule({
     documentLoader: customDocumentLoader,
   }),
   indySdk: new IndySdkModule({
@@ -26,8 +26,8 @@ const agentOptions = getAgentOptions<typeof modules>('W3cVcApi', {}, modules)
 
 const agent = new Agent(agentOptions)
 
-let w3cCredentialRepository: W3cCredentialRepository
-let w3cCredentialService: W3cCredentialService
+let w3cCredentialRepository: W3cCredentialsRepository
+let w3cCredentialService: W3cCredentialsService
 
 const testCredential = JsonTransformer.fromJSON(
   Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
@@ -36,8 +36,8 @@ const testCredential = JsonTransformer.fromJSON(
 
 describe('W3cVcApi', () => {
   beforeAll(() => {
-    w3cCredentialRepository = agent.dependencyManager.resolve(W3cCredentialRepository)
-    w3cCredentialService = agent.dependencyManager.resolve(W3cCredentialService)
+    w3cCredentialRepository = agent.dependencyManager.resolve(W3cCredentialsRepository)
+    w3cCredentialService = agent.dependencyManager.resolve(W3cCredentialsService)
   })
 
   beforeEach(async () => {

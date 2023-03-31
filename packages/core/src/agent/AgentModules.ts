@@ -12,8 +12,7 @@ import { GenericRecordsModule } from '../modules/generic-records'
 import { MessagePickupModule } from '../modules/message-pìckup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
-import { MediatorModule, MediationRecipientModule } from '../modules/routing'
-import { W3cVcModule } from '../modules/vc'
+import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { WalletModule } from '../wallet'
 
 /**

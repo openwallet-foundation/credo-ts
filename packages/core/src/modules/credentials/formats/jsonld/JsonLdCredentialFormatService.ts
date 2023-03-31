@@ -30,7 +30,7 @@ import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
-import { W3cCredentialService } from '../../../vc'
+import { W3cCredentialsService } from '../../../vc'
 import { W3cCredential, W3cVerifiableCredential } from '../../../vc/models'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 
@@ -214,7 +214,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     agentContext: AgentContext,
     { credentialFormats, attachmentId, requestAttachment }: CredentialFormatAcceptRequestOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialsService)
 
     // sign credential here. credential to be signed is received as the request attachment
     // (attachment in the request message from holder to issuer)
@@ -267,7 +267,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     credentialRequest: JsonLdFormatDataCredentialDetail
   ): Promise<string> {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialsService)
 
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cCredential)
 
@@ -306,7 +306,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     agentContext: AgentContext,
     { credentialRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
-    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
+    const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialsService)
 
     const credentialAsJson = attachment.getDataAsJson<W3cVerifiableCredential>()
     const credential = JsonTransformer.fromJSON(credentialAsJson, W3cVerifiableCredential)

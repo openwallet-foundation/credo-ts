@@ -1,4 +1,4 @@
-import type { W3cVcModuleConfigOptions } from './W3cVcModuleConfig'
+import type { W3cVcModuleConfigOptions } from './W3cCredentialsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
 
 import { KeyType } from '../../crypto'
@@ -8,32 +8,32 @@ import {
 } from '../dids/domain/key-type/ed25519'
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
-import { W3cVcApi } from './W3cCredentialApi'
-import { W3cCredentialService } from './W3cCredentialService'
-import { W3cVcModuleConfig } from './W3cVcModuleConfig'
-import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
+import { W3cVcApi } from './W3cCredentialsApi'
+import { W3cCredentialsService } from './W3cCredentialsService'
+import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
+import { W3cCredentialsRepository } from './repository/W3cCredentialsRepository'
 import { Ed25519Signature2018 } from './signature-suites'
 
 /**
  * @public
  */
-export class W3cVcModule implements Module {
-  public readonly config: W3cVcModuleConfig
+export class W3cCredentialsModule implements Module {
+  public readonly config: W3cCredentialsModuleConfig
   public readonly api = W3cVcApi
 
   public constructor(config?: W3cVcModuleConfigOptions) {
-    this.config = new W3cVcModuleConfig(config)
+    this.config = new W3cCredentialsModuleConfig(config)
   }
 
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerContextScoped(W3cVcApi)
-    dependencyManager.registerSingleton(W3cCredentialService)
-    dependencyManager.registerSingleton(W3cCredentialRepository)
+    dependencyManager.registerSingleton(W3cCredentialsService)
+    dependencyManager.registerSingleton(W3cCredentialsRepository)
 
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
     // Register the config
-    dependencyManager.registerInstance(W3cVcModuleConfig, this.config)
+    dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
 
     // Always register ed25519 signature suite
     dependencyManager.registerInstance(SignatureSuiteToken, {

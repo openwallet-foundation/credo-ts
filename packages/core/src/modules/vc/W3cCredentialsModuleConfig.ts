@@ -32,7 +32,7 @@ export interface W3cVcModuleConfigOptions {
   documentLoader?: DocumentLoaderWithContext
 }
 
-export class W3cVcModuleConfig {
+export class W3cCredentialsModuleConfig {
   private options: W3cVcModuleConfigOptions
 
   public constructor(options?: W3cVcModuleConfigOptions) {
