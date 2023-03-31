@@ -35,6 +35,13 @@ export interface CreateRevocationRegistryDefinitionOptions {
   tailsDirectoryPath: string
 }
 
+export interface CreateRevocationStatusListOptions {
+  issuerId: string
+  issuanceByDefault: boolean
+  revocationRegistryDefinitionId: string
+  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+}
+
 export interface CreateCredentialOfferOptions {
   credentialDefinitionId: string
 }
@@ -63,4 +70,8 @@ export interface CreateRevocationRegistryDefinitionReturn {
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
   revocationRegistryDefinitionPrivate?: Record<string, unknown>
   tailsHash: string
+}
+
+export interface CreateRevocationStatusListReturn {
+  revocationStatusList: AnonCredsRevocationStatusList
 }

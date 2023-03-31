@@ -14,6 +14,7 @@ import type {
   GetCredentialsOptions,
   RegisterRevocationRegistryDefinitionReturn,
 } from './services'
+import type { Extensible } from './services/registry/base'
 
 import { AgentContext, inject, injectable } from '@aries-framework/core'
 
@@ -226,35 +227,36 @@ export class AnonCredsApi {
   // TODO: Shall we store in Credential Definition Record the currently used revocation registry id? This can be used when accepting credential request to determine
   // Which one we'll need to use. It can be also a tag in RevocRegDef Record stating which one is the active one for a given CredDefId.
 
-  public async registerCredentialDefinition(
-    options: AnonCredsRegisterCredentialDefinitionOptions
-  ): Promise<RegisterCredentialDefinitionReturn> {
+  public async registerCredentialDefinition(options: {
+    credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+    options: Extensible
+  }): Promise<RegisterCredentialDefinitionReturn> {
     const failedReturnBase = {
       credentialDefinitionState: {
         state: 'failed' as const,
-        reason: `Error registering credential definition for issuerId ${options.issuerId}`,
+        reason: `Error registering credential definition for issuerId ${options.credentialDefinition.issuerId}`,
       },
       registrationMetadata: {},
       credentialDefinitionMetadata: {},
     }
 
-    const registry = this.findRegistryForIdentifier(options.issuerId)
+    const registry = this.findRegistryForIdentifier(options.credentialDefinition.issuerId)
     if (!registry) {
-      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for issuerId ${options.issuerId}`
+      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for issuerId ${options.credentialDefinition.issuerId}`
       return failedReturnBase
     }
 
-    const schemaRegistry = this.findRegistryForIdentifier(options.schemaId)
+    const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
     if (!schemaRegistry) {
-      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.schemaId}`
+      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
       return failedReturnBase
     }
 
     try {
-      const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.schemaId)
+      const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
 
       if (!schemaResult.schema) {
-        failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
+        failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
         return failedReturnBase
       }
 
@@ -262,10 +264,10 @@ export class AnonCredsApi {
         await this.anonCredsIssuerService.createCredentialDefinition(
           this.agentContext,
           {
-            issuerId: options.issuerId,
-            schemaId: options.schemaId,
-            tag: options.tag ?? 'default',
-            supportRevocation: options.supportRevocation ?? false,
+            issuerId: options.credentialDefinition.issuerId,
+            schemaId: options.credentialDefinition.schemaId,
+            tag: options.credentialDefinition.tag ?? 'default',
+            supportRevocation: options.credentialDefinition.supportRevocation ?? false,
             schema: schemaResult.schema,
           },
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.

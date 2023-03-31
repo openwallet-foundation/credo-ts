@@ -10,6 +10,7 @@ import type {
   AnonCredsSchema,
   CreateCredentialDefinitionReturn,
   CreateRevocationRegistryDefinitionReturn,
+  CreateRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -31,6 +32,11 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
   public constructor(@inject(IndySdkSymbol) indySdk: IndySdk) {
     this.indySdk = indySdk
   }
+
+  public async createRevocationStatusList(): Promise<CreateRevocationStatusListReturn> {
+    throw new AriesFrameworkError('Method not implemented.')
+  }
+
   public async createRevocationRegistryDefinition(): Promise<CreateRevocationRegistryDefinitionReturn> {
     throw new AriesFrameworkError('Method not implemented.')
   }

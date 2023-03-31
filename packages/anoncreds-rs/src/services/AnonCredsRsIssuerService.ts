@@ -13,6 +13,9 @@ import type {
   CreateRevocationRegistryDefinitionOptions,
   CreateRevocationRegistryDefinitionReturn,
   AnonCredsRevocationRegistryDefinition,
+  CreateRevocationStatusListOptions,
+  CreateRevocationStatusListReturn,
+  AnonCredsRevocationStatusList,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
@@ -26,6 +29,7 @@ import {
 } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError } from '@aries-framework/core'
 import {
+  RevocationStatusList,
   RevocationRegistryDefinitionPrivate,
   RevocationRegistryDefinition,
   CredentialRevocationConfig,
@@ -125,6 +129,29 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     } finally {
       createReturnObj?.revocationRegistryDefinition.handle.clear()
       createReturnObj?.revocationRegistryDefinitionPrivate.handle.clear()
+    }
+  }
+
+  public async createRevocationStatusList(
+    agentContext: AgentContext,
+    options: CreateRevocationStatusListOptions
+  ): Promise<CreateRevocationStatusListReturn> {
+    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault } = options
+
+    let revocationStatusList: RevocationStatusList | undefined
+    try {
+      revocationStatusList = RevocationStatusList.create({
+        issuanceByDefault,
+        revocationRegistryDefinitionId,
+        revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
+        issuerId,
+      })
+
+      return {
+        revocationStatusList: revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList,
+      }
+    } finally {
+      revocationStatusList?.handle.clear()
     }
   }
 
