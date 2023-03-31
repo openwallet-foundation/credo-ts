@@ -251,8 +251,8 @@ describe('Legacy indy format services', () => {
         credentialDefinitionId: legacyCredentialDefinitionId,
       },
       '_anoncreds/credentialRequest': {
-        master_secret_blinding_data: expect.any(Object),
-        master_secret_name: expect.any(String),
+        link_secret_blinding_data: expect.any(Object),
+        link_secret_name: expect.any(String),
         nonce: expect.any(String),
       },
     })
