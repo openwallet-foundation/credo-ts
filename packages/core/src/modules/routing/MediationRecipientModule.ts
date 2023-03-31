@@ -1,21 +1,21 @@
-import type { RecipientModuleConfigOptions } from './RecipientModuleConfig'
+import type { MediationRecipientModuleConfigOptions } from './MediationRecipientModuleConfig'
 import type { FeatureRegistry } from '../../agent/FeatureRegistry'
 import type { DependencyManager, Module } from '../../plugins'
 
 import { Protocol } from '../../agent/models'
 
-import { RecipientApi } from './RecipientApi'
-import { RecipientModuleConfig } from './RecipientModuleConfig'
+import { MediationRecipientApi } from './MediationRecipientApi'
+import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediationRole } from './models'
 import { MediationRepository } from './repository'
 import { MediationRecipientService, RoutingService } from './services'
 
-export class RecipientModule implements Module {
-  public readonly config: RecipientModuleConfig
-  public readonly api = RecipientApi
+export class MediationRecipientModule implements Module {
+  public readonly config: MediationRecipientModuleConfig
+  public readonly api = MediationRecipientApi
 
-  public constructor(config?: RecipientModuleConfigOptions) {
-    this.config = new RecipientModuleConfig(config)
+  public constructor(config?: MediationRecipientModuleConfigOptions) {
+    this.config = new MediationRecipientModuleConfig(config)
   }
 
   /**
@@ -23,10 +23,10 @@ export class RecipientModule implements Module {
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
-    dependencyManager.registerContextScoped(RecipientApi)
+    dependencyManager.registerContextScoped(MediationRecipientApi)
 
     // Config
-    dependencyManager.registerInstance(RecipientModuleConfig, this.config)
+    dependencyManager.registerInstance(MediationRecipientModuleConfig, this.config)
 
     // Services
     dependencyManager.registerSingleton(MediationRecipientService)

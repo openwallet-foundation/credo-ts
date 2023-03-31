@@ -17,7 +17,7 @@ import { GenericRecordsApi } from '../modules/generic-records'
 import { MessagePickupApi } from '../modules/message-pìckup/MessagePickupApi'
 import { OutOfBandApi } from '../modules/oob'
 import { ProofsApi } from '../modules/proofs'
-import { MediatorApi, RecipientApi } from '../modules/routing'
+import { MediatorApi, MediationRecipientApi } from '../modules/routing'
 import { StorageUpdateService } from '../storage'
 import { UpdateAssistant } from '../storage/migration/UpdateAssistant'
 import { DEFAULT_UPDATE_CONFIG } from '../storage/migration/updates'
@@ -48,7 +48,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly credentials: CustomOrDefaultApi<AgentModules['credentials'], CredentialsModule>
   public readonly proofs: CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
   public readonly mediator: MediatorApi
-  public readonly mediationRecipient: RecipientApi
+  public readonly mediationRecipient: MediationRecipientApi
   public readonly messagePickup: CustomOrDefaultApi<AgentModules['messagePickup'], MessagePickupModule>
   public readonly basicMessages: BasicMessagesApi
   public readonly genericRecords: GenericRecordsApi
@@ -92,7 +92,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     >
     this.proofs = this.dependencyManager.resolve(ProofsApi) as CustomOrDefaultApi<AgentModules['proofs'], ProofsModule>
     this.mediator = this.dependencyManager.resolve(MediatorApi)
-    this.mediationRecipient = this.dependencyManager.resolve(RecipientApi)
+    this.mediationRecipient = this.dependencyManager.resolve(MediationRecipientApi)
     this.messagePickup = this.dependencyManager.resolve(MessagePickupApi) as CustomOrDefaultApi<
       AgentModules['messagePickup'],
       MessagePickupModule

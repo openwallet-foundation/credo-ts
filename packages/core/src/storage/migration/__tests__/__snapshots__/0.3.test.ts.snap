@@ -1,57 +1,57 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`UpdateAssistant | v0.3.1 - v0.4 should correctly update the did records and remove cache records 1`] = `
-Object {
-  "4993c740-5cd9-4c79-a7d8-23d1266d31be": Object {
+{
+  "4993c740-5cd9-4c79-a7d8-23d1266d31be": {
     "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
-    "tags": Object {
+    "tags": {
       "did": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
       "legacyUnqualifiedDid": undefined,
       "method": "indy",
       "methodSpecificIdentifier": "bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
       "qualifiedIndyDid": undefined,
-      "recipientKeyFingerprints": Array [],
+      "recipientKeyFingerprints": [],
       "role": "created",
     },
     "type": "DidRecord",
-    "value": Object {
+    "value": {
       "createdAt": "2023-03-18T18:35:07.208Z",
       "did": "did:indy:bcovrin:test:Pow4pdnPgTS7JAXvWkoF2c",
       "id": "4993c740-5cd9-4c79-a7d8-23d1266d31be",
-      "metadata": Object {},
+      "metadata": {},
       "role": "created",
       "updatedAt": "2023-03-18T22:50:20.522Z",
     },
   },
-  "8168612b-73d1-4917-9a61-84e8102988f0": Object {
+  "8168612b-73d1-4917-9a61-84e8102988f0": {
     "id": "8168612b-73d1-4917-9a61-84e8102988f0",
-    "tags": Object {
+    "tags": {
       "did": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
       "legacyUnqualifiedDid": undefined,
       "method": "indy",
       "methodSpecificIdentifier": "bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
       "qualifiedIndyDid": undefined,
-      "recipientKeyFingerprints": Array [],
+      "recipientKeyFingerprints": [],
       "role": "created",
     },
     "type": "DidRecord",
-    "value": Object {
+    "value": {
       "createdAt": "2023-03-18T18:35:04.191Z",
       "did": "did:indy:bcovrin:test:8DFqUo6UtQLLZETE7Gm29k",
       "id": "8168612b-73d1-4917-9a61-84e8102988f0",
-      "metadata": Object {},
+      "metadata": {},
       "role": "created",
       "updatedAt": "2023-03-18T22:50:20.522Z",
     },
   },
-  "STORAGE_VERSION_RECORD_ID": Object {
+  "STORAGE_VERSION_RECORD_ID": {
     "id": "STORAGE_VERSION_RECORD_ID",
-    "tags": Object {},
+    "tags": {},
     "type": "StorageVersionRecord",
-    "value": Object {
+    "value": {
       "createdAt": "2023-03-18T18:35:02.888Z",
       "id": "STORAGE_VERSION_RECORD_ID",
-      "metadata": Object {},
+      "metadata": {},
       "storageVersion": "0.4",
       "updatedAt": "2023-03-18T22:50:20.522Z",
     },

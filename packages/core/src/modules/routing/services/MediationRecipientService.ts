@@ -24,7 +24,6 @@ import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionM
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidKey } from '../../dids'
 import { didKeyToVerkey, isDidKey } from '../../dids/helpers'
-import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -43,20 +42,17 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private recipientModuleConfig: RecipientModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter,
-    recipientModuleConfig: RecipientModuleConfig
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.recipientModuleConfig = recipientModuleConfig
   }
 
   public async createRequest(
