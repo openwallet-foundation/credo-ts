@@ -37,6 +37,7 @@ import {
   AnonCredsRevocationRegistryDefinitionRecord,
   AnonCredsRevocationStatusListRecord,
   AnonCredsRevocationStatusListRepository,
+  RevocationRegistryState,
 } from './repository'
 import { AnonCredsCredentialDefinitionRecord } from './repository/AnonCredsCredentialDefinitionRecord'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
@@ -366,12 +367,19 @@ export class AnonCredsApi {
           tailsDirectoryPath,
         })
 
+      const localTailsFilePath = `${tailsDirectoryPath}/${tailsHash}}`
+
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
         options: {},
       })
 
-      await this.storeRevocationRegistryDefinitionRecord(result, tailsHash, revocationRegistryDefinitionPrivate)
+      await this.storeRevocationRegistryDefinitionRecord(
+        result,
+        localTailsFilePath,
+        tailsHash,
+        revocationRegistryDefinitionPrivate
+      )
 
       return result
     } catch (error) {
@@ -516,6 +524,7 @@ export class AnonCredsApi {
 
   private async storeRevocationRegistryDefinitionRecord(
     result: RegisterRevocationRegistryDefinitionReturn,
+    localTailsFilePath: string,
     tailsHash: string,
     revocationRegistryDefinitionPrivate?: Record<string, unknown>
   ): Promise<void> {
@@ -530,6 +539,7 @@ export class AnonCredsApi {
         const revocationRegistryDefinitionRecord = new AnonCredsRevocationRegistryDefinitionRecord({
           revocationRegistryDefinitionId: result.revocationRegistryDefinitionState.revocationRegistryDefinitionId,
           revocationRegistryDefinition: result.revocationRegistryDefinitionState.revocationRegistryDefinition,
+          localTailsFilePath,
           tailsHash,
         })
 
@@ -555,6 +565,7 @@ export class AnonCredsApi {
           const revocationRegistryDefinitionPrivateRecord = new AnonCredsRevocationRegistryDefinitionPrivateRecord({
             revocationRegistryDefinitionId: result.revocationRegistryDefinitionState.revocationRegistryDefinitionId,
             value: revocationRegistryDefinitionPrivate,
+            state: RevocationRegistryState.Active,
           })
           await this.anonCredsRevocationRegistryDefinitionPrivateRepository.save(
             this.agentContext,

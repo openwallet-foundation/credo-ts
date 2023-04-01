@@ -4,7 +4,6 @@ import { BaseRecord, utils } from '@aries-framework/core'
 
 export enum RevocationRegistryState {
   Created = 'created',
-  Published = 'published',
   Active = 'active',
   Full = 'full',
 }
@@ -14,6 +13,7 @@ export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   revocationRegistryDefinitionId: string
   value: Record<string, unknown>
   index?: number
+  state?: RevocationRegistryState
 }
 
 export type DefaultAnonCredsRevocationRegistryPrivateTags = {
@@ -43,7 +43,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
       this.value = props.value
       this.currentIndex = props.index ?? 0
-      this.state = RevocationRegistryState.Created
+      this.state = props.state ?? RevocationRegistryState.Created
     }
   }
 

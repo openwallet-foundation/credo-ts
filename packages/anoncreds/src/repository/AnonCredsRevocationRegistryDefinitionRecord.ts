@@ -8,6 +8,7 @@ export interface AnonCredsRevocationRegistryDefinitionRecordProps {
   id?: string
   revocationRegistryDefinitionId: string
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+  localTailsFilePath: string
   tailsHash: string
 }
 
@@ -26,6 +27,7 @@ export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<
 
   public readonly revocationRegistryDefinitionId!: string
   public readonly revocationRegistryDefinition!: AnonCredsRevocationRegistryDefinition
+  public readonly localTailsFilePath!: string
   public readonly tailsHash!: string
 
   public constructor(props: AnonCredsRevocationRegistryDefinitionRecordProps) {

@@ -53,6 +53,12 @@ import {
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
+import {
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
+  AnonCredsRevocationRegistryDefinitionRepository,
+  RevocationRegistryState,
+} from '../repository'
 
 const ANONCREDS_CREDENTIAL_OFFER = 'anoncreds/credential-offer@v1.0'
 const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
@@ -303,13 +309,63 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const credentialRequest = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
     if (!credentialRequest) throw new AriesFrameworkError('Missing anoncreds credential request in createCredential')
 
-    // TODO: Check if credential definition supports revocation, fetch current revocation registry id and tailsFilePath,
-    // and current revocation status list
+    // We check locally for credential definition info. If it supports revocation, we need to search locally for
+    // an active revocation registry
+    const credentialDefinition = (
+      await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .getByCredentialDefinitionId(agentContext, credentialRequest.cred_def_id)
+    ).credentialDefinition.value
+
+    let revocationRegistryDefinitionId
+    let revocationStatusList
+    let tailsFilePath
+
+    if (credentialDefinition.revocation) {
+      const [revocationRegistryDefinitionPrivateRecord] = await agentContext.dependencyManager
+        .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
+        .findAllByCredentialDefinitionIdAndState(
+          agentContext,
+          credentialRequest.cred_def_id,
+          RevocationRegistryState.Active
+        )
+
+      if (!revocationRegistryDefinitionPrivateRecord) {
+        throw new AriesFrameworkError(`No available revocation registry found for ${credentialRequest.cred_def_id}`)
+      }
+
+      revocationRegistryDefinitionId = revocationRegistryDefinitionPrivateRecord.revocationRegistryDefinitionId
+
+      // get current revocation status list
+      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
+      const registry = registryService.getRegistryForIdentifier(agentContext, credentialRequest.cred_def_id)
+      const result = await registry.getRevocationStatusList(
+        agentContext,
+        revocationRegistryDefinitionId,
+        new Date().getTime()
+      )
+
+      if (!result.revocationStatusList) {
+        throw new AriesFrameworkError(
+          `Could not get current revocation status list for ${revocationRegistryDefinitionId}`
+        )
+      }
+      revocationStatusList = result.revocationStatusList
+
+      const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsRevocationRegistryDefinitionRepository)
+        .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
+
+      tailsFilePath = revocationRegistryDefinitionRecord.localTailsFilePath
+    }
 
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest,
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
+      revocationRegistryDefinitionId,
+      revocationStatusList,
+      tailsFilePath,
     })
 
     if (credential.rev_reg_id) {

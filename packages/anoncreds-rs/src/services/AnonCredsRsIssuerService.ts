@@ -1,4 +1,4 @@
-import type {
+import {
   AnonCredsIssuerService,
   CreateCredentialDefinitionOptions,
   CreateCredentialOfferOptions,
@@ -16,6 +16,7 @@ import type {
   CreateRevocationStatusListOptions,
   CreateRevocationStatusListReturn,
   AnonCredsRevocationStatusList,
+  RevocationRegistryState,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
@@ -204,7 +205,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       (e) => e !== undefined
     )
     if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 3) {
-      throw new AriesFrameworkError('Revocation requires all of revocationRegistryDefinitionId and tailsFilePath')
+      throw new AriesFrameworkError(
+        'Revocation requires all of revocationRegistryDefinitionId, revocationStatusList and tailsFilePath'
+      )
     }
 
     let credential: Credential | undefined
@@ -237,8 +240,8 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
         const registryIndex = revocationRegistryDefinitionPrivateRecord.currentIndex + 1
 
-        if (registryIndex > revocationRegistryDefinitionRecord.revocationRegistryDefinition.value.maxCredNum) {
-          throw new AriesFrameworkError('Revocation registry has reached maximum credential number')
+        if (registryIndex >= revocationRegistryDefinitionRecord.revocationRegistryDefinition.value.maxCredNum) {
+          revocationRegistryDefinitionPrivateRecord.state = RevocationRegistryState.Full
         }
 
         // Update current registry index in storage
