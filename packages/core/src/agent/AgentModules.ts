@@ -9,6 +9,7 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
+import { MessagePickupModule } from '../modules/message-pìckup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
 import { MediatorModule, MediationRecipientModule } from '../modules/routing'
@@ -121,6 +122,7 @@ function getDefaultAgentModules() {
     proofs: () => new ProofsModule(),
     mediator: () => new MediatorModule(),
     mediationRecipient: () => new MediationRecipientModule(),
+    messagePickup: () => new MessagePickupModule(),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
