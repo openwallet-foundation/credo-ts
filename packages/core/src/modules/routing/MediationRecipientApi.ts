@@ -23,6 +23,9 @@ import { ConnectionService } from '../connections/services'
 import { DidsApi } from '../dids'
 import { verkeyToDidKey } from '../dids/helpers'
 import { DiscoverFeaturesApi } from '../discover-features'
+import { MessagePickupApi } from '../message-pìckup/MessagePickupApi'
+import { V1BatchPickupMessage } from '../message-pìckup/protocol/v1'
+import { V2StatusMessage } from '../message-pìckup/protocol/v2'
 
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -32,8 +35,6 @@ import { MediationDenyHandler } from './handlers/MediationDenyHandler'
 import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
 import { MediationState } from './models/MediationState'
-import { StatusRequestMessage, BatchPickupMessage, StatusMessage } from './protocol'
-import { StatusHandler, MessageDeliveryHandler } from './protocol/pickup/v2/handlers'
 import { MediationRepository } from './repository'
 import { MediationRecipientService } from './services/MediationRecipientService'
 import { RoutingService } from './services/RoutingService'
@@ -49,6 +50,7 @@ export class MediationRecipientApi {
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesApi: DiscoverFeaturesApi
+  private messagePickupApi: MessagePickupApi
   private mediationRepository: MediationRepository
   private routingService: RoutingService
   private agentContext: AgentContext
@@ -65,6 +67,7 @@ export class MediationRecipientApi {
     messageSender: MessageSender,
     eventEmitter: EventEmitter,
     discoverFeaturesApi: DiscoverFeaturesApi,
+    messagePickupApi: MessagePickupApi,
     mediationRepository: MediationRepository,
     routingService: RoutingService,
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -79,6 +82,7 @@ export class MediationRecipientApi {
     this.eventEmitter = eventEmitter
     this.logger = logger
     this.discoverFeaturesApi = discoverFeaturesApi
+    this.messagePickupApi = messagePickupApi
     this.mediationRepository = mediationRepository
     this.routingService = routingService
     this.agentContext = agentContext
@@ -195,7 +199,11 @@ export class MediationRecipientApi {
           try {
             if (pickupStrategy === MediatorPickupStrategy.PickUpV2) {
               // Start Pickup v2 protocol to receive messages received while websocket offline
-              await this.sendStatusRequest({ mediatorId: mediator.id })
+              await this.messagePickupApi.pickupMessages({
+                connectionId: mediator.connectionId,
+                batchSize: this.config.maximumMessagePickup,
+                protocolVersion: 'v2',
+              })
             } else {
               await this.openMediationWebSocket(mediator)
             }
@@ -237,7 +245,11 @@ export class MediationRecipientApi {
       case MediatorPickupStrategy.PickUpV2:
         this.logger.info(`Starting pickup of messages from mediator '${mediatorRecord.id}'`)
         await this.openWebSocketAndPickUp(mediatorRecord, mediatorPickupStrategy)
-        await this.sendStatusRequest({ mediatorId: mediatorRecord.id })
+        await this.messagePickupApi.pickupMessages({
+          connectionId: mediatorConnection.id,
+          batchSize: this.config.maximumMessagePickup,
+          protocolVersion: 'v2',
+        })
         break
       case MediatorPickupStrategy.PickUpV1: {
         const stopConditions$ = merge(this.stop$, this.stopMessagePickup$).pipe()
@@ -247,7 +259,11 @@ export class MediationRecipientApi {
           .pipe(takeUntil(stopConditions$))
           .subscribe({
             next: async () => {
-              await this.pickupMessages(mediatorConnection)
+              await this.messagePickupApi.pickupMessages({
+                connectionId: mediatorConnection.id,
+                batchSize: this.config.maximumMessagePickup,
+                protocolVersion: 'v1',
+              })
             },
             complete: () => this.logger.info(`Stopping pickup of messages from mediator '${mediatorRecord.id}'`),
           })
@@ -271,22 +287,6 @@ export class MediationRecipientApi {
     this.stopMessagePickup$.next(true)
   }
 
-  private async sendStatusRequest(config: { mediatorId: string; recipientKey?: string }) {
-    const mediationRecord = await this.mediationRecipientService.getById(this.agentContext, config.mediatorId)
-
-    const statusRequestMessage = await this.mediationRecipientService.createStatusRequest(mediationRecord, {
-      recipientKey: config.recipientKey,
-    })
-
-    const mediatorConnection = await this.connectionService.getById(this.agentContext, mediationRecord.connectionId)
-    return this.messageSender.sendMessage(
-      new OutboundMessageContext(statusRequestMessage, {
-        agentContext: this.agentContext,
-        connection: mediatorConnection,
-      })
-    )
-  }
-
   private async getPickupStrategyForMediator(mediator: MediationRecord) {
     let mediatorPickupStrategy = mediator.pickupStrategy ?? this.config.mediatorPickupStrategy
 
@@ -296,22 +296,22 @@ export class MediationRecipientApi {
       const discloseForPickupV2 = await this.discoverFeaturesApi.queryFeatures({
         connectionId: mediator.connectionId,
         protocolVersion: 'v1',
-        queries: [{ featureType: 'protocol', match: StatusMessage.type.protocolUri }],
+        queries: [{ featureType: 'protocol', match: V2StatusMessage.type.protocolUri }],
         awaitDisclosures: true,
       })
 
-      if (discloseForPickupV2.features?.find((item) => item.id === StatusMessage.type.protocolUri)) {
+      if (discloseForPickupV2.features?.find((item) => item.id === V2StatusMessage.type.protocolUri)) {
         mediatorPickupStrategy = MediatorPickupStrategy.PickUpV2
       } else {
         const discloseForPickupV1 = await this.discoverFeaturesApi.queryFeatures({
           connectionId: mediator.connectionId,
           protocolVersion: 'v1',
-          queries: [{ featureType: 'protocol', match: BatchPickupMessage.type.protocolUri }],
+          queries: [{ featureType: 'protocol', match: V1BatchPickupMessage.type.protocolUri }],
           awaitDisclosures: true,
         })
         // Use explicit pickup strategy
         mediatorPickupStrategy = discloseForPickupV1.features?.find(
-          (item) => item.id === BatchPickupMessage.type.protocolUri
+          (item) => item.id === V1BatchPickupMessage.type.protocolUri
         )
           ? MediatorPickupStrategy.PickUpV1
           : MediatorPickupStrategy.Implicit
@@ -329,18 +329,18 @@ export class MediationRecipientApi {
     return this.mediationRecipientService.discoverMediation(this.agentContext)
   }
 
+  /**
+   * @deprecated Use `MessagePickupApi.pickupMessages` instead.
+   * */
   public async pickupMessages(mediatorConnection: ConnectionRecord, pickupStrategy?: MediatorPickupStrategy) {
     mediatorConnection.assertReady()
 
-    const pickupMessage =
-      pickupStrategy === MediatorPickupStrategy.PickUpV2
-        ? new StatusRequestMessage({})
-        : new BatchPickupMessage({ batchSize: 10 })
-    const outboundMessageContext = new OutboundMessageContext(pickupMessage, {
-      agentContext: this.agentContext,
-      connection: mediatorConnection,
+    const messagePickupApi = this.agentContext.dependencyManager.resolve(MessagePickupApi)
+
+    await messagePickupApi.pickupMessages({
+      connectionId: mediatorConnection.id,
+      protocolVersion: pickupStrategy === MediatorPickupStrategy.PickUpV2 ? 'v2' : 'v1',
     })
-    await this.sendMessage(outboundMessageContext, pickupStrategy)
   }
 
   public async setDefaultMediator(mediatorRecord: MediationRecord) {
@@ -476,8 +476,6 @@ export class MediationRecipientApi {
     messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new StatusHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new MessageDeliveryHandler(this.mediationRecipientService))
     //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }
