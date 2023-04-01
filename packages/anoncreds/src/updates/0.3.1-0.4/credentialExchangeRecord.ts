@@ -131,8 +131,11 @@ export function migrateIndyCredentialMetadataToAnonCredsMetadata<Agent extends B
 
   const indyCredentialRequestMetadata = credentialRecord.metadata.get(indyCredentialRequestMetadataKey)
   if (indyCredentialRequestMetadata) {
-    // TODO: we if we choose to rename master secret to link secret in anoncreds-rs we should also rename it in the request
-    credentialRecord.metadata.set(ANONCREDS_CREDENTIAL_REQUEST_METADATA, indyCredentialRequestMetadata)
+    credentialRecord.metadata.set(ANONCREDS_CREDENTIAL_REQUEST_METADATA, {
+      link_secret_blinding_data: indyCredentialRequestMetadata.master_secret_blinding_data,
+      link_secret_name: indyCredentialRequestMetadata.master_secret_name,
+      nonce: indyCredentialRequestMetadata.nonce,
+    })
     credentialRecord.metadata.delete(indyCredentialRequestMetadataKey)
   }
 

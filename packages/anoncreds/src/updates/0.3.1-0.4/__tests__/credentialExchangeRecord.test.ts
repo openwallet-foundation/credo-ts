@@ -45,7 +45,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Exchange Record', () =>
         getCredentialRecord({
           metadata: {
             '_internal/indyCredential': { some: 'value' },
-            '_internal/indyRequest': { another: 'value' },
+            '_internal/indyRequest': { nonce: 'nonce', master_secret_name: 'ms', master_secret_blinding_data: 'msbd' },
           },
           credentials: [
             {
@@ -71,7 +71,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Exchange Record', () =>
       expect(credentialRecord.toJSON()).toMatchObject({
         metadata: {
           '_anoncreds/credential': { some: 'value' },
-          '_anoncreds/credentialRequest': { another: 'value' },
+          '_anoncreds/credentialRequest': { nonce: 'nonce', link_secret_name: 'ms', link_secret_blinding_data: 'msbd' },
         },
         credentials: [
           {
@@ -92,7 +92,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Exchange Record', () =>
       const record = getCredentialRecord({
         metadata: {
           '_internal/indyCredential': { some: 'value' },
-          '_internal/indyRequest': { another: 'value' },
+          '_internal/indyRequest': { nonce: 'nonce', master_secret_name: 'ms', master_secret_blinding_data: 'msbd' },
         },
       })
 
@@ -101,7 +101,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Credential Exchange Record', () =>
       expect(record.toJSON()).toMatchObject({
         metadata: {
           '_anoncreds/credential': { some: 'value' },
-          '_anoncreds/credentialRequest': { another: 'value' },
+          '_anoncreds/credentialRequest': { nonce: 'nonce', link_secret_name: 'ms', link_secret_blinding_data: 'msbd' },
         },
       })
     })
