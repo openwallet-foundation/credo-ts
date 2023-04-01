@@ -132,8 +132,9 @@ export function indySdkRevocationDeltaFromAnonCreds(
       accum: revocationStatusList.currentAccumulator,
       issued: [],
       revoked: revokedIndices,
-      // NOTE: I don't think this is used?
-      prevAccum: '',
+      // NOTE: this must be a valid accumulator but it's not actually used. So we set it to the
+      // currentAccumulator as that should always be a valid accumulator.
+      prevAccum: revocationStatusList.currentAccumulator,
     },
     ver: '1.0',
   }
