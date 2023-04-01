@@ -6,11 +6,11 @@ import type {
   AnonCredsCredentialInfo,
   AnonCredsNonRevokedInterval,
 } from '@aries-framework/anoncreds'
-import { AgentContext, AriesFrameworkError } from '@aries-framework/core'
+import type { AgentContext } from '@aries-framework/core'
 import type { RevStates } from 'indy-sdk'
 
 import { assertBestPracticeRevocationInterval } from '@aries-framework/anoncreds'
-import { inject, injectable } from '@aries-framework/core'
+import { AriesFrameworkError, inject, injectable } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'

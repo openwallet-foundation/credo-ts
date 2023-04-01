@@ -881,12 +881,12 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/anoncreds-nodejs@^0.1.0-dev.11":
-  version "0.1.0-dev.11"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.11.tgz#301b9bc5a4bb0235212ac48da2bf41118b407cdd"
-  integrity sha512-4BSHOGOdXjF4pyJuEjwk0iaSHeqt5UdXRXNv+u9VJ7yYhqM/aJZNhtUAgHXu8KGZwimFcFsp2e0FoLqwO0vLHQ==
+"@hyperledger/anoncreds-nodejs@^0.1.0-dev.13":
+  version "0.1.0-dev.13"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.13.tgz#65b60be1c5ff077457ccd2f8298e71f198a8984f"
+  integrity sha512-W6Hoxp4lzcdv6yIQruK0CJDH52n79yQ8XCekFNmkUsXxpycB8Ts2M1o3KKRPa68AYM3CzmcN2Nw8pE7XqqEMyQ==
   dependencies:
-    "@hyperledger/anoncreds-shared" "0.1.0-dev.11"
+    "@hyperledger/anoncreds-shared" "0.1.0-dev.13"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "4.0.3"
     node-cache "5.1.2"
@@ -894,10 +894,10 @@
     ref-napi "3.0.3"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.1.0-dev.11", "@hyperledger/anoncreds-shared@^0.1.0-dev.11":
-  version "0.1.0-dev.11"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.11.tgz#206328cabcd855ef20c863ab5c2615a3a4c2502c"
-  integrity sha512-nK05y/qNtI3P+hnkVZW/d5oduMa7slZfEh2gQ+ZmAEmwHEcSU8iJ+QTkKS3nRE+6igXUvVAztlGS7JZHf21KKw==
+"@hyperledger/anoncreds-shared@0.1.0-dev.13", "@hyperledger/anoncreds-shared@^0.1.0-dev.13":
+  version "0.1.0-dev.13"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.13.tgz#e78768366e6d7dd6e65839b769b857fbd828bce7"
+  integrity sha512-UtR2zCrugTa/Mu6LqAiEX1NJw1bdaf65wqcdS/k9efcq0iY1slQb+qg/KWEf+pZZFVa6NmkjAwmdyrzVbu9WTQ==
 
 "@hyperledger/aries-askar-nodejs@^0.1.0-dev.6":
   version "0.1.0-dev.6"
