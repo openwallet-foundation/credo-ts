@@ -8,10 +8,9 @@ import type {
   CreateRevocationRegistryDefinitionOptions,
   CreateRevocationRegistryDefinitionReturn,
   CreateRevocationStatusListOptions,
-  CreateRevocationStatusListReturn,
 } from './AnonCredsIssuerServiceOptions'
 import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsSchema } from '../models/registry'
+import type { AnonCredsRevocationStatusList, AnonCredsSchema } from '../models/registry'
 import type { AgentContext } from '@aries-framework/core'
 
 export const AnonCredsIssuerServiceSymbol = Symbol('AnonCredsIssuerService')
@@ -35,7 +34,7 @@ export interface AnonCredsIssuerService {
   createRevocationStatusList(
     agentContext: AgentContext,
     options: CreateRevocationStatusListOptions
-  ): Promise<CreateRevocationStatusListReturn>
+  ): Promise<AnonCredsRevocationStatusList>
 
   createCredentialOffer(
     agentContext: AgentContext,

@@ -14,7 +14,6 @@ import {
   CreateRevocationRegistryDefinitionReturn,
   AnonCredsRevocationRegistryDefinition,
   CreateRevocationStatusListOptions,
-  CreateRevocationStatusListReturn,
   AnonCredsRevocationStatusList,
   RevocationRegistryState,
 } from '@aries-framework/anoncreds'
@@ -136,7 +135,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   public async createRevocationStatusList(
     agentContext: AgentContext,
     options: CreateRevocationStatusListOptions
-  ): Promise<CreateRevocationStatusListReturn> {
+  ): Promise<AnonCredsRevocationStatusList> {
     const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault } = options
 
     let revocationStatusList: RevocationStatusList | undefined
@@ -148,9 +147,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         issuerId,
       })
 
-      return {
-        revocationStatusList: revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList,
-      }
+      return revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList
     } finally {
       revocationStatusList?.handle.clear()
     }

@@ -487,7 +487,7 @@ export class AnonCredsApi {
     }
 
     try {
-      const { revocationStatusList } = await this.anonCredsIssuerService.createRevocationStatusList(this.agentContext, {
+      const revocationStatusList = await this.anonCredsIssuerService.createRevocationStatusList(this.agentContext, {
         issuanceByDefault,
         issuerId,
         revocationRegistryDefinition,

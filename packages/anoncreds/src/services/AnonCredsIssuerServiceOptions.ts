@@ -72,6 +72,3 @@ export interface CreateRevocationRegistryDefinitionReturn {
   tailsHash: string
 }
 
-export interface CreateRevocationStatusListReturn {
-  revocationStatusList: AnonCredsRevocationStatusList
-}
