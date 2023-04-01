@@ -40,7 +40,7 @@ import {
   Credential,
   CredentialRequest,
   CredentialRevocationState,
-  MasterSecret,
+  LinkSecret,
   Presentation,
   RevocationRegistryDefinition,
   RevocationStatusList,
@@ -55,19 +55,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext: AgentContext,
     options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
-    let masterSecret: MasterSecret | undefined
-    try {
-      masterSecret = MasterSecret.create()
-
-      // FIXME: This is a very specific format of anoncreds-rs. I think it should be simply a string
-      const linkSecretJson = masterSecret.toJson() as { value: { ms: string } }
-
-      return {
-        linkSecretId: options?.linkSecretId ?? utils.uuid(),
-        linkSecretValue: linkSecretJson.value.ms,
-      }
-    } finally {
-      masterSecret?.handle.clear()
+    return {
+      linkSecretId: options?.linkSecretId ?? utils.uuid(),
+      linkSecretValue: LinkSecret.create(),
     }
   }
 
@@ -187,7 +177,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         credentials: credentials.map((entry) => entry.credentialEntry),
         credentialsProve,
         selfAttest: selectedCredentials.selfAttestedAttributes,
-        masterSecret: { value: { ms: linkSecretRecord.value } },
+        linkSecret: linkSecretRecord.value,
       })
 
       return presentation.toJson() as unknown as AnonCredsProof
@@ -219,6 +209,10 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         )
       }
 
+      if (!linkSecretRecord.value) {
+        throw new AnonCredsRsError('Link Secret value not stored')
+      }
+
       const isLegacyIdentifier = credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
       if (!isLegacyIdentifier && useLegacyProverDid) {
         throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
@@ -230,8 +224,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           : undefined,
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialOffer: credentialOffer as unknown as JsonObject,
-        masterSecret: { value: { ms: linkSecretRecord.value } },
-        masterSecretId: linkSecretRecord.linkSecretId,
+        linkSecret: linkSecretRecord.value,
+        linkSecretId: linkSecretRecord.linkSecretId,
       })
 
       return {
@@ -250,7 +244,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     const linkSecretRecord = await agentContext.dependencyManager
       .resolve(AnonCredsLinkSecretRepository)
-      .getByLinkSecretId(agentContext, credentialRequestMetadata.master_secret_name)
+      .getByLinkSecretId(agentContext, credentialRequestMetadata.link_secret_name)
+
+    if (!linkSecretRecord.value) {
+      throw new AnonCredsRsError('Link Secret value not stored')
+    }
 
     const revocationRegistryDefinition = revocationRegistry?.definition as unknown as JsonObject
 
@@ -263,7 +261,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       processedCredential = credentialObj.process({
         credentialDefinition: credentialDefinition as unknown as JsonObject,
         credentialRequestMetadata: credentialRequestMetadata as unknown as JsonObject,
-        masterSecret: { value: { ms: linkSecretRecord.value } },
+        linkSecret: linkSecretRecord.value,
         revocationRegistryDefinition,
       })
 
