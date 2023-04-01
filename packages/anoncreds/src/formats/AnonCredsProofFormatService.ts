@@ -15,13 +15,7 @@ import type {
   AnonCredsSelectedCredentials,
   AnonCredsProofRequest,
 } from '../models'
-import type {
-  AnonCredsHolderService,
-  AnonCredsVerifierService,
-  CreateProofOptions,
-  GetCredentialsForProofRequestReturn,
-  VerifyProofOptions,
-} from '../services'
+import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsForProofRequestReturn } from '../services'
 import type {
   ProofFormatService,
   AgentContext,
@@ -57,11 +51,12 @@ import {
   sortRequestedCredentialsMatches,
   createRequestFromPreview,
   areAnonCredsProofRequestsEqual,
-  assertRevocationInterval,
-  downloadTailsFile,
+  assertBestPracticeRevocationInterval,
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
+  getRevocationRegistriesForRequest,
+  getRevocationRegistriesForProof,
 } from '../utils'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
@@ -240,7 +235,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       new Set(proofJson.identifiers.map((i) => i.cred_def_id))
     )
 
-    const revocationRegistries = await this.getRevocationRegistriesForProof(agentContext, proofJson)
+    const revocationRegistries = await getRevocationRegistriesForProof(agentContext, proofJson)
 
     return await verifierService.verifyProof(agentContext, {
       proofRequest: proofRequestJson,
@@ -538,7 +533,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     )
 
     // Make sure the revocation interval follows best practices from Aries RFC 0441
-    assertRevocationInterval(requestNonRevoked)
+    assertBestPracticeRevocationInterval(requestNonRevoked)
 
     const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
     const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryId)
@@ -596,7 +591,9 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       new Set(credentialObjects.map((c) => c.credentialDefinitionId))
     )
 
-    const revocationRegistries = await this.getRevocationRegistriesForRequest(
+    // selectedCredentials are overridden with specified timestamps of the revocation status list that
+    // should be used for the selected credentials.
+    const { revocationRegistries, updatedSelectedCredentials } = await getRevocationRegistriesForRequest(
       agentContext,
       proofRequest,
       selectedCredentials
@@ -604,175 +601,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     return await holderService.createProof(agentContext, {
       proofRequest,
-      selectedCredentials,
+      selectedCredentials: updatedSelectedCredentials,
       schemas,
       credentialDefinitions,
       revocationRegistries,
     })
-  }
-
-  private async getRevocationRegistriesForRequest(
-    agentContext: AgentContext,
-    proofRequest: AnonCredsProofRequest,
-    selectedCredentials: AnonCredsSelectedCredentials
-  ) {
-    const revocationRegistries: CreateProofOptions['revocationRegistries'] = {}
-
-    try {
-      agentContext.config.logger.debug(`Retrieving revocation registries for proof request`, {
-        proofRequest,
-        selectedCredentials,
-      })
-
-      const referentCredentials = []
-
-      // Retrieve information for referents and push to single array
-      for (const [referent, selectedCredential] of Object.entries(selectedCredentials.attributes)) {
-        referentCredentials.push({
-          referent,
-          credentialInfo: selectedCredential.credentialInfo,
-          nonRevoked: proofRequest.requested_attributes[referent].non_revoked ?? proofRequest.non_revoked,
-        })
-      }
-      for (const [referent, selectedCredential] of Object.entries(selectedCredentials.predicates)) {
-        referentCredentials.push({
-          referent,
-          credentialInfo: selectedCredential.credentialInfo,
-          nonRevoked: proofRequest.requested_predicates[referent].non_revoked ?? proofRequest.non_revoked,
-        })
-      }
-
-      for (const { referent, credentialInfo, nonRevoked } of referentCredentials) {
-        if (!credentialInfo) {
-          throw new AriesFrameworkError(
-            `Credential for referent '${referent} does not have credential info for revocation state creation`
-          )
-        }
-
-        // Prefer referent-specific revocation interval over global revocation interval
-        const credentialRevocationId = credentialInfo.credentialRevocationId
-        const revocationRegistryId = credentialInfo.revocationRegistryId
-
-        // If revocation interval is present and the credential is revocable then create revocation state
-        if (nonRevoked && credentialRevocationId && revocationRegistryId) {
-          agentContext.config.logger.trace(
-            `Presentation is requesting proof of non revocation for referent '${referent}', creating revocation state for credential`,
-            {
-              nonRevoked,
-              credentialRevocationId,
-              revocationRegistryId,
-            }
-          )
-
-          // Make sure the revocation interval follows best practices from Aries RFC 0441
-          assertRevocationInterval(nonRevoked)
-
-          const registry = agentContext.dependencyManager
-            .resolve(AnonCredsRegistryService)
-            .getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-          // Fetch revocation registry definition if not in revocation registries list yet
-          if (!revocationRegistries[revocationRegistryId]) {
-            const { revocationRegistryDefinition, resolutionMetadata } = await registry.getRevocationRegistryDefinition(
-              agentContext,
-              revocationRegistryId
-            )
-            if (!revocationRegistryDefinition) {
-              throw new AriesFrameworkError(
-                `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
-              )
-            }
-
-            const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
-            const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
-
-            revocationRegistries[revocationRegistryId] = {
-              definition: revocationRegistryDefinition,
-              tailsFilePath,
-              revocationStatusLists: {},
-            }
-          }
-
-          // TODO: can we check if the revocation status list is already fetched? We don't know which timestamp the query will return. This
-          // should probably be solved using caching
-          // Fetch the revocation status list
-          const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
-            await registry.getRevocationStatusList(agentContext, revocationRegistryId, nonRevoked.to ?? Date.now())
-          if (!revocationStatusList) {
-            throw new AriesFrameworkError(
-              `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
-            )
-          }
-
-          revocationRegistries[revocationRegistryId].revocationStatusLists[revocationStatusList.timestamp] =
-            revocationStatusList
-        }
-      }
-
-      agentContext.config.logger.debug(`Retrieved revocation registries for proof request`, {
-        revocationRegistries,
-      })
-
-      return revocationRegistries
-    } catch (error) {
-      agentContext.config.logger.error(`Error retrieving revocation registry for proof request`, {
-        error,
-        proofRequest,
-        selectedCredentials,
-      })
-
-      throw error
-    }
-  }
-
-  private async getRevocationRegistriesForProof(agentContext: AgentContext, proof: AnonCredsProof) {
-    const revocationRegistries: VerifyProofOptions['revocationRegistries'] = {}
-
-    for (const identifier of proof.identifiers) {
-      const revocationRegistryId = identifier.rev_reg_id
-      const timestamp = identifier.timestamp
-
-      // Skip if no revocation registry id is present
-      if (!revocationRegistryId || !timestamp) continue
-
-      const registry = agentContext.dependencyManager
-        .resolve(AnonCredsRegistryService)
-        .getRegistryForIdentifier(agentContext, revocationRegistryId)
-
-      // Fetch revocation registry definition if not already fetched
-      if (!revocationRegistries[revocationRegistryId]) {
-        const { revocationRegistryDefinition, resolutionMetadata } = await registry.getRevocationRegistryDefinition(
-          agentContext,
-          revocationRegistryId
-        )
-        if (!revocationRegistryDefinition) {
-          throw new AriesFrameworkError(
-            `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
-          )
-        }
-
-        revocationRegistries[revocationRegistryId] = {
-          definition: revocationRegistryDefinition,
-          revocationStatusLists: {},
-        }
-      }
-
-      // Fetch revocation status list by timestamp if not already fetched
-      if (!revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp]) {
-        const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
-          await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
-
-        if (!revocationStatusList) {
-          throw new AriesFrameworkError(
-            `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
-          )
-        }
-
-        revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp] = revocationStatusList
-      }
-    }
-
-    return revocationRegistries
   }
 
   /**

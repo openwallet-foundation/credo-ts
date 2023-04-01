@@ -115,20 +115,23 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
               throw new AnonCredsRsError(`Revocation Registry ${revocationRegistryDefinitionId} not found`)
             }
 
-            const { definition, tailsFilePath } = options.revocationRegistries[revocationRegistryDefinitionId]
+            const { definition, revocationStatusLists, tailsFilePath } =
+              options.revocationRegistries[revocationRegistryDefinitionId]
+
+            // Extract revocation status list for the given timestamp
+            const revocationStatusList = revocationStatusLists[timestamp]
+            if (!revocationStatusList) {
+              throw new AriesFrameworkError(
+                `Revocation status list for revocation registry ${revocationRegistryDefinitionId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
+              )
+            }
 
             revocationRegistryDefinition = RevocationRegistryDefinition.fromJson(definition as unknown as JsonObject)
             revocationState = CredentialRevocationState.create({
               revocationRegistryIndex: Number(revocationRegistryIndex),
               revocationRegistryDefinition,
               tailsPath: tailsFilePath,
-              revocationStatusList: RevocationStatusList.create({
-                issuerId: definition.issuerId,
-                issuanceByDefault: true,
-                revocationRegistryDefinition,
-                revocationRegistryDefinitionId,
-                timestamp,
-              }),
+              revocationStatusList: RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject),
             })
           }
           return {
