@@ -18,7 +18,7 @@ GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
 
 ## Running tests
 
-Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
+Test are executed using jest. Some test require either the **mediator agents** or the **ledger** to be running. When running tests that require a connection to the ledger pool, you need to set the `TEST_AGENT_PUBLIC_DID_SEED`, `ENDORSER_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
 
 ### Setting environment variables
 
@@ -62,7 +62,7 @@ docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool
 docker exec indy-pool indy-cli-setup
 
 #  DID and Verkey from seed. Set 'Trustee' role in order to be able to register public DIDs
-docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE
+docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 ENDORSER
 
 # If you want to register using the DID/Verkey you can use
 # docker exec indy-pool add-did "NkGXDEPgpFGjQKMYmz6SyF" "CrSA1WbYYWLJoHm16Xw1VEeWxFvXtWjtsfEzMsjB5vDT"

@@ -201,6 +201,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
+    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
@@ -215,22 +223,32 @@ describe('IndyVdrIndyDidRegistrar', () => {
         privateKey,
       },
     })
+
+    expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
+      agentContext,
+      pool: poolMock,
+      mode: { type: 'create', submitterKey: expect.any(Key) },
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       poolMock,
+      undefined,
       // Unqualified submitter did
       'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
+      // Verkey
       expect.any(Key),
       // Unqualified created indy did
       'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
       // Alias
       'Hello',
       // Role
-      'STEWARD',
-      undefined
+      'STEWARD'
     )
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
@@ -263,6 +281,16 @@ describe('IndyVdrIndyDidRegistrar', () => {
   test('creates a did:indy document by passing did', async () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
+    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
@@ -276,22 +304,34 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
       secret: {},
     })
+
+    expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
+      agentContext,
+      pool: poolMock,
+      mode: { type: 'create', submitterKey: expect.any(Key) },
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       poolMock,
+      // writeRequest
+      // TODO;
+      undefined,
       // Unqualified submitter did
       'BzCbsNYhMrjHiqZDTUASHg',
       // submitter signing key,
       expect.any(Key),
       // Unqualified created indy did
       'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
       // Alias
       'Hello',
       // Role
-      'STEWARD',
-      undefined
+      'STEWARD'
     )
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
@@ -321,6 +361,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('creates a did:indy document with services using diddocContent', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
@@ -364,22 +412,15 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
     })
 
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
+    expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
-      poolMock,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD',
-      {
+      pool: poolMock,
+      mode: { type: 'create', submitterKey: expect.any(Key) },
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: {
         '@context': [],
         authentication: [],
         id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
@@ -415,7 +456,25 @@ describe('IndyVdrIndyDidRegistrar', () => {
             type: 'X25519KeyAgreementKey2019',
           },
         ],
-      }
+      },
+    })
+
+    expect(registerPublicDidSpy).toHaveBeenCalledWith(
+      agentContext,
+      poolMock,
+      // writeRequest
+      // TODO;
+      undefined,
+      // Unqualified submitter did
+      'BzCbsNYhMrjHiqZDTUASHg',
+      // submitter signing key,
+      expect.any(Key),
+      // Unqualified created indy did
+      'B6xaJg1c2xU3D9ppCtt1CZ',
+      // Alias
+      'Hello',
+      // Role
+      'STEWARD'
     )
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
     expect(JsonTransformer.toJSON(result)).toMatchObject({
@@ -485,8 +544,24 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
+    const createSetDidEndpointsRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createSetDidEndpointsRequest'
+    )
+    createSetDidEndpointsRequestSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
@@ -527,33 +602,47 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
     })
 
+    expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
+      agentContext,
+      pool: poolMock,
+      mode: { type: 'create', submitterKey: expect.any(Key) },
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       poolMock,
+      // writeRequest
+      // TODO;
+      undefined,
       // Unqualified submitter did
       'BzCbsNYhMrjHiqZDTUASHg',
       // submitter signing key,
       expect.any(Key),
       // Unqualified created indy did
       'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
       // Alias
       'Hello',
       // Role
       'STEWARD'
     )
-    expect(setEndpointsForDidSpy).toHaveBeenCalledWith(
+    expect(createSetDidEndpointsRequestSpy).toHaveBeenCalledWith({
       agentContext,
-      poolMock,
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      expect.any(Key),
-      {
+      pool: poolMock,
+      mode: { type: 'create', submitterKey: expect.any(Key) },
+      // Unqualified created indy did
+      unqualifiedDid: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
         types: ['endpoint', 'did-communication', 'DIDComm'],
-      }
-    )
+      },
+    })
+    expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -618,6 +707,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('stores the did document', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - method is private
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private

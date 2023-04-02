@@ -1,5 +1,5 @@
 import type { DidDocument } from './domain'
-import type { DIDResolutionOptions, ParsedDID, DIDDocumentMetadata, DIDResolutionMetadata } from 'did-resolver'
+import type { DIDDocumentMetadata, DIDResolutionMetadata, DIDResolutionOptions, ParsedDID } from 'did-resolver'
 
 export type ParsedDid = ParsedDID
 export type DidResolutionOptions = DIDResolutionOptions
@@ -36,13 +36,19 @@ export interface DidOperationStateFailed {
   reason: string
 }
 
-export interface DidOperationState {
-  state: 'action' | 'wait'
+export interface DidOperationStateWait {
+  state: 'wait'
   did?: string
   secret?: DidRegistrationSecretOptions
   didDocument?: DidDocument
 }
 
+export interface DidOperationStateActionBase {
+  state: 'action'
+  did?: string
+  secret?: DidRegistrationSecretOptions
+  didDocument?: DidDocument
+}
 export interface DidCreateOptions {
   method?: string
   did?: string
@@ -51,9 +57,11 @@ export interface DidCreateOptions {
   didDocument?: DidDocument
 }
 
-export interface DidCreateResult {
+export interface DidCreateResult<
+  DidOperationStateAction extends DidOperationStateActionBase = DidOperationStateActionBase
+> {
   jobId?: string
-  didState: DidOperationState | DidOperationStateFinished | DidOperationStateFailed
+  didState: DidOperationStateWait | DidOperationStateAction | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
 }
@@ -68,7 +76,7 @@ export interface DidUpdateOptions {
 
 export interface DidUpdateResult {
   jobId?: string
-  didState: DidOperationState | DidOperationStateFinished | DidOperationStateFailed
+  didState: DidOperationStateWait | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
 }
@@ -81,7 +89,7 @@ export interface DidDeactivateOptions {
 
 export interface DidDeactivateResult {
   jobId?: string
-  didState: DidOperationState | DidOperationStateFinished | DidOperationStateFailed
+  didState: DidOperationStateWait | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
 }

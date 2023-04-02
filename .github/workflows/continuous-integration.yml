@@ -37,7 +37,7 @@ jobs:
               export SHOULD_RUN='true'
           elif [[ "${{ github.event.action }}" == "labeled" && "${{ github.event.label.name }}" != "ci-test" ]]; then
               export SHOULD_RUN='false'
-          else 
+          else
               export SHOULD_RUN='true'
           fi
 
@@ -96,6 +96,7 @@ jobs:
 
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
+
       - name: Setup Indy Pool
         uses: ./.github/actions/setup-indy-pool
         with:
@@ -120,7 +121,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} ENDORSER_AGENT_PUBLIC_DID_SEED=${ENDORSER_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
 
       - uses: codecov/codecov-action@v1
         if: always()

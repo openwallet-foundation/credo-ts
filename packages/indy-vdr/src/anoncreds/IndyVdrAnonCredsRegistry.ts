@@ -145,7 +145,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       const submitterKey = await verificationKeyForIndyDid(agentContext, options.schema.issuerId)
-      const response = await pool.submitWriteRequest(agentContext, schemaRequest, submitterKey)
+      const response = await pool.createAndSubmitWriteRequest(agentContext, schemaRequest, submitterKey)
       agentContext.config.logger.debug(`Registered schema '${didIndySchemaId}' on ledger '${pool.indyNamespace}'`, {
         response,
         schemaRequest,
@@ -327,7 +327,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       const submitterKey = await verificationKeyForIndyDid(agentContext, options.credentialDefinition.issuerId)
-      const response = await pool.submitWriteRequest(agentContext, credentialDefinitionRequest, submitterKey)
+      const response = await pool.createAndSubmitWriteRequest(agentContext, credentialDefinitionRequest, submitterKey)
       agentContext.config.logger.debug(
         `Registered credential definition '${didIndyCredentialDefinitionId}' on ledger '${pool.indyNamespace}'`,
         {

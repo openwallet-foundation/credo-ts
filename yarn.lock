@@ -902,22 +902,23 @@
   dependencies:
     fast-text-encoding "^1.0.3"
 
-"@hyperledger/indy-vdr-nodejs@^0.1.0-dev.10":
-  version "0.1.0-dev.10"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.10.tgz#f5fc988b3c11766475f7f084f814af8a4eca0caf"
-  integrity sha512-wETVax9HRidhRTRiRqwLTj/looNCvjZ3vdqMoqmPbmet5sM9eRkU9v4ipz4paqz4LiZipTx2fisLyYskKW9g6A==
+"@hyperledger/indy-vdr-nodejs@^0.1.0-dev.14":
+  version "0.1.0-dev.14"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.1.0-dev.14.tgz#d21590d5464341fb701b654c132c75c96e1cba8f"
+  integrity sha512-iuR4At4Vs2tQhctZH84KlWKFL1JI6BXa+2dnBauQXhMEQj8q2l5kTH8TjJeXPD1PyOnbLB9ry4tfx+/a0A2AKg==
   dependencies:
-    "@hyperledger/indy-vdr-shared" "0.1.0-dev.10"
+    "@hyperledger/indy-vdr-shared" "0.1.0-dev.14"
     "@mapbox/node-pre-gyp" "^1.0.10"
+    "@types/ref-array-di" "^1.2.5"
     ffi-napi "^4.0.3"
     ref-array-di "^1.2.2"
     ref-napi "^3.0.3"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/indy-vdr-shared@0.1.0-dev.10", "@hyperledger/indy-vdr-shared@^0.1.0-dev.10":
-  version "0.1.0-dev.10"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.1.0-dev.10.tgz#2a6d09a3a6ae3458ae9209ab7b6f09435e88b9c9"
-  integrity sha512-7fr9/Iliu0u94qE8u1g/RoLJOwMH0kFdclttwBHfTAKTQyfoXUPe1yIZ8ITRgLwnmFYPQpRa54lU+uv15c37fg==
+"@hyperledger/indy-vdr-shared@0.1.0-dev.14", "@hyperledger/indy-vdr-shared@^0.1.0-dev.14":
+  version "0.1.0-dev.14"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.1.0-dev.14.tgz#7dc3d61f997c1bcf737b23133ed0d08fec2a901d"
+  integrity sha512-CsZUcqybgtvVEVD1uHHgCGY3tddYcePJKjkEar14pss4w2IxbhRYnzkfp0+lWYUQnAY7rGX8A0MxRxwd7K1Yhw==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
@@ -2683,6 +2684,13 @@
     "@types/prop-types" "*"
     "@types/scheduler" "*"
     csstype "^3.0.2"
+
+"@types/ref-array-di@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@types/ref-array-di/-/ref-array-di-1.2.5.tgz#822b9be5b934398fafd5c26264d8de80d487747d"
+  integrity sha512-dA/Himb7ca/Tf5vqLOhi7LewAAoOXghlocw7gAqvNrmLybAtu+w2BLzEsbFWAtx5ElNzMEHDaRybueYViFROjQ==
+  dependencies:
+    "@types/ref-napi" "*"
 
 "@types/ref-napi@*", "@types/ref-napi@^3.0.4":
   version "3.0.7"

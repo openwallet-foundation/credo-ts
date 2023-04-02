@@ -1,3 +1,4 @@
+import type { WriteRequestMode } from '../dids/IndyVdrIndyDidRegistrar'
 import type { AgentContext, Key } from '@aries-framework/core'
 import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
@@ -9,6 +10,7 @@ import {
   indyVdr,
 } from '@hyperledger/indy-vdr-shared'
 
+import { parseIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrError } from '../error'
 
 export interface TransactionAuthorAgreement {
@@ -83,23 +85,42 @@ export class IndyVdrPool {
     // this.pool.close()
   }
 
-  public async submitWriteRequest<Request extends IndyVdrRequest>(
+  public async createWriteRequest<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     request: Request,
-    signingKey: Key
+    mode: WriteRequestMode
   ) {
     await this.appendTaa(request)
 
+    if (mode.type === 'toBeSigned') return request
+
+    if (mode.type === 'toBeEndorsed') {
+      request.setEndorser({ endorser: parseIndyDid(mode.endorserDid).namespaceIdentifier })
+    }
+
     const signature = await agentContext.wallet.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
-      key: signingKey,
+      key: mode.type === 'create' ? mode.submitterKey : mode.authorKey,
     })
 
     request.setSignature({
       signature,
     })
 
-    return await this.pool.submitRequest(request)
+    return request
+  }
+
+  public async submitWriteRequest<Request extends IndyVdrRequest>(writeRequest: Request) {
+    return await this.pool.submitRequest(writeRequest)
+  }
+
+  public async createAndSubmitWriteRequest<Request extends IndyVdrRequest>(
+    agentContext: AgentContext,
+    request: Request,
+    submitterKey: Key
+  ) {
+    const writeRequest = await this.createWriteRequest(agentContext, request, { type: 'create', submitterKey })
+    return await this.submitWriteRequest(writeRequest)
   }
 
   public async submitReadRequest<Request extends IndyVdrRequest>(request: Request) {
