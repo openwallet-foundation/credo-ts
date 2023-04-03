@@ -1,6 +1,6 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
-import { Agent, KeyType, TypedArrayEncoder, W3cCredentialRecord, W3cVcModule } from '@aries-framework/core'
+import { Agent, KeyType, TypedArrayEncoder, W3cCredentialRecord, W3cCredentialsModule } from '@aries-framework/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
@@ -14,7 +14,7 @@ import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),
-  w3cVc: new W3cVcModule({
+  w3cVc: new W3cCredentialsModule({
     documentLoader: customDocumentLoader,
   }),
   indySdk: new IndySdkModule({

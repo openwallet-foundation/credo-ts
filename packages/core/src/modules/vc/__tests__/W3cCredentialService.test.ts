@@ -15,8 +15,8 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../dids/domain/key-type/ed25519'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
+import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
-import { W3cCredentialsService } from '../W3cCredentialsService'
 import { orArrayToArray } from '../jsonldUtil'
 import jsonld from '../libraries/jsonld'
 import { W3cCredential, W3cVerifiableCredential } from '../models'
@@ -24,7 +24,7 @@ import { LinkedDataProof } from '../models/LinkedDataProof'
 import { W3cPresentation } from '../models/presentation/W3cPresentation'
 import { W3cVerifiablePresentation } from '../models/presentation/W3cVerifiablePresentation'
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
-import { W3cCredentialRecord, W3cCredentialsRepository } from '../repository'
+import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 import { Ed25519Signature2018 } from '../signature-suites'
 
 import { customDocumentLoader } from './documentLoader'
@@ -46,7 +46,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
 const signingProviderRegistry = new SigningProviderRegistry([])
 
 jest.mock('../repository/W3cCredentialRepository')
-const W3cCredentialsRepositoryMock = W3cCredentialsRepository as jest.Mock<W3cCredentialsRepository>
+const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
 
 const agentConfig = getAgentConfig('W3cCredentialServiceTest')
 
@@ -66,8 +66,8 @@ const credentialRecordFactory = async (credential: W3cVerifiableCredential) => {
 describe('W3cCredentialsService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
-  let w3cCredentialsService: W3cCredentialsService
-  let w3cCredentialsRepository: W3cCredentialsRepository
+  let w3cCredentialsService: W3cCredentialService
+  let w3cCredentialsRepository: W3cCredentialRepository
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
@@ -78,7 +78,7 @@ describe('W3cCredentialsService', () => {
       wallet,
     })
     w3cCredentialsRepository = new W3cCredentialsRepositoryMock()
-    w3cCredentialsService = new W3cCredentialsService(
+    w3cCredentialsService = new W3cCredentialService(
       w3cCredentialsRepository,
       signatureSuiteRegistry,
       new W3cCredentialsModuleConfig({

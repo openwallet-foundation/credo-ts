@@ -1,4 +1,4 @@
-export * from './W3cCredentialsService'
+export * from './W3cCredentialService'
 export * from './repository/W3cCredentialRecord'
 export * from './W3cCredentialsModule'
 export * from './models'

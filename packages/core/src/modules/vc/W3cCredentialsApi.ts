@@ -1,12 +1,11 @@
-import type { W3cVerifiableCredential } from './models'
-import type { StoreCredentialOptions } from './models/W3cCredentialServiceOptions'
+import type { W3cVerifiableCredential, StoreCredentialOptions } from './models'
 import type { W3cCredentialRecord } from './repository'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
-import { W3cCredentialsService } from './W3cCredentialsService'
+import { W3cCredentialService } from './W3cCredentialService'
 
 /**
  * @public
@@ -14,9 +13,9 @@ import { W3cCredentialsService } from './W3cCredentialsService'
 @injectable()
 export class W3cVcApi {
   private agentContext: AgentContext
-  private w3cCredentialService: W3cCredentialsService
+  private w3cCredentialService: W3cCredentialService
 
-  public constructor(agentContext: AgentContext, w3cCredentialService: W3cCredentialsService) {
+  public constructor(agentContext: AgentContext, w3cCredentialService: W3cCredentialService) {
     this.agentContext = agentContext
     this.w3cCredentialService = w3cCredentialService
   }

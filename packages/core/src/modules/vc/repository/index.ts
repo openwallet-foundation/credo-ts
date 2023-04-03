@@ -1,2 +1,2 @@
 export * from './W3cCredentialRecord'
-export * from './W3cCredentialsRepository'
+export * from './W3cCredentialRepository'
