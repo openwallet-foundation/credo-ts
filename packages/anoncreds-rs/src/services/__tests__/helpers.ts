@@ -13,7 +13,7 @@ import {
   CredentialOffer,
   CredentialRequest,
   CredentialRevocationConfig,
-  MasterSecret,
+  LinkSecret,
   RevocationRegistryDefinition,
   RevocationRegistryDefinitionPrivate,
   RevocationStatusList,
@@ -77,10 +77,7 @@ export function createCredentialOffer(keyCorrectnessProof: Record<string, unknow
  * @returns Creates a valid link secret value for anoncreds-rs
  */
 export function createLinkSecret() {
-  const masterSecret = MasterSecret.create()
-  const ms = (masterSecret.toJson() as { value: { ms: string } }).value.ms as string
-  masterSecret.handle.clear()
-  return ms
+  return LinkSecret.create()
 }
 
 export function createCredentialForHolder(options: {
@@ -118,8 +115,8 @@ export function createCredentialForHolder(options: {
     entropy: 'some-entropy',
     credentialDefinition,
     credentialOffer,
-    masterSecret: { value: { ms: linkSecret } },
-    masterSecretId: linkSecretId,
+    linkSecret,
+    linkSecretId: linkSecretId,
   })
 
   const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate, tailsPath } =
@@ -158,6 +155,7 @@ export function createCredentialForHolder(options: {
     credentialDefinitionId,
     credentialId,
     schemaId,
+    methodName: 'inMemory',
   }
   const returnObj = {
     credential: credentialObj.toJson() as unknown as AnonCredsCredential,

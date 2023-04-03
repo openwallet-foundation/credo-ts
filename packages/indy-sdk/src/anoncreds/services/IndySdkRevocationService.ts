@@ -9,6 +9,7 @@ import type {
 import type { AgentContext } from '@aries-framework/core'
 import type { RevStates } from 'indy-sdk'
 
+import { assertBestPracticeRevocationInterval } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, inject, injectable } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
@@ -67,6 +68,7 @@ export class IndySdkRevocationService {
         referent: string
         credentialInfo: AnonCredsCredentialInfo
         referentRevocationInterval: AnonCredsNonRevokedInterval | undefined
+        timestamp: number | undefined
       }> = []
 
       //Retrieve information for referents and push to single array
@@ -76,6 +78,7 @@ export class IndySdkRevocationService {
           credentialInfo: selectedCredential.credentialInfo,
           type: RequestReferentType.Attribute,
           referentRevocationInterval: proofRequest.requested_attributes[referent].non_revoked,
+          timestamp: selectedCredential.timestamp,
         })
       }
       for (const [referent, selectedCredential] of Object.entries(selectedCredentials.predicates ?? {})) {
@@ -84,17 +87,18 @@ export class IndySdkRevocationService {
           credentialInfo: selectedCredential.credentialInfo,
           type: RequestReferentType.Predicate,
           referentRevocationInterval: proofRequest.requested_predicates[referent].non_revoked,
+          timestamp: selectedCredential.timestamp,
         })
       }
 
-      for (const { referent, credentialInfo, type, referentRevocationInterval } of referentCredentials) {
+      for (const { referent, credentialInfo, type, referentRevocationInterval, timestamp } of referentCredentials) {
         // Prefer referent-specific revocation interval over global revocation interval
         const requestRevocationInterval = referentRevocationInterval ?? proofRequest.non_revoked
         const credentialRevocationId = credentialInfo.credentialRevocationId
         const revocationRegistryId = credentialInfo.revocationRegistryId
 
         // If revocation interval is present and the credential is revocable then create revocation state
-        if (requestRevocationInterval && credentialRevocationId && revocationRegistryId) {
+        if (requestRevocationInterval && timestamp && credentialRevocationId && revocationRegistryId) {
           agentContext.config.logger.trace(
             `Presentation is requesting proof of non revocation for ${type} referent '${referent}', creating revocation state for credential`,
             {
@@ -104,12 +108,17 @@ export class IndySdkRevocationService {
             }
           )
 
-          this.assertRevocationInterval(requestRevocationInterval)
+          assertBestPracticeRevocationInterval(requestRevocationInterval)
 
           const { definition, revocationStatusLists, tailsFilePath } = revocationRegistries[revocationRegistryId]
-          // NOTE: we assume that the revocationStatusLists have been added based on timestamps of the `to` query. On a higher level it means we'll find the
-          // most accurate revocation list for a given timestamp. It doesn't have to be that the revocationStatusList is from the `to` timestamp however.
-          const revocationStatusList = revocationStatusLists[requestRevocationInterval.to]
+
+          // Extract revocation status list for the given timestamp
+          const revocationStatusList = revocationStatusLists[timestamp]
+          if (!revocationStatusList) {
+            throw new AriesFrameworkError(
+              `Revocation status list for revocation registry ${revocationRegistryId} and timestamp ${timestamp} not found in revocation status lists. All revocation status lists must be present.`
+            )
+          }
 
           const tails = await createTailsReader(agentContext, tailsFilePath)
 
@@ -120,7 +129,6 @@ export class IndySdkRevocationService {
             revocationStatusList.timestamp,
             credentialRevocationId
           )
-          const timestamp = revocationState.timestamp
 
           if (!indyRevocationStates[revocationRegistryId]) {
             indyRevocationStates[revocationRegistryId] = {}
@@ -144,31 +152,4 @@ export class IndySdkRevocationService {
       throw isIndyError(error) ? new IndySdkError(error) : error
     }
   }
-
-  // TODO: Add Test
-  // TODO: we should do this verification on a higher level I think?
-  // Check revocation interval in accordance with https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0441-present-proof-best-practices/README.md#semantics-of-non-revocation-interval-endpoints
-  private assertRevocationInterval(
-    revocationInterval: AnonCredsNonRevokedInterval
-  ): asserts revocationInterval is BestPracticeNonRevokedInterval {
-    if (!revocationInterval.to) {
-      throw new AriesFrameworkError(`Presentation requests proof of non-revocation with no 'to' value specified`)
-    }
-
-    if (
-      (revocationInterval.from || revocationInterval.from === 0) &&
-      revocationInterval.to !== revocationInterval.from
-    ) {
-      throw new AriesFrameworkError(
-        `Presentation requests proof of non-revocation with an interval from: '${revocationInterval.from}' that does not match the interval to: '${revocationInterval.to}', as specified in Aries RFC 0441`
-      )
-    }
-  }
-}
-
-// This sets the `to` value to be required. We do this check in the `assertRevocationInterval` method,
-// and it makes it easier to work with the object in TS
-interface BestPracticeNonRevokedInterval {
-  from?: number
-  to: number
 }

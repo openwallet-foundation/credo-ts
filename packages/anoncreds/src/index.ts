@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+
 export * from './models'
 export * from './services'
 export * from './error'
@@ -11,3 +13,4 @@ export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { generateLegacyProverDidLikeString } from './utils/proverDid'
 export * from './utils/legacyIndyIdentifiers'
+export { assertBestPracticeRevocationInterval } from './utils/revocationInterval'

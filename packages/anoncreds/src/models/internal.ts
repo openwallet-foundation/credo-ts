@@ -7,6 +7,7 @@ export interface AnonCredsCredentialInfo {
   credentialDefinitionId: string
   revocationRegistryId?: string | undefined
   credentialRevocationId?: string | undefined
+  methodName: string
 }
 
 export interface AnonCredsRequestedAttributeMatch {
@@ -30,11 +31,13 @@ export interface AnonCredsSelectedCredentials {
   selfAttestedAttributes: Record<string, string>
 }
 
+export interface AnonCredsLinkSecretBlindingData {
+  v_prime: string
+  vr_prime: string | null
+}
+
 export interface AnonCredsCredentialRequestMetadata {
-  master_secret_blinding_data: {
-    v_prime: string
-    vr_prime: string | null
-  }
-  master_secret_name: string
+  link_secret_blinding_data: AnonCredsLinkSecretBlindingData
+  link_secret_name: string
   nonce: string
 }

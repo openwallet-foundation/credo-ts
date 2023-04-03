@@ -1,21 +1,18 @@
 import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 import type { AgentContext } from '../../../agent'
 import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import type { Query } from '../../../storage/StorageService'
-import type { EncryptedMessage } from '../../../types'
 import type { ConnectionRecord } from '../../connections'
 import type { Routing } from '../../connections/services/ConnectionService'
 import type { MediationStateChangedEvent, KeylistUpdatedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
-import type { StatusMessage, MessageDeliveryMessage } from '../protocol'
 
 import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
-import { filterContextCorrelationId, AgentEventTypes } from '../../../agent/Events'
+import { filterContextCorrelationId } from '../../../agent/Events'
 import { MessageSender } from '../../../agent/MessageSender'
 import { OutboundMessageContext } from '../../../agent/models'
 import { Key, KeyType } from '../../../crypto'
@@ -27,10 +24,7 @@ import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionM
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { DidKey } from '../../dids'
 import { didKeyToVerkey, isDidKey } from '../../dids/helpers'
-import { ProblemReportError } from '../../problem-reports'
-import { RecipientModuleConfig } from '../RecipientModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
-import { RoutingProblemReportReason } from '../error'
 import {
   KeylistUpdateAction,
   KeylistUpdateResponseMessage,
@@ -39,7 +33,6 @@ import {
 } from '../messages'
 import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
 import { MediationRole, MediationState } from '../models'
-import { DeliveryRequestMessage, MessagesReceivedMessage, StatusRequestMessage } from '../protocol/pickup/v2/messages'
 import { MediationRecord } from '../repository/MediationRecord'
 import { MediationRepository } from '../repository/MediationRepository'
 
@@ -49,37 +42,17 @@ export class MediationRecipientService {
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private recipientModuleConfig: RecipientModuleConfig
 
   public constructor(
     connectionService: ConnectionService,
     messageSender: MessageSender,
     mediatorRepository: MediationRepository,
-    eventEmitter: EventEmitter,
-    recipientModuleConfig: RecipientModuleConfig
+    eventEmitter: EventEmitter
   ) {
     this.mediationRepository = mediatorRepository
     this.eventEmitter = eventEmitter
     this.connectionService = connectionService
     this.messageSender = messageSender
-    this.recipientModuleConfig = recipientModuleConfig
-  }
-
-  public async createStatusRequest(
-    mediationRecord: MediationRecord,
-    config: {
-      recipientKey?: string
-    } = {}
-  ) {
-    mediationRecord.assertRole(MediationRole.Recipient)
-    mediationRecord.assertReady()
-
-    const { recipientKey } = config
-    const statusRequest = new StatusRequestMessage({
-      recipientKey,
-    })
-
-    return statusRequest
   }
 
   public async createRequest(
@@ -306,81 +279,6 @@ export class MediationRecipientService {
     await this.updateState(messageContext.agentContext, mediationRecord, MediationState.Denied)
 
     return mediationRecord
-  }
-
-  public async processStatus(messageContext: InboundMessageContext<StatusMessage>) {
-    const connection = messageContext.assertReadyConnection()
-    const { message: statusMessage } = messageContext
-    const { messageCount, recipientKey } = statusMessage
-
-    //No messages to be sent
-    if (messageCount === 0) {
-      const { message, connectionRecord } = await this.connectionService.createTrustPing(
-        messageContext.agentContext,
-        connection,
-        {
-          responseRequested: false,
-        }
-      )
-      const websocketSchemes = ['ws', 'wss']
-
-      await this.messageSender.sendMessage(
-        new OutboundMessageContext(message, {
-          agentContext: messageContext.agentContext,
-          connection: connectionRecord,
-        }),
-        {
-          transportPriority: {
-            schemes: websocketSchemes,
-            restrictive: true,
-            // TODO: add keepAlive: true to enforce through the public api
-            // we need to keep the socket alive. It already works this way, but would
-            // be good to make more explicit from the public facing API.
-            // This would also make it easier to change the internal API later on.
-            // keepAlive: true,
-          },
-        }
-      )
-
-      return null
-    }
-    const { maximumMessagePickup } = this.recipientModuleConfig
-    const limit = messageCount < maximumMessagePickup ? messageCount : maximumMessagePickup
-
-    const deliveryRequestMessage = new DeliveryRequestMessage({
-      limit,
-      recipientKey,
-    })
-
-    return deliveryRequestMessage
-  }
-
-  public async processDelivery(messageContext: InboundMessageContext<MessageDeliveryMessage>) {
-    messageContext.assertReadyConnection()
-
-    const { appendedAttachments } = messageContext.message
-
-    if (!appendedAttachments)
-      throw new ProblemReportError('Error processing attachments', {
-        problemCode: RoutingProblemReportReason.ErrorProcessingAttachments,
-      })
-
-    const ids: string[] = []
-    for (const attachment of appendedAttachments) {
-      ids.push(attachment.id)
-
-      this.eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
-        payload: {
-          message: attachment.getDataAsJson<EncryptedMessage>(),
-          contextCorrelationId: messageContext.agentContext.contextCorrelationId,
-        },
-      })
-    }
-
-    return new MessagesReceivedMessage({
-      messageIdList: ids,
-    })
   }
 
   /**

@@ -8,6 +8,7 @@ export interface AnonCredsCredentialDefinitionRecordProps {
   id?: string
   credentialDefinitionId: string
   credentialDefinition: AnonCredsCredentialDefinition
+  methodName: string
 }
 
 export type DefaultAnonCredsCredentialDefinitionTags = {
@@ -15,6 +16,7 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
   credentialDefinitionId: string
   issuerId: string
   tag: string
+  methodName: string
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
@@ -25,8 +27,14 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   public static readonly type = 'AnonCredsCredentialDefinitionRecord'
   public readonly type = AnonCredsCredentialDefinitionRecord.type
 
-  public readonly credentialDefinitionId!: string
-  public readonly credentialDefinition!: AnonCredsCredentialDefinition
+  public credentialDefinitionId!: string
+  public credentialDefinition!: AnonCredsCredentialDefinition
+
+  /**
+   * AnonCreds method name. We don't use names explicitly from the registry (there's no identifier for a registry)
+   * @see https://hyperledger.github.io/anoncreds-methods-registry/
+   */
+  public methodName!: string
 
   public constructor(props: AnonCredsCredentialDefinitionRecordProps) {
     super()
@@ -35,6 +43,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
       this.id = props.id ?? utils.uuid()
       this.credentialDefinitionId = props.credentialDefinitionId
       this.credentialDefinition = props.credentialDefinition
+      this.methodName = props.methodName
     }
   }
 
@@ -45,6 +54,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
       schemaId: this.credentialDefinition.schemaId,
       issuerId: this.credentialDefinition.issuerId,
       tag: this.credentialDefinition.tag,
+      methodName: this.methodName,
     }
   }
 }

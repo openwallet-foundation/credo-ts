@@ -20,6 +20,7 @@ describe('AnoncredsCredentialRecords', () => {
       schemaIssuerId: 'schemaIssuerDid',
       schemaName: 'schemaName',
       schemaVersion: 'schemaVersion',
+      methodName: 'methodName',
     })
 
     const tags = anoncredsCredentialRecords.getTags()
@@ -38,6 +39,7 @@ describe('AnoncredsCredentialRecords', () => {
       'attr::attr1::marker': true,
       'attr::attr2::value': 'value2',
       'attr::attr2::marker': true,
+      methodName: 'methodName',
     })
   })
 })

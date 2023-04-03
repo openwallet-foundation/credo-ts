@@ -92,7 +92,7 @@ export class IndySdkToAskarMigrationUpdater {
    * This doubles checks some fields as later it might be possiblt to run this function
    */
   private async migrate() {
-    const specUri = this.dbPath
+    const specUri = this.backupFile
     const kdfLevel = this.walletConfig.keyDerivationMethod ?? 'ARGON2I_MOD'
     const walletName = this.walletConfig.id
     const walletKey = this.walletConfig.key
@@ -137,7 +137,7 @@ export class IndySdkToAskarMigrationUpdater {
    * Temporary backup location of the pre-migrated script
    */
   private get backupFile() {
-    return `${this.fs.tempPath}/${this.walletConfig.id}.bak.db`
+    return `${this.fs.tempPath}/${this.walletConfig.id}.db`
   }
 
   /**
@@ -161,35 +161,6 @@ export class IndySdkToAskarMigrationUpdater {
     }
   }
 
-  /**
-   * Reverts backed up database file to the original path, if its missing, and
-   * deletes the backup. We do some additional, possible redundant, exists checks
-   * here to be extra sure that only a happy flow occurs.
-   */
-  private async restoreDatabase() {
-    // "Impossible" state. Since we do not continue if `this.backupDatabase()`
-    // fails, this file should always be there. If this error is thrown, we
-    // cannot correctly restore the state.
-    if (!(await this.fs.exists(this.backupFile))) {
-      throw new IndySdkToAskarMigrationError('Backup file could not be found while trying to restore the state')
-    }
-
-    /**
-     * Since we used `copy` to get the file, it should still be there. We
-     * double-check here to be sure.
-     */
-    if (!(await this.fs.exists(this.dbPath))) {
-      return
-    } else {
-      this.agent.config.logger.trace(`Moving '${this.backupFile}' back to the original path: '${this.dbPath}`)
-
-      // Move the backedup file back to the original path
-      await this.fs.copyFile(this.backupFile, this.dbPath)
-
-      this.agent.config.logger.trace(`Cleaned up the backed up file at '${this.backupFile}'`)
-    }
-  }
-
   // Delete the backup as `this.fs.copyFile` only copies and no deletion
   // Since we use `tempPath` which is cleared when certain events happen,
   // e.g. cron-job and system restart (depending on the os) we could omit
@@ -204,7 +175,7 @@ export class IndySdkToAskarMigrationUpdater {
    * to the `FileSystem.dataPath`.
    */
   private async moveToNewLocation() {
-    const src = this.dbPath
+    const src = this.backupFile
     // New path for the database
     const dest = this.newWalletPath
 
@@ -243,7 +214,7 @@ export class IndySdkToAskarMigrationUpdater {
 
       const keyMethod =
         this.walletConfig?.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
-      this.store = await Store.open({ uri: `sqlite://${this.dbPath}`, passKey: this.walletConfig.key, keyMethod })
+      this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
 
       // Update the values to reflect the new structure
       await this.updateKeys()
@@ -255,8 +226,6 @@ export class IndySdkToAskarMigrationUpdater {
       await this.moveToNewLocation()
     } catch (err) {
       this.agent.config.logger.error('Migration failed. Restoring state.')
-
-      await this.restoreDatabase()
 
       throw new IndySdkToAskarMigrationError(`Migration failed. State has been restored. ${err.message}`, {
         cause: err.cause,
@@ -425,6 +394,8 @@ export class IndySdkToAskarMigrationUpdater {
           schemaVersion,
           credentialId: row.name,
           linkSecretId: this.defaultLinkSecretId,
+          // Hardcode methodName to indy as all IndySDK credentials are indy credentials
+          methodName: 'indy',
         })
 
         const tags = transformFromRecordTagValues(record.getTags())

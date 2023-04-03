@@ -19,6 +19,12 @@ export interface Wallet extends Disposable {
   rotateKey(walletConfig: WalletConfigRekey): Promise<void>
   close(): Promise<void>
   delete(): Promise<void>
+
+  /**
+   * Export the wallet to a file at the given path and encrypt it with the given key.
+   *
+   * @throws {WalletExportPathExistsError} When the export path already exists
+   */
   export(exportConfig: WalletExportImportConfig): Promise<void>
   import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void>
 

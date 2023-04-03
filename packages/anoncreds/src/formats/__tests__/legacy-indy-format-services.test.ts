@@ -242,22 +242,23 @@ describe('Legacy indy format services', () => {
       credentialDefinitionId: legacyCredentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: null,
+      methodName: 'indy',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: legacySchemaId,
         credentialDefinitionId: legacyCredentialDefinitionId,
       },
-      '_anonCreds/anonCredsCredentialRequest': {
-        master_secret_blinding_data: expect.any(Object),
-        master_secret_name: expect.any(String),
+      '_anoncreds/credentialRequest': {
+        link_secret_blinding_data: expect.any(Object),
+        link_secret_name: expect.any(String),
         nonce: expect.any(String),
       },
     })
 
     expect(issuerCredentialRecord.metadata.data).toEqual({
-      '_anonCreds/anonCredsCredential': {
+      '_anoncreds/credential': {
         schemaId: legacySchemaId,
         credentialDefinitionId: legacyCredentialDefinitionId,
       },
