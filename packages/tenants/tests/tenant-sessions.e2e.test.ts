@@ -1,6 +1,6 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { Agent } from '@aries-framework/core'
+import { ConnectionsModule, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import { testLogger, indySdk } from '../../core/tests'
@@ -16,7 +16,6 @@ const agentConfig: InitConfig = {
   },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
-  autoAcceptConnections: true,
 }
 
 // Create multi-tenant agent
@@ -26,6 +25,9 @@ const agent = new Agent({
   modules: {
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
     indySdk: new IndySdkModule({ indySdk }),
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
   },
 })
 

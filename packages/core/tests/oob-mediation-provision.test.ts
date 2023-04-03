@@ -4,7 +4,12 @@ import type { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { MediationState, MediatorPickupStrategy } from '../src/modules/routing'
+import {
+  MediationState,
+  MediatorModule,
+  MediatorPickupStrategy,
+  MediationRecipientModule,
+} from '../src/modules/routing'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
@@ -20,17 +25,22 @@ const aliceAgentOptions = getAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
-    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  getIndySdkModules()
+  {
+    ...getIndySdkModules(),
+    mediationRecipient: new MediationRecipientModule({
+      // FIXME: discover features returns that we support this protocol, but we don't support all roles
+      // we should return that we only support the mediator role so we don't have to explicitly declare this
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    }),
+  }
 )
 const mediatorAgentOptions = getAgentOptions(
   'OOB mediation provision - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
-    autoAcceptMediationRequests: true,
   },
-  getIndySdkModules()
+  { ...getIndySdkModules(), mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
 describe('out of band with mediation set up with provision method', () => {

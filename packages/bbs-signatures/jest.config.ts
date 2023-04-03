@@ -6,7 +6,7 @@ import packageJson from './package.json'
 
 const config: Config.InitialOptions = {
   ...base,
-  name: packageJson.name,
+
   displayName: packageJson.name,
   setupFilesAfterEnv: ['./tests/setup.ts'],
 }
