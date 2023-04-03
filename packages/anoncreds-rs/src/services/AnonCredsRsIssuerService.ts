@@ -16,6 +16,7 @@ import {
   CreateRevocationStatusListOptions,
   AnonCredsRevocationStatusList,
   RevocationRegistryState,
+  UpdateRevocationStatusListOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
@@ -123,7 +124,6 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       return {
         revocationRegistryDefinition:
           createReturnObj.revocationRegistryDefinition.toJson() as unknown as AnonCredsRevocationRegistryDefinition,
-        tailsHash: createReturnObj.revocationRegistryDefinition.getTailsHash(),
         revocationRegistryDefinitionPrivate: createReturnObj.revocationRegistryDefinitionPrivate.toJson(),
       }
     } finally {
@@ -138,6 +138,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
   ): Promise<AnonCredsRevocationStatusList> {
     const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault } = options
 
+    console.log(`revocation list: ${options.revocationRegistryDefinition.value.tailsLocation}`)
     let revocationStatusList: RevocationStatusList | undefined
     try {
       revocationStatusList = RevocationStatusList.create({
@@ -145,11 +146,46 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         revocationRegistryDefinitionId,
         revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
         issuerId,
+        timestamp: new Date().getTime() // TODO: fix optional field issue in anoncreds-rs
       })
 
       return revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList
     } finally {
       revocationStatusList?.handle.clear()
+    }
+  }
+
+  public async updateRevocationStatusList(
+    agentContext: AgentContext,
+    options: UpdateRevocationStatusListOptions
+  ): Promise<AnonCredsRevocationStatusList> {
+    const { revocationStatusList, revocationRegistryDefinition, issued, revoked, timestamp } = options
+
+    let updatedRevocationStatusList: RevocationStatusList | undefined
+    let revocationRegistryDefinitionObj: RevocationRegistryDefinition | undefined
+
+    try {
+      updatedRevocationStatusList = RevocationStatusList.fromJson(revocationStatusList as unknown as JsonObject)
+
+      if (timestamp && !issued && !revoked) {
+        updatedRevocationStatusList.updateTimestamp({
+          timestamp
+        })
+      } else {
+        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(revocationRegistryDefinition as unknown as JsonObject)
+        updatedRevocationStatusList.update({
+          // TODO: Fix parameters in anoncreds-rs
+          revocationRegstryDefinition: revocationRegistryDefinitionObj,
+          issued,
+          revoked,
+          timestamp
+        })
+      }
+
+      return updatedRevocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList
+    } finally {
+      updatedRevocationStatusList?.handle.clear()
+      revocationRegistryDefinitionObj?.handle.clear()
     }
   }
 

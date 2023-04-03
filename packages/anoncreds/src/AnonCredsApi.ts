@@ -357,7 +357,7 @@ export class AnonCredsApi {
     }
 
     try {
-      const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate, tailsHash } =
+      const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
         await this.anonCredsIssuerService.createRevocationRegistryDefinition(this.agentContext, {
           issuerId,
           tag,
@@ -367,7 +367,9 @@ export class AnonCredsApi {
           tailsDirectoryPath,
         })
 
-      const localTailsFilePath = `${tailsDirectoryPath}/${tailsHash}}`
+      // TODO: Publish tails file and get public URL for it
+      const localTailsFilePath = 
+        `${revocationRegistryDefinition.value.tailsLocation}/${revocationRegistryDefinition.value.tailsHash}}`
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
@@ -377,7 +379,6 @@ export class AnonCredsApi {
       await this.storeRevocationRegistryDefinitionRecord(
         result,
         localTailsFilePath,
-        tailsHash,
         revocationRegistryDefinitionPrivate
       )
 
@@ -525,7 +526,6 @@ export class AnonCredsApi {
   private async storeRevocationRegistryDefinitionRecord(
     result: RegisterRevocationRegistryDefinitionReturn,
     localTailsFilePath: string,
-    tailsHash: string,
     revocationRegistryDefinitionPrivate?: Record<string, unknown>
   ): Promise<void> {
     try {
@@ -539,8 +539,6 @@ export class AnonCredsApi {
         const revocationRegistryDefinitionRecord = new AnonCredsRevocationRegistryDefinitionRecord({
           revocationRegistryDefinitionId: result.revocationRegistryDefinitionState.revocationRegistryDefinitionId,
           revocationRegistryDefinition: result.revocationRegistryDefinitionState.revocationRegistryDefinition,
-          localTailsFilePath,
-          tailsHash,
         })
 
         // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
@@ -564,6 +562,7 @@ export class AnonCredsApi {
         if (revocationRegistryDefinitionPrivate) {
           const revocationRegistryDefinitionPrivateRecord = new AnonCredsRevocationRegistryDefinitionPrivateRecord({
             revocationRegistryDefinitionId: result.revocationRegistryDefinitionState.revocationRegistryDefinitionId,
+            credentialDefinitionId: result.revocationRegistryDefinitionState.revocationRegistryDefinition.credDefId,
             value: revocationRegistryDefinitionPrivate,
             state: RevocationRegistryState.Active,
           })

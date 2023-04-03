@@ -59,6 +59,7 @@ import {
   AnonCredsRevocationRegistryDefinitionRepository,
   RevocationRegistryState,
 } from '../repository'
+import { downloadTailsFile } from '../utils'
 
 const ANONCREDS_CREDENTIAL_OFFER = 'anoncreds/credential-offer@v1.0'
 const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
@@ -352,11 +353,13 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       }
       revocationStatusList = result.revocationStatusList
 
-      const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
+      const { revocationRegistryDefinition } = await agentContext.dependencyManager
         .resolve(AnonCredsRevocationRegistryDefinitionRepository)
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
-      tailsFilePath = revocationRegistryDefinitionRecord.localTailsFilePath
+      ;({ tailsFilePath } = await downloadTailsFile(agentContext, 
+        revocationRegistryDefinition.value.tailsLocation, 
+        revocationRegistryDefinition.value.tailsHash))
     }
 
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {

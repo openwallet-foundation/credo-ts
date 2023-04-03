@@ -11,6 +11,7 @@ export enum RevocationRegistryState {
 export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   id?: string
   revocationRegistryDefinitionId: string
+  credentialDefinitionId: string
   value: Record<string, unknown>
   index?: number
   state?: RevocationRegistryState
@@ -18,6 +19,7 @@ export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
 
 export type DefaultAnonCredsRevocationRegistryPrivateTags = {
   revocationRegistryDefinitionId: string
+  credentialDefinitionId: string
   state: RevocationRegistryState
 }
 
@@ -29,6 +31,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
   public readonly type = AnonCredsRevocationRegistryDefinitionPrivateRecord.type
 
   public readonly revocationRegistryDefinitionId!: string
+  public readonly credentialDefinitionId!: string
   public readonly value!: Record<string, unknown> // TODO: Define structure
 
   public currentIndex!: number
@@ -41,6 +44,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
     if (props) {
       this.id = props.id ?? utils.uuid()
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
+      this.credentialDefinitionId = props.credentialDefinitionId
       this.value = props.value
       this.currentIndex = props.index ?? 0
       this.state = props.state ?? RevocationRegistryState.Created
@@ -51,6 +55,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
     return {
       ...this._tags,
       revocationRegistryDefinitionId: this.revocationRegistryDefinitionId,
+      credentialDefinitionId: this.credentialDefinitionId,
       state: this.state,
     }
   }

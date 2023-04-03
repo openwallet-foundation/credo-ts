@@ -8,8 +8,6 @@ export interface AnonCredsRevocationRegistryDefinitionRecordProps {
   id?: string
   revocationRegistryDefinitionId: string
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
-  localTailsFilePath: string
-  tailsHash: string
 }
 
 export type DefaultAnonCredsRevocationRegistryDefinitionTags = {
@@ -27,8 +25,6 @@ export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<
 
   public readonly revocationRegistryDefinitionId!: string
   public readonly revocationRegistryDefinition!: AnonCredsRevocationRegistryDefinition
-  public readonly localTailsFilePath!: string
-  public readonly tailsHash!: string
 
   public constructor(props: AnonCredsRevocationRegistryDefinitionRecordProps) {
     super()
@@ -37,7 +33,6 @@ export class AnonCredsRevocationRegistryDefinitionRecord extends BaseRecord<
       this.id = props.id ?? utils.uuid()
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
       this.revocationRegistryDefinition = props.revocationRegistryDefinition
-      this.tailsHash = props.tailsHash
     }
   }
 
