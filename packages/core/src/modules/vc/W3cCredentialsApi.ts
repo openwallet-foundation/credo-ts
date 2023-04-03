@@ -11,7 +11,7 @@ import { W3cCredentialService } from './W3cCredentialService'
  * @public
  */
 @injectable()
-export class W3cVcApi {
+export class W3cCredentialsApi {
   private agentContext: AgentContext
   private w3cCredentialService: W3cCredentialService
 

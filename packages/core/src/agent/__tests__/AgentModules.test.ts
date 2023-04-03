@@ -67,7 +67,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cCredentialsModule),
+        w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
       })
     })
@@ -91,7 +91,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cCredentialsModule),
+        w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         myModule,
       })
@@ -118,7 +118,7 @@ describe('AgentModules', () => {
         dids: expect.any(DidsModule),
         wallet: expect.any(WalletModule),
         oob: expect.any(OutOfBandModule),
-        w3cVc: expect.any(W3cCredentialsModule),
+        w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         myModule,
       })

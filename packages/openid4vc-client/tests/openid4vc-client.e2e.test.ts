@@ -14,7 +14,7 @@ import { OpenId4VcClientModule } from '@aries-framework/openid4vc-client'
 
 const modules = {
   openId4VcClient: new OpenId4VcClientModule(),
-  w3cVc: new W3cCredentialsModule({
+  w3cCredentials: new W3cCredentialsModule({
     documentLoader: customDocumentLoader,
   }),
   indySdk: new IndySdkModule({

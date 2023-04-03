@@ -9,7 +9,7 @@ import {
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
 import { W3cCredentialService } from './W3cCredentialService'
-import { W3cVcApi } from './W3cCredentialsApi'
+import { W3cCredentialsApi } from './W3cCredentialsApi'
 import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
 import { Ed25519Signature2018 } from './signature-suites'
@@ -19,14 +19,14 @@ import { Ed25519Signature2018 } from './signature-suites'
  */
 export class W3cCredentialsModule implements Module {
   public readonly config: W3cCredentialsModuleConfig
-  public readonly api = W3cVcApi
+  public readonly api = W3cCredentialsApi
 
   public constructor(config?: W3cVcModuleConfigOptions) {
     this.config = new W3cCredentialsModuleConfig(config)
   }
 
   public register(dependencyManager: DependencyManager) {
-    dependencyManager.registerContextScoped(W3cVcApi)
+    dependencyManager.registerContextScoped(W3cCredentialsApi)
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 

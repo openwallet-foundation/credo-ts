@@ -13,6 +13,7 @@ import { MessagePickupModule } from '../modules/message-pìckup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
 import { MediationRecipientModule, MediatorModule } from '../modules/routing'
+import { W3cCredentialsModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
 
 /**
@@ -128,7 +129,7 @@ function getDefaultAgentModules() {
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
-    // w3cVc: () => new W3cVcModule(),
+    w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
   } as const
 }
