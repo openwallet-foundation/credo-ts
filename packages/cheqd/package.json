@@ -26,14 +26,14 @@
   "dependencies": {
     "@aries-framework/anoncreds": "0.3.3",
     "@aries-framework/core": "0.3.3",
-    "@cheqd/sdk": "3.0.2",
+    "@cheqd/sdk": "cjs",
     "@cheqd/ts-proto": "^2.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "rxjs": "^7.2.0",
     "tsyringe": "^4.7.0",
-    "@cosmjs-rn/proto-signing": "^0.27.1",
-    "@cosmjs-rn/crypto": "^0.27.1",
+    "@cosmjs/proto-signing": "^0.29.5",
+    "@cosmjs/crypto": "^0.29.5",
     "@stablelib/ed25519": "^1.0.3"
   },
   "devDependencies": {
