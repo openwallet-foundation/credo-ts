@@ -250,7 +250,7 @@ describeSkipNode17And18('credentials, BBS+ signature', () => {
       formats: [
         {
           attach_id: expect.any(String),
-          format: 'aries/ld-proof-vc@1.0',
+          format: 'aries/ld-proof-vc@v1.0',
         },
       ],
       'credentials~attach': [
