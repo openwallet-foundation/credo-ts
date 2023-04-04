@@ -234,7 +234,7 @@ export class AskarWallet implements Wallet {
       if (rekey) {
         await this._store.rekey({
           passKey: rekey,
-          keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IInt),
+          keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IMod),
         })
       }
       this._session = await this._store.openSession()
@@ -823,7 +823,7 @@ export class AskarWallet implements Wallet {
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
       keyMethod: keyDerivationMethodToStoreKeyMethod(
-        walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IInt
+        walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
       ),
       passKey: walletConfig.key,
     }
