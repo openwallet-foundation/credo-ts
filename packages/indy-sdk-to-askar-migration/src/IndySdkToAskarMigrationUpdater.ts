@@ -83,7 +83,7 @@ export class IndySdkToAskarMigrationUpdater {
    */
   private async migrate() {
     const specUri = this.backupFile
-    const kdfLevel = this.walletConfig.keyDerivationMethod ?? 'ARGON2I_MOD'
+    const kdfLevel = this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
     const walletName = this.walletConfig.id
     const walletKey = this.walletConfig.key
     const storageType = this.walletConfig.storage?.type ?? 'sqlite'
@@ -205,7 +205,7 @@ export class IndySdkToAskarMigrationUpdater {
       await this.migrate()
 
       const keyMethod = keyDerivationMethodToStoreKeyMethod(
-        this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IInt
+        this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
       )
       this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
 
