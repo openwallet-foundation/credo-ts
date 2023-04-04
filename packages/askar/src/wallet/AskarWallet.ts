@@ -8,7 +8,6 @@ import type {
   Wallet,
   WalletConfigRekey,
   KeyPair,
-  KeyDerivationMethod,
   WalletExportImportConfig,
 } from '@aries-framework/core'
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
@@ -33,8 +32,10 @@ import {
   TypedArrayEncoder,
   FileSystem,
   WalletNotFoundError,
+  KeyDerivationMethod,
 } from '@aries-framework/core'
 import {
+  KdfMethod,
   StoreKeyMethod,
   KeyAlgs,
   CryptoBox,
@@ -233,9 +234,7 @@ export class AskarWallet implements Wallet {
       if (rekey) {
         await this._store.rekey({
           passKey: rekey,
-          keyMethod:
-            keyDerivationMethodToStoreKeyMethod(rekeyDerivation) ??
-            (`${StoreKeyMethod.Kdf}:argon2i:int` as StoreKeyMethod),
+          keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IInt),
         })
       }
       this._session = await this._store.openSession()
@@ -823,9 +822,9 @@ export class AskarWallet implements Wallet {
       uri,
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
-      keyMethod:
-        keyDerivationMethodToStoreKeyMethod(walletConfig.keyDerivationMethod) ??
-        (`${StoreKeyMethod.Kdf}:argon2i:int` as StoreKeyMethod),
+      keyMethod: keyDerivationMethodToStoreKeyMethod(
+        walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IInt
+      ),
       passKey: walletConfig.key,
     }
   }

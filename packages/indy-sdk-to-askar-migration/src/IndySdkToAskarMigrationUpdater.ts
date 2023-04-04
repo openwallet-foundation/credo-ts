@@ -5,10 +5,10 @@ import type { EntryObject } from '@hyperledger/aries-askar-shared'
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
 import { AskarWallet } from '@aries-framework/askar'
 import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
-import { Migration, Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { Migration, Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
-import { transformFromRecordTagValues } from './utils'
+import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } from './utils'
 
 /**
  *
@@ -89,7 +89,7 @@ export class IndySdkToAskarMigrationUpdater {
   /**
    * This function migrates the old database to the new structure.
    *
-   * This doubles checks some fields as later it might be possiblt to run this function
+   * This doubles checks some fields as later it might be possible to run this function
    */
   private async migrate() {
     const specUri = this.backupFile
@@ -212,8 +212,9 @@ export class IndySdkToAskarMigrationUpdater {
       // Migrate the database
       await this.migrate()
 
-      const keyMethod =
-        this.walletConfig?.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
+      const keyMethod = keyDerivationMethodToStoreKeyMethod(
+        this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IInt
+      )
       this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
 
       // Update the values to reflect the new structure
@@ -225,7 +226,7 @@ export class IndySdkToAskarMigrationUpdater {
       // Move the migrated and updated file to the expected location for afj
       await this.moveToNewLocation()
     } catch (err) {
-      this.agent.config.logger.error('Migration failed. Restoring state.')
+      this.agent.config.logger.error(`Migration failed. Restoring state. ${err.message}`)
 
       throw new IndySdkToAskarMigrationError(`Migration failed. State has been restored. ${err.message}`, {
         cause: err.cause,
