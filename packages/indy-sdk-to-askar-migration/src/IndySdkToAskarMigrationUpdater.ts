@@ -30,13 +30,11 @@ export class IndySdkToAskarMigrationUpdater {
   private agent: Agent
   private dbPath: string
   private fs: FileSystem
-  private deleteOnFinish: boolean
 
   private constructor(
     walletConfig: WalletConfig,
     agent: Agent,
     dbPath: string,
-    deleteOnFinish = false,
     defaultLinkSecretId?: string
   ) {
     this.walletConfig = walletConfig
@@ -44,18 +42,15 @@ export class IndySdkToAskarMigrationUpdater {
     this.agent = agent
     this.fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     this.defaultLinkSecretId = defaultLinkSecretId ?? walletConfig.id
-    this.deleteOnFinish = deleteOnFinish
   }
 
   public static async initialize({
     dbPath,
     agent,
-    deleteOnFinish,
     defaultLinkSecretId,
   }: {
     dbPath: string
     agent: Agent
-    deleteOnFinish?: boolean
     defaultLinkSecretId?: string
   }) {
     const {
@@ -83,7 +78,7 @@ export class IndySdkToAskarMigrationUpdater {
       throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
     }
 
-    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, deleteOnFinish, defaultLinkSecretId)
+    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, defaultLinkSecretId)
   }
 
   /**
@@ -186,9 +181,6 @@ export class IndySdkToAskarMigrationUpdater {
 
     // Copy the file from the database path to the new location
     await this.fs.copyFile(src, dest)
-
-    // Delete the original, only if specified by the user
-    if (this.deleteOnFinish) await this.fs.delete(this.dbPath)
   }
 
   /**
