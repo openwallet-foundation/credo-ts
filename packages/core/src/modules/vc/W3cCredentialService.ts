@@ -21,7 +21,7 @@ import { VerificationMethod } from '../dids'
 import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
-import { W3cVcModuleConfig } from './W3cVcModuleConfig'
+import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 import { deriveProof } from './deriveProof'
 import { orArrayToArray, w3cDate } from './jsonldUtil'
 import jsonld from './libraries/jsonld'
@@ -35,16 +35,16 @@ import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 export class W3cCredentialService {
   private w3cCredentialRepository: W3cCredentialRepository
   private signatureSuiteRegistry: SignatureSuiteRegistry
-  private w3cVcModuleConfig: W3cVcModuleConfig
+  private w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
 
   public constructor(
     w3cCredentialRepository: W3cCredentialRepository,
     signatureSuiteRegistry: SignatureSuiteRegistry,
-    w3cVcModuleConfig: W3cVcModuleConfig
+    w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
   ) {
     this.w3cCredentialRepository = w3cCredentialRepository
     this.signatureSuiteRegistry = signatureSuiteRegistry
-    this.w3cVcModuleConfig = w3cVcModuleConfig
+    this.w3cCredentialsModuleConfig = w3cCredentialsModuleConfig
   }
 
   /**
@@ -89,7 +89,7 @@ export class W3cCredentialService {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suite,
       purpose: options.proofPurpose,
-      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
     })
 
     return JsonTransformer.fromJSON(result, W3cVerifiableCredential)
@@ -112,7 +112,7 @@ export class W3cCredentialService {
     const verifyOptions: Record<string, unknown> = {
       credential: JsonTransformer.toJSON(options.credential),
       suite: suites,
-      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
       checkStatus: () => {
         if (verifyRevocationState) {
           throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
@@ -182,7 +182,7 @@ export class W3cCredentialService {
       throw new AriesFrameworkError('The key type of the verification method does not match the suite')
     }
 
-    const documentLoader = this.w3cVcModuleConfig.documentLoader(agentContext)
+    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
     const verificationMethodObject = (await documentLoader(options.verificationMethod)).document as Record<
       string,
       unknown
@@ -209,7 +209,7 @@ export class W3cCredentialService {
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
       challenge: options.challenge,
-      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
     })
 
     return JsonTransformer.fromJSON(result, W3cVerifiablePresentation)
@@ -262,7 +262,7 @@ export class W3cCredentialService {
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: allSuites,
       challenge: options.challenge,
-      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
     }
 
     // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -284,7 +284,7 @@ export class W3cCredentialService {
 
     const proof = await deriveProof(JsonTransformer.toJSON(options.credential), options.revealDocument, {
       suite: suite,
-      documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
     })
 
     return proof
@@ -294,7 +294,7 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     verificationMethod: string
   ): Promise<Key> {
-    const documentLoader = this.w3cVcModuleConfig.documentLoader(agentContext)
+    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
     const verificationMethodObject = await documentLoader(verificationMethod)
     const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
 
@@ -315,7 +315,7 @@ export class W3cCredentialService {
     // Get the expanded types
     const expandedTypes = (
       await jsonld.expand(JsonTransformer.toJSON(options.credential), {
-        documentLoader: this.w3cVcModuleConfig.documentLoader(agentContext),
+        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
       })
     )[0]['@type']
 

@@ -1,5 +1,8 @@
 import type { TagsBase } from '@aries-framework/core'
 
+import { KeyDerivationMethod } from '@aries-framework/core'
+import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+
 /**
  * Adopted from `AskarStorageService` implementation and should be kept in sync.
  */
@@ -37,4 +40,14 @@ export const transformFromRecordTagValues = (tags: TagsBase): { [key: string]: s
   }
 
   return transformedTags
+}
+
+export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
+  const correspondenceTable = {
+    [KeyDerivationMethod.Raw]: KdfMethod.Raw,
+    [KeyDerivationMethod.Argon2IInt]: KdfMethod.Argon2IInt,
+    [KeyDerivationMethod.Argon2IMod]: KdfMethod.Argon2IMod,
+  }
+
+  return new StoreKeyMethod(correspondenceTable[keyDerivationMethod])
 }
