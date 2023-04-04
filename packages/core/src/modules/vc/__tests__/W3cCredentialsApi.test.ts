@@ -3,23 +3,18 @@ import { getAgentOptions, indySdk } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { W3cVerifiableCredential } from '../models'
 import { W3cCredentialRepository } from '../repository'
 
-import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
 const modules = {
-  w3cVc: new W3cCredentialsModule({
-    documentLoader: customDocumentLoader,
-  }),
   indySdk: new IndySdkModule({
     indySdk,
   }),
 }
 
-const agentOptions = getAgentOptions<typeof modules>('W3cVcApi', {}, modules)
+const agentOptions = getAgentOptions<typeof modules>('W3cCredentialsApi', {}, modules)
 
 const agent = new Agent(agentOptions)
 
@@ -50,7 +45,7 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'save')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'storeCredential')
 
-    await agent.modules.w3cVc.storeCredential({
+    await agent.w3cCredentials.storeCredential({
       credential: testCredential,
     })
 
@@ -62,11 +57,11 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'getById')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'getCredentialRecordById')
 
-    const storedCredential = await agent.modules.w3cVc.storeCredential({
+    const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,
     })
 
-    const retrievedCredential = await agent.modules.w3cVc.getCredentialRecordById(storedCredential.id)
+    const retrievedCredential = await agent.w3cCredentials.getCredentialRecordById(storedCredential.id)
     expect(storedCredential.id).toEqual(retrievedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
@@ -80,17 +75,17 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'delete')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
-    const storedCredential = await agent.modules.w3cVc.storeCredential({
+    const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,
     })
 
-    await agent.modules.w3cVc.removeCredentialRecord(storedCredential.id)
+    await agent.w3cCredentials.removeCredentialRecord(storedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
     expect(serviceSpy).toHaveBeenCalledWith((agent as any).agentContext, storedCredential.id)
 
-    const allCredentials = await agent.modules.w3cVc.getAllCredentialRecords()
+    const allCredentials = await agent.w3cCredentials.getAllCredentialRecords()
     expect(allCredentials).toHaveLength(0)
   })
 })
