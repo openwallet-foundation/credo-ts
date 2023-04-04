@@ -31,12 +31,7 @@ export class IndySdkToAskarMigrationUpdater {
   private dbPath: string
   private fs: FileSystem
 
-  private constructor(
-    walletConfig: WalletConfig,
-    agent: Agent,
-    dbPath: string,
-    defaultLinkSecretId?: string
-  ) {
+  private constructor(walletConfig: WalletConfig, agent: Agent, dbPath: string, defaultLinkSecretId?: string) {
     this.walletConfig = walletConfig
     this.dbPath = dbPath
     this.agent = agent
@@ -185,6 +180,11 @@ export class IndySdkToAskarMigrationUpdater {
 
   /**
    * Function that updates the values from an indy-sdk structure to the new askar structure.
+   *
+   * > NOTE: It is very important that this script is ran before the 0.3.x to
+   *         0.4.x migration script. This can easily be done by calling this when you
+   *         upgrade, before you initialize the agent with `autoUpdateStorageOnStartup:
+   *         true`.
    *
    * - Assert that the paths that will be used are free
    * - Create a backup of the database
