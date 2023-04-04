@@ -308,7 +308,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<GetRevocationStatusListReturn> {
     const revocationStatusLists = this.revocationStatusLists[revocationRegistryId]
 
-    console.log(`revocationStatusLists: ${JSON.stringify(this.revocationStatusLists)}`)
     if (!revocationStatusLists || Object.entries(revocationStatusLists).length === 0) {
       return {
         resolutionMetadata: {
@@ -319,9 +318,10 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    const previousTimestamps = Object.keys(revocationStatusLists).filter(ts => Number(ts) <= timestamp).sort()
+    const previousTimestamps = Object.keys(revocationStatusLists)
+      .filter((ts) => Number(ts) <= timestamp)
+      .sort()
 
-    console.log(`previous timestamps: ${previousTimestamps}`)
     if (!previousTimestamps) {
       return {
         resolutionMetadata: {
@@ -334,7 +334,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
 
     return {
       resolutionMetadata: {},
-      revocationStatusList: revocationStatusLists[previousTimestamps[previousTimestamps.length-1]],
+      revocationStatusList: revocationStatusLists[previousTimestamps[previousTimestamps.length - 1]],
       revocationStatusListMetadata: {},
     }
   }
@@ -343,7 +343,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
-    const timestamp = (options.options.timestamp as number) ?? new Date().getTime()
+    const timestamp = (options.options.timestamp as number) ?? Math.floor(new Date().getTime() / 1000)
     const revocationStatusList = {
       ...options.revocationStatusList,
       timestamp,

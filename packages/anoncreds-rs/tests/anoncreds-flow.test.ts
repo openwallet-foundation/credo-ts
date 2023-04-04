@@ -1,7 +1,14 @@
-import { AnonCredsCredentialRequest, AnonCredsRevocationRegistryDefinitionPrivateRecord, AnonCredsRevocationRegistryDefinitionPrivateRepository, AnonCredsRevocationRegistryDefinitionRecord, AnonCredsRevocationRegistryDefinitionRepository, AnonCredsRevocationStatusListRecord, AnonCredsRevocationStatusListRepository, RevocationRegistryState } from '@aries-framework/anoncreds'
-import { ConsoleLogger, DownloadToFileOptions, FileSystem, LogLevel, Wallet } from '@aries-framework/core'
+import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
+import type { Wallet } from '@aries-framework/core'
 
 import {
+  AnonCredsRevocationRegistryDefinitionPrivateRecord,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
+  AnonCredsRevocationRegistryDefinitionRecord,
+  AnonCredsRevocationRegistryDefinitionRepository,
+  AnonCredsRevocationStatusListRecord,
+  AnonCredsRevocationStatusListRepository,
+  RevocationRegistryState,
   AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -20,6 +27,9 @@ import {
   AnonCredsCredentialFormatService,
 } from '@aries-framework/anoncreds'
 import {
+  utils,
+  ConsoleLogger,
+  LogLevel,
   CredentialState,
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
@@ -27,6 +37,8 @@ import {
   ProofState,
   ProofExchangeRecord,
 } from '@aries-framework/core'
+import FormData from 'form-data'
+import fs from 'fs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
@@ -43,7 +55,9 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
 
-const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs', { logger: new ConsoleLogger(LogLevel.debug)})
+const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs', {
+  logger: new ConsoleLogger(LogLevel.debug),
+})
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
@@ -373,10 +387,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       options: {},
     })
 
-    if (
-      !schemaState.schema ||
-      !schemaState.schemaId
-    ) {
+    if (!schemaState.schema || !schemaState.schemaId) {
       throw new Error('Failed to create schema')
     }
 
@@ -403,10 +414,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       options: {},
     })
 
-    if (
-      !credentialDefinitionState.credentialDefinition ||
-      !credentialDefinitionState.credentialDefinitionId
-    ) {
+    if (!credentialDefinitionState.credentialDefinition || !credentialDefinitionState.credentialDefinitionId) {
       throw new Error('Failed to create credential definition')
     }
 
@@ -438,7 +446,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       })
     )
-    
+
     const { revocationRegistryDefinition, revocationRegistryDefinitionPrivate } =
       await anonCredsIssuerService.createRevocationRegistryDefinition(agentContext, {
         issuerId: indyDid,
@@ -446,21 +454,34 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         maximumCredentialNumber: 100,
         tailsDirectoryPath: new agentDependencies.FileSystem().dataPath,
-        tag: 'default'
+        tag: 'default',
       })
 
     // At this moment, tails file should be published and a valid public URL will be received
-    const localTailsPath = revocationRegistryDefinition.value.tailsLocation
-    
-    // TOOD: addd test tails server and upload file
-    revocationRegistryDefinition.value.tailsLocation = 
-      `http://${revocationRegistryDefinition.value.tailsLocation}`
+    const localTailsFilePath = revocationRegistryDefinition.value.tailsLocation
+
+    const tailsFileId = utils.uuid()
+    const data = new FormData()
+    const readStream = fs.createReadStream(localTailsFilePath)
+    data.append('file', readStream)
+    const response = await agentContext.config.agentDependencies.fetch(
+      `http://localhost:3001/${encodeURIComponent(tailsFileId)}`,
+      {
+        method: 'PUT',
+        body: data,
+      }
+    )
+    if (response.status !== 200) {
+      throw new Error('Cannot upload tails file')
+    }
+
+    revocationRegistryDefinition.value.tailsLocation = `http://localhost:3001/${encodeURIComponent(tailsFileId)}`
 
     const { revocationRegistryDefinitionState } = await registry.registerRevocationRegistryDefinition(agentContext, {
       revocationRegistryDefinition,
       options: {},
     })
-    
+
     if (
       !revocationRegistryDefinitionState.revocationRegistryDefinition ||
       !revocationRegistryDefinitionState.revocationRegistryDefinitionId ||
@@ -490,8 +511,10 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
     const revocationStatusList = await anonCredsIssuerService.createRevocationStatusList(agentContext, {
       issuanceByDefault: true,
       issuerId: indyDid,
-      revocationRegistryDefinition: { ...revocationRegistryDefinition, value: { ...revocationRegistryDefinition.value, 
-        tailsLocation: localTailsPath }},
+      revocationRegistryDefinition: {
+        ...revocationRegistryDefinition,
+        value: { ...revocationRegistryDefinition.value, tailsLocation: localTailsFilePath },
+      },
       revocationRegistryDefinitionId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
     })
 
@@ -500,10 +523,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       options: {},
     })
 
-    if (
-      !revocationStatusListState.revocationStatusList ||
-      !revocationStatusListState.timestamp
-    ) {
+    if (!revocationStatusListState.revocationStatusList || !revocationStatusListState.timestamp) {
       throw new Error('Failed to create revocation status list')
     }
 
@@ -628,7 +648,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
-      credentialRevocationId: "1",
+      credentialRevocationId: '1',
       methodName: 'inMemory',
     })
 
@@ -637,7 +657,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
         schemaId: schemaState.schemaId,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         revocationRegistryId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
-        credentialRevocationId: "1",
+        credentialRevocationId: '1',
       },
       '_anoncreds/credentialRequest': {
         link_secret_blinding_data: expect.any(Object),
@@ -649,7 +669,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
     expect(issuerCredentialRecord.metadata.data).toEqual({
       '_anoncreds/credential': {
         revocationRegistryId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
-        credentialRevocationId: "1",
+        credentialRevocationId: '1',
         schemaId: schemaState.schemaId,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
@@ -666,7 +686,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 
-    const nrpRequestedTime = new Date().getTime()
+    const nrpRequestedTime = Math.floor(new Date().getTime() / 1000)
 
     const { attachment: proofProposalAttachment } = await anoncredsProofFormatService.createProposal(agentContext, {
       proofFormats: {
@@ -689,7 +709,7 @@ describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', (
           ],
           name: 'Proof Request',
           version: '1.0',
-          nonRevokedInterval: { from: nrpRequestedTime, to: nrpRequestedTime }
+          nonRevokedInterval: { from: nrpRequestedTime, to: nrpRequestedTime },
         },
       },
       proofRecord: holderProofRecord,

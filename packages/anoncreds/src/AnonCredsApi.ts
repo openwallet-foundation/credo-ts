@@ -368,19 +368,13 @@ export class AnonCredsApi {
         })
 
       // TODO: Publish tails file and get public URL for it
-      const localTailsFilePath = 
-        `${revocationRegistryDefinition.value.tailsLocation}/${revocationRegistryDefinition.value.tailsHash}}`
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
         options: {},
       })
 
-      await this.storeRevocationRegistryDefinitionRecord(
-        result,
-        localTailsFilePath,
-        revocationRegistryDefinitionPrivate
-      )
+      await this.storeRevocationRegistryDefinitionRecord(result, revocationRegistryDefinitionPrivate)
 
       return result
     } catch (error) {
@@ -525,7 +519,6 @@ export class AnonCredsApi {
 
   private async storeRevocationRegistryDefinitionRecord(
     result: RegisterRevocationRegistryDefinitionReturn,
-    localTailsFilePath: string,
     revocationRegistryDefinitionPrivate?: Record<string, unknown>
   ): Promise<void> {
     try {

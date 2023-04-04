@@ -38,7 +38,7 @@ export class AnonCredsRevocationStatusListRecord extends BaseRecord<
   public getTags() {
     return {
       ...this._tags,
-      revocationRegistryDefinitionId: this.revocationStatusList.revRegId,
+      revocationRegistryDefinitionId: this.revocationStatusList.revRegDefId,
       credentialDefinitionId: this.credentialDefinitionId,
       timestamp: this.revocationStatusList.timestamp.toString(),
     }
