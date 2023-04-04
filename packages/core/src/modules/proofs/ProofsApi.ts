@@ -374,11 +374,11 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     proofRecord.assertState(ProofState.RequestReceived)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
-    await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
-
     if (options.sendProblemReport) {
       await this.sendProblemReport({ proofRecordId: options.proofRecordId, description: 'Request declined' })
     }
+
+    await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
 
     return proofRecord
   }
