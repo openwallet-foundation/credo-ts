@@ -22,7 +22,7 @@ import {
 } from '@aries-framework/core'
 
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
-import { W3cVcModuleConfig } from '../../core/src/modules/vc/W3cVcModuleConfig'
+import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndySdkWallet } from '../../indy-sdk/src'
@@ -77,7 +77,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
     w3cCredentialService = new W3cCredentialService(
       {} as unknown as W3cCredentialRepository,
       signatureSuiteRegistry,
-      new W3cVcModuleConfig({
+      new W3cCredentialsModuleConfig({
         documentLoader: customDocumentLoader,
       })
     )

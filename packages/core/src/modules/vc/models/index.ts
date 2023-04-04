@@ -1,6 +1,7 @@
 export * from './credential/W3cCredential'
 export * from './credential/W3cVerifiableCredential'
 export * from './credential/W3cVerifyCredentialResult'
+export * from './W3cCredentialServiceOptions'
 export * from './presentation/VerifyPresentationResult'
 export * from './presentation/W3cPresentation'
 export * from './presentation/W3cVerifiablePresentation'
