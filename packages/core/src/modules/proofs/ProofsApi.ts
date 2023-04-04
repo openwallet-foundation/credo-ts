@@ -585,6 +585,8 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       await this.messageSender.sendMessage(outboundMessageContext)
       return proofRecord
     } else if (requestMessage?.service) {
+      proofRecord.assertState(ProofState.RequestReceived)
+
       // Create ~service decorator
       const routing = await this.routingService.getRouting(this.agentContext)
       const ourService = new ServiceDecorator({
