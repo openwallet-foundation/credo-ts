@@ -12,21 +12,24 @@ import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const backupDate = new Date('2022-01-21T22:50:20.522Z')
+const backupDate = new Date('2023-03-18T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 
 const walletConfig = {
-  id: `Wallet: 0.3 Update`,
-  key: `Key: 0.3 Update`,
+  id: `Wallet: 0.4 Update`,
+  key: `Key: 0.4 Update`,
 }
 
-describe('UpdateAssistant | v0.3 - v0.3.1', () => {
-  it(`should correctly update the did records`, async () => {
+describe('UpdateAssistant | v0.3.1 - v0.4', () => {
+  it(`should correctly update the did records and remove cache records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
     const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
-    const aliceDidRecordsString = readFileSync(path.join(__dirname, '__fixtures__/alice-8-dids-0.3.json'), 'utf8')
+    const aliceDidRecordsString = readFileSync(
+      path.join(__dirname, '__fixtures__/alice-2-sov-dids-one-cache-record-0.3.json'),
+      'utf8'
+    )
 
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
@@ -59,10 +62,10 @@ describe('UpdateAssistant | v0.3 - v0.3.1', () => {
     storageService.records = JSON.parse(aliceDidRecordsString)
 
     expect(await updateAssistant.isUpToDate()).toBe(false)
-    expect(await updateAssistant.getNeededUpdates()).toEqual([
+    expect(await updateAssistant.getNeededUpdates('0.4')).toEqual([
       {
-        fromVersion: '0.3',
-        toVersion: '0.3.1',
+        fromVersion: '0.3.1',
+        toVersion: '0.4',
         doUpdate: expect.any(Function),
       },
     ])

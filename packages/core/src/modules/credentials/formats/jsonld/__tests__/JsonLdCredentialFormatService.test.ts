@@ -341,7 +341,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
       expect(format).toMatchObject({
         attachmentId: expect.any(String),
-        format: 'aries/ld-proof-vc@1.0',
+        format: 'aries/ld-proof-vc@v1.0',
       })
     })
   })

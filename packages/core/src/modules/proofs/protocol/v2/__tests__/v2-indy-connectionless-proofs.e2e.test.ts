@@ -1,4 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 
 import { Subject } from 'rxjs'
 
@@ -25,7 +26,7 @@ import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
 import { CredentialEventTypes } from '../../../../credentials'
-import { MediatorPickupStrategy } from '../../../../routing'
+import { MediatorModule, MediatorPickupStrategy, MediationRecipientModule } from '../../../../routing'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { AutoAcceptProof, ProofState } from '../../../models'
 
@@ -267,12 +268,16 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
-        autoAcceptMediationRequests: true,
         endpoints: ['rxjs:mediator'],
       },
-      getLegacyAnonCredsModules({
-        autoAcceptProofs: AutoAcceptProof.Always,
-      })
+      {
+        ...getLegacyAnonCredsModules({
+          autoAcceptProofs: AutoAcceptProof.Always,
+        }),
+        mediator: new MediatorModule({
+          autoAcceptMediationRequests: true,
+        }),
+      }
     )
 
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -296,28 +301,34 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const faberOptions = getAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
+      {},
       {
-        mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com',
+        ...getLegacyAnonCredsModules({
+          autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-      getLegacyAnonCredsModules({
-        autoAcceptProofs: AutoAcceptProof.Always,
-      })
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        }),
+      }
     )
 
     const aliceOptions = getAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
+      {},
       {
-        mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com',
+        ...getLegacyAnonCredsModules({
+          autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-      getLegacyAnonCredsModules({
-        autoAcceptProofs: AutoAcceptProof.Always,
-      })
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        }),
+      }
     )
 
     const faberAgent = new Agent(faberOptions)
@@ -347,10 +358,10 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     // issue credential with two linked attachments
     await issueLegacyAnonCredsCredential({
-      issuerAgent: faberAgent,
+      issuerAgent: faberAgent as AnonCredsTestsAgent,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnection.id,
-      holderAgent: aliceAgent,
+      holderAgent: aliceAgent as AnonCredsTestsAgent,
       holderReplay: aliceReplay,
       offer: {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,

@@ -13,6 +13,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
+import { MessagePickupApi } from '../../modules/message-pìckup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
@@ -20,8 +21,8 @@ import {
   MediationRepository,
   MediatorApi,
   MediatorService,
-  RecipientApi,
-  RecipientModule,
+  MediationRecipientApi,
+  MediationRecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { WalletError } from '../../wallet/error'
@@ -75,7 +76,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          mediationRecipient: new RecipientModule({
+          mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
           ...getIndySdkModules(),
@@ -170,7 +171,8 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
       expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
-      expect(container.resolve(RecipientApi)).toBeInstanceOf(RecipientApi)
+      expect(container.resolve(MediationRecipientApi)).toBeInstanceOf(MediationRecipientApi)
+      expect(container.resolve(MessagePickupApi)).toBeInstanceOf(MessagePickupApi)
       expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
       expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
@@ -207,7 +209,8 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
       expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
-      expect(container.resolve(RecipientApi)).toBe(container.resolve(RecipientApi))
+      expect(container.resolve(MediationRecipientApi)).toBe(container.resolve(MediationRecipientApi))
+      expect(container.resolve(MessagePickupApi)).toBe(container.resolve(MessagePickupApi))
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
       expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))

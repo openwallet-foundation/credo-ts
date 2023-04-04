@@ -1,9 +1,9 @@
-import { assertRevocationInterval } from '../../utils'
+import { assertBestPracticeRevocationInterval } from '../../utils'
 
-describe('assertRevocationInterval', () => {
+describe('assertBestPracticeRevocationInterval', () => {
   test("throws if no 'to' value is specified", () => {
     expect(() =>
-      assertRevocationInterval({
+      assertBestPracticeRevocationInterval({
         from: 10,
       })
     ).toThrow()
@@ -11,7 +11,7 @@ describe('assertRevocationInterval', () => {
 
   test("throws if a 'from' value is specified and it is different from 'to'", () => {
     expect(() =>
-      assertRevocationInterval({
+      assertBestPracticeRevocationInterval({
         to: 5,
         from: 10,
       })
@@ -20,7 +20,7 @@ describe('assertRevocationInterval', () => {
 
   test('does not throw if only to is provided', () => {
     expect(() =>
-      assertRevocationInterval({
+      assertBestPracticeRevocationInterval({
         to: 5,
       })
     ).not.toThrow()
@@ -28,7 +28,7 @@ describe('assertRevocationInterval', () => {
 
   test('does not throw if from and to are equal', () => {
     expect(() =>
-      assertRevocationInterval({
+      assertBestPracticeRevocationInterval({
         to: 10,
         from: 10,
       })
