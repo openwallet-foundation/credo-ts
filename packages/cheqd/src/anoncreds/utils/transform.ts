@@ -130,16 +130,16 @@ export class CheqdRevocationRegistryDefinition {
 }
 
 export class CheqdRevocationStatusList {
-  public constructor(options: Omit<AnonCredsRevocationStatusList, 'issuerId'>) {
+  public constructor(options: Omit<AnonCredsRevocationStatusList, 'issuerId' | 'revRegId'> & { revRegDefId: string }) {
     if (options) {
-      this.revRegId = options.revRegId
+      this.revRegDefId = options.revRegDefId
       this.revocationList = options.revocationList
       this.currentAccumulator = options.currentAccumulator
     }
   }
 
   @IsString()
-  public revRegId!: string
+  public revRegDefId!: string
 
   @IsNumber({}, { each: true })
   public revocationList!: number[]

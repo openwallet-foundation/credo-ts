@@ -246,7 +246,10 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         `Submitting get revocation registry definition request for '${revocationRegistryDefinitionId}' to ledger`
       )
 
-      const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryDefinitionId)
+      const response = await cheqdDidResolver.resolveResource(
+        agentContext,
+        `${revocationRegistryDefinitionId}&resourceType=anonCredsRevocRegDef`
+      )
       const revocationRegistryDefinition = JsonTransformer.fromJSON(
         response.resource,
         CheqdRevocationRegistryDefinition
@@ -297,7 +300,10 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         `Submitting get revocation status request for '${revocationRegistryId}' to ledger`
       )
 
-      const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryId)
+      const response = await cheqdDidResolver.resolveResource(
+        agentContext,
+        `${revocationRegistryId}&resourceType=anonCredsStatusList&time=${timestamp}`
+      )
       const revocationStatusList = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
 
       const statusListTimestamp = response.resourceMetadata?.created?.getUTCSeconds()
@@ -309,7 +315,9 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       return {
         revocationStatusList: {
-          ...revocationStatusList,
+          revRegId: revocationStatusList.revRegDefId,
+          revocationList: revocationStatusList.revocationList,
+          currentAccumulator: revocationStatusList.currentAccumulator,
           issuerId: parsedDid.did,
           timestamp: statusListTimestamp,
         },
