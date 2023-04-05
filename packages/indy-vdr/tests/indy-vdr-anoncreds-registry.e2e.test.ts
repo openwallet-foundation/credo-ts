@@ -320,7 +320,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationStatusList: {
         issuerId: legacyIssuerId,
         currentAccumulator: '1',
-        revRegId: legacyRevocationRegistryId,
+        revRegDefId: legacyRevocationRegistryId,
         revocationList: [
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -344,7 +344,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationStatusList: {
         issuerId: didIndyIssuerId,
         currentAccumulator: '1',
-        revRegId: didIndyRevocationRegistryId,
+        revRegDefId: didIndyRevocationRegistryId,
         revocationList: [
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

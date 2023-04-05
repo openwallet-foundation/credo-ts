@@ -65,7 +65,7 @@ const existingRevocationStatusLists = {
       currentAccumulator: 'ab81257c-be63-4051-9e21-c7d384412f64',
       issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
       revocationList: [1, 0, 1],
-      revRegId: 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
+      revRegDefId: 'VsKV7grR1BUE29mG2Fm2kX:4:VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG:CL_ACCUM:TAG',
       timestamp: 10123,
     },
   },
