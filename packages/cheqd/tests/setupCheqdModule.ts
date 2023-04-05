@@ -1,8 +1,10 @@
+import type { CheqdModuleConfigOptions } from '../src'
+
 import { DidsModule, KeyDidRegistrar, KeyDidResolver } from '@aries-framework/core'
 import { IndySdkModule, IndySdkModuleConfig } from '@aries-framework/indy-sdk'
 import indySdk from 'indy-sdk'
 
-import { CheqdModule, CheqdModuleConfig, CheqdDidRegistrar, CheqdDidResolver } from '../src'
+import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'
 
 export const getIndySdkModuleConfig = () =>
   new IndySdkModuleConfig({
@@ -10,7 +12,7 @@ export const getIndySdkModuleConfig = () =>
   })
 
 export const getCheqdModuleConfig = (seed?: string) =>
-  new CheqdModuleConfig({
+  ({
     networks: [
       {
         network: 'testnet',
@@ -19,7 +21,7 @@ export const getCheqdModuleConfig = (seed?: string) =>
           'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
       },
     ],
-  })
+  } satisfies CheqdModuleConfigOptions)
 
 export const getCheqdModules = (seed?: string) => ({
   cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed)),

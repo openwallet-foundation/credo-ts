@@ -66,10 +66,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
           privateKey: privateKey,
         })
         didDocument = generateDidDoc({
-          verificationMethod: verificationMethod.type,
+          verificationMethod: verificationMethod.type as VerificationMethods,
           verificationMethodId: verificationMethod.id || 'key-1',
-          methodSpecificIdAlgo: methodSpecificIdAlgo || MethodSpecificIdAlgo.Uuid,
-          network,
+          methodSpecificIdAlgo: (methodSpecificIdAlgo as MethodSpecificIdAlgo) || MethodSpecificIdAlgo.Uuid,
+          network: network as CheqdNetwork,
           publicKey: TypedArrayEncoder.toHex(key.publicKey),
         }) satisfies DidDocument
       } else {
@@ -167,7 +167,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
           didDocument.verificationMethod?.concat(
             createDidVerificationMethod(
-              [verificationMethod.type],
+              [verificationMethod.type as VerificationMethods],
               [
                 {
                   methodSpecificId: didDocument.id.split(':')[3],
@@ -363,11 +363,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
 export interface CheqdDidCreateOptions extends DidCreateOptions {
   method: 'cheqd'
   options: {
-    network: CheqdNetwork
-    rpcUrl?: string
+    network: `${CheqdNetwork}`
     fee?: DidStdFee
     versionId?: string
-    methodSpecificIdAlgo?: MethodSpecificIdAlgo
+    methodSpecificIdAlgo?: `${MethodSpecificIdAlgo}`
   }
   secret: {
     verificationMethod?: IVerificationMethod
@@ -379,8 +378,6 @@ export interface CheqdDidUpdateOptions extends DidCreateOptions {
   did: string
   didDocument: DidDocument
   options: {
-    network?: CheqdNetwork
-    rpcUrl?: string
     fee?: DidStdFee
     versionId?: string
   }
@@ -393,8 +390,6 @@ export interface CheqdDidDeactivateOptions extends DidCreateOptions {
   method: 'cheqd'
   did: string
   options: {
-    network?: CheqdNetwork
-    rpcUrl?: string
     fee?: DidStdFee
     versionId?: string
   }
@@ -405,7 +400,7 @@ export interface CheqdCreateResourceOptions extends Omit<Partial<MsgCreateResour
 }
 
 interface IVerificationMethod {
-  type: VerificationMethods
+  type: `${VerificationMethods}`
   id: TVerificationKey<string, number>
   privateKey?: Buffer
 }

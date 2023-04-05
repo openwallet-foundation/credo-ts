@@ -2,6 +2,8 @@ import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
 import type { AgentContext, DidDocument, DidResolutionResult, DidResolver, ParsedDid } from '@aries-framework/core'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
+import { AriesFrameworkError } from '@aries-framework/core'
+
 import {
   cheqdDidMetadataRegex,
   cheqdDidRegex,
@@ -29,10 +31,10 @@ export class CheqdDidResolver implements DidResolver {
 
       switch (did) {
         case did.match(cheqdDidRegex)?.input:
-          return await this.resovleDidDoc(agentContext, parsedDid.did)
+          return await this.resolveDidDoc(agentContext, parsedDid.did)
         case did.match(cheqdDidVersionRegex)?.input: {
           const version = did.split('/')[2]
-          return await this.resovleDidDoc(agentContext, parsedDid.did, version)
+          return await this.resolveDidDoc(agentContext, parsedDid.did, version)
         }
         case did.match(cheqdDidVersionsRegex)?.input:
           return await this.resolveAllDidDocVersions(agentContext, parsedDid)
@@ -62,7 +64,7 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  public async resolveResource(agentContext: AgentContext, did: string): Promise<any> {
+  public async resolveResource(agentContext: AgentContext, did: string) {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     try {
       const parsedDid = parseCheqdDid(did)
@@ -151,7 +153,15 @@ export class CheqdDidResolver implements DidResolver {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     const { did, id } = parsedDid
 
-    const resourceId = parsedDid.path!.split('/')[2]
+    if (!parsedDid.path) {
+      throw new AriesFrameworkError(`Missing path in did ${parsedDid.did}`)
+    }
+
+    const [, , resourceId] = parsedDid.path.split('/')
+
+    if (!resourceId) {
+      throw new AriesFrameworkError(`Missing resource id in didUrl ${parsedDid.didUrl}`)
+    }
 
     const metadata = await cheqdLedgerService.resolveResourceMetadata(did, id, resourceId)
     return {
@@ -163,7 +173,7 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  private async resovleDidDoc(agentContext: AgentContext, did: string, version?: string): Promise<DidResolutionResult> {
+  private async resolveDidDoc(agentContext: AgentContext, did: string, version?: string): Promise<DidResolutionResult> {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did, version)

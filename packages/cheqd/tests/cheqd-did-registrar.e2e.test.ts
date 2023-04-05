@@ -1,3 +1,6 @@
+import type { CheqdDidCreateOptions } from '../src'
+import type { DidDocument } from '@aries-framework/core'
+
 import { Agent, TypedArrayEncoder } from '@aries-framework/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
@@ -31,7 +34,7 @@ describe('Cheqd DID registrar', () => {
     )
     const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
     const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
-    const did = await agent.dids.create({
+    const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       secret: {
         verificationMethod: {
@@ -61,7 +64,7 @@ describe('Cheqd DID registrar', () => {
   })
 
   it('should create a did:cheqd using Ed25519VerificationKey2020', async () => {
-    const did = await agent.dids.create({
+    const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       secret: {
         verificationMethod: {
@@ -78,7 +81,7 @@ describe('Cheqd DID registrar', () => {
   })
 
   it('should create a did:cheqd using JsonWebKey2020', async () => {
-    const createResult = await agent.dids.create({
+    const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       secret: {
         verificationMethod: {
@@ -100,8 +103,8 @@ describe('Cheqd DID registrar', () => {
       },
     })
     expect(createResult.didState.did).toBeDefined()
-    const did = createResult.didState.did!
-    const didDocument = createResult.didState.didDocument!
+    const did = createResult.didState.did as string
+    const didDocument = createResult.didState.didDocument as DidDocument
     didDocument.service = [validService(did)]
 
     const updateResult = await agent.dids.update({

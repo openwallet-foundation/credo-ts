@@ -2,7 +2,7 @@ import type { DidDocument } from '@aries-framework/core'
 import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
-import { JsonEncoder, TypedArrayEncoder } from '@aries-framework/core'
+import { AriesFrameworkError, JsonEncoder, TypedArrayEncoder } from '@aries-framework/core'
 import {
   createDidPayload,
   createDidVerificationMethod,
@@ -116,8 +116,9 @@ export interface IDidDocOptions {
 
 export function getClosestResourceVersion(resources: Metadata[], date: Date) {
   const result = resources.sort(function (a, b) {
-    const distancea = Math.abs(date.getTime() - a.created!.getTime())
-    const distanceb = Math.abs(date.getTime() - b.created!.getTime())
+    if (!a.created || !b.created) throw new AriesFrameworkError("Missing required property 'created' on resource")
+    const distancea = Math.abs(date.getTime() - a.created.getTime())
+    const distanceb = Math.abs(date.getTime() - b.created.getTime())
     return distancea - distanceb
   })
   return result[0]

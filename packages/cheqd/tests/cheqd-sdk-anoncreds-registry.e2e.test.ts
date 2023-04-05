@@ -1,3 +1,5 @@
+import type { CheqdDidCreateOptions } from '../src'
+
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
@@ -31,7 +33,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('register and resolve a schema and credential definition', async () => {
     const privateKey = TypedArrayEncoder.fromString('000000000000000000000000000cheqd')
 
-    const did = await agent.dids.create({
+    const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       secret: {
         verificationMethod: {
@@ -46,7 +48,7 @@ describe('cheqdAnonCredsRegistry', () => {
       },
     })
     expect(did.didState).toMatchObject({ state: 'finished' })
-    issuerId = `${did.didState.did}`
+    issuerId = did.didState.did as string
 
     const dynamicVersion = `1.${Math.random() * 100}`
 

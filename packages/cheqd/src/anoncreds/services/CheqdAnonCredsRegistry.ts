@@ -12,7 +12,7 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { JsonTransformer, utils } from '@aries-framework/core'
+import { AriesFrameworkError, JsonTransformer, utils } from '@aries-framework/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
@@ -24,6 +24,8 @@ import {
 } from '../utils/transform'
 
 export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
+  public methodName = 'cheqd'
+
   /**
    * This class supports resolving and registering objects with cheqd identifiers.
    * It needs to include support for the schema, credential definition, revocation registry as well
@@ -210,7 +212,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         },
         credentialDefinitionId,
         resolutionMetadata: {},
-        credentialDefinitionMetadata: response.resourceMetadata,
+        credentialDefinitionMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving credential definition '${credentialDefinitionId}'`, {
@@ -256,7 +258,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
         },
         revocationRegistryDefinitionId,
         resolutionMetadata: {},
-        revocationRegistryDefinitionMetadata: response.resourceMetadata,
+        revocationRegistryDefinitionMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
       }
     } catch (error) {
       agentContext.config.logger.error(
@@ -278,6 +280,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
+  // FIXME: this method doesn't retrieve the revocation status list at a specified time, it just resolves the revocation registry definition
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
@@ -295,15 +298,23 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       )
 
       const response = await cheqdDidResolver.resolveResource(agentContext, revocationRegistryId)
-      const revocationRegistryDefinition = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
+      const revocationStatusList = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
+
+      const statusListTimestamp = response.resourceMetadata?.created?.getUTCSeconds()
+      if (!statusListTimestamp) {
+        throw new AriesFrameworkError(
+          `Unable to extract revocation status list timestamp from resource ${revocationRegistryId}`
+        )
+      }
+
       return {
         revocationStatusList: {
-          ...revocationRegistryDefinition,
+          ...revocationStatusList,
           issuerId: parsedDid.did,
-          timestamp,
+          timestamp: statusListTimestamp,
         },
         resolutionMetadata: {},
-        revocationStatusListMetadata: response.resourceMetadata,
+        revocationStatusListMetadata: (response.resourceMetadata ?? {}) as Record<string, unknown>,
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving revocation registry status list '${revocationRegistryId}'`, {
