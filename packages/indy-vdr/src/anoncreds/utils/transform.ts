@@ -26,7 +26,7 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   return {
     issuerId: revocationRegistryDefinition.issuerId,
     currentAccumulator: delta.accum,
-    revRegId: revocationRegistryDefinitionId,
+    revRegDefId: revocationRegistryDefinitionId,
     revocationList,
     timestamp,
   }
