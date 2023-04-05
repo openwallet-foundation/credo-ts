@@ -32,7 +32,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
 
         revocationRegistryDefinitions[revocationRegistryDefinitionId] = definition as unknown as JsonObject
 
-        lists.push(...Object.values(revocationStatusLists).map((item) => item as unknown as JsonObject))
+        lists.push(...(Object.values(revocationStatusLists) as unknown as Array<JsonObject>))
       }
 
       return presentation.verify({
