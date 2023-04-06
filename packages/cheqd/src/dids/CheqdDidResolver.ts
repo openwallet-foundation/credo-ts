@@ -87,7 +87,7 @@ export class CheqdDidResolver implements DidResolver {
         if (params.version) {
           resource = resources.find((resource) => resource.version == params.version)
         } else {
-          const date = params.time ? new Date(params.time) : new Date()
+          const date = params.resourceTime ? new Date(params.resourceTime) : new Date()
           // find the resourceId closest to the created time
           resource = getClosestResourceVersion(resources, date)
         }

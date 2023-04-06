@@ -6,11 +6,10 @@ const NETWORK = '(testnet|mainnet)'
 const METHOD_ID = `((?:${ID_CHAR}*:)*(${ID_CHAR}+))`
 const PATH = `(/[^#?]*)?`
 const QUERY = `([?][^#]*)?`
-const FRAGMENT = `(#.*)?`
 const VERSION_ID = `(.*?)`
 
 export const cheqdSdkAnonCredsRegistryIdentifierRegex = new RegExp(
-  `^did:cheqd:${NETWORK}:${METHOD_ID}${PATH}${QUERY}${FRAGMENT}$`
+  `^did:cheqd:${NETWORK}:${METHOD_ID}${PATH}${QUERY}$`
 )
 
 export const cheqdDidRegex = new RegExp(`^did:cheqd:${NETWORK}:${METHOD_ID}${QUERY}$`)
