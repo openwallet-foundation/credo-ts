@@ -5,10 +5,10 @@ import type { EntryObject } from '@hyperledger/aries-askar-shared'
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@aries-framework/anoncreds'
 import { AskarWallet } from '@aries-framework/askar'
 import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
-import { Migration, Key, KeyAlgs, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { Migration, Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
-import { transformFromRecordTagValues } from './utils'
+import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } from './utils'
 
 /**
  *
@@ -30,32 +30,22 @@ export class IndySdkToAskarMigrationUpdater {
   private agent: Agent
   private dbPath: string
   private fs: FileSystem
-  private deleteOnFinish: boolean
 
-  private constructor(
-    walletConfig: WalletConfig,
-    agent: Agent,
-    dbPath: string,
-    deleteOnFinish = false,
-    defaultLinkSecretId?: string
-  ) {
+  private constructor(walletConfig: WalletConfig, agent: Agent, dbPath: string, defaultLinkSecretId?: string) {
     this.walletConfig = walletConfig
     this.dbPath = dbPath
     this.agent = agent
     this.fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     this.defaultLinkSecretId = defaultLinkSecretId ?? walletConfig.id
-    this.deleteOnFinish = deleteOnFinish
   }
 
   public static async initialize({
     dbPath,
     agent,
-    deleteOnFinish,
     defaultLinkSecretId,
   }: {
     dbPath: string
     agent: Agent
-    deleteOnFinish?: boolean
     defaultLinkSecretId?: string
   }) {
     const {
@@ -83,17 +73,17 @@ export class IndySdkToAskarMigrationUpdater {
       throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
     }
 
-    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, deleteOnFinish, defaultLinkSecretId)
+    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, defaultLinkSecretId)
   }
 
   /**
    * This function migrates the old database to the new structure.
    *
-   * This doubles checks some fields as later it might be possiblt to run this function
+   * This doubles checks some fields as later it might be possible to run this function
    */
   private async migrate() {
     const specUri = this.backupFile
-    const kdfLevel = this.walletConfig.keyDerivationMethod ?? 'ARGON2I_MOD'
+    const kdfLevel = this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
     const walletName = this.walletConfig.id
     const walletKey = this.walletConfig.key
     const storageType = this.walletConfig.storage?.type ?? 'sqlite'
@@ -186,13 +176,15 @@ export class IndySdkToAskarMigrationUpdater {
 
     // Copy the file from the database path to the new location
     await this.fs.copyFile(src, dest)
-
-    // Delete the original, only if specified by the user
-    if (this.deleteOnFinish) await this.fs.delete(this.dbPath)
   }
 
   /**
    * Function that updates the values from an indy-sdk structure to the new askar structure.
+   *
+   * > NOTE: It is very important that this script is ran before the 0.3.x to
+   *         0.4.x migration script. This can easily be done by calling this when you
+   *         upgrade, before you initialize the agent with `autoUpdateStorageOnStartup:
+   *         true`.
    *
    * - Assert that the paths that will be used are free
    * - Create a backup of the database
@@ -212,8 +204,9 @@ export class IndySdkToAskarMigrationUpdater {
       // Migrate the database
       await this.migrate()
 
-      const keyMethod =
-        this.walletConfig?.keyDerivationMethod == KeyDerivationMethod.Raw ? StoreKeyMethod.Raw : StoreKeyMethod.Kdf
+      const keyMethod = keyDerivationMethodToStoreKeyMethod(
+        this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
+      )
       this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
 
       // Update the values to reflect the new structure
@@ -225,7 +218,7 @@ export class IndySdkToAskarMigrationUpdater {
       // Move the migrated and updated file to the expected location for afj
       await this.moveToNewLocation()
     } catch (err) {
-      this.agent.config.logger.error('Migration failed. Restoring state.')
+      this.agent.config.logger.error(`Migration failed. Restoring state. ${err.message}`)
 
       throw new IndySdkToAskarMigrationError(`Migration failed. State has been restored. ${err.message}`, {
         cause: err.cause,

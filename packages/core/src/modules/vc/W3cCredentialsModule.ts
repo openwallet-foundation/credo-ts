@@ -1,4 +1,4 @@
-import type { W3cVcModuleConfigOptions } from './W3cVcModuleConfig'
+import type { W3cVcModuleConfigOptions } from './W3cCredentialsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
 
 import { KeyType } from '../../crypto'
@@ -9,25 +9,31 @@ import {
 
 import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
 import { W3cCredentialService } from './W3cCredentialService'
-import { W3cVcModuleConfig } from './W3cVcModuleConfig'
+import { W3cCredentialsApi } from './W3cCredentialsApi'
+import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
 import { Ed25519Signature2018 } from './signature-suites'
 
-export class W3cVcModule implements Module {
-  public readonly config: W3cVcModuleConfig
+/**
+ * @public
+ */
+export class W3cCredentialsModule implements Module {
+  public readonly config: W3cCredentialsModuleConfig
+  public readonly api = W3cCredentialsApi
 
   public constructor(config?: W3cVcModuleConfigOptions) {
-    this.config = new W3cVcModuleConfig(config)
+    this.config = new W3cCredentialsModuleConfig(config)
   }
 
   public register(dependencyManager: DependencyManager) {
+    dependencyManager.registerContextScoped(W3cCredentialsApi)
     dependencyManager.registerSingleton(W3cCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 
     dependencyManager.registerSingleton(SignatureSuiteRegistry)
 
     // Register the config
-    dependencyManager.registerInstance(W3cVcModuleConfig, this.config)
+    dependencyManager.registerInstance(W3cCredentialsModuleConfig, this.config)
 
     // Always register ed25519 signature suite
     dependencyManager.registerInstance(SignatureSuiteToken, {

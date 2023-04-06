@@ -28,10 +28,10 @@
     "@aries-framework/askar": "0.3.3",
     "@aries-framework/core": "0.3.3",
     "@aries-framework/node": "0.3.3",
-    "@hyperledger/aries-askar-shared": "^0.1.0-dev.6"
+    "@hyperledger/aries-askar-shared": "^0.1.0-dev.8"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.6",
+    "@hyperledger/aries-askar-nodejs": "^0.1.0-dev.8",
     "@aries-framework/indy-sdk": "0.3.3",
     "indy-sdk": "^1.16.0-dev-1655",
     "rimraf": "^4.4.0",
