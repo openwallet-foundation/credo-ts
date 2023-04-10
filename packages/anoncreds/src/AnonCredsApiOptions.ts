@@ -16,14 +16,24 @@ export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
   issuerId: string
   tag: string
   credentialDefinitionId: string
-  credentialDefinition: AnonCredsCredentialDefinition
   tailsDirectoryPath: string
   maximumCredentialNumber: number
 }
 
 export interface AnonCredsRegisterRevocationStatusListOptions {
   issuerId: string
-  issuanceByDefault: true
-  revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+  issuanceByDefault: boolean
   revocationRegistryDefinitionId: string
+  tailsLocation: string
+}
+
+export interface AnonCredsUpdateRevocationStatusListOptions {
+  revokedCredentialIndexes: number[]
+  issuedCredentialIndexes: number[]
+  revocationRegistryDefinitionId: string
+}
+
+export interface AnonCredsRevokeCredentialOptions {
+  revocationRegistryDefinitionId: string
+  revokedIndexes: number[]
 }

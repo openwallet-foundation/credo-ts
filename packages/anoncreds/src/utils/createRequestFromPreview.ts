@@ -12,7 +12,7 @@ export function createRequestFromPreview({
   nonce,
   attributes,
   predicates,
-  nonRevokedInterval
+  nonRevokedInterval,
 }: {
   name: string
   version: string

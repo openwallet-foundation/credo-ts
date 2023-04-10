@@ -122,6 +122,13 @@ export interface AcceptCredentialOptions {
 }
 
 /**
+ * Interface for CredentialsApi.sendRevocationNotification. Will send notifications
+ */
+export interface SendRevocationNotificationOptions {
+  credentialRecordIds: string[]
+}
+
+/**
  * Interface for CredentialsApi.sendProblemReport. Will send a problem-report message
  */
 export interface SendCredentialProblemReportOptions {

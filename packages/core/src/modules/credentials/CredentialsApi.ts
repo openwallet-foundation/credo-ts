@@ -15,6 +15,7 @@ import type {
   ProposeCredentialOptions,
   SendCredentialProblemReportOptions,
   DeleteCredentialOptions,
+  SendRevocationNotificationOptions,
 } from './CredentialsApiOptions'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/CredentialProtocolOptions'
@@ -61,6 +62,9 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
 
   // Issue Credential Methods
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
+
+  // Revoke Credential Methods
+  sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void>
 
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{

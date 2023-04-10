@@ -136,17 +136,20 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateRevocationStatusListOptions
   ): Promise<AnonCredsRevocationStatusList> {
-    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault } = options
+    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault, tailsLocation } =
+      options
 
-    console.log(`revocation list: ${options.revocationRegistryDefinition.value.tailsLocation}`)
     let revocationStatusList: RevocationStatusList | undefined
     try {
       revocationStatusList = RevocationStatusList.create({
         issuanceByDefault,
         revocationRegistryDefinitionId,
-        revocationRegistryDefinition: revocationRegistryDefinition as unknown as JsonObject,
+        revocationRegistryDefinition: {
+          ...revocationRegistryDefinition,
+          value: { ...revocationRegistryDefinition.value, tailsLocation },
+        } as unknown as JsonObject,
         issuerId,
-        timestamp: new Date().getTime() // TODO: fix optional field issue in anoncreds-rs
+        timestamp: Math.floor(new Date().getTime() / 1000), // TODO: fix optional field issue in anoncreds-rs
       })
 
       return revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList
@@ -159,7 +162,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: UpdateRevocationStatusListOptions
   ): Promise<AnonCredsRevocationStatusList> {
-    const { revocationStatusList, revocationRegistryDefinition, issued, revoked, timestamp } = options
+    const { revocationStatusList, revocationRegistryDefinition, issued, revoked, timestamp, tailsLocation } = options
 
     let updatedRevocationStatusList: RevocationStatusList | undefined
     let revocationRegistryDefinitionObj: RevocationRegistryDefinition | undefined
@@ -169,16 +172,18 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
       if (timestamp && !issued && !revoked) {
         updatedRevocationStatusList.updateTimestamp({
-          timestamp
+          timestamp,
         })
       } else {
-        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(revocationRegistryDefinition as unknown as JsonObject)
+        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(
+          { ...revocationRegistryDefinition, value: { ...revocationRegistryDefinition.value, tailsLocation }} as unknown as JsonObject
+        )
         updatedRevocationStatusList.update({
           // TODO: Fix parameters in anoncreds-rs
           revocationRegstryDefinition: revocationRegistryDefinitionObj,
-          issued,
-          revoked,
-          timestamp
+          issued: [3],
+          revoked: [2],
+          timestamp: timestamp ?? -1,
         })
       }
 

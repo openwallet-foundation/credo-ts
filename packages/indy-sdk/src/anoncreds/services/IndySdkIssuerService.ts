@@ -37,6 +37,10 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     throw new AriesFrameworkError('Method not implemented.')
   }
 
+  public async updateRevocationStatusList(): Promise<AnonCredsRevocationStatusList> {
+    throw new AriesFrameworkError('Method not implemented.')
+  }
+
   public async createRevocationRegistryDefinition(): Promise<CreateRevocationRegistryDefinitionReturn> {
     throw new AriesFrameworkError('Method not implemented.')
   }

@@ -86,7 +86,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       name: anoncredsFormat.name ?? 'Proof request',
       version: anoncredsFormat.version ?? '1.0',
       nonce: await agentContext.wallet.generateNonce(),
-      nonRevokedInterval: anoncredsFormat.nonRevokedInterval
+      nonRevokedInterval: anoncredsFormat.nonRevokedInterval,
     })
     const attachment = this.getFormatData(proofRequest, format.attachmentId)
 

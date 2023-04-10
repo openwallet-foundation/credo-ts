@@ -331,6 +331,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
           RevocationRegistryState.Active
         )
 
+      // TODO: should a new revocation registry be generated/published/etc automatically?
       if (!revocationRegistryDefinitionPrivateRecord) {
         throw new AriesFrameworkError(`No available revocation registry found for ${credentialRequest.cred_def_id}`)
       }
@@ -343,7 +344,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       const result = await registry.getRevocationStatusList(
         agentContext,
         revocationRegistryDefinitionId,
-        new Date().getTime()
+        Math.floor(new Date().getTime() / 1000)
       )
 
       if (!result.revocationStatusList) {
@@ -357,9 +358,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         .resolve(AnonCredsRevocationRegistryDefinitionRepository)
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
-      ;({ tailsFilePath } = await downloadTailsFile(agentContext, 
-        revocationRegistryDefinition.value.tailsLocation, 
-        revocationRegistryDefinition.value.tailsHash))
+      ;({ tailsFilePath } = await downloadTailsFile(
+        agentContext,
+        revocationRegistryDefinition.value.tailsLocation,
+        revocationRegistryDefinition.value.tailsHash
+      ))
     }
 
     const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
