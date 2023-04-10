@@ -75,10 +75,11 @@ export { Hasher } from './utils/Hasher'
 export { MessageValidator } from './utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'
-import { uuid } from './utils/uuid'
+import { uuid, isValidUuid } from './utils/uuid'
 
 const utils = {
   uuid,
+  isValidUuid,
   parseInvitationUrl,
 }
 

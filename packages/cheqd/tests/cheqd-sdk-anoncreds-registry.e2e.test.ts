@@ -226,10 +226,11 @@ describe('cheqdAnonCredsRegistry', () => {
     const revocationStatusListResponse = await cheqdAnonCredsRegistry.getRevocationStatusList(
       agent.context,
       revocationRegistryId,
-      new Date().getUTCSeconds()
+      1680789403
     )
+
     expect(revocationStatusListResponse.revocationStatusList).toMatchObject({
-      revRegId: `${revocationRegistryId}&resourceType=anonCredsRevocRegDef`,
+      revRegDefId: `${revocationRegistryId}&resourceType=anonCredsRevocRegDef`,
       revocationList: [
         0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

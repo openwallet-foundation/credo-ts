@@ -130,7 +130,7 @@ export class CheqdRevocationRegistryDefinition {
 }
 
 export class CheqdRevocationStatusList {
-  public constructor(options: Omit<AnonCredsRevocationStatusList, 'issuerId' | 'revRegId'> & { revRegDefId: string }) {
+  public constructor(options: Omit<AnonCredsRevocationStatusList, 'issuerId'>) {
     if (options) {
       this.revRegDefId = options.revRegDefId
       this.revocationList = options.revocationList

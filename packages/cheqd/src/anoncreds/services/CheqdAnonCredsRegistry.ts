@@ -84,7 +84,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       const schema = options.schema
       const schemaResource = {
         id: utils.uuid(),
-        name: schema.name,
+        name: `${schema.name}-Schema`,
         resourceType: 'anonCredsSchema',
         data: {
           name: schema.name,
@@ -134,10 +134,10 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
     try {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const { credentialDefinition } = options
-
+      const schema = await this.getSchema(agentContext, credentialDefinition.schemaId)
       const credDefResource = {
         id: utils.uuid(),
-        name: credentialDefinition.tag,
+        name: `${schema.schema?.name}-${credentialDefinition.tag}-CredDef`,
         resourceType: 'anonCredsCredDef',
         data: {
           type: credentialDefinition.type,
@@ -315,9 +315,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       return {
         revocationStatusList: {
-          revRegId: revocationStatusList.revRegDefId,
-          revocationList: revocationStatusList.revocationList,
-          currentAccumulator: revocationStatusList.currentAccumulator,
+          ...revocationStatusList,
           issuerId: parsedDid.did,
           timestamp: statusListTimestamp,
         },
