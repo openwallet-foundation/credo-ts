@@ -1,8 +1,7 @@
 {
-    "extends": "../../tsconfig.build.json",
-    "compilerOptions": {
-      "outDir": "./build"
-    },
-    "include": ["src/**/*"]
-  }
-  
+  "extends": "../../tsconfig.build.json",
+  "compilerOptions": {
+    "outDir": "./build"
+  },
+  "include": ["src/**/*"]
+}
