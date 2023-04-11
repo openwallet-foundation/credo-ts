@@ -1,10 +1,10 @@
-import type { TailsFileManager } from './TailsFileManager'
-import type { AnonCredsRevocationRegistryDefinition } from '../models'
+import type { TailsFileService } from './TailsFileService'
+import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext, FileSystem } from '@aries-framework/core'
 
 import { AriesFrameworkError, InjectionSymbols, TypedArrayEncoder } from '@aries-framework/core'
 
-export class BasicTailsFileManager implements TailsFileManager {
+export class BasicTailsFileService implements TailsFileService {
   private tailsDirectoryPath?: string
 
   public constructor(options?: { tailsDirectoryPath?: string; tailsServerBaseUrl?: string }) {
@@ -27,7 +27,9 @@ export class BasicTailsFileManager implements TailsFileManager {
   }
 
   public async uploadTailsFile(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     agentContext: AgentContext,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }

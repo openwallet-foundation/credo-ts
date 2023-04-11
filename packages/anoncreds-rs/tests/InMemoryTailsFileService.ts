@@ -1,9 +1,9 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { BasicTailsFileManager } from '@aries-framework/anoncreds'
+import { BasicTailsFileService } from '@aries-framework/anoncreds'
 
-export class InMemoryTailsFileManager extends BasicTailsFileManager {
+export class InMemoryTailsFileService extends BasicTailsFileService {
   private tailsFilePaths: Record<string, string> = {}
 
   public async uploadTailsFile(

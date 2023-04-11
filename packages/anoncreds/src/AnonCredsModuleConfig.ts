@@ -1,7 +1,7 @@
 import type { AnonCredsRegistry } from './services'
-import type { TailsFileManager } from './services/TailsFileManager'
+import type { TailsFileService } from './services/tails'
 
-import { BasicTailsFileManager } from './services/BasicTailsFileManager'
+import { BasicTailsFileService } from './services/tails'
 
 /**
  * @public
@@ -23,7 +23,7 @@ export interface AnonCredsModuleConfigOptions {
    * Tails file manager for download/uploading tails files
    * @default DefaultTailsFileManager (only for downloading tails files)
    */
-  tailsFileManager?: TailsFileManager
+  tailsFileService?: TailsFileService
 }
 
 /**
@@ -46,8 +46,8 @@ export class AnonCredsModuleConfig {
     return this.options.maximumCredentialNumberPerRevocationRegistry ?? 1000
   }
 
-  /** See {@link AnonCredsModuleConfigOptions.tailsFileManager} */
+  /** See {@link AnonCredsModuleConfigOptions.tailsFileService} */
   public get tailsFileManager() {
-    return this.options.tailsFileManager ?? new BasicTailsFileManager()
+    return this.options.tailsFileService ?? new BasicTailsFileService()
   }
 }

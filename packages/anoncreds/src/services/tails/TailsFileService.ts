@@ -1,7 +1,7 @@
-import type { AnonCredsRevocationRegistryDefinition } from '../models'
+import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext } from '@aries-framework/core'
 
-export interface TailsFileManager {
+export interface TailsFileService {
   getTailsBasePath(agentContext: AgentContext): string
 
   getTailsFilePath(agentContext: AgentContext, tailsHash: string): string

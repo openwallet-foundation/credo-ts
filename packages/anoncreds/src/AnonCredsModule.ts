@@ -9,6 +9,7 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
+  AnonCredsRevocationStatusListRepository,
 } from './repository'
 import { AnonCredsCredentialDefinitionRepository } from './repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
@@ -40,6 +41,7 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
     dependencyManager.registerSingleton(AnonCredsRevocationRegistryDefinitionRepository)
     dependencyManager.registerSingleton(AnonCredsRevocationRegistryDefinitionPrivateRepository)
+    dependencyManager.registerSingleton(AnonCredsRevocationStatusListRepository)
   }
 
   public updates = [

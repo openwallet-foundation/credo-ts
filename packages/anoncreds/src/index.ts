@@ -9,7 +9,6 @@ export * from './protocols'
 
 export { AnonCredsModule } from './AnonCredsModule'
 export { AnonCredsModuleConfig, AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
-export { TailsFileManager, BasicTailsFileManager } from './services'
 export { AnonCredsApi } from './AnonCredsApi'
 export * from './AnonCredsApiOptions'
 export { generateLegacyProverDidLikeString } from './utils/proverDid'

@@ -1,7 +1,8 @@
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
+import type { AnonCredsHolderService, AnonCredsProposeCredentialFormat } from '@aries-framework/anoncreds'
 
-import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
-import testLogger from '../../core/tests/logger'
+import { AnonCredsHolderServiceSymbol } from '@aries-framework/anoncreds'
 import {
   DidCommMessageRepository,
   JsonTransformer,
@@ -13,14 +14,12 @@ import {
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
 } from '@aries-framework/core'
-import {
-  AnonCredsHolderService,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsProposeCredentialFormat,
-} from '@aries-framework/anoncreds'
-import { AnonCredsTestsAgent, issueAnonCredsCredential } from './anoncredsSetup'
-import { setupAnonCredsTests } from './anoncredsSetup'
+
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
+import testLogger from '../../core/tests/logger'
+
+import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -29,7 +28,7 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   profile_picture: 'profile picture',
 })
 
-describe('v2 credentials', () => {
+describe('IC/PP V2 AnonCreds credentials', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
@@ -42,6 +41,8 @@ describe('v2 credentials', () => {
   let anonCredsCredentialProposal: AnonCredsProposeCredentialFormat
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+
+  const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
   const newCredentialPreview = V2CredentialPreview.fromRecord({
     name: 'John',
@@ -60,6 +61,7 @@ describe('v2 credentials', () => {
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
+      issuerId,
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],

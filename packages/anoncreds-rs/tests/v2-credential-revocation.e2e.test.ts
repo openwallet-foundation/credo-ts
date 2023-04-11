@@ -36,6 +36,8 @@ describe('v2 credential revocation', () => {
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
 
+  const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
+
   beforeAll(async () => {
     ;({
       issuerAgent: faberAgent,
@@ -46,6 +48,7 @@ describe('v2 credential revocation', () => {
       revocationRegistryDefinitionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
+      issuerId,
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],

@@ -16,7 +16,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
-  TypedArrayEncoder,
+  DidDocumentBuilder,
   CacheModule,
   InMemoryLruCache,
   Agent,
@@ -36,30 +36,22 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
-  importExistingIndyDidFromPrivateKey,
   makeConnection,
-  publicDidSeed,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import {
-  IndyVdrAnonCredsRegistry,
-  IndyVdrSovDidResolver,
-  IndyVdrModule,
-  IndyVdrIndyDidResolver,
-  IndyVdrIndyDidRegistrar,
-} from '../../indy-vdr/src'
-import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import { AnonCredsRsModule } from '../src'
 
-import { InMemoryTailsFileManager } from './InMemoryTailsFileManager'
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { LocalDidResolver } from './LocalDidResolver'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -96,16 +88,14 @@ export const getAnonCredsModules = ({
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: registries ?? [new IndyVdrAnonCredsRegistry()],
-      tailsFileManager: new InMemoryTailsFileManager(),
+      registries: registries ?? [new InMemoryAnonCredsRegistry()],
+      tailsFileService: new InMemoryTailsFileService(),
     }),
     anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
-    indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
-      registrars: [new IndyVdrIndyDidRegistrar()],
+      resolvers: [new LocalDidResolver()],
     }),
     askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
@@ -282,6 +272,7 @@ export async function setupAnonCredsTests<
   VerifierName extends string | undefined = undefined,
   CreateConnections extends boolean = true
 >({
+  issuerId,
   issuerName,
   holderName,
   verifierName,
@@ -292,6 +283,7 @@ export async function setupAnonCredsTests<
   supportRevocation,
   registries,
 }: {
+  issuerId: string
   issuerName: string
   holderName: string
   verifierName?: VerifierName
@@ -365,6 +357,7 @@ export async function setupAnonCredsTests<
   const { credentialDefinition, revocationRegistryDefinition, schema } = await prepareForAnonCredsIssuance(
     issuerAgent,
     {
+      issuerId,
       attributeNames,
       supportRevocation,
     }
@@ -406,18 +399,24 @@ export async function setupAnonCredsTests<
 
 export async function prepareForAnonCredsIssuance(
   agent: Agent,
-  { attributeNames, supportRevocation }: { attributeNames: string[]; supportRevocation?: boolean }
+  {
+    attributeNames,
+    supportRevocation,
+    issuerId,
+  }: { attributeNames: string[]; supportRevocation?: boolean; issuerId: string }
 ) {
-  // Add existing endorser did to the wallet
-  const unqualifiedDid = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
-  const didIndyDid = `did:indy:pool:localtest:${unqualifiedDid}`
+  //const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
+
+  const didDocument = new DidDocumentBuilder(issuerId).build()
+
+  await agent.dids.import({ did: issuerId, didDocument })
 
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,
     name: `Schema ${randomUUID()}`,
     version: '1.0',
-    issuerId: didIndyDid,
+    issuerId,
   })
 
   // Wait some time pass to let ledger settle the object
@@ -425,7 +424,7 @@ export async function prepareForAnonCredsIssuance(
 
   const credentialDefinition = await registerCredentialDefinition(agent, {
     schemaId: schema.schemaId,
-    issuerId: didIndyDid,
+    issuerId,
     tag: 'default',
     supportRevocation,
   })
@@ -437,7 +436,7 @@ export async function prepareForAnonCredsIssuance(
   let revocationStatusList
   if (supportRevocation) {
     revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
-      issuerId: didIndyDid,
+      issuerId,
       tag: 'default',
       credentialDefinitionId: credentialDefinition.credentialDefinitionId,
       maximumCredentialNumber: 10,
@@ -449,7 +448,7 @@ export async function prepareForAnonCredsIssuance(
     revocationStatusList = await registerRevocationStatusList(agent, {
       issuanceByDefault: true,
       revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
-      issuerId: didIndyDid,
+      issuerId,
     })
 
     // Wait some time pass to let ledger settle the object
