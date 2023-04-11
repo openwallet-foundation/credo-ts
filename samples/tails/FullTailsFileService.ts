@@ -1,12 +1,12 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { BasicTailsFileManager } from '@aries-framework/anoncreds'
+import { BasicTailsFileService } from '@aries-framework/anoncreds'
 import { utils } from '@aries-framework/core'
 import FormData from 'form-data'
 import fs from 'fs'
 
-export class FullTailsFileManager extends BasicTailsFileManager {
+export class FullTailsFileService extends BasicTailsFileService {
   private tailsServerBaseUrl?: string
   public constructor(options?: { tailsDirectoryPath?: string; tailsServerBaseUrl?: string }) {
     super(options)

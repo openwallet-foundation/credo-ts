@@ -58,6 +58,7 @@ import {
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
 } from '../utils'
+import { dateToTimestamp } from '../utils/timestamp'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
@@ -542,7 +543,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     const revocationStatusResult = await registry.getRevocationStatusList(
       agentContext,
       revocationRegistryId,
-      requestNonRevoked.to ?? Date.now()
+      requestNonRevoked.to ?? dateToTimestamp(new Date())
     )
 
     if (!revocationStatusResult.revocationStatusList) {

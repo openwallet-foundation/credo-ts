@@ -15,6 +15,7 @@ import {
   V2RequestCredentialMessage,
 } from '@aries-framework/core'
 
+import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
@@ -28,7 +29,7 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   profile_picture: 'profile picture',
 })
 
-describe('IC/PP V2 AnonCreds credentials', () => {
+describeRunInNodeVersion([18], 'IC V2 AnonCreds credentials', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
@@ -70,11 +71,11 @@ describe('IC/PP V2 AnonCreds credentials', () => {
 
     anonCredsCredentialProposal = {
       credentialDefinitionId: credentialDefinitionId,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      schemaIssuerDid: issuerId,
       schemaName: 'ahoy',
       schemaVersion: '1.0',
-      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+      schemaId: `${issuerId}/q7ATwTYbQDgiigVijUAej:2:test:1.0`,
+      issuerDid: issuerId,
     }
   })
 
@@ -94,12 +95,12 @@ describe('IC/PP V2 AnonCreds credentials', () => {
       credentialFormats: {
         anoncreds: {
           attributes: credentialPreview.attributes,
-          schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
+          schemaIssuerDid: issuerId,
           schemaName: 'ahoy',
           schemaVersion: '1.0',
-          schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-          issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-          credentialDefinitionId: 'GMm4vMw8LLrLJjp81kRRLp:3:CL:12:tag',
+          schemaId: `${issuerId}/q7ATwTYbQDgiigVijUAej:2:test:1.0`,
+          issuerDid: issuerId,
+          credentialDefinitionId: `${issuerId}/:3:CL:12:tag`,
         },
       },
       comment: 'v2 propose credential test',

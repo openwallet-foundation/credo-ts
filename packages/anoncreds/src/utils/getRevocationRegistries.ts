@@ -191,7 +191,7 @@ export async function getRevocationRegistriesForProof(agentContext: AgentContext
 
       if (!revocationStatusList) {
         throw new AriesFrameworkError(
-          `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
+          `Could not retrieve revocation status list for revocation registry ${revocationRegistryId} at ${timestamp}: ${statusListResolutionMetadata.message}`
         )
       }
 
