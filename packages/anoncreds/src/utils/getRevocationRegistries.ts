@@ -4,10 +4,10 @@ import type { AgentContext } from '@aries-framework/core'
 
 import { AriesFrameworkError } from '@aries-framework/core'
 
+import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRegistryService } from '../services'
 
 import { assertBestPracticeRevocationInterval } from './revocationInterval'
-import { downloadTailsFile } from './tails'
 
 export async function getRevocationRegistriesForRequest(
   agentContext: AgentContext,
@@ -88,8 +88,10 @@ export async function getRevocationRegistriesForRequest(
             )
           }
 
-          const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
-          const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
+          const tailsFileManager = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileManager
+          const { tailsFilePath } = await tailsFileManager.downloadTailsFile(agentContext, {
+            revocationRegistryDefinition,
+          })
 
           // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
           revocationRegistries[revocationRegistryId] = {

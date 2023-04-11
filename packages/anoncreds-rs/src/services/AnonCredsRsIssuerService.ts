@@ -1,4 +1,4 @@
-import {
+import type {
   AnonCredsIssuerService,
   CreateCredentialDefinitionOptions,
   CreateCredentialOfferOptions,
@@ -15,13 +15,13 @@ import {
   AnonCredsRevocationRegistryDefinition,
   CreateRevocationStatusListOptions,
   AnonCredsRevocationStatusList,
-  RevocationRegistryState,
   UpdateRevocationStatusListOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
 import {
+  RevocationRegistryState,
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
@@ -136,7 +136,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateRevocationStatusListOptions
   ): Promise<AnonCredsRevocationStatusList> {
-    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault, tailsLocation } =
+    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault, tailsFilePath } =
       options
 
     let revocationStatusList: RevocationStatusList | undefined
@@ -146,10 +146,9 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         revocationRegistryDefinitionId,
         revocationRegistryDefinition: {
           ...revocationRegistryDefinition,
-          value: { ...revocationRegistryDefinition.value, tailsLocation },
+          value: { ...revocationRegistryDefinition.value, tailsLocation: tailsFilePath },
         } as unknown as JsonObject,
         issuerId,
-        timestamp: Math.floor(new Date().getTime() / 1000), // TODO: fix optional field issue in anoncreds-rs
       })
 
       return revocationStatusList.toJson() as unknown as AnonCredsRevocationStatusList
@@ -162,7 +161,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: UpdateRevocationStatusListOptions
   ): Promise<AnonCredsRevocationStatusList> {
-    const { revocationStatusList, revocationRegistryDefinition, issued, revoked, timestamp, tailsLocation } = options
+    const { revocationStatusList, revocationRegistryDefinition, issued, revoked, timestamp, tailsFilePath } = options
 
     let updatedRevocationStatusList: RevocationStatusList | undefined
     let revocationRegistryDefinitionObj: RevocationRegistryDefinition | undefined
@@ -175,14 +174,15 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           timestamp,
         })
       } else {
-        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson(
-          { ...revocationRegistryDefinition, value: { ...revocationRegistryDefinition.value, tailsLocation }} as unknown as JsonObject
-        )
+        revocationRegistryDefinitionObj = RevocationRegistryDefinition.fromJson({
+          ...revocationRegistryDefinition,
+          value: { ...revocationRegistryDefinition.value, tailsLocation: tailsFilePath },
+        } as unknown as JsonObject)
         updatedRevocationStatusList.update({
           // TODO: Fix parameters in anoncreds-rs
           revocationRegstryDefinition: revocationRegistryDefinitionObj,
-          issued: [3],
-          revoked: [2],
+          issued: options.issued,
+          revoked: options.revoked,
           timestamp: timestamp ?? -1,
         })
       }

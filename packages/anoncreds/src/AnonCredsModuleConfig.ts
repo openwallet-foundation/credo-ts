@@ -1,4 +1,7 @@
 import type { AnonCredsRegistry } from './services'
+import type { TailsFileManager } from './services/TailsFileManager'
+
+import { BasicTailsFileManager } from './services/BasicTailsFileManager'
 
 /**
  * @public
@@ -17,10 +20,10 @@ export interface AnonCredsModuleConfigOptions {
   maximumCredentialNumberPerRevocationRegistry?: number
 
   /**
-   * Maximum credential number per revocation registry
-   * @default agent's data path
+   * Tails file manager for download/uploading tails files
+   * @default DefaultTailsFileManager (only for downloading tails files)
    */
-  tailsDirectoryPath?: string
+  tailsFileManager?: TailsFileManager
 }
 
 /**
@@ -43,8 +46,8 @@ export class AnonCredsModuleConfig {
     return this.options.maximumCredentialNumberPerRevocationRegistry ?? 1000
   }
 
-  /** See {@link AnonCredsModuleConfigOptions.tailsDirectoryPath} */
-  public get tailsDirectoryPath() {
-    return this.options.tailsDirectoryPath
+  /** See {@link AnonCredsModuleConfigOptions.tailsFileManager} */
+  public get tailsFileManager() {
+    return this.options.tailsFileManager ?? new BasicTailsFileManager()
   }
 }

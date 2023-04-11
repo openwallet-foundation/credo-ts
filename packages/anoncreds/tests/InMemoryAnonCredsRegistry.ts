@@ -34,6 +34,7 @@ import {
   parseSchemaId,
 } from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import { parseIndyDid } from '../../indy-sdk/src/dids/didIndyUtil'
+import { dateToTimestamp } from '../src/utils/timestamp'
 
 /**
  * In memory implementation of the {@link AnonCredsRegistry} interface. Useful for testing.
@@ -343,7 +344,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
-    const timestamp = (options.options.timestamp as number) ?? Math.floor(new Date().getTime() / 1000)
+    const timestamp = (options.options.timestamp as number) ?? dateToTimestamp(new Date())
     const revocationStatusList = {
       ...options.revocationStatusList,
       timestamp,
@@ -351,6 +352,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     if (!this.revocationStatusLists[options.revocationStatusList.revRegDefId]) {
       this.revocationStatusLists[options.revocationStatusList.revRegDefId] = {}
     }
+
     this.revocationStatusLists[revocationStatusList.revRegDefId][timestamp.toString()] = revocationStatusList
 
     return {

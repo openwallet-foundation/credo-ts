@@ -1,7 +1,6 @@
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
 
-import { waitForCredentialRecordSubject } from '../../core/tests'
-import testLogger from '../../core/tests/logger'
 import {
   DidCommMessageRepository,
   JsonTransformer,
@@ -10,9 +9,13 @@ import {
   V2CredentialPreview,
   V2OfferCredentialMessage,
 } from '@aries-framework/core'
-import { AnonCredsProposeCredentialFormat } from '@aries-framework/anoncreds'
-import { AnonCredsTestsAgent, setupAnonCredsTests } from './anoncredsSetup'
+
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { waitForCredentialRecordSubject } from '../../core/tests'
+import testLogger from '../../core/tests/logger'
+
+import { setupAnonCredsTests } from './anoncredsSetup'
+import { waitForRevocationNotification } from './helpers'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -25,22 +28,13 @@ describe('v2 credential revocation', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
-  let faberConnectionId: string
+  let revocationRegistryDefinitionId: string | undefined
   let aliceConnectionId: string
 
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
 
-  let anonCredsCredentialProposal: AnonCredsProposeCredentialFormat
-
   const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
-
-  const newCredentialPreview = V2CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-    'x-ray': 'another x-ray value',
-    profile_picture: 'another profile picture',
-  })
 
   beforeAll(async () => {
     ;({
@@ -49,7 +43,7 @@ describe('v2 credential revocation', () => {
       holderAgent: aliceAgent,
       holderReplay: aliceReplay,
       credentialDefinitionId,
-      issuerHolderConnectionId: faberConnectionId,
+      revocationRegistryDefinitionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
       issuerName: 'Faber Agent Credentials v2',
@@ -58,15 +52,6 @@ describe('v2 credential revocation', () => {
       supportRevocation: true,
       registries: [inMemoryRegistry],
     }))
-
-    anonCredsCredentialProposal = {
-      credentialDefinitionId: credentialDefinitionId,
-      schemaIssuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-      schemaName: 'ahoy',
-      schemaVersion: '1.0',
-      schemaId: 'q7ATwTYbQDgiigVijUAej:2:test:1.0',
-      issuerDid: 'GMm4vMw8LLrLJjp81kRRLp',
-    }
   })
 
   afterAll(async () => {
@@ -219,11 +204,29 @@ describe('v2 credential revocation', () => {
     })
 
     // Now revoke the credential
-    const revocationRegistryDefinitionId = doneCredentialRecord.getTag('anonCredsRevocationRegistryId') as string
-    const credentialRevocationId = doneCredentialRecord.getTag('anonCredsCredentialRevocationId') as string
-    await faberAgent.modules.anoncreds.revokeCredentials({
-      revocationRegistryDefinitionId,
-      revokedIndexes: [Number(credentialRevocationId)],
+    const credentialRevocationRegistryDefinitionId = doneCredentialRecord.getTag(
+      'anonCredsRevocationRegistryId'
+    ) as string
+    const credentialRevocationIndex = doneCredentialRecord.getTag('anonCredsCredentialRevocationId') as string
+
+    expect(credentialRevocationRegistryDefinitionId).toBeDefined()
+    expect(credentialRevocationIndex).toBeDefined()
+    expect(credentialRevocationRegistryDefinitionId).toEqual(revocationRegistryDefinitionId)
+
+    await faberAgent.modules.anoncreds.updateRevocationStatusList({
+      revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
+      revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+    })
+
+    await faberAgent.credentials.sendRevocationNotification({
+      credentialRecordId: doneCredentialRecord.id,
+      revocationFormat: 'anoncreds',
+      revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,
+    })
+
+    testLogger.test('Alice waits for credential revocation notification from Faber')
+    await waitForRevocationNotification(aliceAgent, {
+      threadId: faberCredentialRecord.threadId,
     })
   })
 })

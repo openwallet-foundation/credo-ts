@@ -1,20 +1,19 @@
-import { AgentContext, utils } from '@aries-framework/core'
-import { AnonCredsRevocationRegistryDefinition } from '../models'
+import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
+import type { AgentContext } from '@aries-framework/core'
+
+import { BasicTailsFileManager } from '@aries-framework/anoncreds'
+import { utils } from '@aries-framework/core'
 import FormData from 'form-data'
 import fs from 'fs'
 
-export interface TailsFileUploader {
-  uploadTails(
-    agentContext: AgentContext,
-    options: {
-      revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
-      localTailsFilePath: string
-    }
-  ): Promise<string>
-}
+export class FullTailsFileManager extends BasicTailsFileManager {
+  private tailsServerBaseUrl?: string
+  public constructor(options?: { tailsDirectoryPath?: string; tailsServerBaseUrl?: string }) {
+    super(options)
+    this.tailsServerBaseUrl = options?.tailsServerBaseUrl
+  }
 
-export class DefaultTailsFileUploader implements TailsFileUploader {
-  public async uploadTails(
+  public async uploadTailsFile(
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
@@ -28,7 +27,7 @@ export class DefaultTailsFileUploader implements TailsFileUploader {
     const readStream = fs.createReadStream(localTailsFilePath)
     data.append('file', readStream)
     const response = await agentContext.config.agentDependencies.fetch(
-      `http://localhost:3001/${encodeURIComponent(tailsFileId)}`,
+      `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}`,
       {
         method: 'PUT',
         body: data,
@@ -37,6 +36,6 @@ export class DefaultTailsFileUploader implements TailsFileUploader {
     if (response.status !== 200) {
       throw new Error('Cannot upload tails file')
     }
-    return `http://localhost:3001/${encodeURIComponent(tailsFileId)}`
+    return `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}`
   }
 }

@@ -3,7 +3,6 @@ import type {
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
   AnonCredsRegisterRevocationStatusListOptions,
-  AnonCredsRevokeCredentialOptions,
   AnonCredsUpdateRevocationStatusListOptions,
 } from './AnonCredsApiOptions'
 import type {
@@ -20,7 +19,7 @@ import type {
   RegisterRevocationStatusListReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
-import { AriesFrameworkError, SimpleQuery } from '@aries-framework/core'
+import type { SimpleQuery } from '@aries-framework/core'
 
 import { AgentContext, inject, injectable } from '@aries-framework/core'
 
@@ -54,8 +53,7 @@ import {
   AnonCredsHolderService,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
-import { DefaultTailsFileUploader } from './services/TailsFileUploader'
-import { downloadTailsFile } from './utils'
+import { dateToTimestamp } from './utils/timestamp'
 
 @injectable()
 export class AnonCredsApi {
@@ -299,37 +297,6 @@ export class AnonCredsApi {
 
       await this.storeCredentialDefinitionRecord(registry, result, credentialDefinitionPrivate, keyCorrectnessProof)
 
-      // If it supports revocation, create the first revocation registry definition
-      if (options.credentialDefinition.supportRevocation && result.credentialDefinitionState.credentialDefinitionId) {
-        const { revocationRegistryDefinitionState, revocationRegistryDefinitionMetadata } =
-          await this.registerRevocationRegistryDefinition({
-            credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-            issuerId: options.credentialDefinition.issuerId,
-            maximumCredentialNumber: this.config.maximumCredentialNumberPerRevocationRegistry,
-            tailsDirectoryPath:
-              this.config.tailsDirectoryPath ?? new this.agentContext.config.agentDependencies.FileSystem().dataPath,
-            tag: '', // TODO: define tags
-          })
-
-        if (
-          revocationRegistryDefinitionState.revocationRegistryDefinition &&
-          revocationRegistryDefinitionState.revocationRegistryDefinitionId
-        ) {
-          const tailsLocation = revocationRegistryDefinitionMetadata.localTailsLocation as string
-
-          if (!tailsLocation) {
-            throw new AriesFrameworkError('Cannot find tails file locally')
-          }
-          // Create and register an initial revocation status list
-          await this.registerRevocationStatusList({
-            issuanceByDefault: true,
-            issuerId: options.credentialDefinition.issuerId,
-            revocationRegistryDefinitionId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
-            tailsLocation,
-          })
-        }
-      }
-
       return result
     } catch (error) {
       // Storage failed
@@ -380,23 +347,29 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerRevocationRegistryDefinition(
-    options: AnonCredsRegisterRevocationRegistryDefinitionOptions
-  ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    const { issuerId, tag, credentialDefinitionId, tailsDirectoryPath, maximumCredentialNumber } = options
+  public async registerRevocationRegistryDefinition(options: {
+    revocationRegistryDefinition: AnonCredsRegisterRevocationRegistryDefinitionOptions
+    options: Extensible
+  }): Promise<RegisterRevocationRegistryDefinitionReturn> {
+    const { issuerId, tag, credentialDefinitionId, maximumCredentialNumber } = options.revocationRegistryDefinition
+
+    const tailsFileManager =
+      this.agentContext.dependencyManager.resolve<AnonCredsModuleConfig>(AnonCredsModuleConfig).tailsFileManager
+
+    const tailsDirectoryPath = tailsFileManager.getTailsBasePath(this.agentContext)
 
     const failedReturnBase = {
       revocationRegistryDefinitionState: {
         state: 'failed' as const,
-        reason: `Error registering revocation registry definition for issuerId ${options.issuerId}`,
+        reason: `Error registering revocation registry definition for issuerId ${issuerId}`,
       },
       registrationMetadata: {},
       revocationRegistryDefinitionMetadata: {},
     }
 
-    const registry = this.findRegistryForIdentifier(options.issuerId)
+    const registry = this.findRegistryForIdentifier(issuerId)
     if (!registry) {
-      failedReturnBase.revocationRegistryDefinitionState.reason = `Unable to register revocation registry definition. No registry found for issuerId ${options.issuerId}`
+      failedReturnBase.revocationRegistryDefinitionState.reason = `Unable to register revocation registry definition. No registry found for issuerId ${issuerId}`
       return failedReturnBase
     }
 
@@ -418,12 +391,11 @@ export class AnonCredsApi {
         })
 
       // At this moment, tails file should be published and a valid public URL will be received
-      // FIXME: Make configurable as interface
       const localTailsLocation = revocationRegistryDefinition.value.tailsLocation
-      revocationRegistryDefinition.value.tailsLocation = await new DefaultTailsFileUploader().uploadTails(
-        this.agentContext,
-        { revocationRegistryDefinition }
-      )
+
+      revocationRegistryDefinition.value.tailsLocation = await tailsFileManager.uploadTailsFile(this.agentContext, {
+        revocationRegistryDefinition,
+      })
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
@@ -483,23 +455,24 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerRevocationStatusList(
-    options: AnonCredsRegisterRevocationStatusListOptions
-  ): Promise<RegisterRevocationStatusListReturn> {
-    const { issuanceByDefault, issuerId, revocationRegistryDefinitionId, tailsLocation } = options
+  public async registerRevocationStatusList(options: {
+    revocationStatusList: AnonCredsRegisterRevocationStatusListOptions
+    options: Extensible
+  }): Promise<RegisterRevocationStatusListReturn> {
+    const { issuanceByDefault, issuerId, revocationRegistryDefinitionId } = options.revocationStatusList
 
     const failedReturnBase = {
       revocationStatusListState: {
         state: 'failed' as const,
-        reason: `Error registering revocation status list for issuerId ${options.issuerId}`,
+        reason: `Error registering revocation status list for issuerId ${issuerId}`,
       },
       registrationMetadata: {},
       revocationStatusListMetadata: {},
     }
 
-    const registry = this.findRegistryForIdentifier(options.issuerId)
+    const registry = this.findRegistryForIdentifier(issuerId)
     if (!registry) {
-      failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No registry found for issuerId ${options.issuerId}`
+      failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No registry found for issuerId ${issuerId}`
       return failedReturnBase
     }
 
@@ -512,6 +485,10 @@ export class AnonCredsApi {
       failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No revocation registry definition found for ${revocationRegistryDefinitionId}`
       return failedReturnBase
     }
+    const tailsFileManager = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileManager
+    const { tailsFilePath } = await tailsFileManager.downloadTailsFile(this.agentContext, {
+      revocationRegistryDefinition,
+    })
 
     try {
       const revocationStatusList = await this.anonCredsIssuerService.createRevocationStatusList(this.agentContext, {
@@ -519,7 +496,7 @@ export class AnonCredsApi {
         issuerId,
         revocationRegistryDefinition,
         revocationRegistryDefinitionId,
-        tailsLocation,
+        tailsFilePath,
       })
 
       const result = await registry.registerRevocationStatusList(this.agentContext, {
@@ -574,7 +551,7 @@ export class AnonCredsApi {
 
     const { revocationStatusList: previousRevocationStatusList } = await this.getRevocationStatusList(
       revocationRegistryDefinitionId,
-      Math.floor(new Date().getTime() / 1000)
+      dateToTimestamp(new Date())
     )
 
     if (!previousRevocationStatusList) {
@@ -582,19 +559,18 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const { tailsFilePath: tailsLocation } = await downloadTailsFile(
-      this.agentContext,
-      revocationRegistryDefinition.value.tailsLocation,
-      revocationRegistryDefinition.value.tailsHash
-    )
-  
+    const tailsFileManager = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileManager
+    const { tailsFilePath } = await tailsFileManager.downloadTailsFile(this.agentContext, {
+      revocationRegistryDefinition,
+    })
+
     try {
       const revocationStatusList = await this.anonCredsIssuerService.updateRevocationStatusList(this.agentContext, {
         issued: issuedCredentialIndexes,
         revoked: revokedCredentialIndexes,
         revocationStatusList: previousRevocationStatusList,
         revocationRegistryDefinition,
-        tailsLocation
+        tailsFilePath,
       })
 
       const result = await registry.registerRevocationStatusList(this.agentContext, {
@@ -614,66 +590,6 @@ export class AnonCredsApi {
 
       failedReturnBase.revocationStatusListState.reason = `Error registering revocation status list: ${error.message}`
       return failedReturnBase
-    }
-  }
-
-  public async revokeCredentials(options: AnonCredsRevokeCredentialOptions): Promise<void> {
-    const { revocationRegistryDefinitionId, revokedIndexes } = options
-    const anonCredsIssuerService =
-      this.agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
-
-    // get current revocation status list
-    const registry = this.findRegistryForIdentifier(revocationRegistryDefinitionId)
-
-    // FIXME: Do not throw. Instead, return a fail status like other methods from the API
-    if (!registry) {
-      throw new AriesFrameworkError(
-        `Could not get registry for revocation registry definition ${revocationRegistryDefinitionId}`
-      )
-    }
-
-    const { revocationRegistryDefinition } = await registry.getRevocationRegistryDefinition(
-      this.agentContext,
-      revocationRegistryDefinitionId
-    )
-
-    if (!revocationRegistryDefinition) {
-      throw new AriesFrameworkError(`Could not get revocation registry definition ${revocationRegistryDefinitionId}`)
-    }
-
-    const { revocationStatusList } = await registry.getRevocationStatusList(
-      this.agentContext,
-      revocationRegistryDefinitionId,
-      Math.floor(new Date().getTime() / 1000) // FIXME: Make optional and use now if not defined
-    )
-
-    if (!revocationStatusList) {
-      throw new AriesFrameworkError(
-        `Could not get current revocation status list for ${revocationRegistryDefinitionId}`
-      )
-    }
-
-    const { tailsFilePath: tailsLocation } = await downloadTailsFile(
-      this.agentContext,
-      revocationRegistryDefinition.value.tailsLocation,
-      revocationRegistryDefinition.value.tailsHash
-    )
-
-    // Update and publish the new revocation status list
-    const newRevocationStatusList = await anonCredsIssuerService.updateRevocationStatusList(this.agentContext, {
-      revocationStatusList,
-      revocationRegistryDefinition,
-      revoked: revokedIndexes,
-      tailsLocation
-    })
-
-    const result = await registry.registerRevocationStatusList(this.agentContext, {
-      revocationStatusList: newRevocationStatusList,
-      options: {},
-    })
-
-    if (!result.revocationStatusListState) {
-      throw new AriesFrameworkError(`Cannot update revocation registry for ${revocationRegistryDefinitionId}`)
     }
   }
 

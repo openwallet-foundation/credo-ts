@@ -25,9 +25,9 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsProofFormatService,
   AnonCredsCredentialFormatService,
+  AnonCredsRegistryService,
 } from '@aries-framework/anoncreds'
 import {
-  utils,
   ConsoleLogger,
   LogLevel,
   CredentialState,
@@ -37,23 +37,24 @@ import {
   ProofState,
   ProofExchangeRecord,
 } from '@aries-framework/core'
-import FormData from 'form-data'
-import fs from 'fs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { describeRunInNodeVersion } from '../../../tests/runInVersion'
-import { AnonCredsRegistryService } from '@aries-framework/anoncreds/src/services/registry/AnonCredsRegistryService'
-import { InMemoryAnonCredsRegistry } from '@aries-framework/anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext } from '@aries-framework/core/tests/helpers'
+import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
 import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
 import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
-import { AnonCredsApi } from 'packages/anoncreds/build'
+
+import { InMemoryTailsFileManager } from './InMemoryTailsFileManager'
 
 const registry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+const tailsFileManager = new InMemoryTailsFileManager()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
+  tailsFileManager,
 })
 
 const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs', {
@@ -168,29 +169,12 @@ describeRunInNodeVersion([18], 'AnonCreds API using anoncreds-rs', () => {
         credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         maximumCredentialNumber: 100,
-        tailsDirectoryPath: new agentDependencies.FileSystem().dataPath,
+        tailsDirectoryPath: tailsFileManager.getTailsBasePath(agentContext),
         tag: 'default',
       })
 
     // At this moment, tails file should be published and a valid public URL will be received
     const localTailsFilePath = revocationRegistryDefinition.value.tailsLocation
-
-    const tailsFileId = utils.uuid()
-    const data = new FormData()
-    const readStream = fs.createReadStream(localTailsFilePath)
-    data.append('file', readStream)
-    const response = await agentContext.config.agentDependencies.fetch(
-      `http://localhost:3001/${encodeURIComponent(tailsFileId)}`,
-      {
-        method: 'PUT',
-        body: data,
-      }
-    )
-    if (response.status !== 200) {
-      throw new Error('Cannot upload tails file')
-    }
-
-    revocationRegistryDefinition.value.tailsLocation = `http://localhost:3001/${encodeURIComponent(tailsFileId)}`
 
     const { revocationRegistryDefinitionState } = await registry.registerRevocationRegistryDefinition(agentContext, {
       revocationRegistryDefinition,
@@ -223,18 +207,16 @@ describeRunInNodeVersion([18], 'AnonCreds API using anoncreds-rs', () => {
       })
     )
 
-    const revocationStatusList = await anonCredsIssuerService.createRevocationStatusList(agentContext, {
+    const createdRevocationStatusList = await anonCredsIssuerService.createRevocationStatusList(agentContext, {
       issuanceByDefault: true,
       issuerId: indyDid,
-      revocationRegistryDefinition: {
-        ...revocationRegistryDefinition,
-        value: { ...revocationRegistryDefinition.value, tailsLocation: localTailsFilePath },
-      },
+      revocationRegistryDefinition,
       revocationRegistryDefinitionId: revocationRegistryDefinitionState.revocationRegistryDefinitionId,
+      tailsFilePath: localTailsFilePath,
     })
 
     const { revocationStatusListState } = await registry.registerRevocationStatusList(agentContext, {
-      revocationStatusList,
+      revocationStatusList: createdRevocationStatusList,
       options: {},
     })
 
@@ -246,7 +228,7 @@ describeRunInNodeVersion([18], 'AnonCreds API using anoncreds-rs', () => {
       agentContext,
       new AnonCredsRevocationStatusListRecord({
         credentialDefinitionId: revocationRegistryDefinition.credDefId,
-        revocationStatusList,
+        revocationStatusList: revocationStatusListState.revocationStatusList,
       })
     )
 
@@ -401,7 +383,7 @@ describeRunInNodeVersion([18], 'AnonCreds API using anoncreds-rs', () => {
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 
-    const nrpRequestedTime = Math.floor(new Date().getTime() / 1000)
+    const nrpRequestedTime = dateToTimestamp(new Date())
 
     const { attachment: proofProposalAttachment } = await anoncredsProofFormatService.createProposal(agentContext, {
       proofFormats: {

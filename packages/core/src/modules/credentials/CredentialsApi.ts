@@ -102,6 +102,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   private credentialRepository: CredentialRepository
   private agentContext: AgentContext
   private didCommMessageRepository: DidCommMessageRepository
+  private revocationNotificationService: RevocationNotificationService
   private routingService: RoutingService
   private logger: Logger
 
@@ -113,9 +114,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     credentialRepository: CredentialRepository,
     mediationRecipientService: RoutingService,
     didCommMessageRepository: DidCommMessageRepository,
-    // only injected so the handlers will be registered
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _revocationNotificationService: RevocationNotificationService,
+    revocationNotificationService: RevocationNotificationService,
     config: CredentialsModuleConfig<CPs>
   ) {
     this.messageSender = messageSender
@@ -124,6 +123,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     this.routingService = mediationRecipientService
     this.agentContext = agentContext
     this.didCommMessageRepository = didCommMessageRepository
+    this.revocationNotificationService = revocationNotificationService
     this.logger = logger
     this.config = config
   }
@@ -565,6 +565,68 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     else {
       throw new AriesFrameworkError(
         `Cannot accept credential without connectionId or ~service decorator on credential message.`
+      )
+    }
+  }
+
+  /**
+   * Send a revocation notification for a credential exchange record. Currently Revocation Notification V2 protocol is supported
+   *
+   * @param credentialRecordId The id of the credential record for which to send revocation notification
+   */
+  public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
+    const { credentialRecordId, revocationId, revocationFormat, comment, requestAck } = options
+
+    const credentialRecord = await this.getById(credentialRecordId)
+
+    const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
+      credentialId: revocationId,
+      revocationFormat,
+      comment,
+      requestAck,
+    })
+    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+
+    // Use connection if present
+    if (credentialRecord.connectionId) {
+      const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+      const outboundMessageContext = new OutboundMessageContext(message, {
+        agentContext: this.agentContext,
+        connection,
+        associatedRecord: credentialRecord,
+      })
+      await this.messageSender.sendMessage(outboundMessageContext)
+    }
+    // Use ~service decorator otherwise
+    else if (requestMessage?.service && offerMessage?.service) {
+      const recipientService = requestMessage.service
+      const ourService = offerMessage.service
+
+      message.service = ourService
+      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
+        agentMessage: message,
+        role: DidCommMessageRole.Sender,
+        associatedRecordId: credentialRecord.id,
+      })
+
+      await this.messageSender.sendMessageToService(
+        new OutboundMessageContext(message, {
+          agentContext: this.agentContext,
+          serviceParams: {
+            service: recipientService.resolvedDidCommService,
+            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
+            returnRoute: true,
+          },
+        })
+      )
+    }
+    // Cannot send message without connectionId or ~service decorator
+    else {
+      throw new AriesFrameworkError(
+        `Cannot send revocation notification for credential record without connectionId or ~service decorator on credential offer / request.`
       )
     }
   }

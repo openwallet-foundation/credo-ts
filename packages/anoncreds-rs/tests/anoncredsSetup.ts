@@ -1,5 +1,4 @@
-import type { EventReplaySubject } from '../../core/tests'
-import {
+import type {
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
@@ -7,10 +6,13 @@ import {
   AnonCredsSchema,
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
-  AnonCredsCredentialFormatService,
-  AnonCredsProofFormatService,
   AnonCredsRegistry,
+  AnonCredsRegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturnStateFinished,
+  AnonCredsRegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListReturnStateFinished,
 } from '../../anoncreds/src'
+import type { EventReplaySubject } from '../../core/tests'
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
@@ -33,7 +35,7 @@ import {
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsRsModule } from '../src'
+import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
@@ -55,7 +57,9 @@ import {
   IndyVdrIndyDidRegistrar,
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
-import { AnonCredsModule } from '../../anoncreds/src'
+import { AnonCredsRsModule } from '../src'
+
+import { InMemoryTailsFileManager } from './InMemoryTailsFileManager'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<
@@ -93,6 +97,7 @@ export const getAnonCredsModules = ({
     }),
     anoncreds: new AnonCredsModule({
       registries: registries ?? [new IndyVdrAnonCredsRegistry()],
+      tailsFileManager: new InMemoryTailsFileManager(),
     }),
     anoncredsRs: new AnonCredsRsModule({
       anoncreds,
@@ -270,6 +275,7 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
+  revocationRegistryDefinitionId?: string
 }
 
 export async function setupAnonCredsTests<
@@ -356,10 +362,13 @@ export async function setupAnonCredsTests<
     setAsDefault: true,
   })
 
-  const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
-    attributeNames,
-    supportRevocation,
-  })
+  const { credentialDefinition, revocationRegistryDefinition, schema } = await prepareForAnonCredsIssuance(
+    issuerAgent,
+    {
+      attributeNames,
+      supportRevocation,
+    }
+  )
 
   let issuerHolderConnection: ConnectionRecord | undefined
   let holderIssuerConnection: ConnectionRecord | undefined
@@ -384,6 +393,7 @@ export async function setupAnonCredsTests<
     verifierAgent: verifierName ? verifierAgent : undefined,
     verifierReplay: verifierName ? verifierReplay : undefined,
 
+    revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
     credentialDefinitionId: credentialDefinition.credentialDefinitionId,
     schemaId: schema.schemaId,
 
@@ -423,6 +433,29 @@ export async function prepareForAnonCredsIssuance(
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
+  let revocationRegistryDefinition
+  let revocationStatusList
+  if (supportRevocation) {
+    revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
+      issuerId: didIndyDid,
+      tag: 'default',
+      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+      maximumCredentialNumber: 10,
+    })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
+
+    revocationStatusList = await registerRevocationStatusList(agent, {
+      issuanceByDefault: true,
+      revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+      issuerId: didIndyDid,
+    })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
+  }
+
   return {
     schema: {
       ...schema,
@@ -431,6 +464,13 @@ export async function prepareForAnonCredsIssuance(
     credentialDefinition: {
       ...credentialDefinition,
       credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+    },
+    revocationRegistryDefinition: {
+      ...revocationRegistryDefinition,
+      revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+    },
+    revocationStatusList: {
+      ...revocationStatusList,
     },
   }
 }
@@ -473,4 +513,44 @@ async function registerCredentialDefinition(
   }
 
   return credentialDefinitionState
+}
+
+async function registerRevocationRegistryDefinition(
+  agent: AnonCredsTestsAgent,
+  revocationRegistryDefinition: AnonCredsRegisterRevocationRegistryDefinitionOptions
+): Promise<RegisterRevocationRegistryDefinitionReturnStateFinished> {
+  const { revocationRegistryDefinitionState } = await agent.modules.anoncreds.registerRevocationRegistryDefinition({
+    revocationRegistryDefinition,
+    options: {},
+  })
+
+  if (revocationRegistryDefinitionState.state !== 'finished') {
+    throw new AriesFrameworkError(
+      `Revocation registry definition not created: ${
+        revocationRegistryDefinitionState.state === 'failed' ? revocationRegistryDefinitionState.reason : 'Not finished'
+      }`
+    )
+  }
+
+  return revocationRegistryDefinitionState
+}
+
+async function registerRevocationStatusList(
+  agent: AnonCredsTestsAgent,
+  revocationStatusList: AnonCredsRegisterRevocationStatusListOptions
+): Promise<RegisterRevocationStatusListReturnStateFinished> {
+  const { revocationStatusListState } = await agent.modules.anoncreds.registerRevocationStatusList({
+    revocationStatusList,
+    options: {},
+  })
+
+  if (revocationStatusListState.state !== 'finished') {
+    throw new AriesFrameworkError(
+      `Revocation status list not created: ${
+        revocationStatusListState.state === 'failed' ? revocationStatusListState.reason : 'Not finished'
+      }`
+    )
+  }
+
+  return revocationStatusListState
 }

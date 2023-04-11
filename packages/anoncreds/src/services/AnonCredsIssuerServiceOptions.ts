@@ -40,7 +40,7 @@ export interface CreateRevocationStatusListOptions {
   issuanceByDefault: boolean
   revocationRegistryDefinitionId: string
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
-  tailsLocation: string
+  tailsFilePath: string
 }
 
 export interface UpdateRevocationStatusListOptions {
@@ -49,7 +49,7 @@ export interface UpdateRevocationStatusListOptions {
   revoked?: number[]
   issued?: number[]
   timestamp?: number
-  tailsLocation: string
+  tailsFilePath: string
 }
 
 export interface CreateCredentialOfferOptions {
