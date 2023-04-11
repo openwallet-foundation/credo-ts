@@ -114,7 +114,7 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_anonCreds/anonCredsCredential': {
+          '_anoncreds/credential': {
             schemaId,
             credentialDefinitionId,
           },
@@ -136,7 +136,7 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_anonCreds/anonCredsCredential': {
+          '_anoncreds/credential': {
             schemaId,
             credentialDefinitionId,
           },
@@ -197,7 +197,7 @@ describe('V1 Connectionless Credentials', () => {
       createdAt: expect.any(Date),
       metadata: {
         data: {
-          '_anonCreds/anonCredsCredential': {
+          '_anoncreds/credential': {
             schemaId,
             credentialDefinitionId: credentialDefinitionId,
           },

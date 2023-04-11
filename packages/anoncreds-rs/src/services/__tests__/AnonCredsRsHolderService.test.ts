@@ -11,15 +11,18 @@ import type {
 import type { JsonObject } from '@hyperledger/anoncreds-nodejs'
 
 import {
+  AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsLinkSecretRecord,
   AnonCredsCredentialRecord,
 } from '@aries-framework/anoncreds'
 import { anoncreds, RevocationRegistryDefinition } from '@hyperledger/anoncreds-nodejs'
 
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsCredentialRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
+import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
@@ -52,12 +55,20 @@ const agentContext = getAgentContext({
     [AnonCredsLinkSecretRepository, anoncredsLinkSecretRepositoryMock],
     [AnonCredsCredentialRepository, anoncredsCredentialRepositoryMock],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
+    [
+      AnonCredsModuleConfig,
+      new AnonCredsModuleConfig({
+        registries: [new InMemoryAnonCredsRegistry({})],
+      }),
+    ],
   ],
   agentConfig,
 })
 
-describe('AnonCredsRsHolderService', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'AnonCredsRsHolderService', () => {
   const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
+  const findByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
     getByCredentialIdMock.mockClear()
@@ -216,6 +227,7 @@ describe('AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     getByCredentialIdMock.mockResolvedValueOnce(
@@ -227,6 +239,7 @@ describe('AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -289,6 +302,10 @@ describe('AnonCredsRsHolderService', () => {
           names: ['name', 'height'],
           restrictions: [{ cred_def_id: 'crededefid:uri', issuer_id: 'issuerid:uri' }],
         },
+        attr5_referent: {
+          name: 'name',
+          restrictions: [{ 'attr::name::value': 'Alice', 'attr::name::marker': '1' }],
+        },
       },
       requested_predicates: {
         predicate1_referent: { name: 'age', p_type: '>=' as const, p_value: 18 },
@@ -319,8 +336,14 @@ describe('AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['name'],
-        issuerId: 'issuer:uri',
+        $and: [
+          {
+            'attr::name::marker': true,
+          },
+          {
+            issuerId: 'issuer:uri',
+          },
+        ],
       })
     })
 
@@ -331,7 +354,11 @@ describe('AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['phoneNumber'],
+        $and: [
+          {
+            'attr::phoneNumber::marker': true,
+          },
+        ],
       })
     })
 
@@ -342,8 +369,14 @@ describe('AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['age'],
-        $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+        $and: [
+          {
+            'attr::age::marker': true,
+          },
+          {
+            $or: [{ schemaId: 'schemaid:uri', schemaName: 'schemaName' }, { schemaVersion: '1.0' }],
+          },
+        ],
       })
     })
 
@@ -354,9 +387,35 @@ describe('AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['name', 'height'],
-        credentialDefinitionId: 'crededefid:uri',
-        issuerId: 'issuerid:uri',
+        $and: [
+          {
+            'attr::name::marker': true,
+            'attr::height::marker': true,
+          },
+          {
+            credentialDefinitionId: 'crededefid:uri',
+            issuerId: 'issuerid:uri',
+          },
+        ],
+      })
+    })
+
+    test('referent with attribute values and marker restriction', async () => {
+      await anonCredsHolderService.getCredentialsForProofRequest(agentContext, {
+        proofRequest,
+        attributeReferent: 'attr5_referent',
+      })
+
+      expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+        $and: [
+          {
+            'attr::name::marker': true,
+          },
+          {
+            'attr::name::value': 'Alice',
+            'attr::name::marker': true,
+          },
+        ],
       })
     })
 
@@ -367,7 +426,11 @@ describe('AnonCredsRsHolderService', () => {
       })
 
       expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
-        attributes: ['age'],
+        $and: [
+          {
+            'attr::age::marker': true,
+          },
+        ],
       })
     })
   })
@@ -383,6 +446,7 @@ describe('AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
 
@@ -413,6 +477,7 @@ describe('AnonCredsRsHolderService', () => {
         schemaIssuerId: 'schemaIssuerDid',
         schemaName: 'schemaName',
         schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
       })
     )
     expect(
@@ -429,6 +494,59 @@ describe('AnonCredsRsHolderService', () => {
       schemaId: 'schemaId',
       credentialRevocationId: 'credentialRevocationId',
     })
+  })
+
+  test('getCredentials', async () => {
+    findByQueryMock.mockResolvedValueOnce([
+      new AnonCredsCredentialRecord({
+        credential: {
+          cred_def_id: 'credDefId',
+          schema_id: 'schemaId',
+          signature: 'signature',
+          signature_correctness_proof: 'signatureCorrectnessProof',
+          values: { attr1: { raw: 'value1', encoded: 'encvalue1' }, attr2: { raw: 'value2', encoded: 'encvalue2' } },
+          rev_reg_id: 'revRegId',
+        } as AnonCredsCredential,
+        credentialId: 'myCredentialId',
+        credentialRevocationId: 'credentialRevocationId',
+        linkSecretId: 'linkSecretId',
+        issuerId: 'issuerDid',
+        schemaIssuerId: 'schemaIssuerDid',
+        schemaName: 'schemaName',
+        schemaVersion: 'schemaVersion',
+        methodName: 'inMemory',
+      }),
+    ])
+
+    const credentialInfo = await anonCredsHolderService.getCredentials(agentContext, {
+      credentialDefinitionId: 'credDefId',
+      schemaId: 'schemaId',
+      schemaIssuerId: 'schemaIssuerDid',
+      schemaName: 'schemaName',
+      schemaVersion: 'schemaVersion',
+      issuerId: 'issuerDid',
+      methodName: 'inMemory',
+    })
+
+    expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+      credentialDefinitionId: 'credDefId',
+      schemaId: 'schemaId',
+      schemaIssuerId: 'schemaIssuerDid',
+      schemaName: 'schemaName',
+      schemaVersion: 'schemaVersion',
+      issuerId: 'issuerDid',
+      methodName: 'inMemory',
+    })
+    expect(credentialInfo).toMatchObject([
+      {
+        attributes: { attr1: 'value1', attr2: 'value2' },
+        credentialDefinitionId: 'credDefId',
+        credentialId: 'myCredentialId',
+        revocationRegistryId: 'revRegId',
+        schemaId: 'schemaId',
+        credentialRevocationId: 'credentialRevocationId',
+      },
+    ])
   })
 
   test('storeCredential', async () => {

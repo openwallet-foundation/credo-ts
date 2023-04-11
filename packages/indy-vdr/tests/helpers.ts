@@ -2,11 +2,14 @@ import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistra
 import type { Agent } from '@aries-framework/core'
 
 import { DidCommV1Service, DidCommV2Service, DidDocumentService, KeyType } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
+import { sleep } from '../../core/src/utils/sleep'
 import { genesisTransactions } from '../../core/tests/helpers'
 import { IndyVdrModuleConfig } from '../src/IndyVdrModuleConfig'
 
 export const indyVdrModuleConfig = new IndyVdrModuleConfig({
+  indyVdr,
   networks: [
     {
       genesisTransactions,
@@ -57,6 +60,9 @@ export async function createDidOnLedger(agent: Agent, submitterDid: string) {
       `Did was not created. ${createResult.didState.state === 'failed' ? createResult.didState.reason : 'Not finished'}`
     )
   }
+
+  // Wait some time pass to let ledger settle the object
+  await sleep(1000)
 
   return { did: createResult.didState.did, key }
 }

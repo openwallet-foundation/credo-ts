@@ -39,6 +39,8 @@ import {
 import { anonCredsRevocationStatusListFromIndyVdr } from './utils/transform'
 
 export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
+  public readonly methodName = 'indy'
+
   public readonly supportedIdentifier = indyVdrAnonCredsRegistryIdentifierRegex
 
   public async getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {

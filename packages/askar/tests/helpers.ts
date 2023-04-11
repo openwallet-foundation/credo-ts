@@ -1,12 +1,16 @@
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import type { InitConfig } from '@aries-framework/core'
 
-import { LogLevel } from '@aries-framework/core'
+import { ConnectionsModule, LogLevel, utils } from '@aries-framework/core'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import path from 'path'
 
 import { TestLogger } from '../../core/tests/logger'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
+import { AskarModuleConfig } from '../src/AskarModuleConfig'
+
+export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -19,14 +23,14 @@ export function getPostgresAgentOptions(
   storageConfig: AskarWalletPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {
+  const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} Postgres`,
+    label: `PostgresAgent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      id: `PostgresWallet${name}${random}`,
       key: `Key${name}`,
       storage: storageConfig,
     },
-    autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -34,19 +38,24 @@ export function getPostgresAgentOptions(
   return {
     config,
     dependencies: agentDependencies,
-    modules: { askar: new AskarModule() },
+    modules: {
+      askar: new AskarModule(askarModuleConfig),
+      connections: new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
+    },
   } as const
 }
 
 export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+  const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} SQLite`,
+    label: `SQLiteAgent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      id: `SQLiteWallet${name} - ${random}`,
       key: `Key${name}`,
       storage: { type: 'sqlite' },
     },
-    autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -54,6 +63,11 @@ export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitCon
   return {
     config,
     dependencies: agentDependencies,
-    modules: { askar: new AskarModule() },
+    modules: {
+      askar: new AskarModule(askarModuleConfig),
+      connections: new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
+    },
   } as const
 }

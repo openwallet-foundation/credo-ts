@@ -8,12 +8,12 @@ import type {
   Wallet,
   WalletConfigRekey,
   KeyPair,
-  KeyDerivationMethod,
   WalletExportImportConfig,
 } from '@aries-framework/core'
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
 import {
+  WalletExportPathExistsError,
   WalletKeyExistsError,
   isValidSeed,
   isValidPrivateKey,
@@ -32,8 +32,10 @@ import {
   TypedArrayEncoder,
   FileSystem,
   WalletNotFoundError,
+  KeyDerivationMethod,
 } from '@aries-framework/core'
 import {
+  KdfMethod,
   StoreKeyMethod,
   KeyAlgs,
   CryptoBox,
@@ -232,9 +234,7 @@ export class AskarWallet implements Wallet {
       if (rekey) {
         await this._store.rekey({
           passKey: rekey,
-          keyMethod:
-            keyDerivationMethodToStoreKeyMethod(rekeyDerivation) ??
-            (`${StoreKeyMethod.Kdf}:argon2i:int` as StoreKeyMethod),
+          keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IMod),
         })
       }
       this._session = await this._store.openSession()
@@ -317,6 +317,13 @@ export class AskarWallet implements Wallet {
       // Close this wallet before copying
       await this.close()
 
+      // Export path already exists
+      if (await this.fileSystem.exists(destinationPath)) {
+        throw new WalletExportPathExistsError(
+          `Unable to create export, wallet export at path '${exportConfig.path}' already exists`
+        )
+      }
+
       // Copy wallet to the destination path
       await this.fileSystem.copyFile(sourcePath, destinationPath)
 
@@ -332,6 +339,8 @@ export class AskarWallet implements Wallet {
 
       await this._open(this.walletConfig)
     } catch (error) {
+      if (error instanceof WalletExportPathExistsError) throw error
+
       const errorMessage = `Error exporting wallet '${this.walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
         error,
@@ -813,9 +822,9 @@ export class AskarWallet implements Wallet {
       uri,
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
-      keyMethod:
-        keyDerivationMethodToStoreKeyMethod(walletConfig.keyDerivationMethod) ??
-        (`${StoreKeyMethod.Kdf}:argon2i:int` as StoreKeyMethod),
+      keyMethod: keyDerivationMethodToStoreKeyMethod(
+        walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
+      ),
       passKey: walletConfig.key,
     }
   }

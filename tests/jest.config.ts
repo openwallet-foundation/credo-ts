@@ -4,7 +4,6 @@ import base from '../jest.config.base'
 
 const config: Config.InitialOptions = {
   ...base,
-  name: '@aries-framework/e2e-test',
   displayName: '@aries-framework/e2e-test',
   setupFilesAfterEnv: ['../packages/core/tests/setup.ts'],
 }

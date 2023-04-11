@@ -89,7 +89,7 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_anonCreds/anonCredsCredential': {
+            '_anoncreds/credential': {
               schemaId: schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -128,8 +128,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
-            '_anonCreds/anonCredsCredential': {
+            '_anoncreds/credentialRequest': expect.any(Object),
+            '_anoncreds/credential': {
               schemaId,
               credentialDefinitionId,
             },
@@ -230,8 +230,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
-            '_anonCreds/anonCredsCredential': {
+            '_anoncreds/credentialRequest': expect.any(Object),
+            '_anoncreds/credential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -252,7 +252,7 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_anonCreds/anonCredsCredential': {
+            '_anoncreds/credential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },
@@ -318,8 +318,8 @@ describe('V1 Credentials Auto Accept', () => {
         createdAt: expect.any(Date),
         metadata: {
           data: {
-            '_anonCreds/anonCredsCredentialRequest': expect.any(Object),
-            '_anonCreds/anonCredsCredential': {
+            '_anoncreds/credentialRequest': expect.any(Object),
+            '_anoncreds/credential': {
               schemaId,
               credentialDefinitionId: credentialDefinitionId,
             },

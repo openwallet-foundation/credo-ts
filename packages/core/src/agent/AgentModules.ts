@@ -1,4 +1,3 @@
-import type { AgentConfig } from './AgentConfig'
 import type { Module, DependencyManager, ApiModule } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
@@ -10,10 +9,11 @@ import { CredentialsModule } from '../modules/credentials'
 import { DidsModule } from '../modules/dids'
 import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
+import { MessagePickupModule } from '../modules/message-pìckup'
 import { OutOfBandModule } from '../modules/oob'
 import { ProofsModule } from '../modules/proofs'
-import { MediatorModule, RecipientModule } from '../modules/routing'
-import { W3cVcModule } from '../modules/vc'
+import { MediationRecipientModule, MediatorModule } from '../modules/routing'
+import { W3cCredentialsModule } from '../modules/vc'
 import { WalletModule } from '../wallet'
 
 /**
@@ -112,46 +112,24 @@ export type CustomOrDefaultApi<
   : InstanceType<DefaultModuleType['api']>
 
 /**
- * Method to get the default agent modules to be registered on any agent instance.
- *
- * @note This implementation is quite ugly and is meant to be temporary. It extracts the module specific config from the agent config
- * and will only construct the module if the method is called. This prevents the modules from being initialized if they are already configured by the end
- * user using the `module` property in the agent constructor.
+ * Method to get the default agent modules to be registered on any agent instance. It doens't configure the modules in any way,
+ * and if that's needed the user needs to provide the module in the agent constructor
  */
-function getDefaultAgentModules(agentConfig: AgentConfig) {
+function getDefaultAgentModules() {
   return {
-    connections: () =>
-      new ConnectionsModule({
-        autoAcceptConnections: agentConfig.autoAcceptConnections,
-      }),
-    credentials: () =>
-      new CredentialsModule({
-        autoAcceptCredentials: agentConfig.autoAcceptCredentials,
-      }),
-    proofs: () =>
-      new ProofsModule({
-        autoAcceptProofs: agentConfig.autoAcceptProofs,
-      }),
-    mediator: () =>
-      new MediatorModule({
-        autoAcceptMediationRequests: agentConfig.autoAcceptMediationRequests,
-      }),
-    mediationRecipient: () =>
-      new RecipientModule({
-        maximumMessagePickup: agentConfig.maximumMessagePickup,
-        mediatorInvitationUrl: agentConfig.mediatorConnectionsInvite,
-        mediatorPickupStrategy: agentConfig.mediatorPickupStrategy,
-        baseMediatorReconnectionIntervalMs: agentConfig.baseMediatorReconnectionIntervalMs,
-        maximumMediatorReconnectionIntervalMs: agentConfig.maximumMediatorReconnectionIntervalMs,
-        mediatorPollingInterval: agentConfig.mediatorPollingInterval,
-      }),
+    connections: () => new ConnectionsModule(),
+    credentials: () => new CredentialsModule(),
+    proofs: () => new ProofsModule(),
+    mediator: () => new MediatorModule(),
+    mediationRecipient: () => new MediationRecipientModule(),
+    messagePickup: () => new MessagePickupModule(),
     basicMessages: () => new BasicMessagesModule(),
     genericRecords: () => new GenericRecordsModule(),
     discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
     oob: () => new OutOfBandModule(),
-    w3cVc: () => new W3cVcModule(),
+    w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
   } as const
 }
@@ -163,11 +141,10 @@ function getDefaultAgentModules(agentConfig: AgentConfig) {
  * on the default agent.
  */
 export function extendModulesWithDefaultModules<AgentModules extends AgentModulesInput>(
-  agentConfig: AgentConfig,
   modules?: AgentModules
 ): AgentModules & DefaultAgentModules {
   const extendedModules: Record<string, Module> = { ...modules }
-  const defaultAgentModules = getDefaultAgentModules(agentConfig)
+  const defaultAgentModules = getDefaultAgentModules()
 
   // Register all default modules, if not registered yet
   for (const [moduleKey, getConfiguredModule] of Object.entries(defaultAgentModules)) {

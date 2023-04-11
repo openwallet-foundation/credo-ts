@@ -37,7 +37,7 @@ import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import { JsonLdCredentialDetail } from './JsonLdCredentialDetail'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
-const JSONLD_VC = 'aries/ld-proof-vc@1.0'
+const JSONLD_VC = 'aries/ld-proof-vc@v1.0'
 
 export class JsonLdCredentialFormatService implements CredentialFormatService<JsonLdCredentialFormat> {
   public readonly formatKey = 'jsonld' as const

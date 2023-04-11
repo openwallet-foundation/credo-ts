@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import type { AgentDependencies } from '../../../agent/AgentDependencies'
+import type { AgentModulesInput } from '../../../agent/AgentModules'
 import type { InitConfig } from '../../../types'
 
 import { Subject } from 'rxjs'
@@ -10,7 +11,10 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
+import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
+import { MediationRecipientModule } from '../MediationRecipientModule'
+import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
@@ -18,10 +22,14 @@ const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, getInd
 const mediatorAgentOptions = getAgentOptions(
   'Mediation: Mediator',
   {
-    autoAcceptMediationRequests: true,
     endpoints: ['rxjs:mediator'],
   },
-  getIndySdkModules()
+  {
+    ...getIndySdkModules(),
+    mediator: new MediatorModule({
+      autoAcceptMediationRequests: true,
+    }),
+  }
 )
 
 const senderAgentOptions = getAgentOptions(
@@ -50,10 +58,12 @@ describe('mediator establishment', () => {
     mediatorAgentOptions: {
       readonly config: InitConfig
       readonly dependencies: AgentDependencies
+      modules: AgentModulesInput
     },
     recipientAgentOptions: {
       config: InitConfig
       dependencies: AgentDependencies
+      modules: AgentModulesInput
     }
   ) => {
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -81,10 +91,13 @@ describe('mediator establishment', () => {
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent({
       ...recipientAgentOptions,
-      config: {
-        ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com/ssi',
+      modules: {
+        ...recipientAgentOptions.modules,
+        mediationRecipient: new MediationRecipientModule({
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com/ssi',
+          }),
         }),
       },
     })
@@ -143,6 +156,10 @@ describe('mediator establishment', () => {
       content: message,
     })
 
+    // polling interval is 100ms, so 500ms should be enough to make sure no messages are sent
+    await recipientAgent.mediationRecipient.stopMessagePickup()
+    await sleep(500)
+
     expect(basicMessage.content).toBe(message)
   }
 
@@ -154,13 +171,7 @@ describe('mediator establishment', () => {
         5. Assert endpoint in recipient invitation for sender is mediator endpoint
         6. Send basic message from sender to recipient and assert it is received on the recipient side
 `, async () => {
-    await e2eMediationTest(mediatorAgentOptions, {
-      ...recipientAgentOptions,
-      config: {
-        ...recipientAgentOptions.config,
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-    })
+    await e2eMediationTest(mediatorAgentOptions, recipientAgentOptions)
   })
 
   test('Mediation end-to-end flow (not using did:key)', async () => {
@@ -173,7 +184,6 @@ describe('mediator establishment', () => {
         ...recipientAgentOptions,
         config: {
           ...recipientAgentOptions.config,
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
           useDidKeyInProtocols: false,
         },
       }
@@ -206,12 +216,14 @@ describe('mediator establishment', () => {
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent({
       ...recipientAgentOptions,
-      config: {
-        ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com/ssi',
+      modules: {
+        ...recipientAgentOptions.modules,
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com/ssi',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
     })
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
@@ -237,12 +249,14 @@ describe('mediator establishment', () => {
     await recipientAgent.shutdown()
     recipientAgent = new Agent({
       ...recipientAgentOptions,
-      config: {
-        ...recipientAgentOptions.config,
-        mediatorConnectionsInvite: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com/ssi',
+      modules: {
+        ...recipientAgentOptions.modules,
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com/ssi',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
     })
     recipientAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))

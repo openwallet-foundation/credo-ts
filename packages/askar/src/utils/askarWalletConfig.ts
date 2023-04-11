@@ -2,20 +2,16 @@ import type { AskarWalletPostgresStorageConfig } from '../wallet/AskarWalletPost
 import type { WalletConfig } from '@aries-framework/core'
 
 import { KeyDerivationMethod, WalletError } from '@aries-framework/core'
-import { StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
-export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod?: KeyDerivationMethod) => {
-  if (!keyDerivationMethod) {
-    return undefined
-  }
-
+export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
   const correspondenceTable = {
-    [KeyDerivationMethod.Raw]: StoreKeyMethod.Raw,
-    [KeyDerivationMethod.Argon2IInt]: `${StoreKeyMethod.Kdf}:argon2i:int`,
-    [KeyDerivationMethod.Argon2IMod]: `${StoreKeyMethod.Kdf}:argon2i:mod`,
+    [KeyDerivationMethod.Raw]: KdfMethod.Raw,
+    [KeyDerivationMethod.Argon2IInt]: KdfMethod.Argon2IInt,
+    [KeyDerivationMethod.Argon2IMod]: KdfMethod.Argon2IMod,
   }
 
-  return correspondenceTable[keyDerivationMethod] as StoreKeyMethod
+  return new StoreKeyMethod(correspondenceTable[keyDerivationMethod])
 }
 
 /**

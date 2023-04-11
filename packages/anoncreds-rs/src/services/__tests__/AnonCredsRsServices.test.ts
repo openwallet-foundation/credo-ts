@@ -1,6 +1,7 @@
 import type { AnonCredsProofRequest } from '@aries-framework/anoncreds'
 
 import {
+  AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
@@ -20,6 +21,7 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { encodeCredentialValue } from '../../../../anoncreds/src/utils/credential'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -42,11 +44,18 @@ const agentContext = getAgentContext({
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
+    [
+      AnonCredsModuleConfig,
+      new AnonCredsModuleConfig({
+        registries: [registry],
+      }),
+    ],
   ],
   agentConfig,
 })
 
-describe('AnonCredsRsServices', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'AnonCredsRsServices', () => {
   test('issuance flow without revocation', async () => {
     const issuerId = 'did:indy:pool:localtest:TL1EaPFCZ8Si5aUrqScBDt'
 
@@ -94,6 +103,7 @@ describe('AnonCredsRsServices', () => {
       new AnonCredsSchemaRecord({
         schema: schemaState.schema,
         schemaId: schemaState.schemaId,
+        methodName: 'inMemory',
       })
     )
 
@@ -102,6 +112,7 @@ describe('AnonCredsRsServices', () => {
       new AnonCredsCredentialDefinitionRecord({
         credentialDefinition: credentialDefinitionState.credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'inMemory',
       })
     )
 
@@ -178,6 +189,7 @@ describe('AnonCredsRsServices', () => {
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: undefined, // Should it be null in this case?
+      methodName: 'inMemory',
     })
 
     const proofRequest: AnonCredsProofRequest = {

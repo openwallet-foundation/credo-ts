@@ -3,10 +3,7 @@ import type { Logger } from '../logger'
 import type { InitConfig } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
-import { AriesFrameworkError } from '../error'
 import { ConsoleLogger, LogLevel } from '../logger'
-import { AutoAcceptCredential } from '../modules/credentials/models/CredentialAutoAcceptType'
-import { AutoAcceptProof } from '../modules/proofs/models/ProofAutoAcceptType'
 import { DidCommMimeType } from '../types'
 
 export class AgentConfig {
@@ -22,15 +19,6 @@ export class AgentConfig {
     this.label = initConfig.label
     this.logger = initConfig.logger ?? new ConsoleLogger(LogLevel.off)
     this.agentDependencies = agentDependencies
-
-    const { mediatorConnectionsInvite, clearDefaultMediator, defaultMediatorId } = this.initConfig
-
-    const allowOne = [mediatorConnectionsInvite, clearDefaultMediator, defaultMediatorId].filter((e) => e !== undefined)
-    if (allowOne.length > 1) {
-      throw new AriesFrameworkError(
-        `Only one of 'mediatorConnectionsInvite', 'clearDefaultMediator' and 'defaultMediatorId' can be set as they negate each other`
-      )
-    }
   }
 
   /**
@@ -40,63 +28,8 @@ export class AgentConfig {
     return this.initConfig.walletConfig
   }
 
-  /**
-   * @deprecated use autoAcceptConnections from the `ConnectionsModuleConfig` class
-   */
-  public get autoAcceptConnections() {
-    return this.initConfig.autoAcceptConnections ?? false
-  }
-
-  /**
-   * @deprecated use autoAcceptProofs from the `ProofsModuleConfig` class
-   */
-  public get autoAcceptProofs() {
-    return this.initConfig.autoAcceptProofs ?? AutoAcceptProof.Never
-  }
-
-  /**
-   * @deprecated use autoAcceptCredentials from the `CredentialsModuleConfig` class
-   */
-  public get autoAcceptCredentials() {
-    return this.initConfig.autoAcceptCredentials ?? AutoAcceptCredential.Never
-  }
-
   public get didCommMimeType() {
     return this.initConfig.didCommMimeType ?? DidCommMimeType.V1
-  }
-
-  /**
-   * @deprecated use mediatorPollingInterval from the `RecipientModuleConfig` class
-   */
-  public get mediatorPollingInterval() {
-    return this.initConfig.mediatorPollingInterval ?? 5000
-  }
-
-  /**
-   * @deprecated use mediatorPickupStrategy from the `RecipientModuleConfig` class
-   */
-  public get mediatorPickupStrategy() {
-    return this.initConfig.mediatorPickupStrategy
-  }
-
-  /**
-   * @deprecated use maximumMessagePickup from the `RecipientModuleConfig` class
-   */
-  public get maximumMessagePickup() {
-    return this.initConfig.maximumMessagePickup ?? 10
-  }
-  /**
-   * @deprecated use baseMediatorReconnectionIntervalMs from the `RecipientModuleConfig` class
-   */
-  public get baseMediatorReconnectionIntervalMs() {
-    return this.initConfig.baseMediatorReconnectionIntervalMs ?? 100
-  }
-
-  /**
-   * @deprecated use maximumMediatorReconnectionIntervalMs from the `RecipientModuleConfig` class
-   */
-  public get maximumMediatorReconnectionIntervalMs() {
-    return this.initConfig.maximumMediatorReconnectionIntervalMs ?? Number.POSITIVE_INFINITY
   }
 
   /**
@@ -121,34 +54,6 @@ export class AgentConfig {
 
   public set endpoints(endpoints: string[]) {
     this._endpoints = endpoints
-  }
-
-  /**
-   * @deprecated use mediatorInvitationUrl from the `RecipientModuleConfig` class
-   */
-  public get mediatorConnectionsInvite() {
-    return this.initConfig.mediatorConnectionsInvite
-  }
-
-  /**
-   * @deprecated use autoAcceptMediationRequests from the `MediatorModuleConfig` class
-   */
-  public get autoAcceptMediationRequests() {
-    return this.initConfig.autoAcceptMediationRequests ?? false
-  }
-
-  /**
-   * @deprecated you can use `RecipientApi.setDefaultMediator` to set the default mediator.
-   */
-  public get defaultMediatorId() {
-    return this.initConfig.defaultMediatorId
-  }
-
-  /**
-   * @deprecated you can set the `default` tag to `false` (or remove it completely) to clear the default mediator.
-   */
-  public get clearDefaultMediator() {
-    return this.initConfig.clearDefaultMediator ?? false
   }
 
   public get useDidSovPrefixWhereAllowed() {

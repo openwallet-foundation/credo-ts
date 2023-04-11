@@ -1,4 +1,5 @@
 import { Agent, DidsModule, Key, KeyType, TypedArrayEncoder } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { RevocationRegistryDefinitionRequest, RevocationRegistryEntryRequest } from '@hyperledger/indy-vdr-shared'
 
 import {
@@ -25,6 +26,7 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     indyVdr: new IndyVdrModule({
+      indyVdr,
       networks: indyVdrModuleConfig.networks,
     }),
     indySdk: new IndySdkModule({
@@ -318,7 +320,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationStatusList: {
         issuerId: legacyIssuerId,
         currentAccumulator: '1',
-        revRegId: legacyRevocationRegistryId,
+        revRegDefId: legacyRevocationRegistryId,
         revocationList: [
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -342,7 +344,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
       revocationStatusList: {
         issuerId: didIndyIssuerId,
         currentAccumulator: '1',
-        revRegId: didIndyRevocationRegistryId,
+        revRegDefId: didIndyRevocationRegistryId,
         revocationList: [
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

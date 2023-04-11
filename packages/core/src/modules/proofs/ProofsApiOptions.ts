@@ -94,6 +94,12 @@ export interface RequestProofOptions<PPs extends ProofProtocol[] = ProofProtocol
  */
 export interface AcceptProofRequestOptions<PPs extends ProofProtocol[] = ProofProtocol[]> extends BaseOptions {
   proofRecordId: string
+
+  /**
+   * whether to enable return routing on the send presentation message. This value only
+   * has an effect for connectionless exchanges.
+   */
+  useReturnRoute?: boolean
   proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptRequest'>
 
   goalCode?: string
@@ -166,4 +172,12 @@ export interface SelectCredentialsForProofRequestReturn<PPs extends ProofProtoco
 export interface SendProofProblemReportOptions {
   proofRecordId: string
   description: string
+}
+
+/**
+ * Interface for ProofsApi.declineRequest. Decline a received proof request and optionally send a problem-report message to Verifier
+ */
+export interface DeclineProofRequestOptions {
+  proofRecordId: string
+  sendProblemReport?: boolean
 }

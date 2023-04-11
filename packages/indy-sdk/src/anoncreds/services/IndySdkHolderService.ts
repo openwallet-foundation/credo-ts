@@ -10,9 +10,9 @@ import type {
   GetCredentialsForProofRequestOptions,
   GetCredentialsForProofRequestReturn,
   AnonCredsSelectedCredentials,
-  AnonCredsCredentialRequestMetadata,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
+  GetCredentialsOptions,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 import type {
@@ -21,7 +21,6 @@ import type {
   RevStates,
   Schemas,
   IndyCredential as IndySdkCredential,
-  CredReqMetadata,
   IndyProofRequest,
 } from 'indy-sdk'
 
@@ -33,7 +32,9 @@ import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
 import { parseCredentialDefinitionId } from '../utils/identifiers'
 import {
+  anonCredsCredentialRequestMetadataFromIndySdk,
   indySdkCredentialDefinitionFromAnonCreds,
+  indySdkCredentialRequestMetadataFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
   indySdkSchemaFromAnonCreds,
 } from '../utils/transform'
@@ -164,8 +165,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       return await this.indySdk.proverStoreCredential(
         agentContext.wallet.handle,
         options.credentialId ?? null,
-        // The type is typed as a Record<string, unknown> in the indy-sdk, but the anoncreds package contains the correct type
-        options.credentialRequestMetadata as unknown as CredReqMetadata,
+        indySdkCredentialRequestMetadataFromAnonCreds(options.credentialRequestMetadata),
         options.credential,
         indySdkCredentialDefinitionFromAnonCreds(options.credentialDefinitionId, options.credentialDefinition),
         indyRevocationRegistryDefinition
@@ -195,6 +195,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         schemaId: result.schema_id,
         credentialRevocationId: result.cred_rev_id,
         revocationRegistryId: result.rev_reg_id,
+        methodName: 'indy',
       }
     } catch (error) {
       agentContext.config.logger.error(`Error getting Indy Credential '${options.credentialId}'`, {
@@ -205,11 +206,43 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     }
   }
 
+  public async getCredentials(agentContext: AgentContext, options: GetCredentialsOptions) {
+    assertIndySdkWallet(agentContext.wallet)
+
+    // Indy SDK only supports indy credentials
+    if (options.methodName && options.methodName !== 'indy') {
+      return []
+    }
+
+    const credentials = await this.indySdk.proverGetCredentials(agentContext.wallet.handle, {
+      cred_def_id: options.credentialDefinitionId,
+      schema_id: options.schemaId,
+      schema_issuer_did: options.schemaIssuerId,
+      schema_name: options.schemaName,
+      schema_version: options.schemaVersion,
+      issuer_did: options.issuerId,
+    })
+
+    return credentials.map((credential) => ({
+      credentialDefinitionId: credential.cred_def_id,
+      attributes: credential.attrs,
+      credentialId: credential.referent,
+      schemaId: credential.schema_id,
+      credentialRevocationId: credential.cred_rev_id,
+      revocationRegistryId: credential.rev_reg_id,
+      methodName: 'indy',
+    }))
+  }
+
   public async createCredentialRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions
   ): Promise<CreateCredentialRequestReturn> {
     assertIndySdkWallet(agentContext.wallet)
+
+    if (!options.useLegacyProverDid) {
+      throw new AriesFrameworkError('Indy SDK only supports legacy prover did for credential requests')
+    }
 
     const linkSecretRepository = agentContext.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 
@@ -243,7 +276,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
       return {
         credentialRequest: result[0],
         // The type is typed as a Record<string, unknown> in the indy-sdk, but the anoncreds package contains the correct type
-        credentialRequestMetadata: result[1] as unknown as AnonCredsCredentialRequestMetadata,
+        credentialRequestMetadata: anonCredsCredentialRequestMetadataFromIndySdk(result[1]),
       }
     } catch (error) {
       agentContext.config.logger.error(`Error creating Indy Credential Request`, {
@@ -308,6 +341,7 @@ export class IndySdkHolderService implements AnonCredsHolderService {
             schemaId: credential.cred_info.schema_id,
             revocationRegistryId: credential.cred_info.rev_reg_id,
             credentialRevocationId: credential.cred_info.cred_rev_id,
+            methodName: 'indy',
           },
           interval: credential.interval,
         }))

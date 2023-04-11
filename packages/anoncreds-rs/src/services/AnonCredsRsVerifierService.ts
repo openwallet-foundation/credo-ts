@@ -3,7 +3,7 @@ import type { AgentContext } from '@aries-framework/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
 
 import { injectable } from '@aries-framework/core'
-import { Presentation, RevocationRegistryDefinition, RevocationStatusList } from '@hyperledger/anoncreds-shared'
+import { Presentation } from '@hyperledger/anoncreds-shared'
 
 @injectable()
 export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
@@ -24,27 +24,15 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
         rsSchemas[schemaId] = schemas[schemaId] as unknown as JsonObject
       }
 
-      const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
-      const lists = []
+      const revocationRegistryDefinitions: Record<string, JsonObject> = {}
+      const lists: JsonObject[] = []
 
       for (const revocationRegistryDefinitionId in revocationRegistries) {
         const { definition, revocationStatusLists } = options.revocationRegistries[revocationRegistryDefinitionId]
 
-        revocationRegistryDefinitions[revocationRegistryDefinitionId] = RevocationRegistryDefinition.fromJson(
-          definition as unknown as JsonObject
-        )
+        revocationRegistryDefinitions[revocationRegistryDefinitionId] = definition as unknown as JsonObject
 
-        for (const timestamp in revocationStatusLists) {
-          lists.push(
-            RevocationStatusList.create({
-              issuerId: definition.issuerId,
-              issuanceByDefault: true,
-              revocationRegistryDefinition: revocationRegistryDefinitions[revocationRegistryDefinitionId],
-              revocationRegistryDefinitionId,
-              timestamp: Number(timestamp),
-            })
-          )
-        }
+        lists.push(...(Object.values(revocationStatusLists) as unknown as Array<JsonObject>))
       }
 
       return presentation.verify({

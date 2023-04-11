@@ -14,37 +14,52 @@ import { describeRunInNodeVersion } from './runInVersion'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
-import { Agent, AutoAcceptCredential, MediatorPickupStrategy } from '@aries-framework/core'
+import {
+  Agent,
+  AutoAcceptCredential,
+  MediatorModule,
+  MediatorPickupStrategy,
+  MediationRecipientModule,
+} from '@aries-framework/core'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Askar Subject Recipient',
+  {},
   {
-    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-  },
-  getAskarAnonCredsIndyModules({
-    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+    ...getAskarAnonCredsIndyModules({
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    }),
+    mediationRecipient: new MediationRecipientModule({
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    }),
+  }
 )
 const mediatorAgentOptions = getAgentOptions(
   'E2E Askar Subject Mediator',
   {
     endpoints: ['rxjs:mediator'],
-    autoAcceptMediationRequests: true,
   },
-  getAskarAnonCredsIndyModules({
-    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+  {
+    ...getAskarAnonCredsIndyModules({
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    }),
+    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+  }
 )
 const senderAgentOptions = getAgentOptions(
   'E2E Indy SDK Subject Sender',
   {
     endpoints: ['rxjs:sender'],
-    mediatorPollingInterval: 1000,
-    mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
   },
-  getLegacyAnonCredsModules({
-    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+  {
+    ...getLegacyAnonCredsModules({
+      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    }),
+    mediationRecipient: new MediationRecipientModule({
+      mediatorPollingInterval: 1000,
+      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    }),
+  }
 )
 
 // Performance issues outside of Node 18
@@ -54,9 +69,9 @@ describeRunInNodeVersion([18], 'E2E Askar-AnonCredsRS-IndyVDR Subject tests', ()
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    recipientAgent = new Agent(recipientAgentOptions)
-    mediatorAgent = new Agent(mediatorAgentOptions)
-    senderAgent = new Agent(senderAgentOptions)
+    recipientAgent = new Agent(recipientAgentOptions) as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorAgentOptions) as AnonCredsTestsAgent
+    senderAgent = new Agent(senderAgentOptions) as AnonCredsTestsAgent
   })
 
   afterEach(async () => {

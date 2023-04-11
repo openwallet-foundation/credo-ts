@@ -11,8 +11,10 @@ import {
   Agent,
   DidsModule,
 } from '@aries-framework/core'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
+import { sleep } from '../../core/src/utils/sleep'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
@@ -31,6 +33,7 @@ const endorser = new Agent(
     {
       indyVdr: new IndyVdrModule({
         networks: indyVdrModuleConfig.networks,
+        indyVdr,
       }),
       indySdk: new IndySdkModule({
         indySdk,
@@ -48,6 +51,7 @@ const agent = new Agent(
     {},
     {
       indyVdr: new IndyVdrModule({
+        indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
       indySdk: new IndySdkModule({
@@ -119,6 +123,9 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const did = didRegistrationResult.didState.did
     if (!did) throw Error('did not defined')
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     const didResolutionResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
@@ -206,6 +213,9 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const did = didCreateTobeEndorsedResult.didState.did
     if (!did) throw Error('did not defined')
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     const didResolutionResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
@@ -306,6 +316,9 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
+
     const didResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
@@ -381,6 +394,9 @@ describe('Indy VDR Indy Did Registrar', () => {
         },
       },
     })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     const didResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
@@ -518,6 +534,9 @@ describe('Indy VDR Indy Did Registrar', () => {
         didDocument: expectedDidDocument,
       },
     })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     const didResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
@@ -667,6 +686,8 @@ describe('Indy VDR Indy Did Registrar', () => {
         didDocument: expectedDidDocument,
       },
     })
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
 
     const didResult = await endorser.dids.resolve(did)
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({

@@ -12,6 +12,7 @@ import {
 import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
 import { AskarModule } from '@aries-framework/askar'
 import {
+  ConnectionsModule,
   DidsModule,
   V2ProofProtocol,
   V2CredentialProtocol,
@@ -25,6 +26,9 @@ import {
 import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@aries-framework/indy-sdk'
 import { IndyVdrAnonCredsRegistry, IndyVdrModule, IndyVdrSovDidResolver } from '@aries-framework/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { randomUUID } from 'crypto'
 import indySdk from 'indy-sdk'
 
@@ -72,7 +76,6 @@ export class BaseAgent {
         key: name,
       },
       endpoints: [`http://localhost:${this.port}`],
-      autoAcceptConnections: true,
     } satisfies InitConfig
 
     this.config = config
@@ -100,6 +103,9 @@ function getAskarAnonCredsIndyModules() {
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
     credentials: new CredentialsModule({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       credentialProtocols: [
@@ -125,14 +131,19 @@ function getAskarAnonCredsIndyModules() {
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry()],
     }),
-    anoncredsRs: new AnonCredsRsModule(),
+    anoncredsRs: new AnonCredsRsModule({
+      anoncreds,
+    }),
     indyVdr: new IndyVdrModule({
+      indyVdr,
       networks: [indyNetworkConfig],
     }),
     dids: new DidsModule({
       resolvers: [new IndyVdrSovDidResolver()],
     }),
-    askar: new AskarModule(),
+    askar: new AskarModule({
+      ariesAskar,
+    }),
   } as const
 }
 
@@ -141,6 +152,9 @@ function getLegacyIndySdkModules() {
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
     credentials: new CredentialsModule({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       credentialProtocols: [

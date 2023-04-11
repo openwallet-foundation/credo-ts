@@ -1,4 +1,5 @@
 import type { SubjectMessage } from '../../../../../../../tests/transport/SubjectInboundTransport'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { Subject } from 'rxjs'
 
@@ -15,6 +16,8 @@ import {
   Attachment,
   AttachmentData,
   ProofEventTypes,
+  MediatorModule,
+  MediationRecipientModule,
 } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
@@ -43,7 +46,8 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     }
   })
 
-  test('Faber starts with connection-less proof requests to Alice', async () => {
+  // new method to test the return route and mediator together
+  const connectionlessTest = async (returnRoute?: boolean) => {
     const {
       holderAgent: aliceAgent,
       issuerAgent: faberAgent,
@@ -134,6 +138,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     await aliceAgent.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
+      useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -143,6 +148,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
+    const sentPresentationMessage = aliceAgent.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
@@ -154,6 +160,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       threadId: aliceProofExchangeRecord.threadId,
       state: ProofState.Done,
     })
+    return sentPresentationMessage
+  }
+
+  test('Faber starts with connection-less proof requests to Alice', async () => {
+    await connectionlessTest()
   })
 
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled', async () => {
@@ -353,10 +364,14 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     const mediatorAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
-        autoAcceptMediationRequests: true,
         endpoints: ['rxjs:mediator'],
       },
-      getIndySdkModules()
+      {
+        ...getIndySdkModules(),
+        mediator: new MediatorModule({
+          autoAcceptMediationRequests: true,
+        }),
+      }
     )
 
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -380,28 +395,34 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     const faberAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
+      {},
       {
-        mediatorConnectionsInvite: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com',
+        ...getLegacyAnonCredsModules({
+          autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-      getLegacyAnonCredsModules({
-        autoAcceptProofs: AutoAcceptProof.Always,
-      })
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        }),
+      }
     )
 
     const aliceAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
+      {},
       {
-        mediatorConnectionsInvite: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-          domain: 'https://example.com',
+        ...getLegacyAnonCredsModules({
+          autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-      },
-      getLegacyAnonCredsModules({
-        autoAcceptProofs: AutoAcceptProof.Always,
-      })
+        mediationRecipient: new MediationRecipientModule({
+          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+            domain: 'https://example.com',
+          }),
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        }),
+      }
     )
 
     const faberAgent = new Agent(faberAgentOptions)
@@ -433,10 +454,10 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     })
 
     await issueLegacyAnonCredsCredential({
-      issuerAgent: faberAgent,
+      issuerAgent: faberAgent as AnonCredsTestsAgent,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnection.id,
-      holderAgent: aliceAgent,
+      holderAgent: aliceAgent as AnonCredsTestsAgent,
       holderReplay: aliceReplay,
       offer: {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
