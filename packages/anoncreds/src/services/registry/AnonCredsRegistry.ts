@@ -10,7 +10,7 @@ import type {
 } from './RevocationRegistryDefinitionOptions'
 import type {
   GetRevocationStatusListReturn,
-  RegisterRevocationListOptions as RegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
 } from './RevocationStatusListOptions'
 import type { GetSchemaReturn, RegisterSchemaOptions, RegisterSchemaReturn } from './SchemaOptions'

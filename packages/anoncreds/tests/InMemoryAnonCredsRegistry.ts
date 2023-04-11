@@ -16,7 +16,7 @@ import type {
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
-  RegisterRevocationListOptions as RegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListOptions,
 } from '../src'
 import type { AgentContext } from '@aries-framework/core'
 
