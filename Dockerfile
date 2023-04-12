@@ -1,42 +1,41 @@
+## Stage 1: Build indy-sdk and postgres plugin
+
 FROM ubuntu:22.04 as base
 
-ENV DEBIAN_FRONTEND noninteractive
+# Set this value only during build
+ARG DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update -y && apt-get install -y \
-    software-properties-common \
-    apt-transport-https \
-    curl \
-    # Only needed to build indy-sdk
-    build-essential \
-    git \
+# Define packages to install
+ENV PACKAGES software-properties-common ca-certificates \
+    curl build-essential git \
     libzmq3-dev libsodium-dev pkg-config
 
-# libssl1.1 (required by libindy)
-RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl1.1.deb
-RUN dpkg -i libssl1.1.deb
+# Combined update and install to ensure Docker caching works correctly
+RUN apt-get update -y \
+    && apt-get install -y $PACKAGES
 
-# libssl-dev1.1 (required to compile libindy with posgres plugin)
-RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl-dev1.1.deb
-RUN dpkg -i libssl-dev1.1.deb
+RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl1.1.deb \
+    # libssl1.1 (required by libindy)
+    && dpkg -i libssl1.1.deb \
+    && curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl-dev1.1.deb \
+    # libssl-dev1.1 (required to compile libindy with posgres plugin)
+    && dpkg -i libssl-dev1.1.deb
 
-# libindy
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
-RUN add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable"
+# Add APT sources
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
+    && add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable" \
+    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 
-# nodejs 16x LTS Debian
-RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-
-# yarn
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
-    echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-
-# install depdencies
-RUN apt-get update -y && apt-get install -y --allow-unauthenticated \
-    libindy \
-    nodejs
-
-# Install yarn seperately due to `no-install-recommends` to skip nodejs install 
-RUN apt-get install -y --no-install-recommends yarn
+# Install libindy, NodeJS and yarn
+RUN apt-get update -y \
+    # Install libindy
+    && apt-get install -y --allow-unauthenticated libindy \
+    && apt-get install -y nodejs \
+    && apt-get install -y --no-install-recommends yarn \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean -y
 
 # postgres plugin setup
 # install rust and set up rustup
@@ -54,14 +53,19 @@ RUN cargo build --release
 # set up library path for postgres plugin
 ENV LIB_INDY_STRG_POSTGRES="/indy-sdk/experimental/plugins/postgres_storage/target/release"
 
+## Stage 2: Build Aries Framework JavaScript
+
 FROM base as final
 
-# AFJ specifc setup
-WORKDIR /www
+# Set environment variables
 ENV RUN_MODE="docker"
 
-# Copy dependencies
+# Set working directory
+WORKDIR /www
+
+# Copy repository files
 COPY . . 
 
-RUN yarn install
-RUN yarn build
+# Run yarn install and build
+RUN yarn install --frozen-lockfile \
+    && yarn build
