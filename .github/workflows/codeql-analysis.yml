@@ -33,6 +33,13 @@ jobs:
           # Fetch history for CodeQL analysis
           fetch-depth: 0
 
+      # setup dependencies
+      - name: Setup Libssl
+        uses: ./.github/actions/setup-libssl
+
+      - name: Setup Libindy
+        uses: ./.github/actions/setup-libindy
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
