@@ -1,0 +1,32 @@
+#################################
+# GitHub Dependabot Config info #
+#################################
+
+version: 2
+updates:
+  # Maintain dependencies for NPM
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    allow:
+      # Focus on main dependencies, not devDependencies
+      - dependency-type: 'production'
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+
+  # Maintain dependencies for Docker
+  - package-ecosystem: 'docker'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+
+  # Maintain dependencies for Cargo
+  - package-ecosystem: 'cargo'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
