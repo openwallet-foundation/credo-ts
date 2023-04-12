@@ -15,7 +15,7 @@ export class BasicTailsFileService implements TailsFileService {
     const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     const basePath = `${this.tailsDirectoryPath ?? fileSystem.cachePath}/anoncreds/tails`
     if (!(await fileSystem.exists(basePath))) {
-      await fileSystem.createDirectory(basePath)
+      await fileSystem.createDirectory(`${basePath}/file`)
     }
     return basePath
   }
