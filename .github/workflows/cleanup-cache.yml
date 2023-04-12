@@ -1,9 +1,9 @@
-# Github Actions workflow to delete the cache every week
 # Repositories have 10 GB of cache storage per repository
+# Documentation: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#usage-limits-and-eviction-policy
 name: "Cleanup - Cache"
 on:
   schedule:
-    - cron: "0 0 * * 0"
+    - cron: "0 0 * * 0/3"
   workflow_dispatch:
 
 jobs:
