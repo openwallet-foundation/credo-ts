@@ -281,7 +281,6 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('creates a did:indy document by passing did', async () => {
     // @ts-ignore - method is private
-    // @ts-ignore - method is private
     const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'

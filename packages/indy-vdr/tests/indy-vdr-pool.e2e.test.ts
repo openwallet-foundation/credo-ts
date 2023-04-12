@@ -78,7 +78,7 @@ describe('IndyVdrPoolService', () => {
       expect(JSON.parse(response.result.data as string)).toMatchObject({
         dest: 'TL1EaPFCZ8Si5aUrqScBDt',
         identifier: 'V4SGRU86Z58d6TV7PBUe6f',
-        role: '101',
+        role: '0',
         seqNo: expect.any(Number),
         txnTime: expect.any(Number),
         verkey: '~43X4NhAFqREffK7eWdKgFH',

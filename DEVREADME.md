@@ -31,6 +31,9 @@ If you're using the setup as described in this document, you don't need to provi
 - `TEST_AGENT_PUBLIC_DID_SEED`: The seed to use for the public DID. This will be used to do public write operations to the ledger. You should use a seed for a DID that is already registered on the ledger.
   - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-ledger) in the previous step. (default is `000000000000000000000000Trustee9`)
   - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
+- `ENDORSER_AGENT_PUBLIC_DID_SEED`: The seed to use for the public Endorser DID. This will be used to endorse transactions. You should use a seed for a DID that is already registered on the ledger.
+  - If using the local or default genesis, use the same seed you used for the `add-did-from-seed` command from the [ledger setup](#setup-ledger) in the previous step. (default is `00000000000000000000000Endorser9`)
+  - If using the BuilderNet genesis, make sure your seed is registered on the BuilderNet using [selfserve.sovrin.org](https://selfserve.sovrin.org/) and you have read and accepted the associated [Transaction Author Agreement](https://github.com/sovrin-foundation/sovrin/blob/master/TAA/TAA.md). We are not responsible for any unwanted consequences of using the BuilderNet.
 
 ### Setup Postgres
 
@@ -61,8 +64,11 @@ docker run -d --rm --name indy-pool -p 9701-9708:9701-9708 indy-pool
 # Setup CLI. This creates a wallet, connects to the ledger and sets the Transaction Author Agreement
 docker exec indy-pool indy-cli-setup
 
-#  DID and Verkey from seed. Set 'Trustee' role in order to be able to register public DIDs
-docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 ENDORSER
+#  DID and Verkey from seed. Set 'ENDORSER' role in order to be able to register public DIDs
+docker exec indy-pool add-did-from-seed 00000000000000000000000Endorser9 ENDORSER
+
+#  DID and Verkey from seed. Set 'Trustee'
+docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE
 
 # If you want to register using the DID/Verkey you can use
 # docker exec indy-pool add-did "NkGXDEPgpFGjQKMYmz6SyF" "CrSA1WbYYWLJoHm16Xw1VEeWxFvXtWjtsfEzMsjB5vDT"
@@ -79,7 +85,7 @@ yarn test
 If you're not using the ledger setup from above, make sure you pass the correct environment variables from [Setting environment variables](#setting-environment-variables) for connecting to the indy **ledger** pool.
 
 ```sh
-GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 yarn test
+GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=000000000000000000000000Trustee9 ENDORSER_AGENT_PUBLIC_DID_SEED=00000000000000000000000Endorser9 yarn test
 ```
 
 Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:

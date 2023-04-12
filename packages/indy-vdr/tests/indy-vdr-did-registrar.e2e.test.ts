@@ -72,7 +72,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     await endorser.initialize()
     const unqualifiedSubmitterDid = await importExistingIndyDidFromPrivateKey(
       endorser,
-      TypedArrayEncoder.fromString('000000000000000000000000Trustee9')
+      TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
     )
     submitterDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
 
