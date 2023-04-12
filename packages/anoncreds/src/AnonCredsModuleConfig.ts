@@ -21,7 +21,7 @@ export interface AnonCredsModuleConfigOptions {
 
   /**
    * Tails file manager for download/uploading tails files
-   * @default DefaultTailsFileManager (only for downloading tails files)
+   * @default BasicTailsFileService (only for downloading tails files)
    */
   tailsFileService?: TailsFileService
 }
@@ -47,7 +47,7 @@ export class AnonCredsModuleConfig {
   }
 
   /** See {@link AnonCredsModuleConfigOptions.tailsFileService} */
-  public get tailsFileManager() {
+  public get tailsFileService() {
     return this.options.tailsFileService ?? new BasicTailsFileService()
   }
 }

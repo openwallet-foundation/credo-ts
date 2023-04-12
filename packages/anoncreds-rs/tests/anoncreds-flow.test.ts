@@ -49,10 +49,10 @@ import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierS
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
-const tailsFileManager = new InMemoryTailsFileService()
+const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  tailsFileService: tailsFileManager,
+  tailsFileService,
 })
 
 const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs')
@@ -182,7 +182,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
         credentialDefinition,
         credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         maximumCredentialNumber: 100,
-        tailsDirectoryPath: tailsFileManager.getTailsBasePath(agentContext),
+        tailsDirectoryPath: await tailsFileService.getTailsBasePath(agentContext),
         tag: 'default',
       })
 

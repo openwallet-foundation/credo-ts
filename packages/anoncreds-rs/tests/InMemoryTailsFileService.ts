@@ -36,7 +36,7 @@ export class InMemoryTailsFileService extends BasicTailsFileService {
 
       // hash is used as file identifier
       const tailsExists = await this.tailsFileExists(agentContext, tailsHash)
-      const tailsFilePath = this.getTailsFilePath(agentContext, tailsHash)
+      const tailsFilePath = await this.getTailsFilePath(agentContext, tailsHash)
       agentContext.config.logger.debug(
         `Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${tailsFilePath}`
       )

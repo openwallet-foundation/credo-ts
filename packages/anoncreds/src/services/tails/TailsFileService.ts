@@ -2,11 +2,11 @@ import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext } from '@aries-framework/core'
 
 export interface TailsFileService {
-  getTailsBasePath(agentContext: AgentContext): string
+  getTailsBasePath(agentContext: AgentContext): string | Promise<string>
 
-  getTailsFilePath(agentContext: AgentContext, tailsHash: string): string
+  getTailsFilePath(agentContext: AgentContext, tailsHash: string): string | Promise<string>
 
-  tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean>
+  tailsFileExists(agentContext: AgentContext, tailsHash: string): boolean | Promise<boolean>
 
   uploadTailsFile(
     agentContext: AgentContext,

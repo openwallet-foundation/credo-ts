@@ -353,10 +353,10 @@ export class AnonCredsApi {
   }): Promise<RegisterRevocationRegistryDefinitionReturn> {
     const { issuerId, tag, credentialDefinitionId, maximumCredentialNumber } = options.revocationRegistryDefinition
 
-    const tailsFileManager =
-      this.agentContext.dependencyManager.resolve<AnonCredsModuleConfig>(AnonCredsModuleConfig).tailsFileManager
+    const tailsFileService =
+      this.agentContext.dependencyManager.resolve<AnonCredsModuleConfig>(AnonCredsModuleConfig).tailsFileService
 
-    const tailsDirectoryPath = tailsFileManager.getTailsBasePath(this.agentContext)
+    const tailsDirectoryPath = await tailsFileService.getTailsBasePath(this.agentContext)
 
     const failedReturnBase = {
       revocationRegistryDefinitionState: {
@@ -393,7 +393,7 @@ export class AnonCredsApi {
       // At this moment, tails file should be published and a valid public URL will be received
       const localTailsLocation = revocationRegistryDefinition.value.tailsLocation
 
-      revocationRegistryDefinition.value.tailsLocation = await tailsFileManager.uploadTailsFile(this.agentContext, {
+      revocationRegistryDefinition.value.tailsLocation = await tailsFileService.uploadTailsFile(this.agentContext, {
         revocationRegistryDefinition,
       })
 
@@ -485,8 +485,8 @@ export class AnonCredsApi {
       failedReturnBase.revocationStatusListState.reason = `Unable to register revocation status list. No revocation registry definition found for ${revocationRegistryDefinitionId}`
       return failedReturnBase
     }
-    const tailsFileManager = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileManager
-    const { tailsFilePath } = await tailsFileManager.downloadTailsFile(this.agentContext, {
+    const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
+    const { tailsFilePath } = await tailsFileService.downloadTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
@@ -559,8 +559,8 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const tailsFileManager = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileManager
-    const { tailsFilePath } = await tailsFileManager.downloadTailsFile(this.agentContext, {
+    const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
+    const { tailsFilePath } = await tailsFileService.downloadTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 

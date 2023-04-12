@@ -11,19 +11,23 @@ export class BasicTailsFileService implements TailsFileService {
     this.tailsDirectoryPath = options?.tailsDirectoryPath
   }
 
-  public getTailsBasePath(agentContext: AgentContext) {
+  public async getTailsBasePath(agentContext: AgentContext) {
     const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    return `${this.tailsDirectoryPath ?? fileSystem.cachePath}/anoncreds/tails`
+    const basePath = `${this.tailsDirectoryPath ?? fileSystem.cachePath}/anoncreds/tails`
+    if (!(await fileSystem.exists(basePath))) {
+      await fileSystem.createDirectory(basePath)
+    }
+    return basePath
   }
 
-  public getTailsFilePath(agentContext: AgentContext, tailsHash: string) {
-    return `${this.getTailsBasePath(agentContext)}/${tailsHash}`
+  public async getTailsFilePath(agentContext: AgentContext, tailsHash: string) {
+    return `${await this.getTailsBasePath(agentContext)}/${tailsHash}`
   }
 
-  public tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean> {
+  public async tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean> {
     const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    const tailsFilePath = this.getTailsFilePath(agentContext, tailsHash)
-    return fileSystem.exists(tailsFilePath)
+    const tailsFilePath = await this.getTailsFilePath(agentContext, tailsHash)
+    return await fileSystem.exists(tailsFilePath)
   }
 
   public async uploadTailsFile(
@@ -34,7 +38,7 @@ export class BasicTailsFileService implements TailsFileService {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
   ): Promise<string> {
-    throw new AriesFrameworkError('BasicTailsFileManager only supports tails file downloading')
+    throw new AriesFrameworkError('BasicTailsFileService only supports tails file downloading')
   }
 
   public async downloadTailsFile(
@@ -57,7 +61,7 @@ export class BasicTailsFileService implements TailsFileService {
 
       // hash is used as file identifier
       const tailsExists = await this.tailsFileExists(agentContext, tailsHash)
-      const tailsFilePath = this.getTailsFilePath(agentContext, tailsHash)
+      const tailsFilePath = await this.getTailsFilePath(agentContext, tailsHash)
       agentContext.config.logger.debug(
         `Tails file for ${tailsLocation} ${tailsExists ? 'is stored' : 'is not stored'} at ${tailsFilePath}`
       )
