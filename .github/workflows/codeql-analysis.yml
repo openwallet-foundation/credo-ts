@@ -11,6 +11,9 @@ concurrency:
   # Cancel previous runs that are not completed yet
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  NODE_OPTIONS: --max_old_space_size=4096
+
 
 jobs:
   analyze:
@@ -22,7 +25,6 @@ jobs:
       security-events: write
 
     strategy:
-      fail-fast: false
       matrix:
         language: ['javascript']
 
