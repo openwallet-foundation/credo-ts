@@ -7,6 +7,10 @@ on:
     branches: [main]
   schedule:
     - cron: '45 0 * * 6'
+concurrency:
+  # Cancel previous runs that are not completed yet
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -24,12 +28,24 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          # Fetch history for CodeQL analysis
+          fetch-depth: 0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with:
           languages: ${{ matrix.language }}
+          # Add recommended CodeQL query pack
+          # Docs: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/customizing-code-scanning#running-additional-queries
+          queries: security-and-quality
+
+      - name: Build
+        # CodeQL relies on build output to run analysis
+        run: |
+          npm ci
+          npm run build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
