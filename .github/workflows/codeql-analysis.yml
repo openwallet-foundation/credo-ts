@@ -44,8 +44,8 @@ jobs:
       - name: Build
         # CodeQL relies on build output to run analysis
         run: |
-          npm ci
-          npm run build
+          yarn install --immutable
+          yarn build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
