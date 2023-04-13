@@ -6,11 +6,11 @@ on:
       - main
 
 env:
-  NODE_OPTIONS: --max_old_space_size=4096
+  NODE_OPTIONS: --max_old_space_size=6144
 
 jobs:
   release-canary:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-m
     name: Release Canary
     if: "!startsWith(github.event.head_commit.message, 'chore(release): v')"
     steps:
@@ -19,6 +19,7 @@ jobs:
         with:
           # pulls all commits (needed for lerna to correctly version)
           fetch-depth: 0
+          persist-credentials: false
 
       # setup dependencies
       - name: Setup Libindy
@@ -60,7 +61,7 @@ jobs:
           git push origin v${{ steps.get-version.outputs.version }} --no-verify
 
   release-stable:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest-m
     name: Create Stable Release
     # Only run if the last pushed commit is a release commit
     if: "startsWith(github.event.head_commit.message, 'chore(release): v')"
