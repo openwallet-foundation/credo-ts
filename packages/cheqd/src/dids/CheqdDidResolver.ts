@@ -2,7 +2,7 @@ import type { ParsedCheqdDid } from '../anoncreds/utils/identifiers'
 import type { AgentContext, DidDocument, DidResolutionResult, DidResolver, ParsedDid } from '@aries-framework/core'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
-import { AriesFrameworkError } from '@aries-framework/core'
+import { AriesFrameworkError, utils } from '@aries-framework/core'
 
 import {
   cheqdDidMetadataRegex,
@@ -87,7 +87,7 @@ export class CheqdDidResolver implements DidResolver {
         if (params.version) {
           resource = resources.find((resource) => resource.version == params.version)
         } else {
-          const date = params.resourceTime ? new Date(Number(params.resourceTime) * 1000) : new Date()
+          const date = params.resourceVersionTime ? new Date(Number(params.resourceVersionTime) * 1000) : new Date()
           // find the resourceId closest to the created time
           resource = getClosestResourceVersion(resources, date)
         }
@@ -102,6 +102,9 @@ export class CheqdDidResolver implements DidResolver {
           error: 'notFound',
           message: `resolver_error: Invalid did url '${did}'`,
         }
+      }
+      if (!utils.isValidUuid(resourceId)) {
+        throw new Error('Invalid resource Id')
       }
 
       const { resource, metadata } = await cheqdLedgerService.resolveResource(parsedDid.did, id, resourceId)

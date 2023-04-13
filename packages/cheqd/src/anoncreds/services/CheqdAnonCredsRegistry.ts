@@ -302,7 +302,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
 
       const response = await cheqdDidResolver.resolveResource(
         agentContext,
-        `${revocationRegistryId}&resourceType=anonCredsStatusList&resourceTime=${timestamp}`
+        `${revocationRegistryId}&resourceType=anonCredsStatusList&resourceVersionTime=${timestamp}`
       )
       const revocationStatusList = JsonTransformer.fromJSON(response.resource, CheqdRevocationStatusList)
 
