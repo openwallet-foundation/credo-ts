@@ -126,7 +126,7 @@ const getIndyJsonLdModules = () =>
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    w3cVc: new W3cCredentialsModule({
+    w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
     }),
   } as const)

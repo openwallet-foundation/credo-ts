@@ -1,9 +1,9 @@
 import type { IndySdkIndyDidCreateOptions } from '../src'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { Agent, AriesFrameworkError, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 
 import { getAgentOptions, importExistingIndyDidFromPrivateKey, publicDidSeed } from '../../core/tests/helpers'
-import { parseIndyDid } from '../src/dids/didIndyUtil'
 
 import { getIndySdkModules } from './setupIndySdkModule'
 

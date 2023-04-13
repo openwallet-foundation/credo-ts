@@ -2,6 +2,11 @@ import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
 import type { Wallet } from '@aries-framework/core'
 
 import {
+  getUnqualifiedSchemaId,
+  parseIndySchemaId,
+  parseIndySchemaId,
+  getUnqualifiedCredentialDefinitionId,
+  parseIndyCredentialDefinitionId,
   AnonCredsModuleConfig,
   LegacyIndyCredentialFormatService,
   AnonCredsHolderServiceSymbol,
@@ -38,7 +43,7 @@ import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderServi
 import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
 import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
 
-const registry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: true })
+const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })
@@ -70,7 +75,7 @@ const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService(
 const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
-const indyDid = 'LjgpST2rjsoxYegQDRm7EL'
+const indyDid = 'did:indy:bcovrin:test:LjgpST2rjsoxYegQDRm7EL'
 
 // FIXME: Re-include in tests when NodeJS wrapper performance is improved
 describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs', () => {
@@ -191,6 +196,20 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
       }),
     ]
 
+    const parsedCredentialDefinition = parseIndyCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
+    const unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
+      parsedCredentialDefinition.namespaceIdentifier,
+      parsedCredentialDefinition.schemaSeqNo,
+      parsedCredentialDefinition.tag
+    )
+
+    const parsedSchemaId = parseIndySchemaId(schemaState.schemaId)
+    const unqualifiedSchemaId = getUnqualifiedSchemaId(
+      parsedSchemaId.namespaceIdentifier,
+      parsedSchemaId.schemaName,
+      parsedSchemaId.schemaVersion
+    )
+
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: proposalAttachment } = await legacyIndyCredentialFormatService.createProposal(agentContext, {
@@ -198,7 +217,7 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
       credentialFormats: {
         indy: {
           attributes: credentialAttributes,
-          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+          credentialDefinitionId: unqualifiedCredentialDefinitionId,
         },
       },
     })
@@ -266,8 +285,8 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
         age: '25',
         name: 'John',
       },
-      schemaId: schemaState.schemaId,
-      credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+      schemaId: unqualifiedSchemaId,
+      credentialDefinitionId: unqualifiedCredentialDefinitionId,
       revocationRegistryId: null,
       credentialRevocationId: undefined, // FIXME: should be null?
       methodName: 'inMemory',
@@ -275,8 +294,8 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
 
     expect(holderCredentialRecord.metadata.data).toEqual({
       '_anoncreds/credential': {
-        schemaId: schemaState.schemaId,
-        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        schemaId: unqualifiedSchemaId,
+        credentialDefinitionId: unqualifiedCredentialDefinitionId,
       },
       '_anoncreds/credentialRequest': {
         link_secret_blinding_data: expect.any(Object),
@@ -287,8 +306,8 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
 
     expect(issuerCredentialRecord.metadata.data).toEqual({
       '_anoncreds/credential': {
-        schemaId: schemaState.schemaId,
-        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        schemaId: unqualifiedSchemaId,
+        credentialDefinitionId: unqualifiedCredentialDefinitionId,
       },
     })
 
@@ -309,14 +328,14 @@ describeRunInNodeVersion([18], 'Legacy indy format services using anoncreds-rs',
           attributes: [
             {
               name: 'name',
-              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              credentialDefinitionId: unqualifiedCredentialDefinitionId,
               value: 'John',
               referent: '1',
             },
           ],
           predicates: [
             {
-              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+              credentialDefinitionId: unqualifiedCredentialDefinitionId,
               name: 'age',
               predicate: '>=',
               threshold: 18,

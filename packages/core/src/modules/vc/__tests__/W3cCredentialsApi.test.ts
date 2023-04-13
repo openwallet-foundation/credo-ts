@@ -3,18 +3,23 @@ import { getAgentOptions, indySdk } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
+import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { W3cVerifiableCredential } from '../models'
 import { W3cCredentialRepository } from '../repository'
 
+import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
 const modules = {
   indySdk: new IndySdkModule({
     indySdk,
   }),
+  w3cCredentials: new W3cCredentialsModule({
+    documentLoader: customDocumentLoader,
+  }),
 }
 
-const agentOptions = getAgentOptions<typeof modules>('W3cCredentialsApi', {}, modules)
+const agentOptions = getAgentOptions('W3cCredentialsApi', {}, modules)
 
 const agent = new Agent(agentOptions)
 
@@ -83,7 +88,7 @@ describe('W3cCredentialsApi', () => {
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
-    expect(serviceSpy).toHaveBeenCalledWith((agent as any).agentContext, storedCredential.id)
+    expect(serviceSpy).toHaveBeenCalledWith(agent.context, storedCredential.id)
 
     const allCredentials = await agent.w3cCredentials.getAllCredentialRecords()
     expect(allCredentials).toHaveLength(0)

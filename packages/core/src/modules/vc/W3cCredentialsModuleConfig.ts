@@ -3,10 +3,10 @@ import type { DocumentLoaderWithContext } from './libraries/documentLoader'
 import { defaultDocumentLoader } from './libraries/documentLoader'
 
 /**
- * W3cVcModuleConfigOptions defines the interface for the options of the W3cVcModuleConfig class.
+ * W3cCredentialsModuleConfigOptions defines the interface for the options of the W3cCredentialsModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
-export interface W3cVcModuleConfigOptions {
+export interface W3cCredentialsModuleConfigOptions {
   /**
    * Document loader to use for resolving JSON-LD objects. Takes a {@link AgentContext} as parameter,
    * and must return a {@link DocumentLoader} function.
@@ -33,13 +33,13 @@ export interface W3cVcModuleConfigOptions {
 }
 
 export class W3cCredentialsModuleConfig {
-  private options: W3cVcModuleConfigOptions
+  private options: W3cCredentialsModuleConfigOptions
 
-  public constructor(options?: W3cVcModuleConfigOptions) {
+  public constructor(options?: W3cCredentialsModuleConfigOptions) {
     this.options = options ?? {}
   }
 
-  /** See {@link W3cVcModuleConfigOptions.documentLoader} */
+  /** See {@link W3cCredentialsModuleConfigOptions.documentLoader} */
   public get documentLoader() {
     return this.options.documentLoader ?? defaultDocumentLoader
   }

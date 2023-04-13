@@ -159,7 +159,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       }
       return instances
     } catch (error) {
-      throw new WalletError(`Error executing query`, { cause: error })
+      throw new WalletError(`Error executing query. ${error.message}`, { cause: error })
     }
   }
 }
