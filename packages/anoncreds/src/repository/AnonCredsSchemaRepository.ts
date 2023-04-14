@@ -14,10 +14,28 @@ export class AnonCredsSchemaRepository extends Repository<AnonCredsSchemaRecord>
   }
 
   public async getBySchemaId(agentContext: AgentContext, schemaId: string) {
-    return this.getSingleByQuery(agentContext, { schemaId: schemaId })
+    return this.getSingleByQuery(agentContext, {
+      $or: [
+        {
+          schemaId,
+        },
+        {
+          unqualifiedSchemaId: schemaId,
+        },
+      ],
+    })
   }
 
   public async findBySchemaId(agentContext: AgentContext, schemaId: string) {
-    return await this.findSingleByQuery(agentContext, { schemaId: schemaId })
+    return await this.findSingleByQuery(agentContext, {
+      $or: [
+        {
+          schemaId,
+        },
+        {
+          unqualifiedSchemaId: schemaId,
+        },
+      ],
+    })
   }
 }

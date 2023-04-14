@@ -1,3 +1,4 @@
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@aries-framework/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
@@ -6,7 +7,6 @@ import { IndySdkModule } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrModule } from '../src'
 import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver } from '../src/dids'
-import { parseIndyDid } from '../src/dids/didIndyUtil'
 
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 

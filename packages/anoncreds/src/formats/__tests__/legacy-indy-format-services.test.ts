@@ -22,12 +22,6 @@ import {
   IndySdkWallet,
 } from '../../../../indy-sdk/src'
 import { IndySdkRevocationService } from '../../../../indy-sdk/src/anoncreds/services/IndySdkRevocationService'
-import {
-  getLegacyCredentialDefinitionId,
-  getLegacySchemaId,
-  parseCredentialDefinitionId,
-  parseSchemaId,
-} from '../../../../indy-sdk/src/anoncreds/utils/identifiers'
 import { legacyIndyDidFromPublicKeyBase58 } from '../../../../indy-sdk/src/utils/did'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
@@ -38,6 +32,12 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
+import {
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
+} from '../../utils/indyIdentifiers'
 import { LegacyIndyCredentialFormatService } from '../LegacyIndyCredentialFormatService'
 import { LegacyIndyProofFormatService } from '../LegacyIndyProofFormatService'
 
@@ -162,11 +162,15 @@ describe('Legacy indy format services', () => {
       }),
     ]
 
-    const cd = parseCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
-    const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.namespaceIdentifier, cd.schemaSeqNo, cd.tag)
+    const cd = parseIndyCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
+    const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
+      cd.namespaceIdentifier,
+      cd.schemaSeqNo,
+      cd.tag
+    )
 
-    const s = parseSchemaId(schemaState.schemaId)
-    const legacySchemaId = getLegacySchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
+    const s = parseIndySchemaId(schemaState.schemaId)
+    const legacySchemaId = getUnqualifiedSchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
 
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes

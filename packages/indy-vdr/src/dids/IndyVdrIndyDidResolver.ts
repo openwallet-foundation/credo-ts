@@ -2,12 +2,13 @@ import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type { DidResolutionResult, DidResolver, AgentContext } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
 import { IndyVdrPoolService } from '../pool'
 
-import { combineDidDocumentWithJson, createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
+import { combineDidDocumentWithJson, createKeyAgreementKey, indyDidDocumentFromDid } from './didIndyUtil'
 import { getFullVerkey, addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndyVdrIndyDidResolver implements DidResolver {

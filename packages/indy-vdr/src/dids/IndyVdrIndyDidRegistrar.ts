@@ -11,6 +11,7 @@ import type {
   DidDocumentService,
 } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import {
   IndyAgentService,
   DidCommV1Service,
@@ -32,7 +33,6 @@ import {
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
-  parseIndyDid,
   isSelfCertifiedIndyDid,
   verificationKeyForIndyDid,
 } from './didIndyUtil'

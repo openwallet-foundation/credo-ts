@@ -32,7 +32,7 @@ import {
   AnonCredsCredentialRepository,
   AnonCredsLinkSecretRepository,
   AnonCredsRestrictionWrapper,
-  legacyIndyCredentialDefinitionIdRegex,
+  unqualifiedCredentialDefinitionIdRegex,
   AnonCredsRegistryService,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
@@ -213,7 +213,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         throw new AnonCredsRsError('Link Secret value not stored')
       }
 
-      const isLegacyIdentifier = credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
+      const isLegacyIdentifier = credentialOffer.cred_def_id.match(unqualifiedCredentialDefinitionIdRegex)
       if (!isLegacyIdentifier && useLegacyProverDid) {
         throw new AriesFrameworkError('Cannot use legacy prover_did with non-legacy identifiers')
       }

@@ -3,12 +3,14 @@ import type { IndySdkPool } from '../ledger'
 import type { IndySdk } from '../types'
 import type { DidResolutionResult, DidResolver, AgentContext } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
+
 import { isIndyError, IndySdkError } from '../error'
 import { IndySdkPoolService } from '../ledger/IndySdkPoolService'
 import { IndySdkSymbol } from '../types'
 import { getFullVerkey } from '../utils/did'
 
-import { createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid } from './didIndyUtil'
+import { createKeyAgreementKey, indyDidDocumentFromDid } from './didIndyUtil'
 import { addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndySdkIndyDidResolver implements DidResolver {

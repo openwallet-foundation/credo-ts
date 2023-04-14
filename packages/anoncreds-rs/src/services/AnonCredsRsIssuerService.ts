@@ -15,6 +15,10 @@ import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefinitionPrivate, JsonObject, KeyCorrectnessProof } from '@hyperledger/anoncreds-shared'
 
 import {
+  parseIndyDid,
+  getUnqualifiedSchemaId,
+  parseIndySchemaId,
+  isUnqualifiedCredentialDefinitionId,
   AnonCredsKeyCorrectnessProofRepository,
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRepository,
@@ -87,22 +91,35 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
 
     let credentialOffer: CredentialOffer | undefined
     try {
+      // The getByCredentialDefinitionId supports both qualified and unqualified identifiers, even though the
+      // record is always stored using the qualified identifier.
       const credentialDefinitionRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionRepository)
         .getByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
 
+      // We fetch the keyCorrectnessProof based on the credential definition record id, as the
+      // credential definition id passed to this module could be unqualified, and the key correctness
+      // proof is only stored using the qualified identifier.
       const keyCorrectnessProofRecord = await agentContext.dependencyManager
         .resolve(AnonCredsKeyCorrectnessProofRepository)
-        .getByCredentialDefinitionId(agentContext, options.credentialDefinitionId)
+        .getByCredentialDefinitionId(agentContext, credentialDefinitionRecord.credentialDefinitionId)
 
       if (!credentialDefinitionRecord) {
         throw new AnonCredsRsError(`Credential Definition ${credentialDefinitionId} not found`)
       }
 
+      let schemaId = credentialDefinitionRecord.credentialDefinition.schemaId
+
+      // if the credentialDefinitionId is not qualified, we need to transform the schemaId to also be unqualified
+      if (isUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)) {
+        const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
+        schemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
+      }
+
       credentialOffer = CredentialOffer.create({
         credentialDefinitionId,
         keyCorrectnessProof: keyCorrectnessProofRecord?.value,
-        schemaId: credentialDefinitionRecord.credentialDefinition.schemaId,
+        schemaId,
       })
 
       return credentialOffer.toJson() as unknown as AnonCredsCredentialOffer
@@ -135,9 +152,25 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         .resolve(AnonCredsCredentialDefinitionRepository)
         .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
 
+      // We fetch the private record based on the cred def id from the cred def record, as the
+      // credential definition id passed to this module could be unqualified, and the private record
+      // is only stored using the qualified identifier.
       const credentialDefinitionPrivateRecord = await agentContext.dependencyManager
         .resolve(AnonCredsCredentialDefinitionPrivateRepository)
-        .getByCredentialDefinitionId(agentContext, options.credentialRequest.cred_def_id)
+        .getByCredentialDefinitionId(agentContext, credentialDefinitionRecord.credentialDefinitionId)
+
+      let credentialDefinition = credentialDefinitionRecord.credentialDefinition
+
+      if (isUnqualifiedCredentialDefinitionId(options.credentialRequest.cred_def_id)) {
+        const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(credentialDefinition.schemaId)
+        const { namespaceIdentifier: unqualifiedDid } = parseIndyDid(credentialDefinition.issuerId)
+        parseIndyDid
+        credentialDefinition = {
+          ...credentialDefinition,
+          schemaId: getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion),
+          issuerId: unqualifiedDid,
+        }
+      }
 
       credential = Credential.create({
         credentialDefinition: credentialDefinitionRecord.credentialDefinition as unknown as JsonObject,
