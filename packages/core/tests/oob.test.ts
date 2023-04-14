@@ -50,6 +50,7 @@ describe('out of band', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     alias: `Faber's connection with Alice`,
+    imageUrl: 'http://faber.image.url',
   }
 
   const issueCredentialConfig = {
@@ -186,6 +187,7 @@ describe('out of band', () => {
       expect(outOfBandRecord.outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
       expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
       expect(outOfBandRecord.outOfBandInvitation.label).toBe(makeConnectionConfig.label)
+      expect(outOfBandRecord.outOfBandInvitation.imageUrl).toBe(makeConnectionConfig.imageUrl)
     })
 
     test('create OOB message only with handshake', async () => {
@@ -316,6 +318,7 @@ describe('out of band', () => {
       expect(faberAliceConnection?.state).toBe(DidExchangeState.Completed)
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection!)
+      expect(aliceFaberConnection.imageUrl).toBe(makeConnectionConfig.imageUrl)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })

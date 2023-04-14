@@ -98,6 +98,7 @@ export class DidExchangeProtocol {
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
     })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
