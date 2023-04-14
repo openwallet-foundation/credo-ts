@@ -58,6 +58,18 @@ export function isUnqualifiedSchemaId(schemaId: string) {
   return unqualifiedSchemaIdRegex.test(schemaId)
 }
 
+export function isDidIndySchemaId(schemaId: string) {
+  return didIndySchemaIdRegex.test(schemaId)
+}
+
+export function isDidIndyCredentialDefinitionId(credentialDefinitionId: string) {
+  return didIndyCredentialDefinitionIdRegex.test(credentialDefinitionId)
+}
+
+export function isDidIndyRevocationRegistryId(revocationRegistryId: string) {
+  return didIndyRevocationRegistryIdRegex.test(revocationRegistryId)
+}
+
 export function parseIndyDid(did: string) {
   const match = did.match(didIndyRegex)
   if (match) {

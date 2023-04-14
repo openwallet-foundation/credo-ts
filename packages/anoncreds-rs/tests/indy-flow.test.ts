@@ -4,7 +4,6 @@ import type { Wallet } from '@aries-framework/core'
 import {
   getUnqualifiedSchemaId,
   parseIndySchemaId,
-  parseIndySchemaId,
   getUnqualifiedCredentialDefinitionId,
   parseIndyCredentialDefinitionId,
   AnonCredsModuleConfig,

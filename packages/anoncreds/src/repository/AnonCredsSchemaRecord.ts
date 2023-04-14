@@ -4,7 +4,7 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
-import { getUnqualifiedSchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
+import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
 
 export interface AnonCredsSchemaRecordProps {
   id?: string
@@ -56,7 +56,7 @@ export class AnonCredsSchemaRecord extends BaseRecord<
 
   public getTags() {
     let unqualifiedSchemaId: string | undefined = undefined
-    if (this.schemaId.startsWith('did:indy:')) {
+    if (isDidIndySchemaId(this.schemaId)) {
       const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(this.schemaId)
       unqualifiedSchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
     }

@@ -4,7 +4,11 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
-import { getUnqualifiedCredentialDefinitionId, parseIndyCredentialDefinitionId } from '../utils/indyIdentifiers'
+import {
+  getUnqualifiedCredentialDefinitionId,
+  isDidIndyCredentialDefinitionId,
+  parseIndyCredentialDefinitionId,
+} from '../utils/indyIdentifiers'
 
 export interface AnonCredsCredentialDefinitionRecordProps {
   id?: string
@@ -56,7 +60,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
 
   public getTags() {
     let unqualifiedCredentialDefinitionId: string | undefined = undefined
-    if (this.credentialDefinitionId.startsWith('did:indy:')) {
+    if (isDidIndyCredentialDefinitionId(this.credentialDefinitionId)) {
       const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(this.credentialDefinitionId)
 
       unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
