@@ -183,11 +183,10 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           value: { ...revocationRegistryDefinition.value, tailsLocation: tailsFilePath },
         } as unknown as JsonObject)
         updatedRevocationStatusList.update({
-          // TODO: Fix parameters in anoncreds-rs
-          revocationRegstryDefinition: revocationRegistryDefinitionObj,
+          revocationRegistryDefinition: revocationRegistryDefinitionObj,
           issued: options.issued,
           revoked: options.revoked,
-          timestamp: timestamp ?? -1,
+          timestamp: timestamp ?? -1, // TODO: Fix parameters in anoncreds-rs
         })
       }
 

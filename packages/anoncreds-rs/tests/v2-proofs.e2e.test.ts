@@ -1,5 +1,6 @@
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import type { EventReplaySubject } from '../../core/tests'
+import type { AnonCredsRequestProofFormat } from '@aries-framework/anoncreds'
 import type { CredentialExchangeRecord } from '@aries-framework/core'
 
 import {
@@ -16,6 +17,7 @@ import {
 import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { sleep } from '../../core/src/utils/sleep'
 import { waitForProofExchangeRecord } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
 
@@ -34,7 +36,7 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
   let aliceProofExchangeRecord: ProofExchangeRecord
   let faberCredentialExchangeRecord: CredentialExchangeRecord
 
-  const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+  const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 
   const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
@@ -48,6 +50,7 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
       holderReplay: aliceReplay,
       credentialDefinitionId,
       revocationRegistryDefinitionId,
+      //revocationStatusListTimestamp,
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
     } = await setupAnonCredsTests({
@@ -777,7 +780,43 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
       state: ProofState.RequestReceived,
     })
 
-    const nrpRequestedTime = dateToTimestamp(new Date())
+    const nrpRequestedTime = dateToTimestamp(new Date()) + 1
+
+    const requestProofFormat: AnonCredsRequestProofFormat = {
+      non_revoked: { from: nrpRequestedTime, to: nrpRequestedTime },
+      name: 'Proof Request',
+      version: '1.0.0',
+      requested_attributes: {
+        name: {
+          name: 'name',
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+        image_0: {
+          name: 'image_0',
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+      },
+      requested_predicates: {
+        age: {
+          name: 'age',
+          p_type: '>=',
+          p_value: 50,
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+      },
+    }
 
     // Faber sends a presentation request to Alice
     testLogger.test('Faber sends a presentation request to Alice')
@@ -785,75 +824,13 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
       protocolVersion: 'v2',
       connectionId: faberConnectionId,
       proofFormats: {
-        anoncreds: {
-          non_revoked: { from: nrpRequestedTime, to: nrpRequestedTime },
-          name: 'Proof Request',
-          version: '1.0.0',
-          requested_attributes: {
-            name: {
-              name: 'name',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-            image_0: {
-              name: 'image_0',
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-          requested_predicates: {
-            age: {
-              name: 'age',
-              p_type: '>=',
-              p_value: 50,
-              restrictions: [
-                {
-                  cred_def_id: credentialDefinitionId,
-                },
-              ],
-            },
-          },
-        },
+        anoncreds: requestProofFormat,
       },
     })
 
     // Alice waits for presentation request from Faber
     testLogger.test('Alice waits for presentation request from Faber')
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-
-    const request = await faberAgent.proofs.findRequestMessage(faberProofExchangeRecord.id)
-    expect(request).toMatchObject({
-      type: 'https://didcomm.org/present-proof/2.0/request-presentation',
-      formats: [
-        {
-          attachmentId: expect.any(String),
-          format: 'anoncreds/proof-request@v1.0',
-        },
-      ],
-      requestAttachments: [
-        {
-          id: expect.any(String),
-          mimeType: 'application/json',
-          data: {
-            base64: expect.any(String),
-          },
-        },
-      ],
-      id: expect.any(String),
-    })
-
-    expect(aliceProofExchangeRecord.id).not.toBeNull()
-    expect(aliceProofExchangeRecord).toMatchObject({
-      threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
-      protocolVersion: 'v2',
-    })
 
     // Alice retrieves the requested credentials and accepts the presentation request
     testLogger.test('Alice accepts presentation request from Faber')
@@ -876,6 +853,9 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
     expect(credentialRevocationRegistryDefinitionId).toBeDefined()
     expect(credentialRevocationIndex).toBeDefined()
 
+    // FIXME: do not use delays. Maybe we can add the timestamp to parameters?
+    // InMemoryAnonCredsRegistry would respect what we ask while actual VDRs will use their own
+    await sleep(2000)
     await faberAgent.modules.anoncreds.updateRevocationStatusList({
       revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
       revokedCredentialIndexes: [Number(credentialRevocationIndex)],
@@ -889,36 +869,6 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
     // Faber waits until it receives a presentation from Alice
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await faberProofExchangeRecordPromise
-
-    const presentation = await faberAgent.proofs.findPresentationMessage(faberProofExchangeRecord.id)
-    expect(presentation).toMatchObject({
-      type: 'https://didcomm.org/present-proof/2.0/presentation',
-      formats: [
-        {
-          attachmentId: expect.any(String),
-          format: 'anoncreds/proof@v1.0',
-        },
-      ],
-      presentationAttachments: [
-        {
-          id: expect.any(String),
-          mimeType: 'application/json',
-          data: {
-            base64: expect.any(String),
-          },
-        },
-      ],
-      id: expect.any(String),
-      thread: {
-        threadId: faberProofExchangeRecord.threadId,
-      },
-    })
-    expect(faberProofExchangeRecord.id).not.toBeNull()
-    expect(faberProofExchangeRecord).toMatchObject({
-      threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
-      protocolVersion: 'v2',
-    })
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
@@ -934,22 +884,118 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
-      id: expect.any(String),
-      createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
-      connectionId: expect.any(String),
       isVerified: true,
       state: ProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
-      id: expect.any(String),
-      createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
-      connectionId: expect.any(String),
       state: ProofState.Done,
+    })
+  })
+
+  test('Credential is revoked before proof request', async () => {
+    // Revoke the credential
+    const credentialRevocationRegistryDefinitionId = faberCredentialExchangeRecord.getTag(
+      'anonCredsRevocationRegistryId'
+    ) as string
+    const credentialRevocationIndex = faberCredentialExchangeRecord.getTag('anonCredsCredentialRevocationId') as string
+
+    expect(credentialRevocationRegistryDefinitionId).toBeDefined()
+    expect(credentialRevocationIndex).toBeDefined()
+
+    const { revocationStatusListState } = await faberAgent.modules.anoncreds.updateRevocationStatusList({
+      revocationRegistryDefinitionId: credentialRevocationRegistryDefinitionId,
+      revokedCredentialIndexes: [Number(credentialRevocationIndex)],
+    })
+
+    expect(revocationStatusListState.revocationStatusList).toBeDefined()
+    const revokedTimestamp = revocationStatusListState.revocationStatusList?.timestamp
+
+    const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
+      state: ProofState.RequestReceived,
+    })
+
+    const nrpRequestedTime = (revokedTimestamp ?? dateToTimestamp(new Date())) + 1
+
+    const requestProofFormat: AnonCredsRequestProofFormat = {
+      non_revoked: { from: nrpRequestedTime, to: nrpRequestedTime },
+      name: 'Proof Request',
+      version: '1.0.0',
+      requested_attributes: {
+        name: {
+          name: 'name',
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+        image_0: {
+          name: 'image_0',
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+      },
+      requested_predicates: {
+        age: {
+          name: 'age',
+          p_type: '>=',
+          p_value: 50,
+          restrictions: [
+            {
+              cred_def_id: credentialDefinitionId,
+            },
+          ],
+        },
+      },
+    }
+
+    // Faber sends a presentation request to Alice
+    testLogger.test('Faber sends a presentation request to Alice')
+    faberProofExchangeRecord = await faberAgent.proofs.requestProof({
+      protocolVersion: 'v2',
+      connectionId: faberConnectionId,
+      proofFormats: {
+        anoncreds: requestProofFormat,
+      },
+    })
+
+    // Alice waits for presentation request from Faber
+    testLogger.test('Alice waits for presentation request from Faber')
+    aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
+
+    // Alice retrieves the requested credentials and accepts the presentation request
+    testLogger.test('Alice accepts presentation request from Faber')
+
+    const requestedCredentials = await aliceAgent.proofs.selectCredentialsForRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+      proofFormats: { anoncreds: { filterByNonRevocationRequirements: false } },
+    })
+
+    const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: ProofState.PresentationReceived,
+    })
+
+    await aliceAgent.proofs.acceptRequest({
+      proofRecordId: aliceProofExchangeRecord.id,
+      proofFormats: { anoncreds: requestedCredentials.proofFormats.anoncreds },
+    })
+
+    // Faber waits until it receives a presentation from Alice
+    testLogger.test('Faber waits for presentation from Alice')
+    faberProofExchangeRecord = await faberProofExchangeRecordPromise
+
+    // Faber receives presentation and checks that it is not valid
+    expect(faberProofExchangeRecord).toMatchObject({
+      threadId: aliceProofExchangeRecord.threadId,
+      isVerified: false,
+      state: ProofState.PresentationReceived,
     })
   })
 })

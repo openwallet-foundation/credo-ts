@@ -266,6 +266,7 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
   schemaId: string
   credentialDefinitionId: string
   revocationRegistryDefinitionId?: string
+  revocationStatusListTimestamp?: number
 }
 
 export async function setupAnonCredsTests<
@@ -354,14 +355,12 @@ export async function setupAnonCredsTests<
     setAsDefault: true,
   })
 
-  const { credentialDefinition, revocationRegistryDefinition, schema } = await prepareForAnonCredsIssuance(
-    issuerAgent,
-    {
+  const { credentialDefinition, revocationRegistryDefinition, revocationStatusList, schema } =
+    await prepareForAnonCredsIssuance(issuerAgent, {
       issuerId,
       attributeNames,
       supportRevocation,
-    }
-  )
+    })
 
   let issuerHolderConnection: ConnectionRecord | undefined
   let holderIssuerConnection: ConnectionRecord | undefined
@@ -387,6 +386,7 @@ export async function setupAnonCredsTests<
     verifierReplay: verifierName ? verifierReplay : undefined,
 
     revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+    revocationStatusListTimestamp: revocationStatusList.revocationStatusList?.timestamp,
     credentialDefinitionId: credentialDefinition.credentialDefinitionId,
     schemaId: schema.schemaId,
 
