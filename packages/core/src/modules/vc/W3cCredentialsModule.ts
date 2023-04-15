@@ -1,4 +1,4 @@
-import type { W3cVcModuleConfigOptions } from './W3cCredentialsModuleConfig'
+import type { W3cCredentialsModuleConfigOptions } from './W3cCredentialsModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
 
 import { KeyType } from '../../crypto'
@@ -21,7 +21,7 @@ export class W3cCredentialsModule implements Module {
   public readonly config: W3cCredentialsModuleConfig
   public readonly api = W3cCredentialsApi
 
-  public constructor(config?: W3cVcModuleConfigOptions) {
+  public constructor(config?: W3cCredentialsModuleConfigOptions) {
     this.config = new W3cCredentialsModuleConfig(config)
   }
 

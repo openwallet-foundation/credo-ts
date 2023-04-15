@@ -1,12 +1,13 @@
 import type { AgentContext } from '@aries-framework/core'
 import type { GetNymResponse } from '@hyperledger/indy-vdr-shared'
 
+import { didIndyRegex } from '@aries-framework/anoncreds'
 import { Logger, InjectionSymbols, injectable, inject, CacheModuleConfig } from '@aries-framework/core'
 import { GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrModuleConfig } from '../IndyVdrModuleConfig'
 import { IndyVdrError, IndyVdrNotFoundError, IndyVdrNotConfiguredError } from '../error'
-import { isSelfCertifiedDid, DID_INDY_REGEX } from '../utils/did'
+import { isSelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
 import { IndyVdrPool } from './IndyVdrPool'
@@ -46,7 +47,7 @@ export class IndyVdrPoolService {
     did: string
   ): Promise<{ pool: IndyVdrPool; nymResponse?: CachedDidResponse['nymResponse'] }> {
     // Check if the did starts with did:indy
-    const match = did.match(DID_INDY_REGEX)
+    const match = did.match(didIndyRegex)
 
     if (match) {
       const [, namespace] = match

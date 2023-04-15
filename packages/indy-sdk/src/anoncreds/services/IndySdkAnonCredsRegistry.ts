@@ -16,22 +16,25 @@ import type {
 import type { AgentContext } from '@aries-framework/core'
 import type { Schema as IndySdkSchema } from 'indy-sdk'
 
+import {
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedRevocationRegistryId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyDid,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
+} from '@aries-framework/anoncreds'
 import { AriesFrameworkError } from '@aries-framework/core'
 
-import { parseIndyDid, verificationKeyForIndyDid } from '../../dids/didIndyUtil'
+import { verificationKeyForIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdkPoolService } from '../../ledger'
 import { IndySdkSymbol } from '../../types'
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndySchemaId,
-  getLegacyCredentialDefinitionId,
-  getLegacyRevocationRegistryId,
-  getLegacySchemaId,
   indySdkAnonCredsRegistryIdentifierRegex,
-  parseCredentialDefinitionId,
-  parseRevocationRegistryId,
-  parseSchemaId,
 } from '../utils/identifiers'
 import { anonCredsRevocationStatusListFromIndySdk } from '../utils/transform'
 
@@ -51,12 +54,12 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
       // parse schema id (supports did:indy and legacy)
-      const { did, namespaceIdentifier, schemaName, schemaVersion } = parseSchemaId(schemaId)
+      const { did, namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
       agentContext.config.logger.debug(`Getting schema '${schemaId}' from ledger '${pool.didIndyNamespace}'`)
 
       // even though we support did:indy and legacy identifiers we always need to fetch using the legacy identifier
-      const legacySchemaId = getLegacySchemaId(namespaceIdentifier, schemaName, schemaVersion)
+      const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
       const request = await indySdk.buildGetSchemaRequest(null, legacySchemaId)
 
       agentContext.config.logger.trace(
@@ -130,7 +133,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         options.schema.name,
         options.schema.version
       )
-      const legacySchemaId = getLegacySchemaId(namespaceIdentifier, options.schema.name, options.schema.version)
+      const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, options.schema.name, options.schema.version)
 
       const schema = {
         attrNames: options.schema.attrNames,
@@ -197,14 +200,14 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
       // we support did:indy and legacy identifiers
-      const { did, namespaceIdentifier, schemaSeqNo, tag } = parseCredentialDefinitionId(credentialDefinitionId)
+      const { did, namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(credentialDefinitionId)
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
         `Using ledger '${pool.didIndyNamespace}' to retrieve credential definition '${credentialDefinitionId}'`
       )
 
-      const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
+      const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
       const request = await indySdk.buildGetCredDefRequest(null, legacyCredentialDefinitionId)
 
       agentContext.config.logger.trace(
@@ -319,7 +322,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
         }
       }
 
-      const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(
+      const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
         namespaceIdentifier,
         schemaMetadata.indyLedgerSeqNo,
         options.credentialDefinition.tag
@@ -384,14 +387,14 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
       const { did, namespaceIdentifier, credentialDefinitionTag, revocationRegistryTag, schemaSeqNo } =
-        parseRevocationRegistryId(revocationRegistryDefinitionId)
+        parseIndyRevocationRegistryId(revocationRegistryDefinitionId)
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry definition '${revocationRegistryDefinitionId}'`
       )
 
-      const legacyRevocationRegistryId = getLegacyRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,
@@ -426,7 +429,7 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
             schemaSeqNo,
             credentialDefinitionTag
           )
-        : getLegacyCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, credentialDefinitionTag)
+        : getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, credentialDefinitionTag)
 
       return {
         resolutionMetadata: {},
@@ -483,14 +486,14 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
       const indySdk = agentContext.dependencyManager.resolve<IndySdk>(IndySdkSymbol)
 
       const { did, namespaceIdentifier, schemaSeqNo, credentialDefinitionTag, revocationRegistryTag } =
-        parseRevocationRegistryId(revocationRegistryId)
+        parseIndyRevocationRegistryId(revocationRegistryId)
       const { pool } = await indySdkPoolService.getPoolForDid(agentContext, did)
 
       agentContext.config.logger.debug(
         `Using ledger '${pool.didIndyNamespace}' to retrieve revocation registry deltas with revocation registry definition id '${revocationRegistryId}' until ${timestamp}`
       )
 
-      const legacyRevocationRegistryId = getLegacyRevocationRegistryId(
+      const legacyRevocationRegistryId = getUnqualifiedRevocationRegistryId(
         namespaceIdentifier,
         schemaSeqNo,
         credentialDefinitionTag,

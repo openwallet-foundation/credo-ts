@@ -48,7 +48,7 @@ import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierS
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
-const registry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],

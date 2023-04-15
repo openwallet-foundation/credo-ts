@@ -4,6 +4,12 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
+import {
+  getUnqualifiedCredentialDefinitionId,
+  isDidIndyCredentialDefinitionId,
+  parseIndyCredentialDefinitionId,
+} from '../utils/indyIdentifiers'
+
 export interface AnonCredsCredentialDefinitionRecordProps {
   id?: string
   credentialDefinitionId: string
@@ -17,6 +23,11 @@ export type DefaultAnonCredsCredentialDefinitionTags = {
   issuerId: string
   tag: string
   methodName: string
+
+  // Stores the unqualified variant of the credential definition id, which allows issuing credentials using the legacy
+  // credential definition id, even though the credential definition id is stored in the wallet as a qualified id.
+  // This is only added when the credential definition id is an did:indy identifier.
+  unqualifiedCredentialDefinitionId?: string
 }
 
 export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
@@ -48,6 +59,13 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
   }
 
   public getTags() {
+    let unqualifiedCredentialDefinitionId: string | undefined = undefined
+    if (isDidIndyCredentialDefinitionId(this.credentialDefinitionId)) {
+      const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(this.credentialDefinitionId)
+
+      unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(namespaceIdentifier, schemaSeqNo, tag)
+    }
+
     return {
       ...this._tags,
       credentialDefinitionId: this.credentialDefinitionId,
@@ -55,6 +73,7 @@ export class AnonCredsCredentialDefinitionRecord extends BaseRecord<
       issuerId: this.credentialDefinition.issuerId,
       tag: this.credentialDefinition.tag,
       methodName: this.methodName,
+      unqualifiedCredentialDefinitionId,
     }
   }
 }

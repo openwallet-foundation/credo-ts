@@ -2,11 +2,12 @@ import type { AnonCredsVerifierService, VerifyProofOptions } from '@aries-framew
 import type { AgentContext } from '@aries-framework/core'
 import type { CredentialDefs, Schemas, RevocRegDefs, RevRegs, IndyProofRequest, IndyProof } from 'indy-sdk'
 
+import { parseIndyCredentialDefinitionId } from '@aries-framework/anoncreds'
 import { inject, injectable } from '@aries-framework/core'
 
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
-import { parseCredentialDefinitionId } from '../utils/identifiers'
+import { assertAllUnqualified } from '../utils/assertUnqualified'
 import {
   indySdkCredentialDefinitionFromAnonCreds,
   indySdkRevocationRegistryDefinitionFromAnonCreds,
@@ -23,6 +24,12 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
   }
 
   public async verifyProof(agentContext: AgentContext, options: VerifyProofOptions): Promise<boolean> {
+    assertAllUnqualified({
+      credentialDefinitionIds: Object.keys(options.credentialDefinitions),
+      schemaIds: Object.keys(options.schemas),
+      revocationRegistryIds: Object.keys(options.revocationRegistries),
+    })
+
     try {
       // The AnonCredsSchema doesn't contain the seqNo anymore. However, the indy credential definition id
       // does contain the seqNo, so we can extract it from the credential definition id.
@@ -39,7 +46,7 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
         )
 
         // Get the seqNo for the schemas so we can use it when transforming the schemas
-        const { schemaSeqNo } = parseCredentialDefinitionId(credentialDefinitionId)
+        const { schemaSeqNo } = parseIndyCredentialDefinitionId(credentialDefinitionId)
         seqNoMap[credentialDefinition.schemaId] = Number(schemaSeqNo)
       }
 

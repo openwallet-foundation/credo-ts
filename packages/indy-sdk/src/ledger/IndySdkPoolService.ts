@@ -3,6 +3,7 @@ import type { IndySdk } from '../types'
 import type { AgentContext, Key } from '@aries-framework/core'
 import type { GetNymResponse, LedgerReadReplyResponse, LedgerRequest, LedgerWriteReplyResponse } from 'indy-sdk'
 
+import { didIndyRegex } from '@aries-framework/anoncreds'
 import {
   TypedArrayEncoder,
   CacheModuleConfig,
@@ -17,7 +18,7 @@ import { Subject } from 'rxjs'
 import { IndySdkModuleConfig } from '../IndySdkModuleConfig'
 import { IndySdkError, isIndyError } from '../error'
 import { assertIndySdkWallet } from '../utils/assertIndySdkWallet'
-import { DID_INDY_REGEX, isLegacySelfCertifiedDid } from '../utils/did'
+import { isLegacySelfCertifiedDid } from '../utils/did'
 import { allSettled, onlyFulfilled, onlyRejected } from '../utils/promises'
 
 import { IndySdkPool } from './IndySdkPool'
@@ -62,7 +63,7 @@ export class IndySdkPoolService {
    * https://docs.google.com/document/d/109C_eMsuZnTnYe2OAd02jAts1vC4axwEKIq7_4dnNVA/edit
    *
    * This method will optionally return a nym response when the did has been resolved to determine the ledger
-   * either now or in the past. The nymResponse can be used to prevent multiple ledger quries fetching the same
+   * either now or in the past. The nymResponse can be used to prevent multiple ledger queries fetching the same
    * did
    */
   public async getPoolForDid(
@@ -70,7 +71,7 @@ export class IndySdkPoolService {
     did: string
   ): Promise<{ pool: IndySdkPool; nymResponse?: GetNymResponse }> {
     // Check if the did starts with did:indy
-    const match = did.match(DID_INDY_REGEX)
+    const match = did.match(didIndyRegex)
 
     if (match) {
       const [, namespace] = match

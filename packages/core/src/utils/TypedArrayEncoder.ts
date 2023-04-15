@@ -49,6 +49,24 @@ export class TypedArrayEncoder {
   }
 
   /**
+   * Encode buffer into base64 string.
+   *
+   * @param buffer the buffer to encode into base64 string
+   */
+  public static toHex(buffer: Buffer | Uint8Array) {
+    return Buffer.from(buffer).toString('hex')
+  }
+
+  /**
+   * Decode hex string into buffer
+   *
+   * @param hex the hex string to decode into buffer format
+   */
+  public static fromHex(hex: string) {
+    return Buffer.from(hex, 'hex')
+  }
+
+  /**
    * Decode string into buffer.
    *
    * @param str the string to decode into buffer format

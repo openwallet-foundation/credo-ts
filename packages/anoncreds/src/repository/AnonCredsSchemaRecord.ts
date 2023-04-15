@@ -4,6 +4,8 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
+import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
+
 export interface AnonCredsSchemaRecordProps {
   id?: string
   schemaId: string
@@ -17,6 +19,11 @@ export type DefaultAnonCredsSchemaTags = {
   schemaName: string
   schemaVersion: string
   methodName: string
+
+  // Stores the unqualified variant of the schema id, which allows issuing credentials using the legacy
+  // schema id, even though the schema id is stored in the wallet as a qualified id.
+  // This is only added when the schema id is an did:indy identifier.
+  unqualifiedSchemaId?: string
 }
 
 export class AnonCredsSchemaRecord extends BaseRecord<
@@ -48,6 +55,12 @@ export class AnonCredsSchemaRecord extends BaseRecord<
   }
 
   public getTags() {
+    let unqualifiedSchemaId: string | undefined = undefined
+    if (isDidIndySchemaId(this.schemaId)) {
+      const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(this.schemaId)
+      unqualifiedSchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)
+    }
+
     return {
       ...this._tags,
       schemaId: this.schemaId,
@@ -55,6 +68,7 @@ export class AnonCredsSchemaRecord extends BaseRecord<
       schemaName: this.schema.name,
       schemaVersion: this.schema.version,
       methodName: this.methodName,
+      unqualifiedSchemaId,
     }
   }
 }

@@ -14,14 +14,18 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
+import { parseIndyDid, getUnqualifiedSchemaId, generateLegacyProverDidLikeString } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError, inject } from '@aries-framework/core'
 
-import { parseIndyDid } from '../../dids/didIndyUtil'
 import { IndySdkError, isIndyError } from '../../error'
 import { IndySdk, IndySdkSymbol } from '../../types'
 import { assertIndySdkWallet } from '../../utils/assertIndySdkWallet'
-import { getLegacySchemaId } from '../utils/identifiers'
+import {
+  assertUnqualifiedCredentialDefinitionId,
+  assertUnqualifiedCredentialOffer,
+  assertUnqualifiedCredentialRequest,
+  assertUnqualifiedRevocationRegistryId,
+} from '../utils/assertUnqualified'
 import { createTailsReader } from '../utils/tails'
 import { indySdkSchemaFromAnonCreds } from '../utils/transform'
 
@@ -77,7 +81,7 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     const { namespaceIdentifier } = parseIndyDid(options.issuerId)
 
     // parse schema in a way that supports both unqualified and qualified identifiers
-    const legacySchemaId = getLegacySchemaId(namespaceIdentifier, schema.name, schema.version)
+    const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schema.name, schema.version)
 
     if (!metadata)
       throw new AriesFrameworkError('The metadata parameter is required when using Indy, but received undefined.')
@@ -114,6 +118,8 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     options: CreateCredentialOfferOptions
   ): Promise<AnonCredsCredentialOffer> {
     assertIndySdkWallet(agentContext.wallet)
+    assertUnqualifiedCredentialDefinitionId(options.credentialDefinitionId)
+
     try {
       return await this.indySdk.issuerCreateCredentialOffer(agentContext.wallet.handle, options.credentialDefinitionId)
     } catch (error) {
@@ -129,6 +135,12 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
       options
 
     assertIndySdkWallet(agentContext.wallet)
+    assertUnqualifiedCredentialOffer(options.credentialOffer)
+    assertUnqualifiedCredentialRequest(options.credentialRequest)
+    if (options.revocationRegistryId) {
+      assertUnqualifiedRevocationRegistryId(options.revocationRegistryId)
+    }
+
     try {
       // Indy SDK requires tailsReaderHandle. Use null if no tailsFilePath is present
       const tailsReaderHandle = tailsFilePath ? await createTailsReader(agentContext, tailsFilePath) : 0

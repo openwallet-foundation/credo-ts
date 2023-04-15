@@ -17,7 +17,6 @@
 
 import { TypedArrayEncoder } from '@aries-framework/core'
 
-export const DID_INDY_REGEX = /^did:indy:((?:[a-z][_a-z0-9-]*)(?::[a-z][_a-z0-9-]*)?):([1-9A-HJ-NP-Za-km-z]{21,22})$/
 export const ABBREVIATED_VERKEY_REGEX = /^~[1-9A-HJ-NP-Za-km-z]{21,22}$/
 
 /**

@@ -1,5 +1,6 @@
 import type { AgentContext } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import {
   getKeyFromVerificationMethod,
   AriesFrameworkError,
@@ -13,8 +14,6 @@ import {
   KeyType,
   TypedArrayEncoder,
 } from '@aries-framework/core'
-
-import { DID_INDY_REGEX } from '../utils/did'
 
 // Create a base DIDDoc template according to https://hyperledger.github.io/indy-did-method/#base-diddoc-template
 export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
@@ -37,16 +36,6 @@ export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
 
 export function createKeyAgreementKey(verkey: string) {
   return TypedArrayEncoder.toBase58(convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(verkey)))
-}
-
-export function parseIndyDid(did: string) {
-  const match = did.match(DID_INDY_REGEX)
-  if (match) {
-    const [, namespace, namespaceIdentifier] = match
-    return { namespace, namespaceIdentifier }
-  } else {
-    throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
-  }
 }
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {

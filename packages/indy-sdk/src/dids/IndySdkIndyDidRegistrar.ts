@@ -12,6 +12,7 @@ import type {
 } from '@aries-framework/core'
 import type { NymRole } from 'indy-sdk'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { DidDocumentRole, DidRecord, DidRepository, KeyType, Key } from '@aries-framework/core'
 
 import { IndySdkError } from '../error'
@@ -21,7 +22,7 @@ import { IndySdkSymbol } from '../types'
 import { assertIndySdkWallet } from '../utils/assertIndySdkWallet'
 import { isLegacySelfCertifiedDid, legacyIndyDidFromPublicKeyBase58 } from '../utils/did'
 
-import { createKeyAgreementKey, indyDidDocumentFromDid, parseIndyDid, verificationKeyForIndyDid } from './didIndyUtil'
+import { createKeyAgreementKey, indyDidDocumentFromDid, verificationKeyForIndyDid } from './didIndyUtil'
 import { addServicesFromEndpointsAttrib } from './didSovUtil'
 
 export class IndySdkIndyDidRegistrar implements DidRegistrar {

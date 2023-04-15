@@ -55,11 +55,10 @@ import {
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
-  legacyIndyCredentialDefinitionIdRegex,
-  legacyIndySchemaIdRegex,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
 } from '../utils'
+import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
 import { dateToTimestamp } from '../utils/timestamp'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
@@ -469,7 +468,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const schemas: { [key: string]: AnonCredsSchema } = {}
 
     for (const schemaId of schemaIds) {
-      if (!schemaId.match(legacyIndySchemaIdRegex)) {
+      if (!isUnqualifiedSchemaId(schemaId)) {
         throw new AriesFrameworkError(`${schemaId} is not a valid legacy indy schema id`)
       }
 
@@ -501,7 +500,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const credentialDefinitions: { [key: string]: AnonCredsCredentialDefinition } = {}
 
     for (const credentialDefinitionId of credentialDefinitionIds) {
-      if (!credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)) {
+      if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
         throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
       }
 
