@@ -106,7 +106,11 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
           schemaId: `${schema.issuerId}/resources/${schemaResource.id}`,
         },
         registrationMetadata: {},
-        schemaMetadata: {},
+        schemaMetadata: {
+          // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
+          // For this reason we return a default value in metadata.
+          indyLedgerSeqNo: 1,
+        },
       }
     } catch (error) {
       agentContext.config.logger.debug(`Error registering schema for did '${options.schema.issuerId}'`, {
