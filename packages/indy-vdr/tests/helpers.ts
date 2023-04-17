@@ -26,7 +26,10 @@ export async function createDidOnLedger(agent: Agent, submitterDid: string) {
   const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
     options: {
-      submitterDid,
+      mode: {
+        type: 'create',
+        submitterDid,
+      },
       alias: 'Alias',
       role: 'TRUSTEE',
       verkey: key.publicKeyBase58,

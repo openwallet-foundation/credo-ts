@@ -90,7 +90,10 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid,
+        mode: {
+          type: 'create',
+          submitterDid,
+        },
       },
     })
 
@@ -158,7 +161,6 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid,
         mode: {
           type: 'toBeEndorsed',
           endorserDid: submitterDid,
@@ -170,13 +172,12 @@ describe('Indy VDR Indy Did Registrar', () => {
     if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest,
-      didState.submitterDid
+      didState.nymRequest.body,
+      didState.endorserDid
     )
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid,
         mode: {
           type: 'submit',
           endorseDidTxAction: { ...didState, nymRequest: signedNymRequest },
@@ -211,7 +212,7 @@ describe('Indy VDR Indy Did Registrar', () => {
       },
     })
 
-    const did = didCreateTobeEndorsedResult.didState.did
+    const did = didCreateSubmitResult.didState.did
     if (!did) throw Error('did not defined')
 
     // Wait some time pass to let ledger settle the object
@@ -262,7 +263,6 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        submitterDid,
         mode: {
           type: 'toBeEndorsed',
           endorserDid: submitterDid,
@@ -275,13 +275,12 @@ describe('Indy VDR Indy Did Registrar', () => {
     if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest,
-      didState.submitterDid
+      didState.nymRequest.body,
+      didState.endorserDid
     )
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid,
         mode: {
           type: 'submit',
           endorseDidTxAction: { ...didState, nymRequest: signedNymRequest },
@@ -363,7 +362,10 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        submitterDid,
+        mode: {
+          type: 'create',
+          submitterDid,
+        },
         verkey,
       },
     })
@@ -446,7 +448,10 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        submitterDid,
+        mode: {
+          type: 'create',
+          submitterDid,
+        },
         useEndpointAttrib: true,
         verkey,
         services: [
@@ -573,7 +578,6 @@ describe('Indy VDR Indy Did Registrar', () => {
           type: 'toBeEndorsed',
           endorserDid: submitterDid,
         },
-        submitterDid,
         useEndpointAttrib: true,
         verkey,
         services: [
@@ -604,20 +608,19 @@ describe('Indy VDR Indy Did Registrar', () => {
     if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest,
-      didState.submitterDid
+      didState.nymRequest.body,
+      didState.endorserDid
     )
 
     if (!didState.attribRequest) throw Error('attrib request not found')
     const endorsedAttribRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.attribRequest,
-      didState.submitterDid
+      didState.attribRequest.body,
+      didState.endorserDid
     )
 
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        submitterDid,
         mode: {
           type: 'submit',
           endorseDidTxAction: { ...didState, nymRequest: signedNymRequest, attribRequest: endorsedAttribRequest },

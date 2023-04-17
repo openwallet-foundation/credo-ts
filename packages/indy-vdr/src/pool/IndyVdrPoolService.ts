@@ -173,7 +173,7 @@ export class IndyVdrPoolService {
       const request = new GetNymRequest({ dest: did })
 
       this.logger.trace(`Submitting get did request for did '${did}' to ledger '${pool.indyNamespace}'`)
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       if (!response.result.data) {
         throw new IndyVdrNotFoundError(`Did ${did} not found on indy pool with namespace ${pool.indyNamespace}`)

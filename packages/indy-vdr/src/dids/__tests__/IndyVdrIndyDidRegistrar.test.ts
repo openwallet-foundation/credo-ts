@@ -80,8 +80,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool1:did-value',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
       },
       secret: {
         privateKey: TypedArrayEncoder.fromString('key'),
@@ -102,7 +102,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       options: {
-        submitterDid: 'BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'BzCbsNYhMrjHiqZDTUASHg' },
         alias: 'Hello',
       },
     })
@@ -121,7 +121,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -141,7 +141,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         alias: 'Hello',
       },
     })
@@ -160,7 +160,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -180,7 +180,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool2:B6xaJg1c2xU3D9ppCtt1CZ',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
       },
@@ -217,7 +217,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         role: 'STEWARD',
       },
       secret: {
@@ -228,7 +228,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      mode: { type: 'create', submitterKey: expect.any(Key) },
+      signingKey: expect.any(Key),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
       namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
       verificationKey: expect.any(Key),
@@ -236,21 +236,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       diddocContent: undefined,
     })
 
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
-      agentContext,
-      poolMock,
-      undefined,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // Verkey
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD'
-    )
+    expect(registerPublicDidSpy).toHaveBeenCalledWith(agentContext, poolMock, undefined)
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -298,7 +284,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       options: {
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         role: 'STEWARD',
       },
       secret: {},
@@ -307,7 +293,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      mode: { type: 'create', submitterKey: expect.any(Key) },
+      signingKey: expect.any(Key),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
       namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
       verificationKey: expect.any(Key),
@@ -319,18 +305,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       agentContext,
       poolMock,
       // writeRequest
-      // TODO;
-      undefined,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD'
+      undefined
     )
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
@@ -381,7 +356,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         role: 'STEWARD',
         services: [
           new DidDocumentService({
@@ -413,7 +388,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      mode: { type: 'create', submitterKey: expect.any(Key) },
+      signingKey: expect.any(Key),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
       namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
       verificationKey: expect.any(Key),
@@ -461,18 +436,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       agentContext,
       poolMock,
       // writeRequest
-      // TODO;
-      undefined,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD'
+      undefined
     )
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
     expect(JsonTransformer.toJSON(result)).toMatchObject({
@@ -570,7 +534,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         role: 'STEWARD',
         useEndpointAttrib: true,
         services: [
@@ -603,7 +567,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      mode: { type: 'create', submitterKey: expect.any(Key) },
+      signingKey: expect.any(Key),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
       namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
       verificationKey: expect.any(Key),
@@ -615,23 +579,13 @@ describe('IndyVdrIndyDidRegistrar', () => {
       agentContext,
       poolMock,
       // writeRequest
-      // TODO;
-      undefined,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD'
+      undefined
     )
     expect(createSetDidEndpointsRequestSpy).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      mode: { type: 'create', submitterKey: expect.any(Key) },
+      signingKey: expect.any(Key),
+      endorserDid: undefined,
       // Unqualified created indy did
       unqualifiedDid: 'B6xaJg1c2xU3D9ppCtt1CZ',
       endpoints: {
@@ -731,7 +685,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
         role: 'STEWARD',
         services: [
           new DidDocumentService({

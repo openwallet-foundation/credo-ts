@@ -76,7 +76,7 @@ export interface DidUpdateOptions {
 
 export interface DidUpdateResult {
   jobId?: string
-  didState: DidOperationStateWait | DidOperationStateFinished | DidOperationStateFailed
+  didState: DidOperationStateWait | DidOperationStateActionBase | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
 }
@@ -89,7 +89,7 @@ export interface DidDeactivateOptions {
 
 export interface DidDeactivateResult {
   jobId?: string
-  didState: DidOperationStateWait | DidOperationStateFinished | DidOperationStateFailed
+  didState: DidOperationStateWait | DidOperationStateActionBase | DidOperationStateFinished | DidOperationStateFailed
   didRegistrationMetadata: DidRegistrationMetadata
   didDocumentMetadata: DidResolutionMetadata
 }

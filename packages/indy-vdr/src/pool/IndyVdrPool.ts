@@ -1,6 +1,5 @@
-import type { WriteRequestMode } from '../dids/IndyVdrIndyDidRegistrar'
 import type { AgentContext, Key } from '@aries-framework/core'
-import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { TypedArrayEncoder } from '@aries-framework/core'
 import {
@@ -85,22 +84,21 @@ export class IndyVdrPool {
     // this.pool.close()
   }
 
-  public async createWriteRequest<Request extends IndyVdrRequest>(
+  public async prepareWriteRequest<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     request: Request,
-    mode: WriteRequestMode
+    signingKey: Key,
+    endorserDid?: string
   ) {
     await this.appendTaa(request)
 
-    if (mode.type === 'toBeSigned') return request
-
-    if (mode.type === 'toBeEndorsed') {
-      request.setEndorser({ endorser: parseIndyDid(mode.endorserDid).namespaceIdentifier })
+    if (endorserDid) {
+      request.setEndorser({ endorser: parseIndyDid(endorserDid).namespaceIdentifier })
     }
 
     const signature = await agentContext.wallet.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
-      key: mode.type === 'create' ? mode.submitterKey : mode.authorKey,
+      key: signingKey,
     })
 
     request.setSignature({
@@ -110,21 +108,17 @@ export class IndyVdrPool {
     return request
   }
 
-  public async submitWriteRequest<Request extends IndyVdrRequest>(writeRequest: Request) {
+  /**
+   * This method submits a request to the ledger.
+   * It does only submit the request. It does not modify it in any way.
+   * To create the request, use the `prepareWriteRequest` method.
+   * @param writeRequest
+   */
+
+  public async submitRequest<Request extends IndyVdrRequest>(
+    writeRequest: Request
+  ): Promise<RequestResponseType<Request>> {
     return await this.pool.submitRequest(writeRequest)
-  }
-
-  public async createAndSubmitWriteRequest<Request extends IndyVdrRequest>(
-    agentContext: AgentContext,
-    request: Request,
-    submitterKey: Key
-  ) {
-    const writeRequest = await this.createWriteRequest(agentContext, request, { type: 'create', submitterKey })
-    return await this.submitWriteRequest(writeRequest)
-  }
-
-  public async submitReadRequest<Request extends IndyVdrRequest>(request: Request) {
-    return await this.pool.submitRequest(request)
   }
 
   private async appendTaa(request: IndyVdrRequest) {
@@ -179,10 +173,10 @@ export class IndyVdrPool {
     }
 
     const taaRequest = new GetTransactionAuthorAgreementRequest({})
-    const taaResponse = await this.submitReadRequest(taaRequest)
+    const taaResponse = await this.submitRequest(taaRequest)
 
     const acceptanceMechanismRequest = new GetAcceptanceMechanismsRequest({})
-    const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest)
+    const acceptanceMechanismResponse = await this.submitRequest(acceptanceMechanismRequest)
 
     const taaData = taaResponse.result.data
 

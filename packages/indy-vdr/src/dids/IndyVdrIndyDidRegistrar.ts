@@ -47,11 +47,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private didCreateActionResult({
     namespace,
     didAction,
+    jobId,
   }: {
     namespace: string
     didAction: EndorseDidTxAction
+    jobId: string
   }): IndyVdrDidCreateResult {
     return {
+      jobId: jobId,
       didDocumentMetadata: {},
       didRegistrationMetadata: {
         didIndyNamespace: namespace,
@@ -60,13 +63,13 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  private didCreateFailedResult({ errorMessage }: { errorMessage: string }): IndyVdrDidCreateResult {
+  private didCreateFailedResult({ reason }: { reason: string }): IndyVdrDidCreateResult {
     return {
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: errorMessage,
+        reason: reason,
       },
     }
   }
@@ -106,31 +109,29 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  public async parseInput(
-    agentContext: AgentContext,
-    options: IndyVdrDidCreateOptions,
-    didCreateMode: DidCreateMode
-  ): Promise<ParseInputResult> {
+  public async parseInput(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<ParseInputResult> {
     let did = options.did
     let namespaceIdentifier: string
     let verificationKey: Key
     const seed = options.secret?.seed
     const privateKey = options.secret?.privateKey
+    const didCreateMode = options.options.mode
 
     let submitterDid: string
+
     if (didCreateMode.type === 'toBeEndorsed') submitterDid = didCreateMode.endorserDid
-    else if (didCreateMode.type === 'submit') submitterDid = didCreateMode.endorseDidTxAction.submitterDid
+    else if (didCreateMode.type === 'submit') submitterDid = didCreateMode.endorseDidTxAction.endorserDid
     else submitterDid = didCreateMode.submitterDid
 
     const { namespace: submitterNamespace, namespaceIdentifier: submitterNamespaceIdentifier } =
       parseIndyDid(submitterDid)
 
     if (didCreateMode.type === 'submit') {
+      const did = JSON.parse(didCreateMode.endorseDidTxAction.nymRequest.body).operation.dest
       return {
         status: 'ok',
-        did: didCreateMode.endorseDidTxAction.did,
-        verificationKey: didCreateMode.endorseDidTxAction.verificationKey,
-        namespaceIdentifier: parseIndyDid(didCreateMode.endorseDidTxAction.did).namespaceIdentifier,
+        did: `did:indy:${submitterNamespace}:${did}`,
+        namespaceIdentifier: did,
         namespace: submitterNamespace,
         submitterNamespaceIdentifier,
         seed: didCreateMode.endorseDidTxAction.secret?.seed as Buffer,
@@ -142,7 +143,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     if (allowOne.length > 1) {
       return {
         status: 'error',
-        errorMessage: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
+        reason: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
       }
     }
 
@@ -150,7 +151,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       if (!options.options.verkey) {
         return {
           status: 'error',
-          errorMessage: 'If a did is defined, a matching verkey must be provided',
+          reason: 'If a did is defined, a matching verkey must be provided',
         }
       }
 
@@ -161,14 +162,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       if (!isSelfCertifiedIndyDid(did, options.options.verkey)) {
         return {
           status: 'error',
-          errorMessage: `Initial verkey ${options.options.verkey} does not match did ${did}`,
+          reason: `Initial verkey ${options.options.verkey} does not match did ${did}`,
         }
       }
 
       if (submitterNamespace !== namespace) {
         return {
           status: 'error',
-          errorMessage: `The submitter did uses namespace ${submitterNamespace} and the did to register uses namespace ${namespace}. Namespaces must match.`,
+          reason: `The submitter did uses namespace ${submitterNamespace} and the did to register uses namespace ${namespace}. Namespaces must match.`,
         }
       }
     } else {
@@ -206,7 +207,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     await didRepository.save(agentContext, didRecord)
   }
 
-  public createDidDocument(
+  private createDidDocument(
     did: string,
     verificationKey: Key,
     services: DidDocumentService[] | undefined,
@@ -276,14 +277,11 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   }
 
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<IndyVdrDidCreateResult> {
-    const { submitterDid, mode: _mode } = options.options
-    const didCreateMode: DidCreateMode = _mode ?? { type: 'create', submitterDid }
-    options.options.mode = didCreateMode
-
     try {
-      const res = await this.parseInput(agentContext, options, didCreateMode)
-      if (res.status === 'error') return this.didCreateFailedResult({ errorMessage: res.errorMessage })
+      const res = await this.parseInput(agentContext, options)
+      if (res.status === 'error') return this.didCreateFailedResult({ reason: res.reason })
 
+      const didCreateMode = options.options.mode
       const { did, namespaceIdentifier, submitterNamespaceIdentifier, verificationKey, namespace, seed, privateKey } =
         res
 
@@ -293,30 +291,13 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       let didDocument: DidDocument
       let attribRequest: AttribRequest | CustomRequest | undefined
       let alias: string | undefined
-      let role: string | undefined
 
       if (didCreateMode.type === 'submit') {
-        ;({ nymRequest, didDocument, attribRequest, alias, role } = didCreateMode.endorseDidTxAction)
+        ;({ nymRequest, didDocument, attribRequest } = didCreateMode.endorseDidTxAction)
       } else {
         const { services, useEndpointAttrib } = options.options
         alias = options.options.alias
-        role = options.options.role
-
-        let createDidWriteMode: WriteRequestMode
-        let setDidEndpointWriteMode: WriteRequestMode
-
-        if (didCreateMode.type === 'create') {
-          const submitterKey = await verificationKeyForIndyDid(agentContext, submitterDid)
-          createDidWriteMode = { type: 'create', submitterKey }
-          setDidEndpointWriteMode = { type: 'create', submitterKey: verificationKey }
-        } else {
-          createDidWriteMode = { type: 'toBeSigned' }
-          setDidEndpointWriteMode = {
-            type: 'toBeEndorsed',
-            authorKey: verificationKey,
-            endorserDid: didCreateMode.endorserDid,
-          }
-        }
+        if (!verificationKey) throw new Error('VerificationKey not defined')
 
         const { didDocument: _didDocument, diddocContent } = this.createDidDocument(
           did,
@@ -326,10 +307,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         )
         didDocument = _didDocument
 
+        let didRegisterSigningKey: Key | undefined = undefined
+        if (didCreateMode.type === 'create')
+          didRegisterSigningKey = await verificationKeyForIndyDid(agentContext, didCreateMode.submitterDid)
+
         nymRequest = await this.createRegisterDidWriteRequest({
           agentContext,
           pool,
-          mode: createDidWriteMode,
+          signingKey: didRegisterSigningKey,
           submitterNamespaceIdentifier,
           namespaceIdentifier,
           verificationKey,
@@ -342,7 +327,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           attribRequest = await this.createSetDidEndpointsRequest({
             agentContext,
             pool,
-            mode: setDidEndpointWriteMode,
+            signingKey: verificationKey,
+            endorserDid: didCreateMode.type === 'toBeEndorsed' ? didCreateMode.endorserDid : undefined,
             unqualifiedDid: namespaceIdentifier,
             endpoints,
           })
@@ -352,37 +338,22 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           const didAction: EndorseDidTxAction = {
             state: 'action',
             name: 'signNymTx',
-            did,
-            submitterDid,
+            endorserDid: didCreateMode.endorserDid,
             nymRequest,
             attribRequest,
             didDocument,
-            verificationKey,
             secret: { seed, privateKey },
-            alias,
-            role,
           }
 
-          return this.didCreateActionResult({ namespace, didAction })
+          return this.didCreateActionResult({ namespace, didAction, jobId: did })
         }
       }
-
-      await this.registerPublicDid(
-        agentContext,
-        pool,
-        nymRequest,
-        submitterNamespaceIdentifier,
-        verificationKey,
-        namespaceIdentifier,
-        alias,
-        role
-      )
-
-      if (attribRequest) await this.setEndpointsForDid(agentContext, pool, namespaceIdentifier, attribRequest)
+      await this.registerPublicDid(agentContext, pool, nymRequest)
+      if (attribRequest) await this.setEndpointsForDid(agentContext, pool, attribRequest)
       await this.saveDidRecord(agentContext, did, didDocument)
       return this.didCreateFinishedResult({ did, didDocument, namespace, seed, privateKey })
     } catch (error) {
-      return this.didCreateFailedResult({ errorMessage: `unknownError: ${error.message}` })
+      return this.didCreateFailedResult({ reason: `unknownError: ${error.message}` })
     }
   }
 
@@ -411,15 +382,22 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private async createRegisterDidWriteRequest(options: {
     agentContext: AgentContext
     pool: IndyVdrPool
-    mode: WriteRequestMode
     submitterNamespaceIdentifier: string
     namespaceIdentifier: string
     verificationKey: Key
+    signingKey?: Key
     alias: string | undefined
     diddocContent?: Record<string, unknown>
   }) {
-    const { agentContext, pool, mode, submitterNamespaceIdentifier, namespaceIdentifier, verificationKey, alias } =
-      options
+    const {
+      agentContext,
+      pool,
+      submitterNamespaceIdentifier,
+      namespaceIdentifier,
+      verificationKey,
+      alias,
+      signingKey,
+    } = options
 
     // FIXME: Add diddocContent when supported by indy-vdr
     if (options.diddocContent) {
@@ -433,42 +411,28 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       alias: alias,
     })
 
-    const writeRequest = await pool.createWriteRequest(agentContext, request, mode)
+    if (!signingKey) return request
+    const writeRequest = await pool.prepareWriteRequest(agentContext, request, signingKey, undefined)
     return writeRequest
   }
 
   private async registerPublicDid<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     pool: IndyVdrPool,
-    writeRequest: Request,
-    unqualifiedSubmitterDid: string,
-    signingKey: Key,
-    unqualifiedDid: string,
-    alias?: string,
-    role?: string
+    writeRequest: Request
   ) {
+    const body = writeRequest.body
     try {
-      agentContext.config.logger.debug(`Register public did '${unqualifiedDid}' on ledger '${pool}'`)
+      const response = await pool.submitRequest(writeRequest)
 
-      const response = await pool.submitWriteRequest(writeRequest)
-
-      agentContext.config.logger.debug(`Registered public did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`, {
+      agentContext.config.logger.debug(`Register public did on ledger '${pool.indyNamespace}'\nRequest: ${body}}`, {
         response,
       })
 
       return
     } catch (error) {
       agentContext.config.logger.error(
-        `Error registering public did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`,
-        {
-          error,
-          unqualifiedSubmitterDid,
-          unqualifiedDid,
-          signingKey,
-          alias,
-          role,
-          pool: pool.indyNamespace,
-        }
+        `Error Registering public did on ledger '${pool.indyNamespace}'\nRequest: ${body}}`
       )
 
       throw error
@@ -478,45 +442,40 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private async createSetDidEndpointsRequest(options: {
     agentContext: AgentContext
     pool: IndyVdrPool
-    mode: WriteRequestMode
+    signingKey: Key
+    endorserDid?: string
     unqualifiedDid: string
     endpoints: IndyEndpointAttrib
   }): Promise<AttribRequest> {
-    const { agentContext, mode, pool, endpoints, unqualifiedDid } = options
+    const { agentContext, pool, endpoints, unqualifiedDid, signingKey, endorserDid } = options
     const request = new AttribRequest({
       submitterDid: unqualifiedDid,
       targetDid: unqualifiedDid,
       raw: JSON.stringify({ endpoint: endpoints }),
     })
 
-    const writeRequest = await pool.createWriteRequest(agentContext, request, mode)
+    const writeRequest = await pool.prepareWriteRequest(agentContext, request, signingKey, endorserDid)
     return writeRequest
   }
 
   private async setEndpointsForDid<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     pool: IndyVdrPool,
-    unqualifiedDid: string,
     writeRequest: Request
   ): Promise<void> {
+    const body = writeRequest.body
     try {
-      agentContext.config.logger.debug(`Set endpoints for did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`)
-
-      const response = await pool.submitWriteRequest(writeRequest)
+      const response = await pool.submitRequest(writeRequest)
 
       agentContext.config.logger.debug(
-        `Successfully set endpoints for did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`,
+        `Successfully set endpoints for did on ledger '${pool.indyNamespace}'.\nRequest: ${body}}`,
         {
           response,
         }
       )
     } catch (error) {
       agentContext.config.logger.error(
-        `Error setting endpoints for did '${unqualifiedDid}' on ledger '${pool.indyNamespace}'`,
-        {
-          error,
-          unqualifiedDid,
-        }
+        `Error setting endpoints for did on ledger '${pool.indyNamespace}'.\nRequest: ${body}}`
       )
 
       throw new IndyVdrError(error)
@@ -529,11 +488,6 @@ export type DidCreateMode =
   | { type: 'create'; submitterDid: string }
   | { type: 'submit'; endorseDidTxAction: EndorseDidTxAction }
 
-export type WriteRequestMode =
-  | { type: 'toBeEndorsed'; endorserDid: string; authorKey: Key }
-  | { type: 'toBeSigned' }
-  | { type: 'create'; submitterKey: Key }
-
 interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
   didDocument?: never // Not yet supported
   options: {
@@ -543,8 +497,7 @@ interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
     useEndpointAttrib?: boolean
     verkey?: string
 
-    submitterDid: string
-    mode?: DidCreateMode
+    mode: DidCreateMode
   }
   secret?: {
     seed?: Buffer
@@ -567,7 +520,7 @@ export type IndyVdrDidCreateOptions = IndyVdrDidCreateOptionsWithDid | IndyVdrDi
 type ParseInputOk = {
   status: 'ok'
   did: string
-  verificationKey: Key
+  verificationKey?: Key
   namespaceIdentifier: string
   namespace: string
   submitterNamespaceIdentifier: string
@@ -575,20 +528,16 @@ type ParseInputOk = {
   privateKey: Buffer | undefined
 }
 
-type parseInputError = { status: 'error'; errorMessage: string }
+type parseInputError = { status: 'error'; reason: string }
 
 type ParseInputResult = ParseInputOk | parseInputError
 
 export interface EndorseDidTxAction extends DidOperationStateActionBase {
   name: 'signNymTx'
-  did: string
-  submitterDid: string
+  endorserDid: string
   nymRequest: NymRequest | CustomRequest
   attribRequest?: AttribRequest | CustomRequest
   didDocument: DidDocument
-  verificationKey: Key
-  role?: string
-  alias?: string
 }
 
 export type IndyVdrDidCreateResult = DidCreateResult<EndorseDidTxAction>

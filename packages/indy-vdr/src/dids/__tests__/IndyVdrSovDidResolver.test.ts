@@ -50,8 +50,8 @@ describe('DidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 
@@ -89,8 +89,8 @@ describe('DidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 
@@ -106,7 +106,7 @@ describe('DidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockRejectedValue(new Error('Error submitting read request'))
+      jest.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 
