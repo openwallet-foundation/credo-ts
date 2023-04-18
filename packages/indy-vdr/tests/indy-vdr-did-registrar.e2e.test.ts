@@ -66,7 +66,7 @@ const agent = new Agent(
 )
 
 describe('Indy VDR Indy Did Registrar', () => {
-  let submitterDid: string
+  let endorserDid: string
 
   beforeAll(async () => {
     await endorser.initialize()
@@ -74,7 +74,7 @@ describe('Indy VDR Indy Did Registrar', () => {
       endorser,
       TypedArrayEncoder.fromString('00000000000000000000000Endorser9')
     )
-    submitterDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
+    endorserDid = `did:indy:pool:localtest:${unqualifiedSubmitterDid}`
 
     await agent.initialize()
   })
@@ -90,10 +90,8 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        mode: {
-          type: 'create',
-          submitterDid,
-        },
+        endorserDid,
+        endorserMode: 'internal',
       },
     })
 
@@ -161,28 +159,27 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        mode: {
-          type: 'toBeEndorsed',
-          endorserDid: submitterDid,
-        },
+        endorserMode: 'external',
+        endorserDid,
       },
     })) as IndyVdrDidCreateResult
 
     const didState = didCreateTobeEndorsedResult.didState
-    if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
+    if (didState.state !== 'action' || didState.action !== 'endorseIndyTransaction') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest.body,
+      didState.nymRequest,
       didState.endorserDid
     )
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      method: 'indy',
+      did: didState.did,
       options: {
-        mode: {
-          type: 'submit',
-          endorseDidTxAction: { ...didState, nymRequest: signedNymRequest },
+        endorserMode: 'external',
+        endorsedTransaction: {
+          nymRequest: signedNymRequest,
         },
       },
+      secret: didState.secret,
     })
 
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
@@ -263,29 +260,28 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        mode: {
-          type: 'toBeEndorsed',
-          endorserDid: submitterDid,
-        },
+        endorserDid,
+        endorserMode: 'external',
         verkey,
       },
     })) as IndyVdrDidCreateResult
 
     const didState = didCreateTobeEndorsedResult.didState
-    if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
+    if (didState.state !== 'action' || didState.action !== 'endorseIndyTransaction') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest.body,
+      didState.nymRequest,
       didState.endorserDid
     )
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      method: 'indy',
+      did: didState.did,
       options: {
-        mode: {
-          type: 'submit',
-          endorseDidTxAction: { ...didState, nymRequest: signedNymRequest },
+        endorserMode: 'external',
+        endorsedTransaction: {
+          nymRequest: signedNymRequest,
         },
       },
+      secret: didState.secret,
     })
 
     expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
@@ -362,10 +358,8 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        mode: {
-          type: 'create',
-          submitterDid,
-        },
+        endorserDid,
+        endorserMode: 'internal',
         verkey,
       },
     })
@@ -448,10 +442,8 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        mode: {
-          type: 'create',
-          submitterDid,
-        },
+        endorserDid,
+        endorserMode: 'internal',
         useEndpointAttrib: true,
         verkey,
         services: [
@@ -574,10 +566,8 @@ describe('Indy VDR Indy Did Registrar', () => {
     const didCreateTobeEndorsedResult = (await endorser.dids.create<IndyVdrDidCreateOptions>({
       did,
       options: {
-        mode: {
-          type: 'toBeEndorsed',
-          endorserDid: submitterDid,
-        },
+        endorserMode: 'external',
+        endorserDid: endorserDid,
         useEndpointAttrib: true,
         verkey,
         services: [
@@ -605,27 +595,29 @@ describe('Indy VDR Indy Did Registrar', () => {
     })) as IndyVdrDidCreateResult
 
     const didState = didCreateTobeEndorsedResult.didState
-    if (didState.state !== 'action' || didState.name !== 'signNymTx') throw Error('unexpected did state')
+    if (didState.state !== 'action' || didState.action !== 'endorseIndyTransaction') throw Error('unexpected did state')
 
     const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest.body,
+      didState.nymRequest,
       didState.endorserDid
     )
 
     if (!didState.attribRequest) throw Error('attrib request not found')
     const endorsedAttribRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.attribRequest.body,
+      didState.attribRequest,
       didState.endorserDid
     )
 
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      method: 'indy',
+      did: didState.did,
       options: {
-        mode: {
-          type: 'submit',
-          endorseDidTxAction: { ...didState, nymRequest: signedNymRequest, attribRequest: endorsedAttribRequest },
+        endorserMode: 'external',
+        endorsedTransaction: {
+          nymRequest: signedNymRequest,
+          attribRequest: endorsedAttribRequest,
         },
       },
+      secret: didState.secret,
     })
 
     const expectedDidDocument = {

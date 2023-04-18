@@ -73,6 +73,6 @@ export class IndyVdrApi {
       if (txBody.identifier !== namespaceIdentifier) throw new IndyVdrError('Submitter does not match identifier')
       endorsedTransaction = await this.signRequest(request, endorserDid)
     }
-    return endorsedTransaction
+    return endorsedTransaction.body
   }
 }

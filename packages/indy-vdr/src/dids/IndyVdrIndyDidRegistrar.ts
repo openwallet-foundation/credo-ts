@@ -12,7 +12,7 @@ import type {
   DidRegistrar,
   DidUpdateResult,
 } from '@aries-framework/core'
-import type { CustomRequest, IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
 import {
   DidCommV1Service,
@@ -26,12 +26,13 @@ import {
   KeyType,
   TypedArrayEncoder,
 } from '@aries-framework/core'
-import { AttribRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
+import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError } from '../error'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
 
 import {
+  buildDidDocument,
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
@@ -47,14 +48,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private didCreateActionResult({
     namespace,
     didAction,
-    jobId,
+    did,
   }: {
     namespace: string
     didAction: EndorseDidTxAction
-    jobId: string
+    did: string
   }): IndyVdrDidCreateResult {
     return {
-      jobId: jobId,
+      jobId: did,
       didDocumentMetadata: {},
       didRegistrationMetadata: {
         didIndyNamespace: namespace,
@@ -115,29 +116,26 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     let verificationKey: Key
     const seed = options.secret?.seed
     const privateKey = options.secret?.privateKey
-    const didCreateMode = options.options.mode
 
-    let submitterDid: string
+    if (options.options.endorsedTransaction) {
+      const _did = did as string
+      const { namespace } = parseIndyDid(_did)
+      // endorser did from the transaction
+      const endorserNamespaceIdentifier = JSON.parse(options.options.endorsedTransaction.nymRequest).identifier
 
-    if (didCreateMode.type === 'toBeEndorsed') submitterDid = didCreateMode.endorserDid
-    else if (didCreateMode.type === 'submit') submitterDid = didCreateMode.endorseDidTxAction.endorserDid
-    else submitterDid = didCreateMode.submitterDid
-
-    const { namespace: submitterNamespace, namespaceIdentifier: submitterNamespaceIdentifier } =
-      parseIndyDid(submitterDid)
-
-    if (didCreateMode.type === 'submit') {
-      const did = JSON.parse(didCreateMode.endorseDidTxAction.nymRequest.body).operation.dest
       return {
         status: 'ok',
-        did: `did:indy:${submitterNamespace}:${did}`,
-        namespaceIdentifier: did,
-        namespace: submitterNamespace,
-        submitterNamespaceIdentifier,
-        seed: didCreateMode.endorseDidTxAction.secret?.seed as Buffer,
-        privateKey: didCreateMode.endorseDidTxAction.secret?.privateKey as Buffer,
+        did: _did,
+        namespace: namespace,
+        namespaceIdentifier: parseIndyDid(_did).namespaceIdentifier,
+        endorserNamespaceIdentifier,
+        seed,
+        privateKey,
       }
     }
+
+    const endorserDid = options.options.endorserDid
+    const { namespace: endorserNamespace, namespaceIdentifier: endorserNamespaceIdentifier } = parseIndyDid(endorserDid)
 
     const allowOne = [privateKey, seed, did].filter((e) => e !== undefined)
     if (allowOne.length > 1) {
@@ -155,8 +153,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
       }
 
-      const { namespace, namespaceIdentifier: _namespaceIdentifier } = parseIndyDid(did)
-      namespaceIdentifier = _namespaceIdentifier
+      const { namespace: didNamespace, namespaceIdentifier: didNamespaceIdentifier } = parseIndyDid(did)
+      namespaceIdentifier = didNamespaceIdentifier
       verificationKey = Key.fromPublicKeyBase58(options.options.verkey, KeyType.Ed25519)
 
       if (!isSelfCertifiedIndyDid(did, options.options.verkey)) {
@@ -166,10 +164,10 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         }
       }
 
-      if (submitterNamespace !== namespace) {
+      if (didNamespace !== endorserNamespace) {
         return {
           status: 'error',
-          reason: `The submitter did uses namespace ${submitterNamespace} and the did to register uses namespace ${namespace}. Namespaces must match.`,
+          reason: `The endorser did uses namespace: '${endorserNamespace}' and the did to register uses namespace: '${didNamespace}'. Namespaces must match.`,
         }
       }
     } else {
@@ -178,7 +176,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       const buffer = Hasher.hash(verificationKey.publicKey, 'sha2-256')
 
       namespaceIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-      did = `did:indy:${submitterNamespace}:${namespaceIdentifier}`
+      did = `did:indy:${endorserNamespace}:${namespaceIdentifier}`
     }
 
     return {
@@ -186,8 +184,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       did,
       verificationKey,
       namespaceIdentifier,
-      namespace: submitterNamespace,
-      submitterNamespaceIdentifier,
+      namespace: endorserNamespace,
+      endorserNamespaceIdentifier,
       seed,
       privateKey,
     }
@@ -281,19 +279,20 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       const res = await this.parseInput(agentContext, options)
       if (res.status === 'error') return this.didCreateFailedResult({ reason: res.reason })
 
-      const didCreateMode = options.options.mode
-      const { did, namespaceIdentifier, submitterNamespaceIdentifier, verificationKey, namespace, seed, privateKey } =
+      const { did, namespaceIdentifier, endorserNamespaceIdentifier, verificationKey, namespace, seed, privateKey } =
         res
 
       const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
 
       let nymRequest: NymRequest | CustomRequest
-      let didDocument: DidDocument
+      let didDocument: DidDocument | undefined
       let attribRequest: AttribRequest | CustomRequest | undefined
       let alias: string | undefined
 
-      if (didCreateMode.type === 'submit') {
-        ;({ nymRequest, didDocument, attribRequest } = didCreateMode.endorseDidTxAction)
+      if (options.options.endorsedTransaction) {
+        const { nymRequest: _nymRequest, attribRequest: _attribRequest } = options.options.endorsedTransaction
+        nymRequest = new CustomRequest({ customRequest: _nymRequest })
+        attribRequest = _attribRequest ? new CustomRequest({ customRequest: _attribRequest }) : undefined
       } else {
         const { services, useEndpointAttrib } = options.options
         alias = options.options.alias
@@ -308,14 +307,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         didDocument = _didDocument
 
         let didRegisterSigningKey: Key | undefined = undefined
-        if (didCreateMode.type === 'create')
-          didRegisterSigningKey = await verificationKeyForIndyDid(agentContext, didCreateMode.submitterDid)
+        if (options.options.endorserMode === 'internal')
+          didRegisterSigningKey = await verificationKeyForIndyDid(agentContext, options.options.endorserDid)
 
         nymRequest = await this.createRegisterDidWriteRequest({
           agentContext,
           pool,
           signingKey: didRegisterSigningKey,
-          submitterNamespaceIdentifier,
+          submitterNamespaceIdentifier: endorserNamespaceIdentifier,
           namespaceIdentifier,
           verificationKey,
           alias,
@@ -328,28 +327,29 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             agentContext,
             pool,
             signingKey: verificationKey,
-            endorserDid: didCreateMode.type === 'toBeEndorsed' ? didCreateMode.endorserDid : undefined,
+            endorserDid: options.options.endorserMode === 'external' ? options.options.endorserDid : undefined,
             unqualifiedDid: namespaceIdentifier,
             endpoints,
           })
         }
 
-        if (didCreateMode.type === 'toBeEndorsed') {
+        if (options.options.endorserMode === 'external') {
           const didAction: EndorseDidTxAction = {
             state: 'action',
-            name: 'signNymTx',
-            endorserDid: didCreateMode.endorserDid,
-            nymRequest,
-            attribRequest,
-            didDocument,
+            action: 'endorseIndyTransaction',
+            endorserDid: options.options.endorserDid,
+            nymRequest: nymRequest.body,
+            attribRequest: attribRequest?.body,
+            did: did,
             secret: { seed, privateKey },
           }
 
-          return this.didCreateActionResult({ namespace, didAction, jobId: did })
+          return this.didCreateActionResult({ namespace, didAction, did })
         }
       }
       await this.registerPublicDid(agentContext, pool, nymRequest)
       if (attribRequest) await this.setEndpointsForDid(agentContext, pool, attribRequest)
+      didDocument = didDocument ?? (await buildDidDocument(agentContext, pool, did))
       await this.saveDidRecord(agentContext, did, didDocument)
       return this.didCreateFinishedResult({ did, didDocument, namespace, seed, privateKey })
     } catch (error) {
@@ -483,11 +483,6 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   }
 }
 
-export type DidCreateMode =
-  | { type: 'toBeEndorsed'; endorserDid: string }
-  | { type: 'create'; submitterDid: string }
-  | { type: 'submit'; endorseDidTxAction: EndorseDidTxAction }
-
 interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
   didDocument?: never // Not yet supported
   options: {
@@ -497,7 +492,12 @@ interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
     useEndpointAttrib?: boolean
     verkey?: string
 
-    mode: DidCreateMode
+    // endorserDid is always required. We just have internal or external mode
+    endorserDid: string
+    // if endorserMode is 'internal', the endorserDid MUST be present in the wallet
+    // if endorserMode is 'external', the endorserDid doesn't have to be present in the wallet
+    endorserMode: 'internal' | 'external'
+    endorsedTransaction?: never
   }
   secret?: {
     seed?: Buffer
@@ -515,7 +515,32 @@ interface IndyVdrDidCreateOptionsWithoutDid extends IndyVdrDidCreateOptionsBase 
   did?: never
 }
 
-export type IndyVdrDidCreateOptions = IndyVdrDidCreateOptionsWithDid | IndyVdrDidCreateOptionsWithoutDid
+// When transactions have been endorsed. Only supported for external mode
+// this is a separate interface so we can remove all the properties we don't need anymore.
+interface IndyVdrDidCreateOptionsForSubmission extends DidCreateOptions {
+  didDocument?: never
+  did: string // for submission MUST always have a did, so we know which did we're submitting the transaction for. We MUST check whether the did passed here, matches with the
+  method?: never
+  options: {
+    endorserMode: 'external'
+
+    // provide the endorsed transactions. If these are provided
+    // we will submit the transactions to the ledger
+    endorsedTransaction: {
+      nymRequest: string
+      attribRequest?: string
+    }
+  }
+  secret?: {
+    seed?: Buffer
+    privateKey?: Buffer
+  }
+}
+
+export type IndyVdrDidCreateOptions =
+  | IndyVdrDidCreateOptionsWithDid
+  | IndyVdrDidCreateOptionsWithoutDid
+  | IndyVdrDidCreateOptionsForSubmission
 
 type ParseInputOk = {
   status: 'ok'
@@ -523,7 +548,7 @@ type ParseInputOk = {
   verificationKey?: Key
   namespaceIdentifier: string
   namespace: string
-  submitterNamespaceIdentifier: string
+  endorserNamespaceIdentifier: string
   seed: Buffer | undefined
   privateKey: Buffer | undefined
 }
@@ -533,11 +558,11 @@ type parseInputError = { status: 'error'; reason: string }
 type ParseInputResult = ParseInputOk | parseInputError
 
 export interface EndorseDidTxAction extends DidOperationStateActionBase {
-  name: 'signNymTx'
+  action: 'endorseIndyTransaction'
   endorserDid: string
-  nymRequest: NymRequest | CustomRequest
-  attribRequest?: AttribRequest | CustomRequest
-  didDocument: DidDocument
+  nymRequest: string
+  attribRequest?: string
+  did: string
 }
 
 export type IndyVdrDidCreateResult = DidCreateResult<EndorseDidTxAction>

@@ -45,6 +45,7 @@ export interface DidOperationStateWait {
 
 export interface DidOperationStateActionBase {
   state: 'action'
+  action: string
   did?: string
   secret?: DidRegistrationSecretOptions
   didDocument?: DidDocument

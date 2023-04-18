@@ -81,7 +81,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       did: 'did:indy:pool1:did-value',
       options: {
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       },
       secret: {
         privateKey: TypedArrayEncoder.fromString('key'),
@@ -98,11 +99,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     })
   })
 
-  test('returns an error state if the submitter did is not a valid did:indy did', async () => {
+  test('returns an error state if the endorser did is not a valid did:indy did', async () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       options: {
-        mode: { type: 'create', submitterDid: 'BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
       },
     })
@@ -121,7 +123,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -141,7 +144,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
       },
     })
@@ -160,7 +164,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -176,11 +181,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     })
   })
 
-  test('returns an error state if did is provided, but does not match with the namespace from the submitterDid', async () => {
+  test('returns an error state if did is provided, but does not match with the namespace from the endorserDid', async () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool2:B6xaJg1c2xU3D9ppCtt1CZ',
       options: {
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
       },
@@ -192,7 +198,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didState: {
         state: 'failed',
         reason:
-          'The submitter did uses namespace pool1 and the did to register uses namespace pool2. Namespaces must match.',
+          "The endorser did uses namespace: 'pool1' and the did to register uses namespace: 'pool2'. Namespaces must match.",
       },
     })
   })
@@ -217,7 +223,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
       },
       secret: {
@@ -284,7 +291,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       options: {
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
       },
       secret: {},
@@ -356,7 +364,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         services: [
           new DidDocumentService({
@@ -534,7 +543,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         useEndpointAttrib: true,
         services: [
@@ -685,7 +695,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        mode: { type: 'create', submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg' },
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         services: [
           new DidDocumentService({
