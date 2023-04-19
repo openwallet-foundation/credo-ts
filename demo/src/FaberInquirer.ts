@@ -3,7 +3,7 @@ import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Faber } from './Faber'
+import { Faber, RegistryOptions } from './Faber'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
@@ -89,6 +89,8 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async credential() {
+    const registry = await prompt([this.inquireOptions([RegistryOptions.indy, RegistryOptions.cheqd])])
+    await this.faber.importDid(registry.options)
     await this.faber.issueCredential()
     const title = 'Is the credential offer accepted?'
     await this.listener.newAcceptedPrompt(title, this)

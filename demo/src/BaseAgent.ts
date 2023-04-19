@@ -12,6 +12,13 @@ import {
 import { AnonCredsRsModule } from '@aries-framework/anoncreds-rs'
 import { AskarModule } from '@aries-framework/askar'
 import {
+  CheqdAnonCredsRegistry,
+  CheqdDidRegistrar,
+  CheqdDidResolver,
+  CheqdModule,
+  CheqdModuleConfig,
+} from '@aries-framework/cheqd'
+import {
   ConnectionsModule,
   DidsModule,
   V2ProofProtocol,
@@ -129,7 +136,7 @@ function getAskarAnonCredsIndyModules() {
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new IndyVdrAnonCredsRegistry()],
+      registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],
     }),
     anoncredsRs: new AnonCredsRsModule({
       anoncreds,
@@ -138,8 +145,20 @@ function getAskarAnonCredsIndyModules() {
       indyVdr,
       networks: [indyNetworkConfig],
     }),
+    cheqd: new CheqdModule(
+      new CheqdModuleConfig({
+        networks: [
+          {
+            network: 'testnet',
+            cosmosPayerSeed:
+              'robust across amount corn curve panther opera wish toe ring bleak empower wreck party abstract glad average muffin picnic jar squeeze annual long aunt',
+          },
+        ],
+      })
+    ),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver()],
+      resolvers: [new IndyVdrSovDidResolver(), new CheqdDidResolver()],
+      registrars: [new CheqdDidRegistrar()],
     }),
     askar: new AskarModule({
       ariesAskar,
