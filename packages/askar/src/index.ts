@@ -1,5 +1,10 @@
 // Wallet
-export { AskarWallet } from './wallet'
+export {
+  AskarWallet,
+  AskarWalletPostgresStorageConfig,
+  AskarWalletPostgresConfig,
+  AskarWalletPostgresCredentials,
+} from './wallet'
 
 // Storage
 export { AskarStorageService } from './storage'
