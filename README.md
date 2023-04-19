@@ -99,6 +99,14 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     </td>
   </tr>
   <tr>
+    <td>@aries-framework/cheqd</td>
+    <td>
+      <a href="https://npmjs.com/package/@aries-framework/cheqd">
+        <img alt="@aries-framework/cheqd version" src="https://img.shields.io/npm/v/@aries-framework/cheqd"/>
+      </a>
+    </td>
+  </tr>  
+  <tr>
     <td>@aries-framework/askar</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/askar">
