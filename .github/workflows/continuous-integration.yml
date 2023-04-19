@@ -101,6 +101,9 @@ jobs:
         with:
           seed: ${TEST_AGENT_PUBLIC_DID_SEED}
 
+      - name: Setup Cheqd
+        uses: ./.github/actions/setup-cheqd
+
       - name: Setup Postgres
         uses: ./.github/actions/setup-postgres
 
