@@ -5,6 +5,7 @@ import { Agent, JsonTransformer, TypedArrayEncoder } from '@aries-framework/core
 import { agentDependencies, getAgentConfig } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
+import { resolverAgent } from './cheqd-did-resolver.e2e.test'
 import { getCheqdModules } from './setupCheqdModule'
 
 const agentConfig = getAgentConfig('cheqdAnonCredsRegistry')
@@ -12,7 +13,9 @@ const agentConfig = getAgentConfig('cheqdAnonCredsRegistry')
 const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
-  modules: getCheqdModules('000000000000000000000000000cheqd'),
+  modules: getCheqdModules(
+    'ugly dirt sorry girl prepare argue door man that manual glow scout bomb pigeon matter library transfer flower clown cat miss pluck drama dizzy'
+  ),
 })
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
@@ -189,7 +192,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('resolve query based url', async () => {
     const schemaResourceId =
       'did:cheqd:testnet:d8ac0372-0d4b-413e-8ef5-8e8f07822b2c?resourceName=test - 11&resourceType=anonCredsSchema'
-    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(agent.context, `${schemaResourceId}`)
+    const schemaResponse = await cheqdAnonCredsRegistry.getSchema(resolverAgent.context, `${schemaResourceId}`)
 
     expect(schemaResponse).toMatchObject({
       schema: {
@@ -203,7 +206,7 @@ describe('cheqdAnonCredsRegistry', () => {
   test('resolve revocation registry definition and statusList', async () => {
     const revocationRegistryId = 'did:cheqd:testnet:e42ccb8b-78e8-4e54-9d11-f375153d63f8?resourceName=universityDegree'
     const revocationDefinitionResponse = await cheqdAnonCredsRegistry.getRevocationRegistryDefinition(
-      agent.context,
+      resolverAgent.context,
       revocationRegistryId
     )
 
@@ -224,7 +227,7 @@ describe('cheqdAnonCredsRegistry', () => {
     })
 
     const revocationStatusListResponse = await cheqdAnonCredsRegistry.getRevocationStatusList(
-      agent.context,
+      resolverAgent.context,
       revocationRegistryId,
       1680789403
     )

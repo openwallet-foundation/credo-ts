@@ -2,23 +2,26 @@ import { Agent, JsonTransformer } from '@aries-framework/core'
 
 import { getAgentOptions } from '../../core/tests/helpers'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
+import { DefaultRPCUrl } from '../src/ledger/CheqdLedgerService'
 
 import { getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(getAgentOptions('Indy SDK Sov DID resolver', {}, getCheqdModules()))
+export const resolverAgent = new Agent(
+  getAgentOptions('Cheqd resolver', {}, getCheqdModules(undefined, DefaultRPCUrl.Testnet))
+)
 
 describe('Cheqd DID resolver', () => {
   beforeAll(async () => {
-    await agent.initialize()
+    await resolverAgent.initialize()
   })
 
   afterAll(async () => {
-    await agent.shutdown()
-    await agent.wallet.delete()
+    await resolverAgent.shutdown()
+    await resolverAgent.wallet.delete()
   })
 
   it('should resolve a did:cheqd:testnet did', async () => {
-    const did = await agent.dids.resolve('did:cheqd:testnet:3053e034-8faa-458d-9f01-2e3e1e8b2ab8')
+    const did = await resolverAgent.dids.resolve('did:cheqd:testnet:3053e034-8faa-458d-9f01-2e3e1e8b2ab8')
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocument: {
         '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2020/v1'],
@@ -46,7 +49,7 @@ describe('Cheqd DID resolver', () => {
   })
 
   it('should getClosestResourceVersion', async () => {
-    const did = await agent.dids.resolve('did:cheqd:testnet:SiVQgrFZ7jFZFrTGstT4ZD')
+    const did = await resolverAgent.dids.resolve('did:cheqd:testnet:SiVQgrFZ7jFZFrTGstT4ZD')
     let resource = getClosestResourceVersion(did.didDocumentMetadata.linkedResourceMetadata, new Date())
     expect(resource).toMatchObject({
       id: '0b02ebf4-07c4-4df7-9015-e93c21108240',
