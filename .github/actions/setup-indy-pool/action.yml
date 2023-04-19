@@ -27,7 +27,7 @@ runs:
       run: docker exec indy-pool add-did-from-seed ${{ inputs.seed }} TRUSTEE
       shell: bash
 
-    - name: Register Endoorser DID on ledger
+    - name: Register Endorser DID on ledger
       run: docker exec indy-pool add-did-from-seed ${{ inputs.endorserSeed }} ENDORSER
       shell: bash
 

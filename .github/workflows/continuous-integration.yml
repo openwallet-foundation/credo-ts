@@ -80,7 +80,7 @@ jobs:
         run: yarn build
 
   integration-test:
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
     name: Integration Tests
 
     strategy:
