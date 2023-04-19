@@ -14,6 +14,7 @@ import type {
 } from '@aries-framework/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import {
   DidCommV1Service,
   DidCommV2Service,
@@ -37,7 +38,6 @@ import {
   didDocDiff,
   indyDidDocumentFromDid,
   isSelfCertifiedIndyDid,
-  parseIndyDid,
   verificationKeyForIndyDid,
 } from './didIndyUtil'
 import { endpointsAttribFromServices } from './didSovUtil'

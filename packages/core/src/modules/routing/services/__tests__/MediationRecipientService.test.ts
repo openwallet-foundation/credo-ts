@@ -13,7 +13,6 @@ import { ConnectionRepository } from '../../../connections/repository/Connection
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { DidRepository } from '../../../dids/repository/DidRepository'
 import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
-import { MediationRecipientModuleConfig } from '../../MediationRecipientModuleConfig'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import {
   KeylistUpdateAction,

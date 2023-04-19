@@ -13,7 +13,7 @@ import {
 } from 'class-validator'
 
 import { anonCredsPredicateType, AnonCredsPredicateType } from '../../../../models'
-import { legacyIndyCredentialDefinitionIdRegex } from '../../../../utils'
+import { unqualifiedCredentialDefinitionIdRegex } from '../../../../utils'
 
 export interface V1PresentationPreviewAttributeOptions {
   name: string
@@ -39,7 +39,7 @@ export class V1PresentationPreviewAttribute {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @ValidateIf((o: V1PresentationPreviewAttribute) => o.referent !== undefined)
-  @Matches(legacyIndyCredentialDefinitionIdRegex)
+  @Matches(unqualifiedCredentialDefinitionIdRegex)
   public credentialDefinitionId?: string
 
   @Expose({ name: 'mime-type' })
@@ -82,7 +82,7 @@ export class V1PresentationPreviewPredicate {
 
   @Expose({ name: 'cred_def_id' })
   @IsString()
-  @Matches(legacyIndyCredentialDefinitionIdRegex)
+  @Matches(unqualifiedCredentialDefinitionIdRegex)
   public credentialDefinitionId!: string
 
   @IsIn(anonCredsPredicateType)

@@ -8,10 +8,10 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { CredDef, CredReqMetadata, RevocReg, RevocRegDef, RevocRegDelta, Schema } from 'indy-sdk'
 
-import { parseCredentialDefinitionId, parseSchemaId } from './identifiers'
+import { parseIndyCredentialDefinitionId, parseIndySchemaId } from '@aries-framework/anoncreds'
 
 export function anonCredsSchemaFromIndySdk(schema: Schema): AnonCredsSchema {
-  const { did } = parseSchemaId(schema.id)
+  const { did } = parseIndySchemaId(schema.id)
   return {
     issuerId: did,
     name: schema.name,
@@ -32,7 +32,7 @@ export function indySdkSchemaFromAnonCreds(schemaId: string, schema: AnonCredsSc
 }
 
 export function anonCredsCredentialDefinitionFromIndySdk(credentialDefinition: CredDef): AnonCredsCredentialDefinition {
-  const { did } = parseCredentialDefinitionId(credentialDefinition.id)
+  const { did } = parseIndyCredentialDefinitionId(credentialDefinition.id)
 
   return {
     issuerId: did,

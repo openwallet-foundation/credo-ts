@@ -45,7 +45,6 @@ import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
-import { legacyIndyCredentialDefinitionIdRegex, legacyIndySchemaIdRegex } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -53,6 +52,7 @@ import {
   assertAttributesMatch,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
+import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 
@@ -151,7 +151,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       )
     }
 
-    if (!credentialDefinitionId.match(legacyIndyCredentialDefinitionIdRegex)) {
+    if (!isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
       throw new AriesFrameworkError(`${credentialDefinitionId} is not a valid legacy indy credential definition id`)
     }
 
@@ -210,10 +210,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
-    if (
-      !credOffer.schema_id.match(legacyIndySchemaIdRegex) ||
-      !credOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)
-    ) {
+    if (!isUnqualifiedSchemaId(credOffer.schema_id) || !isUnqualifiedCredentialDefinitionId(credOffer.cred_def_id)) {
       throw new ProblemReportError('Invalid credential offer', {
         problemCode: CredentialProblemReportReason.IssuanceAbandoned,
       })
@@ -234,7 +231,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
-    if (!credentialOffer.cred_def_id.match(legacyIndyCredentialDefinitionIdRegex)) {
+    if (!isUnqualifiedCredentialDefinitionId(credentialOffer.cred_def_id)) {
       throw new AriesFrameworkError(
         `${credentialOffer.cred_def_id} is not a valid legacy indy credential definition id`
       )

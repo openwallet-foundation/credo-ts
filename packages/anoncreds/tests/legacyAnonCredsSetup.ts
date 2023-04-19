@@ -51,12 +51,6 @@ import {
   IndySdkModule,
   IndySdkSovDidResolver,
 } from '../../indy-sdk/src'
-import {
-  getLegacyCredentialDefinitionId,
-  getLegacySchemaId,
-  parseCredentialDefinitionId,
-  parseSchemaId,
-} from '../../indy-sdk/src/anoncreds/utils/identifiers'
 import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   IndyVdrAnonCredsRegistry,
@@ -67,6 +61,10 @@ import {
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
+  getUnqualifiedCredentialDefinitionId,
+  getUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndySchemaId,
   V1CredentialProtocol,
   V1ProofProtocol,
   AnonCredsModule,
@@ -469,11 +467,15 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
     tag: 'default',
   })
 
-  const s = parseSchemaId(schema.schemaId)
-  const cd = parseCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
+  const s = parseIndySchemaId(schema.schemaId)
+  const cd = parseIndyCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
 
-  const legacySchemaId = getLegacySchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
-  const legacyCredentialDefinitionId = getLegacyCredentialDefinitionId(cd.namespaceIdentifier, cd.schemaSeqNo, cd.tag)
+  const legacySchemaId = getUnqualifiedSchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
+  const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
+    cd.namespaceIdentifier,
+    cd.schemaSeqNo,
+    cd.tag
+  )
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)

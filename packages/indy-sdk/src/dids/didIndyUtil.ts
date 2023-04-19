@@ -9,18 +9,6 @@ import {
   TypedArrayEncoder,
 } from '@aries-framework/core'
 
-import { DID_INDY_REGEX } from '../utils/did'
-
-export function parseIndyDid(did: string) {
-  const match = did.match(DID_INDY_REGEX)
-  if (match) {
-    const [, namespace, namespaceIdentifier] = match
-    return { namespace, namespaceIdentifier }
-  } else {
-    throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
-  }
-}
-
 // Create a base DIDDoc template according to https://hyperledger.github.io/indy-did-method/#base-diddoc-template
 export function indyDidDocumentFromDid(did: string, publicKeyBase58: string) {
   const verificationMethodId = `${did}#verkey`

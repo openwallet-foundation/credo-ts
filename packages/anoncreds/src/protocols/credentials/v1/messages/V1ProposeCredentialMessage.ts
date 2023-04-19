@@ -5,10 +5,10 @@ import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
 import {
-  legacyIndyCredentialDefinitionIdRegex,
-  legacyIndyDidRegex,
-  legacyIndySchemaIdRegex,
-  legacyIndySchemaVersionRegex,
+  unqualifiedCredentialDefinitionIdRegex,
+  unqualifiedIndyDidRegex,
+  unqualifiedSchemaIdRegex,
+  unqualifiedSchemaVersionRegex,
 } from '../../../../utils'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
@@ -79,7 +79,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(legacyIndyDidRegex)
+  @Matches(unqualifiedIndyDidRegex)
   public schemaIssuerDid?: string
 
   /**
@@ -88,7 +88,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_id' })
   @IsString()
   @IsOptional()
-  @Matches(legacyIndySchemaIdRegex)
+  @Matches(unqualifiedSchemaIdRegex)
   public schemaId?: string
 
   /**
@@ -105,7 +105,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'schema_version' })
   @IsString()
   @IsOptional()
-  @Matches(legacyIndySchemaVersionRegex, {
+  @Matches(unqualifiedSchemaVersionRegex, {
     message: 'Version must be X.X or X.X.X',
   })
   public schemaVersion?: string
@@ -116,7 +116,7 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'cred_def_id' })
   @IsString()
   @IsOptional()
-  @Matches(legacyIndyCredentialDefinitionIdRegex)
+  @Matches(unqualifiedCredentialDefinitionIdRegex)
   public credentialDefinitionId?: string
 
   /**
@@ -125,6 +125,6 @@ export class V1ProposeCredentialMessage extends AgentMessage {
   @Expose({ name: 'issuer_did' })
   @IsString()
   @IsOptional()
-  @Matches(legacyIndyDidRegex)
+  @Matches(unqualifiedIndyDidRegex)
   public issuerDid?: string
 }

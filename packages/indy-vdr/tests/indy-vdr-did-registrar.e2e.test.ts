@@ -1,5 +1,6 @@
 import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/dids/IndyVdrIndyDidRegistrar'
 
+import { didIndyRegex } from '@aries-framework/anoncreds'
 import {
   Key,
   JsonTransformer,
@@ -22,7 +23,6 @@ import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
-import { DID_INDY_REGEX } from '../src/utils/did'
 
 import { indyVdrModuleConfig } from './helpers'
 
@@ -100,16 +100,16 @@ describe('Indy VDR Indy Did Registrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'finished',
-        did: expect.stringMatching(DID_INDY_REGEX),
+        did: expect.stringMatching(didIndyRegex),
         didDocument: {
           '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-          id: expect.stringMatching(DID_INDY_REGEX),
+          id: expect.stringMatching(didIndyRegex),
           alsoKnownAs: undefined,
           controller: undefined,
           verificationMethod: [
             {
               type: 'Ed25519VerificationKey2018',
-              controller: expect.stringMatching(DID_INDY_REGEX),
+              controller: expect.stringMatching(didIndyRegex),
               id: expect.stringContaining('#verkey'),
               publicKeyBase58: expect.any(String),
             },
@@ -187,16 +187,16 @@ describe('Indy VDR Indy Did Registrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'finished',
-        did: expect.stringMatching(DID_INDY_REGEX),
+        did: expect.stringMatching(didIndyRegex),
         didDocument: {
           '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-          id: expect.stringMatching(DID_INDY_REGEX),
+          id: expect.stringMatching(didIndyRegex),
           alsoKnownAs: undefined,
           controller: undefined,
           verificationMethod: [
             {
               type: 'Ed25519VerificationKey2018',
-              controller: expect.stringMatching(DID_INDY_REGEX),
+              controller: expect.stringMatching(didIndyRegex),
               id: expect.stringContaining('#verkey'),
               publicKeyBase58: expect.any(String),
             },

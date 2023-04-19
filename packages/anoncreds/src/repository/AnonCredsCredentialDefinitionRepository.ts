@@ -14,10 +14,28 @@ export class AnonCredsCredentialDefinitionRepository extends Repository<AnonCred
   }
 
   public async getByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.getSingleByQuery(agentContext, { credentialDefinitionId })
+    return this.getSingleByQuery(agentContext, {
+      $or: [
+        {
+          credentialDefinitionId,
+        },
+        {
+          unqualifiedCredentialDefinitionId: credentialDefinitionId,
+        },
+      ],
+    })
   }
 
   public async findByCredentialDefinitionId(agentContext: AgentContext, credentialDefinitionId: string) {
-    return this.findSingleByQuery(agentContext, { credentialDefinitionId })
+    return this.findSingleByQuery(agentContext, {
+      $or: [
+        {
+          credentialDefinitionId,
+        },
+        {
+          unqualifiedCredentialDefinitionId: credentialDefinitionId,
+        },
+      ],
+    })
   }
 }

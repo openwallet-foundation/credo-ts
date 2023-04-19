@@ -2,10 +2,9 @@ import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 import type { IndyVdrPool } from '../pool'
 import type { AgentContext } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import {
-  getKeyFromVerificationMethod,
   AriesFrameworkError,
-  convertPublicKeyToX25519,
   DidDocument,
   DidDocumentBuilder,
   DidsApi,
@@ -14,11 +13,12 @@ import {
   Key,
   KeyType,
   TypedArrayEncoder,
+  convertPublicKeyToX25519,
+  getKeyFromVerificationMethod,
 } from '@aries-framework/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
 import { IndyVdrError, IndyVdrNotFoundError } from '../error'
-import { DID_INDY_REGEX } from '../utils/did'
 
 import { addServicesFromEndpointsAttrib, getFullVerkey } from './didSovUtil'
 
@@ -43,16 +43,6 @@ export function indyDidDocumentFromDid(did: string, verKeyBase58: string) {
 
 export function createKeyAgreementKey(verkey: string) {
   return TypedArrayEncoder.toBase58(convertPublicKeyToX25519(TypedArrayEncoder.fromBase58(verkey)))
-}
-
-export function parseIndyDid(did: string) {
-  const match = did.match(DID_INDY_REGEX)
-  if (match) {
-    const [, namespace, namespaceIdentifier] = match
-    return { namespace, namespaceIdentifier }
-  } else {
-    throw new AriesFrameworkError(`${did} is not a valid did:indy did`)
-  }
 }
 
 const deepMerge = (a: Record<string, unknown>, b: Record<string, unknown>) => {

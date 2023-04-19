@@ -33,7 +33,7 @@ export const getJsonLdModules = ({
       credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
       autoAcceptCredentials,
     }),
-    w3cVc: new W3cCredentialsModule({
+    w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
     }),
     proofs: new ProofsModule({

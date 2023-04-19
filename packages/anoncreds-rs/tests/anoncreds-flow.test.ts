@@ -38,7 +38,7 @@ import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderServi
 import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
 import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
 
-const registry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
 })

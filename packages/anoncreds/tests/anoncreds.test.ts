@@ -165,6 +165,7 @@ describe('AnonCreds API', () => {
       schemaName: 'Employee Credential',
       schemaVersion: '1.0.0',
       methodName: 'inMemory',
+      unqualifiedSchemaId: '6xDN7v3AiGgusRp4bqZACZ:2:Employee Credential:1.0.0',
     })
   })
 
@@ -263,6 +264,7 @@ describe('AnonCreds API', () => {
       schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
       issuerId: 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX',
       tag: 'TAG',
+      unqualifiedCredentialDefinitionId: 'VsKV7grR1BUE29mG2Fm2kX:3:CL:75206:TAG',
     })
   })
 

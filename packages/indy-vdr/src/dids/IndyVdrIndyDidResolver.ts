@@ -1,8 +1,10 @@
 import type { AgentContext, DidResolutionResult, DidResolver } from '@aries-framework/core'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
+
 import { IndyVdrPoolService } from '../pool'
 
-import { buildDidDocument, parseIndyDid } from './didIndyUtil'
+import { buildDidDocument } from './didIndyUtil'
 
 export class IndyVdrIndyDidResolver implements DidResolver {
   public readonly supportedMethods = ['indy']

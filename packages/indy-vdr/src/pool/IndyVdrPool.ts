@@ -1,6 +1,7 @@
 import type { AgentContext, Key } from '@aries-framework/core'
 import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { TypedArrayEncoder } from '@aries-framework/core'
 import {
   GetTransactionAuthorAgreementRequest,
@@ -9,7 +10,6 @@ import {
   indyVdr,
 } from '@hyperledger/indy-vdr-shared'
 
-import { parseIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrError } from '../error'
 
 export interface TransactionAuthorAgreement {

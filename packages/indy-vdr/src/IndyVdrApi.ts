@@ -1,10 +1,11 @@
 import type { Key } from '@aries-framework/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { AgentContext, injectable, TypedArrayEncoder } from '@aries-framework/core'
 import { CustomRequest } from '@hyperledger/indy-vdr-shared'
 
-import { verificationKeyForIndyDid, parseIndyDid } from './dids/didIndyUtil'
+import { verificationKeyForIndyDid } from './dids/didIndyUtil'
 import { IndyVdrError } from './error'
 import { IndyVdrPoolService } from './pool'
 
