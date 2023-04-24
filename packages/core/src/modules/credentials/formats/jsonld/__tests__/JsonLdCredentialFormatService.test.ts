@@ -14,7 +14,7 @@ import { W3cCredentialRecord, W3cCredentialService } from '../../../../vc'
 import { Ed25519Signature2018Fixtures } from '../../../../vc/__tests__/fixtures'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
 import { W3cVerifiableCredential } from '../../../../vc/models'
-import { CredentialState } from '../../../models'
+import { CredentialRole, CredentialState } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
@@ -93,6 +93,7 @@ const credentialAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
@@ -100,6 +101,7 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
+  role?: CredentialRole
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -110,6 +112,7 @@ const mockCredentialRecord = ({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
     state: state || CredentialState.OfferSent,
+    role: role || CredentialRole.Issuer,
     threadId: threadId ?? 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     connectionId: connectionId ?? '123',
     tags,

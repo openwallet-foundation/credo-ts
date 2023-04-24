@@ -4,7 +4,7 @@ import type { RevocationNotificationReceivedEvent } from '../../../../Credential
 
 import { Subject } from 'rxjs'
 
-import { CredentialExchangeRecord, CredentialState, InboundMessageContext } from '../../../../../..'
+import { CredentialExchangeRecord, CredentialRole, CredentialState, InboundMessageContext } from '../../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../../agent/MessageHandlerRegistry'
@@ -68,6 +68,7 @@ describe('RevocationNotificationService', () => {
         threadId: 'thread-id',
         protocolVersion: 'v1',
         state: CredentialState.Done,
+        role: CredentialRole.Holder,
       })
 
       const metadata = {
@@ -181,6 +182,7 @@ describe('RevocationNotificationService', () => {
         threadId: 'thread-id',
         protocolVersion: 'v2',
         state: CredentialState.Done,
+        role: CredentialRole.Holder,
       })
 
       const metadata = {

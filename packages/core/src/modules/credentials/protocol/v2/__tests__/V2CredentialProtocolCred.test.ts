@@ -13,7 +13,7 @@ import type { CustomCredentialTags } from '../../../repository/CredentialExchang
 
 import { Subject } from 'rxjs'
 
-import { AriesFrameworkError, CredentialFormatSpec } from '../../../../..'
+import { AriesFrameworkError, CredentialFormatSpec, CredentialRole } from '../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
@@ -180,6 +180,7 @@ const getAgentMessageMock = async (agentContext: AgentContext, options: GetAgent
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockCredentialRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
@@ -187,6 +188,7 @@ const mockCredentialRecord = ({
   credentialAttributes,
 }: {
   state?: CredentialState
+  role?: CredentialRole
   tags?: CustomCredentialTags
   threadId?: string
   connectionId?: string
@@ -197,6 +199,7 @@ const mockCredentialRecord = ({
     id,
     credentialAttributes: credentialAttributes,
     state: state || CredentialState.OfferSent,
+    role: role || CredentialRole.Issuer,
     threadId: threadId || 'thread-id',
     connectionId: connectionId ?? '123',
     credentials: [

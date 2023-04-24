@@ -9,6 +9,8 @@ import {
   ProofExchangeRecord,
   ProofState,
   EventEmitter,
+  ProofRole,
+  CredentialRole,
 } from '@aries-framework/core'
 import * as indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
@@ -142,12 +144,14 @@ describe('Legacy indy format services', () => {
     const holderCredentialRecord = new CredentialExchangeRecord({
       protocolVersion: 'v1',
       state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
     const issuerCredentialRecord = new CredentialExchangeRecord({
       protocolVersion: 'v1',
       state: CredentialState.ProposalReceived,
+      role: CredentialRole.Issuer,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
@@ -271,11 +275,13 @@ describe('Legacy indy format services', () => {
     const holderProofRecord = new ProofExchangeRecord({
       protocolVersion: 'v1',
       state: ProofState.ProposalSent,
+      role: ProofRole.Prover,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
     const verifierProofRecord = new ProofExchangeRecord({
       protocolVersion: 'v1',
       state: ProofState.ProposalReceived,
+      role: ProofRole.Verifier,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 
