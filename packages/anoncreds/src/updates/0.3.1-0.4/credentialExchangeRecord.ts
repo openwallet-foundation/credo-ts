@@ -1,6 +1,6 @@
 import type { BaseAgent, CredentialExchangeRecord } from '@credo-ts/core'
 
-import { CredentialRepository } from '@credo-ts/core'
+import { CredentialState, CredentialRole, CredentialRepository } from '@credo-ts/core'
 
 /**
  * Migrates the {@link CredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
@@ -10,6 +10,7 @@ import { CredentialRepository } from '@credo-ts/core'
  * The following transformations are applied:
  *  - {@link migrateIndyCredentialMetadataToAnonCredsMetadata}
  *  - {@link migrateIndyCredentialTypeToAnonCredsCredential}
+ *  - {@link migrateRole}
  */
 export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
@@ -26,6 +27,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
 
     migrateIndyCredentialTypeToAnonCredsCredential(agent, credentialRecord)
     migrateIndyCredentialMetadataToAnonCredsMetadata(agent, credentialRecord)
+    await migrateRole(agent, credentialRecord)
 
     // Save updated record
     await credentialRepository.update(agent.context, credentialRecord)
@@ -34,6 +36,48 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
       `Successfully migrated credential exchange record with id ${credentialRecord.id} to storage version 0.4`
     )
   }
+}
+
+const holderCredentialStates = [
+  CredentialState.Declined,
+  CredentialState.ProposalSent,
+  CredentialState.OfferReceived,
+  CredentialState.RequestSent,
+  CredentialState.CredentialReceived,
+]
+
+export async function getCredentialRole(agent: BaseAgent, credentialRecord: CredentialExchangeRecord) {
+  // Credentials will only have a value when a credential is received, meaning we're the holder
+  if (credentialRecord.credentials.length > 0) {
+    return CredentialRole.Holder
+  }
+  // If credentialRecord.credentials doesn't have any values, and we're also not in state done it means we're the issuer.
+  else if (credentialRecord.state === CredentialState.Done) {
+    return CredentialRole.Issuer
+  }
+  // For these states we know for certain that we're the holder
+  else if (holderCredentialStates.includes(credentialRecord.state)) {
+    return CredentialRole.Holder
+  }
+
+  // FIXME: we need to determine the role based on the didcomm messages
+  // If we have role Sender on e.g. offer we are the issuer
+
+  // For all other states we can be certain we're the issuer
+  return CredentialRole.Issuer
+}
+
+/**
+ * Add a role to the credential record.
+ */
+export async function migrateRole<Agent extends BaseAgent>(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+  agent.config.logger.debug(`Adding role to record with id ${credentialRecord.id} to for version 0.4`)
+
+  credentialRecord.role = await getCredentialRole(agent, credentialRecord)
+
+  agent.config.logger.debug(
+    `Successfully updated role to '${credentialRecord.role}' on credential record with id ${credentialRecord.id} to for version 0.4`
+  )
 }
 
 /**

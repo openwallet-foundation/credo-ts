@@ -1,37 +1,8 @@
-import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
-import type { Wallet } from '@credo-ts/core'
+import type { AnonCredsCredentialRequest } from '@aries-framework/anoncreds'
+import type { Wallet } from '@aries-framework/core'
 
 import {
-  CredentialRole,
-  ProofRole,
-  CredentialState,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  InjectionSymbols,
-  ProofState,
-  ProofExchangeRecord,
-  SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
-  DidResolverService,
-  DidsModuleConfig,
-} from '@credo-ts/core'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
-import { AnonCredsRsVerifierService, AnonCredsRsIssuerService, AnonCredsRsHolderService } from '../src/anoncreds-rs'
-
-import { anoncreds } from './helpers'
-
-import {
-  getUnqualifiedSchemaId,
-  parseIndySchemaId,
-  getUnqualifiedCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
   AnonCredsModuleConfig,
-  LegacyIndyCredentialFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsVerifierServiceSymbol,
@@ -45,16 +16,36 @@ import {
   AnonCredsKeyCorrectnessProofRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsLinkSecretRecord,
-  LegacyIndyProofFormatService,
-} from '@credo-ts/anoncreds'
+  AnonCredsProofFormatService,
+  AnonCredsCredentialFormatService,
+} from '@aries-framework/anoncreds'
+import {
+  CredentialRole,
+  ProofRole,
+  CredentialState,
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  InjectionSymbols,
+  ProofState,
+  ProofExchangeRecord,
+} from '@aries-framework/core'
+import { Subject } from 'rxjs'
+
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { describeRunInNodeVersion } from '../../../tests/runInVersion'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
+import { AnonCredsRsHolderService } from '../src/services/AnonCredsRsHolderService'
+import { AnonCredsRsIssuerService } from '../src/services/AnonCredsRsIssuerService'
+import { AnonCredsRsVerifierService } from '../src/services/AnonCredsRsVerifierService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
   registries: [registry],
-  anoncreds,
 })
 
-const agentConfig = getAgentConfig('LegacyIndyCredentialFormatService using anoncreds-rs')
+const agentConfig = getAgentConfig('AnonCreds format services using anoncreds-rs')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
@@ -71,23 +62,19 @@ const agentContext = getAgentContext({
     [AnonCredsHolderServiceSymbol, anonCredsHolderService],
     [AnonCredsVerifierServiceSymbol, anonCredsVerifierService],
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
-    [DidResolverService, new DidResolverService(testLogger, new DidsModuleConfig())],
-    [InjectionSymbols.Logger, testLogger],
-    [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
-    [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
   wallet,
 })
 
-const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
+const anoncredsProofFormatService = new AnonCredsProofFormatService()
 
-// This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
-const indyDid = 'did:indy:bcovrin:test:LjgpST2rjsoxYegQDRm7EL'
+const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
-describe('Legacy indy format services using anoncreds-rs', () => {
+// FIXME: Re-include in tests when NodeJS wrapper performance is improved
+describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     const schema = await anonCredsIssuerService.createSchema(agentContext, {
       attrNames: ['name', 'age'],
@@ -207,108 +194,93 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       }),
     ]
 
-    const parsedCredentialDefinition = parseIndyCredentialDefinitionId(credentialDefinitionState.credentialDefinitionId)
-    const unqualifiedCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-      parsedCredentialDefinition.namespaceIdentifier,
-      parsedCredentialDefinition.schemaSeqNo,
-      parsedCredentialDefinition.tag
-    )
-
-    const parsedSchemaId = parseIndySchemaId(schemaState.schemaId)
-    const unqualifiedSchemaId = getUnqualifiedSchemaId(
-      parsedSchemaId.namespaceIdentifier,
-      parsedSchemaId.schemaName,
-      parsedSchemaId.schemaVersion
-    )
-
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes
-    const { attachment: proposalAttachment } = await legacyIndyCredentialFormatService.createProposal(agentContext, {
+    const { attachment: proposalAttachment } = await anoncredsCredentialFormatService.createProposal(agentContext, {
       credentialRecord: holderCredentialRecord,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: credentialAttributes,
-          credentialDefinitionId: unqualifiedCredentialDefinitionId,
+          credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
         },
       },
     })
 
     // Issuer processes and accepts proposal
-    await legacyIndyCredentialFormatService.processProposal(agentContext, {
+    await anoncredsCredentialFormatService.processProposal(agentContext, {
       credentialRecord: issuerCredentialRecord,
       attachment: proposalAttachment,
     })
     // Set attributes on the credential record, this is normally done by the protocol service
     issuerCredentialRecord.credentialAttributes = credentialAttributes
-    const { attachment: offerAttachment } = await legacyIndyCredentialFormatService.acceptProposal(agentContext, {
+    const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
       credentialRecord: issuerCredentialRecord,
       proposalAttachment: proposalAttachment,
     })
 
     // Holder processes and accepts offer
-    await legacyIndyCredentialFormatService.processOffer(agentContext, {
+    await anoncredsCredentialFormatService.processOffer(agentContext, {
       credentialRecord: holderCredentialRecord,
       attachment: offerAttachment,
     })
-    const { attachment: requestAttachment } = await legacyIndyCredentialFormatService.acceptOffer(agentContext, {
+    const { attachment: requestAttachment } = await anoncredsCredentialFormatService.acceptOffer(agentContext, {
       credentialRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
-        indy: {
+        anoncreds: {
           linkSecretId: linkSecret.linkSecretId,
         },
       },
     })
 
-    // Make sure the request contains a prover_did field
-    expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).prover_did).toBeDefined()
+    // Make sure the request contains an entropy and does not contain a prover_did field
+    expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).entropy).toBeDefined()
+    expect((requestAttachment.getDataAsJson() as AnonCredsCredentialRequest).prover_did).toBeUndefined()
 
     // Issuer processes and accepts request
-    await legacyIndyCredentialFormatService.processRequest(agentContext, {
+    await anoncredsCredentialFormatService.processRequest(agentContext, {
       credentialRecord: issuerCredentialRecord,
       attachment: requestAttachment,
     })
-    const { attachment: credentialAttachment } = await legacyIndyCredentialFormatService.acceptRequest(agentContext, {
+    const { attachment: credentialAttachment } = await anoncredsCredentialFormatService.acceptRequest(agentContext, {
       credentialRecord: issuerCredentialRecord,
       requestAttachment,
       offerAttachment,
     })
 
     // Holder processes and accepts credential
-    await legacyIndyCredentialFormatService.processCredential(agentContext, {
-      offerAttachment,
+    await anoncredsCredentialFormatService.processCredential(agentContext, {
       credentialRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
 
     expect(holderCredentialRecord.credentials).toEqual([
-      { credentialRecordType: 'w3c', credentialRecordId: expect.any(String) },
+      { credentialRecordType: 'anoncreds', credentialRecordId: expect.any(String) },
     ])
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
     const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-      id: credentialId,
+      credentialId,
     })
 
     expect(anonCredsCredential).toEqual({
       credentialId,
       attributes: {
-        age: 25,
+        age: '25',
         name: 'John',
       },
       schemaId: schemaState.schemaId,
       credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       revocationRegistryId: null,
-      credentialRevocationId: null,
+      credentialRevocationId: undefined, // FIXME: should be null?
       methodName: 'inMemory',
-      linkSecretId: 'linkSecretId',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({
       '_anoncreds/credential': {
-        schemaId: unqualifiedSchemaId,
-        credentialDefinitionId: unqualifiedCredentialDefinitionId,
+        schemaId: schemaState.schemaId,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
       '_anoncreds/credentialRequest': {
         link_secret_blinding_data: expect.any(Object),
@@ -319,8 +291,8 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     expect(issuerCredentialRecord.metadata.data).toEqual({
       '_anoncreds/credential': {
-        schemaId: unqualifiedSchemaId,
-        credentialDefinitionId: unqualifiedCredentialDefinitionId,
+        schemaId: schemaState.schemaId,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
       },
     })
 
@@ -337,20 +309,20 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 
-    const { attachment: proofProposalAttachment } = await legacyIndyProofFormatService.createProposal(agentContext, {
+    const { attachment: proofProposalAttachment } = await anoncredsProofFormatService.createProposal(agentContext, {
       proofFormats: {
-        indy: {
+        anoncreds: {
           attributes: [
             {
               name: 'name',
-              credentialDefinitionId: unqualifiedCredentialDefinitionId,
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
               value: 'John',
               referent: '1',
             },
           ],
           predicates: [
             {
-              credentialDefinitionId: unqualifiedCredentialDefinitionId,
+              credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
               name: 'age',
               predicate: '>=',
               threshold: 18,
@@ -363,28 +335,28 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       proofRecord: holderProofRecord,
     })
 
-    await legacyIndyProofFormatService.processProposal(agentContext, {
+    await anoncredsProofFormatService.processProposal(agentContext, {
       attachment: proofProposalAttachment,
       proofRecord: verifierProofRecord,
     })
 
-    const { attachment: proofRequestAttachment } = await legacyIndyProofFormatService.acceptProposal(agentContext, {
+    const { attachment: proofRequestAttachment } = await anoncredsProofFormatService.acceptProposal(agentContext, {
       proofRecord: verifierProofRecord,
       proposalAttachment: proofProposalAttachment,
     })
 
-    await legacyIndyProofFormatService.processRequest(agentContext, {
+    await anoncredsProofFormatService.processRequest(agentContext, {
       attachment: proofRequestAttachment,
       proofRecord: holderProofRecord,
     })
 
-    const { attachment: proofAttachment } = await legacyIndyProofFormatService.acceptRequest(agentContext, {
+    const { attachment: proofAttachment } = await anoncredsProofFormatService.acceptRequest(agentContext, {
       proofRecord: holderProofRecord,
       requestAttachment: proofRequestAttachment,
       proposalAttachment: proofProposalAttachment,
     })
 
-    const isValid = await legacyIndyProofFormatService.processPresentation(agentContext, {
+    const isValid = await anoncredsProofFormatService.processPresentation(agentContext, {
       attachment: proofAttachment,
       proofRecord: verifierProofRecord,
       requestAttachment: proofRequestAttachment,

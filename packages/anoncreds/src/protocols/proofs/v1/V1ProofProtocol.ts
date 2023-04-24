@@ -13,6 +13,7 @@ import type {
 } from '@credo-ts/core'
 
 import {
+  ProofRole,
   BaseProofProtocol,
   Protocol,
   ProofRepository,
@@ -139,6 +140,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
       state: ProofState.ProposalSent,
+      role: ProofRole.Prover,
       autoAcceptProof,
       protocolVersion: 'v1',
     })
@@ -208,6 +210,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
         state: ProofState.ProposalReceived,
+        role: ProofRole.Verifier,
         protocolVersion: 'v1',
       })
 
@@ -366,6 +369,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       threadId: utils.uuid(),
       parentThreadId,
       state: ProofState.RequestSent,
+      role: ProofRole.Verifier,
       autoAcceptProof,
       protocolVersion: 'v1',
     })
@@ -459,6 +463,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
         state: ProofState.RequestReceived,
+        role: ProofRole.Prover,
         protocolVersion: 'v1',
       })
 

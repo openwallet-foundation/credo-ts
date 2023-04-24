@@ -1,6 +1,6 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { ProofRole, ProofState } from '../models'
 import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
-import type { ProofState } from '../models/ProofState'
 
 import { CredoError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
@@ -12,6 +12,7 @@ export interface ProofExchangeRecordProps {
   protocolVersion: string
   isVerified?: boolean
   state: ProofState
+  role: ProofRole
   connectionId?: string
   threadId: string
   parentThreadId?: string
@@ -26,6 +27,7 @@ export type DefaultProofTags = {
   parentThreadId?: string
   connectionId?: string
   state: ProofState
+  role: ProofRole
 }
 
 export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
@@ -35,6 +37,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
   public parentThreadId?: string
   public isVerified?: boolean
   public state!: ProofState
+  public role!: ProofRole
   public autoAcceptProof?: AutoAcceptProof
   public errorMessage?: string
 
@@ -51,6 +54,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
 
       this.isVerified = props.isVerified
       this.state = props.state
+      this.role = props.role
       this.connectionId = props.connectionId
       this.threadId = props.threadId
       this.parentThreadId = props.parentThreadId
@@ -67,6 +71,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
       parentThreadId: this.parentThreadId,
       connectionId: this.connectionId,
       state: this.state,
+      role: this.role,
     }
   }
 

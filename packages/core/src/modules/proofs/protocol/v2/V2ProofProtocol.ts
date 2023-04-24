@@ -40,7 +40,7 @@ import { ConnectionService } from '../../../connections'
 import { V2ProposeCredentialMessage } from '../../../credentials'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
-import { AutoAcceptProof, ProofState } from '../../models'
+import { AutoAcceptProof, ProofRole, ProofState } from '../../models'
 import { ProofExchangeRecord, ProofRepository } from '../../repository'
 import { composeAutoAccept } from '../../utils'
 import { BaseProofProtocol } from '../BaseProofProtocol'
@@ -122,6 +122,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       threadId: uuid(),
       parentThreadId,
       state: ProofState.ProposalSent,
+      role: ProofRole.Prover,
       protocolVersion: 'v2',
       autoAcceptProof,
     })
@@ -210,6 +211,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         state: ProofState.ProposalReceived,
+        role: ProofRole.Verifier,
         protocolVersion: 'v2',
         parentThreadId: proposalMessage.thread?.parentThreadId,
       })
@@ -366,6 +368,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       connectionId: connectionRecord?.id,
       threadId: uuid(),
       state: ProofState.RequestSent,
+      role: ProofRole.Verifier,
       autoAcceptProof,
       protocolVersion: 'v2',
       parentThreadId,
@@ -460,6 +463,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
         connectionId: connection?.id,
         threadId: requestMessage.threadId,
         state: ProofState.RequestReceived,
+        role: ProofRole.Prover,
         protocolVersion: 'v2',
         parentThreadId: requestMessage.thread?.parentThreadId,
       })

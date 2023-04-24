@@ -4,6 +4,7 @@ import type { AnonCredsCredentialMetadata } from '@credo-ts/anoncreds'
 
 import { Subject } from 'rxjs'
 
+import { CredentialExchangeRecord, CredentialRole, CredentialState, InboundMessageContext } from '../../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../../agent/EventEmitter'
 import { MessageHandlerRegistry } from '../../../../../../agent/MessageHandlerRegistry'
@@ -12,8 +13,6 @@ import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRepository } from '../../../../repository/CredentialRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
 import { RevocationNotificationService } from '../RevocationNotificationService'
-
-import { CredentialExchangeRecord, CredentialState, InboundMessageContext } from '@credo-ts/core'
 
 jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
@@ -69,6 +68,7 @@ describe('RevocationNotificationService', () => {
         threadId: 'thread-id',
         protocolVersion: 'v1',
         state: CredentialState.Done,
+        role: CredentialRole.Holder,
       })
 
       const metadata = {
@@ -182,6 +182,7 @@ describe('RevocationNotificationService', () => {
         threadId: 'thread-id',
         protocolVersion: 'v2',
         state: CredentialState.Done,
+        role: CredentialRole.Holder,
       })
 
       const metadata = {

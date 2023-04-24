@@ -13,6 +13,7 @@ import { uuid } from '../../../../../utils/uuid'
 import { ConnectionService, DidExchangeState } from '../../../../connections'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
+import { ProofRole } from '../../../models'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 import { ProofState } from '../../../models/ProofState'
 import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
@@ -71,12 +72,14 @@ const requestAttachment = new Attachment({
 // object to test our service would behave correctly. We use type assertion for `offer` attribute to `any`.
 const mockProofExchangeRecord = ({
   state,
+  role,
   threadId,
   connectionId,
   tags,
   id,
 }: {
   state?: ProofState
+  role?: ProofRole
   tags?: CustomProofTags
   threadId?: string
   connectionId?: string
@@ -86,6 +89,7 @@ const mockProofExchangeRecord = ({
     protocolVersion: 'v2',
     id,
     state: state || ProofState.RequestSent,
+    role: role || ProofRole.Verifier,
     threadId: threadId ?? uuid(),
     connectionId: connectionId ?? '123',
     tags,

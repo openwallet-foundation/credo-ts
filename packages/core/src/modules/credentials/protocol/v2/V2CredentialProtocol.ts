@@ -36,7 +36,7 @@ import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
 import { ConnectionService } from '../../../connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
-import { AutoAcceptCredential, CredentialProblemReportReason, CredentialState } from '../../models'
+import { AutoAcceptCredential, CredentialProblemReportReason, CredentialRole, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
 import { arePreviewAttributesEqual } from '../../util/previewAttributes'
@@ -136,6 +136,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connectionId: connectionRecord.id,
       threadId: uuid(),
       state: CredentialState.ProposalSent,
+      role: CredentialRole.Holder,
       autoAcceptCredential,
       protocolVersion: 'v2',
     })
@@ -222,6 +223,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
         state: CredentialState.ProposalReceived,
+        role: CredentialRole.Issuer,
         protocolVersion: 'v2',
       })
 
@@ -371,6 +373,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connectionId: connectionRecord?.id,
       threadId: uuid(),
       state: CredentialState.OfferSent,
+      role: CredentialRole.Issuer,
       autoAcceptCredential,
       protocolVersion: 'v2',
     })
@@ -458,6 +461,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         threadId: offerMessage.threadId,
         parentThreadId: offerMessage.thread?.parentThreadId,
         state: CredentialState.OfferReceived,
+        role: CredentialRole.Holder,
         protocolVersion: 'v2',
       })
 
@@ -604,6 +608,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connectionId: connectionRecord.id,
       threadId: uuid(),
       state: CredentialState.RequestSent,
+      role: CredentialRole.Holder,
       autoAcceptCredential,
       protocolVersion: 'v2',
     })
@@ -702,6 +707,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         threadId: requestMessage.threadId,
         parentThreadId: requestMessage.thread?.parentThreadId,
         state: CredentialState.RequestReceived,
+        role: CredentialRole.Issuer,
         protocolVersion: 'v2',
       })
 
