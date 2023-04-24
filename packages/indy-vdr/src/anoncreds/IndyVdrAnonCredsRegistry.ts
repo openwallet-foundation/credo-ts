@@ -62,7 +62,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get schema request for schema '${schemaId}' to ledger '${pool.indyNamespace}'`
       )
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       agentContext.config.logger.trace(`Got un-parsed schema '${schemaId}' from ledger '${pool.indyNamespace}'`, {
         response,
@@ -150,7 +150,9 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       const submitterKey = await verificationKeyForIndyDid(agentContext, options.schema.issuerId)
-      const response = await pool.submitWriteRequest(agentContext, schemaRequest, submitterKey)
+      const writeRequest = await pool.prepareWriteRequest(agentContext, schemaRequest, submitterKey)
+      const response = await pool.submitRequest(writeRequest)
+
       agentContext.config.logger.debug(`Registered schema '${didIndySchemaId}' on ledger '${pool.indyNamespace}'`, {
         response,
         schemaRequest,
@@ -216,7 +218,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get credential definition request for credential definition '${credentialDefinitionId}' to ledger '${pool.indyNamespace}'`
       )
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       // We need to fetch the schema to determine the schemaId (we only have the seqNo)
       const schema = await this.fetchIndySchemaWithSeqNo(agentContext, response.result.ref, namespaceIdentifier)
@@ -332,7 +334,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       })
 
       const submitterKey = await verificationKeyForIndyDid(agentContext, options.credentialDefinition.issuerId)
-      const response = await pool.submitWriteRequest(agentContext, credentialDefinitionRequest, submitterKey)
+      const writeRequest = await pool.prepareWriteRequest(agentContext, credentialDefinitionRequest, submitterKey)
+      const response = await pool.submitRequest(writeRequest)
       agentContext.config.logger.debug(
         `Registered credential definition '${didIndyCredentialDefinitionId}' on ledger '${pool.indyNamespace}'`,
         {
@@ -400,7 +403,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get revocation registry definition request for revocation registry definition '${revocationRegistryDefinitionId}' to ledger`
       )
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       if (!response.result.data) {
         agentContext.config.logger.error(
@@ -512,7 +515,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(
         `Submitting get revocation registry delta request for revocation registry '${revocationRegistryId}' to ledger`
       )
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       agentContext.config.logger.debug(
         `Got revocation registry deltas '${revocationRegistryId}' until timestamp ${timestamp} from ledger`
@@ -596,7 +599,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
     const request = new GetTransactionRequest({ ledgerType: 1, seqNo })
 
     agentContext.config.logger.trace(`Submitting get transaction request to ledger '${pool.indyNamespace}'`)
-    const response = await pool.submitReadRequest(request)
+    const response = await pool.submitRequest(request)
 
     if (response.result.data?.txn.type !== '101') {
       agentContext.config.logger.error(`Could not get schema from ledger for seq no ${seqNo}'`)

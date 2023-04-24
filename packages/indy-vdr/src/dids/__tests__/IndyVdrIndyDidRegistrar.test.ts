@@ -80,8 +80,9 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool1:did-value',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       },
       secret: {
         privateKey: TypedArrayEncoder.fromString('key'),
@@ -98,11 +99,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     })
   })
 
-  test('returns an error state if the submitter did is not a valid did:indy did', async () => {
+  test('returns an error state if the endorser did is not a valid did:indy did', async () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       method: 'indy',
       options: {
-        submitterDid: 'BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
       },
     })
@@ -121,7 +123,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -141,7 +144,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         alias: 'Hello',
       },
     })
@@ -160,7 +164,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'verkey',
         alias: 'Hello',
       },
@@ -176,11 +181,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     })
   })
 
-  test('returns an error state if did is provided, but does not match with the namespace from the submitterDid', async () => {
+  test('returns an error state if did is provided, but does not match with the namespace from the endorserDid', async () => {
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
       did: 'did:indy:pool2:B6xaJg1c2xU3D9ppCtt1CZ',
       options: {
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
       },
@@ -192,13 +198,21 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didState: {
         state: 'failed',
         reason:
-          'The submitter did uses namespace pool1 and the did to register uses namespace pool2. Namespaces must match.',
+          "The endorser did uses namespace: 'pool1' and the did to register uses namespace: 'pool2'. Namespaces must match.",
       },
     })
   })
 
   test('creates a did:indy document without services', async () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+
+    // @ts-ignore - method is private
+    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
@@ -209,30 +223,27 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
       },
       secret: {
         privateKey,
       },
     })
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
+
+    expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
       agentContext,
-      poolMock,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD',
-      undefined
-    )
+      pool: poolMock,
+      signingKey: expect.any(Key),
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
+    expect(registerPublicDidSpy).toHaveBeenCalledWith(agentContext, poolMock, undefined)
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -263,7 +274,15 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('creates a did:indy document by passing did', async () => {
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
+
+    // @ts-ignore - method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
@@ -272,26 +291,28 @@ describe('IndyVdrIndyDidRegistrar', () => {
       options: {
         verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
       },
       secret: {},
     })
+
+    expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
+      agentContext,
+      pool: poolMock,
+      signingKey: expect.any(Key),
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       poolMock,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD',
+      // writeRequest
       undefined
     )
     expect(JsonTransformer.toJSON(result)).toMatchObject({
@@ -324,11 +345,18 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // @ts-ignore - method is private
+    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - method is private
     const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
 
@@ -336,7 +364,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         services: [
           new DidDocumentService({
@@ -365,22 +394,15 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
     })
 
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
+    expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
-      poolMock,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD',
-      {
+      pool: poolMock,
+      signingKey: expect.any(Key),
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: {
         '@context': [],
         authentication: [],
         id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
@@ -416,7 +438,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
             type: 'X25519KeyAgreementKey2019',
           },
         ],
-      }
+      },
+    })
+
+    expect(registerPublicDidSpy).toHaveBeenCalledWith(
+      agentContext,
+      poolMock,
+      // writeRequest
+      undefined
     )
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
     expect(JsonTransformer.toJSON(result)).toMatchObject({
@@ -485,9 +514,25 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
     // @ts-ignore - method is private
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // @ts-ignore - method is private
+    const createSetDidEndpointsRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createSetDidEndpointsRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createSetDidEndpointsRequestSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     // @ts-ignore - method is private
     const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
@@ -498,7 +543,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         useEndpointAttrib: true,
         services: [
@@ -528,33 +574,37 @@ describe('IndyVdrIndyDidRegistrar', () => {
       },
     })
 
+    expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
+      agentContext,
+      pool: poolMock,
+      signingKey: expect.any(Key),
+      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
+      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      verificationKey: expect.any(Key),
+      alias: 'Hello',
+      diddocContent: undefined,
+    })
+
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
       agentContext,
       poolMock,
-      // Unqualified submitter did
-      'BzCbsNYhMrjHiqZDTUASHg',
-      // submitter signing key,
-      expect.any(Key),
-      // Unqualified created indy did
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      // Verkey
-      expect.any(Key),
-      // Alias
-      'Hello',
-      // Role
-      'STEWARD'
+      // writeRequest
+      undefined
     )
-    expect(setEndpointsForDidSpy).toHaveBeenCalledWith(
+    expect(createSetDidEndpointsRequestSpy).toHaveBeenCalledWith({
       agentContext,
-      poolMock,
-      'B6xaJg1c2xU3D9ppCtt1CZ',
-      expect.any(Key),
-      {
+      pool: poolMock,
+      signingKey: expect.any(Key),
+      endorserDid: undefined,
+      // Unqualified created indy did
+      unqualifiedDid: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
         types: ['endpoint', 'did-communication', 'DIDComm'],
-      }
-    )
+      },
+    })
+    expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
     expect(JsonTransformer.toJSON(result)).toMatchObject({
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -621,6 +671,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
     const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
 
     // @ts-ignore - method is private
+    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+      indyVdrIndyDidRegistrar,
+      'createRegisterDidWriteRequest'
+    )
+    // @ts-ignore type check fails because method is private
+    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
+
+    // @ts-ignore - method is private
     const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
@@ -637,7 +695,8 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
-        submitterDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+        endorserMode: 'internal',
+        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
         services: [
           new DidDocumentService({

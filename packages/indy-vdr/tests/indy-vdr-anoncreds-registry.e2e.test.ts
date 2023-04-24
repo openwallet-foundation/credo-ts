@@ -231,7 +231,8 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // After this call, the revocation registry should now be resolvable
-    await pool.submitWriteRequest(agent.context, revocationRegistryRequest, signingKey)
+    const writeRequest = await pool.prepareWriteRequest(agent.context, revocationRegistryRequest, signingKey)
+    await pool.submitRequest(writeRequest)
 
     // Also create a revocation registry entry
     const revocationEntryRequest = new RevocationRegistryEntryRequest({
@@ -247,7 +248,13 @@ describe('IndyVdrAnonCredsRegistry', () => {
     })
 
     // After this call we can query the revocation registry entries (using timestamp now)
-    const entryResponse = await pool.submitWriteRequest(agent.context, revocationEntryRequest, signingKey)
+
+    const revocationEntryWriteRequest = await pool.prepareWriteRequest(
+      agent.context,
+      revocationEntryRequest,
+      signingKey
+    )
+    const entryResponse = await pool.submitRequest(revocationEntryWriteRequest)
 
     const legacyRevocationRegistryDefinition = await indyVdrAnonCredsRegistry.getRevocationRegistryDefinition(
       agent.context,

@@ -10,6 +10,7 @@ on:
 
 env:
   TEST_AGENT_PUBLIC_DID_SEED: 000000000000000000000000Trustee9
+  ENDORSER_AGENT_PUBLIC_DID_SEED: 00000000000000000000000Endorser9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
   LIB_INDY_STRG_POSTGRES: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
   NODE_OPTIONS: --max_old_space_size=4096
@@ -37,7 +38,7 @@ jobs:
               export SHOULD_RUN='true'
           elif [[ "${{ github.event.action }}" == "labeled" && "${{ github.event.label.name }}" != "ci-test" ]]; then
               export SHOULD_RUN='false'
-          else 
+          else
               export SHOULD_RUN='true'
           fi
 
@@ -96,10 +97,12 @@ jobs:
 
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
+
       - name: Setup Indy Pool
         uses: ./.github/actions/setup-indy-pool
         with:
           seed: ${TEST_AGENT_PUBLIC_DID_SEED}
+          endorserSeed: ${ENDORSER_AGENT_PUBLIC_DID_SEED}
 
       - name: Setup Cheqd
         uses: ./.github/actions/setup-cheqd
@@ -123,7 +126,7 @@ jobs:
         run: yarn install
 
       - name: Run tests
-        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
+        run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} ENDORSER_AGENT_PUBLIC_DID_SEED=${ENDORSER_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
 
       - uses: codecov/codecov-action@v1
         if: always()

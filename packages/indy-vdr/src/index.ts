@@ -1,4 +1,4 @@
-export { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver } from './dids'
+export { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver, IndyVdrDidCreateResult } from './dids'
 export { IndyVdrPoolConfig } from './pool'
 export * from './IndyVdrModule'
 export * from './IndyVdrModuleConfig'
