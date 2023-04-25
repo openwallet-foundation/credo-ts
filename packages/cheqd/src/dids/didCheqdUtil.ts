@@ -1,8 +1,13 @@
-import type { DidDocument } from '@aries-framework/core'
 import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
-import { AriesFrameworkError, JsonEncoder, TypedArrayEncoder } from '@aries-framework/core'
+import {
+  DidDocument,
+  AriesFrameworkError,
+  JsonEncoder,
+  TypedArrayEncoder,
+  JsonTransformer,
+} from '@aries-framework/core'
 import {
   createDidPayload,
   createDidVerificationMethod,
@@ -102,8 +107,8 @@ export function generateDidDoc(options: IDidDocOptions) {
     throw new Error('Invalid DID options')
   }
   const verificationMethods = createDidVerificationMethod([verificationMethod], [verificationKeys])
-
-  return createDidPayload(verificationMethods, [verificationKeys]) as DidDocument
+  const didPayload = createDidPayload(verificationMethods, [verificationKeys])
+  return JsonTransformer.fromJSON(didPayload, DidDocument)
 }
 
 export interface IDidDocOptions {

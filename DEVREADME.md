@@ -47,7 +47,7 @@ docker pull postgres
 docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
 ```
 
-### Setup Ledger
+### Setup Indy Ledger
 
 For testing we've added a setup to this repo that allows you to quickly setup an indy ledger.
 
@@ -72,6 +72,14 @@ docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE
 
 # If you want to register using the DID/Verkey you can use
 # docker exec indy-pool add-did "NkGXDEPgpFGjQKMYmz6SyF" "CrSA1WbYYWLJoHm16Xw1VEeWxFvXtWjtsfEzMsjB5vDT"
+```
+
+### Setup Cheqd Ledger
+
+In addition, there's also a docker command to run a cheqd test network.
+
+```sh
+docker run --rm -d -p 26657:26657 ghcr.io/cheqd/cheqd-testnet:latest
 ```
 
 ### Run all tests
