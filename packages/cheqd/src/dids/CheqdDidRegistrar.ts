@@ -66,6 +66,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           keyType: KeyType.Ed25519,
           privateKey: privateKey,
         })
+
         didDocument = generateDidDoc({
           verificationMethod: verificationMethod.type as VerificationMethods,
           verificationMethodId: verificationMethod.id || 'key-1',
@@ -73,13 +74,25 @@ export class CheqdDidRegistrar implements DidRegistrar {
           network: network as CheqdNetwork,
           publicKey: TypedArrayEncoder.toHex(key.publicKey),
         })
+
+        const contextMapping = {
+          Ed25519VerificationKey2018: 'https://w3id.org/security/suites/ed25519-2018/v1',
+          Ed25519VerificationKey2020: 'https://w3id.org/security/suites/ed25519-2020/v1',
+          JsonWebKey2020: 'https://w3id.org/security/suites/jws-2020/v1',
+        }
+        const contextUrl = contextMapping[verificationMethod.type]
+
+        // Add the context to the did document
+        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while AFJ did doc uses https://w3id.org/did/v1
+        // We should align these at some point. For now we just return a consistent value.
+        didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Provide a didDocument or atleast one verificationMethod with seed in secret',
+            reason: 'Provide a didDocument or at least one verificationMethod with seed in secret',
           },
         }
       }

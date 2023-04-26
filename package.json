@@ -60,7 +60,8 @@
     "ws": "^8.13.0"
   },
   "resolutions": {
-    "@types/node": "^16.11.7"
+    "@types/node": "^16.11.7",
+    "ref-napi": "npm:@2060.io/ref-napi"
   },
   "engines": {
     "node": "^16 || ^18"
