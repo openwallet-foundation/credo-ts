@@ -1,17 +1,27 @@
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import { prompt } from 'inquirer'
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
+import { prompt } from 'inquirer'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Faber, RegistryOptions } from './Faber'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
 export const runFaber = async () => {
-  clear()
-  console.log(textSync('Faber', { horizontalLayout: 'full' }))
-  const faber = await FaberInquirer.build()
-  await faber.processAnswer()
+  // We set the HOME directory to a temp dir so that the default wallet isn't
+  // written to arbitrary home directories.  This seems like the most
+  // reasonable way to change where it gets stored in the current setup
+  // unfortunately
+  const tempDirPath = mkdtempSync(join(tmpdir(), 'faber-'));
+  process.env['HOME'] = tempDirPath;
+
+  clear();
+  console.log(textSync('Faber', { horizontalLayout: 'full' }));
+  const faber = await FaberInquirer.build();
+  await faber.processAnswer();
 }
 
 enum PromptOptions {

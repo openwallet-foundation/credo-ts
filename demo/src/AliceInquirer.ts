@@ -2,18 +2,28 @@ import type { CredentialExchangeRecord, ProofExchangeRecord } from '@aries-frame
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
-import { prompt } from 'inquirer'
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
+import { prompt } from 'inquirer'
 import { Alice } from './Alice'
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Listener } from './Listener'
 import { Title } from './OutputClass'
 
 export const runAlice = async () => {
-  clear()
-  console.log(textSync('Alice', { horizontalLayout: 'full' }))
-  const alice = await AliceInquirer.build()
-  await alice.processAnswer()
+  // We set the HOME directory to a temp dir so that the default wallet isn't
+  // written to arbitrary home directories.  This seems like the most
+  // reasonable way to change where it gets stored in the current setup
+  // unfortunately
+  const tempDirPath = mkdtempSync(join(tmpdir(), 'alice-'));
+  process.env['HOME'] = tempDirPath;
+
+  clear();
+  console.log(textSync('Alice', { horizontalLayout: 'full' }));
+  const alice = await AliceInquirer.build();
+  await alice.processAnswer();
 }
 
 enum PromptOptions {
