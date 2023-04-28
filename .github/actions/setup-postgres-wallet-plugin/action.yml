@@ -10,7 +10,7 @@ runs:
     # so pointing rust version to 1.63.0
     - name: Setup Postgres wallet plugin
       run: |
-        sudo apt-get install -y libzmq3-dev libsodium-dev pkg-config
+        sudo apt-get install -y libzmq3-dev libsodium-dev pkg-config libssl-dev
         curl https://sh.rustup.rs -sSf | bash -s -- -y
         export PATH="/root/.cargo/bin:${PATH}"
         rustup default 1.63.0
