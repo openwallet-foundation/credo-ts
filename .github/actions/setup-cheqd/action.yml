@@ -1,0 +1,14 @@
+name: Setup cheqd
+description: Setup a cheqd network to perform tests
+author: 'daev@cheqd.io'
+
+runs:
+  using: composite
+  steps:
+    - name: Start cheqd localnet
+      run: docker run --rm -d -p 26657:26657 ghcr.io/cheqd/cheqd-testnet:latest
+      shell: bash
+
+branding:
+  icon: scissors
+  color: purple

@@ -6,6 +6,9 @@ inputs:
   seed:
     description: Seed to register on the ledger
     required: true
+  endorserSeed:
+    description: Endorser seed to register on the ledger
+    required: true
 
 runs:
   using: composite
@@ -20,8 +23,12 @@ runs:
       run: docker exec indy-pool indy-cli-setup
       shell: bash
 
-    - name: Register DID on ledger
+    - name: Register Trustee DID on ledger
       run: docker exec indy-pool add-did-from-seed ${{ inputs.seed }} TRUSTEE
+      shell: bash
+
+    - name: Register Endorser DID on ledger
+      run: docker exec indy-pool add-did-from-seed ${{ inputs.endorserSeed }} ENDORSER
       shell: bash
 
 branding:

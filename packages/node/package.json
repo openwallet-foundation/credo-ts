@@ -35,7 +35,7 @@
   "devDependencies": {
     "@types/ffi-napi": "^4.0.5",
     "@types/node": "^16.11.7",
-    "@types/node-fetch": "^2.5.10",
+    "@types/node-fetch": "2.6.2",
     "@types/ref-napi": "^3.0.4",
     "@types/ws": "^8.5.4",
     "nock": "^13.3.0",

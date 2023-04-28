@@ -11,10 +11,11 @@ export const getIndySdkModuleConfig = () =>
     indySdk,
   })
 
-export const getCheqdModuleConfig = (seed?: string) =>
+export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   ({
     networks: [
       {
+        rpcUrl: rpcUrl || 'http://localhost:26657',
         network: 'testnet',
         cosmosPayerSeed:
           seed ||
@@ -23,8 +24,8 @@ export const getCheqdModuleConfig = (seed?: string) =>
     ],
   } satisfies CheqdModuleConfigOptions)
 
-export const getCheqdModules = (seed?: string) => ({
-  cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed)),
+export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
+  cheqdSdk: new CheqdModule(getCheqdModuleConfig(seed, rpcUrl)),
   dids: new DidsModule({
     registrars: [new CheqdDidRegistrar(), new KeyDidRegistrar()],
     resolvers: [new CheqdDidResolver(), new KeyDidResolver()],

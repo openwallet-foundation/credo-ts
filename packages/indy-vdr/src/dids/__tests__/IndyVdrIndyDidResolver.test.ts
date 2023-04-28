@@ -39,12 +39,12 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      const poolMockSubmitReadRequest = jest.spyOn(poolMock, 'submitReadRequest')
-      poolMockSubmitReadRequest.mockResolvedValueOnce(nymResponse)
+      const poolMockSubmitRequest = jest.spyOn(poolMock, 'submitRequest')
+      poolMockSubmitRequest.mockResolvedValueOnce(nymResponse)
 
       const result = await resolver.resolve(agentContext, did)
 
-      expect(poolMockSubmitReadRequest).toHaveBeenCalledTimes(1)
+      expect(poolMockSubmitRequest).toHaveBeenCalledTimes(1)
       expect(JsonTransformer.toJSON(result)).toMatchObject({
         didDocument: didIndyLjgpST2rjsoxYegQDRm7EL,
         didDocumentMetadata: {},
@@ -75,8 +75,8 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did)
 
@@ -114,8 +114,8 @@ describe('IndyVdrIndyDidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitReadRequest').mockResolvedValueOnce(attribResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did)
 
@@ -131,7 +131,7 @@ describe('IndyVdrIndyDidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:indy:ns1:R1xKJw17sUoXhejEpugMYJ'
 
-      jest.spyOn(poolMock, 'submitReadRequest').mockRejectedValue(new Error('Error submitting read request'))
+      jest.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
 
       const result = await resolver.resolve(agentContext, did)
 

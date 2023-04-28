@@ -1,6 +1,7 @@
 import type { AgentContext, Key } from '@aries-framework/core'
-import type { IndyVdrRequest, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
+import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
+import { parseIndyDid } from '@aries-framework/anoncreds'
 import { TypedArrayEncoder } from '@aries-framework/core'
 import {
   GetTransactionAuthorAgreementRequest,
@@ -83,12 +84,17 @@ export class IndyVdrPool {
     // this.pool.close()
   }
 
-  public async submitWriteRequest<Request extends IndyVdrRequest>(
+  public async prepareWriteRequest<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     request: Request,
-    signingKey: Key
+    signingKey: Key,
+    endorserDid?: string
   ) {
     await this.appendTaa(request)
+
+    if (endorserDid) {
+      request.setEndorser({ endorser: parseIndyDid(endorserDid).namespaceIdentifier })
+    }
 
     const signature = await agentContext.wallet.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
@@ -99,11 +105,20 @@ export class IndyVdrPool {
       signature,
     })
 
-    return await this.pool.submitRequest(request)
+    return request
   }
 
-  public async submitReadRequest<Request extends IndyVdrRequest>(request: Request) {
-    return await this.pool.submitRequest(request)
+  /**
+   * This method submits a request to the ledger.
+   * It does only submit the request. It does not modify it in any way.
+   * To create the request, use the `prepareWriteRequest` method.
+   * @param writeRequest
+   */
+
+  public async submitRequest<Request extends IndyVdrRequest>(
+    writeRequest: Request
+  ): Promise<RequestResponseType<Request>> {
+    return await this.pool.submitRequest(writeRequest)
   }
 
   private async appendTaa(request: IndyVdrRequest) {
@@ -158,10 +173,10 @@ export class IndyVdrPool {
     }
 
     const taaRequest = new GetTransactionAuthorAgreementRequest({})
-    const taaResponse = await this.submitReadRequest(taaRequest)
+    const taaResponse = await this.submitRequest(taaRequest)
 
     const acceptanceMechanismRequest = new GetAcceptanceMechanismsRequest({})
-    const acceptanceMechanismResponse = await this.submitReadRequest(acceptanceMechanismRequest)
+    const acceptanceMechanismResponse = await this.submitRequest(acceptanceMechanismRequest)
 
     const taaData = taaResponse.result.data
 

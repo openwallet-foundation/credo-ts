@@ -20,13 +20,14 @@ export const indyVdrModuleConfig = new IndyVdrModuleConfig({
   ],
 })
 
-export async function createDidOnLedger(agent: Agent, submitterDid: string) {
+export async function createDidOnLedger(agent: Agent, endorserDid: string) {
   const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
 
   const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
     options: {
-      submitterDid,
+      endorserMode: 'internal',
+      endorserDid: endorserDid,
       alias: 'Alias',
       role: 'TRUSTEE',
       verkey: key.publicKeyBase58,

@@ -8,6 +8,11 @@ import { ui } from 'inquirer'
 import { BaseAgent } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
+export enum RegistryOptions {
+  indy = 'did:indy',
+  cheqd = 'did:cheqd',
+}
+
 export class Faber extends BaseAgent {
   public outOfBandId?: string
   public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
@@ -22,25 +27,34 @@ export class Faber extends BaseAgent {
   public static async build(): Promise<Faber> {
     const faber = new Faber(9001, 'faber')
     await faber.initializeAgent()
+    return faber
+  }
 
+  public async importDid(registry: string) {
     // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
     // and store the existing did in the wallet
     const privateKey = TypedArrayEncoder.fromString('afjdemoverysercure00000000000000')
-
-    const key = await faber.agent.wallet.createKey({
+    const key = await this.agent.wallet.createKey({
       keyType: KeyType.Ed25519,
       privateKey,
     })
-
     // did is first 16 bytes of public key encoded as base58
     const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
-    await faber.agent.dids.import({
-      did: `did:sov:${unqualifiedIndyDid}`,
-    })
-
-    faber.anonCredsIssuerId = unqualifiedIndyDid
-
-    return faber
+    const cheqdDid = 'did:cheqd:testnet:2d6841a0-8614-44c0-95c5-d54c61e420f2'
+    switch (registry) {
+      case RegistryOptions.indy:
+        await this.agent.dids.import({
+          did: `did:sov:${unqualifiedIndyDid}`,
+        })
+        this.anonCredsIssuerId = unqualifiedIndyDid
+        break
+      case RegistryOptions.cheqd:
+        await this.agent.dids.import({
+          did: cheqdDid,
+        })
+        this.anonCredsIssuerId = cheqdDid
+        break
+    }
   }
 
   private async getConnectionRecord() {

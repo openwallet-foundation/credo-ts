@@ -59,7 +59,7 @@ describe('IndyVdrPoolService', () => {
         dest: 'TL1EaPFCZ8Si5aUrqScBDt',
       })
 
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       expect(response).toMatchObject({
         op: 'REPLY',
@@ -98,7 +98,8 @@ describe('IndyVdrPoolService', () => {
         verkey: key.publicKeyBase58,
       })
 
-      const response = await pool.submitWriteRequest(agentContext, request, signerKey)
+      const writeRequest = await pool.prepareWriteRequest(agentContext, request, signerKey)
+      const response = await pool.submitRequest(writeRequest)
 
       expect(response).toMatchObject({
         op: 'REPLY',
@@ -133,7 +134,8 @@ describe('IndyVdrPoolService', () => {
       },
     })
 
-    const schemaResponse = await pool.submitWriteRequest(agentContext, schemaRequest, signerKey)
+    const writeRequest = await pool.prepareWriteRequest(agentContext, schemaRequest, signerKey)
+    const schemaResponse = await pool.submitRequest(writeRequest)
 
     expect(schemaResponse).toMatchObject({
       op: 'REPLY',
@@ -183,7 +185,8 @@ describe('IndyVdrPoolService', () => {
       },
     })
 
-    const response = await pool.submitWriteRequest(agentContext, credentialDefinitionRequest, signerKey)
+    const credDefWriteRequest = await pool.prepareWriteRequest(agentContext, credentialDefinitionRequest, signerKey)
+    const response = await pool.submitRequest(credDefWriteRequest)
 
     expect(response).toMatchObject({
       op: 'REPLY',

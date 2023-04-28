@@ -51,7 +51,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
 
   private async getPublicDid(pool: IndyVdrPool, unqualifiedDid: string) {
     const request = new GetNymRequest({ dest: unqualifiedDid })
-    const didResponse = await pool.submitReadRequest(request)
+    const didResponse = await pool.submitRequest(request)
 
     if (!didResponse.result.data) {
       throw new IndyVdrNotFoundError(`DID ${unqualifiedDid} not found`)
@@ -68,7 +68,7 @@ export class IndyVdrSovDidResolver implements DidResolver {
       agentContext.config.logger.debug(
         `Submitting get endpoint ATTRIB request for did '${did}' to ledger '${pool.indyNamespace}'`
       )
-      const response = await pool.submitReadRequest(request)
+      const response = await pool.submitRequest(request)
 
       if (!response.result.data) {
         return null
