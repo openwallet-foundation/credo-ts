@@ -35,7 +35,7 @@ describeRunInNodeVersion([18], 'IC v2 credential revocation', () => {
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
 
-  const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+  const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 
   const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 

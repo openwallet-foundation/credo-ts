@@ -9,9 +9,7 @@ import type {
   GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
   AnonCredsRevocationRegistryDefinition,
-  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'

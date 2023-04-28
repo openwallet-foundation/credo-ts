@@ -102,6 +102,9 @@ export class CheqdRevocationRegistryDefinitionValue {
 
   @IsString()
   public tailsHash!: string
+
+  @IsString()
+  public issuanceType!: 'ISSUANCE_BY_DEFAULT' | 'ISSUANCE_ON_DEMAND'
 }
 
 export class CheqdRevocationRegistryDefinition {

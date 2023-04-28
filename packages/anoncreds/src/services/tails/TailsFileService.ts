@@ -12,6 +12,7 @@ export interface TailsFileService {
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+      revocationRegistryDefinitionId?: string
     }
   ): Promise<string>
 
@@ -19,6 +20,7 @@ export interface TailsFileService {
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
+      revocationRegistryDefinitionId?: string
     }
   ): Promise<{
     tailsFilePath: string

@@ -20,7 +20,7 @@ export interface AnonCredsModuleConfigOptions {
   maximumCredentialNumberPerRevocationRegistry?: number
 
   /**
-   * Tails file manager for download/uploading tails files
+   * Tails file service for download/uploading tails files
    * @default BasicTailsFileService (only for downloading tails files)
    */
   tailsFileService?: TailsFileService

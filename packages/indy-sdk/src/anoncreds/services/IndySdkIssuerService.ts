@@ -137,8 +137,8 @@ export class IndySdkIssuerService implements AnonCredsIssuerService {
     assertIndySdkWallet(agentContext.wallet)
     assertUnqualifiedCredentialOffer(options.credentialOffer)
     assertUnqualifiedCredentialRequest(options.credentialRequest)
-    if (options.revocationRegistryId) {
-      assertUnqualifiedRevocationRegistryId(options.revocationRegistryId)
+    if (options.revocationRegistryDefinitionId) {
+      assertUnqualifiedRevocationRegistryId(options.revocationRegistryDefinitionId)
     }
 
     try {

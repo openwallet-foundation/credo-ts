@@ -1036,12 +1036,12 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/anoncreds-nodejs@^0.1.0-dev.14":
-  version "0.1.0-dev.14"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.14.tgz#00d4dca419f04a580cc02611d0c803d3d5c04fbf"
-  integrity sha512-N0H89rRBOaLeX+j5NHSibU1m88lWOXWg2t/orZZtY9iTt8op1oFV0IcWHeUJ1lPDJnOiozpn+AF/f5G0kipK7w==
+"@hyperledger/anoncreds-nodejs@^0.1.0-dev.15":
+  version "0.1.0-dev.15"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.1.0-dev.15.tgz#8d248f53c318d91e82030a7fb23740fe4b2bef7a"
+  integrity sha512-3QiKzjVhbQ+N07vMiR0XCBxxy51RwhKf/z0/mHiVYy1ZcmuTok5dE/jTjAwmHh+jvuAwqk+O4ebWmFItRx1K7Q==
   dependencies:
-    "@hyperledger/anoncreds-shared" "0.1.0-dev.14"
+    "@hyperledger/anoncreds-shared" "0.1.0-dev.15"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ffi-napi "4.0.3"
     node-cache "5.1.2"
@@ -1049,10 +1049,10 @@
     ref-napi "3.0.3"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.1.0-dev.14", "@hyperledger/anoncreds-shared@^0.1.0-dev.14":
-  version "0.1.0-dev.14"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.14.tgz#0cdaa18a59b8223bb3eb2116970b1aa56cf5acfc"
-  integrity sha512-4yS7NgZZF9nfE50OquvbLWuZSzjOOiPufC/n2Ywb5lL2VloBblXMI2CezCZU1POmyAl7xnoT99pi2Od1fQaJxQ==
+"@hyperledger/anoncreds-shared@0.1.0-dev.15", "@hyperledger/anoncreds-shared@^0.1.0-dev.15":
+  version "0.1.0-dev.15"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.1.0-dev.15.tgz#644e9cbc16a174f46b2f54dd7cb215a251d3da0a"
+  integrity sha512-nTO5KDTlDxpadk1j/r5T8E4wfS16rWKgZpyyG6dxg/7WhwZQkIcTsbPNnPH+NHklGju/ee+WT7rWlojpJ6XFVQ==
 
 "@hyperledger/aries-askar-nodejs@^0.1.0-dev.8":
   version "0.1.0-dev.8"

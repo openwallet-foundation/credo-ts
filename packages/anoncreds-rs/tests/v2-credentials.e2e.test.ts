@@ -41,7 +41,7 @@ describeRunInNodeVersion([18], 'IC V2 AnonCreds credentials', () => {
 
   let anonCredsCredentialProposal: AnonCredsProposeCredentialFormat
 
-  const inMemoryRegistry = new InMemoryAnonCredsRegistry({ useLegacyIdentifiers: false })
+  const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 
   const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
