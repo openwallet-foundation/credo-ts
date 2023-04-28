@@ -27,7 +27,7 @@ jobs:
   # validation scripts. To still be able to run the CI we can manually trigger it by adding the 'ci-test'
   # label to the pull request
   ci-trigger:
-    runs-on: ubuntu-2004-paid
+    runs-on: aries-ubuntu-2004
     outputs:
       triggered: ${{ steps.check.outputs.triggered }}
     steps:
@@ -46,7 +46,7 @@ jobs:
           echo "::set-output name=triggered::${SHOULD_RUN}"
 
   validate:
-    runs-on: ubuntu-2004-paid
+    runs-on: aries-ubuntu-2004
     name: Validate
     steps:
       - name: Checkout aries-framework-javascript
@@ -77,7 +77,7 @@ jobs:
         run: yarn build
 
   integration-test:
-    runs-on: ubuntu-2004-paid
+    runs-on: aries-ubuntu-2004
     name: Integration Tests
 
     strategy:
@@ -127,7 +127,7 @@ jobs:
         if: always()
 
   version-stable:
-    runs-on: ubuntu-2004-paid
+    runs-on: aries-ubuntu-2004
     name: Release stable
     needs: [integration-test, validate]
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
