@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as base
+FROM ubuntu:20.04 as base
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -9,15 +9,7 @@ RUN apt-get update -y && apt-get install -y \
     # Only needed to build indy-sdk
     build-essential \
     git \
-    libzmq3-dev libsodium-dev pkg-config
-
-# libssl1.1 (required by libindy)
-RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl1.1.deb
-RUN dpkg -i libssl1.1.deb
-
-# libssl-dev1.1 (required to compile libindy with posgres plugin)
-RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1-1ubuntu2.1~18.04.21_amd64.deb -o libssl-dev1.1.deb
-RUN dpkg -i libssl-dev1.1.deb
+    libzmq3-dev libsodium-dev pkg-config libssl-dev
 
 # libindy
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88
