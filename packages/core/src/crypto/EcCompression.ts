@@ -87,9 +87,7 @@ export function expand(publicKey: Uint8Array, curve: 'P-256' | 'P-384' | 'P-521'
   var signY: any = (new Number(publicKeyComponent[1]) as any) - 2
   const x = bigInt(publicKeyComponent.substring(2), 16)
   // y^2 = x^3 - 3x + b
-  let y
-
-  y = x.pow(3).subtract(x.multiply(3)).add(b).modPow(pIdent, prime)
+  let y = x.pow(3).subtract(x.multiply(3)).add(b).modPow(pIdent, prime)
 
   // If the parity doesn't match it's the *other* root
   if (y.mod(2).toJSNumber() !== signY) {
