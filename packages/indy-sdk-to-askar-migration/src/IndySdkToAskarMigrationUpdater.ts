@@ -337,7 +337,7 @@ export class IndySdkToAskarMigrationUpdater {
       for (const row of masterSecrets) {
         this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
 
-        const isDefault = masterSecrets.length === 0 ?? row.name === this.walletConfig.id
+        const isDefault = masterSecrets.length === 0 || row.name === this.walletConfig.id
 
         const {
           value: { ms },
