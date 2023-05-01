@@ -12,9 +12,9 @@ export async function migrateLinkSecretToV0_4<Agent extends BaseAgent>(agent: Ag
   const linkSecretRepository = agent.dependencyManager.resolve(AnonCredsLinkSecretRepository)
 
   agent.config.logger.debug(`Fetching default link secret record from storage`)
-  const defaultLinkdSecret = await linkSecretRepository.findDefault(agent.context)
+  const defaultLinkSecret = await linkSecretRepository.findDefault(agent.context)
 
-  if (!defaultLinkdSecret) {
+  if (!defaultLinkSecret) {
     // If no default link secret record exists, we create one based on the wallet id and set is as default
     agent.config.logger.debug(`No default link secret record found. Creating one based on wallet id.`)
 
@@ -35,7 +35,7 @@ export async function migrateLinkSecretToV0_4<Agent extends BaseAgent>(agent: Ag
     await linkSecretRepository.save(agent.context, linkSecret)
   } else {
     agent.config.logger.debug(
-      `Default link secret record with record id ${defaultLinkdSecret.id} and link secret id ${defaultLinkdSecret.linkSecretId} found. Skipping...`
+      `Default link secret record with record id ${defaultLinkSecret.id} and link secret id ${defaultLinkSecret.linkSecretId} found. Skipping...`
     )
   }
 
