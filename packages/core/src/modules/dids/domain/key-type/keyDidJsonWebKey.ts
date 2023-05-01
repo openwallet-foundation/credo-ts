@@ -8,7 +8,7 @@ import { VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020, isJsonWebKey2020 } from '..
 
 export const keyDidJsonWebKey: KeyDidMapping = {
   supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020],
-  getVerificationMethods: (did, key) => [getJsonWebKey2020VerificationMethod(did, key)],
+  getVerificationMethods: (did, key) => [getJsonWebKey2020VerificationMethod({ did, key })],
 
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (!isJsonWebKey2020(verificationMethod) || !verificationMethod.publicKeyJwk) {
