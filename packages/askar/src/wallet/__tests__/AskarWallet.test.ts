@@ -100,6 +100,12 @@ describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
     })
   })
 
+  test('Create P256 keypair', async () => {
+    await expect(askarWallet.createKey({ seed, keyType: KeyType.P256 })).resolves.toMatchObject({
+      keyType: KeyType.P256,
+    })
+  })
+
   test('throws WalletKeyExistsError when a key already exists', async () => {
     const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b68')
     await expect(askarWallet.createKey({ privateKey, keyType: KeyType.Ed25519 })).resolves.toEqual(expect.any(Key))
@@ -108,10 +114,8 @@ describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
     )
   })
 
-  describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
-    test('Fail to create a Bls12381g1g2 keypair', async () => {
-      await expect(askarWallet.createKey({ seed, keyType: KeyType.Bls12381g1g2 })).rejects.toThrowError(WalletError)
-    })
+  test('Fail to create a P384 keypair', async () => {
+    await expect(askarWallet.createKey({ seed, keyType: KeyType.P384 })).rejects.toThrowError(WalletError)
   })
 
   test('Create a signature with a ed25519 keypair', async () => {

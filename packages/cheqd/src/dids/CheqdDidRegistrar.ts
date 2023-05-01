@@ -5,13 +5,12 @@ import type {
   DidCreateResult,
   DidDeactivateResult,
   DidUpdateResult,
-  DidDocument,
-  VerificationMethod,
 } from '@aries-framework/core'
 import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 
 import {
+  DidDocument,
   DidDocumentRole,
   DidRecord,
   DidRepository,
@@ -21,6 +20,8 @@ import {
   utils,
   TypedArrayEncoder,
   getKeyFromVerificationMethod,
+  VerificationMethod,
+  JsonTransformer,
 } from '@aries-framework/core'
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
@@ -166,16 +167,19 @@ export class CheqdDidRegistrar implements DidRegistrar {
           })
 
           didDocument.verificationMethod?.concat(
-            createDidVerificationMethod(
-              [verificationMethod.type as VerificationMethods],
-              [
-                {
-                  methodSpecificId: didDocument.id.split(':')[3],
-                  didUrl: didDocument.id,
-                  keyId: `${didDocument.id}#${verificationMethod.id}`,
-                  publicKey: TypedArrayEncoder.toHex(key.publicKey),
-                },
-              ]
+            JsonTransformer.fromJSON(
+              createDidVerificationMethod(
+                [verificationMethod.type as VerificationMethods],
+                [
+                  {
+                    methodSpecificId: didDocument.id.split(':')[3],
+                    didUrl: didDocument.id,
+                    keyId: `${didDocument.id}#${verificationMethod.id}`,
+                    publicKey: TypedArrayEncoder.toHex(key.publicKey),
+                  },
+                ]
+              ),
+              VerificationMethod
             )
           )
         }
@@ -237,6 +241,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
     try {
       const { didDocument, didDocumentMetadata } = await cheqdLedgerService.resolve(did)
+
       const didRecord = await didRepository.findCreatedDid(agentContext, did)
       if (!didDocument || didDocumentMetadata.deactivated || !didRecord) {
         return {
@@ -249,7 +254,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
       const payloadToSign = createMsgDeactivateDidDocPayloadToSign(didDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+      const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
       const response = await cheqdLedgerService.deactivate(didDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
@@ -316,7 +322,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
         data,
       })
       const payloadToSign = MsgCreateResourcePayload.encode(resourcePayload).finish()
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+
+      const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
+      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
       const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
