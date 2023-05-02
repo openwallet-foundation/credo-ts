@@ -101,7 +101,7 @@ export class IndySdkToAskarMigrationUpdater {
   }
 
   /*
-   * Checks whether the destination locations are allready used. This might
+   * Checks whether the destination locations are already used. This might
    * happen if you want to migrate a wallet when you already have a new wallet
    * with the same id.
    */
@@ -130,10 +130,20 @@ export class IndySdkToAskarMigrationUpdater {
     return `${this.fs.tempPath}/${this.walletConfig.id}.db`
   }
 
+  private async copyDatabaseWithOptionalWal(src: string, dest: string) {
+    // Copy the supplied database to the backup destination
+    await this.fs.copyFile(src, dest)
+
+    // If a wal-file is included, also copy it (https://www.sqlite.org/wal.html)
+    if (await this.fs.exists(`${src}-wal`)) {
+      await this.fs.copyFile(`${src}-wal`, `${dest}-wal`)
+    }
+  }
+
   /**
    * Backup the database file. This function makes sure that the the indy-sdk
    * database file is backed up within our temporary directory path. If some
-   * error occurs, `this.revertDatbase()` will be called to revert the backup.
+   * error occurs, `this.revertDatabase()` will be called to revert the backup.
    */
   private async backupDatabase() {
     const src = this.dbPath
@@ -143,8 +153,8 @@ export class IndySdkToAskarMigrationUpdater {
     // Create the directories for the backup
     await this.fs.createDirectory(dest)
 
-    // Copy the supplied database to the backup destination
-    await this.fs.copyFile(src, dest)
+    // Copy the supplied database to the backup destination, with optional wal-file
+    await this.copyDatabaseWithOptionalWal(src, dest)
 
     if (!(await this.fs.exists(dest))) {
       throw new IndySdkToAskarMigrationError('Could not locate the new backup file')
@@ -158,6 +168,11 @@ export class IndySdkToAskarMigrationUpdater {
   private async cleanBackup() {
     this.agent.config.logger.trace(`Deleting the backup file at '${this.backupFile}'`)
     await this.fs.delete(this.backupFile)
+
+    // Also delete wal-file if it exists
+    if (await this.fs.exists(`${this.backupFile}-wal`)) {
+      await this.fs.delete(`${this.backupFile}-wal`)
+    }
   }
 
   /**
@@ -174,8 +189,8 @@ export class IndySdkToAskarMigrationUpdater {
 
     this.agent.config.logger.trace(`Moving upgraded database from ${src} to ${dest}`)
 
-    // Copy the file from the database path to the new location
-    await this.fs.copyFile(src, dest)
+    // Copy the file from the database path to the new location, with optional wal-file
+    await this.copyDatabaseWithOptionalWal(src, dest)
   }
 
   /**
@@ -253,7 +268,7 @@ export class IndySdkToAskarMigrationUpdater {
         const keySk = TypedArrayEncoder.fromBase58(signKey)
         const key = Key.fromSecretBytes({
           algorithm: KeyAlgs.Ed25519,
-          secretKey: keySk.subarray(0, 32),
+          secretKey: new Uint8Array(keySk.slice(0, 32)),
         })
         await txn.insertKey({ name: row.name, key })
 
@@ -322,7 +337,7 @@ export class IndySdkToAskarMigrationUpdater {
       for (const row of masterSecrets) {
         this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
 
-        const isDefault = masterSecrets.length === 0 ?? row.name === this.walletConfig.id
+        const isDefault = masterSecrets.length === 0 || row.name === this.walletConfig.id
 
         const {
           value: { ms },

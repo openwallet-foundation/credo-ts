@@ -602,7 +602,12 @@ export class AskarWallet implements Wallet {
 
     try {
       cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+
       senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
+      if (senderVerkey && !senderKey) {
+        throw new WalletError(`Unable to pack message. Sender key ${senderVerkey} not found in wallet.`)
+      }
+
       senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
 
       const recipients: JweRecipient[] = []
