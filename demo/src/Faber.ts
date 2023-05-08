@@ -5,7 +5,7 @@ import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
-import { BaseAgent } from './BaseAgent'
+import { BaseAgent, indyNetworkConfig } from './BaseAgent'
 import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export enum RegistryOptions {
@@ -33,28 +33,23 @@ export class Faber extends BaseAgent {
   public async importDid(registry: string) {
     // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
     // and store the existing did in the wallet
-    const privateKey = TypedArrayEncoder.fromString('afjdemoverysercure00000000000000')
-    const key = await this.agent.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      privateKey,
+    // indy did is based on private key (seed)
+    const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
+    const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
+    const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
+
+    const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
+    await this.agent.dids.import({
+      did,
+      overwrite: true,
+      privateKeys: [
+        {
+          keyType: KeyType.Ed25519,
+          privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+        },
+      ],
     })
-    // did is first 16 bytes of public key encoded as base58
-    const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
-    const cheqdDid = 'did:cheqd:testnet:2d6841a0-8614-44c0-95c5-d54c61e420f2'
-    switch (registry) {
-      case RegistryOptions.indy:
-        await this.agent.dids.import({
-          did: `did:sov:${unqualifiedIndyDid}`,
-        })
-        this.anonCredsIssuerId = unqualifiedIndyDid
-        break
-      case RegistryOptions.cheqd:
-        await this.agent.dids.import({
-          did: cheqdDid,
-        })
-        this.anonCredsIssuerId = cheqdDid
-        break
-    }
+    this.anonCredsIssuerId = did
   }
 
   private async getConnectionRecord() {
@@ -149,9 +144,7 @@ export class Faber extends BaseAgent {
 
     const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
       schema: schemaTemplate,
-      options: {
-        didIndyNamespace: 'bcovrin:test',
-      },
+      options: {},
     })
 
     if (schemaState.state !== 'finished') {
@@ -175,9 +168,7 @@ export class Faber extends BaseAgent {
         issuerId: this.anonCredsIssuerId,
         tag: 'latest',
       },
-      options: {
-        didIndyNamespace: 'bcovrin:test',
-      },
+      options: {},
     })
 
     if (credentialDefinitionState.state !== 'finished') {
@@ -202,9 +193,9 @@ export class Faber extends BaseAgent {
 
     await this.agent.credentials.offerCredential({
       connectionId: connectionRecord.id,
-      protocolVersion: 'v1',
+      protocolVersion: 'v2',
       credentialFormats: {
-        indy: {
+        anoncreds: {
           attributes: [
             {
               name: 'name',
@@ -255,10 +246,10 @@ export class Faber extends BaseAgent {
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
     await this.agent.proofs.requestProof({
-      protocolVersion: 'v1',
+      protocolVersion: 'v2',
       connectionId: connectionRecord.id,
       proofFormats: {
-        indy: {
+        anoncreds: {
           name: 'proof-request',
           version: '1.0',
           requested_attributes: proofAttribute,

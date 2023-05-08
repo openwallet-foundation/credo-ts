@@ -47,7 +47,7 @@ docker pull postgres
 docker run --name postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres
 ```
 
-### Setup Ledger
+### Setup Indy Ledger
 
 For testing we've added a setup to this repo that allows you to quickly setup an indy ledger.
 
@@ -74,6 +74,20 @@ docker exec indy-pool add-did-from-seed 000000000000000000000000Trustee9 TRUSTEE
 # docker exec indy-pool add-did "NkGXDEPgpFGjQKMYmz6SyF" "CrSA1WbYYWLJoHm16Xw1VEeWxFvXtWjtsfEzMsjB5vDT"
 ```
 
+### Setup Cheqd Ledger
+
+In addition, there's also a docker command to run a cheqd test network.
+
+```sh
+docker run --rm -d -p 26657:26657 ghcr.io/cheqd/cheqd-testnet:latest
+```
+
+If you want to run tests without the cheqd ledger, you can use the following ignore pattern:
+
+```sh
+yarn test --testPathIgnorePatterns packages/cheqd
+```
+
 ### Run all tests
 
 You can run the tests using the following command.
@@ -91,13 +105,13 @@ GENESIS_TXN_PATH=network/genesis/local-genesis.txn TEST_AGENT_PUBLIC_DID_SEED=00
 Locally, you might want to run the tests without postgres tests. You can do that by ignoring the tests:
 
 ```sh
-yarn test --testPathIgnorePatterns ./packages/indy-sdk/tests/postgres.e2e.test.ts -u
+yarn test --testPathIgnorePatterns postgres.e2e.test.ts
 ```
 
-In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client. On a Unix system with default setup you achieve this by running:
+In case you run into trouble running the tests, e.g. complaining about snapshots not being up-to-date, you can try and remove the data stored for the indy-client or AFJ. Note this removes all wallets and data, so make sure you're okay with all data being removed. On a Unix system with default setup you achieve this by running:
 
 ```sh
-rm -rf ~/.indy-client
+rm -rf ~/.indy-client ~/.afj
 ```
 
 ## Usage with Docker
