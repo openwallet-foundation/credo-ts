@@ -33,7 +33,6 @@ export interface PreAuthCodeFlowOptions {
   issuerUri: string
   kid: string
   verifyRevocationState: boolean
-  scope?: string[]
 }
 
 export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
