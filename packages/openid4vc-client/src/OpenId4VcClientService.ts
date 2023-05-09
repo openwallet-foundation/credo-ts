@@ -258,21 +258,10 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Full server metadata', serverMetadata)
 
-    let scope: string
-
     if (accessToken.scope) {
-      scope = accessToken.scope
-    } else {
-      if (!options.scope || options.scope.length === 0) {
-        throw new AriesFrameworkError(
-          'The access_token response does not include a scope and no scope was provided in the request. Unable to determine the credential type.'
-        )
+      for (const credentialType of accessToken.scope.split(' ')) {
+        this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
       }
-      scope = options.scope.join(' ')
-    }
-
-    for (const credentialType of scope.split(' ')) {
-      this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
     }
 
     // proof of possession
@@ -298,7 +287,7 @@ export class OpenId4VcClientService {
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      credentialType: scope,
+      credentialType: accessToken.scope,
       format: credentialFormat,
     })
 
