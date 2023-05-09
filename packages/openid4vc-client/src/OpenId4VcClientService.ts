@@ -33,6 +33,7 @@ export interface PreAuthCodeFlowOptions {
   issuerUri: string
   kid: string
   verifyRevocationState: boolean
+  scope?: string[]
 }
 
 export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
@@ -257,12 +258,22 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Full server metadata', serverMetadata)
 
-    if (!accessToken.scope) {
-      throw new AriesFrameworkError(
-        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
-      )
+    let scope: string
+
+    if (accessToken.scope) {
+      scope = accessToken.scope
+    } else {
+      if (!options.scope || options.scope.length === 0) {
+        throw new AriesFrameworkError(
+          'The access_token response does not include a scope and no scope was provided in the request. Unable to determine the credential type.'
+        )
+      }
+      scope = options.scope.join(' ')
     }
-    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
+
+    for (const credentialType of scope.split(' ')) {
+      this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
+    }
 
     // proof of possession
     const callbacks = this.getSignCallback(agentContext)
@@ -287,7 +298,7 @@ export class OpenId4VcClientService {
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      credentialType: accessToken.scope,
+      credentialType: scope,
       format: credentialFormat,
     })
 
