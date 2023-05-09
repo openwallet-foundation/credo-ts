@@ -13,11 +13,11 @@ export class DidJwk {
     this.did = did
   }
 
-  public get forEncrypting() {
+  public get allowsEncrypting() {
     return this.jwk.use === 'enc' || this.key.supportsEncrypting
   }
 
-  public get forSigning() {
+  public get allowsSigning() {
     return this.jwk.use === 'sig' || this.key.supportsSigning
   }
 

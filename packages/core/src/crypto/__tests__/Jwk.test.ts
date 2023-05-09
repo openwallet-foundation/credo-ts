@@ -1,4 +1,10 @@
-import type { Bls12381g1Jwk, Bls12381g2Jwk, Ed25519Jwk, P256Jwk, P384Jwk, P521Jwk, X25519Jwk } from '../JwkTypes'
+import type {
+  Ed25519JwkPublicKey,
+  P256JwkPublicKey,
+  P384JwkPublicKey,
+  P521JwkPublicKey,
+  X25519JwkPublicKey,
+} from '../JwkTypes'
 
 import { getJwkFromKey, getKeyDataFromJwk } from '../Jwk'
 import { Key } from '../Key'
@@ -11,7 +17,7 @@ describe('jwk', () => {
       kty: 'OKP',
       crv: 'Ed25519',
       x: 'O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik',
-    } satisfies Ed25519Jwk
+    } satisfies Ed25519JwkPublicKey
 
     const { keyType, publicKey } = getKeyDataFromJwk(jwk)
     expect(keyType).toEqual(KeyType.Ed25519)
@@ -27,44 +33,11 @@ describe('jwk', () => {
       kty: 'OKP',
       crv: 'X25519',
       x: 'W_Vcc7guviK-gPNDBmevVw-uJVamQV5rMNQGUwCqlH0',
-    } satisfies X25519Jwk
+    } satisfies X25519JwkPublicKey
 
     const { keyType, publicKey } = getKeyDataFromJwk(jwk)
     expect(keyType).toEqual(KeyType.X25519)
     expect(Key.fromPublicKey(publicKey, KeyType.X25519).fingerprint).toEqual(fingerprint)
-
-    const actualJwk = getJwkFromKey(Key.fromFingerprint(fingerprint))
-    expect(actualJwk).toEqual(jwk)
-  })
-
-  it('Bls12381G1', () => {
-    const fingerprint = 'z3tEEysHYz5kkgpfDAByfDVgAuvtSFLHSqoMWmmSZBU1LZtN2sDsAS6RVQSevfxv39kyty'
-    const jwk = {
-      kty: 'EC',
-      crv: 'Bls12381G1',
-      x: 'im0OQGMTkh4YEhAl16hQwUQTcOaRqIqThqtSwksFK7WaH6Qywypmc3VIDyydmYTe',
-    } satisfies Bls12381g1Jwk
-
-    const { keyType, publicKey } = getKeyDataFromJwk(jwk)
-    expect(keyType).toEqual(KeyType.Bls12381g1)
-    expect(Key.fromPublicKey(publicKey, KeyType.Bls12381g1).fingerprint).toEqual(fingerprint)
-
-    const actualJwk = getJwkFromKey(Key.fromFingerprint(fingerprint))
-    expect(actualJwk).toEqual(jwk)
-  })
-
-  it('Bls12381G2', () => {
-    const fingerprint =
-      'zUC73gNPc1EnZmDDjYJzE8Bk89VRhuZPQYXFnSiSUZvX9N1i7N5VtMbJyowDR46rtARHLJYRVf7WMbGLb43s9tfTyKF9KFF22vBjXZRomcwtoQJmMNUSY7tfzyhLEy58dwUz3WD'
-    const jwk = {
-      crv: 'Bls12381G2',
-      kty: 'EC',
-      x: 'h_rkcTKXXzRbOPr9UxSfegCbid2U_cVNXQUaKeGF7UhwrMJFP70uMH0VQ9-3-_2zDPAAjflsdeLkOXW3-ShktLxuPy8UlXSNgKNmkfb-rrj-FRwbs13pv_WsIf-eV66-',
-    } satisfies Bls12381g2Jwk
-
-    const { keyType, publicKey } = getKeyDataFromJwk(jwk)
-    expect(keyType).toEqual(KeyType.Bls12381g2)
-    expect(Key.fromPublicKey(publicKey, KeyType.Bls12381g2).fingerprint).toEqual(fingerprint)
 
     const actualJwk = getJwkFromKey(Key.fromFingerprint(fingerprint))
     expect(actualJwk).toEqual(jwk)
@@ -77,7 +50,7 @@ describe('jwk', () => {
       crv: 'P-256',
       x: 'igrFmi0whuihKnj9R3Om1SoMph72wUGeFaBbzG2vzns',
       y: 'efsX5b10x8yjyrj4ny3pGfLcY7Xby1KzgqOdqnsrJIM',
-    } satisfies P256Jwk
+    } satisfies P256JwkPublicKey
 
     const { keyType, publicKey } = getKeyDataFromJwk(jwk)
     expect(keyType).toEqual(KeyType.P256)
@@ -94,7 +67,7 @@ describe('jwk', () => {
       crv: 'P-384',
       x: 'lInTxl8fjLKp_UCrxI0WDklahi-7-_6JbtiHjiRvMvhedhKVdHBfi2HCY8t_QJyc',
       y: 'y6N1IC-2mXxHreETBW7K3mBcw0qGr3CWHCs-yl09yCQRLcyfGv7XhqAngHOu51Zv',
-    } satisfies P384Jwk
+    } satisfies P384JwkPublicKey
 
     const { keyType, publicKey } = getKeyDataFromJwk(jwk)
     expect(keyType).toEqual(KeyType.P384)
@@ -112,7 +85,7 @@ describe('jwk', () => {
       crv: 'P-521',
       x: 'ASUHPMyichQ0QbHZ9ofNx_l4y7luncn5feKLo3OpJ2nSbZoC7mffolj5uy7s6KSKXFmnNWxGJ42IOrjZ47qqwqyS',
       y: 'AW9ziIC4ZQQVSNmLlp59yYKrjRY0_VqO-GOIYQ9tYpPraBKUloEId6cI_vynCzlZWZtWpgOM3HPhYEgawQ703RjC',
-    } satisfies P521Jwk
+    } satisfies P521JwkPublicKey
 
     const { keyType, publicKey } = getKeyDataFromJwk(jwk)
     expect(keyType).toEqual(KeyType.P521)

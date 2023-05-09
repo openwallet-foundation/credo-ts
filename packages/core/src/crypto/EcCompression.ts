@@ -83,8 +83,7 @@ export function compress(publicKey: Uint8Array): Uint8Array {
 export function expand(publicKey: Uint8Array, curve: 'P-256' | 'P-384' | 'P-521'): Uint8Array {
   const publicKeyComponent = Buffer.from(publicKey).toString('hex')
   const { prime, b, pIdent } = getConstantsForCurve(curve)
-  // eslint-disable-next-line
-  var signY: any = (new Number(publicKeyComponent[1]) as any) - 2
+  const signY = new Number(publicKeyComponent[1]).valueOf() - 2
   const x = bigInt(publicKeyComponent.substring(2), 16)
   // y^2 = x^3 - 3x + b
   let y = x.pow(3).subtract(x.multiply(3)).add(b).modPow(pIdent, prime)

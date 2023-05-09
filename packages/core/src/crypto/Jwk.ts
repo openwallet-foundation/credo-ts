@@ -1,33 +1,30 @@
-import type { Ed25519Jwk, Jwk, P256Jwk, P384Jwk, P521Jwk, X25519Jwk } from './JwkTypes'
+import type {
+  Ed25519JwkPublicKey,
+  Jwk,
+  P256JwkPublicKey,
+  P384JwkPublicKey,
+  P521JwkPublicKey,
+  X25519JwkPublicKey,
+} from './JwkTypes'
 import type { Key } from './Key'
 
 import { TypedArrayEncoder, Buffer } from '../utils'
 
 import { compress, expand } from './EcCompression'
 import {
-  isBls12381g1Jwk,
-  isBls12381g2Jwk,
   jwkCurveToKeyTypeMapping,
   keyTypeToJwkCurveMapping,
-  isEd25519Jwk,
-  isX25519Jwk,
-  isP256Jwk,
-  isP384Jwk,
-  isP521Jwk,
+  isEd25519JwkPublicKey,
+  isX25519JwkPublicKey,
+  isP256JwkPublicKey,
+  isP384JwkPublicKey,
+  isP521JwkPublicKey,
 } from './JwkTypes'
 import { KeyType } from './KeyType'
 
 export function getKeyDataFromJwk(jwk: Jwk): { keyType: KeyType; publicKey: Uint8Array } {
   // ed25519, x25519
-  if (isEd25519Jwk(jwk) || isX25519Jwk(jwk)) {
-    return {
-      publicKey: TypedArrayEncoder.fromBase64(jwk.x),
-      keyType: jwkCurveToKeyTypeMapping[jwk.crv],
-    }
-  }
-
-  // bls12381g1, bls12381g2
-  if (isBls12381g1Jwk(jwk) || isBls12381g2Jwk(jwk)) {
+  if (isEd25519JwkPublicKey(jwk) || isX25519JwkPublicKey(jwk)) {
     return {
       publicKey: TypedArrayEncoder.fromBase64(jwk.x),
       keyType: jwkCurveToKeyTypeMapping[jwk.crv],
@@ -35,7 +32,7 @@ export function getKeyDataFromJwk(jwk: Jwk): { keyType: KeyType; publicKey: Uint
   }
 
   // p-256, p-384, p-521
-  if (isP256Jwk(jwk) || isP384Jwk(jwk) || isP521Jwk(jwk)) {
+  if (isP256JwkPublicKey(jwk) || isP384JwkPublicKey(jwk) || isP521JwkPublicKey(jwk)) {
     // TODO: do we want to use the compressed key in the Key instance?
     const publicKeyBuffer = Buffer.concat([TypedArrayEncoder.fromBase64(jwk.x), TypedArrayEncoder.fromBase64(jwk.y)])
     const compressedPublicKey = compress(publicKeyBuffer)
@@ -55,15 +52,7 @@ export function getJwkFromKey(key: Key): Jwk {
       kty: 'OKP',
       crv: keyTypeToJwkCurveMapping[key.keyType],
       x: TypedArrayEncoder.toBase64URL(key.publicKey),
-    } satisfies Ed25519Jwk | X25519Jwk
-  }
-
-  if (key.keyType === KeyType.Bls12381g1 || key.keyType === KeyType.Bls12381g2) {
-    return {
-      kty: 'EC',
-      crv: keyTypeToJwkCurveMapping[key.keyType],
-      x: TypedArrayEncoder.toBase64URL(key.publicKey),
-    }
+    } satisfies Ed25519JwkPublicKey | X25519JwkPublicKey
   }
 
   if (key.keyType === KeyType.P256 || key.keyType === KeyType.P384 || key.keyType === KeyType.P521) {
@@ -77,7 +66,7 @@ export function getJwkFromKey(key: Key): Jwk {
       crv,
       x: TypedArrayEncoder.toBase64URL(x),
       y: TypedArrayEncoder.toBase64URL(y),
-    } satisfies P256Jwk | P384Jwk | P521Jwk
+    } satisfies P256JwkPublicKey | P384JwkPublicKey | P521JwkPublicKey
   }
 
   throw new Error(`Cannot encode Key as JWK. Unsupported key type '${key.keyType}'`)

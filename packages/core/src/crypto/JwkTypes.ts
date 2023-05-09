@@ -1,42 +1,32 @@
 import { KeyType } from './KeyType'
 
+export type JwkCurve = 'Ed25519' | 'X25519' | 'P-256' | 'P-384' | 'P-521' | 'Bls12381G1' | 'Bls12381G2'
+
 export interface Jwk {
   kty: 'EC' | 'OKP'
-  crv: 'Ed25519' | 'X25519' | 'P-256' | 'P-384' | 'P-521' | 'Bls12381G1' | 'Bls12381G2'
+  crv: JwkCurve
   x: string
   y?: string
   use?: 'sig' | 'enc'
 }
 
-export interface Ed25519Jwk {
+export interface Ed25519JwkPublicKey extends Jwk {
   kty: 'OKP'
   crv: 'Ed25519'
   x: string
+  y?: never
   use?: 'sig'
 }
 
-export interface Bls12381g1Jwk {
-  kty: 'EC'
-  crv: 'Bls12381G1'
-  x: string
-  use?: 'sig'
-}
-
-export interface Bls12381g2Jwk {
-  kty: 'EC'
-  crv: 'Bls12381G2'
-  x: string
-  use?: 'sig'
-}
-
-export interface X25519Jwk {
+export interface X25519JwkPublicKey extends Jwk {
   kty: 'OKP'
   crv: 'X25519'
   x: string
+  y?: never
   use?: 'enc'
 }
 
-export interface P256Jwk {
+export interface P256JwkPublicKey extends Jwk {
   kty: 'EC'
   crv: 'P-256'
   x: string
@@ -44,7 +34,7 @@ export interface P256Jwk {
   use?: 'sig' | 'enc'
 }
 
-export interface P384Jwk {
+export interface P384JwkPublicKey extends Jwk {
   kty: 'EC'
   crv: 'P-384'
   x: string
@@ -52,7 +42,7 @@ export interface P384Jwk {
   use?: 'sig' | 'enc'
 }
 
-export interface P521Jwk {
+export interface P521JwkPublicKey extends Jwk {
   kty: 'EC'
   crv: 'P-521'
   x: string
@@ -60,23 +50,15 @@ export interface P521Jwk {
   use?: 'sig' | 'enc'
 }
 
-export function isEd25519Jwk(jwk: Jwk): jwk is Ed25519Jwk {
+export function isEd25519JwkPublicKey(jwk: Jwk): jwk is Ed25519JwkPublicKey {
   return jwk.kty === 'OKP' && jwk.crv === 'Ed25519' && jwk.x !== undefined && (!jwk.use || jwk.use === 'sig')
 }
 
-export function isX25519Jwk(jwk: Jwk): jwk is X25519Jwk {
+export function isX25519JwkPublicKey(jwk: Jwk): jwk is X25519JwkPublicKey {
   return jwk.kty === 'OKP' && jwk.crv === 'X25519' && jwk.x !== undefined && (!jwk.use || jwk.use === 'enc')
 }
 
-export function isBls12381g1Jwk(jwk: Jwk): jwk is Bls12381g1Jwk {
-  return jwk.kty === 'EC' && jwk.crv === 'Bls12381G1' && jwk.x !== undefined && (!jwk.use || jwk.use === 'sig')
-}
-
-export function isBls12381g2Jwk(jwk: Jwk): jwk is Bls12381g2Jwk {
-  return jwk.kty === 'EC' && jwk.crv === 'Bls12381G2' && jwk.x !== undefined && (!jwk.use || jwk.use === 'sig')
-}
-
-export function isP256Jwk(jwk: Jwk): jwk is P256Jwk {
+export function isP256JwkPublicKey(jwk: Jwk): jwk is P256JwkPublicKey {
   return (
     jwk.kty === 'EC' &&
     jwk.crv === 'P-256' &&
@@ -86,7 +68,7 @@ export function isP256Jwk(jwk: Jwk): jwk is P256Jwk {
   )
 }
 
-export function isP384Jwk(jwk: Jwk): jwk is P384Jwk {
+export function isP384JwkPublicKey(jwk: Jwk): jwk is P384JwkPublicKey {
   return (
     jwk.kty === 'EC' &&
     jwk.crv === 'P-384' &&
@@ -96,7 +78,7 @@ export function isP384Jwk(jwk: Jwk): jwk is P384Jwk {
   )
 }
 
-export function isP521Jwk(jwk: Jwk): jwk is P521Jwk {
+export function isP521JwkPublicKey(jwk: Jwk): jwk is P521JwkPublicKey {
   return (
     jwk.kty === 'EC' &&
     jwk.crv === 'P-521' &&

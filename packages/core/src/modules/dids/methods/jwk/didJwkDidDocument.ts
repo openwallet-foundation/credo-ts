@@ -5,8 +5,8 @@ import { SECURITY_JWS_CONTEXT_URL } from '../../../vc/constants'
 import { getJsonWebKey2020VerificationMethod, DidDocumentBuilder } from '../../domain'
 
 export function getDidJwkDocument(didJwk: DidJwk) {
-  if (!didJwk.forEncrypting && !didJwk.forSigning) {
-    throw new AriesFrameworkError('At least one of forSigning or forEncryption must be enabled')
+  if (!didJwk.allowsEncrypting && !didJwk.allowsSigning) {
+    throw new AriesFrameworkError('At least one of allowsSigning or allowsEncrypting must be enabled')
   }
 
   const verificationMethod = getJsonWebKey2020VerificationMethod({
@@ -19,7 +19,7 @@ export function getDidJwkDocument(didJwk: DidJwk) {
     .addContext(SECURITY_JWS_CONTEXT_URL)
     .addVerificationMethod(verificationMethod)
 
-  if (didJwk.forSigning) {
+  if (didJwk.allowsSigning) {
     didDocumentBuilder
       .addAuthentication(verificationMethod.id)
       .addAssertionMethod(verificationMethod.id)
@@ -27,7 +27,7 @@ export function getDidJwkDocument(didJwk: DidJwk) {
       .addCapabilityInvocation(verificationMethod.id)
   }
 
-  if (didJwk.forEncrypting) {
+  if (didJwk.allowsEncrypting) {
     didDocumentBuilder.addKeyAgreement(verificationMethod.id)
   }
 
