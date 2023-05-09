@@ -5,6 +5,8 @@ import type { Server } from 'http'
 import { DidCommMimeType, AriesFrameworkError, TransportService, utils, MessageReceiver } from '@aries-framework/core'
 import express, { text } from 'express'
 
+const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
+
 export class HttpInboundTransport implements InboundTransport {
   public readonly app: Express
   private port: number
@@ -22,12 +24,19 @@ export class HttpInboundTransport implements InboundTransport {
     this.app = app ?? express()
     this.path = path ?? '/'
 
-    this.app.use(
-      text({
-        type: [DidCommMimeType.V0, DidCommMimeType.V1],
-        limit: '5mb',
-      })
-    )
+    this.app.use((req, res, next) => {
+      const contentType = req.headers['content-type']
+
+      if (!contentType || !supportedContentTypes.includes(contentType)) {
+        return res
+          .status(415)
+          .send('Unsupported content-type. Supported content-types are: ' + supportedContentTypes.join(', '))
+      }
+
+      return next()
+    })
+
+    this.app.use(text({ type: supportedContentTypes, limit: '5mb' }))
   }
 
   public async start(agent: Agent) {

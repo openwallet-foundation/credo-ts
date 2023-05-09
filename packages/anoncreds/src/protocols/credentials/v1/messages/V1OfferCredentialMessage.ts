@@ -1,0 +1,78 @@
+import type { AnonCredsCredentialOffer } from '../../../../models'
+
+import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { Expose, Type } from 'class-transformer'
+import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
+
+import { V1CredentialPreview } from './V1CredentialPreview'
+
+export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
+
+export interface V1OfferCredentialMessageOptions {
+  id?: string
+  comment?: string
+  offerAttachments: V1Attachment[]
+  credentialPreview: V1CredentialPreview
+  attachments?: V1Attachment[]
+}
+
+/**
+ * Message part of Issue Credential Protocol used to continue or initiate credential exchange by issuer.
+ *
+ * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
+ */
+export class V1OfferCredentialMessage extends DidCommV1Message {
+  public readonly allowDidSovPrefix = true
+
+  public constructor(options: V1OfferCredentialMessageOptions) {
+    super()
+
+    if (options) {
+      this.id = options.id || this.generateId()
+      this.comment = options.comment
+      this.credentialPreview = options.credentialPreview
+      this.offerAttachments = options.offerAttachments
+      this.appendedAttachments = options.attachments
+    }
+  }
+
+  @IsValidMessageType(V1OfferCredentialMessage.type)
+  public readonly type = V1OfferCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/offer-credential')
+
+  @IsString()
+  @IsOptional()
+  public comment?: string
+
+  @Expose({ name: 'credential_preview' })
+  @Type(() => V1CredentialPreview)
+  @ValidateNested()
+  @IsInstance(V1CredentialPreview)
+  public credentialPreview!: V1CredentialPreview
+
+  @Expose({ name: 'offers~attach' })
+  @Type(() => V1Attachment)
+  @IsArray()
+  @ValidateNested({
+    each: true,
+  })
+  @IsInstance(V1Attachment, { each: true })
+  public offerAttachments!: V1Attachment[]
+
+  public get indyCredentialOffer(): AnonCredsCredentialOffer | null {
+    const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
+
+    // Extract credential offer from attachment
+    const credentialOfferJson = attachment?.getDataAsJson<AnonCredsCredentialOffer>() ?? null
+
+    return credentialOfferJson
+  }
+
+  public getOfferAttachmentById(id: string): V1Attachment | undefined {
+    return this.offerAttachments.find((attachment) => attachment.id == id)
+  }
+}

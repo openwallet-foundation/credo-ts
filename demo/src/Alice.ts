@@ -8,7 +8,7 @@ export class Alice extends BaseAgent {
   public connectionRecordFaberId?: string
 
   public constructor(port: number, name: string) {
-    super(port, name)
+    super({ port, name, useLegacyIndySdk: true })
     this.connected = false
   }
 
@@ -46,17 +46,19 @@ export class Alice extends BaseAgent {
   }
 
   public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+    const linkSecretIds = await this.agent.modules.anoncreds.getLinkSecretIds()
+    if (linkSecretIds.length === 0) {
+      await this.agent.modules.anoncreds.createLinkSecret()
+    }
+
     await this.agent.credentials.acceptOffer({
       credentialRecordId: credentialRecord.id,
     })
   }
 
   public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
-    const requestedCredentials = await this.agent.proofs.autoSelectCredentialsForProofRequest({
+    const requestedCredentials = await this.agent.proofs.selectCredentialsForRequest({
       proofRecordId: proofRecord.id,
-      config: {
-        filterByPresentationPreview: true,
-      },
     })
 
     await this.agent.proofs.acceptRequest({

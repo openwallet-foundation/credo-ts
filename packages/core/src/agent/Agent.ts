@@ -1,15 +1,15 @@
-import type { InboundTransport } from '../transport/InboundTransport'
-import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
 import type { AgentMessageReceivedEvent } from './Events'
+import type { Module } from '../plugins'
+import type { InboundTransport } from '../transport/InboundTransport'
+import type { OutboundTransport } from '../transport/OutboundTransport'
+import type { InitConfig } from '../types'
 import type { Subscription } from 'rxjs'
 
 import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
-import { CacheRepository } from '../cache'
 import { InjectionSymbols } from '../constants'
 import { KeyProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
@@ -21,8 +21,6 @@ import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
 import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
-import { IndyStorageService } from '../storage/IndyStorageService'
-import { IndyWallet } from '../wallet/IndyWallet'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
@@ -51,7 +49,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
-    const modulesWithDefaultModules = extendModulesWithDefaultModules(agentConfig, options.modules)
+    const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
 
     // Register internal dependencies
     dependencyManager.registerSingleton(MessageHandlerRegistry)
@@ -63,7 +61,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(EnvelopeService)
     dependencyManager.registerSingleton(FeatureRegistry)
     dependencyManager.registerSingleton(JwsService)
-    dependencyManager.registerSingleton(CacheRepository)
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
@@ -78,23 +75,27 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
     dependencyManager.registerInstance(InjectionSymbols.FileSystem, new agentConfig.agentDependencies.FileSystem())
 
+    // Register all modules. This will also include the default modules
+    dependencyManager.registerModules(modulesWithDefaultModules)
+
     // Register possibly already defined services
     if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndyWallet)
+      throw new AriesFrameworkError(
+        "Missing required dependency: 'Wallet'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+      )
     }
 
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
       dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
-      dependencyManager.registerSingleton(InjectionSymbols.StorageService, IndyStorageService)
+      throw new AriesFrameworkError(
+        "Missing required dependency: 'StorageService'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
+      )
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
       dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
     }
-
-    // Register all modules. This will also include the default modules
-    dependencyManager.registerModules(modulesWithDefaultModules)
 
     // TODO: contextCorrelationId for base wallet
     // Bind the default agent context to the container for use in modules etc.
@@ -138,12 +139,20 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
+  }
+
   public get inboundTransports() {
     return this.messageReceiver.inboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
     this.messageSender.registerOutboundTransport(outboundTransport)
+  }
+
+  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
+    await this.messageSender.unregisterOutboundTransport(outboundTransport)
   }
 
   public get outboundTransports() {
@@ -164,13 +173,10 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   public async initialize() {
     await super.initialize()
 
-    // set the pools on the ledger.
-    this.ledger.setPools(this.ledger.config.indyLedgers)
-    // As long as value isn't false we will async connect to all genesis pools on startup
-    if (this.ledger.config.connectToIndyLedgersOnStartup) {
-      this.ledger.connectToPools().catch((error) => {
-        this.logger.warn('Error connecting to ledger, will try to reconnect when needed.', { error })
-      })
+    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
+      if (module.initialize) {
+        await module.initialize(this.agentContext)
+      }
     }
 
     for (const transport of this.inboundTransports) {

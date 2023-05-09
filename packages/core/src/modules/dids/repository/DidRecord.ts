@@ -1,5 +1,5 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
 import type { DidRecordMetadata } from './didRecordMetadataTypes'
+import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { Type } from 'class-transformer'
 import { IsEnum, ValidateNested } from 'class-validator'
@@ -21,7 +21,7 @@ export interface DidRecordProps {
   tags?: CustomDidTags
 }
 
-interface CustomDidTags extends TagsBase {
+export interface CustomDidTags extends TagsBase {
   recipientKeyFingerprints?: string[]
 }
 

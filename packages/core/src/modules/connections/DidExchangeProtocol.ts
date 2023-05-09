@@ -1,11 +1,11 @@
+import type { ConnectionRecord } from './repository'
+import type { Routing } from './services/ConnectionService'
 import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ParsedMessageType } from '../../utils/messageType'
 import type { ResolvedDidCommService } from '../didcomm'
 import type { PeerDidCreateOptions } from '../dids'
 import type { OutOfBandRecord } from '../oob/repository'
-import type { ConnectionRecord } from './repository'
-import type { Routing } from './services/ConnectionService'
 
 import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
@@ -25,7 +25,8 @@ import {
   getNumAlgoFromPeerDid,
   PeerDidNumAlgo,
 } from '../dids'
-import { getKeyDidMappingByVerificationMethod } from '../dids/domain/key-type'
+import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
+import { tryParseDid } from '../dids/domain/parse'
 import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
@@ -101,6 +102,7 @@ export class DidExchangeProtocol {
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
     })
 
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
@@ -108,7 +110,7 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
     const didDocument = await this.createPeerDidDoc(agentContext, this.routingToServices(routing))
-    const parentThreadId = outOfBandInvitation.id
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
@@ -150,9 +152,13 @@ export class DidExchangeProtocol {
 
     const { message } = messageContext
 
-    // Check corresponding invitation ID is the request's ~thread.parentThreadId
+    // Check corresponding invitation ID is the request's ~thread.pthid or pthid is a public did
     // TODO Maybe we can do it in handler, but that actually does not make sense because we try to find oob by parent thread ID there.
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
+    const parentThreadId = message.thread?.parentThreadId
+    if (
+      !parentThreadId ||
+      (!tryParseDid(parentThreadId) && parentThreadId !== outOfBandRecord.getTags().invitationId)
+    ) {
       throw new DidExchangeProblemReportError('Missing reference to invitation.', {
         problemCode: DidExchangeProblemReportReason.RequestNotAccepted,
       })
@@ -240,7 +246,7 @@ export class DidExchangeProtocol {
     if (routing) {
       services = this.routingToServices(routing)
     } else if (outOfBandRecord) {
-      const inlineServices = outOfBandRecord.getOutOfBandInvitation().getInlineServices()
+      const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
       services = inlineServices.map((service) => ({
         id: service.id,
         serviceEndpoint: service.serviceEndpoint,
@@ -362,7 +368,7 @@ export class DidExchangeProtocol {
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
-    const parentThreadId = outOfBandRecord.getOutOfBandInvitation().id
+    const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     if (!threadId) {
       throw new AriesFrameworkError(`Connection record ${connectionRecord.id} does not have 'threadId' attribute.`)
@@ -405,8 +411,8 @@ export class DidExchangeProtocol {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
     }
-
-    if (!message.thread?.parentThreadId || message.thread?.parentThreadId !== outOfBandRecord.getTags().invitationId) {
+    const pthid = message.thread?.parentThreadId
+    if (!pthid || pthid !== outOfBandRecord.outOfBandInvitation.id) {
       throw new DidExchangeProblemReportError('Invalid or missing parent thread ID referencing to the invitation.', {
         problemCode: DidExchangeProblemReportReason.CompleteRejected,
       })
@@ -468,9 +474,13 @@ export class DidExchangeProtocol {
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          verkey,
+          key,
           header: {
             kid,
+          },
+          protectedHeaderOptions: {
+            alg: 'EdDSA',
+            jwk: key.toJwk(),
           },
         })
         didDocAttach.addJws(jws)
@@ -514,7 +524,7 @@ export class DidExchangeProtocol {
     this.logger.trace('DidDocument JSON', json)
 
     const payload = JsonEncoder.toBuffer(json)
-    const { isValid, signerVerkeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
+    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication
@@ -523,15 +533,14 @@ export class DidExchangeProtocol {
           typeof authentication === 'string'
             ? didDocument.dereferenceVerificationMethod(authentication)
             : authentication
-        const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
         const key = getKeyFromVerificationMethod(verificationMethod)
         return key.publicKeyBase58
       })
       .concat(invitationKeysBase58)
 
-    this.logger.trace('JWS verification result', { isValid, signerVerkeys, didDocumentKeysBase58 })
+    this.logger.trace('JWS verification result', { isValid, signerKeys, didDocumentKeysBase58 })
 
-    if (!isValid || !signerVerkeys.every((verkey) => didDocumentKeysBase58?.includes(verkey))) {
+    if (!isValid || !signerKeys.every((key) => didDocumentKeysBase58?.includes(key.publicKeyBase58))) {
       const problemCode =
         message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted

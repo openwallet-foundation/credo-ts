@@ -53,7 +53,7 @@ export class QuestionAnswerService {
     const questionAnswerRecord = await this.createRecord({
       questionText: questionMessage.questionText,
       questionDetail: questionMessage.questionDetail,
-      threadId: questionMessage.id,
+      threadId: questionMessage.threadId,
       connectionId: connectionId,
       role: QuestionAnswerRole.Questioner,
       signatureRequired: false,
@@ -97,7 +97,7 @@ export class QuestionAnswerService {
       questionText: questionMessage.questionText,
       questionDetail: questionMessage.questionDetail,
       connectionId: connection?.id,
-      threadId: questionMessage.id,
+      threadId: questionMessage.threadId,
       role: QuestionAnswerRole.Responder,
       signatureRequired: false,
       state: QuestionAnswerState.QuestionReceived,

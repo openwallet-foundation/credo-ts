@@ -64,6 +64,6 @@ export class V2OfferCredentialMessage extends DidCommV1Message {
   public replacementId?: string
 
   public getOfferAttachmentById(id: string): V1Attachment | undefined {
-    return this.offerAttachments.find((attachment) => attachment.id == id)
+    return this.offerAttachments.find((attachment) => attachment.id === id)
   }
 }

@@ -52,6 +52,6 @@ export class V2RequestCredentialMessage extends DidCommV1Message {
   public comment?: string
 
   public getRequestAttachmentById(id: string): V1Attachment | undefined {
-    return this.requestAttachments.find((attachment) => attachment.id == id)
+    return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

@@ -1,77 +1,57 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type {
-  AcceptCredentialOfferOptions,
   AgentDependencies,
+  BaseEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionRecordProps,
-  CredentialDefinitionTemplate,
   CredentialStateChangedEvent,
   InitConfig,
   InjectionToken,
   ProofStateChangedEvent,
-  SchemaTemplate,
   Wallet,
+  Agent,
+  CredentialState,
+  ConnectionStateChangedEvent,
+  Buffer,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { IndyOfferCredentialFormat } from '../src/modules/credentials/formats/indy/IndyCredentialFormat'
-import type { ProofAttributeInfo, ProofPredicateInfo } from '../src/modules/proofs/formats/indy/models'
-import type { AutoAcceptProof } from '../src/modules/proofs/models/ProofAutoAcceptType'
-import type { Awaited } from '../src/types'
-import type { CredDef, Schema } from 'indy-sdk'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
+import type { ProofState } from '../src/modules/proofs/models/ProofState'
+import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
 
+import { readFileSync } from 'fs'
 import path from 'path'
-import { firstValueFrom, ReplaySubject, Subject } from 'rxjs'
-import { catchError, filter, map, timeout } from 'rxjs/operators'
+import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
+import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { BbsModule } from '../../bbs-signatures/src/BbsModule'
-import { agentDependencies, WalletScheme } from '../../node/src'
+import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
-  CredentialsModule,
-  IndyCredentialFormatService,
-  JsonLdCredentialFormatService,
-  V1CredentialProtocol,
-  V2CredentialProtocol,
-  W3cVcModule,
-  Agent,
+  ConnectionsModule,
+  ConnectionEventTypes,
+  TypedArrayEncoder,
   AgentConfig,
   AgentContext,
-  AriesFrameworkError,
   BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
-  CredentialState,
   DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
   InjectionSymbols,
-  LogLevel,
   ProofEventTypes,
+  TrustPingEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { V1Attachment, V1AttachmentData } from '../src/decorators/attachment/V1Attachment'
-import { AutoAcceptCredential } from '../src/modules/credentials/models/CredentialAutoAcceptType'
-import { V1CredentialPreview } from '../src/modules/credentials/protocol/v1/messages/V1CredentialPreview'
 import { DidCommV1Service } from '../src/modules/dids'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages'
+import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
-import { PredicateType } from '../src/modules/proofs/formats/indy/models'
-import { ProofState } from '../src/modules/proofs/models/ProofState'
-import {
-  PresentationPreview,
-  PresentationPreviewAttribute,
-  PresentationPreviewPredicate,
-} from '../src/modules/proofs/protocol/v1/models/V1PresentationPreview'
-import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
-import { LinkedAttachment } from '../src/utils/LinkedAttachment'
+import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
@@ -80,54 +60,63 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
   : path.join(__dirname, '../../../network/genesis/local-genesis.txn')
 
+export const genesisTransactions = readFileSync(genesisPath).toString('utf-8')
+
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
-const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
-const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
+export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${number}.${number}` | `${number}`
+export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
-  modules?: AgentModules
+  inputModules?: AgentModules
 ): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+  const random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name}`,
+    label: `Agent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet: ${name}`,
-      key: `Key: ${name}`,
+      id: `Wallet: ${name} - ${random}`,
+      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+      keyDerivationMethod: KeyDerivationMethod.Raw,
     },
-    publicDidSeed,
-    autoAcceptConnections: true,
-    connectToIndyLedgersOnStartup: false,
-    indyLedgers: [
-      {
-        id: `pool-${name}`,
-        isProduction: false,
-        genesisPath,
-        indyNamespace: `pool:localtest`,
-        transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-      },
-    ],
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
-    logger: new TestLogger(LogLevel.off, name),
+    logger: TestLogger.fromLogger(testLogger, name),
     ...extraConfig,
   }
 
-  return { config, modules: (modules ?? {}) as AgentModules, dependencies: agentDependencies } as const
+  const m = (inputModules ?? {}) as AgentModulesInput
+  const modules = {
+    ...m,
+    // Make sure connections module is always defined so we can set autoAcceptConnections
+    connections:
+      m.connections ??
+      new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
+  }
+
+  return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
 }
 
-export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getPostgresAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+  name: string,
+  extraConfig: Partial<InitConfig> = {},
+  inputModules?: AgentModules
+) {
+  const random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name}`,
+    label: `Agent: ${name} - ${random}`,
     walletConfig: {
-      id: `Wallet${name}`,
+      // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
+      id: `PostgresWallet${name}${random}`,
       key: `Key${name}`,
       storage: {
         type: 'postgres_storage',
         config: {
           url: 'localhost:5432',
-          wallet_scheme: WalletScheme.DatabasePerWallet,
+          wallet_scheme: IndySdkPostgresWalletScheme.DatabasePerWallet,
         },
         credentials: {
           account: 'postgres',
@@ -137,27 +126,44 @@ export function getPostgresAgentOptions(name: string, extraConfig: Partial<InitC
         },
       },
     },
-    publicDidSeed,
-    autoAcceptConnections: true,
     autoUpdateStorageOnStartup: false,
-    indyLedgers: [
-      {
-        id: `pool-${name}`,
-        indyNamespace: `pool:localtest`,
-        isProduction: false,
-        genesisPath,
-      },
-    ],
-    logger: new TestLogger(LogLevel.off, name),
+    logger: TestLogger.fromLogger(testLogger, name),
     ...extraConfig,
   }
 
-  return { config, dependencies: agentDependencies } as const
+  const m = (inputModules ?? {}) as AgentModulesInput
+  const modules = {
+    ...m,
+    // Make sure connections module is always defined so we can set autoAcceptConnections
+    connections: m.connections ?? new ConnectionsModule({}),
+  }
+
+  modules.connections.config.autoAcceptConnections = true
+
+  return { config, dependencies: agentDependencies, modules: modules as AgentModules } as const
 }
 
-export function getAgentConfig(name: string, extraConfig: Partial<InitConfig> = {}) {
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
+  const key = await agent.wallet.createKey({
+    keyType: KeyType.Ed25519,
+    privateKey,
+  })
+
+  // did is first 16 bytes of public key encoded as base58
+  const unqualifiedIndyDid = TypedArrayEncoder.toBase58(key.publicKey.slice(0, 16))
+
+  // import the did in the wallet so it can be used
+  await agent.dids.import({ did: `did:indy:pool:localtest:${unqualifiedIndyDid}` })
+
+  return unqualifiedIndyDid
+}
+
+export function getAgentConfig(
+  name: string,
+  extraConfig: Partial<InitConfig> = {}
+): AgentConfig & { walletConfig: WalletConfig } {
   const { config, dependencies } = getAgentOptions(name, extraConfig)
-  return new AgentConfig(config, dependencies)
+  return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 
 export function getAgentContext({
@@ -201,25 +207,39 @@ export async function waitForProofExchangeRecord(
   return waitForProofExchangeRecordSubject(observable, options)
 }
 
+const isProofStateChangedEvent = (e: BaseEvent): e is ProofStateChangedEvent =>
+  e.type === ProofEventTypes.ProofStateChanged
+const isCredentialStateChangedEvent = (e: BaseEvent): e is CredentialStateChangedEvent =>
+  e.type === CredentialEventTypes.CredentialStateChanged
+const isConnectionStateChangedEvent = (e: BaseEvent): e is ConnectionStateChangedEvent =>
+  e.type === ConnectionEventTypes.ConnectionStateChanged
+const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
+  e.type === TrustPingEventTypes.TrustPingReceivedEvent
+const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
+  e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
+
 export function waitForProofExchangeRecordSubject(
-  subject: ReplaySubject<ProofStateChangedEvent> | Observable<ProofStateChangedEvent>,
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
     threadId,
     parentThreadId,
     state,
     previousState,
     timeoutMs = 10000,
+    count = 1,
   }: {
     threadId?: string
     parentThreadId?: string
     state?: ProofState
     previousState?: ProofState | null
     timeoutMs?: number
+    count?: number
   }
 ) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  const observable: Observable<BaseEvent> = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return lastValueFrom(
     observable.pipe(
+      filter(isProofStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.proofRecord.threadId === threadId),
       filter((e) => parentThreadId === undefined || e.payload.proofRecord.parentThreadId === parentThreadId),
@@ -227,21 +247,104 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: {
-  previousState: ${previousState},
-  threadId: ${threadId},
-  parentThreadId: ${parentThreadId},
-  state: ${state}
-}`
+          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
+          previousState: ${previousState},
+          threadId: ${threadId},
+          parentThreadId: ${parentThreadId},
+          state: ${state}
+        }`
         )
       }),
+      take(count),
       map((e) => e.payload.proofRecord)
     )
   )
 }
 
+export async function waitForTrustPingReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+
+  return waitForTrustPingReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingReceivedEventSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter(isTrustPingReceivedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
+export async function waitForTrustPingResponseReceivedEvent(
+  agent: Agent,
+  options: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
+    TrustPingEventTypes.TrustPingResponseReceivedEvent
+  )
+
+  return waitForTrustPingResponseReceivedEventSubject(observable, options)
+}
+
+export function waitForTrustPingResponseReceivedEventSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  return firstValueFrom(
+    observable.pipe(
+      filter(isTrustPingResponseReceivedEvent),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(
+          `TrustPingResponseReceivedEvent event not emitted within specified timeout: ${timeoutMs}
+  threadId: ${threadId},
+}`
+        )
+      }),
+      map((e) => e.payload.message)
+    )
+  )
+}
+
 export function waitForCredentialRecordSubject(
-  subject: ReplaySubject<CredentialStateChangedEvent> | Observable<CredentialStateChangedEvent>,
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
     threadId,
     state,
@@ -258,6 +361,7 @@ export function waitForCredentialRecordSubject(
 
   return firstValueFrom(
     observable.pipe(
+      filter(isCredentialStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
       filter((e) => state === undefined || e.payload.credentialRecord.state === state),
@@ -285,6 +389,54 @@ export async function waitForCredentialRecord(
 ) {
   const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
   return waitForCredentialRecordSubject(observable, options)
+}
+
+export function waitForConnectionRecordSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    state,
+    previousState,
+    timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
+  }: {
+    threadId?: string
+    state?: DidExchangeState
+    previousState?: DidExchangeState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+
+  return firstValueFrom(
+    observable.pipe(
+      filter(isConnectionStateChangedEvent),
+      filter((e) => previousState === undefined || e.payload.previousState === previousState),
+      filter((e) => threadId === undefined || e.payload.connectionRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.connectionRecord.state === state),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`ConnectionStateChanged event not emitted within specified timeout: {
+  previousState: ${previousState},
+  threadId: ${threadId},
+  state: ${state}
+}`)
+      }),
+      map((e) => e.payload.connectionRecord)
+    )
+  )
+}
+
+export async function waitForConnectionRecord(
+  agent: Agent,
+  options: {
+    threadId?: string
+    state?: DidExchangeState
+    previousState?: DidExchangeState | null
+    timeoutMs?: number
+  }
+) {
+  const observable = agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged)
+  return waitForConnectionRecordSubject(observable, options)
 }
 
 export async function waitForBasicMessage(agent: Agent, { content }: { content?: string }): Promise<BasicMessage> {
@@ -383,279 +535,13 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation!)
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
 
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
-  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand!.id)
+  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
   agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
 
   return [agentAConnection, agentBConnection]
-}
-
-export async function registerSchema(agent: Agent, schemaTemplate: SchemaTemplate): Promise<Schema> {
-  const schema = await agent.ledger.registerSchema(schemaTemplate)
-  testLogger.test(`created schema with id ${schema.id}`, schema)
-  return schema
-}
-
-export async function registerDefinition(
-  agent: Agent,
-  definitionTemplate: CredentialDefinitionTemplate
-): Promise<CredDef> {
-  const credentialDefinition = await agent.ledger.registerCredentialDefinition(definitionTemplate)
-  testLogger.test(`created credential definition with id ${credentialDefinition.id}`, credentialDefinition)
-  return credentialDefinition
-}
-
-export async function prepareForIssuance(agent: Agent, attributes: string[]) {
-  const publicDid = agent.publicDid?.did
-
-  if (!publicDid) {
-    throw new AriesFrameworkError('No public did')
-  }
-
-  await ensurePublicDidIsOnLedger(agent, publicDid)
-
-  const schema = await registerSchema(agent, {
-    attributes,
-    name: `schema-${uuid()}`,
-    version: '1.0',
-  })
-
-  const definition = await registerDefinition(agent, {
-    schema,
-    signatureType: 'CL',
-    supportRevocation: false,
-    tag: 'default',
-  })
-
-  return {
-    schema,
-    definition,
-    publicDid,
-  }
-}
-
-export async function ensurePublicDidIsOnLedger(agent: Agent, publicDid: string) {
-  try {
-    testLogger.test(`Ensure test DID ${publicDid} is written to ledger`)
-    await agent.ledger.getPublicDid(publicDid)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    // Unfortunately, this won't prevent from the test suite running because of Jest runner runs all tests
-    // regardless of thrown errors. We're more explicit about the problem with this error handling.
-    throw new Error(`Test DID ${publicDid} is not written on ledger or ledger is not available: ${error.message}`)
-  }
-}
-
-/**
- * Assumes that the autoAcceptCredential is set to {@link AutoAcceptCredential.ContentApproved}
- */
-export async function issueCredential({
-  issuerAgent,
-  issuerConnectionId,
-  holderAgent,
-  credentialTemplate,
-}: {
-  issuerAgent: Agent
-  issuerConnectionId: string
-  holderAgent: Agent
-  credentialTemplate: IndyOfferCredentialFormat
-}) {
-  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
-  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
-
-  issuerAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(issuerReplay)
-  holderAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(holderReplay)
-
-  let issuerCredentialRecord = await issuerAgent.credentials.offerCredential({
-    comment: 'some comment about credential',
-    connectionId: issuerConnectionId,
-    protocolVersion: 'v1',
-    credentialFormats: {
-      indy: {
-        attributes: credentialTemplate.attributes,
-        credentialDefinitionId: credentialTemplate.credentialDefinitionId,
-        linkedAttachments: credentialTemplate.linkedAttachments,
-      },
-    },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  })
-
-  let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.OfferReceived,
-  })
-
-  const acceptOfferOptions: AcceptCredentialOfferOptions = {
-    credentialRecordId: holderCredentialRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-
-  await holderAgent.credentials.acceptOffer(acceptOfferOptions)
-
-  // Because we use auto-accept it can take a while to have the whole credential flow finished
-  // Both parties need to interact with the ledger and sign/verify the credential
-  holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-
-  return {
-    issuerCredential: issuerCredentialRecord,
-    holderCredential: holderCredentialRecord,
-  }
-}
-
-export async function issueConnectionLessCredential({
-  issuerAgent,
-  holderAgent,
-  credentialTemplate,
-}: {
-  issuerAgent: Agent
-  holderAgent: Agent
-  credentialTemplate: IndyOfferCredentialFormat
-}) {
-  const issuerReplay = new ReplaySubject<CredentialStateChangedEvent>()
-  const holderReplay = new ReplaySubject<CredentialStateChangedEvent>()
-
-  issuerAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(issuerReplay)
-  holderAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(holderReplay)
-
-  // eslint-disable-next-line prefer-const
-  let { credentialRecord: issuerCredentialRecord, message } = await issuerAgent.credentials.createOffer({
-    comment: 'V1 Out of Band offer',
-    protocolVersion: 'v1',
-    credentialFormats: {
-      indy: {
-        attributes: credentialTemplate.attributes,
-        credentialDefinitionId: credentialTemplate.credentialDefinitionId,
-      },
-    },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  })
-
-  const { message: offerMessage } = await issuerAgent.oob.createLegacyConnectionlessInvitation({
-    recordId: issuerCredentialRecord.id,
-    domain: 'https://example.org',
-    message,
-  })
-
-  await holderAgent.receiveMessage(offerMessage.toJSON())
-
-  let holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.OfferReceived,
-  })
-  const acceptOfferOptions: AcceptCredentialOfferOptions = {
-    credentialRecordId: holderCredentialRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
-  }
-
-  await holderAgent.credentials.acceptOffer(acceptOfferOptions)
-
-  holderCredentialRecord = await waitForCredentialRecordSubject(holderReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-
-  issuerCredentialRecord = await waitForCredentialRecordSubject(issuerReplay, {
-    threadId: issuerCredentialRecord.threadId,
-    state: CredentialState.Done,
-  })
-
-  return {
-    issuerCredential: issuerCredentialRecord,
-    holderCredential: holderCredentialRecord,
-  }
-}
-
-export async function presentProof({
-  verifierAgent,
-  verifierConnectionId,
-  holderAgent,
-  presentationTemplate: { attributes, predicates },
-}: {
-  verifierAgent: Agent
-  verifierConnectionId: string
-  holderAgent: Agent
-  presentationTemplate: {
-    attributes?: Record<string, ProofAttributeInfo>
-    predicates?: Record<string, ProofPredicateInfo>
-  }
-}) {
-  const verifierReplay = new ReplaySubject<ProofStateChangedEvent>()
-  const holderReplay = new ReplaySubject<ProofStateChangedEvent>()
-
-  verifierAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(verifierReplay)
-  holderAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(holderReplay)
-
-  let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
-  })
-
-  let verifierRecord = await verifierAgent.proofs.requestProof({
-    connectionId: verifierConnectionId,
-    proofFormats: {
-      indy: {
-        name: 'test-proof-request',
-        requestedAttributes: attributes,
-        requestedPredicates: predicates,
-        version: '1.0',
-        nonce: '947121108704767252195123',
-      },
-    },
-    protocolVersion: 'v2',
-  })
-
-  let holderRecord = await holderProofExchangeRecordPromise
-
-  const requestedCredentials = await holderAgent.proofs.autoSelectCredentialsForProofRequest({
-    proofRecordId: holderRecord.id,
-    config: {
-      filterByPresentationPreview: true,
-    },
-  })
-
-  const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
-    threadId: holderRecord.threadId,
-    state: ProofState.PresentationReceived,
-  })
-
-  await holderAgent.proofs.acceptRequest({
-    proofRecordId: holderRecord.id,
-    proofFormats: { indy: requestedCredentials.proofFormats.indy },
-  })
-
-  verifierRecord = await verifierProofExchangeRecordPromise
-
-  // assert presentation is valid
-  expect(verifierRecord.isVerified).toBe(true)
-
-  holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    threadId: holderRecord.threadId,
-    state: ProofState.Done,
-  })
-
-  verifierRecord = await verifierAgent.proofs.acceptPresentation(verifierRecord.id)
-  holderRecord = await holderProofExchangeRecordPromise
-
-  return {
-    verifierProof: verifierRecord,
-    holderProof: holderRecord,
-  }
 }
 
 /**
@@ -676,195 +562,4 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
-}
-
-// Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type CredentialTestsAgent = Awaited<ReturnType<typeof setupCredentialTests>>['aliceAgent']
-export async function setupCredentialTests(
-  faberName: string,
-  aliceName: string,
-  autoAcceptCredentials?: AutoAcceptCredential
-) {
-  const faberMessages = new Subject<SubjectMessage>()
-  const aliceMessages = new Subject<SubjectMessage>()
-  const subjectMap = {
-    'rxjs:faber': faberMessages,
-    'rxjs:alice': aliceMessages,
-  }
-
-  const indyCredentialFormat = new IndyCredentialFormatService()
-  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
-
-  // TODO remove the dependency on BbsModule
-  const modules = {
-    bbs: new BbsModule(),
-
-    // Initialize custom credentials module (with jsonLdCredentialFormat enabled)
-    credentials: new CredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new V1CredentialProtocol({ indyCredentialFormat }),
-        new V2CredentialProtocol({
-          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
-        }),
-      ],
-    }),
-    // Register custom w3cVc module so we can define the test document loader
-    w3cVc: new W3cVcModule({
-      documentLoader: customDocumentLoader,
-    }),
-  }
-  const faberAgentOptions = getAgentOptions(
-    faberName,
-    {
-      endpoints: ['rxjs:faber'],
-    },
-    modules
-  )
-
-  const aliceAgentOptions = getAgentOptions(
-    aliceName,
-    {
-      endpoints: ['rxjs:alice'],
-    },
-    modules
-  )
-  const faberAgent = new Agent(faberAgentOptions)
-  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await faberAgent.initialize()
-
-  const aliceAgent = new Agent(aliceAgentOptions)
-  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await aliceAgent.initialize()
-
-  const {
-    schema,
-    definition: { id: credDefId },
-  } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
-
-  const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
-
-  const faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
-  const aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
-
-  faberAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(faberReplay)
-  aliceAgent.events
-    .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
-    .subscribe(aliceReplay)
-
-  return { faberAgent, aliceAgent, credDefId, schema, faberConnection, aliceConnection, faberReplay, aliceReplay }
-}
-
-export async function setupProofsTest(faberName: string, aliceName: string, autoAcceptProofs?: AutoAcceptProof) {
-  const credentialPreview = V1CredentialPreview.fromRecord({
-    name: 'John',
-    age: '99',
-  })
-
-  const unique = uuid().substring(0, 4)
-
-  const faberAgentOptions = getAgentOptions(`${faberName}-${unique}`, {
-    autoAcceptProofs,
-    endpoints: ['rxjs:faber'],
-  })
-
-  const aliceAgentOptions = getAgentOptions(`${aliceName}-${unique}`, {
-    autoAcceptProofs,
-    endpoints: ['rxjs:alice'],
-  })
-
-  const faberMessages = new Subject<SubjectMessage>()
-  const aliceMessages = new Subject<SubjectMessage>()
-
-  const subjectMap = {
-    'rxjs:faber': faberMessages,
-    'rxjs:alice': aliceMessages,
-  }
-  const faberAgent = new Agent(faberAgentOptions)
-  faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-  faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await faberAgent.initialize()
-
-  const aliceAgent = new Agent(aliceAgentOptions)
-  aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-  aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-  await aliceAgent.initialize()
-
-  const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'image_0', 'image_1'])
-
-  const [agentAConnection, agentBConnection] = await makeConnection(faberAgent, aliceAgent)
-  expect(agentAConnection.isReady).toBe(true)
-  expect(agentBConnection.isReady).toBe(true)
-
-  const faberConnection = agentAConnection
-  const aliceConnection = agentBConnection
-
-  const presentationPreview = new PresentationPreview({
-    attributes: [
-      new PresentationPreviewAttribute({
-        name: 'name',
-        credentialDefinitionId: definition.id,
-        referent: '0',
-        value: 'John',
-      }),
-      new PresentationPreviewAttribute({
-        name: 'image_0',
-        credentialDefinitionId: definition.id,
-      }),
-    ],
-    predicates: [
-      new PresentationPreviewPredicate({
-        name: 'age',
-        credentialDefinitionId: definition.id,
-        predicate: PredicateType.GreaterThanOrEqualTo,
-        threshold: 50,
-      }),
-    ],
-  })
-
-  await issueCredential({
-    issuerAgent: faberAgent,
-    issuerConnectionId: faberConnection.id,
-    holderAgent: aliceAgent,
-    credentialTemplate: {
-      credentialDefinitionId: definition.id,
-      attributes: credentialPreview.attributes,
-      linkedAttachments: [
-        new LinkedAttachment({
-          name: 'image_0',
-          attachment: new V1Attachment({
-            filename: 'picture-of-a-cat.png',
-            data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
-          }),
-        }),
-        new LinkedAttachment({
-          name: 'image_1',
-          attachment: new V1Attachment({
-            filename: 'picture-of-a-dog.png',
-            data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
-          }),
-        }),
-      ],
-    },
-  })
-  const faberReplay = new ReplaySubject<ProofStateChangedEvent>()
-  const aliceReplay = new ReplaySubject<ProofStateChangedEvent>()
-
-  faberAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(faberReplay)
-  aliceAgent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged).subscribe(aliceReplay)
-
-  return {
-    faberAgent,
-    aliceAgent,
-    credDefId: definition.id,
-    faberConnection,
-    aliceConnection,
-    presentationPreview,
-    faberReplay,
-    aliceReplay,
-  }
 }

@@ -60,12 +60,12 @@ export function getKeyDidMappingByKeyType(keyType: KeyType) {
   return keyDid
 }
 
-export function getKeyDidMappingByVerificationMethod(verificationMethod: VerificationMethod) {
+export function getKeyFromVerificationMethod(verificationMethod: VerificationMethod) {
   const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
 
   if (!keyDid) {
     throw new Error(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
-  return keyDid
+  return keyDid.getKeyFromVerificationMethod(verificationMethod)
 }

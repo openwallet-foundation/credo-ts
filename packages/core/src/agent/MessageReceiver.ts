@@ -5,6 +5,8 @@ import type { InboundTransport } from '../transport'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { ConnectionRecord } from '../modules/connections'
+import type { InboundTransport } from '../transport'
 
 import { InjectionSymbols } from '../constants'
 import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
@@ -42,7 +44,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  public readonly inboundTransports: InboundTransport[] = []
+  private _inboundTransports: InboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -62,10 +64,20 @@ export class MessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
+    this._inboundTransports = []
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
-    this.inboundTransports.push(inboundTransport)
+    this._inboundTransports.push(inboundTransport)
+  }
+
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   /**
@@ -174,7 +186,7 @@ export class MessageReceiver {
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
+      session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     } else if (session) {
@@ -280,5 +292,36 @@ export class MessageReceiver {
       })
     }
     return messageTransformed
+  }
+
+  /**
+   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
+   * @param message error message to send
+   * @param connection connection to send the message to
+   * @param plaintextMessage received inbound message
+   */
+  private async sendProblemReportMessage(
+    agentContext: AgentContext,
+    message: string,
+    connection: ConnectionRecord,
+    plaintextMessage: PlaintextMessage
+  ) {
+    const messageType = parseMessageType(plaintextMessage['@type'])
+    if (canHandleMessageType(ProblemReportMessage, messageType)) {
+      throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${message}`)
+    }
+    const problemReportMessage = new ProblemReportMessage({
+      description: {
+        en: message,
+        code: ProblemReportReason.MessageParseFailure,
+      },
+    })
+    problemReportMessage.setThread({
+      parentThreadId: plaintextMessage['@id'],
+    })
+    const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
+    if (outboundMessageContext) {
+      await this.messageSender.sendMessage(outboundMessageContext)
+    }
   }
 }

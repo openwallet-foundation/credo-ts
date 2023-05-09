@@ -15,6 +15,7 @@ type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
   invitationId?: string
+  threadId?: string
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -35,6 +36,7 @@ export interface OutOfBandRecordProps {
   reusable?: boolean
   mediatorId?: string
   reuseConnectionId?: string
+  threadId?: string
 }
 
 export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
@@ -81,6 +83,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation?.id,
+      threadId: this.outOfBandInvitation.threadId,
     }
   }
 

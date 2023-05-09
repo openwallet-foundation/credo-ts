@@ -1,11 +1,7 @@
-import type { AgentContext } from '../../../agent'
-import type { Wallet } from '../../../wallet/Wallet'
-
 import { Subject } from 'rxjs'
 
 import {
   agentDependencies,
-  getAgentConfig,
   getAgentContext,
   getMockConnection,
   getMockOutOfBand,
@@ -16,7 +12,6 @@ import { InboundMessageContext } from '../../../agent/models/InboundMessageConte
 import { KeyType, Key } from '../../../crypto'
 import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { AriesFrameworkError } from '../../../error'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { DidExchangeState } from '../../connections/models'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
 import { OutOfBandRole } from '../domain/OutOfBandRole'
@@ -31,24 +26,12 @@ const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandReposi
 
 const key = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
 
+const agentContext = getAgentContext()
+
 describe('OutOfBandService', () => {
-  const agentConfig = getAgentConfig('OutOfBandServiceTest')
-  let wallet: Wallet
   let outOfBandRepository: OutOfBandRepository
   let outOfBandService: OutOfBandService
   let eventEmitter: EventEmitter
-  let agentContext: AgentContext
-
-  beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
-    agentContext = getAgentContext()
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
-  })
 
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentDependencies, new Subject())

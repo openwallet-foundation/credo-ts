@@ -10,7 +10,6 @@ import {
   AgentContext,
   AriesFrameworkError,
   ConnectionService,
-  Dispatcher,
   MessageSender,
   OutboundMessageContext,
   injectable,
@@ -36,7 +35,6 @@ export class ActionMenuApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
     connectionService: ConnectionService,
     messageSender: MessageSender,
     actionMenuService: ActionMenuService,
@@ -46,7 +44,13 @@ export class ActionMenuApi {
     this.messageSender = messageSender
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
-    this.registerMessageHandlers(dispatcher)
+
+    this.agentContext.dependencyManager.registerMessageHandlers([
+      new ActionMenuProblemReportHandler(this.actionMenuService),
+      new MenuMessageHandler(this.actionMenuService),
+      new MenuRequestMessageHandler(this.actionMenuService),
+      new PerformMessageHandler(this.actionMenuService),
+    ])
   }
 
   /**
@@ -159,12 +163,5 @@ export class ActionMenuApi {
     })
 
     return actionMenuRecord ? await this.actionMenuService.clearMenu(this.agentContext, { actionMenuRecord }) : null
-  }
-
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new ActionMenuProblemReportHandler(this.actionMenuService))
-    dispatcher.registerMessageHandler(new MenuMessageHandler(this.actionMenuService))
-    dispatcher.registerMessageHandler(new MenuRequestMessageHandler(this.actionMenuService))
-    dispatcher.registerMessageHandler(new PerformMessageHandler(this.actionMenuService))
   }
 }

@@ -5,16 +5,13 @@ import type { EncryptedMessage } from '../../src/didcomm/types'
 import type { WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../../src/types'
 import type { Buffer } from '../../src/utils/buffer'
 import type {
-  DidInfo,
   UnpackedMessageContext,
-  DidConfig,
   WalletCreateKeyOptions,
   WalletSignOptions,
   WalletVerifyOptions,
 } from '../../src/wallet'
 
 export class MockWallet implements Wallet {
-  public publicDid = undefined
   public isInitialized = true
   public isProvisioned = true
 
@@ -40,9 +37,6 @@ export class MockWallet implements Wallet {
     throw new Error('Method not implemented.')
   }
   public import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  public initPublicDid(didConfig: DidConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
   public pack(

@@ -7,7 +7,7 @@ import { KeyType, Key } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { getKeyDidMappingByVerificationMethod } from './key-type'
+import { getKeyFromVerificationMethod } from './key-type'
 import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
@@ -210,7 +210,6 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
   // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
   // as didcomm v2 doesn't have this issue anymore
   const verificationMethod = didDocument.dereferenceKey(keyId, ['authentication', 'keyAgreement'])
-  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
   const key = getKeyFromVerificationMethod(verificationMethod)
 
   return key

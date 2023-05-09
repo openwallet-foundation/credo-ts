@@ -17,7 +17,7 @@ export class TypedArrayEncoder {
    *
    * @param buffer the buffer to encode into base64url string
    */
-  public static toBase64URL(buffer: Buffer) {
+  public static toBase64URL(buffer: Buffer | Uint8Array) {
     return base64ToBase64URL(TypedArrayEncoder.toBase64(buffer))
   }
 
@@ -46,6 +46,24 @@ export class TypedArrayEncoder {
    */
   public static fromBase58(base58: string) {
     return Buffer.from(decodeFromBase58(base58))
+  }
+
+  /**
+   * Encode buffer into base64 string.
+   *
+   * @param buffer the buffer to encode into base64 string
+   */
+  public static toHex(buffer: Buffer | Uint8Array) {
+    return Buffer.from(buffer).toString('hex')
+  }
+
+  /**
+   * Decode hex string into buffer
+   *
+   * @param hex the hex string to decode into buffer format
+   */
+  public static fromHex(hex: string) {
+    return Buffer.from(hex, 'hex')
   }
 
   /**

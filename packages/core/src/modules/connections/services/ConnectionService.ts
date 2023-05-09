@@ -98,7 +98,7 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
+    const { outOfBandInvitation } = outOfBandRecord
 
     const { mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
@@ -121,8 +121,8 @@ export class ConnectionService {
     })
 
     connectionRequest.setThread({
-      threadId: connectionRequest.id,
-      parentThreadId: outOfBandInvitation.id,
+      threadId: connectionRequest.threadId,
+      parentThreadId: outOfBandRecord.outOfBandInvitation.id,
     })
 
     const connectionRecord = await this.createConnection(agentContext, {
@@ -137,7 +137,7 @@ export class ConnectionService {
       outOfBandId: outOfBandRecord.id,
       invitationDid,
       imageUrl: outOfBandInvitation.imageUrl,
-      threadId: connectionRequest.id,
+      threadId: connectionRequest.threadId,
     })
 
     await this.updateState(agentContext, connectionRecord, DidExchangeState.RequestSent)
@@ -209,7 +209,7 @@ export class ConnectionService {
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
-    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
+    const { outOfBandInvitation } = outOfBandRecord.getOutOfBandInvitation()
 
     const didDoc = routing
       ? this.createDidDoc(routing)
@@ -450,8 +450,8 @@ export class ConnectionService {
       previousSentMessage,
       previousReceivedMessage,
     }: {
-      previousSentMessage?: DidCommV1Message
-      previousReceivedMessage?: DidCommV1Message
+      previousSentMessage?: DidCommV1Message | null
+      previousReceivedMessage?: DidCommV1Message | null
     } = {}
   ) {
     const { connection, message } = messageContext

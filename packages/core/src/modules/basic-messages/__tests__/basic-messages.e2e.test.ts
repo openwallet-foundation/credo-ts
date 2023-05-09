@@ -6,6 +6,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
+import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
@@ -13,13 +14,21 @@ import { MessageSendingError, RecordNotFoundError } from '../../../error'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const faberConfig = getAgentOptions('Faber Basic Messages', {
-  endpoints: ['rxjs:faber'],
-})
+const faberConfig = getAgentOptions(
+  'Faber Basic Messages',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getIndySdkModules()
+)
 
-const aliceConfig = getAgentOptions('Alice Basic Messages', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceConfig = getAgentOptions(
+  'Alice Basic Messages',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getIndySdkModules()
+)
 
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent
@@ -73,6 +82,55 @@ describe('Basic Messages E2E', () => {
     await waitForBasicMessage(aliceAgent, {
       content: 'How are you?',
     })
+  })
+
+  test('Alice and Faber exchange messages using threadId', async () => {
+    testLogger.test('Alice sends message to Faber')
+    const helloRecord = await aliceAgent.basicMessages.sendMessage(aliceConnection.id, 'Hello')
+
+    expect(helloRecord.content).toBe('Hello')
+
+    testLogger.test('Faber waits for message from Alice')
+    const helloMessage = await waitForBasicMessage(faberAgent, {
+      content: 'Hello',
+    })
+
+    testLogger.test('Faber sends message to Alice')
+    const replyRecord = await faberAgent.basicMessages.sendMessage(faberConnection.id, 'How are you?', helloMessage.id)
+    expect(replyRecord.content).toBe('How are you?')
+    expect(replyRecord.parentThreadId).toBe(helloMessage.id)
+
+    testLogger.test('Alice waits until she receives message from faber')
+    const replyMessage = await waitForBasicMessage(aliceAgent, {
+      content: 'How are you?',
+    })
+    expect(replyMessage.content).toBe('How are you?')
+    expect(replyMessage.thread?.parentThreadId).toBe(helloMessage.id)
+
+    // Both sender and recipient shall be able to find the threaded messages
+    // Hello message
+    const aliceHelloMessage = await aliceAgent.basicMessages.getByThreadId(helloMessage.id)
+    const faberHelloMessage = await faberAgent.basicMessages.getByThreadId(helloMessage.id)
+    expect(aliceHelloMessage).toMatchObject({
+      content: helloRecord.content,
+      threadId: helloRecord.threadId,
+    })
+    expect(faberHelloMessage).toMatchObject({
+      content: helloRecord.content,
+      threadId: helloRecord.threadId,
+    })
+
+    // Reply message
+    const aliceReplyMessages = await aliceAgent.basicMessages.findAllByQuery({ parentThreadId: helloMessage.id })
+    const faberReplyMessages = await faberAgent.basicMessages.findAllByQuery({ parentThreadId: helloMessage.id })
+    expect(aliceReplyMessages.length).toBe(1)
+    expect(aliceReplyMessages[0]).toMatchObject({
+      content: replyRecord.content,
+      parentThreadId: replyRecord.parentThreadId,
+      threadId: replyRecord.threadId,
+    })
+    expect(faberReplyMessages.length).toBe(1)
+    expect(faberReplyMessages[0]).toMatchObject(replyRecord)
   })
 
   test('Alice is unable to send a message', async () => {

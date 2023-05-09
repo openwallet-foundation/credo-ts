@@ -1,3 +1,5 @@
+import type { OutboundTransport } from './OutboundTransport'
+import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { OutboundPackage } from '../didcomm/types'
@@ -47,7 +49,7 @@ export class WsOutboundTransport implements OutboundTransport {
       throw new AriesFrameworkError("Missing connection or endpoint. I don't know how and where to send the message.")
     }
 
-    const isNewSocket = this.hasOpenSocket(endpoint)
+    const isNewSocket = !this.hasOpenSocket(endpoint)
     const socket = await this.resolveSocket({ socketId: endpoint, endpoint, connectionId })
 
     socket.send(Buffer.from(JSON.stringify(payload)))
@@ -75,7 +77,7 @@ export class WsOutboundTransport implements OutboundTransport {
     // If we already have a socket connection use it
     let socket = this.transportTable.get(socketId)
 
-    if (!socket) {
+    if (!socket || socket.readyState === this.WebSocketClass.CLOSING) {
       if (!endpoint) {
         throw new AriesFrameworkError(`Missing endpoint. I don't know how and where to send the message.`)
       }

@@ -1,10 +1,11 @@
 import type { AgentContext } from '../../agent'
-import type { Wallet } from '../../wallet'
+import type { Key, Wallet } from '@aries-framework/core'
 
+import { IndySdkWallet } from '../../../../indy-sdk/src'
+import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
-import { Buffer, JsonEncoder } from '../../utils'
-import { IndyWallet } from '../../wallet/IndyWallet'
+import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
 import { KeyProviderRegistry } from '../key-provider'
@@ -16,17 +17,26 @@ describe('JwsService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
   let jwsService: JwsService
-
+  let didJwsz6MkfKey: Key
+  let didJwsz6MkvKey: Key
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new IndyWallet(config.agentDependencies, config.logger, new KeyProviderRegistry([]))
+    // TODO: update to InMemoryWallet
+    wallet = new IndySdkWallet(indySdk, config.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(config.walletConfig!)
+    await wallet.createAndOpen(config.walletConfig)
 
     jwsService = new JwsService()
+    didJwsz6MkfKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
+      keyType: KeyType.Ed25519,
+    })
+    didJwsz6MkvKey = await wallet.createKey({
+      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
+      keyType: KeyType.Ed25519,
+    })
   })
 
   afterAll(async () => {
@@ -35,16 +45,17 @@ describe('JwsService', () => {
 
   describe('createJws', () => {
     it('creates a jws for the payload with the key associated with the verkey', async () => {
-      const key = await wallet.createKey({ seed: didJwsz6Mkf.SEED, keyType: KeyType.Ed25519 })
-
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-      const kid = new DidKey(key).did
+      const kid = new DidKey(didJwsz6MkfKey).did
 
       const jws = await jwsService.createJws(agentContext, {
         payload,
-        // FIXME: update to use key instance instead of verkey
-        verkey: key.publicKeyBase58,
+        key: didJwsz6MkfKey,
         header: { kid },
+        protectedHeaderOptions: {
+          alg: 'EdDSA',
+          jwk: didJwsz6MkfKey.toJwk(),
+        },
       })
 
       expect(jws).toEqual(didJwsz6Mkf.JWS_JSON)
@@ -55,37 +66,37 @@ describe('JwsService', () => {
     it('returns true if the jws signature matches the payload', async () => {
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: didJwsz6Mkf.JWS_JSON,
       })
 
       expect(isValid).toBe(true)
-      expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY])
+      expect(signerKeys).toEqual([didJwsz6MkfKey])
     })
 
     it('returns all verkeys that signed the jws', async () => {
       const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
       })
 
       expect(isValid).toBe(true)
-      expect(signerVerkeys).toEqual([didJwsz6Mkf.VERKEY, didJwsz6Mkv.VERKEY])
+      expect(signerKeys).toEqual([didJwsz6MkfKey, didJwsz6MkvKey])
     })
 
     it('returns false if the jws signature does not match the payload', async () => {
       const payload = JsonEncoder.toBuffer({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' })
 
-      const { isValid, signerVerkeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
         payload,
         jws: didJwsz6Mkf.JWS_JSON,
       })
 
       expect(isValid).toBe(false)
-      expect(signerVerkeys).toMatchObject([])
+      expect(signerKeys).toMatchObject([])
     })
 
     it('throws an error if the jws signatures array does not contain a JWS', async () => {

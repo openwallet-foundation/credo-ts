@@ -1,7 +1,7 @@
 import type { DummyStateChangedEvent } from './dummy'
 import type { Socket } from 'net'
 
-import { Agent, ConsoleLogger, LogLevel } from '@aries-framework/core'
+import { Agent, ConnectionsModule, ConsoleLogger, LogLevel } from '@aries-framework/core'
 import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@aries-framework/node'
 import express from 'express'
 import { Server } from 'ws'
@@ -28,10 +28,12 @@ const run = async () => {
         key: 'responder',
       },
       logger: new ConsoleLogger(LogLevel.debug),
-      autoAcceptConnections: true,
     },
     modules: {
       dummy: new DummyModule({ autoAcceptRequests }),
+      connections: new ConnectionsModule({
+        autoAcceptConnections: true,
+      }),
     },
     dependencies: agentDependencies,
   })

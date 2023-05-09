@@ -27,56 +27,20 @@ describe('Dispatcher', () => {
   const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
-  describe('dispatch() for DidCommV1Message', () => {
+  describe('dispatch()', () => {
     it('calls the handle method of the handler', async () => {
+      const messageHandlerRegistry = new MessageHandlerRegistry()
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
-        new MessageHandlerRegistry(),
-        agentConfig.logger
-      )
-      const customProtocolMessage = new V1CustomProtocolMessage()
-      const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
-
-      const mockHandle = jest.fn()
-      dispatcher.registerMessageHandler({ supportedMessages: [V1CustomProtocolMessage], handle: mockHandle })
-
-      await dispatcher.dispatch(inboundMessageContext)
-
-      expect(mockHandle).toHaveBeenNthCalledWith(1, inboundMessageContext)
-    })
-
-    it('throws an error if no handler for the message could be found', async () => {
-      const dispatcher = new Dispatcher(
-        new MessageSenderMock(),
-        eventEmitter,
-        new MessageHandlerRegistry(),
-        agentConfig.logger
-      )
-      const customProtocolMessage = new V1CustomProtocolMessage()
-      const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
-
-      const mockHandle = jest.fn()
-      dispatcher.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
-
-      await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
-        `No handler for message type "${testMessageType}" found`
-      )
-    })
-  })
-
-  describe('dispatch() for DidCommV2Message', () => {
-    it('calls the handle method of the handler', async () => {
-      const dispatcher = new Dispatcher(
-        new MessageSenderMock(),
-        eventEmitter,
-        new MessageHandlerRegistry(),
+        messageHandlerRegistry,
         agentConfig.logger
       )
       const customProtocolMessage = new V2CustomProtocolMessage()
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
+      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
       dispatcher.registerMessageHandler({ supportedMessages: [V2CustomProtocolMessage], handle: mockHandle })
 
       await dispatcher.dispatch(inboundMessageContext)
@@ -85,6 +49,7 @@ describe('Dispatcher', () => {
     })
 
     it('throws an error if no handler for the message could be found', async () => {
+      const messageHandlerRegistry = new MessageHandlerRegistry()
       const dispatcher = new Dispatcher(
         new MessageSenderMock(),
         eventEmitter,
@@ -95,10 +60,10 @@ describe('Dispatcher', () => {
       const inboundMessageContext = new InboundMessageContext(customProtocolMessage, { agentContext })
 
       const mockHandle = jest.fn()
-      dispatcher.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
+      messageHandlerRegistry.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
 
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
-        `No handler for message type "${testMessageType}" found`
+          'No handler for message type "https://didcomm.org/fake-protocol/1.5/message" found'
       )
     })
   })

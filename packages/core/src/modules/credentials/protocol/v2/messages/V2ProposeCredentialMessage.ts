@@ -8,7 +8,7 @@ import { CredentialFormatSpec } from '../../../models'
 
 import { V2CredentialPreview } from './V2CredentialPreview'
 
-export interface V2ProposeCredentialMessageProps {
+export interface V2ProposeCredentialMessageOptions {
   id?: string
   formats: CredentialFormatSpec[]
   proposalAttachments: V1Attachment[]
@@ -18,21 +18,22 @@ export interface V2ProposeCredentialMessageProps {
 }
 
 export class V2ProposeCredentialMessage extends DidCommV1Message {
-  public constructor(props: V2ProposeCredentialMessageProps) {
+  public constructor(props: V2ProposeCredentialMessageOptions) {
     super()
-    if (props) {
-      this.id = props.id ?? this.generateId()
-      this.comment = props.comment
-      this.credentialPreview = props.credentialPreview
-      this.formats = props.formats
-      this.proposalAttachments = props.proposalAttachments
-      this.appendedAttachments = props.attachments
+    if (options) {
+      this.id = options.id ?? this.generateId()
+      this.comment = options.comment
+      this.credentialPreview = options.credentialPreview
+      this.formats = options.formats
+      this.proposalAttachments = options.proposalAttachments
+      this.appendedAttachments = options.attachments
     }
   }
 
   @Type(() => CredentialFormatSpec)
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @IsArray()
+  @IsInstance(CredentialFormatSpec, { each: true })
   public formats!: CredentialFormatSpec[]
 
   @IsValidMessageType(V2ProposeCredentialMessage.type)
@@ -64,6 +65,6 @@ export class V2ProposeCredentialMessage extends DidCommV1Message {
   public comment?: string
 
   public getProposalAttachmentById(id: string): V1Attachment | undefined {
-    return this.proposalAttachments.find((attachment) => attachment.id == id)
+    return this.proposalAttachments.find((attachment) => attachment.id === id)
   }
 }

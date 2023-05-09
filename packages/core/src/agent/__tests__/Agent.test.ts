@@ -2,6 +2,7 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
+import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
@@ -12,22 +13,18 @@ import { ConnectionRepository } from '../../modules/connections/repository/Conne
 import { ConnectionService } from '../../modules/connections/services/ConnectionService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { IndyLedgerService } from '../../modules/ledger'
-import { LedgerApi } from '../../modules/ledger/LedgerApi'
+import { MessagePickupApi } from '../../modules/message-pìckup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
-import { V1ProofService } from '../../modules/proofs/protocol/v1'
-import { V2ProofService } from '../../modules/proofs/protocol/v2'
 import {
   MediationRecipientService,
   MediationRepository,
   MediatorApi,
   MediatorService,
-  RecipientApi,
-  RecipientModule,
+  MediationRecipientApi,
+  MediationRecipientModule,
 } from '../../modules/routing'
 import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
-import { IndyStorageService } from '../../storage/IndyStorageService'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -36,7 +33,7 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const agentOptions = getAgentOptions('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test', {}, getIndySdkModules())
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -64,6 +61,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
+          ...getIndySdkModules(),
         },
       })
 
@@ -78,9 +76,10 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          mediationRecipient: new RecipientModule({
+          mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
+          ...getIndySdkModules(),
         },
       })
 
@@ -161,8 +160,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
       expect(container.resolve(V1TrustPingService)).toBeInstanceOf(V1TrustPingService)
 
-      expect(container.resolve(V1ProofService)).toBeInstanceOf(V1ProofService)
-      expect(container.resolve(V2ProofService)).toBeInstanceOf(V2ProofService)
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
@@ -174,18 +171,15 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
       expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
-      expect(container.resolve(RecipientApi)).toBeInstanceOf(RecipientApi)
+      expect(container.resolve(MediationRecipientApi)).toBeInstanceOf(MediationRecipientApi)
+      expect(container.resolve(MessagePickupApi)).toBeInstanceOf(MessagePickupApi)
       expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
       expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
       expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
 
-      expect(container.resolve(LedgerApi)).toBeInstanceOf(LedgerApi)
-      expect(container.resolve(IndyLedgerService)).toBeInstanceOf(IndyLedgerService)
-
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
       expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
-      expect(container.resolve(InjectionSymbols.StorageService)).toBeInstanceOf(IndyStorageService)
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -204,8 +198,6 @@ describe('Agent', () => {
       expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
       expect(container.resolve(V1TrustPingService)).toBe(container.resolve(V1TrustPingService))
 
-      expect(container.resolve(V1ProofService)).toBe(container.resolve(V1ProofService))
-      expect(container.resolve(V2ProofService)).toBe(container.resolve(V2ProofService))
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
@@ -217,13 +209,11 @@ describe('Agent', () => {
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
       expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
-      expect(container.resolve(RecipientApi)).toBe(container.resolve(RecipientApi))
+      expect(container.resolve(MediationRecipientApi)).toBe(container.resolve(MediationRecipientApi))
+      expect(container.resolve(MessagePickupApi)).toBe(container.resolve(MessagePickupApi))
       expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
       expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
       expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
-
-      expect(container.resolve(LedgerApi)).toBe(container.resolve(LedgerApi))
-      expect(container.resolve(IndyLedgerService)).toBe(container.resolve(IndyLedgerService))
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
@@ -254,19 +244,18 @@ describe('Agent', () => {
         'https://didcomm.org/basicmessage/1.0',
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/coordinate-mediation/1.0',
+        'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/present-proof/2.0',
         'https://didcomm.org/didexchange/1.0',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
-        'https://didcomm.org/issue-credential/1.0',
-        'https://didcomm.org/issue-credential/2.0',
         'https://didcomm.org/messagepickup/1.0',
         'https://didcomm.org/messagepickup/2.0',
         'https://didcomm.org/out-of-band/1.1',
-        'https://didcomm.org/present-proof/1.0',
         'https://didcomm.org/revocation_notification/1.0',
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(14)
+    expect(protocols.length).toEqual(13)
   })
 })

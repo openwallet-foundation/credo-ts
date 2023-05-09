@@ -21,21 +21,50 @@ export type ProofFormatPayload<PFs extends ProofFormat[], M extends keyof ProofF
   [ProofFormat in PFs[number] as ProofFormat['formatKey']]?: ProofFormat['proofFormats'][M]
 }
 
+/**
+ * Get the input or output for the getCredentialsForRequest and selectCredentialsForRequest method with specific format data
+ *
+ * @example
+ * ```
+ *
+ * type SelectedCredentialsForRequest = ProofFormatCredentialForRequestPayload<[IndyProofFormat, PresentationExchangeProofFormat], 'selectCredentialsForRequest', 'output'>
+ *
+ * // equal to
+ * type SelectedCredentialsForRequest = {
+ *  indy: {
+ *   // ... return value for indy selected credentials ...
+ *  },
+ *  presentationExchange: {
+ *  // ... return value for presentation exchange selected credentials ...
+ *  }
+ * }
+ * ```
+ */
+export type ProofFormatCredentialForRequestPayload<
+  PFs extends ProofFormat[],
+  M extends 'selectCredentialsForRequest' | 'getCredentialsForRequest',
+  IO extends 'input' | 'output'
+> = {
+  [ProofFormat in PFs[number] as ProofFormat['formatKey']]?: ProofFormat['proofFormats'][M][IO]
+}
+
 export interface ProofFormat {
-  formatKey: string // e.g. 'ProofManifest', cannot be shared between different formats
+  formatKey: string // e.g. 'presentationExchange', cannot be shared between different formats
+
   proofFormats: {
     createProposal: unknown
     acceptProposal: unknown
     createRequest: unknown
     acceptRequest: unknown
-    createPresentation: unknown
-    acceptPresentation: unknown
-    createProposalAsResponse: unknown
-    createOutOfBandRequest: unknown
-    createRequestAsResponse: unknown
-    createProofRequestFromProposal: unknown
-    requestCredentials: unknown
-    retrieveCredentials: unknown
+
+    getCredentialsForRequest: {
+      input: unknown
+      output: unknown
+    }
+    selectCredentialsForRequest: {
+      input: unknown
+      output: unknown
+    }
   }
   formatData: {
     proposal: unknown

@@ -46,7 +46,10 @@ export class DidResolverService {
     if (!resolver) {
       return {
         ...result,
-        didResolutionMetadata: { error: 'unsupportedDidMethod' },
+        didResolutionMetadata: {
+          error: 'unsupportedDidMethod',
+          message: `No did resolver registered for did method ${parsed.method}`,
+        },
       }
     }
 

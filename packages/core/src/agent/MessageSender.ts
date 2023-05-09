@@ -21,6 +21,7 @@ import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
 import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
+import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { inject, injectable } from '../plugins'
@@ -48,7 +49,7 @@ export class MessageSender {
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
-  public readonly outboundTransports: OutboundTransport[] = []
+  private _outboundTransports: OutboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -66,11 +67,20 @@ export class MessageSender {
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
-    this.outboundTransports = []
+    this._outboundTransports = []
+  }
+
+  public get outboundTransports() {
+    return this._outboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: OutboundTransport) {
-    this.outboundTransports.push(outboundTransport)
+    this._outboundTransports.push(outboundTransport)
+  }
+
+  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
+    this._outboundTransports = this.outboundTransports.filter((transport) => transport !== outboundTransport)
+    await outboundTransport.stop()
   }
 
   public async packMessage(
@@ -207,7 +217,7 @@ export class MessageSender {
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { agentContext, connection, outOfBand, sessionId } = outboundMessageContext
+    const { agentContext, connection, outOfBand, message } = outboundMessageContext
     const errors: Error[] = []
 
     if (!connection) {
@@ -223,17 +233,9 @@ export class MessageSender {
       connectionId: connection?.id,
     })
 
-    let session: TransportSession | undefined
+    const session = this.findSessionForOutboundContext(outboundMessageContext)
 
-    if (sessionId) {
-      session = this.transportService.findSessionById(sessionId)
-    }
-    if (!session) {
-      // Try to send to already open session
-      session = this.transportService.findSessionByConnectionId(connection.id)
-    }
-
-    if (session?.inboundMessage?.hasReturnRouting(message.threadId)) {
+    if (session) {
       this.logger.debug(`Found session with return routing for message '${message.id}' (connection '${connection.id}'`)
       try {
         await this.sendMessageToSession(agentContext, session, message)
@@ -257,7 +259,7 @@ export class MessageSender {
         outOfBand
       ))
     } catch (error) {
-      this.logger.error(`Unable to retrieve services for connection '${connection.id}`)
+      this.logger.error(`Unable to retrieve services for connection '${connection.id}. ${error.message}`)
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
       throw new MessageSendingError(`Unable to retrieve services for connection '${connection.id}`, {
         outboundMessageContext,
@@ -365,6 +367,20 @@ export class MessageSender {
   }
 
   public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
+    const session = this.findSessionForOutboundContext(outboundMessageContext)
+
+    if (session) {
+      this.logger.debug(`Found session with return routing for message '${outboundMessageContext.message.id}'`)
+      try {
+        await this.sendMessageToSession(outboundMessageContext.agentContext, session, outboundMessageContext.message)
+        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToSession)
+        return
+      } catch (error) {
+        this.logger.debug(`Sending an outbound message via session failed with error: ${error.message}.`, error)
+      }
+    }
+
+    // If there is no session try sending to service instead
     try {
       await this.sendToService(outboundMessageContext)
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
@@ -433,7 +449,7 @@ export class MessageSender {
     for (const transport of this.outboundTransports) {
       const protocolScheme = getProtocolScheme(service.serviceEndpoint)
       if (!protocolScheme) {
-        this.logger.warn('Service does not have valid protocolScheme.')
+        this.logger.warn('Service does not have a protocol scheme.')
       } else if (transport.supportedSchemes.includes(protocolScheme)) {
         await transport.sendMessage(outboundPackage)
         return
@@ -442,6 +458,25 @@ export class MessageSender {
     throw new MessageSendingError(`Unable to send message to service: ${service.serviceEndpoint}`, {
       outboundMessageContext,
     })
+  }
+
+  private findSessionForOutboundContext(outboundContext: OutboundMessageContext) {
+    let session: TransportSession | undefined = undefined
+
+    // Use session id from outbound context if present, or use the session from the inbound message context
+    const sessionId = outboundContext.sessionId ?? outboundContext.inboundMessageContext?.sessionId
+
+    // Try to find session by id
+    if (sessionId) {
+      session = this.transportService.findSessionById(sessionId)
+    }
+
+    // Try to find session by connection id
+    if (!session && outboundContext.connection?.id) {
+      session = this.transportService.findSessionByConnectionId(outboundContext.connection.id)
+    }
+
+    return session && session.inboundMessage?.hasAnyReturnRoute() ? session : null
   }
 
   private async retrieveServicesByConnection(
@@ -463,7 +498,7 @@ export class MessageSender {
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.getOutOfBandInvitation().getServices()) {
+        for (const service of outOfBand.outOfBandInvitation.getServices()) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)
@@ -724,7 +759,6 @@ function getAuthenticationKeys(didDocument: DidDocument) {
     didDocument.authentication?.map((authentication) => {
       const verificationMethod =
         typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
       const key = getKeyFromVerificationMethod(verificationMethod)
       return key
     }) ?? []

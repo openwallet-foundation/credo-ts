@@ -1,6 +1,6 @@
 export * from './W3cCredentialService'
 export * from './repository/W3cCredentialRecord'
-export * from './W3cVcModule'
+export * from './W3cCredentialsModule'
 export * from './models'
 export type { DocumentLoader, Proof } from './jsonldUtil'
 export { w3cDate, orArrayToArray } from './jsonldUtil'

@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { V1CredentialProtocol } from '../../anoncreds/src'
+import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
 import type { DidCommV1Message } from '../src/didcomm/versions/v1'
-import type { CreateOfferOptions, V1CredentialProtocol } from '../src/modules/credentials'
 import type { AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { Key } from '../src/crypto'
@@ -23,14 +25,28 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
 import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getAgentOptions, prepareForIssuance, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, waitForCredentialRecord } from './helpers'
 
-const faberAgentOptions = getAgentOptions('Faber Agent OOB', {
-  endpoints: ['rxjs:faber'],
-})
-const aliceAgentOptions = getAgentOptions('Alice Agent OOB', {
-  endpoints: ['rxjs:alice'],
-})
+import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
+
+const faberAgentOptions = getAgentOptions(
+  'Faber Agent OOB',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
+)
+const aliceAgentOptions = getAgentOptions(
+  'Alice Agent OOB',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getLegacyAnonCredsModules({
+    autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+  })
+)
 
 describe('out of band', () => {
   const makeConnectionConfig = {
@@ -38,6 +54,7 @@ describe('out of band', () => {
     goalCode: 'p2p-messaging',
     label: 'Faber College',
     alias: `Faber's connection with Alice`,
+    imageUrl: 'http://faber.image.url',
   }
 
   const issueCredentialConfig = {
@@ -51,9 +68,9 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let credentialTemplate: CreateOfferOptions<[V1CredentialProtocol]>
+  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -74,19 +91,33 @@ describe('out of band', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    const { definition } = await prepareForIssuance(faberAgent, ['name', 'age', 'profile_picture', 'x-ray'])
+    const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
+      attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
+    })
 
     credentialTemplate = {
       protocolVersion: 'v1',
       credentialFormats: {
         indy: {
-          attributes: V1CredentialPreview.fromRecord({
-            name: 'name',
-            age: 'age',
-            profile_picture: 'profile_picture',
-            'x-ray': 'x-ray',
-          }).attributes,
-          credentialDefinitionId: definition.id,
+          attributes: [
+            {
+              name: 'name',
+              value: 'name',
+            },
+            {
+              name: 'age',
+              value: 'age',
+            },
+            {
+              name: 'profile_picture',
+              value: 'profile_picture',
+            },
+            {
+              name: 'x-ray',
+              value: 'x-ray',
+            },
+          ],
+          credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         },
       },
       autoAcceptCredential: AutoAcceptCredential.Never,
@@ -158,9 +189,10 @@ describe('out of band', () => {
       expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
       expect(outOfBandRecord.alias).toBe(makeConnectionConfig.alias)
       expect(outOfBandRecord.reusable).toBe(false)
-      expect(outOfBandRecord.outOfBandInvitation!.goal).toBe(makeConnectionConfig.goal)
-      expect(outOfBandRecord.outOfBandInvitation!.goalCode).toBe(makeConnectionConfig.goalCode)
-      expect(outOfBandRecord.outOfBandInvitation!.label).toBe(makeConnectionConfig.label)
+      expect(outOfBandRecord.outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
+      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
+      expect(outOfBandRecord.outOfBandInvitation.label).toBe(makeConnectionConfig.label)
+      expect(outOfBandRecord.outOfBandInvitation.imageUrl).toBe(makeConnectionConfig.imageUrl)
     })
 
     test('create OOB message only with handshake', async () => {
@@ -301,6 +333,7 @@ describe('out of band', () => {
       expect(faberAliceConnection?.state).toBe(DidExchangeState.Completed)
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
+      expect(aliceFaberConnection.imageUrl).toBe(makeConnectionConfig.imageUrl)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(faberAliceConnection.alias).toBe(makeConnectionConfig.alias)
     })

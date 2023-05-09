@@ -1,6 +1,7 @@
 import { tmpdir } from 'os'
 import path from 'path'
 
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { BasicMessageRepository, BasicMessageRecord, BasicMessageRole } from '../src/modules/basic-messages'
 import { KeyDerivationMethod } from '../src/types'
@@ -11,8 +12,8 @@ import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getAgentOptions } from './helpers'
 
-const aliceAgentOptions = getAgentOptions('wallet-tests-Alice')
-const bobAgentOptions = getAgentOptions('wallet-tests-Bob')
+const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, getIndySdkModules())
+const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, getIndySdkModules())
 
 describe('wallet', () => {
   let aliceAgent: Agent
@@ -150,9 +151,14 @@ describe('wallet', () => {
     await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
 
     // Expect same basic message record to exist in new wallet
-    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject(
-      basicMessageRecord
-    )
+    expect(await bobBasicMessageRepository.getById(bobAgent.context, basicMessageRecord.id)).toMatchObject({
+      id: basicMessageRecord.id,
+      connectionId: basicMessageRecord.connectionId,
+      content: basicMessageRecord.content,
+      createdAt: basicMessageRecord.createdAt,
+      updatedAt: basicMessageRecord.updatedAt,
+      type: basicMessageRecord.type,
+    })
   })
 
   test('changing wallet key', async () => {

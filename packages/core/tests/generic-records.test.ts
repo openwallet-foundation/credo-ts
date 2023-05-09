@@ -1,13 +1,18 @@
 import type { GenericRecord } from '../src/modules/generic-records/repository/GenericRecord'
 
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { RecordNotFoundError } from '../src/error'
 
 import { getAgentOptions } from './helpers'
 
-const aliceAgentOptions = getAgentOptions('Generic Records Alice', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Generic Records Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getIndySdkModules()
+)
 
 describe('genericRecords', () => {
   let aliceAgent: Agent
@@ -56,11 +61,11 @@ describe('genericRecords', () => {
   test('get generic-record specific record', async () => {
     //Create genericRecord message
     const savedRecords1 = await aliceAgent.genericRecords.findAllByQuery({ myTag: 'foobar1' })
-    expect(savedRecords1?.length == 1).toBe(true)
+    expect(savedRecords1?.length === 1).toBe(true)
     expect(savedRecords1[0].content).toEqual({ foo: 42 })
 
     const savedRecords2 = await aliceAgent.genericRecords.findAllByQuery({ myTag: 'foobar2' })
-    expect(savedRecords2.length == 2).toBe(true)
+    expect(savedRecords2.length === 2).toBe(true)
     expect(savedRecords2[0].content).toEqual({ foo: 'Some data saved' })
   })
 
