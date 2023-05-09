@@ -20,8 +20,8 @@ import {
   utils,
   TypedArrayEncoder,
   getKeyFromVerificationMethod,
-  VerificationMethod,
   JsonTransformer,
+  VerificationMethod,
 } from '@aries-framework/core'
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
@@ -66,28 +66,43 @@ export class CheqdDidRegistrar implements DidRegistrar {
           keyType: KeyType.Ed25519,
           privateKey: privateKey,
         })
+
         didDocument = generateDidDoc({
           verificationMethod: verificationMethod.type as VerificationMethods,
           verificationMethodId: verificationMethod.id || 'key-1',
           methodSpecificIdAlgo: (methodSpecificIdAlgo as MethodSpecificIdAlgo) || MethodSpecificIdAlgo.Uuid,
           network: network as CheqdNetwork,
           publicKey: TypedArrayEncoder.toHex(key.publicKey),
-        }) satisfies DidDocument
+        })
+
+        const contextMapping = {
+          Ed25519VerificationKey2018: 'https://w3id.org/security/suites/ed25519-2018/v1',
+          Ed25519VerificationKey2020: 'https://w3id.org/security/suites/ed25519-2020/v1',
+          JsonWebKey2020: 'https://w3id.org/security/suites/jws-2020/v1',
+        }
+        const contextUrl = contextMapping[verificationMethod.type]
+
+        // Add the context to the did document
+        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while AFJ did doc uses https://w3id.org/did/v1
+        // We should align these at some point. For now we just return a consistent value.
+        didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Provide a didDocument or atleast one verificationMethod with seed in secret',
+            reason: 'Provide a didDocument or at least one verificationMethod with seed in secret',
           },
         }
       }
 
-      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
+      const didDocumentJson = didDocument.toJSON() as DIDDocument
+
+      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocumentJson, versionId)
       const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
-      const response = await cheqdLedgerService.create(didDocument as DIDDocument, signInputs, versionId)
+      const response = await cheqdLedgerService.create(didDocumentJson, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -269,7 +284,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didState: {
           state: 'finished',
           did: didDocument.id,
-          didDocument: didDocument as DidDocument,
+          didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
           secret: options.secret,
         },
       }

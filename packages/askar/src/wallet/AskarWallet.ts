@@ -518,7 +518,7 @@ export class AskarWallet implements Wallet {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
-      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}. ${error.message}`, { cause: error })
     }
   }
 

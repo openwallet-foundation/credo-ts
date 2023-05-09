@@ -46,6 +46,11 @@ export class Alice extends BaseAgent {
   }
 
   public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+    const linkSecretIds = await this.agent.modules.anoncreds.getLinkSecretIds()
+    if (linkSecretIds.length === 0) {
+      await this.agent.modules.anoncreds.createLinkSecret()
+    }
+
     await this.agent.credentials.acceptOffer({
       credentialRecordId: credentialRecord.id,
     })

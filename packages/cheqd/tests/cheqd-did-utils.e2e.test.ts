@@ -37,7 +37,7 @@ describe('Test Cheqd Did Utils', () => {
   })
 
   it('should create MsgCreateDidDocPayloadToSign', async () => {
-    const result = await createMsgCreateDidDocPayloadToSign(validDidDoc() as DIDDocument, '1.0')
+    const result = await createMsgCreateDidDocPayloadToSign(validDidDoc().toJSON() as DIDDocument, '1.0')
     expect(result).toBeDefined()
   })
 
