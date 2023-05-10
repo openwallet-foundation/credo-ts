@@ -2,13 +2,13 @@ import type {
   AnonCredsRegistry,
   GetCredentialDefinitionReturn,
   GetSchemaReturn,
-  RegisterSchemaOptions,
-  RegisterCredentialDefinitionOptions,
   RegisterSchemaReturn,
   RegisterCredentialDefinitionReturn,
   GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
   AnonCredsRevocationRegistryDefinition,
+  AnonCredsSchema,
+  AnonCredsCredentialDefinition,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
@@ -29,6 +29,7 @@ import {
   GetTransactionRequest,
   GetRevocationRegistryDeltaRequest,
   GetRevocationRegistryDefinitionRequest,
+  CustomRequest,
 } from '@hyperledger/indy-vdr-shared'
 
 import { verificationKeyForIndyDid } from '../dids/didIndyUtil'
@@ -115,58 +116,70 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async registerSchema(
     agentContext: AgentContext,
-    options: RegisterSchemaOptions
+    options: RegisterSchemaOptionsIndyVdr
   ): Promise<RegisterSchemaReturn> {
+    const schema = options.schema
+    const { issuerId, name, version, attrNames } = schema
     try {
       // This will throw an error if trying to register a schema with a legacy indy identifier. We only support did:indy identifiers
       // for registering, that will allow us to extract the namespace and means all stored records will use did:indy identifiers.
-      const { namespaceIdentifier, namespace } = parseIndyDid(options.schema.issuerId)
 
+      const { namespaceIdentifier, namespace } = parseIndyDid(issuerId)
+      const { endorserDid, endorserMode } = options.options
       const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
       const pool = indyVdrPoolService.getPoolForNamespace(namespace)
-      agentContext.config.logger.debug(
-        `Register schema on ledger '${pool.indyNamespace}' with did '${options.schema.issuerId}'`,
-        options.schema
-      )
 
-      const didIndySchemaId = getDidIndySchemaId(
-        namespace,
-        namespaceIdentifier,
-        options.schema.name,
-        options.schema.version
-      )
-      const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, options.schema.name, options.schema.version)
+      let writeRequest: SchemaRequest
+      const didIndySchemaId = getDidIndySchemaId(namespace, namespaceIdentifier, schema.name, schema.version)
 
-      const schemaRequest = new SchemaRequest({
-        submitterDid: namespaceIdentifier,
-        schema: {
-          id: legacySchemaId,
-          name: options.schema.name,
-          ver: '1.0',
-          version: options.schema.version,
-          attrNames: options.schema.attrNames,
-        },
-      })
+      const endorsedTransaction = options.options.endorsedTransaction
+      if (endorsedTransaction) {
+        writeRequest = new CustomRequest({ customRequest: endorsedTransaction }) as SchemaRequest
+      } else {
+        agentContext.config.logger.debug(`Create schema tx on ledger '${namespace}' with did '${issuerId}'`, schema)
+        const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, name, version)
 
-      const submitterKey = await verificationKeyForIndyDid(agentContext, options.schema.issuerId)
-      const writeRequest = await pool.prepareWriteRequest(agentContext, schemaRequest, submitterKey)
+        const schemaRequest = new SchemaRequest({
+          submitterDid: namespaceIdentifier,
+          schema: { id: legacySchemaId, name, ver: '1.0', version, attrNames },
+        })
+
+        const signingDid = endorserMode === 'external' ? issuerId : endorserDid
+        const submitterKey = await verificationKeyForIndyDid(agentContext, signingDid)
+        writeRequest = await pool.prepareWriteRequest(
+          agentContext,
+          schemaRequest,
+          submitterKey,
+          endorserMode === 'internal' ? undefined : endorserDid
+        )
+
+        if (endorserMode === 'external') {
+          return {
+            jobId: didIndySchemaId,
+            schemaState: {
+              state: 'action',
+              action: 'endorseIndyTransaction',
+              schemaId: didIndySchemaId,
+              schema: schema,
+              schemaRequest: writeRequest.body,
+            },
+            registrationMetadata: {},
+            schemaMetadata: {},
+          }
+        }
+      }
       const response = await pool.submitRequest(writeRequest)
 
       agentContext.config.logger.debug(`Registered schema '${didIndySchemaId}' on ledger '${pool.indyNamespace}'`, {
         response,
-        schemaRequest,
+        writeRequest,
       })
 
       return {
         schemaState: {
           state: 'finished',
-          schema: {
-            attrNames: options.schema.attrNames,
-            issuerId: options.schema.issuerId,
-            name: options.schema.name,
-            version: options.schema.version,
-          },
+          schema: schema,
           schemaId: didIndySchemaId,
         },
         registrationMetadata: {},
@@ -177,10 +190,10 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         },
       }
     } catch (error) {
-      agentContext.config.logger.error(`Error registering schema for did '${options.schema.issuerId}'`, {
+      agentContext.config.logger.error(`Error registering schema for did '${issuerId}'`, {
         error,
-        did: options.schema.issuerId,
-        schema: options.schema,
+        did: issuerId,
+        schema: schema,
       })
 
       return {
@@ -188,7 +201,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         registrationMetadata: {},
         schemaState: {
           state: 'failed',
-          schema: options.schema,
+          schema: schema,
           reason: `unknownError: ${error.message}`,
         },
       }
@@ -274,67 +287,93 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async registerCredentialDefinition(
     agentContext: AgentContext,
-    options: RegisterCredentialDefinitionOptions
+    options: RegisterCredentialDefinitionOptionsIndyVdr
   ): Promise<RegisterCredentialDefinitionReturn> {
+    const credentialDefinition = options.credentialDefinition
+    const { schemaId, issuerId, tag, value } = credentialDefinition
+
     try {
       // This will throw an error if trying to register a credential defintion with a legacy indy identifier. We only support did:indy
       // identifiers for registering, that will allow us to extract the namespace and means all stored records will use did:indy identifiers.
-      const { namespaceIdentifier, namespace } = parseIndyDid(options.credentialDefinition.issuerId)
-
+      const { namespaceIdentifier, namespace } = parseIndyDid(issuerId)
+      const { endorserDid, endorserMode } = options.options
       const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
-
       const pool = indyVdrPoolService.getPoolForNamespace(namespace)
+
       agentContext.config.logger.debug(
-        `Registering credential definition on ledger '${pool.indyNamespace}' with did '${options.credentialDefinition.issuerId}'`,
+        `Registering credential definition on ledger '${namespace}' with did '${issuerId}'`,
         options.credentialDefinition
       )
 
-      // TODO: this will bypass caching if done on a higher level.
-      const { schema, schemaMetadata, resolutionMetadata } = await this.getSchema(
-        agentContext,
-        options.credentialDefinition.schemaId
-      )
+      let writeRequest: CredentialDefinitionRequest
+      let didIndyCredentialDefinitionId: string
+      let seqNo: number
 
-      if (!schema || !schemaMetadata.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
-        return {
-          registrationMetadata: {},
-          credentialDefinitionMetadata: {
-            didIndyNamespace: pool.indyNamespace,
+      const endorsedTransaction = options.options.endorsedTransaction
+      if (endorsedTransaction) {
+        writeRequest = new CustomRequest({ customRequest: endorsedTransaction }) as CredentialDefinitionRequest
+        const operation = JSON.parse(endorsedTransaction)?.operation
+        seqNo = Number(operation?.ref)
+        didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(namespace, namespaceIdentifier, seqNo, tag)
+      } else {
+        // TODO: this will bypass caching if done on a higher level.
+        const { schemaMetadata, resolutionMetadata } = await this.getSchema(agentContext, schemaId)
+
+        if (!schemaMetadata?.indyLedgerSeqNo || typeof schemaMetadata.indyLedgerSeqNo !== 'number') {
+          return {
+            registrationMetadata: {},
+            credentialDefinitionMetadata: {
+              didIndyNamespace: pool.indyNamespace,
+            },
+            credentialDefinitionState: {
+              credentialDefinition: options.credentialDefinition,
+              state: 'failed',
+              reason: `error resolving schema with id ${schemaId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
+            },
+          }
+        }
+        seqNo = schemaMetadata.indyLedgerSeqNo
+
+        const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(issuerId, seqNo, tag)
+        didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(namespace, namespaceIdentifier, seqNo, tag)
+
+        const credentialDefinitionRequest = new CredentialDefinitionRequest({
+          submitterDid: namespaceIdentifier,
+          credentialDefinition: {
+            ver: '1.0',
+            id: legacyCredentialDefinitionId,
+            schemaId: `${seqNo}`,
+            type: 'CL',
+            tag: tag,
+            value: value,
           },
-          credentialDefinitionState: {
-            credentialDefinition: options.credentialDefinition,
-            state: 'failed',
-            reason: `error resolving schema with id ${options.credentialDefinition.schemaId}: ${resolutionMetadata.error} ${resolutionMetadata.message}`,
-          },
+        })
+
+        const signingDid = endorserMode === 'external' ? issuerId : endorserDid
+        const submitterKey = await verificationKeyForIndyDid(agentContext, signingDid)
+        writeRequest = await pool.prepareWriteRequest(
+          agentContext,
+          credentialDefinitionRequest,
+          submitterKey,
+          endorserMode === 'internal' ? undefined : endorserDid
+        )
+
+        if (endorserMode === 'external') {
+          return {
+            jobId: didIndyCredentialDefinitionId,
+            credentialDefinitionState: {
+              state: 'action',
+              action: 'endorseIndyTransaction',
+              credentialDefinition: credentialDefinition,
+              credentialDefinitionId: didIndyCredentialDefinitionId,
+              credentialDefinitionRequest: writeRequest.body,
+            },
+            registrationMetadata: {},
+            credentialDefinitionMetadata: {},
+          }
         }
       }
 
-      const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-        options.credentialDefinition.issuerId,
-        schemaMetadata.indyLedgerSeqNo,
-        options.credentialDefinition.tag
-      )
-      const didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(
-        namespace,
-        namespaceIdentifier,
-        schemaMetadata.indyLedgerSeqNo,
-        options.credentialDefinition.tag
-      )
-
-      const credentialDefinitionRequest = new CredentialDefinitionRequest({
-        submitterDid: namespaceIdentifier,
-        credentialDefinition: {
-          ver: '1.0',
-          id: legacyCredentialDefinitionId,
-          schemaId: `${schemaMetadata.indyLedgerSeqNo}`,
-          type: 'CL',
-          tag: options.credentialDefinition.tag,
-          value: options.credentialDefinition.value,
-        },
-      })
-
-      const submitterKey = await verificationKeyForIndyDid(agentContext, options.credentialDefinition.issuerId)
-      const writeRequest = await pool.prepareWriteRequest(agentContext, credentialDefinitionRequest, submitterKey)
       const response = await pool.submitRequest(writeRequest)
       agentContext.config.logger.debug(
         `Registered credential definition '${didIndyCredentialDefinitionId}' on ledger '${pool.indyNamespace}'`,
@@ -347,21 +386,18 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
       return {
         credentialDefinitionMetadata: {},
         credentialDefinitionState: {
-          credentialDefinition: options.credentialDefinition,
+          credentialDefinition: credentialDefinition,
           credentialDefinitionId: didIndyCredentialDefinitionId,
           state: 'finished',
         },
         registrationMetadata: {},
       }
     } catch (error) {
-      agentContext.config.logger.error(
-        `Error registering credential definition for schema '${options.credentialDefinition.schemaId}'`,
-        {
-          error,
-          did: options.credentialDefinition.issuerId,
-          credentialDefinition: options.credentialDefinition,
-        }
-      )
+      agentContext.config.logger.error(`Error registering credential definition for schema '${schemaId}'`, {
+        error,
+        did: issuerId,
+        credentialDefinition: options.credentialDefinition,
+      })
 
       return {
         credentialDefinitionMetadata: {},
@@ -631,3 +667,48 @@ interface SchemaType {
     name: string
   }
 }
+
+export type InternalEndorsement = { endorserMode: 'internal'; endorserDid: string; endorsedTransaction?: never }
+export type ExternalEndorsementCreate = { endorserMode: 'external'; endorserDid: string; endorsedTransaction?: never }
+export type ExternalEndorsementSubmit = { endorserMode: 'external'; endorserDid?: never; endorsedTransaction: string }
+
+export interface RegisterSchemaInternalOptions {
+  schema: AnonCredsSchema
+  options: InternalEndorsement
+}
+
+export interface RegisterSchemaExternalCreateOptions {
+  schema: AnonCredsSchema
+  options: ExternalEndorsementCreate
+}
+
+export interface RegisterSchemaExternalSubmitOptions {
+  schema: AnonCredsSchema
+  options: ExternalEndorsementSubmit
+}
+
+// TODO extends base type
+export type RegisterSchemaOptionsIndyVdr =
+  | RegisterSchemaInternalOptions
+  | RegisterSchemaExternalCreateOptions
+  | RegisterSchemaExternalSubmitOptions
+
+export interface RegisterCredentialDefinitionInternalOptions {
+  credentialDefinition: AnonCredsCredentialDefinition
+  options: InternalEndorsement
+}
+
+export interface RegisterCredentialDefinitionExternalCreateOptions {
+  credentialDefinition: AnonCredsCredentialDefinition
+  options: ExternalEndorsementCreate
+}
+
+export interface RegisterCredentialDefinitionExternalSubmitOptions {
+  credentialDefinition: AnonCredsCredentialDefinition
+  options: ExternalEndorsementSubmit
+}
+
+export type RegisterCredentialDefinitionOptionsIndyVdr =
+  | RegisterCredentialDefinitionInternalOptions
+  | RegisterCredentialDefinitionExternalCreateOptions
+  | RegisterCredentialDefinitionExternalSubmitOptions

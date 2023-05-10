@@ -1,12 +1,16 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
+import type {
+  RegisterCredentialDefinitionOptionsIndyVdr,
+  RegisterSchemaOptionsIndyVdr,
+} from '@aries-framework/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
+import { ConnectionEventTypes, KeyType, TypedArrayEncoder, utils } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, greenText, Output, purpleText, redText } from './OutputClass'
+import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 
 export enum RegistryOptions {
   indy = 'did:indy',
@@ -142,9 +146,12 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
 
-    const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
+    const { schemaState } = await this.agent.modules.anoncreds.registerSchema<RegisterSchemaOptionsIndyVdr>({
       schema: schemaTemplate,
-      options: {},
+      options: {
+        endorserMode: 'internal',
+        endorserDid: this.anonCredsIssuerId,
+      },
     })
 
     if (schemaState.state !== 'finished') {
@@ -162,14 +169,18 @@ export class Faber extends BaseAgent {
     }
 
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
-    const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
-      credentialDefinition: {
-        schemaId,
-        issuerId: this.anonCredsIssuerId,
-        tag: 'latest',
-      },
-      options: {},
-    })
+    const { credentialDefinitionState } =
+      await this.agent.modules.anoncreds.registerCredentialDefinition<RegisterCredentialDefinitionOptionsIndyVdr>({
+        credentialDefinition: {
+          schemaId,
+          issuerId: this.anonCredsIssuerId,
+          tag: 'latest',
+        },
+        options: {
+          endorserMode: 'internal',
+          endorserDid: this.anonCredsIssuerId,
+        },
+      })
 
     if (credentialDefinitionState.state !== 'finished') {
       throw new Error(
