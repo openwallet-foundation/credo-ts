@@ -2,7 +2,7 @@ import type { JwkJson } from './Jwk'
 import type { JwaCurve, JwaKeyType } from '../jwa'
 
 export function hasCrv(jwk: JwkJson, crv: JwaCurve): jwk is JwkJson & { crv: JwaCurve } {
-  return 'crv' in jwk && (!crv || jwk.crv === crv)
+  return 'crv' in jwk && jwk.crv === crv
 }
 
 export function hasKty(jwk: JwkJson, kty: JwaKeyType) {
