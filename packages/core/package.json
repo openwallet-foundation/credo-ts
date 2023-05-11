@@ -25,7 +25,7 @@
   "dependencies": {
     "@digitalcredentials/jsonld": "^5.2.1",
     "@digitalcredentials/jsonld-signatures": "^9.3.1",
-    "@digitalcredentials/vc": "^1.1.2",
+    "@digitalcredentials/vc": "^5.0.0",
     "@multiformats/base-x": "^4.0.1",
     "@stablelib/ed25519": "^1.0.2",
     "@stablelib/random": "^1.0.1",

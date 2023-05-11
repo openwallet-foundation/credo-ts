@@ -128,9 +128,14 @@ export class W3cCredentialService {
       verifyOptions['purpose'] = options.proofPurpose
     }
 
-    const result = await vc.verifyCredential(verifyOptions)
+    const result = (await vc.verifyCredential(verifyOptions)) as unknown as W3cVerifyCredentialResult
+    if (!result.verified) {
+      agentContext.config.logger.debug(`Credential verification failed: ${result.error?.message}`, {
+        stack: result.error?.stack,
+      })
+    }
 
-    return result as unknown as W3cVerifyCredentialResult
+    return result
   }
 
   /**
