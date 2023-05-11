@@ -124,7 +124,7 @@ export class OpenId4VcClientService {
 
       if (jwtKeyAlgMapping[jwt.header.alg].includes(key.keyType)) {
         throw new AriesFrameworkError(
-          `The retreived key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`
+          `The retrieved key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`
         )
       }
 
@@ -257,11 +257,12 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Full server metadata', serverMetadata)
 
-    if (accessToken.scope) {
-      for (const credentialType of accessToken.scope.split(' ')) {
-        this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
-      }
+    if (!accessToken.scope) {
+      throw new AriesFrameworkError(
+        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
+      )
     }
+    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
     // proof of possession
     const callbacks = this.getSignCallback(agentContext)

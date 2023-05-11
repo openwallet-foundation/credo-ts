@@ -1,8 +1,8 @@
 import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
 
-import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
+import { KeyType } from '../../../../crypto/KeyType'
 
 export const VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020 = 'Bls12381G2Key2020'
 

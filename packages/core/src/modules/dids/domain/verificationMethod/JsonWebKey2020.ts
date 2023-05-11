@@ -1,11 +1,12 @@
 import type { VerificationMethod } from './VerificationMethod'
-import type { Jwk } from '../../../../crypto'
+import type { Key } from '../../../../crypto/Key'
+import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
 
-import { Key } from '../../../../crypto'
+import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 
 export const VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 = 'JsonWebKey2020'
 
-type JwkOrKey = { jwk: Jwk; key?: never } | { key: Key; jwk?: never }
+type JwkOrKey = { jwk: JwkJson; key?: never } | { key: Key; jwk?: never }
 type GetJsonWebKey2020VerificationMethodOptions = {
   did: string
 
@@ -19,7 +20,7 @@ export function getJsonWebKey2020VerificationMethod({
   verificationMethodId,
 }: GetJsonWebKey2020VerificationMethodOptions) {
   if (!verificationMethodId) {
-    const k = key ?? Key.fromJwk(jwk)
+    const k = key ?? jwk.key
     verificationMethodId = `${did}#${k.fingerprint}`
   }
 
@@ -27,7 +28,7 @@ export function getJsonWebKey2020VerificationMethod({
     id: verificationMethodId,
     type: VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
     controller: did,
-    publicKeyJwk: jwk ?? key.toJwk(),
+    publicKeyJwk: jwk ?? getJwkFromKey(key).toJson(),
   }
 }
 

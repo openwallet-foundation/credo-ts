@@ -1,31 +1,40 @@
-import type { Jwk } from './JwkTypes'
-import type { Jws, JwsGeneralFormat } from './JwsTypes'
+import type { Jws, JwsGeneralFormat, JwsProtectedHeader, JwsProtectedHeaderOptions } from './JwsTypes'
+import type { Key } from './Key'
+import type { Jwk } from './jose/jwk'
 import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
 
 import { AriesFrameworkError } from '../error'
+import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
+import { DidKey } from '../modules/dids/methods/key/DidKey'
+import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { injectable } from '../plugins'
 import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
 
-import { Key } from './Key'
-import { KeyType } from './KeyType'
-
-// TODO: support more key types, more generic jws format
-const JWS_KEY_TYPE = 'OKP'
-const JWS_CURVE = 'Ed25519'
-const JWS_ALG = 'EdDSA'
+import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
 
 @injectable()
 export class JwsService {
-  public static supportedKeyTypes = [KeyType.Ed25519]
-
   private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
-    if (!JwsService.supportedKeyTypes.includes(options.key.keyType)) {
+    const { jwk, alg } = options.protectedHeaderOptions
+    const keyJwk = getJwkFromKey(options.key)
+
+    // Make sure the options.key and jwk from protectedHeader are the same.
+    if (jwk && (jwk.key.keyType !== options.key.keyType || !jwk.key.publicKey.equals(options.key.publicKey))) {
+      throw new AriesFrameworkError(`Protected header JWK does not match key for signing.`)
+    }
+
+    // Validate the options.key used for signing against the jws options
+    // We use keyJwk instead of jwk, as the user could also use kid instead of jwk
+    if (keyJwk && !keyJwk.supportsSignatureAlgorithm(alg)) {
       throw new AriesFrameworkError(
-        `Only ${JwsService.supportedKeyTypes.join(',')} key type(s) supported for creating JWS`
+        `alg '${alg}' is not a valid JWA signature algorithm for this jwk. Supported algorithms are ${keyJwk.supportedSignatureAlgorithms.join(
+          ', '
+        )}`
       )
     }
+
     const base64Payload = TypedArrayEncoder.toBase64URL(options.payload)
     const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
 
@@ -88,25 +97,25 @@ export class JwsService {
 
     const signerKeys: Key[] = []
     for (const jws of signatures) {
-      const protectedJson = JsonEncoder.fromBase64(jws.protected)
+      const protectedJson: JwsProtectedHeader = JsonEncoder.fromBase64(jws.protected)
 
-      const isValidKeyType = protectedJson?.jwk?.kty === JWS_KEY_TYPE
-      const isValidCurve = protectedJson?.jwk?.crv === JWS_CURVE
-      const isValidAlg = protectedJson?.alg === JWS_ALG
-
-      if (!isValidKeyType || !isValidCurve || !isValidAlg) {
-        throw new AriesFrameworkError('Invalid protected header')
+      const jwk = await this.jwkFromProtectedHeader(agentContext, protectedJson)
+      if (!jwk.supportsSignatureAlgorithm(protectedJson.alg)) {
+        throw new AriesFrameworkError(
+          `alg '${
+            protectedJson.alg
+          }' is not a valid JWA signature algorithm for this jwk. Supported algorithms are ${jwk.supportedSignatureAlgorithms.join(
+            ', '
+          )}`
+        )
       }
 
       const data = TypedArrayEncoder.fromString(`${jws.protected}.${base64Payload}`)
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
-
-      const publicKey = TypedArrayEncoder.fromBase64(protectedJson?.jwk?.x)
-      const key = Key.fromPublicKey(publicKey, KeyType.Ed25519)
-      signerKeys.push(key)
+      signerKeys.push(jwk.key)
 
       try {
-        const isValid = await agentContext.wallet.verify({ key, data, signature })
+        const isValid = await agentContext.wallet.verify({ key: jwk.key, data, signature })
 
         if (!isValid) {
           return {
@@ -128,10 +137,10 @@ export class JwsService {
       }
     }
 
-    return { isValid: true, signerKeys: signerKeys }
+    return { isValid: true, signerKeys }
   }
 
-  private buildProtected(options: ProtectedHeaderOptions) {
+  private buildProtected(options: JwsProtectedHeaderOptions) {
     if (!options.jwk && !options.kid) {
       throw new AriesFrameworkError('Both JWK and kid are undefined. Please provide one or the other.')
     }
@@ -140,10 +149,47 @@ export class JwsService {
     }
 
     return {
+      ...options,
       alg: options.alg,
-      jwk: options.jwk,
+      jwk: options.jwk?.toJson(),
       kid: options.kid,
     }
+  }
+
+  private async jwkFromProtectedHeader(agentContext: AgentContext, protectedHeader: JwsProtectedHeader): Promise<Jwk> {
+    if (protectedHeader.jwk && protectedHeader.kid) {
+      throw new AriesFrameworkError(
+        'Both JWK and kid are defined in the protected header. Only one of the two is allowed.'
+      )
+    }
+
+    // Jwk
+    if (protectedHeader.jwk) {
+      return getJwkFromJson(protectedHeader.jwk)
+    }
+
+    // Kid
+    if (protectedHeader.kid) {
+      if (!protectedHeader.kid.startsWith('did:')) {
+        throw new AriesFrameworkError(
+          `Only DIDs are supported as the 'kid' parameter for JWS. '${protectedHeader.kid}' is not a did.`
+        )
+      }
+
+      const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
+      const didDocument = await didResolver.resolveDidDocument(agentContext, protectedHeader.kid)
+
+      // This is a special case for Aries RFC 0017 signed attachments. It allows a did:key without a keyId to be used kid
+      // https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0017-attachments/README.md#signing-attachments
+      if (protectedHeader.kid.startsWith('did:key:') && !protectedHeader.kid.includes('#')) {
+        return getJwkFromKey(DidKey.fromDid(protectedHeader.kid).key)
+      }
+
+      // TODO: allowedPurposes
+      return getJwkFromKey(getKeyFromVerificationMethod(didDocument.dereferenceKey(protectedHeader.kid)))
+    }
+
+    throw new AriesFrameworkError('Both JWK and kid are undefined. Protected header must contain one of the two.')
   }
 }
 
@@ -151,11 +197,10 @@ export interface CreateJwsOptions {
   key: Key
   payload: Buffer
   header: Record<string, unknown>
-  protectedHeaderOptions: ProtectedHeaderOptions
+  protectedHeaderOptions: JwsProtectedHeaderOptions
 }
 
 type CreateJwsBaseOptions = Omit<CreateJwsOptions, 'header'>
-
 type CreateCompactJwsOptions = Omit<CreateJwsOptions, 'header'>
 
 export interface VerifyJwsOptions {
@@ -166,13 +211,4 @@ export interface VerifyJwsOptions {
 export interface VerifyJwsResult {
   isValid: boolean
   signerKeys: Key[]
-}
-
-export type kid = string
-
-export interface ProtectedHeaderOptions {
-  alg: string
-  jwk?: Jwk
-  kid?: kid
-  [key: string]: any
 }

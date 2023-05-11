@@ -5,7 +5,7 @@
 // native BigInteger is only supported in React Native 0.70+, so we use big-integer for now.
 import bigInt from 'big-integer'
 
-import { Buffer } from '../utils/buffer'
+import { Buffer } from '../../../utils/buffer'
 
 const curveToPointLength = {
   'P-256': 64,
