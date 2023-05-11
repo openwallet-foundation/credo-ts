@@ -2,7 +2,7 @@ import type { VerificationMethod } from './VerificationMethod'
 import type { Key } from '../../../../crypto/Key'
 import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
 
-import { getJwkFromKey } from '../../../../crypto/jose/jwk'
+import { getJwkFromJson, getJwkFromKey } from '../../../../crypto/jose/jwk'
 
 export const VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 = 'JsonWebKey2020'
 
@@ -20,7 +20,7 @@ export function getJsonWebKey2020VerificationMethod({
   verificationMethodId,
 }: GetJsonWebKey2020VerificationMethodOptions) {
   if (!verificationMethodId) {
-    const k = key ?? jwk.key
+    const k = key ?? getJwkFromJson(jwk).key
     verificationMethodId = `${did}#${k.fingerprint}`
   }
 
