@@ -34,15 +34,7 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
 } from '@aries-framework/core'
-import {
-  KdfMethod,
-  StoreKeyMethod,
-  KeyAlgs,
-  CryptoBox,
-  Store,
-  Key as AskarKey,
-  keyAlgFromString,
-} from '@hyperledger/aries-askar-shared'
+import { KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 // eslint-disable-next-line import/order
 import BigNumber from 'bn.js'
 

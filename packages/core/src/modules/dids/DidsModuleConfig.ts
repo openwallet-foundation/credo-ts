@@ -1,6 +1,14 @@
 import type { DidRegistrar, DidResolver } from './domain'
 
-import { KeyDidRegistrar, PeerDidRegistrar, KeyDidResolver, PeerDidResolver, WebDidResolver } from './methods'
+import {
+  KeyDidRegistrar,
+  PeerDidRegistrar,
+  KeyDidResolver,
+  PeerDidResolver,
+  WebDidResolver,
+  JwkDidRegistrar,
+  JwkDidResolver,
+} from './methods'
 
 /**
  * DidsModuleConfigOptions defines the interface for the options of the DidsModuleConfig class.
@@ -15,7 +23,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [KeyDidRegistrar, PeerDidRegistrar]
+   * @default [KeyDidRegistrar, PeerDidRegistrar, JwkDidRegistrar]
    */
   registrars?: DidRegistrar[]
 
@@ -27,7 +35,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [WebDidResolver, KeyDidResolver, PeerDidResolver]
+   * @default [WebDidResolver, KeyDidResolver, PeerDidResolver, JwkDidResolver]
    */
   resolvers?: DidResolver[]
 }
@@ -46,7 +54,7 @@ export class DidsModuleConfig {
     // This prevents creating new instances every time this property is accessed
     if (this._registrars) return this._registrars
 
-    let registrars = this.options.registrars ?? [new KeyDidRegistrar(), new PeerDidRegistrar()]
+    let registrars = this.options.registrars ?? [new KeyDidRegistrar(), new PeerDidRegistrar(), new JwkDidRegistrar()]
 
     // Add peer did registrar if it is not included yet
     if (!registrars.find((registrar) => registrar instanceof PeerDidRegistrar)) {
@@ -67,7 +75,12 @@ export class DidsModuleConfig {
     // This prevents creating new instances every time this property is accessed
     if (this._resolvers) return this._resolvers
 
-    let resolvers = this.options.resolvers ?? [new WebDidResolver(), new KeyDidResolver(), new PeerDidResolver()]
+    let resolvers = this.options.resolvers ?? [
+      new WebDidResolver(),
+      new KeyDidResolver(),
+      new PeerDidResolver(),
+      new JwkDidResolver(),
+    ]
 
     // Add peer did resolver if it is not included yet
     if (!resolvers.find((resolver) => resolver instanceof PeerDidResolver)) {
