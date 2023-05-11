@@ -19,7 +19,7 @@ import {
 } from '@aries-framework/core'
 import { default as didcomm } from 'didcomm-node'
 
-import { DidCommV2EnvelopeServiceImpl } from '../src/services'
+import { DidCommV2EnvelopeService } from '../src/services'
 import { DidCommV2DidResolver } from '../src/services/DidCommV2DidResolver'
 import { DidCommV2SecretsResolver } from '../src/services/DidCommV2SecretsResolver'
 
@@ -112,12 +112,14 @@ async function didResolutionFailureResult(): Promise<DidResolutionResult> {
 
 function oneKeySecretsResolver(secret: Secret) {
   const service = new SecretsResolverMock()
-  mockFunction(service.find_secrets).mockImplementation(async (secret_ids) =>
-    Promise.resolve(secret_ids.filter((value) => value == secret.id))
-  )
-  mockFunction(service.get_secret).mockImplementation(async (secret_id) =>
-    Promise.resolve(secret_id == secret.id ? secret : null)
-  )
+  mockFunction(service.find_secrets).mockImplementation(async (secret_ids) => {
+    const a = await Promise.resolve(secret_ids.filter((value) => value == secret.id))
+    return a
+  })
+  mockFunction(service.get_secret).mockImplementation(async (secret_id) => {
+    const a = await Promise.resolve(secret_id == secret.id ? secret : null)
+    return a
+  })
   return service
 }
 
@@ -183,47 +185,39 @@ const mediator2DidDocument = new DidDocument({
 const bobSecret = {
   id: 'did:example:bob#key-x25519',
   type: 'JsonWebKey2020',
-  secret_material: {
-    format: 'JWK',
-    value: {
-      kty: 'OKP',
-      crv: 'X25519',
-      x: 'GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E',
-      d: 'b9NnuOCB0hm7YGNvaE9DMhwH_wjZA1-gWD6dA0JWdL0',
-    },
+  privateKeyJwk: {
+    kty: 'OKP',
+    crv: 'X25519',
+    x: 'GDTrI66K0pFfO54tlCSvfjjNapIs44dzpneBgyx0S3E',
+    d: 'b9NnuOCB0hm7YGNvaE9DMhwH_wjZA1-gWD6dA0JWdL0',
   },
 }
 
 const mediator1Secret = {
   id: 'did:example:mediator1#key-x25519',
   type: 'JsonWebKey2020',
-  secret_material: {
-    format: 'JWK',
-    value: {
-      kty: 'OKP',
-      crv: 'X25519',
-      x: 'UT9S3F5ep16KSNBBShU2wh3qSfqYjlasZimn0mB8_VM',
-      d: 'p-vteoF1gopny1HXywt76xz_uC83UUmrgszsI-ThBKk',
-    },
+  privateKeyJwk: {
+    kty: 'OKP',
+    crv: 'X25519',
+    x: 'UT9S3F5ep16KSNBBShU2wh3qSfqYjlasZimn0mB8_VM',
+    d: 'p-vteoF1gopny1HXywt76xz_uC83UUmrgszsI-ThBKk',
   },
 }
 
 const mediator2Secret = {
   id: 'did:example:mediator2#key-x25519',
   type: 'JsonWebKey2020',
-  secret_material: {
-    format: 'JWK',
-    value: {
-      kty: 'OKP',
-      crv: 'X25519',
-      x: '82k2BTUiywKv49fKLZa-WwDi8RBf0tB0M8bvSAUQ3yY',
-      d: 'f9WJeuQXEItkGM8shN4dqFr5fLQLBasHnWZ-8dPaSo0',
-    },
+  privateKeyJwk: {
+    kty: 'OKP',
+    crv: 'X25519',
+    x: '82k2BTUiywKv49fKLZa-WwDi8RBf0tB0M8bvSAUQ3yY',
+    d: 'f9WJeuQXEItkGM8shN4dqFr5fLQLBasHnWZ-8dPaSo0',
   },
 }
 
+// FIXME: Forwrad wrapping seems to be broken
 describe('DIDCommV2EnvelopeService', () => {
-  const envelopeService = new DidCommV2EnvelopeServiceImpl(didcomm)
+  const envelopeService = new DidCommV2EnvelopeService(didcomm)
 
   const didResolverService = new DidResolverServiceMock()
 

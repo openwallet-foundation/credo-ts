@@ -4,8 +4,6 @@ import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { OutboundPackage } from '../didcomm/types'
 import type { Logger } from '../logger'
-import type { OutboundTransport } from './OutboundTransport'
-import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from './TransportEventTypes'
 import type WebSocket from 'ws'
 
 import { AgentEventTypes } from '../agent/Events'

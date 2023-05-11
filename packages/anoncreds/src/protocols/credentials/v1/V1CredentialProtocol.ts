@@ -1,9 +1,3 @@
-import type { AgentContext } from '../../../../agent'
-import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
-import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
-import type { DidCommV1Message } from '../../../../didcomm'
-import type { DependencyManager } from '../../../../plugins'
-import type { ProblemReportMessage } from '../../../problem-reports'
 import type { LegacyIndyCredentialFormatService } from '../../../formats'
 import type {
   AgentContext,
@@ -14,6 +8,7 @@ import type {
   ProblemReportMessage,
   ExtractCredentialFormats,
   CredentialProtocol,
+  DidCommV1Message,
 } from '@aries-framework/core'
 
 import {
@@ -24,8 +19,8 @@ import {
   CredentialState,
   JsonTransformer,
   ConnectionService,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   AckStatus,
   CredentialProblemReportReason,
   CredentialsModuleConfig,
@@ -39,25 +34,6 @@ import {
 
 import { AnonCredsCredentialProposal } from '../../../models/AnonCredsCredentialProposal'
 import { composeCredentialAutoAccept, areCredentialPreviewAttributesEqual } from '../../../utils'
-import { Protocol } from '../../../../agent/models/features'
-import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
-import { AriesFrameworkError } from '../../../../error'
-import { injectable } from '../../../../plugins'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
-import { JsonTransformer } from '../../../../utils'
-import { isLinkedAttachment } from '../../../../utils/attachment'
-import { uuid } from '../../../../utils/uuid'
-import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections/services'
-import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
-import { CredentialProblemReportReason } from '../../errors'
-import { IndyCredPropose } from '../../formats/indy/models'
-import { AutoAcceptCredential } from '../../models/CredentialAutoAcceptType'
-import { CredentialState } from '../../models/CredentialState'
-import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
-import { composeAutoAccept } from '../../util/composeAutoAccept'
-import { arePreviewAttributesEqual } from '../../util/previewAttributes'
-import { BaseCredentialProtocol } from '../BaseCredentialProtocol'
 
 import {
   V1ProposeCredentialHandler,

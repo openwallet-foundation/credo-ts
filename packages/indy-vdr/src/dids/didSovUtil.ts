@@ -8,7 +8,7 @@ import {
   AriesFrameworkError,
 } from '@aries-framework/core'
 
-export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
+export type CommEndpointType = 'endpoint' | 'did-communication' | 'DIDCommMessaging'
 
 export interface IndyEndpointAttrib {
   endpoint?: string
@@ -88,7 +88,7 @@ export function sovDidDocumentFromDid(fullDid: string, verkey: string) {
 
 // Process Indy Attrib Endpoint Types according to: https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html > Read (Resolve) > DID Service Endpoint
 function processEndpointTypes(types?: string[]) {
-  const expectedTypes = ['endpoint', 'did-communication', 'DIDComm']
+  const expectedTypes = ['endpoint', 'did-communication', 'DIDCommMessaging']
   const defaultTypes = ['endpoint', 'did-communication']
 
   // Return default types if types "is NOT present [or] empty"
@@ -108,7 +108,7 @@ function processEndpointTypes(types?: string[]) {
 }
 
 export function endpointsAttribFromServices(services: DidDocumentService[]): IndyEndpointAttrib {
-  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDComm']
+  const commTypes: CommEndpointType[] = ['endpoint', 'did-communication', 'DIDCommMessaging']
   const commServices = services.filter((item) => commTypes.includes(item.type as CommEndpointType))
 
   // Check that all services use the same endpoint, as only one is accepted
@@ -173,9 +173,9 @@ export function addServicesFromEndpointsAttrib(
         })
       )
 
-      // If 'DIDComm' included in types, add DIDComm v2 entry
+      // If 'DIDCommMessaging' included in types, add DIDComm v2 entry
       // TODO: should it be DIDComm or DIDCommMessaging? (see https://github.com/sovrin-foundation/sovrin/issues/343)
-      if (processedTypes.includes('DIDComm')) {
+      if (processedTypes.includes('DIDCommMessaging')) {
         builder
           .addService(
             new DidCommV2Service({

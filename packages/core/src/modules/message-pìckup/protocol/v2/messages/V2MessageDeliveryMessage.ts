@@ -1,11 +1,11 @@
-import type { V1Attachment } from '../../../../../../decorators/attachment/V1Attachment'
+import type { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
-import { DidCommV1Message } from '../../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface V2MessageDeliveryMessageOptions {
   id?: string

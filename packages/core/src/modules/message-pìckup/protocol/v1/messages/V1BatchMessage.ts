@@ -1,11 +1,11 @@
 import { Type, Expose } from 'class-transformer'
 import { Matches, IsArray, ValidateNested, IsObject, IsInstance } from 'class-validator'
 
-import { DidCommV1Message } from '../../../../../../didcomm'
-import { EncryptedMessage } from '../../../../../../didcomm/types'
-import { MessageIdRegExp } from '../../../../../../didcomm/validation'
-import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
-import { uuid } from '../../../../../../utils/uuid'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { EncryptedMessage } from '../../../../../didcomm/types'
+import { MessageIdRegExp } from '../../../../../didcomm/validation'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
+import { uuid } from '../../../../../utils/uuid'
 
 export class BatchMessageMessage {
   public constructor(options: { id?: string; message: EncryptedMessage }) {

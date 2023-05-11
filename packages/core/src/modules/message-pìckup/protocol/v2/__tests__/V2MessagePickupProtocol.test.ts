@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../../../../types'
+import type { EncryptedMessage } from '../../../../../didcomm'
 
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
@@ -6,11 +6,12 @@ import { AgentEventTypes } from '../../../../../agent/Events'
 import { MessageSender } from '../../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { InjectionSymbols } from '../../../../../constants'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { InMemoryMessageRepository } from '../../../../../storage/InMemoryMessageRepository'
 import { uuid } from '../../../../../utils/uuid'
-import { DidExchangeState, TrustPingMessage } from '../../../../connections'
+import { DidExchangeState } from '../../../../connections'
+import { TrustPingMessage } from '../../../../connections/protocols/trust-ping/v1/messages/TrustPingMessage'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { MessagePickupModuleConfig } from '../../../MessagePickupModuleConfig'
 import { V1MessagePickupProtocol } from '../../v1'
@@ -63,6 +64,7 @@ const encryptedMessage: EncryptedMessage = {
   iv: 'base64url',
   ciphertext: 'base64url',
   tag: 'base64url',
+  recipients: [],
 }
 const queuedMessages = [encryptedMessage, encryptedMessage, encryptedMessage]
 
@@ -330,7 +332,7 @@ describe('V2MessagePickupService', () => {
       const messageDeliveryMessage = new V2MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new Attachment({
+          new V1Attachment({
             id: '1',
             data: {
               json: {
@@ -362,7 +364,7 @@ describe('V2MessagePickupService', () => {
       const messageDeliveryMessage = new V2MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new Attachment({
+          new V1Attachment({
             id: '1',
             data: {
               json: {
@@ -370,7 +372,7 @@ describe('V2MessagePickupService', () => {
               },
             },
           }),
-          new Attachment({
+          new V1Attachment({
             id: '2',
             data: {
               json: {

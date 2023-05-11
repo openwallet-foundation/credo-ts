@@ -3,7 +3,6 @@ import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } 
 
 import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
-import { AriesFrameworkError } from '../../../../../error'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
@@ -70,7 +69,7 @@ export class V2RequestPresentationMessage extends DidCommV1Message {
   @IsInstance(V1Attachment, { each: true })
   public requestAttachments!: V1Attachment[]
 
-  public getRequestAttachmentById(id: string): Attachment | undefined {
+  public getRequestAttachmentById(id: string): V1Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

@@ -1,10 +1,10 @@
-import type { SigningProvider, WalletConfig } from '@aries-framework/core'
+import type { KeyProvider, WalletConfig } from '@aries-framework/core'
 
 import {
   Key,
   WalletKeyExistsError,
   KeyType,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
 } from '@aries-framework/core'
@@ -24,7 +24,7 @@ const walletConfig: WalletConfig = {
 const signingProvider = {
   keyType: KeyType.X25519,
   createKeyPair: () => Promise.resolve({ keyType: KeyType.X25519, privateKeyBase58: 'b', publicKeyBase58: 'a' }),
-} satisfies Partial<SigningProvider>
+}
 
 describe('IndySdkWallet', () => {
   let indySdkWallet: IndySdkWallet
@@ -36,7 +36,7 @@ describe('IndySdkWallet', () => {
     indySdkWallet = new IndySdkWallet(
       indySdk,
       testLogger,
-      new SigningProviderRegistry([signingProvider as unknown as SigningProvider])
+      new KeyProviderRegistry([signingProvider as unknown as KeyProvider])
     )
     await indySdkWallet.createAndOpen(walletConfig)
   })

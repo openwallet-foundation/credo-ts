@@ -3,8 +3,8 @@ import type { CredentialProtocolOptions, CredentialStateChangedEvent } from '@ar
 import {
   EventEmitter,
   DidExchangeState,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   CredentialState,
   CredentialFormatSpec,
   CredentialExchangeRecord,
@@ -67,17 +67,17 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const proposalAttachment = new Attachment({
-  data: new AttachmentData({
+const proposalAttachment = new V1Attachment({
+  data: new V1AttachmentData({
     json: {
       cred_def_id: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
       schema_issuer_did: 'GMm4vMw8LLrLJjp81kRRLp',

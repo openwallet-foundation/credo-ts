@@ -8,9 +8,7 @@ import type {
   AnonCredsCredentialInfo,
   AnonCredsProof,
   AnonCredsRequestedAttribute,
-  AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicate,
-  AnonCredsRequestedPredicateMatch,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
   AnonCredsProofRequest,
@@ -37,8 +35,8 @@ import type {
 
 import {
   AriesFrameworkError,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   JsonEncoder,
   ProofFormatSpec,
   JsonTransformer,
@@ -55,8 +53,6 @@ import {
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
-  unqualifiedCredentialDefinitionIdRegex,
-  unqualifiedSchemaIdRegex,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
 } from '../utils'
@@ -148,7 +144,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       requested_attributes: indyFormat.requested_attributes ?? {},
       requested_predicates: indyFormat.requested_predicates ?? {},
       non_revoked: indyFormat.non_revoked,
-    } satisfies AnonCredsProofRequest
+    }
 
     // Assert attribute and predicate (group) names do not match
     assertNoDuplicateGroupsNamesInProofRequest(request)
@@ -356,7 +352,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
               credentialInfo: credential.credentialInfo,
               timestamp,
               revoked: isRevoked,
-            } satisfies AnonCredsRequestedAttributeMatch
+            }
           })
         )
       )
@@ -388,7 +384,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
               credentialInfo: credential.credentialInfo,
               timestamp,
               revoked: isRevoked,
-            } satisfies AnonCredsRequestedPredicateMatch
+            }
           })
         )
       )
@@ -630,11 +626,11 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  private getFormatData(data: unknown, id: string): V1Attachment {
+    const attachment = new V1Attachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

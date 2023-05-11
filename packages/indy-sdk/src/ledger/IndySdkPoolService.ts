@@ -151,7 +151,7 @@ export class IndySdkPoolService {
     await cache.set(agentContext, cacheKey, {
       nymResponse: value.did,
       indyNamespace: value.pool.didIndyNamespace,
-    } satisfies CachedDidResponse)
+    })
 
     return { pool: value.pool, nymResponse: value.did }
   }

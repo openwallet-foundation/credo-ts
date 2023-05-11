@@ -74,7 +74,7 @@ describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
-      aliceBobOutOfBandRecord.outOfBandInvitation
+      aliceBobOutOfBandRecord.getOutOfBandInvitation()
     )
     bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
 

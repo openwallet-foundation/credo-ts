@@ -27,7 +27,15 @@ import {
   DidExchangeResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import {
+  TrustPingMessageHandler as V1TrustPingMessageHandler,
+  TrustPingResponseMessageHandler as V1TrustPingResponseMessageHandler,
+} from './protocols/trust-ping/v1'
 import { V1TrustPingService } from './protocols/trust-ping/v1/V1TrustPingService'
+import {
+  TrustPingMessageHandler as V2TrustPingMessageHandler,
+  TrustPingResponseMessageHandler as V2TrustPingResponseMessageHandler,
+} from './protocols/trust-ping/v2'
 import { V2TrustPingService } from './protocols/trust-ping/v2/V2TrustPingService'
 import { ConnectionService } from './services/ConnectionService'
 
@@ -286,19 +294,6 @@ export class ConnectionsApi {
   }
 
   /**
-   * Send Ping message to remote party
-   */
-  public async sendPing(connectionId: string) {
-    const connection = await this.getById(connectionId)
-    const message = connection.isDidCommV1Connection
-      ? await this.v1trustPingService.createPing()
-      : await this.v2TrustPingService.createPing(connection)
-
-    await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
-    )
-  }
-  /**
    * Send a trust ping to an established connection
    *
    * @param connectionId the id of the connection for which to accept the response
@@ -306,32 +301,41 @@ export class ConnectionsApi {
    * @param withReturnRouting do we want a response at the time of posting
    * @returns TurstPingMessage
    */
-  // public async sendPing(
-  //     connectionId: string,
-  //     { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
-  // ) {
-  //   const connection = await this.getById(connectionId)
-  //
-  //   const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
-  //     responseRequested: responseRequested,
-  //   })
-  //
-  //   if (withReturnRouting === true) {
-  //     message.setReturnRouting(ReturnRouteTypes.all)
-  //   }
-  //
-  //   // Disable return routing as we don't want to receive a response for this message over the same channel
-  //   // This has led to long timeouts as not all clients actually close an http socket if there is no response message
-  //   if (withReturnRouting === false) {
-  //     message.setReturnRouting(ReturnRouteTypes.none)
-  //   }
-  //
-  //   await this.messageSender.sendMessage(
-  //       new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
-  //   )
-  //
-  //   return message
-  // }
+  public async sendPing(
+    connectionId: string,
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+  ) {
+    const connection = await this.getById(connectionId)
+
+    if (connection.isDidCommV1Connection) {
+      const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
+        responseRequested: responseRequested,
+      })
+
+      if (withReturnRouting === true) {
+        message.setReturnRouting(ReturnRouteTypes.all)
+      }
+
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      if (withReturnRouting === false) {
+        message.setReturnRouting(ReturnRouteTypes.none)
+      }
+
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      )
+
+      return message
+    } else {
+      const message = await this.v2TrustPingService.createPing(connection)
+
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      )
+      return message
+    }
+  }
 
   /**
    * Gets the known connection types for the record matching the given connectionId
@@ -437,9 +441,11 @@ export class ConnectionsApi {
     )
     messageHandlerRegistry.registerMessageHandler(new AckMessageHandler(this.connectionService))
     messageHandlerRegistry.registerMessageHandler(
-      new TrustPingMessageHandler(this.trustPingService, this.connectionService)
+      new V1TrustPingMessageHandler(this.v1trustPingService, this.connectionService)
     )
-    messageHandlerRegistry.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
+    messageHandlerRegistry.registerMessageHandler(new V1TrustPingResponseMessageHandler(this.v1trustPingService))
+    messageHandlerRegistry.registerMessageHandler(new V2TrustPingMessageHandler(this.v2TrustPingService))
+    messageHandlerRegistry.registerMessageHandler(new V2TrustPingResponseMessageHandler(this.v2TrustPingService))
 
     messageHandlerRegistry.registerMessageHandler(
       new DidExchangeRequestHandler(

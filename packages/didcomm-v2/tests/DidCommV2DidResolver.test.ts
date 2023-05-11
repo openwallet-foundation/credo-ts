@@ -81,15 +81,10 @@ describe('DidCommV2DidResolver', () => {
     expect(result).not.toBeNull()
 
     const adaptedDidDocument = result as DIDDoc
-    expect(adaptedDidDocument.services).toHaveLength(4)
+    expect(adaptedDidDocument.service).toHaveLength(4)
 
-    expect(adaptedDidDocument.services[0].id).toBe('did:example:alice#mediator')
-    expect(adaptedDidDocument.services[0].kind).toStrictEqual({
-      Other: {
-        type: 'Mediator',
-        serviceEndpoint: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h',
-      },
-    })
+    expect(adaptedDidDocument.service[0].id).toBe('did:example:alice#mediator')
+    expect(adaptedDidDocument.service[0].serviceEndpoint).toStrictEqual({ uri: 'did:sov:Q4zqM7aXqm7gDQkUVLng9h' })
   })
 
   it('converts DidDocumentService of endpoint type into didcomm lib Service of Other kind', async () => {
@@ -97,15 +92,10 @@ describe('DidCommV2DidResolver', () => {
     expect(result).not.toBeNull()
 
     const adaptedDidDocument = result as DIDDoc
-    expect(adaptedDidDocument.services).toHaveLength(4)
+    expect(adaptedDidDocument.service).toHaveLength(4)
 
-    expect(adaptedDidDocument.services[1].id).toBe('did:example:alice#endpoint')
-    expect(adaptedDidDocument.services[1].kind).toStrictEqual({
-      Other: {
-        type: 'endpoint',
-        serviceEndpoint: 'https://agent.com',
-      },
-    })
+    expect(adaptedDidDocument.service[1].id).toBe('did:example:alice#endpoint')
+    expect(adaptedDidDocument.service[1].serviceEndpoint).toStrictEqual({ uri: 'https://agent.com' })
   })
 
   it('converts IndyAgentService into didcomm lib Service of Other kind', async () => {
@@ -113,18 +103,10 @@ describe('DidCommV2DidResolver', () => {
     expect(result).not.toBeNull()
 
     const adaptedDidDocument = result as DIDDoc
-    expect(adaptedDidDocument.services).toHaveLength(4)
+    expect(adaptedDidDocument.service).toHaveLength(4)
 
-    expect(adaptedDidDocument.services[2].id).toBe('did:example:alice#indy-agent')
-    expect(adaptedDidDocument.services[2].kind).toStrictEqual({
-      Other: {
-        type: 'IndyAgent',
-        serviceEndpoint: 'did:sov:LjgpST2rjsoxYegQDRm7EL',
-        recipientKeys: ['did:sov:WJz9mHyW9BZksioQnRsrAo#key-agreement-1'],
-        routingKeys: ['did:sov:mediator1#key-agreement-1', 'did:sov:mediator2#key-agreement-2'],
-        priority: 5,
-      },
-    })
+    expect(adaptedDidDocument.service[2].id).toBe('did:example:alice#indy-agent')
+    expect(adaptedDidDocument.service[2].serviceEndpoint).toStrictEqual({ uri: 'did:sov:LjgpST2rjsoxYegQDRm7EL' })
   })
 
   it('converts DidCommV2Service into didcomm lib Service of DIDCommMessaging kind', async () => {
@@ -132,15 +114,13 @@ describe('DidCommV2DidResolver', () => {
     expect(result).not.toBeNull()
 
     const adaptedDidDocument = result as DIDDoc
-    expect(adaptedDidDocument.services).toHaveLength(4)
+    expect(adaptedDidDocument.service).toHaveLength(4)
 
-    expect(adaptedDidDocument.services[3].id).toBe('did:example:alice#did-comm-v2')
-    expect(adaptedDidDocument.services[3].kind).toStrictEqual({
-      DIDCommMessaging: {
-        service_endpoint: 'https://agent.com/did-comm-v2',
-        accept: ['didcomm/v2', 'didcomm/aip2;env=rfc587'],
-        routing_keys: ['did:example:mediator1#key-x25519', 'did:example:mediator2#key-x25519'],
-      },
+    expect(adaptedDidDocument.service[3].id).toBe('did:example:alice#did-comm-v2')
+    expect(adaptedDidDocument.service[3].serviceEndpoint).toStrictEqual({
+      accept: ['didcomm/v2', 'didcomm/aip2;env=rfc587'],
+      routing_keys: ['did:example:mediator1#key-x25519', 'did:example:mediator2#key-x25519'],
+      uri: 'https://agent.com/did-comm-v2',
     })
   })
 })

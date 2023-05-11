@@ -1,5 +1,5 @@
-import type { Key, KeyType, KeyPair } from '../crypto'
-import type { EncryptedMessage, PlaintextMessage } from '../didcomm/types'
+import type { Key, KeyPair, KeyType } from '../crypto'
+import type { EncryptedMessage, PlaintextMessage, EnvelopeType } from '../didcomm/types'
 import type { Disposable } from '../plugins'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
@@ -12,6 +12,7 @@ export interface Wallet extends Disposable {
   createAndOpen(walletConfig: WalletConfig): Promise<void>
   open(walletConfig: WalletConfig): Promise<void>
   rotateKey(walletConfig: WalletConfigRekey): Promise<void>
+  retrieveKeyPair(kid: string): Promise<KeyPair>
   close(): Promise<void>
   delete(): Promise<void>
 
@@ -39,7 +40,7 @@ export interface Wallet extends Disposable {
   sign(options: WalletSignOptions): Promise<Buffer>
   verify(options: WalletVerifyOptions): Promise<boolean>
 
-  pack(payload: Record<string, unknown>, recipientKeys: string[], senderVerkey?: string): Promise<EncryptedMessage>
+  pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage>
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
@@ -67,3 +68,19 @@ export interface UnpackedMessageContext {
   senderKey?: string
   recipientKey?: string
 }
+
+export interface WalletPackV1Options {
+  version: 'v1'
+  recipientKeys: string[]
+  senderKey: string | null
+  envelopeType?: EnvelopeType
+}
+export interface WalletPackV2Options {
+  version: 'v2'
+  toDid?: string
+  fromDid?: string
+  serviceId?: string
+  envelopeType?: EnvelopeType
+}
+
+export type WalletPackOptions = WalletPackV1Options | WalletPackV2Options

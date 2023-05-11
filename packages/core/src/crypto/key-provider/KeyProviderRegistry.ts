@@ -1,5 +1,5 @@
-import type { KeyType } from '..'
 import type { KeyProvider } from './KeyProvider'
+import type { KeyType } from '..'
 
 import { AriesFrameworkError } from '../../error'
 import { injectable, injectAll } from '../../plugins'

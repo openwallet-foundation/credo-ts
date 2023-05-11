@@ -30,10 +30,10 @@ const offerFormat = new CredentialFormatSpec({
   format: 'hlindy/cred-abstract@v2.0',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new V1Attachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),

@@ -30,13 +30,15 @@ export abstract class DiscoverFeaturesService {
 
   public abstract readonly version: string
 
-  public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  public abstract createQuery(
+    options: CreateQueryOptions
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message>>
   public abstract processQuery(
     messageContext: InboundMessageContext<DidCommV1Message>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message> | void>
 
   public abstract createDisclosure(
     options: CreateDisclosureOptions
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommV1Message>>
-  public abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>
+  public abstract processDisclosure(messageContext: InboundMessageContext<DidCommV1Message>): Promise<void>
 }

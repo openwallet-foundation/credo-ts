@@ -1,5 +1,5 @@
-import type { ConstructableDidCommMessage } from '../../didcomm'
 import type { DidCommMessageRole } from './DidCommMessageRole'
+import type { ConstructableDidCommMessage } from '../../didcomm'
 import type { JsonObject } from '../../types'
 
 import { AriesFrameworkError } from '../../error'

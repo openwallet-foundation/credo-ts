@@ -10,7 +10,7 @@ class CustomProtocolMessage extends DidCommV1Message {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/message')
 }
 
-class LegacyDidSovPrefixMessage extends AgentMessage {
+class LegacyDidSovPrefixMessage extends DidCommV1Message {
   public readonly allowDidSovPrefix = true
 
   @IsValidMessageType(LegacyDidSovPrefixMessage.type)
@@ -18,7 +18,7 @@ class LegacyDidSovPrefixMessage extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/fake-protocol/1.5/another-message')
 }
 
-describe('AgentMessage', () => {
+describe('DIDCommV1Message', () => {
   describe('toJSON', () => {
     it('should only use did:sov message prefix if useDidSovPrefixWhereAllowed and allowDidSovPrefix are both true', () => {
       const message = new TestMessage()

@@ -132,7 +132,7 @@ describe('indy-vdr DID Resolver E2E', () => {
             accept: ['didcomm/v2'],
             routingKeys: ['a-routing-key'],
             serviceEndpoint: 'http://localhost:3000',
-            type: 'DIDComm',
+            type: 'DIDCommMessaging',
           },
         ],
       },

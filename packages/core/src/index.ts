@@ -16,11 +16,8 @@ export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, WalletConfig, JsonArray, JsonObject, JsonValue } from './types'
 export type {
   InitConfig,
-  OutboundPackage,
-  EncryptedMessage,
   WalletConfig,
   JsonArray,
   JsonObject,

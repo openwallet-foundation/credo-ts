@@ -9,8 +9,6 @@ import type {
 import {
   EventEmitter,
   DidExchangeState,
-  Attachment,
-  AttachmentData,
   JsonEncoder,
   DidCommMessageRecord,
   DidCommMessageRole,
@@ -24,6 +22,8 @@ import {
   CredentialEventTypes,
   AckStatus,
   CredentialProblemReportReason,
+  V1Attachment,
+  V1AttachmentData,
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
@@ -79,27 +79,27 @@ const credentialPreview = V1CredentialPreview.fromRecord({
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const requestAttachment = new Attachment({
+const requestAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64: JsonEncoder.toBase64({}),
   }),
 })
 
-const credentialAttachment = new Attachment({
+const credentialAttachment = new V1Attachment({
   id: INDY_CREDENTIAL_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new V1AttachmentData({
     base64: JsonEncoder.toBase64({
       values: convertAttributesToCredentialValues(credentialPreview.attributes),
     }),
@@ -525,7 +525,7 @@ describe('V1CredentialProtocol', () => {
       expect(legacyIndyCredentialFormatService.processCredential).toHaveBeenNthCalledWith(1, agentContext, {
         attachment: credentialAttachment,
         credentialRecord,
-        requestAttachment: expect.any(Attachment),
+        requestAttachment: expect.any(V1Attachment),
       })
     })
   })

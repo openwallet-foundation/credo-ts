@@ -1,7 +1,7 @@
 import type { IndySdk } from '../../types'
 import type { TagsBase } from '@aries-framework/core'
 
-import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry } from '@aries-framework/core'
+import { RecordDuplicateError, RecordNotFoundError, KeyProviderRegistry } from '@aries-framework/core'
 import * as indySdk from 'indy-sdk'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
@@ -10,7 +10,7 @@ import { IndySdkWallet } from '../../wallet/IndySdkWallet'
 import { IndySdkStorageService } from '../IndySdkStorageService'
 
 const agentConfig = getAgentConfig('IndySdkStorageServiceTest')
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
 
 const agentContext = getAgentContext({
   wallet,

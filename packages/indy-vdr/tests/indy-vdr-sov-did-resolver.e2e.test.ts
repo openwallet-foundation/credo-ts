@@ -146,7 +146,7 @@ describe('Indy VDR Sov DID Resolver', () => {
             accept: ['didcomm/v2'],
             routingKeys: ['a-routing-key'],
             serviceEndpoint: 'http://localhost:3000',
-            type: 'DIDComm',
+            type: 'DIDCommMessaging',
           },
         ],
       },

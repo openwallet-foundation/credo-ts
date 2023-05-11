@@ -1,4 +1,5 @@
 import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -9,6 +10,10 @@ import { DidCommV2BaseMessage } from './DidCommV2BaseMessage'
 export class DidCommV2Message extends DidCommV2BaseMessage implements AgentMessage {
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
+  }
+
+  public serviceDecorator(): ServiceDecorator | undefined {
+    return undefined
   }
 
   public get didCommVersion(): DidCommMessageVersion {

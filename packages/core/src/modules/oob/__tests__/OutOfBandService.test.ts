@@ -10,7 +10,6 @@ import {
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
 import { KeyType, Key } from '../../../crypto'
-import { KeyProviderRegistry } from '../../../crypto/key-provider'
 import { AriesFrameworkError } from '../../../error'
 import { DidExchangeState } from '../../connections/models'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'

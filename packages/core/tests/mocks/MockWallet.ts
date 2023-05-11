@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Wallet, KeyPair } from '../../src'
+import type { Wallet, KeyPair, WalletPackOptions } from '../../src'
 import type { Key } from '../../src/crypto'
 import type { EncryptedMessage } from '../../src/didcomm/types'
 import type { WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../../src/types'
@@ -39,11 +39,7 @@ export class MockWallet implements Wallet {
   public import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string
-  ): Promise<EncryptedMessage> {
+  public pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
     throw new Error('Method not implemented.')
   }
   public unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext> {

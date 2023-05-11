@@ -6,6 +6,7 @@ import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { AgentMessageSentEvent } from '../Events'
+import type { PackMessageParams } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -659,12 +660,12 @@ describe('MessageSender', () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const keys = {
+      const params: PackMessageParams = {
         recipientKeys: [recipientKey],
         routingKeys: [],
         senderKey: senderKey,
       }
-      const result = await messageSender.packMessage(agentContext, { message, keys, endpoint })
+      const result = await messageSender.packMessage(agentContext, { message, params, endpoint })
 
       expect(result).toEqual({
         payload: encryptedMessage,

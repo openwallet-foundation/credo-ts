@@ -1,8 +1,6 @@
 import type { GetRoutingOptions, RemoveRoutingOptions } from './RoutingService'
 import type { AgentContext } from '../../../agent'
-import type { AgentMessageReceivedEvent } from '../../../agent/Events'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { EncryptedMessage } from '../../../didcomm/types'
 import type { DidCommV1Message } from '../../../didcomm/versions/v1'
 import type { Query } from '../../../storage/StorageService'
 import type { ConnectionRecord } from '../../connections'

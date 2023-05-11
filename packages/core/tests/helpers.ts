@@ -16,7 +16,10 @@ import type {
   Buffer,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
+import type {
+  TrustPingReceivedEvent,
+  TrustPingResponseReceivedEvent,
+} from '../src/modules/connections/protocols/trust-ping/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
 import type { Observable } from 'rxjs'
@@ -49,7 +52,7 @@ import { DidCommV1Service } from '../src/modules/dids'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/oob/messages'
+import { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages/OutOfBandInvitation'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
 import { uuid } from '../src/utils/uuid'
@@ -535,7 +538,9 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(
+    agentAOutOfBand.getOutOfBandInvitation()
+  )
 
   agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
   let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)

@@ -1,12 +1,9 @@
-import type { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import type { V1Attachment } from '@aries-framework/core'
 
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { DidCommV1Message } from '../../../../../didcomm'
-import { indyDidRegex, schemaIdRegex, schemaVersionRegex, credDefIdRegex } from '../../../../../utils'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import {
   unqualifiedCredentialDefinitionIdRegex,
   unqualifiedIndyDidRegex,

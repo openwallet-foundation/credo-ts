@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { V1CredentialProtocol } from '../../anoncreds/src'
-import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
 import type { DidCommV1Message } from '../src/didcomm/versions/v1'
+import type { CreateCredentialOfferOptions } from '../src/modules/credentials'
 import type { AgentMessageReceivedEvent } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
@@ -15,7 +15,7 @@ import { AgentEventTypes } from '../src/agent/Events'
 import { Key } from '../src/crypto'
 import { AriesFrameworkError } from '../src/error'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
-import { AutoAcceptCredential, CredentialState, V1CredentialPreview } from '../src/modules/credentials'
+import { AutoAcceptCredential, CredentialState } from '../src/modules/credentials'
 import { OutOfBandDidCommService } from '../src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
@@ -26,8 +26,6 @@ import { JsonEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
-
-import { AgentEventTypes, AriesFrameworkError, AutoAcceptCredential, CredentialState } from '@aries-framework/core'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB',
@@ -189,10 +187,12 @@ describe('out of band', () => {
       expect(outOfBandRecord.state).toBe(OutOfBandState.AwaitResponse)
       expect(outOfBandRecord.alias).toBe(makeConnectionConfig.alias)
       expect(outOfBandRecord.reusable).toBe(false)
-      expect(outOfBandRecord.outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
-      expect(outOfBandRecord.outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
-      expect(outOfBandRecord.outOfBandInvitation.label).toBe(makeConnectionConfig.label)
-      expect(outOfBandRecord.outOfBandInvitation.imageUrl).toBe(makeConnectionConfig.imageUrl)
+
+      const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
+      expect(outOfBandInvitation.goal).toBe(makeConnectionConfig.goal)
+      expect(outOfBandInvitation.goalCode).toBe(makeConnectionConfig.goalCode)
+      expect(outOfBandInvitation.label).toBe(makeConnectionConfig.label)
+      expect(outOfBandInvitation.imageUrl).toBe(makeConnectionConfig.imageUrl)
     })
 
     test('create OOB message only with handshake', async () => {

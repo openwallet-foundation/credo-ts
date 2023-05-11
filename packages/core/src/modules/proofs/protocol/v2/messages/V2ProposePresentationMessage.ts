@@ -1,8 +1,8 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../agent/AgentMessage'
-import { Attachment } from '../../../../../decorators/attachment/Attachment'
+import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
@@ -11,11 +11,11 @@ export interface V2ProposePresentationMessageOptions {
   id?: string
   comment?: string
   goalCode?: string
-  proposalAttachments: Attachment[]
+  proposalAttachments: V1Attachment[]
   formats: ProofFormatSpec[]
 }
 
-export class V2ProposePresentationMessage extends AgentMessage {
+export class V2ProposePresentationMessage extends DidCommV1Message {
   public constructor(options: V2ProposePresentationMessageOptions) {
     super()
 
@@ -50,13 +50,13 @@ export class V2ProposePresentationMessage extends AgentMessage {
   public formats!: ProofFormatSpec[]
 
   @Expose({ name: 'proposals~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({ each: true })
-  @IsInstance(Attachment, { each: true })
-  public proposalAttachments!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public proposalAttachments!: V1Attachment[]
 
-  public getProposalAttachmentById(id: string): Attachment | undefined {
+  public getProposalAttachmentById(id: string): V1Attachment | undefined {
     return this.proposalAttachments.find((attachment) => attachment.id === id)
   }
 }

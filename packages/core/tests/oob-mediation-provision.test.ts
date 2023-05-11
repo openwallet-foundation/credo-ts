@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { OutOfBandInvitation } from '../src/modules/oob/messages'
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
+import type { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages/OutOfBandInvitation'
 import type { V2OutOfBandInvitation } from '../src/modules/oob/protocols/v2'
 
 import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
@@ -72,7 +71,7 @@ describe('out of band with mediation set up with provision method', () => {
     await faberAgent.initialize()
 
     const mediationOutOfBandRecord = await mediatorAgent.oob.createInvitation(makeConnectionConfig)
-    mediatorOutOfBandInvitation = mediationOutOfBandRecord.outOfBandInvitation
+    mediatorOutOfBandInvitation = mediationOutOfBandRecord.getOutOfBandInvitation()
 
     let { connectionRecord } = await aliceAgent.oob.receiveInvitation(mediatorOutOfBandInvitation)
     connectionRecord = await aliceAgent.connections.returnWhenIsConnected(connectionRecord!.id)

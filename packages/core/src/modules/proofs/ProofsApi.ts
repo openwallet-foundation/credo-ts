@@ -1,6 +1,3 @@
-import type { DidCommV1Message } from '../../didcomm/versions/v1'
-import type { Query } from '../../storage/StorageService'
-import type { ProofService } from './ProofService'
 import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
@@ -25,7 +22,7 @@ import type {
 import type { ProofProtocol } from './protocol/ProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
 import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
-import type { AgentMessage } from '../../agent/AgentMessage'
+import type { DidCommV1Message } from '../../didcomm/versions/v1/DidCommV1Message'
 import type { Query } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
@@ -302,6 +299,8 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
 
+    const recipientService = requestMessage?.serviceDecorator()
+
     // Use connection if present
     if (proofRecord.connectionId) {
       const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
@@ -328,7 +327,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     }
 
     // Use ~service decorator otherwise
-    else if (requestMessage?.service) {
+    else if (recipientService) {
       // Create ~service decorator
       const routing = await this.routingService.getRouting(this.agentContext)
       const ourService = new ServiceDecorator({
@@ -336,7 +335,6 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
         recipientKeys: [routing.recipientKey.publicKeyBase58],
         routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
       })
-      const recipientService = requestMessage.service
 
       const { message } = await protocol.acceptRequest(this.agentContext, {
         proofFormats: options.proofFormats,
@@ -435,7 +433,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @returns the message itself and the proof record associated with the sent request message
    */
   public async createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
-    message: AgentMessage
+    message: DidCommV1Message
     proofRecord: ProofExchangeRecord
   }> {
     const protocol = this.getProtocol(options.protocolVersion)

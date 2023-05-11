@@ -14,7 +14,7 @@ import {
   Key,
   KeyType,
   RepositoryEventTypes,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   TypedArrayEncoder,
   VerificationMethod,
 } from '@aries-framework/core'
@@ -33,7 +33,7 @@ mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
 
 jest
   .spyOn(wallet, 'createKey')
@@ -427,7 +427,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
             routingKeys: ['key-1'],
             serviceEndpoint: 'https://example.com/endpoint',
-            type: 'DIDComm',
+            type: 'DIDCommMessaging',
           },
         ],
         verificationMethod: [
@@ -494,7 +494,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             {
               id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
               serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
+              type: 'DIDCommMessaging',
               routingKeys: ['key-1'],
               accept: ['didcomm/v2'],
             },
@@ -601,7 +601,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
-        types: ['endpoint', 'did-communication', 'DIDComm'],
+        types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
       },
     })
     expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
@@ -651,7 +651,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
             {
               id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-1',
               serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
+              type: 'DIDCommMessaging',
               routingKeys: ['key-1'],
               accept: ['didcomm/v2'],
             },

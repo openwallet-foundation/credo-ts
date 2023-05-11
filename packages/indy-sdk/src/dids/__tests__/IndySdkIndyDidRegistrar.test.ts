@@ -3,7 +3,7 @@ import type { IndySdkPool } from '../../ledger/IndySdkPool'
 import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   DidsApi,
   DidDocument,
   VerificationMethod,
@@ -34,7 +34,7 @@ const pool = {
 mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue(pool)
 
 const agentConfig = getAgentConfig('IndySdkIndyDidRegistrar')
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
 
 jest
   .spyOn(wallet, 'createKey')
@@ -341,7 +341,7 @@ describe('IndySdkIndyDidRegistrar', () => {
         endpoints: {
           endpoint: 'https://example.com/endpoint',
           routingKeys: ['key-1'],
-          types: ['DIDComm', 'did-communication', 'endpoint'],
+          types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
         },
       },
       secret: {
@@ -411,7 +411,7 @@ describe('IndySdkIndyDidRegistrar', () => {
             {
               id: 'did:indy:pool1:R1xKJw17sUoXhejEpugMYJ#didcomm-1',
               serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
+              type: 'DIDCommMessaging',
               routingKeys: ['key-1'],
               accept: ['didcomm/v2'],
             },
@@ -452,7 +452,7 @@ describe('IndySdkIndyDidRegistrar', () => {
         endpoints: {
           endpoint: 'https://example.com/endpoint',
           routingKeys: ['key-1'],
-          types: ['DIDComm', 'did-communication', 'endpoint'],
+          types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
         },
       },
       secret: {

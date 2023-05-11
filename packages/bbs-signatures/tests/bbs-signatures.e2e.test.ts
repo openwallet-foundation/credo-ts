@@ -27,7 +27,7 @@ import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/docume
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndySdkWallet } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
-import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
+import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2KeyProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
 import { describeSkipNode17And18 } from './util'
@@ -68,7 +68,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, keyProviderRegistry)
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

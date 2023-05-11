@@ -18,7 +18,7 @@ export interface V2ProposeCredentialMessageOptions {
 }
 
 export class V2ProposeCredentialMessage extends DidCommV1Message {
-  public constructor(props: V2ProposeCredentialMessageOptions) {
+  public constructor(options: V2ProposeCredentialMessageOptions) {
     super()
     if (options) {
       this.id = options.id ?? this.generateId()

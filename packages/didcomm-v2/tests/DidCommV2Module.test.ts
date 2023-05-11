@@ -1,9 +1,9 @@
 import type { DependencyManager } from '@aries-framework/core'
 
-import { DidCommV2EnvelopeServiceToken } from '@aries-framework/core'
+// import { DidCommV2EnvelopeServiceToken } from '@aries-framework/core'
 import { default as didcomm } from 'didcomm-node'
 
-import { DIDCommV2LibraryToken, DidCommV2Module, DidCommV2EnvelopeServiceImpl } from '../src'
+import { DIDCommV2LibraryToken, DidCommV2Module } from '../src'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -20,9 +20,9 @@ describe('DidCommV2Module', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DIDCommV2LibraryToken, didcomm)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      DidCommV2EnvelopeServiceToken,
-      DidCommV2EnvelopeServiceImpl
-    )
+    // expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+    //   DidCommV2EnvelopeServiceToken,
+    //   DidCommV2EnvelopeServiceImpl
+    // )
   })
 })

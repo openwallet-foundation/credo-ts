@@ -2,7 +2,7 @@ import type { IndySdkPool } from '../../ledger'
 import type { IndyEndpointAttrib } from '../didSovUtil'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
+import { KeyProviderRegistry, JsonTransformer } from '@aries-framework/core'
 import indySdk from 'indy-sdk'
 
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
@@ -29,7 +29,7 @@ mockFunction(indySdkPoolServiceMock.getPoolForDid).mockResolvedValue({
 
 const agentConfig = getAgentConfig('IndySdkSovDidResolver')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
 
 const agentContext = getAgentContext({
   wallet,
@@ -88,7 +88,7 @@ describe('IndySdkSovDidResolver', () => {
 
     const endpoints: IndyEndpointAttrib = {
       endpoint: 'https://agent.com',
-      types: ['endpoint', 'did-communication', 'DIDComm'],
+      types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
       routingKeys: ['routingKey1', 'routingKey2'],
     }
 

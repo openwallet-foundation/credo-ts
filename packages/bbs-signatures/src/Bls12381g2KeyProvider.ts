@@ -17,7 +17,7 @@ export class Bls12381g2KeyProvider implements KeyProvider {
    */
   public async createKeyPair({ seed, privateKey }: CreateKeyPairOptions): Promise<KeyPair> {
     if (privateKey) {
-      throw new SigningProviderError('Cannot create keypair from private key')
+      throw new KeyProviderError('Cannot create keypair from private key')
     }
 
     const blsKeyPair = await generateBls12381G2KeyPair(seed)

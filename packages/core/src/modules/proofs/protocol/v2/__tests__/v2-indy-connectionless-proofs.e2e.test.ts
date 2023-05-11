@@ -21,7 +21,7 @@ import {
   waitForProofExchangeRecord,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -307,7 +307,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: faberMediationOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -323,7 +323,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: aliceMediationOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -369,16 +369,16 @@ describe('V2 Connectionless Proofs - Indy', () => {
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
           new LinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

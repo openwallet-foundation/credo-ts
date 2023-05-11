@@ -95,7 +95,7 @@ describe('mediator establishment', () => {
         ...recipientAgentOptions.modules,
         mediationRecipient: new MediationRecipientModule({
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com/ssi',
           }),
         }),
@@ -133,7 +133,7 @@ describe('mediator establishment', () => {
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
+    const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })
@@ -219,7 +219,7 @@ describe('mediator establishment', () => {
       modules: {
         ...recipientAgentOptions.modules,
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com/ssi',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -252,7 +252,7 @@ describe('mediator establishment', () => {
       modules: {
         ...recipientAgentOptions.modules,
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: mediatorOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com/ssi',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -274,7 +274,7 @@ describe('mediator establishment', () => {
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
-    const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
+    const recipientInvitation = recipientOutOfBandRecord.getOutOfBandInvitation()
 
     let { connectionRecord: senderRecipientConnection } = await senderAgent.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' })

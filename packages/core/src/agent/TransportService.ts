@@ -1,11 +1,7 @@
-import type { EncryptedMessage } from '../didcomm'
-import type { ConnectionRecord } from '../modules/connections/repository'
-import type { DidDocument } from '../modules/dids'
 import type { AgentMessage } from './AgentMessage'
 import type { PackMessageParams } from './EnvelopeService'
-import type { EnvelopeKeys } from './EnvelopeService'
+import type { EncryptedMessage } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
-import type { EncryptedMessage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'

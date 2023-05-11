@@ -1,12 +1,8 @@
 import type { LegacyIndyCredentialRequest } from '../../../../formats'
 
-import { IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType, V1Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
-import { DidCommV1Message } from '../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 

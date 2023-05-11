@@ -1,12 +1,8 @@
 import type { AnonCredsCredentialOffer } from '../../../../models'
 
-import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType, V1Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
-import { DidCommV1Message } from '../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 import { V1CredentialPreview } from './V1CredentialPreview'
 

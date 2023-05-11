@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer'
 import { IsInt } from 'class-validator'
 
-import { DidCommV1Message } from '../../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface BatchPickupMessageOptions {
   id?: string

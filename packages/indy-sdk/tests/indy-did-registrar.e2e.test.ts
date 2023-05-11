@@ -48,7 +48,7 @@ describe('Indy SDK Indy Did Registrar', () => {
         alias: 'Alias',
         endpoints: {
           endpoint: 'https://example.com/endpoint',
-          types: ['DIDComm', 'did-communication', 'endpoint'],
+          types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
           routingKeys: ['a-routing-key'],
         },
       },
@@ -106,7 +106,7 @@ describe('Indy SDK Indy Did Registrar', () => {
               id: `did:indy:pool:localtest:${unqualifiedDid}#didcomm-1`,
               routingKeys: ['a-routing-key'],
               serviceEndpoint: 'https://example.com/endpoint',
-              type: 'DIDComm',
+              type: 'DIDCommMessaging',
             },
           ],
           authentication: [`did:indy:pool:localtest:${unqualifiedDid}#verkey`],

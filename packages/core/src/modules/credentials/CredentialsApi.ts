@@ -1,7 +1,4 @@
 import type {
-import type { DidCommV1Message } from '../../didcomm/versions/v1'
-import type { Query } from '../../storage/StorageService'
-import type { CFsFromCPs, DeleteCredentialOptions } from './CredentialProtocolOptions'
   AcceptCredentialOptions,
   AcceptCredentialOfferOptions,
   AcceptCredentialProposalOptions,
@@ -22,6 +19,7 @@ import type { CFsFromCPs, DeleteCredentialOptions } from './CredentialProtocolOp
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/CredentialProtocolOptions'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
+import type { DidCommV1Message } from '../../didcomm/versions/v1'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
@@ -65,7 +63,7 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
   acceptCredential(options: AcceptCredentialOptions): Promise<CredentialExchangeRecord>
 
   // out of band
-  createOffer(options: CreateOfferOptions<CPs>): Promise<{
+  createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
     message: DidCommV1Message
     credentialRecord: CredentialExchangeRecord
   }>

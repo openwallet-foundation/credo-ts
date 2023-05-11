@@ -2,7 +2,7 @@ import type { AgentContext, TagsBase } from '@aries-framework/core'
 
 import {
   TypedArrayEncoder,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@aries-framework/core'
@@ -25,7 +25,7 @@ describeRunInNodeVersion([18], 'AskarStorageService', () => {
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
 
-    wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
       agentConfig,

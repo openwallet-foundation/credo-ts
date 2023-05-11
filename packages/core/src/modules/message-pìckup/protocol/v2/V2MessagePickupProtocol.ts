@@ -1,11 +1,11 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { AgentMessageReceivedEvent } from '../../../../agent/Events'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../../didcomm'
+import type { EncryptedMessage } from '../../../../didcomm/types'
 import type { DependencyManager } from '../../../../plugins'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
-import type { EncryptedMessage } from '../../../../types'
 import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
@@ -13,7 +13,7 @@ import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
-import { Attachment } from '../../../../decorators/attachment/Attachment'
+import { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { ConnectionService } from '../../../connections'
@@ -71,7 +71,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async pickupMessages(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
+  ): Promise<PickupMessagesProtocolReturnType<DidCommV1Message>> {
     const { connectionRecord, recipientKey } = options
     connectionRecord.assertReady()
 
@@ -123,7 +123,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // of delivery message
     const attachments = messages.map(
       (msg) =>
-        new Attachment({
+        new V1Attachment({
           data: {
             json: msg,
           },

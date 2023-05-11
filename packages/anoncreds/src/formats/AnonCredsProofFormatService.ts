@@ -8,9 +8,7 @@ import type {
   AnonCredsCredentialInfo,
   AnonCredsProof,
   AnonCredsRequestedAttribute,
-  AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicate,
-  AnonCredsRequestedPredicateMatch,
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
   AnonCredsProofRequest,
@@ -37,8 +35,8 @@ import type {
 
 import {
   AriesFrameworkError,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   JsonEncoder,
   ProofFormatSpec,
   JsonTransformer,
@@ -145,7 +143,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       requested_attributes: anoncredsFormat.requested_attributes ?? {},
       requested_predicates: anoncredsFormat.requested_predicates ?? {},
       non_revoked: anoncredsFormat.non_revoked,
-    } satisfies AnonCredsProofRequest
+    }
 
     // Assert attribute and predicate (group) names do not match
     assertNoDuplicateGroupsNamesInProofRequest(request)
@@ -349,7 +347,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
               credentialInfo: credential.credentialInfo,
               timestamp,
               revoked: isRevoked,
-            } satisfies AnonCredsRequestedAttributeMatch
+            }
           })
         )
       )
@@ -381,7 +379,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
               credentialInfo: credential.credentialInfo,
               timestamp,
               revoked: isRevoked,
-            } satisfies AnonCredsRequestedPredicateMatch
+            }
           })
         )
       )
@@ -615,11 +613,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  private getFormatData(data: unknown, id: string): V1Attachment {
+    const attachment = new V1Attachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new V1AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

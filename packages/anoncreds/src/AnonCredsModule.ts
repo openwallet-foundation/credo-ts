@@ -38,11 +38,11 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
   }
 
-  public updates = [
+  public updates: Update[] = [
     {
       fromVersion: '0.3.1',
       toVersion: '0.4',
       doUpdate: updateAnonCredsModuleV0_3_1ToV0_4,
     },
-  ] satisfies Update[]
+  ]
 }

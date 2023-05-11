@@ -205,7 +205,7 @@ async function createPublicDid(agent: Agent, unqualifiedSubmitterDid: string, en
       alias: 'Alias',
       endpoints: {
         endpoint,
-        types: ['DIDComm', 'did-communication', 'endpoint'],
+        types: ['DIDCommMessaging', 'did-communication', 'endpoint'],
       },
     },
   })

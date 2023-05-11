@@ -30,7 +30,7 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([new Bls12381g2SigningProvider()]))
+    wallet = new IndySdkWallet(indySdk, testLogger, new KeyProviderRegistry([new Bls12381g2KeyProvider()]))
     await wallet.createAndOpen(walletConfig)
   })
 

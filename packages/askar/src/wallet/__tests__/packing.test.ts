@@ -1,12 +1,6 @@
-import type { WalletConfig } from '@aries-framework/core'
+import type { WalletConfig, WalletPackOptions } from '@aries-framework/core'
 
-import {
-  JsonTransformer,
-  BasicMessage,
-  KeyType,
-  SigningProviderRegistry,
-  KeyDerivationMethod,
-} from '@aries-framework/core'
+import { JsonTransformer, BasicMessage, KeyType, KeyProviderRegistry, KeyDerivationMethod } from '@aries-framework/core'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { agentDependencies } from '../../../../core/tests/helpers'
@@ -25,7 +19,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
   let askarWallet: AskarWallet
 
   beforeEach(async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
     await askarWallet.createAndOpen(walletConfig)
   })
 
@@ -40,11 +34,13 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
 
     const message = new BasicMessage({ content: 'hello' })
 
-    const encryptedMessage = await askarWallet.pack(
-      message.toJSON(),
-      [recipientKey.publicKeyBase58],
-      senderKey.publicKeyBase58
-    )
+    const params: WalletPackOptions = {
+      version: 'v1',
+      recipientKeys: [recipientKey.publicKeyBase58],
+      senderKey: senderKey.publicKeyBase58,
+    }
+
+    const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
 
     const plainTextMessage = await askarWallet.unpack(encryptedMessage)
 

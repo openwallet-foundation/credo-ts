@@ -1,9 +1,5 @@
 import type { InitConfig } from '@aries-framework/core'
-import type { IndySdkPoolConfig } from '@aries-framework/indy-sdk'
-import type { IndyVdrPoolConfig } from '@aries-framework/indy-vdr'
 
-import { Agent, AutoAcceptCredential, AutoAcceptProof, HttpOutboundTransport } from '@aries-framework/core'
-import { DidCommV2Module } from '@aries-framework/didcomm-v2'
 import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
@@ -37,7 +33,6 @@ import {
 import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@aries-framework/indy-sdk'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@aries-framework/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
-import * as didcomm from 'didcomm-node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
@@ -58,7 +53,7 @@ export const indyNetworkConfig = {
   indyNamespace: 'bcovrin:test',
   isProduction: false,
   connectOnStartup: true,
-} satisfies IndySdkPoolConfig | IndyVdrPoolConfig
+}
 
 type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
@@ -88,7 +83,7 @@ export class BaseAgent {
         key: name,
       },
       endpoints: [`http://localhost:${this.port}`],
-    } satisfies InitConfig
+    }
 
     this.config = config
 
@@ -113,9 +108,6 @@ export class BaseAgent {
 function getAskarAnonCredsIndyModules() {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
-
-  // Enable also didcomm-v2 module
-  const didCommV2Module = new DidCommV2Module({ didcomm })
 
   return {
     connections: new ConnectionsModule({
@@ -171,7 +163,6 @@ function getAskarAnonCredsIndyModules() {
     askar: new AskarModule({
       ariesAskar,
     }),
-    didCommV2: didCommV2Module,
   } as const
 }
 

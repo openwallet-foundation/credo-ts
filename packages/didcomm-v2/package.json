@@ -25,17 +25,17 @@
     "test": "jest"
   },
   "dependencies": {
-    "didcomm": "0.3.4"
+    "didcomm": "0.4.1"
   },
   "peerDependencies": {
-    "@aries-framework/core": "0.3.2"
+    "@aries-framework/core": "0.3.3"
   },
   "devDependencies": {
-    "@aries-framework/core": "0.3.2",
-    "@aries-framework/node": "0.3.2",
-    "didcomm-node": "0.3.4",
+    "@aries-framework/core": "0.3.3",
+    "@aries-framework/node": "0.3.3",
+    "didcomm-node": "0.4.1",
     "reflect-metadata": "^0.1.13",
-    "rimraf": "~3.0.2",
-    "typescript": "~4.3.0"
+    "rimraf": "^4.4.0",
+    "typescript": "~4.9.5"
   }
 }

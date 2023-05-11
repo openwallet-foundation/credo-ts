@@ -6,10 +6,10 @@ import type {
   AgentContext,
   ProofProtocolOptions,
   InboundMessageContext,
-  AgentMessage,
   ProblemReportMessage,
   GetProofFormatDataReturn,
   ProofFormat,
+  DidCommV1Message,
 } from '@aries-framework/core'
 
 import {
@@ -23,7 +23,7 @@ import {
   ProofState,
   DidCommMessageRole,
   ConnectionService,
-  Attachment,
+  V1Attachment,
   JsonTransformer,
   PresentationProblemReportReason,
   AckStatus,
@@ -261,7 +261,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       nonce: await agentContext.wallet.generateNonce(),
     })
 
-    const proposalAttachment = new Attachment({
+    const proposalAttachment = new V1Attachment({
       data: {
         json: JsonTransformer.toJSON(requestFromPreview),
       },
@@ -305,7 +305,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       autoAcceptProof,
     }: ProofProtocolOptions.NegotiateProofProposalOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommV1Message>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.ProposalReceived)
@@ -349,7 +349,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       parentThreadId,
       autoAcceptProof,
     }: ProofProtocolOptions.CreateProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommV1Message>> {
     this.assertOnlyIndyFormat(proofFormats)
 
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
@@ -493,7 +493,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       autoAcceptProof,
     }: ProofProtocolOptions.NegotiateProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommV1Message>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.RequestReceived)
@@ -546,7 +546,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       autoAcceptProof,
       comment,
     }: ProofProtocolOptions.AcceptProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommV1Message>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.RequestReceived)
@@ -573,7 +573,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new V1Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -643,7 +643,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new V1Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -703,7 +703,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new V1Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -919,7 +919,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToProposal(agentContext, {
       proofRecord,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new V1Attachment({
         data: {
           json: rfc0592Proposal,
         },
@@ -962,7 +962,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToRequest(agentContext, {
       proofRecord,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new V1Attachment({
         data: {
           base64: JsonEncoder.toBase64(rfc0592Proposal),
         },
@@ -1015,7 +1015,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord,
       requestAttachment,
       presentationAttachment,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new V1Attachment({
         data: {
           json: rfc0592Proposal,
         },

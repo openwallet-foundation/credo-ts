@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { DidCommV1Message } from '../../../didcomm'
 import type { ConnectionRecord } from '../../connections'
 
 export interface PickupMessagesProtocolOptions {
@@ -7,6 +7,6 @@ export interface PickupMessagesProtocolOptions {
   batchSize?: number
 }
 
-export type PickupMessagesProtocolReturnType<MessageType extends AgentMessage> = {
+export type PickupMessagesProtocolReturnType<MessageType extends DidCommV1Message> = {
   message: MessageType
 }

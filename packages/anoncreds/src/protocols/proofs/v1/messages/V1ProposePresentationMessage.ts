@@ -1,9 +1,7 @@
-import { IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { IsValidMessageType, parseMessageType, DidCommV1Message } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { DidCommV1Message } from '../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { V1PresentationPreview } from '../models/V1PresentationPreview'
 
 export interface V1ProposePresentationMessageOptions {

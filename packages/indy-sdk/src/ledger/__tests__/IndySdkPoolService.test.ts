@@ -4,7 +4,7 @@ import type { CachedDidResponse } from '../IndySdkPoolService'
 import {
   CacheModuleConfig,
   InMemoryLruCache,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   AriesFrameworkError,
   Key,
   KeyType,
@@ -58,7 +58,7 @@ const config = getAgentConfig('IndySdkPoolServiceTest')
 const cache = new InMemoryLruCache({ limit: 1 })
 
 const indySdkModule = new IndySdkModuleConfig({ indySdk, networks: pools })
-const wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, config.logger, new KeyProviderRegistry([]))
 
 const agentContext = getAgentContext({
   wallet,

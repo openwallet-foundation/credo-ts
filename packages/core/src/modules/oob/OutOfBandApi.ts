@@ -23,7 +23,7 @@ import { inject, injectable } from '../../plugins'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
-import { parseInvitationUrl, parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
@@ -347,7 +347,7 @@ export class OutOfBandApi {
   public async receiveInvitation(
     invitation: OutOfBandInvitation | ConnectionInvitationMessage | V2OutOfBandInvitation,
     config: ReceiveOutOfBandInvitationConfig = {}
-  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+  ): Promise<{ outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     return this._receiveInvitation(invitation, config)
   }
 
@@ -383,24 +383,17 @@ export class OutOfBandApi {
    * Internal receive invitation method, for both explicit and implicit OOB invitations
    */
   private async _receiveInvitation(
-    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
+    invitation: OutOfBandInvitation | ConnectionInvitationMessage | V2OutOfBandInvitation,
     config: BaseReceiveOutOfBandInvitationConfig = {}
-  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
-    // Convert to out of band invitation if needed
-    const outOfBandInvitation =
-      invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
-
-    const { handshakeProtocols } = outOfBandInvitation
+  ): Promise<{ outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const { routing } = config
 
-  ): Promise<{ outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const autoAcceptInvitation = config.autoAcceptInvitation ?? true
     const autoAcceptConnection = config.autoAcceptConnection ?? true
     const reuseConnection = config.reuseConnection ?? false
     const label = config.label ?? this.agentContext.config.label
     const alias = config.alias
     const imageUrl = config.imageUrl ?? this.agentContext.config.connectionImageUrl
-    const { routing } = config
 
     let outOfBandRecord: OutOfBandRecord | null
 
@@ -428,20 +421,20 @@ export class OutOfBandApi {
         )
       }
 
-    // Make sure we haven't received this invitation before
-    // It's fine if we created it (means that we are connnecting to ourselves) or if it's an implicit
-    // invitation (it allows to connect multiple times to the same public did)
-    if (!config.isImplicit) {
-      const existingOobRecordsFromThisId = await this.outOfBandService.findAllByQuery(this.agentContext, {
-        invitationId: outOfBandInvitation.id,
-        role: OutOfBandRole.Receiver,
-      })
-      if (existingOobRecordsFromThisId.length > 0) {
-        throw new AriesFrameworkError(
-          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
-        )
+      // Make sure we haven't received this invitation before
+      // It's fine if we created it (means that we are connnecting to ourselves) or if it's an implicit
+      // invitation (it allows to connect multiple times to the same public did)
+      if (!config.isImplicit) {
+        const existingOobRecordsFromThisId = await this.outOfBandService.findAllByQuery(this.agentContext, {
+          invitationId: outOfBandInvitation.id,
+          role: OutOfBandRole.Receiver,
+        })
+        if (existingOobRecordsFromThisId.length > 0) {
+          throw new AriesFrameworkError(
+            `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
+          )
+        }
       }
-    }
 
       const recipientKeyFingerprints: string[] = []
       for (const service of outOfBandInvitation.getServices()) {
@@ -464,13 +457,14 @@ export class OutOfBandApi {
         }
       }
 
-    const outOfBandRecord = new OutOfBandRecord({
-      role: OutOfBandRole.Receiver,
-      state: OutOfBandState.Initial,
-      outOfBandInvitation: outOfBandInvitation,
-      autoAcceptConnection,
-      tags: { recipientKeyFingerprints },
-    })
+      outOfBandRecord = new OutOfBandRecord({
+        role: OutOfBandRole.Receiver,
+        state: OutOfBandState.Initial,
+        outOfBandInvitation: outOfBandInvitation,
+        autoAcceptConnection,
+        tags: { recipientKeyFingerprints },
+      })
+    }
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError('Unable to receive Out-of-Band invitation.')

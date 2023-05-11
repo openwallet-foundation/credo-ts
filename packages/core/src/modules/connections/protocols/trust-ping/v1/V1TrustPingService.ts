@@ -1,59 +1,52 @@
+import type { TrustPingMessage } from './messages'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { ConnectionRecord } from '../../../repository/ConnectionRecord'
+import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../TrustPingEvents'
 
-import { Dispatcher } from '../../../../../agent/Dispatcher'
-import { InjectionSymbols } from '../../../../../constants'
-import { Logger } from '../../../../../logger'
-import { inject, injectable } from '../../../../../plugins'
-import { ConnectionService } from '../../../services/ConnectionService'
+import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { OutboundMessageContext } from '../../../../../agent/models'
+import { injectable } from '../../../../../plugins'
+import { TrustPingEventTypes } from '../TrustPingEvents'
 
-import { TrustPingMessageHandler, TrustPingResponseMessageHandler } from './handlers'
-import { TrustPingMessage } from './messages'
-import { TrustPingResponseMessage } from './messages/TrustPingResponseMessage'
+import { TrustPingResponseMessage } from './messages'
 
 @injectable()
 export class V1TrustPingService {
-  private logger: Logger
-  private dispatcher: Dispatcher
-  private connectionService: ConnectionService
+  private eventEmitter: EventEmitter
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    dispatcher: Dispatcher,
-    connectionService: ConnectionService
-  ) {
-    this.logger = logger
-    this.dispatcher = dispatcher
-    this.connectionService = connectionService
-
-    this.registerHandlers()
+  public constructor(eventEmitter: EventEmitter) {
+    this.eventEmitter = eventEmitter
   }
 
-  public createPing(): TrustPingMessage {
-    return new TrustPingMessage({
-      responseRequested: true,
+  public processPing({ message, agentContext }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
+    this.eventEmitter.emit<TrustPingReceivedEvent>(agentContext, {
+      type: TrustPingEventTypes.TrustPingReceivedEvent,
+      payload: {
+        connectionRecord: connection,
+        message: message,
+      },
     })
-  }
 
-  public processPing({ message }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
-    this.logger.info(`Send Trust Ping message to connection ${connection.id}.`)
     if (message.responseRequested) {
       const response = new TrustPingResponseMessage({
-        threadId: message.id,
+        threadId: message.threadId,
       })
 
-      return response
+      return new OutboundMessageContext(response, { agentContext, connection })
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
-    this.logger.info('Trust Ping Response message received.')
-    // TODO: handle ping response message
-  }
+    const { agentContext, message } = inboundMessage
 
-  protected registerHandlers() {
-    this.dispatcher.registerMessageHandler(new TrustPingMessageHandler(this, this.connectionService))
-    this.dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this))
+    const connection = inboundMessage.assertReadyConnection()
+
+    this.eventEmitter.emit<TrustPingResponseReceivedEvent>(agentContext, {
+      type: TrustPingEventTypes.TrustPingResponseReceivedEvent,
+      payload: {
+        connectionRecord: connection,
+        message: message,
+      },
+    })
   }
 }

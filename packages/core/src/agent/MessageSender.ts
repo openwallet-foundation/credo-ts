@@ -1,16 +1,16 @@
+import type { AgentMessage } from './AgentMessage'
+import type { AgentMessageSentEvent } from './Events'
+import type { TransportSession } from './TransportService'
+import type { AgentContext } from './context'
 import type { EncryptedMessage, OutboundPackage, OutboundPackagePayload } from '../didcomm/types'
-import type { DidCommV1Message } from '../didcomm/versions/v1'
+import type { DidCommV1Message, PackMessageParams as DidCommV1PackMessageParams } from '../didcomm/versions/v1'
+import type { V2PackMessageParams as DidCommV2PackMessageParams } from '../didcomm/versions/v2'
 import type { DidCommV2Message } from '../didcomm/versions/v2/DidCommV2Message'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidCommV2Service, DidDocument, DidDocumentService } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { AgentMessage } from './AgentMessage'
-import type { PackMessageParams } from './EnvelopeService'
-import type { AgentMessageSentEvent } from './Events'
-import type { TransportSession } from './TransportService'
-import type { AgentContext } from './context'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
@@ -20,7 +20,6 @@ import { isDidCommV2Message } from '../didcomm/versions/v2'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
-import { getKeyDidMappingByVerificationMethod } from '../modules/dids/domain/key-type'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
@@ -86,16 +85,16 @@ export class MessageSender {
   public async packMessage(
     agentContext: AgentContext,
     {
-      keys,
+      params,
       message,
       endpoint,
     }: {
-      keys: PackMessageParams
+      params: DidCommV1PackMessageParams
       message: AgentMessage
       endpoint: string
     }
   ): Promise<OutboundPackage> {
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, params)
 
     return {
       payload: encryptedMessage,
@@ -201,23 +200,24 @@ export class MessageSender {
     }
   ) {
     if (isDidCommV1Message(outboundMessage.message)) {
-      return this.sendDIDCommV1Message(outboundMessage.message, outboundMessage, options)
+      return this.sendDIDCommV1Message(outboundMessage, options)
     }
     if (isDidCommV2Message(outboundMessage.message)) {
-      return this.sendDIDCommV2Message(outboundMessage.message, outboundMessage, options)
+      return this.sendDIDCommV2Message(outboundMessage, options)
     }
     throw new AriesFrameworkError(`Unexpected case`)
   }
 
   private async sendDIDCommV1Message(
-    message: DidCommV1Message,
     outboundMessageContext: OutboundMessageContext,
     options?: {
       envelopeType?: EnvelopeType
       transportPriority?: TransportPriorityOptions
     }
   ) {
-    const { agentContext, connection, outOfBand, message } = outboundMessageContext
+    const { agentContext, connection, outOfBand } = outboundMessageContext
+    const message = outboundMessageContext.message as DidCommV1Message
+
     const errors: Error[] = []
 
     if (!connection) {
@@ -338,13 +338,13 @@ export class MessageSender {
     if (queueService) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
-      const keys = {
+      const params: DidCommV1PackMessageParams = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
         senderKey: firstOurAuthenticationKey,
       }
 
-      const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
+      const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, params)
       await this.messageRepository.add(connection.id, encryptedMessage)
 
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.QueuedForPickup)
@@ -418,7 +418,7 @@ export class MessageSender {
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
 
-    const keys = {
+    const params: DidCommV1PackMessageParams = {
       recipientKeys: service.recipientKeys,
       routingKeys: service.routingKeys,
       senderKey,
@@ -443,7 +443,7 @@ export class MessageSender {
       throw error
     }
 
-    const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
+    const outboundPackage = await this.packMessage(agentContext, { message, params, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
     for (const transport of this.outboundTransports) {
@@ -498,7 +498,8 @@ export class MessageSender {
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
-        for (const service of outOfBand.outOfBandInvitation.getServices()) {
+        const services = outOfBand.outOfBandInvitation?.getServices() || []
+        for (const service of services) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {
             this.logger.debug(`Resolving services for did ${service}.`)
@@ -556,7 +557,6 @@ export class MessageSender {
   }
 
   private async sendDIDCommV2Message(
-    message: DidCommV2Message,
     outboundMessageContext: OutboundMessageContext,
     options?: {
       envelopeType?: EnvelopeType
@@ -564,6 +564,7 @@ export class MessageSender {
     }
   ) {
     const { agentContext } = outboundMessageContext
+    const message = outboundMessageContext.message as DidCommV2Message
     const envelopeType = options?.envelopeType || EnvelopeType.Encrypted
 
     // recipient is not specified -> send to defaultTransport
@@ -662,7 +663,11 @@ export class MessageSender {
       if (!message.from) {
         throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
       }
-      const params = { signByDID: message.from, serviceId: service?.id, type: EnvelopeType.Signed }
+      const params: DidCommV2PackMessageParams = {
+        signByDid: message.from,
+        serviceId: service?.id,
+        envelopeType: EnvelopeType.Signed,
+      }
       return this.envelopeService.packMessage(agentContext, message, params)
     }
 
@@ -698,7 +703,7 @@ export class MessageSender {
       throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
     }
 
-    const params: PackMessageParams = {
+    const params: DidCommV2PackMessageParams = {
       toDid: recipientDid,
       fromDid: message.from,
       signByDid: undefined,

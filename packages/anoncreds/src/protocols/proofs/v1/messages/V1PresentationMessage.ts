@@ -1,14 +1,8 @@
 import type { AnonCredsProof } from '../../../../models'
 
+import { IsValidMessageType, parseMessageType, DidCommV1Message, V1Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
-
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
-import { DidCommV1Message } from '../../../../../didcomm'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
-import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { V2_INDY_PRESENTATION } from '../../../formats/ProofFormatConstants'
-import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 
@@ -71,7 +65,7 @@ export class V1PresentationMessage extends DidCommV1Message {
     return proofJson
   }
 
-  public getPresentationAttachmentById(id: string): Attachment | undefined {
+  public getPresentationAttachmentById(id: string): V1Attachment | undefined {
     return this.presentationAttachments.find((attachment) => attachment.id === id)
   }
 }

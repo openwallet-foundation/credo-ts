@@ -9,6 +9,7 @@ import type {
   WalletConfigRekey,
   WalletCreateKeyOptions,
   WalletExportImportConfig,
+  WalletPackOptions,
   WalletSignOptions,
   WalletVerifyOptions,
 } from '@aries-framework/core'
@@ -25,7 +26,7 @@ import {
   KeyType,
   Logger,
   RecordNotFoundError,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   TypedArrayEncoder,
   WalletDuplicateError,
   WalletError,
@@ -48,16 +49,16 @@ export class IndySdkWallet implements Wallet {
   private walletHandle?: number
 
   private logger: Logger
-  private signingKeyProviderRegistry: SigningProviderRegistry
+  private keyProviderRegistry: KeyProviderRegistry
   private indySdk: IndySdk
 
   public constructor(
     @inject(IndySdkSymbol) indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    signingKeyProviderRegistry: SigningProviderRegistry
+    signingKeyProviderRegistry: KeyProviderRegistry
   ) {
     this.logger = logger
-    this.signingKeyProviderRegistry = signingKeyProviderRegistry
+    this.keyProviderRegistry = signingKeyProviderRegistry
     this.indySdk = indySdk
   }
 
@@ -431,8 +432,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
+      if (this.keyProviderRegistry.hasProviderForKeyType(keyType)) {
+        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(keyType)
 
         const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
@@ -476,8 +477,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
 
         const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
         const signed = await signingKeyProvider.sign({
@@ -523,8 +524,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
 
         const signed = await signingKeyProvider.verify({
           data,
@@ -545,15 +546,16 @@ export class IndySdkWallet implements Wallet {
     throw new WalletError(`Unsupported keyType: ${key.keyType}`)
   }
 
-  public async pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string
-  ): Promise<EncryptedMessage> {
+  public async pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
     try {
-      const messageRaw = JsonEncoder.toBuffer(payload)
-      const packedMessage = await this.indySdk.packMessage(this.handle, messageRaw, recipientKeys, senderVerkey ?? null)
-      return JsonEncoder.fromBuffer(packedMessage)
+      if (params.version === 'v1') {
+        const messageRaw = JsonEncoder.toBuffer(payload)
+        const { recipientKeys, senderKey } = params
+        const packedMessage = await this.indySdk.packMessage(this.handle, messageRaw, recipientKeys, senderKey)
+        return JsonEncoder.fromBuffer(packedMessage)
+      } else {
+        throw new AriesFrameworkError('DIDComm V2 message packing is not supported for IndyWallet')
+      }
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
@@ -590,7 +592,7 @@ export class IndySdkWallet implements Wallet {
     }
   }
 
-  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
+  public async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
       const { value } = await this.indySdk.getWalletRecord(this.handle, 'KeyPairRecord', `key-${publicKeyBase58}`, {})
       if (value) {

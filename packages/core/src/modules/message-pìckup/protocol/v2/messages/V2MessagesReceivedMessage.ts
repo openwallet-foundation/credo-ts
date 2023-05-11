@@ -2,8 +2,8 @@ import { Expose } from 'class-transformer'
 import { IsArray, IsOptional } from 'class-validator'
 
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
-import { DidCommV1Message } from '../../../../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../../../../utils/messageType'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
 export interface V2MessagesReceivedMessageOptions {
   id?: string

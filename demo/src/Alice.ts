@@ -75,7 +75,7 @@ export class Alice extends BaseAgent {
 
   public async ping() {
     const connectionRecord = await this.getConnectionRecord()
-    await this.agent.connections.sendPing(connectionRecord.id)
+    await this.agent.connections.sendPing(connectionRecord.id, {})
   }
 
   public async exit() {

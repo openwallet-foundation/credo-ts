@@ -82,7 +82,7 @@ describe('DidResolver', () => {
           data: JSON.stringify({
             endpoint: {
               endpoint: 'https://agent.com',
-              types: ['endpoint', 'did-communication', 'DIDComm'],
+              types: ['endpoint', 'did-communication', 'DIDCommMessaging'],
               routingKeys: ['routingKey1', 'routingKey2'],
             },
           }),

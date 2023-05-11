@@ -98,7 +98,7 @@ export class ConnectionService {
 
     // TODO check there is no connection record for particular oob record
 
-    const { outOfBandInvitation } = outOfBandRecord
+    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
 
     const { mediatorId } = config.routing
     const didDoc = this.createDidDoc(config.routing)
@@ -122,7 +122,7 @@ export class ConnectionService {
 
     connectionRequest.setThread({
       threadId: connectionRequest.threadId,
-      parentThreadId: outOfBandRecord.outOfBandInvitation.id,
+      parentThreadId: outOfBandInvitation.id,
     })
 
     const connectionRecord = await this.createConnection(agentContext, {
@@ -209,7 +209,7 @@ export class ConnectionService {
     connectionRecord.assertState(DidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
-    const { outOfBandInvitation } = outOfBandRecord.getOutOfBandInvitation()
+    const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
 
     const didDoc = routing
       ? this.createDidDoc(routing)

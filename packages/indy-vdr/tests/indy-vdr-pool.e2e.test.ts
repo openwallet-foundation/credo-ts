@@ -1,6 +1,6 @@
 import type { Key } from '@aries-framework/core'
 
-import { TypedArrayEncoder, KeyType, SigningProviderRegistry } from '@aries-framework/core'
+import { TypedArrayEncoder, KeyType, KeyProviderRegistry } from '@aries-framework/core'
 import { GetNymRequest, NymRequest, SchemaRequest, CredentialDefinitionRequest } from '@hyperledger/indy-vdr-shared'
 
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
@@ -14,7 +14,7 @@ import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
-const wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, testLogger, new KeyProviderRegistry([]))
 const agentConfig = getAgentConfig('IndyVdrPoolService')
 const agentContext = getAgentContext({ wallet, agentConfig })
 

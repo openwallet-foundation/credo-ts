@@ -13,22 +13,3 @@ export interface ConnectionStateChangedEvent extends BaseEvent {
     previousState: DidExchangeState | null
   }
 }
-
-export enum TrustPingEventTypes {
-  PingReceived = 'PingReceived',
-  PingResponseReceived = 'PingResponseReceived',
-}
-
-export interface PingReceivedEvent extends BaseEvent {
-  type: typeof TrustPingEventTypes.PingReceived
-  payload: {
-    from: string
-  }
-}
-
-export interface PingResponseReceivedEvent extends BaseEvent {
-  type: typeof TrustPingEventTypes.PingResponseReceived
-  payload: {
-    from: string
-  }
-}

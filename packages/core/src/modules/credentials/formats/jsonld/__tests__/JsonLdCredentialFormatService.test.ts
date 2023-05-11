@@ -5,7 +5,7 @@ import type { CustomCredentialTags } from '../../../repository/CredentialExchang
 import type { JsonCredential, JsonLdCredentialFormat, JsonLdCredentialDetailFormat } from '../JsonLdCredentialFormat'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
-import { V1Attachment, V1AttachmentData } from '../../../../decorators/attachment/V1Attachment'
+import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
 import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { DidDocument } from '../../../../dids'

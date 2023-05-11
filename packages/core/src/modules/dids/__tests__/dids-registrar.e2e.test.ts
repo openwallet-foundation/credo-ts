@@ -5,13 +5,9 @@ import { IndySdkModule } from '../../../../../indy-sdk/src'
 import { indySdk } from '../../../../tests'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
-import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
-
-import { JsonTransformer, TypedArrayEncoder } from '@aries-framework/core'
 
 const agentOptions = getAgentOptions(
   'Faber Dids Registrar',

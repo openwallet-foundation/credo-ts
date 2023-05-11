@@ -20,7 +20,7 @@ const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject
 const wallet = {
   createKey: jest.fn().mockResolvedValue(recipientKey),
   // with satisfies Partial<Wallet> we still get type errors when the interface changes
-} satisfies Partial<Wallet>
+}
 const agentContext = getAgentContext({
   wallet: wallet as unknown as Wallet,
   agentConfig,

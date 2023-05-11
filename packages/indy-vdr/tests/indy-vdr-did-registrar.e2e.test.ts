@@ -517,7 +517,7 @@ describe('Indy VDR Indy Did Registrar', () => {
           id: `${did}#didcomm-1`,
           routingKeys: ['a-routing-key'],
           serviceEndpoint: 'https://example.com/endpoint',
-          type: 'DIDComm',
+          type: 'DIDCommMessaging',
         },
       ],
     }
@@ -667,7 +667,7 @@ describe('Indy VDR Indy Did Registrar', () => {
           id: `${did}#didcomm-1`,
           routingKeys: ['a-routing-key'],
           serviceEndpoint: 'https://example.com/endpoint',
-          type: 'DIDComm',
+          type: 'DIDCommMessaging',
         },
       ],
     }

@@ -1,13 +1,13 @@
 import type { LegacyIndyProofRequest } from '../../../../formats'
 
-import { Attachment, AgentMessage, IsValidMessageType, parseMessageType } from '@aries-framework/core'
+import { V1Attachment, IsValidMessageType, parseMessageType, DidCommV1Message } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
 export interface V1RequestPresentationMessageOptions {
   id?: string
   comment?: string
-  requestAttachments: Attachment[]
+  requestAttachments: V1Attachment[]
 }
 
 export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
@@ -17,7 +17,7 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
-export class V1RequestPresentationMessage extends AgentMessage {
+export class V1RequestPresentationMessage extends DidCommV1Message {
   public readonly allowDidSovPrefix = true
 
   public constructor(options: V1RequestPresentationMessageOptions) {
@@ -45,13 +45,13 @@ export class V1RequestPresentationMessage extends AgentMessage {
    * An array of attachments defining the acceptable formats for the presentation.
    */
   @Expose({ name: 'request_presentations~attach' })
-  @Type(() => Attachment)
+  @Type(() => V1Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(Attachment, { each: true })
-  public requestAttachments!: Attachment[]
+  @IsInstance(V1Attachment, { each: true })
+  public requestAttachments!: V1Attachment[]
 
   public get indyProofRequest(): LegacyIndyProofRequest | null {
     const attachment = this.requestAttachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID)
@@ -59,7 +59,7 @@ export class V1RequestPresentationMessage extends AgentMessage {
     return attachment?.getDataAsJson<LegacyIndyProofRequest>() ?? null
   }
 
-  public getRequestAttachmentById(id: string): Attachment | undefined {
+  public getRequestAttachmentById(id: string): V1Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

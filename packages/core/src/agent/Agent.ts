@@ -14,9 +14,6 @@ import { InjectionSymbols } from '../constants'
 import { KeyProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { X25519KeyProvider } from '../crypto/key-provider/X25519KeyProvider'
-import { DidCommV1EnvelopeServiceToken } from '../didcomm/versions/v1'
-import { DefaultDidCommV1EnvelopeService } from '../didcomm/versions/v1/indy/DefaultDidCommV1EnvelopeService'
-import { DefaultDidCommV2EnvelopeService, DidCommV2EnvelopeServiceToken } from '../didcomm/versions/v2'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
@@ -64,9 +61,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(DidCommMessageRepository)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
-
-    dependencyManager.registerSingleton(DidCommV1EnvelopeServiceToken, DefaultDidCommV1EnvelopeService)
-    dependencyManager.registerInstance(DidCommV2EnvelopeServiceToken, DefaultDidCommV2EnvelopeService)
 
     dependencyManager.registerInstance(KeyProviderToken, new X25519KeyProvider())
 

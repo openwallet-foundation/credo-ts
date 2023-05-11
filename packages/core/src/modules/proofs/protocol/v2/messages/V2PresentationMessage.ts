@@ -3,7 +3,6 @@ import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } 
 
 import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
@@ -13,7 +12,7 @@ export interface V2PresentationMessageOptions {
   goalCode?: string
   comment?: string
   lastPresentation?: boolean
-  presentationAttachments: Attachment[]
+  presentationAttachments: V1Attachment[]
   formats: ProofFormatSpec[]
 }
 

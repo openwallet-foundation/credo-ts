@@ -13,8 +13,8 @@ import {
   HandshakeProtocol,
   MediatorPickupStrategy,
   LinkedAttachment,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   ProofEventTypes,
   MediatorModule,
   MediationRecipientModule,
@@ -401,7 +401,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: faberMediationOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -417,7 +417,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+          mediatorInvitationUrl: aliceMediationOutOfBandRecord.getOutOfBandInvitation().toUrl({
             domain: 'https://example.com',
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
@@ -465,16 +465,16 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
           new LinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new V1Attachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

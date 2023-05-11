@@ -1,4 +1,3 @@
-import type { AnonCredsSchema } from '../../models'
 import type { BaseAgent } from '@aries-framework/core'
 
 import { AnonCredsSchemaRepository } from '../../repository'
@@ -36,7 +35,7 @@ export async function migrateAnonCredsSchemaRecordToV0_4<Agent extends BaseAgent
       name: oldSchema.name,
       version: oldSchema.version,
       issuerId: oldSchema.id.split('/')[0],
-    } satisfies AnonCredsSchema
+    }
 
     schemaRecord.schema = newSchema
     schemaRecord.schemaId = oldSchema.id

@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../../didcomm'
 import type { DependencyManager } from '../../../../plugins'
 import type { ProblemReportMessage } from '../../../problem-reports'
 import type {
@@ -107,7 +107,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       goalCode,
       parentThreadId,
     }: CreateProofProposalOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommV1Message }> {
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
     const formatServices = this.getFormatServices(proofFormats)

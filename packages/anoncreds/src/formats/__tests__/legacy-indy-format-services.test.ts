@@ -3,7 +3,7 @@ import type { AnonCredsCredentialRequest } from '../../models'
 import {
   CredentialState,
   CredentialExchangeRecord,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   KeyType,
   CredentialPreviewAttribute,
   ProofExchangeRecord,
@@ -51,7 +51,7 @@ const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
 const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
 const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
 const anonCredsIssuerService = new IndySdkIssuerService(indySdk)
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
 const storageService = new IndySdkStorageService<AnonCredsLinkSecretRecord>(indySdk)
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)

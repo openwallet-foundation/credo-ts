@@ -438,7 +438,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): Attachment {
+  private getFormatData(data: unknown, id: string): V1Attachment {
     const attachment = new V1Attachment({
       id,
       mimeType: 'application/json',

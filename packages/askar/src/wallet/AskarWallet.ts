@@ -9,6 +9,7 @@ import type {
   WalletConfigRekey,
   KeyPair,
   WalletExportImportConfig,
+  WalletPackOptions,
 } from '@aries-framework/core'
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
@@ -28,21 +29,13 @@ import {
   WalletError,
   InjectionSymbols,
   Key,
-  SigningProviderRegistry,
+  KeyProviderRegistry,
   TypedArrayEncoder,
   FileSystem,
   WalletNotFoundError,
   KeyDerivationMethod,
 } from '@aries-framework/core'
-import {
-  KdfMethod,
-  StoreKeyMethod,
-  KeyAlgs,
-  CryptoBox,
-  Store,
-  Key as AskarKey,
-  keyAlgFromString,
-} from '@hyperledger/aries-askar-shared'
+import { KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 // eslint-disable-next-line import/order
 import BigNumber from 'bn.js'
 
@@ -70,16 +63,16 @@ export class AskarWallet implements Wallet {
   private logger: Logger
   private fileSystem: FileSystem
 
-  private signingKeyProviderRegistry: SigningProviderRegistry
+  private keyProviderRegistry: KeyProviderRegistry
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
-    signingKeyProviderRegistry: SigningProviderRegistry
+    signingKeyProviderRegistry: KeyProviderRegistry
   ) {
     this.logger = logger
     this.fileSystem = fileSystem
-    this.signingKeyProviderRegistry = signingKeyProviderRegistry
+    this.keyProviderRegistry = signingKeyProviderRegistry
   }
 
   public get isProvisioned() {
@@ -459,8 +452,8 @@ export class AskarWallet implements Wallet {
         }
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
-          const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
+        if (this.keyProviderRegistry.hasProviderForKeyType(keyType)) {
+          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(keyType)
 
           const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
           await this.storeKeyPair(keyPair)
@@ -507,8 +500,8 @@ export class AskarWallet implements Wallet {
         return Buffer.from(signed)
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-          const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+        if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
 
           const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
           const signed = await signingKeyProvider.sign({
@@ -559,8 +552,8 @@ export class AskarWallet implements Wallet {
         return verified
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-          const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
+        if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
 
           const signed = await signingKeyProvider.verify({
             data,
@@ -587,105 +580,106 @@ export class AskarWallet implements Wallet {
    * Pack a message using DIDComm V1 algorithm
    *
    * @param payload message to send
-   * @param recipientKeys array containing recipient keys in base58
-   * @param senderVerkey sender key in base58
+   * @param params packing options specific for envelop version
    * @returns JWE Envelope to send
    */
-  public async pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string // in base58
-  ): Promise<EncryptedMessage> {
-    let cek: AskarKey | undefined
-    let senderKey: KeyEntryObject | null | undefined
-    let senderExchangeKey: AskarKey | undefined
+  public async pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
+    if (params.version === 'v1') {
+      let cek: AskarKey | undefined
+      let senderKey: KeyEntryObject | null | undefined
+      let senderExchangeKey: AskarKey | undefined
 
-    try {
-      cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+      const { senderKey: senderVerkey, recipientKeys } = params
 
-      senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
-      if (senderVerkey && !senderKey) {
-        throw new WalletError(`Unable to pack message. Sender key ${senderVerkey} not found in wallet.`)
-      }
+      try {
+        cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
 
-      senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
-
-      const recipients: JweRecipient[] = []
-
-      for (const recipientKey of recipientKeys) {
-        let targetExchangeKey: AskarKey | undefined
-        try {
-          targetExchangeKey = AskarKey.fromPublicBytes({
-            publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
-            algorithm: KeyAlgs.Ed25519,
-          }).convertkey({ algorithm: KeyAlgs.X25519 })
-
-          if (senderVerkey && senderExchangeKey) {
-            const encryptedSender = CryptoBox.seal({
-              recipientKey: targetExchangeKey,
-              message: Buffer.from(senderVerkey),
-            })
-            const nonce = CryptoBox.randomNonce()
-            const encryptedCek = CryptoBox.cryptoBox({
-              recipientKey: targetExchangeKey,
-              senderKey: senderExchangeKey,
-              message: cek.secretBytes,
-              nonce,
-            })
-
-            recipients.push(
-              new JweRecipient({
-                encryptedKey: encryptedCek,
-                header: {
-                  kid: recipientKey,
-                  sender: TypedArrayEncoder.toBase64URL(encryptedSender),
-                  iv: TypedArrayEncoder.toBase64URL(nonce),
-                },
-              })
-            )
-          } else {
-            const encryptedCek = CryptoBox.seal({
-              recipientKey: targetExchangeKey,
-              message: cek.secretBytes,
-            })
-            recipients.push(
-              new JweRecipient({
-                encryptedKey: encryptedCek,
-                header: {
-                  kid: recipientKey,
-                },
-              })
-            )
-          }
-        } finally {
-          targetExchangeKey?.handle.free()
+        senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
+        if (senderVerkey && !senderKey) {
+          throw new WalletError(`Unable to pack message. Sender key ${senderVerkey} not found in wallet.`)
         }
+
+        senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
+
+        const recipients: JweRecipient[] = []
+
+        for (const recipientKey of recipientKeys) {
+          let targetExchangeKey: AskarKey | undefined
+          try {
+            targetExchangeKey = AskarKey.fromPublicBytes({
+              publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
+              algorithm: KeyAlgs.Ed25519,
+            }).convertkey({ algorithm: KeyAlgs.X25519 })
+
+            if (senderVerkey && senderExchangeKey) {
+              const encryptedSender = CryptoBox.seal({
+                recipientKey: targetExchangeKey,
+                message: Buffer.from(senderVerkey),
+              })
+              const nonce = CryptoBox.randomNonce()
+              const encryptedCek = CryptoBox.cryptoBox({
+                recipientKey: targetExchangeKey,
+                senderKey: senderExchangeKey,
+                message: cek.secretBytes,
+                nonce,
+              })
+
+              recipients.push(
+                new JweRecipient({
+                  encryptedKey: encryptedCek,
+                  header: {
+                    kid: recipientKey,
+                    sender: TypedArrayEncoder.toBase64URL(encryptedSender),
+                    iv: TypedArrayEncoder.toBase64URL(nonce),
+                  },
+                })
+              )
+            } else {
+              const encryptedCek = CryptoBox.seal({
+                recipientKey: targetExchangeKey,
+                message: cek.secretBytes,
+              })
+              recipients.push(
+                new JweRecipient({
+                  encryptedKey: encryptedCek,
+                  header: {
+                    kid: recipientKey,
+                  },
+                })
+              )
+            }
+          } finally {
+            targetExchangeKey?.handle.free()
+          }
+        }
+
+        const protectedJson = {
+          enc: 'xchacha20poly1305_ietf',
+          typ: 'JWM/1.0',
+          alg: senderVerkey ? 'Authcrypt' : 'Anoncrypt',
+          recipients: recipients.map((item) => JsonTransformer.toJSON(item)),
+        }
+
+        const { ciphertext, tag, nonce } = cek.aeadEncrypt({
+          message: Buffer.from(JSON.stringify(payload)),
+          aad: Buffer.from(JsonEncoder.toBase64URL(protectedJson)),
+        }).parts
+
+        const envelope = new JweEnvelope({
+          ciphertext: TypedArrayEncoder.toBase64URL(ciphertext),
+          iv: TypedArrayEncoder.toBase64URL(nonce),
+          protected: JsonEncoder.toBase64URL(protectedJson),
+          tag: TypedArrayEncoder.toBase64URL(tag),
+        }).toJson()
+
+        return envelope as EncryptedMessage
+      } finally {
+        cek?.handle.free()
+        senderKey?.key.handle.free()
+        senderExchangeKey?.handle.free()
       }
-
-      const protectedJson = {
-        enc: 'xchacha20poly1305_ietf',
-        typ: 'JWM/1.0',
-        alg: senderVerkey ? 'Authcrypt' : 'Anoncrypt',
-        recipients: recipients.map((item) => JsonTransformer.toJSON(item)),
-      }
-
-      const { ciphertext, tag, nonce } = cek.aeadEncrypt({
-        message: Buffer.from(JSON.stringify(payload)),
-        aad: Buffer.from(JsonEncoder.toBase64URL(protectedJson)),
-      }).parts
-
-      const envelope = new JweEnvelope({
-        ciphertext: TypedArrayEncoder.toBase64URL(ciphertext),
-        iv: TypedArrayEncoder.toBase64URL(nonce),
-        protected: JsonEncoder.toBase64URL(protectedJson),
-        tag: TypedArrayEncoder.toBase64URL(tag),
-      }).toJson()
-
-      return envelope as EncryptedMessage
-    } finally {
-      cek?.handle.free()
-      senderKey?.key.handle.free()
-      senderExchangeKey?.handle.free()
+    } else {
+      throw new WalletError(`DIDComm V2 message packing is not supported`)
     }
   }
 
@@ -834,7 +828,7 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
+  public async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
       const entryObject = await this.session.fetch({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` })
 

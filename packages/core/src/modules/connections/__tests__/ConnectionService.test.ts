@@ -16,8 +16,7 @@ import {
 } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { Key, KeyType } from '../../../crypto'
-import { KeyProviderRegistry } from '../../../crypto/key-provider'
+import { Key, KeyProviderRegistry, KeyType } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { DidCommV1Message } from '../../../didcomm'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -83,7 +82,7 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext({ wallet, agentConfig })
     await wallet.createAndOpen(agentConfig.walletConfig)
   })

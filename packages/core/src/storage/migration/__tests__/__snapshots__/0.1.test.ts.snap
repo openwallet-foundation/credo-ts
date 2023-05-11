@@ -843,6 +843,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "receiver",
       "state": "done",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "2-4e4f-41d9-94c4-f49351b811f1": {
@@ -909,6 +910,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "sender",
       "state": "done",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "3-4e4f-41d9-94c4-f49351b811f1": {
@@ -975,6 +977,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "sender",
       "state": "done",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "4-4e4f-41d9-94c4-f49351b811f1": {
@@ -1041,6 +1044,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "receiver",
       "state": "done",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "5-4e4f-41d9-94c4-f49351b811f1": {
@@ -1107,6 +1111,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "receiver",
       "state": "done",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "6-4e4f-41d9-94c4-f49351b811f1": {
@@ -1168,6 +1173,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "sender",
       "state": "await-response",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "7-4e4f-41d9-94c4-f49351b811f1": {
@@ -1234,6 +1240,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "role": "sender",
       "state": "await-response",
       "updatedAt": "2022-01-21T22:50:20.522Z",
+      "v2OutOfBandInvitation": undefined,
     },
   },
   "7781341d-be29-441b-9b79-4a957d8c6d37": {

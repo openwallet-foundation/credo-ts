@@ -1,4 +1,3 @@
-import type { AnonCredsCredentialDefinition } from '../../models'
 import type { BaseAgent } from '@aries-framework/core'
 
 import { AriesFrameworkError } from '@aries-framework/core'
@@ -66,7 +65,7 @@ export async function migrateAnonCredsCredentialDefinitionRecordToV0_4<Agent ext
       type: oldCredentialDefinition.type,
       value: oldCredentialDefinition.value,
       issuerId: oldCredentialDefinition.id.split('/')[0],
-    } satisfies AnonCredsCredentialDefinition
+    }
 
     credentialDefinitionRecord.credentialDefinition = newCredentialDefinition
     credentialDefinitionRecord.credentialDefinitionId = oldCredentialDefinition.id

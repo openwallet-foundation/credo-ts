@@ -1,6 +1,6 @@
 import type { Secret, SecretsResolver } from 'didcomm'
 
-import { InjectionSymbols, Wallet, inject, injectable, getKeyDidMappingByKeyType, Key } from '@aries-framework/core'
+import { InjectionSymbols, Wallet, inject, injectable, Key, getKeyDidMappingByKeyType } from '@aries-framework/core'
 
 @injectable()
 export class DidCommV2SecretsResolver implements SecretsResolver {
@@ -33,7 +33,7 @@ export class DidCommV2SecretsResolver implements SecretsResolver {
     return {
       id: secret_id,
       type: supportedVerificationMethodTypes[0],
-      secret_material: { format: 'Base58', value: key.privateKeyBase58 },
+      privateKeyBase58: key.privateKeyBase58,
     }
   }
 }

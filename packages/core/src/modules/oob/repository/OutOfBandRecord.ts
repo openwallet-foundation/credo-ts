@@ -83,7 +83,7 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       role: this.role,
       state: this.state,
       invitationId: this.outOfBandInvitation?.id,
-      threadId: this.outOfBandInvitation.threadId,
+      threadId: this.outOfBandInvitation?.threadId,
     }
   }
 

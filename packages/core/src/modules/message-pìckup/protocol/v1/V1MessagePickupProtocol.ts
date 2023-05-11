@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
-import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { DidCommV1Message } from '../../../../didcomm'
 import type { DependencyManager } from '../../../../plugins'
 import type { MessageRepository } from '../../../../storage/MessageRepository'
 import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
@@ -43,7 +43,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async pickupMessages(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
+  ): Promise<PickupMessagesProtocolReturnType<DidCommV1Message>> {
     const { connectionRecord, batchSize } = options
     connectionRecord.assertReady()
 

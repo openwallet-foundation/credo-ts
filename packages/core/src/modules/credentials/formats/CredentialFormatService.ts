@@ -1,5 +1,3 @@
-import type { AgentContext } from '../../../agent'
-import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { CredentialFormat } from './CredentialFormat'
 import type {
   CredentialFormatCreateProposalOptions,

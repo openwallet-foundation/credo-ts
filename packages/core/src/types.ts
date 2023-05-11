@@ -1,3 +1,4 @@
+import type { EncryptedMessage } from './didcomm'
 import type { Logger } from './logger'
 
 export enum KeyDerivationMethod {

@@ -9,11 +9,11 @@ import {
 
 import { getFullVerkey } from '../utils/did'
 
-export type DidCommServicesEndpointType = 'endpoint' | 'did-communication' | 'DIDComm'
+export type DidCommServicesEndpointType = 'endpoint' | 'did-communication' | 'DIDCommMessaging'
 
 export interface IndyEndpointAttrib {
   endpoint?: string
-  types?: Array<'endpoint' | 'did-communication' | 'DIDComm'>
+  types?: Array<'endpoint' | 'did-communication' | 'DIDCommMessaging'>
   routingKeys?: string[]
   [key: string]: unknown
 }
@@ -109,7 +109,7 @@ export function addServicesFromEndpointsAttrib(
         })
       )
 
-      // If 'DIDComm' included in types, add DIDComm v2 entry
+      // If 'DIDCommMessaging' included in types, add DIDComm v2 entry
       if (processedTypes.includes('DIDCommMessaging')) {
         builder
           .addService(

@@ -1,8 +1,8 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { DidCommV1Message } from '../../../../../../didcomm'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
+import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { DateParser } from '../../../../../utils/transformers'
 

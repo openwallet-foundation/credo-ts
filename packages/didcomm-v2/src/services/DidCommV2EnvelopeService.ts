@@ -1,5 +1,4 @@
 import type {
-  DidCommV2EnvelopeService,
   AgentContext,
   DidCommV2Message,
   V2PackMessageParams,
@@ -23,9 +22,10 @@ import { DidCommV2DidResolver } from './DidCommV2DidResolver'
 import { DidCommV2SecretsResolver } from './DidCommV2SecretsResolver'
 
 export const DIDCommV2LibraryToken = Symbol('DIDCommV2LibraryToken')
+export const DidCommV2EnvelopeServiceToken = Symbol('DidCommV2EnvelopeServiceToken')
 
 @injectable()
-export class DidCommV2EnvelopeServiceImpl implements DidCommV2EnvelopeService {
+export class DidCommV2EnvelopeService {
   private didcomm: typeof didcommLibrary
 
   public constructor(@inject(DIDCommV2LibraryToken) didcomm: typeof didcommLibrary) {
@@ -54,8 +54,7 @@ export class DidCommV2EnvelopeServiceImpl implements DidCommV2EnvelopeService {
         didResolver,
         secretsResolver,
         {
-          messaging_service: params.serviceId,
-          forward: params.wrapIntoForward,
+          forward: true,
         }
       )
       return JsonEncoder.fromString(encryptedMsg)

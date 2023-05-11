@@ -1,7 +1,7 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
-import type { EncryptedMessage, ProtectedMessage } from '../../types'
 import type { DidCommV1Message } from './DidCommV1Message'
 import type { PlaintextDidCommV1Message } from './types'
+import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { EncryptedMessage, ProtectedMessage } from '../../types'
 
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils'

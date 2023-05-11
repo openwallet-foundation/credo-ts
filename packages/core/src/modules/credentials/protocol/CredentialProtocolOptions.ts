@@ -1,7 +1,6 @@
 import type { CredentialProtocol } from './CredentialProtocol'
-import type { DidCommV1Message } from '../../didcomm'
-import type { FlatArray } from '../../types'
-import type { ConnectionRecord } from '../connections/repository/ConnectionRecord'
+import type { DidCommV1Message } from '../../../didcomm'
+import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type {
   CredentialFormat,
   CredentialFormatPayload,

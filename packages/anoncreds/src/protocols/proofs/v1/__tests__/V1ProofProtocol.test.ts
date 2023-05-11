@@ -4,8 +4,8 @@ import { Subject } from 'rxjs'
 
 import {
   DidExchangeState,
-  Attachment,
-  AttachmentData,
+  V1Attachment,
+  V1AttachmentData,
   ProofState,
   ProofExchangeRecord,
   InboundMessageContext,

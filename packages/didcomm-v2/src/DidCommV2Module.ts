@@ -1,9 +1,9 @@
 import type { DependencyManager, Module } from '@aries-framework/core'
 import type { default as didcomm } from 'didcomm'
 
-import { DidCommV2EnvelopeServiceToken } from '@aries-framework/core'
+// import { DidCommV2EnvelopeServiceToken } from '@aries-framework/core'
 
-import { DidCommV2EnvelopeServiceImpl, DIDCommV2LibraryToken } from './services'
+import { DIDCommV2LibraryToken, DidCommV2EnvelopeServiceToken, DidCommV2EnvelopeService } from './services'
 import { DidCommV2DidResolver } from './services/DidCommV2DidResolver'
 import { DidCommV2SecretsResolver } from './services/DidCommV2SecretsResolver'
 
@@ -27,7 +27,7 @@ export class DidCommV2Module implements Module {
 
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(DIDCommV2LibraryToken, this.didcomm)
-    dependencyManager.registerSingleton(DidCommV2EnvelopeServiceToken, DidCommV2EnvelopeServiceImpl)
+    dependencyManager.registerSingleton(DidCommV2EnvelopeServiceToken, DidCommV2EnvelopeService)
     dependencyManager.registerContextScoped(DidCommV2DidResolver)
     dependencyManager.registerContextScoped(DidCommV2SecretsResolver)
   }

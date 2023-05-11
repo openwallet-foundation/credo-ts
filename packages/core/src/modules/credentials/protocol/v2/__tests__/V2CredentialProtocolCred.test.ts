@@ -72,7 +72,6 @@ const connection = getMockConnection({
   state: DidExchangeState.Completed,
 })
 
-
 const offerAttachment = new V1Attachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',

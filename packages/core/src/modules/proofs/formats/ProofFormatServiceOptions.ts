@@ -1,6 +1,6 @@
-import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { ProofFormat, ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
+import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
 import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 

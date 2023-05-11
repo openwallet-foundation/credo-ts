@@ -1,5 +1,5 @@
-import type { EncryptedMessage } from '../../didcomm/types'
 import type { MediationRecord } from './repository'
+import type { EncryptedMessage } from '../../didcomm/types'
 
 import { AgentContext } from '../../agent'
 import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'

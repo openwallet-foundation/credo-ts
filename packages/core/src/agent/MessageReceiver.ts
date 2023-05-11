@@ -1,10 +1,8 @@
-import type { EncryptedMessage, PlaintextMessage, SignedMessage } from '../didcomm'
-import type { DecryptedMessageContext } from '../didcomm/types'
-import type { ConnectionRecord } from '../modules/connections'
-import type { InboundTransport } from '../transport'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { EncryptedMessage, PlaintextMessage, SignedMessage } from '../didcomm'
+import type { DecryptedMessageContext } from '../didcomm/types'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 
@@ -141,8 +139,9 @@ export class MessageReceiver {
     packedMessage: SignedMessage,
     session?: TransportSession
   ) {
-    const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
-    return this.processUnpackedMessage(agentContext, unpackedMessage, session)
+    // FIXME
+    // const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
+    // return this.processUnpackedMessage(agentContext, undefined, session)
   }
 
   private async processUnpackedMessage(
@@ -292,36 +291,5 @@ export class MessageReceiver {
       })
     }
     return messageTransformed
-  }
-
-  /**
-   * Send the problem report message (https://didcomm.org/notification/1.0/problem-report) to the recipient.
-   * @param message error message to send
-   * @param connection connection to send the message to
-   * @param plaintextMessage received inbound message
-   */
-  private async sendProblemReportMessage(
-    agentContext: AgentContext,
-    message: string,
-    connection: ConnectionRecord,
-    plaintextMessage: PlaintextMessage
-  ) {
-    const messageType = parseMessageType(plaintextMessage['@type'])
-    if (canHandleMessageType(ProblemReportMessage, messageType)) {
-      throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${message}`)
-    }
-    const problemReportMessage = new ProblemReportMessage({
-      description: {
-        en: message,
-        code: ProblemReportReason.MessageParseFailure,
-      },
-    })
-    problemReportMessage.setThread({
-      parentThreadId: plaintextMessage['@id'],
-    })
-    const outboundMessageContext = new OutboundMessageContext(problemReportMessage, { agentContext, connection })
-    if (outboundMessageContext) {
-      await this.messageSender.sendMessage(outboundMessageContext)
-    }
   }
 }

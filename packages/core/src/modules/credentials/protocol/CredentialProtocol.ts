@@ -32,7 +32,7 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
     agentContext: AgentContext,
     options: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommV1Message>>
-  processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  processProposal(messageContext: InboundMessageContext<DidCommV1Message>): Promise<CredentialExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptCredentialProposalOptions<CFs>
@@ -61,12 +61,12 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
   createRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommV1Message>>
   processRequest(messageContext: InboundMessageContext<DidCommV1Message>): Promise<CredentialExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommV1Message>>
 
   // methods for issue
   processCredential(messageContext: InboundMessageContext<DidCommV1Message>): Promise<CredentialExchangeRecord>
