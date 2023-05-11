@@ -100,8 +100,10 @@ describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
     })
   })
 
-  test('Create P256 keypair', async () => {
-    await expect(askarWallet.createKey({ seed, keyType: KeyType.P256 })).resolves.toMatchObject({
+  test('Create P-256 keypair', async () => {
+    await expect(
+      askarWallet.createKey({ seed: Buffer.concat([seed, seed]), keyType: KeyType.P256 })
+    ).resolves.toMatchObject({
       keyType: KeyType.P256,
     })
   })
