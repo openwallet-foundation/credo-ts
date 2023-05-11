@@ -257,12 +257,11 @@ export class OpenId4VcClientService {
 
     this.logger.debug('Full server metadata', serverMetadata)
 
-    if (!accessToken.scope) {
-      throw new AriesFrameworkError(
-        "Access token response doesn't contain a scope. Only scoped issuer URIs are supported at this time."
-      )
+    if (accessToken.scope) {
+      for (const credentialType of accessToken.scope.split(' ')) {
+        this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
+      }
     }
-    this.assertCredentialHasFormat(credentialFormat, accessToken.scope, serverMetadata)
 
     // proof of possession
     const callbacks = this.getSignCallback(agentContext)
