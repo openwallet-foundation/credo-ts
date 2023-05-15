@@ -16,6 +16,7 @@ import { Attachment, AttachmentData } from '../../decorators/attachment/Attachme
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
+import { isDid } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import {
@@ -163,7 +164,7 @@ export class DidExchangeProtocol {
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-    if (!message.did.startsWith('did:peer:')) {
+    if (!isDid(message.did, 'peer')) {
       throw new DidExchangeProblemReportError(
         `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
         {
@@ -304,7 +305,7 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!message.did.startsWith('did:peer:')) {
+    if (!isDid(message.did, 'peer')) {
       throw new DidExchangeProblemReportError(
         `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
         {

@@ -1,6 +1,6 @@
 import { TypedArrayEncoder, Buffer } from '../../../../utils'
 import { KeyType } from '../../../KeyType'
-import { P_521Jwk } from '../P_521Jwk'
+import { P521Jwk } from '../P521Jwk'
 import { compress } from '../ecCompression'
 
 const jwkJson = {
@@ -12,7 +12,7 @@ const jwkJson = {
 
 describe('P_521JWk', () => {
   test('has correct properties', () => {
-    const jwk = new P_521Jwk({ x: jwkJson.x, y: jwkJson.y })
+    const jwk = new P521Jwk({ x: jwkJson.x, y: jwkJson.y })
 
     expect(jwk.kty).toEqual('EC')
     expect(jwk.crv).toEqual('P-521')
@@ -30,11 +30,11 @@ describe('P_521JWk', () => {
   })
 
   test('fromJson', () => {
-    const jwk = P_521Jwk.fromJson(jwkJson)
+    const jwk = P521Jwk.fromJson(jwkJson)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
 
-    expect(() => P_521Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrowError("Invalid 'P-521' JWK.")
+    expect(() => P521Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrowError("Invalid 'P-521' JWK.")
   })
 
   test('fromPublicKey', () => {
@@ -44,7 +44,7 @@ describe('P_521JWk', () => {
     ])
     const compressedPublicKey = Buffer.from(compress(publicKeyBuffer))
 
-    const jwk = P_521Jwk.fromPublicKey(compressedPublicKey)
+    const jwk = P521Jwk.fromPublicKey(compressedPublicKey)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
   })

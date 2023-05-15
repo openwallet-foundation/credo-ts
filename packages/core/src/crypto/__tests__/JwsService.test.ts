@@ -1,9 +1,6 @@
 import type { AgentContext } from '../../agent'
 import type { Key, Wallet } from '@aries-framework/core'
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import '@hyperledger/aries-askar-nodejs'
-
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { AskarWallet } from '../../../../askar/src'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
@@ -19,6 +16,7 @@ import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
+// Only runs in Node18 because test uses Askar, which doesn't work well in Node16
 describeRunInNodeVersion([18], 'JwsService', () => {
   let wallet: Wallet
   let agentContext: AgentContext

@@ -9,7 +9,7 @@ import { Jwk } from './Jwk'
 import { compress, expand } from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
 
-export class P_384Jwk extends Jwk {
+export class P521Jwk extends Jwk {
   public readonly x: string
   public readonly y: string
 
@@ -25,14 +25,19 @@ export class P_384Jwk extends Jwk {
   }
 
   public get crv() {
-    return JwaCurve.P_384 as const
+    return JwaCurve.P521 as const
   }
 
   public get keyType() {
-    return KeyType.P384
+    return KeyType.P521
   }
 
-  // NOTE: this is the compressed variant. We should add support for the uncompressed variant.
+  /**
+   * Returns the public key of the P-521 JWK.
+   *
+   * NOTE: this is the compressed variant. We still need to add support for the
+   * uncompressed variant.
+   */
   public get publicKey() {
     const publicKeyBuffer = Buffer.concat([TypedArrayEncoder.fromBase64(this.x), TypedArrayEncoder.fromBase64(this.y)])
     const compressedPublicKey = compress(publicKeyBuffer)
@@ -45,7 +50,7 @@ export class P_384Jwk extends Jwk {
   }
 
   public get supportedSignatureAlgorithms() {
-    return [JwaSignatureAlgorithm.ES384]
+    return [JwaSignatureAlgorithm.ES512]
   }
 
   public toJson() {
@@ -54,44 +59,44 @@ export class P_384Jwk extends Jwk {
       crv: this.crv,
       x: this.x,
       y: this.y,
-    } as P384JwkJson
+    } as P521JwkJson
   }
 
   public static fromJson(jwk: JwkJson) {
-    if (!isValidP384JwkPublicKey(jwk)) {
-      throw new Error("Invalid 'P-384' JWK.")
+    if (!isValidP521JwkPublicKey(jwk)) {
+      throw new Error("Invalid 'P-521' JWK.")
     }
 
-    return new P_384Jwk({
+    return new P521Jwk({
       x: jwk.x,
       y: jwk.y,
     })
   }
 
   public static fromPublicKey(publicKey: Buffer) {
-    const expanded = expand(publicKey, JwaCurve.P_384)
+    const expanded = expand(publicKey, JwaCurve.P521)
     const x = expanded.slice(0, expanded.length / 2)
     const y = expanded.slice(expanded.length / 2)
 
-    return new P_384Jwk({
+    return new P521Jwk({
       x: TypedArrayEncoder.toBase64URL(x),
       y: TypedArrayEncoder.toBase64URL(y),
     })
   }
 }
 
-export interface P384JwkJson extends JwkJson {
+export interface P521JwkJson extends JwkJson {
   kty: JwaKeyType.EC
-  crv: JwaCurve.P_384
+  crv: JwaCurve.P521
   x: string
   y: string
   use?: 'sig' | 'enc'
 }
 
-export function isValidP384JwkPublicKey(jwk: JwkJson): jwk is P384JwkJson {
+export function isValidP521JwkPublicKey(jwk: JwkJson): jwk is P521JwkJson {
   return (
     hasKty(jwk, JwaKeyType.EC) &&
-    hasCrv(jwk, JwaCurve.P_384) &&
+    hasCrv(jwk, JwaCurve.P521) &&
     hasX(jwk) &&
     hasY(jwk) &&
     hasValidUse(jwk, {

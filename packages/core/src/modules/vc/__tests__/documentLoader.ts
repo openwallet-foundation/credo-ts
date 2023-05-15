@@ -2,6 +2,7 @@ import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { JsonObject } from '../../../types'
 import type { DocumentLoaderResult } from '../libraries/jsonld'
 
+import { isDid } from '../../../utils'
 import jsonld from '../libraries/jsonld'
 
 import {
@@ -127,7 +128,7 @@ async function _customDocumentLoader(url: string): Promise<DocumentLoaderResult>
     throw new Error(`Document not found: ${url}`)
   }
 
-  if (url.startsWith('did:')) {
+  if (isDid(url)) {
     result = await jsonld.frame(
       result,
       {

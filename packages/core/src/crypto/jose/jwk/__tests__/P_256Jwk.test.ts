@@ -1,6 +1,6 @@
 import { TypedArrayEncoder, Buffer } from '../../../../utils'
 import { KeyType } from '../../../KeyType'
-import { P_256Jwk } from '../P_256Jwk'
+import { P256Jwk } from '../P256Jwk'
 import { compress } from '../ecCompression'
 
 const jwkJson = {
@@ -12,7 +12,7 @@ const jwkJson = {
 
 describe('P_256JWk', () => {
   test('has correct properties', () => {
-    const jwk = new P_256Jwk({ x: jwkJson.x, y: jwkJson.y })
+    const jwk = new P256Jwk({ x: jwkJson.x, y: jwkJson.y })
 
     expect(jwk.kty).toEqual('EC')
     expect(jwk.crv).toEqual('P-256')
@@ -31,11 +31,11 @@ describe('P_256JWk', () => {
   })
 
   test('fromJson', () => {
-    const jwk = P_256Jwk.fromJson(jwkJson)
+    const jwk = P256Jwk.fromJson(jwkJson)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
 
-    expect(() => P_256Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrowError("Invalid 'P-256' JWK.")
+    expect(() => P256Jwk.fromJson({ ...jwkJson, kty: 'test' })).toThrowError("Invalid 'P-256' JWK.")
   })
 
   test('fromPublicKey', () => {
@@ -45,7 +45,7 @@ describe('P_256JWk', () => {
     ])
     const compressedPublicKey = Buffer.from(compress(publicKeyBuffer))
 
-    const jwk = P_256Jwk.fromPublicKey(compressedPublicKey)
+    const jwk = P256Jwk.fromPublicKey(compressedPublicKey)
     expect(jwk.x).toEqual(jwkJson.x)
     expect(jwk.y).toEqual(jwkJson.y)
   })

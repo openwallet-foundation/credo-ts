@@ -9,7 +9,7 @@ import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type/ke
 import { DidKey } from '../modules/dids/methods/key/DidKey'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { injectable } from '../plugins'
-import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import { isDid, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
@@ -170,7 +170,7 @@ export class JwsService {
 
     // Kid
     if (protectedHeader.kid) {
-      if (!protectedHeader.kid.startsWith('did:')) {
+      if (!isDid(protectedHeader.kid)) {
         throw new AriesFrameworkError(
           `Only DIDs are supported as the 'kid' parameter for JWS. '${protectedHeader.kid}' is not a did.`
         )
@@ -181,12 +181,13 @@ export class JwsService {
 
       // This is a special case for Aries RFC 0017 signed attachments. It allows a did:key without a keyId to be used kid
       // https://github.com/hyperledger/aries-rfcs/blob/main/concepts/0017-attachments/README.md#signing-attachments
-      if (protectedHeader.kid.startsWith('did:key:') && !protectedHeader.kid.includes('#')) {
+      if (isDid(protectedHeader.kid, 'key') && !protectedHeader.kid.includes('#')) {
         return getJwkFromKey(DidKey.fromDid(protectedHeader.kid).key)
       }
 
-      // TODO: allowedPurposes
-      return getJwkFromKey(getKeyFromVerificationMethod(didDocument.dereferenceKey(protectedHeader.kid)))
+      return getJwkFromKey(
+        getKeyFromVerificationMethod(didDocument.dereferenceKey(protectedHeader.kid, ['authentication']))
+      )
     }
 
     throw new AriesFrameworkError('Both JWK and kid are undefined. Protected header must contain one of the two.')
