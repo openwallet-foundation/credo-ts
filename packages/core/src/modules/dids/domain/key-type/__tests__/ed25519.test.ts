@@ -55,7 +55,6 @@ describe('ed25519', () => {
     expect(keyDidEd25519.supportedVerificationMethodTypes).toMatchObject([
       'Ed25519VerificationKey2018',
       'Ed25519VerificationKey2020',
-      'JsonWebKey2020',
     ])
   })
 
