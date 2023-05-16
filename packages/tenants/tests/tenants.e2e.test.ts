@@ -1,11 +1,12 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { OutOfBandRecord, Agent } from '@aries-framework/core'
+import { ConnectionsModule, OutOfBandRecord, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import testLogger from '../../core/tests/logger'
+import { testLogger, indySdk } from '../../core/tests'
+import { IndySdkModule } from '../../indy-sdk/src'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
@@ -17,7 +18,6 @@ const agent1Config: InitConfig = {
   },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
-  autoAcceptConnections: true,
 }
 
 const agent2Config: InitConfig = {
@@ -28,7 +28,6 @@ const agent2Config: InitConfig = {
   },
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent2'],
-  autoAcceptConnections: true,
 }
 
 // Create multi-tenant agents
@@ -36,6 +35,10 @@ const agent1 = new Agent({
   config: agent1Config,
   modules: {
     tenants: new TenantsModule(),
+    indySdk: new IndySdkModule({ indySdk }),
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
   },
   dependencies: agentDependencies,
 })
@@ -44,6 +47,10 @@ const agent2 = new Agent({
   config: agent2Config,
   modules: {
     tenants: new TenantsModule(),
+    indySdk: new IndySdkModule({ indySdk }),
+    connections: new ConnectionsModule({
+      autoAcceptConnections: true,
+    }),
   },
   dependencies: agentDependencies,
 })

@@ -1,11 +1,8 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
-
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
-import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
@@ -15,7 +12,8 @@ export interface V2PresentationMessageOptions {
   goalCode?: string
   comment?: string
   lastPresentation?: boolean
-  attachmentInfo: ProofAttachmentFormat[]
+  presentationAttachments: V1Attachment[]
+  formats: ProofFormatSpec[]
 }
 
 export class V2PresentationMessage extends DidCommV1Message {
@@ -24,40 +22,15 @@ export class V2PresentationMessage extends DidCommV1Message {
 
     if (options) {
       this.formats = []
-      this.presentationsAttach = []
+      this.presentationAttachments = []
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
       this.lastPresentation = options.lastPresentation ?? true
 
-      for (const entry of options.attachmentInfo) {
-        this.addPresentationsAttachment(entry)
-      }
+      this.formats = options.formats
+      this.presentationAttachments = options.presentationAttachments
     }
-  }
-
-  public addPresentationsAttachment(attachment: ProofAttachmentFormat) {
-    this.formats.push(attachment.format)
-    this.presentationsAttach.push(attachment.attachment)
-  }
-
-  /**
-   * Every attachment has a corresponding entry in the formats array.
-   * This method pairs those together in a {@link ProofAttachmentFormat} object.
-   */
-  public getAttachmentFormats(): ProofAttachmentFormat[] {
-    const attachmentFormats: ProofAttachmentFormat[] = []
-
-    this.formats.forEach((format) => {
-      const attachment = this.presentationsAttach.find((attachment) => attachment.id === format.attachmentId)
-
-      if (!attachment) {
-        throw new AriesFrameworkError(`Could not find a matching attachment with attachmentId: ${format.attachmentId}`)
-      }
-
-      attachmentFormats.push({ format, attachment })
-    })
-    return attachmentFormats
   }
 
   @IsValidMessageType(V2PresentationMessage.type)
@@ -89,5 +62,9 @@ export class V2PresentationMessage extends DidCommV1Message {
   @IsArray()
   @ValidateNested({ each: true })
   @IsInstance(V1Attachment, { each: true })
-  public presentationsAttach!: V1Attachment[]
+  public presentationAttachments!: V1Attachment[]
+
+  public getPresentationAttachmentById(id: string): V1Attachment | undefined {
+    return this.presentationAttachments.find((attachment) => attachment.id === id)
+  }
 }

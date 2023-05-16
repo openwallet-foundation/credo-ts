@@ -18,6 +18,18 @@ describe('AgentConfig', () => {
 
       expect(agentConfig.endpoints).toStrictEqual(['didcomm:transport/queue'])
     })
+
+    it('should return the new config endpoint after setter is called', () => {
+      const endpoint = 'https://local-url.com'
+      const newEndpoint = 'https://new-local-url.com'
+
+      const agentConfig = getAgentConfig('AgentConfig Test', {
+        endpoints: [endpoint],
+      })
+
+      agentConfig.endpoints = [newEndpoint]
+      expect(agentConfig.endpoints).toEqual([newEndpoint])
+    })
   })
 
   describe('label', () => {
@@ -40,7 +52,6 @@ describe('AgentConfig', () => {
       const agentConfig = new AgentConfig(
         {
           label: 'hello',
-          publicDidSeed: 'hello',
         },
         agentDependencies
       )
@@ -49,7 +60,6 @@ describe('AgentConfig', () => {
 
       expect(newAgentConfig).toMatchObject({
         label: 'hello',
-        publicDidSeed: 'hello',
       })
     })
 
@@ -57,20 +67,16 @@ describe('AgentConfig', () => {
       const agentConfig = new AgentConfig(
         {
           label: 'hello',
-          publicDidSeed: 'hello',
         },
         agentDependencies
       )
 
       const newAgentConfig = agentConfig.extend({
         label: 'anotherLabel',
-        autoAcceptConnections: true,
       })
 
       expect(newAgentConfig).toMatchObject({
         label: 'anotherLabel',
-        autoAcceptConnections: true,
-        publicDidSeed: 'hello',
       })
     })
   })

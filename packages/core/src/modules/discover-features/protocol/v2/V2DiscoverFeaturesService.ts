@@ -9,9 +9,9 @@ import type {
   CreateDisclosureOptions,
 } from '../../DiscoverFeaturesServiceOptions'
 
-import { Dispatcher } from '../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { FeatureRegistry } from '../../../../agent/FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../../agent/MessageHandlerRegistry'
 import { InjectionSymbols } from '../../../../constants'
 import { Logger } from '../../../../logger'
 import { inject, injectable } from '../../../../plugins'
@@ -27,12 +27,12 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
     featureRegistry: FeatureRegistry,
     eventEmitter: EventEmitter,
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
   ) {
-    super(featureRegistry, eventEmitter, dispatcher, logger, discoverFeaturesModuleConfig)
-    this.registerMessageHandlers(dispatcher)
+    super(featureRegistry, eventEmitter, logger, discoverFeaturesModuleConfig)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -40,9 +40,9 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v2'
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(new V2DisclosuresMessageHandler(this))
-    dispatcher.registerMessageHandler(new V2QueriesMessageHandler(this))
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(new V2DisclosuresMessageHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new V2QueriesMessageHandler(this))
   }
 
   public async createQuery(

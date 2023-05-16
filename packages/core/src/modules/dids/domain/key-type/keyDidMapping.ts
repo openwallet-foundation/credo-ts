@@ -1,12 +1,15 @@
-import type { Key } from '../../../../crypto/Key'
 import type { VerificationMethod } from '../verificationMethod'
 
 import { KeyType } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { AriesFrameworkError } from '../../../../error'
+import { isJsonWebKey2020, VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 } from '../verificationMethod/JsonWebKey2020'
 
 import { keyDidBls12381g1 } from './bls12381g1'
 import { keyDidBls12381g1g2 } from './bls12381g1g2'
 import { keyDidBls12381g2 } from './bls12381g2'
 import { keyDidEd25519 } from './ed25519'
+import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidX25519 } from './x25519'
 
 export interface KeyDidMapping {
@@ -22,6 +25,9 @@ const keyDidMapping: Record<KeyType, KeyDidMapping> = {
   [KeyType.Bls12381g1]: keyDidBls12381g1,
   [KeyType.Bls12381g2]: keyDidBls12381g2,
   [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
+  [KeyType.P256]: keyDidJsonWebKey,
+  [KeyType.P384]: keyDidJsonWebKey,
+  [KeyType.P521]: keyDidJsonWebKey,
 }
 
 /**
@@ -60,12 +66,23 @@ export function getKeyDidMappingByKeyType(keyType: KeyType) {
   return keyDid
 }
 
-export function getKeyDidMappingByVerificationMethod(verificationMethod: VerificationMethod) {
-  const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
+export function getKeyFromVerificationMethod(verificationMethod: VerificationMethod) {
+  // This is a special verification method, as it supports basically all key types.
+  if (isJsonWebKey2020(verificationMethod)) {
+    // TODO: move this validation to another place
+    if (!verificationMethod.publicKeyJwk) {
+      throw new AriesFrameworkError(
+        `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
+      )
+    }
 
+    return Key.fromJwk(verificationMethod.publicKeyJwk)
+  }
+
+  const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
   if (!keyDid) {
     throw new Error(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
-  return keyDid
+  return keyDid.getKeyFromVerificationMethod(verificationMethod)
 }

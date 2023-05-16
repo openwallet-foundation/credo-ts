@@ -1,0 +1,110 @@
+{
+  "@context": [
+    "https://w3id.org/did/v1",
+    "https://w3id.org/security/suites/ed25519-2018/v1",
+    "https://w3id.org/security/suites/x25519-2019/v1"
+  ],
+  "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL",
+  "alsoKnownAs": ["did:indy:ns2:R1xKJw17sUoXhejEpugMYJ"],
+  "controller": ["did:indy:ns2:R1xKJw17sUoXhejEpugMYJ"],
+  "verificationMethod": [
+    {
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL",
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#verkey",
+      "publicKeyBase58": "E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu"
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-2",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC X..."
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-3",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyBase58": "-----BEGIN PUBLIC 9..."
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-4",
+      "type": "Secp256k1VerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyHex": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "service": [
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#service-1",
+      "type": "Mediator",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h"
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#service-2",
+      "type": "IndyAgent",
+      "serviceEndpoint": "did:sov:Q4zqM7aXqm7gDQkUVLng9h",
+      "recipientKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
+      "routingKeys": ["Q4zqM7aXqm7gDQkUVLng9h"],
+      "priority": 5
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#service-3",
+      "type": "did-communication",
+      "serviceEndpoint": "https://agent.com/did-comm",
+      "recipientKeys": ["DADEajsDSaksLng9h"],
+      "routingKeys": ["DADEajsDSaksLng9h"],
+      "priority": 10
+    }
+  ],
+  "authentication": [
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#verkey",
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#authentication-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "assertionMethod": [
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#assertionMethod-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "capabilityDelegation": [
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#capabilityDelegation-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "capabilityInvocation": [
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#capabilityInvocation-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ],
+  "keyAgreement": [
+    "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#key-1",
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#keyAgreement-1",
+      "type": "RsaVerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    },
+    {
+      "id": "did:indy:ns2:LjgpST2rjsoxYegQDRm7EL#keyAgreement-1",
+      "type": "Ed25519VerificationKey2018",
+      "controller": "did:indy:ns2:WJz9mHyW9BZksioQnRsrAo",
+      "publicKeyPem": "-----BEGIN PUBLIC A..."
+    }
+  ]
+}

@@ -87,8 +87,8 @@ export class V2OutOfBandService {
 
   private async createDid(agentContext: AgentContext, params: CreateDidParams = {}): Promise<DidCreateResult> {
     // Create keys
-    const authentication = await agentContext.wallet.createKey({ seed: params.seed, keyType: KeyType.Ed25519 })
-    const keyAgreement = await agentContext.wallet.createKey({ seed: params.seed, keyType: KeyType.X25519 })
+    const authentication = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
+    const keyAgreement = await agentContext.wallet.createKey({ keyType: KeyType.X25519 })
 
     // Build services
     const services = this.prepareServices(params.routing)

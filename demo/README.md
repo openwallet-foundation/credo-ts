@@ -17,7 +17,7 @@ Alice, a former student of Faber College, connects with the College, is issued a
 
 In order to use Aries Framework JavaScript some platform specific dependencies and setup is required. See our guides below to quickly set up you project with Aries Framework JavaScript for NodeJS, React Native and Electron.
 
-- [NodeJS](https:/aries.js.org/guides/getting-started/prerequisites/nodejs)
+- [NodeJS](https://aries.js.org/guides/getting-started/installation/nodejs)
 
 ### Run the demo
 
@@ -57,8 +57,8 @@ yarn faber
 
 To set up a connection:
 
-- Select 'setup connection' in both Agents
-- Alice will print a invitation link which you then copy and paste to Faber
+- Select 'receive connection invitation' in Alice and 'create connection invitation' in Faber
+- Faber will print a invitation link which you then copy and paste to Alice
 - You have now set up a connection!
 
 To offer a credential:
@@ -66,7 +66,7 @@ To offer a credential:
 - Select 'offer credential' in Faber
 - Faber will start with registering a schema and the credential definition accordingly
 - You have now send a credential offer to Alice!
-- Go to Alice to accept the incoming credential offer
+- Go to Alice to accept the incoming credential offer by selecting 'yes'.
 
 To request a proof:
 

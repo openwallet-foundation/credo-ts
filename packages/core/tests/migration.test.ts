@@ -1,11 +1,12 @@
 import type { VersionString } from '../src/utils/version'
 
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../src/agent/Agent'
 import { UpdateAssistant } from '../src/storage/migration/UpdateAssistant'
 
 import { getAgentOptions } from './helpers'
 
-const agentOptions = getAgentOptions('Migration', { publicDidSeed: undefined, indyLedgers: [] })
+const agentOptions = getAgentOptions('Migration', {}, getIndySdkModules())
 
 describe('migration', () => {
   test('manually initiating the update assistant to perform an update', async () => {

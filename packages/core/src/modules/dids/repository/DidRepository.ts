@@ -1,5 +1,7 @@
+import type { CustomDidTags } from './DidRecord'
 import type { AgentContext } from '../../../agent'
 import type { Key } from '../../../crypto'
+import type { DidDocument } from '../domain'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -57,10 +59,43 @@ export class DidRepository extends Repository<DidRecord> {
     return this.findSingleByQuery(agentContext, { did: createdDid, role: DidDocumentRole.Created })
   }
 
-  public getCreatedDids(agentContext: AgentContext, { method }: { method?: string }) {
+  public getCreatedDids(agentContext: AgentContext, { method, did }: { method?: string; did?: string }) {
     return this.findByQuery(agentContext, {
       role: DidDocumentRole.Created,
       method,
+      did,
     })
   }
+
+  public async storeCreatedDid(agentContext: AgentContext, { did, didDocument, tags }: StoreDidOptions) {
+    const didRecord = new DidRecord({
+      did,
+      didDocument,
+      role: DidDocumentRole.Created,
+      tags,
+    })
+
+    await this.save(agentContext, didRecord)
+
+    return didRecord
+  }
+
+  public async storeReceivedDid(agentContext: AgentContext, { did, didDocument, tags }: StoreDidOptions) {
+    const didRecord = new DidRecord({
+      did,
+      didDocument,
+      role: DidDocumentRole.Received,
+      tags,
+    })
+
+    await this.save(agentContext, didRecord)
+
+    return didRecord
+  }
+}
+
+interface StoreDidOptions {
+  did: string
+  didDocument?: DidDocument
+  tags?: CustomDidTags
 }

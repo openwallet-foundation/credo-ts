@@ -1,4 +1,4 @@
-FROM ubuntu:18.04 as base
+FROM ubuntu:20.04 as base
 
 ENV DEBIAN_FRONTEND noninteractive
 

@@ -1,5 +1,5 @@
-import type { ConstructableDidCommMessage } from '../didcomm'
 import type { InboundMessageContext, OutboundMessageContext } from './models'
+import type { ConstructableDidCommMessage } from '../didcomm'
 
 export interface MessageHandler {
   readonly supportedMessages: readonly ConstructableDidCommMessage[]

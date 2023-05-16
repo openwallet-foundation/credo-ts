@@ -1,5 +1,5 @@
-import type { DidComV1BaseMessageConstructor } from '../../didcomm/'
 import type { ServiceDecoratorOptions } from './ServiceDecorator'
+import type { DidComV1BaseMessageConstructor } from '../../didcomm/'
 
 import { Expose, Type } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'

@@ -1,8 +1,11 @@
+import type { Jwk } from './JwkTypes'
 import type { KeyType } from './KeyType'
 
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
-import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeytype } from './multiCodecKey'
+import { getJwkFromKey, getKeyDataFromJwk } from './Jwk'
+import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './JwkTypes'
+import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
 
 export class Key {
   public readonly publicKey: Buffer
@@ -39,7 +42,7 @@ export class Key {
   }
 
   public get prefixedPublicKey() {
-    const multiCodecPrefix = getMultiCodecPrefixByKeytype(this.keyType)
+    const multiCodecPrefix = getMultiCodecPrefixByKeyType(this.keyType)
 
     // Create Buffer with length of the prefix bytes, then use varint to fill the prefix bytes
     const prefixBytes = VarintEncoder.encode(multiCodecPrefix)
@@ -54,5 +57,23 @@ export class Key {
 
   public get publicKeyBase58() {
     return TypedArrayEncoder.toBase58(this.publicKey)
+  }
+
+  public get supportsEncrypting() {
+    return isEncryptionSupportedForKeyType(this.keyType)
+  }
+
+  public get supportsSigning() {
+    return isSigningSupportedForKeyType(this.keyType)
+  }
+
+  public toJwk(): Jwk {
+    return getJwkFromKey(this)
+  }
+
+  public static fromJwk(jwk: Jwk) {
+    const { keyType, publicKey } = getKeyDataFromJwk(jwk)
+
+    return Key.fromPublicKey(publicKey, keyType)
   }
 }

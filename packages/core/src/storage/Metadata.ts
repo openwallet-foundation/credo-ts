@@ -1,5 +1,9 @@
+// Any is used to prevent frustrating TS errors if we just want to store arbitrary json data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MetadataValue = Record<string, any>
+
 export type MetadataBase = {
-  [key: string]: Record<string, unknown>
+  [key: string]: MetadataValue
 }
 
 /**
@@ -31,7 +35,7 @@ export class Metadata<MetadataTypes> {
    * @returns the value saved in the key value pair
    * @returns null when the key could not be found
    */
-  public get<Value extends Record<string, unknown>, Key extends string = string>(
+  public get<Value extends MetadataValue, Key extends string = string>(
     key: Key
   ): (Key extends keyof MetadataTypes ? MetadataTypes[Key] : Value) | null {
     return (this.data[key] as Key extends keyof MetadataTypes ? MetadataTypes[Key] : Value) ?? null
@@ -43,11 +47,11 @@ export class Metadata<MetadataTypes> {
    * @param key the key to set the metadata by
    * @param value the value to set in the metadata
    */
-  public set<Value extends Record<string, unknown>, Key extends string = string>(
+  public set<Value extends MetadataValue, Key extends string = string>(
     key: Key,
     value: Key extends keyof MetadataTypes ? MetadataTypes[Key] : Value
   ): void {
-    this.data[key] = value as Record<string, unknown>
+    this.data[key] = value as MetadataValue
   }
 
   /**
@@ -56,7 +60,7 @@ export class Metadata<MetadataTypes> {
    * @param key the key to add the metadata at
    * @param value the value to add in the metadata
    */
-  public add<Value extends Record<string, unknown>, Key extends string = string>(
+  public add<Value extends MetadataValue, Key extends string = string>(
     key: Key,
     value: Partial<Key extends keyof MetadataTypes ? MetadataTypes[Key] : Value>
   ): void {

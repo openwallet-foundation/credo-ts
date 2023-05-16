@@ -1,6 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentMessageProcessedEvent } from './Events'
-import type { MessageHandler } from './MessageHandler'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
 import { InjectionSymbols } from '../constants'
@@ -8,6 +7,7 @@ import { AriesFrameworkError } from '../error/AriesFrameworkError'
 import { Logger } from '../logger'
 import { ProblemReportMessage } from '../modules/problem-reports/versions/v1/messages/ProblemReportMessage'
 import { injectable, inject } from '../plugins'
+import { parseMessageType } from '../utils/messageType'
 
 import { EventEmitter } from './EventEmitter'
 import { AgentEventTypes } from './Events'
@@ -34,13 +34,6 @@ class Dispatcher {
     this.logger = logger
   }
 
-  /**
-   * @deprecated Use {@link MessageHandlerRegistry.registerMessageHandler} directly
-   */
-  public registerMessageHandler(messageHandler: MessageHandler) {
-    this.messageHandlerRegistry.registerMessageHandler(messageHandler)
-  }
-
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message } = messageContext
     const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
@@ -57,12 +50,25 @@ class Dispatcher {
       const problemReportMessage = error.problemReport
 
       if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
-        problemReportMessage.setThread({
-          threadId: message.threadId,
-        })
+        const { protocolUri: problemReportProtocolUri } = parseMessageType(problemReportMessage.type)
+        const { protocolUri: inboundProtocolUri } = parseMessageType(messageContext.message.type)
+
+        // If the inbound protocol uri is the same as the problem report protocol uri, we can see the interaction as the same thread
+        // However if it is no the same we should see it as a new thread, where the inbound message `@id` is the parentThreadId
+        if (inboundProtocolUri === problemReportProtocolUri) {
+          problemReportMessage.setThread({
+            threadId: message.threadId,
+          })
+        } else {
+          problemReportMessage.setThread({
+            parentThreadId: message.id,
+          })
+        }
+
         outboundMessage = new OutboundMessageContext(problemReportMessage, {
           agentContext,
           connection: messageContext.connection,
+          inboundMessageContext: messageContext,
         })
       } else {
         this.logger.error(`Error handling message with type ${message.type}`, {
@@ -78,10 +84,14 @@ class Dispatcher {
     }
 
     if (outboundMessage) {
+      // set the inbound message context, if not already defined
+      if (!outboundMessage.inboundMessageContext) {
+        outboundMessage.inboundMessageContext = messageContext
+      }
+
       if (outboundMessage.isOutboundServiceMessage()) {
         await this.messageSender.sendMessageToService(outboundMessage)
       } else {
-        outboundMessage.sessionId = messageContext.sessionId
         await this.messageSender.sendMessage(outboundMessage)
       }
     }

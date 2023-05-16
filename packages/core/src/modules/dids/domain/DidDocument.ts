@@ -7,8 +7,8 @@ import { KeyType, Key } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { getKeyDidMappingByVerificationMethod } from './key-type'
-import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
+import { getKeyFromVerificationMethod } from './key-type'
+import { IndyAgentService, ServiceTransformer, DidCommV1Service, DidCommV2Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
 export type DidPurpose =
@@ -169,8 +169,8 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service | DidCommV2Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type, DidCommV2Service.type]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
       IndyAgentService | DidCommV1Service
     >
@@ -210,7 +210,6 @@ export function keyReferenceToKey(didDocument: DidDocument, keyId: string) {
   // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
   // as didcomm v2 doesn't have this issue anymore
   const verificationMethod = didDocument.dereferenceKey(keyId, ['authentication', 'keyAgreement'])
-  const { getKeyFromVerificationMethod } = getKeyDidMappingByVerificationMethod(verificationMethod)
   const key = getKeyFromVerificationMethod(verificationMethod)
 
   return key
@@ -248,4 +247,26 @@ export async function findVerificationMethodByKeyType(
   }
 
   return null
+}
+
+export function getAuthenticationKeys(didDocument: DidDocument) {
+  return (
+    didDocument.authentication?.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
+}
+
+export function getAgreementKeys(didDocument: DidDocument) {
+  return (
+    didDocument.keyAgreement?.map((keyAgreement) => {
+      const verificationMethod =
+        typeof keyAgreement === 'string' ? didDocument.dereferenceVerificationMethod(keyAgreement) : keyAgreement
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
 }

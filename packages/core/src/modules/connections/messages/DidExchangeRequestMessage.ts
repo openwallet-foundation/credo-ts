@@ -35,7 +35,6 @@ export class DidExchangeRequestMessage extends DidCommV1Message {
       this.did = options.did
 
       this.setThread({
-        threadId: this.id,
         parentThreadId: options.parentThreadId,
       })
     }

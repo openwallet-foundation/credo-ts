@@ -1,24 +1,31 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AgentMessageProcessedEvent } from '../src/agent/Events'
 
-import { filter, firstValueFrom, Subject, timeout } from 'rxjs'
+import { filter, firstValueFrom, timeout } from 'rxjs'
 
-import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { parseMessageType, MessageSender, Dispatcher, IsValidMessageType } from '../src'
+import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { parseMessageType, MessageSender, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
 import { OutboundMessageContext } from '../src/agent/models'
 import { DidCommV1Message } from '../src/didcomm/versions/v1'
 
 import { getAgentOptions } from './helpers'
+import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions('Multi Protocol Versions - Alice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobAgentOptions = getAgentOptions('Multi Protocol Versions - Bob', {
-  endpoints: ['rxjs:bob'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Multi Protocol Versions - Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  getIndySdkModules()
+)
+const bobAgentOptions = getAgentOptions(
+  'Multi Protocol Versions - Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  getIndySdkModules()
+)
 
 describe('multi version protocols', () => {
   let aliceAgent: Agent
@@ -32,29 +39,15 @@ describe('multi version protocols', () => {
   })
 
   test('should successfully handle a message with a lower minor version than the currently supported version', async () => {
-    const aliceMessages = new Subject<SubjectMessage>()
-    const bobMessages = new Subject<SubjectMessage>()
-
-    const subjectMap = {
-      'rxjs:alice': aliceMessages,
-      'rxjs:bob': bobMessages,
-    }
-
-    const mockHandle = jest.fn()
-
+    bobAgent = new Agent(bobAgentOptions)
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    setupSubjectTransports([aliceAgent, bobAgent])
 
     // Register the test handler with the v1.3 version of the message
-    const dispatcher = aliceAgent.dependencyManager.resolve(Dispatcher)
-    dispatcher.registerMessageHandler({ supportedMessages: [TestMessageV13], handle: mockHandle })
+    const mockHandle = jest.fn()
+    aliceAgent.dependencyManager.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
 
     await aliceAgent.initialize()
-
-    bobAgent = new Agent(bobAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     const { outOfBandInvitation, id } = await aliceAgent.oob.createInvitation()

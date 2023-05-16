@@ -1,6 +1,6 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
 import type { DidCommV2Message } from './DidCommV2Message'
 import type { PlaintextDidCommV2Message } from './types'
+import type { AgentMessage } from '../../../agent/AgentMessage'
 
 import { DidCommMessageVersion } from '../../types'
 

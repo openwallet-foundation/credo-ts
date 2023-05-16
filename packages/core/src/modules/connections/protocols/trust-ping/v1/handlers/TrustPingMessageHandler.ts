@@ -2,7 +2,6 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../.
 import type { ConnectionService } from '../../../../services/ConnectionService'
 import type { V1TrustPingService } from '../V1TrustPingService'
 
-import { OutboundMessageContext } from '../../../../../../agent/models'
 import { AriesFrameworkError } from '../../../../../../error'
 import { DidExchangeState } from '../../../../models'
 import { TrustPingMessage } from '../messages'
@@ -29,12 +28,6 @@ export class TrustPingMessageHandler implements MessageHandler {
       await this.connectionService.updateState(messageContext.agentContext, connection, DidExchangeState.Completed)
     }
 
-    const message = await this.trustPingService.processPing(messageContext, connection)
-    if (message) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection,
-      })
-    }
+    return this.trustPingService.processPing(messageContext, connection)
   }
 }

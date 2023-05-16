@@ -16,20 +16,31 @@ export { AgentMessage } from './agent/AgentMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
-export type { InitConfig, WalletConfig, JsonArray, JsonObject, JsonValue } from './types'
+export type {
+  InitConfig,
+  WalletConfig,
+  JsonArray,
+  JsonObject,
+  JsonValue,
+  WalletConfigRekey,
+  WalletExportImportConfig,
+  WalletStorageConfig,
+} from './types'
 export { DidCommMimeType, KeyDerivationMethod } from './types'
-export type { FileSystem } from './storage/FileSystem'
+export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
+export { DidCommMessageRecord, DidCommMessageRole, DidCommMessageRepository } from './storage/didcomm'
 export { InMemoryMessageRepository } from './storage/InMemoryMessageRepository'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export { StorageService, Query } from './storage/StorageService'
+export { StorageService, Query, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
 export { getDirFromFilePath } from './utils/path'
 export { InjectionSymbols } from './constants'
 export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
+export { ServiceDecorator, ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
 export { V1Attachment, V1AttachmentData } from './decorators/attachment/V1Attachment'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
@@ -42,26 +53,32 @@ export * from './modules/discover-features'
 export * from './modules/problem-reports'
 export * from './modules/proofs'
 export * from './modules/connections'
-export * from './modules/ledger'
 export * from './modules/routing'
 export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
+export * from './modules/cache'
 export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedArrayEncoder, Buffer } from './utils'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'
-export { parseMessageType, IsValidMessageType } from './utils/messageType'
+export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
 export type { Constructor } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
 export * from './didcomm/'
 
+// TODO: clean up util exports
+export { encodeAttachment, isLinkedAttachment } from './utils/attachment'
+export { Hasher } from './utils/Hasher'
+export { MessageValidator } from './utils/MessageValidator'
+export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'
-import { uuid } from './utils/uuid'
+import { uuid, isValidUuid } from './utils/uuid'
 
 const utils = {
   uuid,
+  isValidUuid,
   parseInvitationUrl,
 }
 

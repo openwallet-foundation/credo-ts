@@ -655,16 +655,16 @@ describe('MessageSender', () => {
       jest.resetAllMocks()
     })
 
-    test('return outbound message context with connection, payload and endpoint', async () => {
+    test('return outbound message context for DidCommV1 message with connection, payload and endpoint', async () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const keys = {
+      const params = {
         recipientKeys: [recipientKey],
         routingKeys: [],
         senderKey: senderKey,
       }
-      const result = await messageSender.packMessage(agentContext, { message, keys, endpoint })
+      const result = await messageSender.packMessage(agentContext, { message, params, endpoint })
 
       expect(result).toEqual({
         payload: encryptedMessage,

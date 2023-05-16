@@ -5,9 +5,12 @@ import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services/ConnectionService'
 
+import { TransportService } from '../../../agent/TransportService'
 import { OutboundMessageContext } from '../../../agent/models'
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { tryParseDid } from '../../dids/domain/parse'
 import { ConnectionRequestMessage } from '../messages'
+import { HandshakeProtocol } from '../models'
 
 export class ConnectionRequestHandler implements MessageHandler {
   private connectionService: ConnectionService
@@ -32,16 +35,23 @@ export class ConnectionRequestHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<ConnectionRequestHandler>) {
-    const { connection, recipientKey, senderKey } = messageContext
+    const { agentContext, connection, recipientKey, senderKey, message, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
       throw new AriesFrameworkError('Unable to process connection request without senderVerkey or recipientKey')
     }
 
-    const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientKey(
-      messageContext.agentContext,
-      recipientKey
-    )
+    const parentThreadId = message.thread?.parentThreadId
+
+    const outOfBandRecord =
+      parentThreadId && tryParseDid(parentThreadId)
+        ? await this.outOfBandService.createFromImplicitInvitation(agentContext, {
+            did: parentThreadId,
+            threadId: message.threadId,
+            recipientKey,
+            handshakeProtocols: [HandshakeProtocol.Connections],
+          })
+        : await this.outOfBandService.findCreatedByRecipientKey(agentContext, recipientKey)
 
     if (!outOfBandRecord) {
       throw new AriesFrameworkError(`Out-of-band record for recipient key ${recipientKey.fingerprint} was not found.`)
@@ -53,30 +63,31 @@ export class ConnectionRequestHandler implements MessageHandler {
       )
     }
 
-    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(
-      messageContext.agentContext,
-      senderKey
-    )
+    const receivedDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (receivedDidRecord) {
       throw new AriesFrameworkError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)
 
+    // Associate the new connection with the session created for the inbound message
+    if (sessionId) {
+      const transportService = agentContext.dependencyManager.resolve(TransportService)
+      transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+    }
+
     if (connectionRecord?.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
-      const routing = outOfBandRecord.reusable
-        ? await this.routingService.getRouting(messageContext.agentContext)
-        : undefined
+      const routing = outOfBandRecord.reusable ? await this.routingService.getRouting(agentContext) : undefined
 
       const { message } = await this.connectionService.createResponse(
-        messageContext.agentContext,
+        agentContext,
         connectionRecord,
         outOfBandRecord,
         routing
       )
       return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
+        agentContext,
         connection: connectionRecord,
         outOfBand: outOfBandRecord,
       })

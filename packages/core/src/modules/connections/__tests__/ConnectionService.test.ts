@@ -5,6 +5,8 @@ import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
 
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
   getAgentConfig,
   getAgentContext,
@@ -14,14 +16,12 @@ import {
 } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import { Key, KeyType } from '../../../crypto'
-import { KeyProviderRegistry } from '../../../crypto/key-provider'
+import { Key, KeyProviderRegistry, KeyType } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { DidCommV1Message } from '../../../didcomm'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
 import { uuid } from '../../../utils/uuid'
-import { IndyWallet } from '../../../wallet/IndyWallet'
 import { AckMessage, AckStatus } from '../../common'
 import { DidKey, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
@@ -82,10 +82,9 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndyWallet(agentConfig.agentDependencies, agentConfig.logger, new KeyProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
     agentContext = getAgentContext({ wallet, agentConfig })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    await wallet.createAndOpen(agentConfig.walletConfig)
   })
 
   afterAll(async () => {

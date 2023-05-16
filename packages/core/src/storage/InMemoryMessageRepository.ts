@@ -1,5 +1,5 @@
-import type { EncryptedMessage } from '../didcomm/types'
 import type { MessageRepository } from './MessageRepository'
+import type { EncryptedMessage } from '../didcomm/types'
 
 import { InjectionSymbols } from '../constants'
 import { Logger } from '../logger'

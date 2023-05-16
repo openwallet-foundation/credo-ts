@@ -1,5 +1,5 @@
-import type { ConstructableDidCommMessage } from '../didcomm'
 import type { MessageHandler } from './MessageHandler'
+import type { ConstructableDidCommMessage } from '../didcomm'
 
 import { injectable } from 'tsyringe'
 

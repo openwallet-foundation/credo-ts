@@ -1,11 +1,8 @@
-import type { ProofAttachmentFormat } from '../../../formats/models/ProofAttachmentFormat'
-
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
-import { AriesFrameworkError } from '../../../../../error'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
 import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
@@ -16,8 +13,8 @@ export interface V2RequestPresentationMessageOptions {
   goalCode?: string
   presentMultiple?: boolean
   willConfirm?: boolean
-  parentThreadId?: string
-  attachmentInfo: ProofAttachmentFormat[]
+  formats: ProofFormatSpec[]
+  requestAttachments: V1Attachment[]
 }
 
 export class V2RequestPresentationMessage extends DidCommV1Message {
@@ -26,66 +23,15 @@ export class V2RequestPresentationMessage extends DidCommV1Message {
 
     if (options) {
       this.formats = []
-      this.requestPresentationsAttach = []
+      this.requestAttachments = []
       this.id = options.id ?? uuid()
       this.comment = options.comment
       this.goalCode = options.goalCode
       this.willConfirm = options.willConfirm ?? true
       this.presentMultiple = options.presentMultiple ?? false
-
-      if (options.parentThreadId) {
-        this.setThread({
-          parentThreadId: options.parentThreadId,
-        })
-      }
-
-      for (const entry of options.attachmentInfo) {
-        this.addRequestPresentationsAttachment(entry)
-      }
+      this.requestAttachments = options.requestAttachments
+      this.formats = options.formats
     }
-  }
-
-  public addRequestPresentationsAttachment(attachment: ProofAttachmentFormat) {
-    this.formats.push(attachment.format)
-    this.requestPresentationsAttach.push(attachment.attachment)
-  }
-
-  public getAttachmentByFormatIdentifier(formatIdentifier: string) {
-    const format = this.formats.find((x) => x.format === formatIdentifier)
-    if (!format) {
-      throw new AriesFrameworkError(
-        `Expected to find a format entry of type: ${formatIdentifier}, but none could be found.`
-      )
-    }
-
-    const attachment = this.requestPresentationsAttach.find((x) => x.id === format.attachmentId)
-
-    if (!attachment) {
-      throw new AriesFrameworkError(
-        `Expected to find an attachment entry with id: ${format.attachmentId}, but none could be found.`
-      )
-    }
-
-    return attachment
-  }
-
-  /**
-   * Every attachment has a corresponding entry in the formats array.
-   * This method pairs those together in a {@link ProofAttachmentFormat} object.
-   */
-  public getAttachmentFormats(): ProofAttachmentFormat[] {
-    const attachmentFormats: ProofAttachmentFormat[] = []
-
-    this.formats.forEach((format) => {
-      const attachment = this.requestPresentationsAttach.find((attachment) => attachment.id === format.attachmentId)
-
-      if (!attachment) {
-        throw new AriesFrameworkError(`Could not find a matching attachment with attachmentId: ${format.attachmentId}`)
-      }
-
-      attachmentFormats.push({ format, attachment })
-    })
-    return attachmentFormats
   }
 
   @IsValidMessageType(V2RequestPresentationMessage.type)
@@ -121,5 +67,9 @@ export class V2RequestPresentationMessage extends DidCommV1Message {
   @IsArray()
   @ValidateNested({ each: true })
   @IsInstance(V1Attachment, { each: true })
-  public requestPresentationsAttach!: V1Attachment[]
+  public requestAttachments!: V1Attachment[]
+
+  public getRequestAttachmentById(id: string): V1Attachment | undefined {
+    return this.requestAttachments.find((attachment) => attachment.id === id)
+  }
 }

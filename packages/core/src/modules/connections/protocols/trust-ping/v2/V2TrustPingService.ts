@@ -1,15 +1,14 @@
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import type { PingReceivedEvent, PingResponseReceivedEvent } from '../../../ConnectionEvents'
 import type { ConnectionRecord } from '../../../repository'
+import type { V2TrustPingReceivedEvent, V2TrustPingResponseReceivedEvent } from '../TrustPingEvents'
 
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../../constants'
 import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
-import { TrustPingEventTypes } from '../../../ConnectionEvents'
+import { TrustPingEventTypes } from '../TrustPingEvents'
 
-import { TrustPingMessageHandler, TrustPingResponseMessageHandler } from './handlers'
 import { TrustPingMessage } from './messages/TrustPingMessage'
 import { TrustPingResponseMessage } from './messages/TrustPingResponseMessage'
 
@@ -27,8 +26,6 @@ export class V2TrustPingService {
     this.logger = logger
     this.dispatcher = dispatcher
     this.eventEmitter = eventEmitter
-
-    this.registerHandlers()
   }
 
   public createPing(connection: ConnectionRecord): TrustPingMessage {
@@ -45,10 +42,10 @@ export class V2TrustPingService {
   public processPing({ agentContext, message }: InboundMessageContext<TrustPingMessage>) {
     this.logger.info('Trust Ping message received.', message)
 
-    this.eventEmitter.emit<PingReceivedEvent>(agentContext, {
-      type: TrustPingEventTypes.PingReceived,
+    this.eventEmitter.emit<V2TrustPingReceivedEvent>(agentContext, {
+      type: TrustPingEventTypes.V2TrustPingReceivedEvent,
       payload: {
-        from: message.from,
+        message: message,
       },
     })
 
@@ -62,19 +59,15 @@ export class V2TrustPingService {
     }
   }
 
-  public processPingResponse({ agentContext, message }: InboundMessageContext<TrustPingResponseMessage>) {
+  public processPingResponse({ agentContext, message, connection }: InboundMessageContext<TrustPingResponseMessage>) {
     this.logger.info('Trust Ping Response message received.', message)
 
-    this.eventEmitter.emit<PingResponseReceivedEvent>(agentContext, {
-      type: TrustPingEventTypes.PingResponseReceived,
+    this.eventEmitter.emit<V2TrustPingResponseReceivedEvent>(agentContext, {
+      type: TrustPingEventTypes.V2TrustPingResponseReceivedEvent,
       payload: {
-        from: message.from,
+        message: message,
+        connectionRecord: connection,
       },
     })
-  }
-
-  protected registerHandlers() {
-    this.dispatcher.registerMessageHandler(new TrustPingMessageHandler(this))
-    this.dispatcher.registerMessageHandler(new TrustPingResponseMessageHandler(this))
   }
 }

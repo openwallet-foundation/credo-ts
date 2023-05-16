@@ -1,20 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { Wallet, KeyPair } from '../../src'
+import type { Wallet, KeyPair, WalletPackOptions } from '../../src'
 import type { Key } from '../../src/crypto'
 import type { EncryptedMessage } from '../../src/didcomm/types'
 import type { WalletConfig, WalletExportImportConfig, WalletConfigRekey } from '../../src/types'
 import type { Buffer } from '../../src/utils/buffer'
 import type {
-  DidInfo,
   UnpackedMessageContext,
-  DidConfig,
   WalletCreateKeyOptions,
   WalletSignOptions,
   WalletVerifyOptions,
 } from '../../src/wallet'
 
 export class MockWallet implements Wallet {
-  public publicDid = undefined
   public isInitialized = true
   public isProvisioned = true
 
@@ -42,14 +39,7 @@ export class MockWallet implements Wallet {
   public import(walletConfig: WalletConfig, importConfig: WalletExportImportConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }
-  public initPublicDid(didConfig: DidConfig): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  public pack(
-    payload: Record<string, unknown>,
-    recipientKeys: string[],
-    senderVerkey?: string
-  ): Promise<EncryptedMessage> {
+  public pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
     throw new Error('Method not implemented.')
   }
   public unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext> {
@@ -71,10 +61,6 @@ export class MockWallet implements Wallet {
   }
 
   public generateWalletKey(): Promise<string> {
-    throw new Error('Method not implemented.')
-  }
-
-  public retrieveKeyPair(keyId: string): Promise<KeyPair> {
     throw new Error('Method not implemented.')
   }
 

@@ -1,10 +1,12 @@
-import type { FileSystem } from '../../../../src'
 import type { V0_1ToV0_2UpdateConfig } from '../updates/0.1-0.2'
 
-import { unlinkSync, readFileSync } from 'fs'
+import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import { IndySdkWallet } from '../../../../../indy-sdk/src'
+import { IndySdkSymbol } from '../../../../../indy-sdk/src/types'
+import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { Agent } from '../../../../src'
 import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -14,7 +16,6 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-const backupIdentifier = backupDate.getTime()
 
 const walletConfig = {
   id: `Wallet: 0.1 Update`,
@@ -39,6 +40,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       const dependencyManager = new DependencyManager()
       const storageService = new InMemoryStorageService()
       dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+      // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+      dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
       const agent = new Agent(
         {
@@ -47,8 +51,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         },
         dependencyManager
       )
-
-      const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
@@ -79,10 +81,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       delete storageService.records.MEDIATOR_ROUTING_RECORD
       expect(storageService.records).toMatchSnapshot(mediationRoleUpdateStrategy)
 
-      // Need to remove backupFiles after each run so we don't get IOErrors
-      const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-      unlinkSync(backupPath)
-
       await agent.shutdown()
       await agent.wallet.delete()
     }
@@ -101,6 +99,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
     const agent = new Agent(
       {
@@ -109,8 +110,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -141,10 +140,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()
@@ -165,6 +160,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
     const agent = new Agent(
       {
@@ -173,8 +171,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -206,10 +202,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
 
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
-
     await agent.shutdown()
     await agent.wallet.delete()
 
@@ -229,6 +221,9 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
+    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
+    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
 
     const agent = new Agent(
       {
@@ -241,8 +236,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
       dependencyManager
     )
-
-    const fileSystem = agent.injectionContainer.resolve<FileSystem>(InjectionSymbols.FileSystem)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -273,10 +266,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     // MEDIATOR_ROUTING_RECORD recipientKeys will be different every time, and is not what we're testing here
     delete storageService.records.MEDIATOR_ROUTING_RECORD
     expect(storageService.records).toMatchSnapshot()
-
-    // Need to remove backupFiles after each run so we don't get IOErrors
-    const backupPath = `${fileSystem.basePath}/afj/migration/backup/${backupIdentifier}`
-    unlinkSync(backupPath)
 
     await agent.shutdown()
     await agent.wallet.delete()

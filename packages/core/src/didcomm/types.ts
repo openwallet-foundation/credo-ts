@@ -1,6 +1,6 @@
-import type { Key } from '../crypto'
 import type { PlaintextDidCommV1Message } from './versions/v1'
 import type { PlaintextDidCommV2Message } from './versions/v2'
+import type { Key } from '../crypto'
 
 export enum EnvelopeType {
   Plain = 'plain',
@@ -12,6 +12,7 @@ export type PlaintextMessage = PlaintextDidCommV1Message | PlaintextDidCommV2Mes
 
 export type EncryptedMessageRecipientHeader = {
   kid: string
+  epk?: string
 }
 
 export type EncryptedMessageRecipient = {

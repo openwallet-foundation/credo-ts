@@ -1,14 +1,14 @@
-import type { EncryptedMessage, PlaintextMessage, SignedMessage } from '../didcomm'
-import type { DecryptedMessageContext } from '../didcomm/types'
-import type { ConnectionRecord } from '../modules/connections'
-import type { InboundTransport } from '../transport'
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
+import type { EncryptedMessage, PlaintextMessage } from '../didcomm'
+import type { DecryptedMessageContext } from '../didcomm/types'
+import type { ConnectionRecord } from '../modules/connections'
+import type { InboundTransport } from '../transport'
 
 import { InjectionSymbols } from '../constants'
 import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
-import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage, isSignedMessage } from '../didcomm/helpers'
+import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
@@ -42,7 +42,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  public readonly inboundTransports: InboundTransport[] = []
+  private _inboundTransports: InboundTransport[] = []
 
   public constructor(
     envelopeService: EnvelopeService,
@@ -62,10 +62,20 @@ export class MessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
+    this._inboundTransports = []
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
-    this.inboundTransports.push(inboundTransport)
+    this._inboundTransports.push(inboundTransport)
+  }
+
+  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+    this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   /**
@@ -92,8 +102,6 @@ export class MessageReceiver {
     try {
       if (isEncryptedMessage(inboundMessage)) {
         return await this.receiveEncryptedMessage(agentContext, inboundMessage, session)
-      } else if (isSignedMessage(inboundMessage)) {
-        return await this.receiveSignedMessage(agentContext, inboundMessage, session)
       } else if (isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
       } else {
@@ -118,15 +126,6 @@ export class MessageReceiver {
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
     packedMessage: EncryptedMessage,
-    session?: TransportSession
-  ) {
-    const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
-    return this.processUnpackedMessage(agentContext, unpackedMessage, session)
-  }
-
-  private async receiveSignedMessage(
-    agentContext: AgentContext,
-    packedMessage: SignedMessage,
     session?: TransportSession
   ) {
     const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
@@ -174,7 +173,7 @@ export class MessageReceiver {
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
-      session.connection = connection ?? undefined
+      session.connectionId = connection?.id
       messageContext.sessionId = session.id
       this.transportService.saveSession(session)
     } else if (session) {
@@ -232,10 +231,15 @@ export class MessageReceiver {
       })
     }
     if (isPlaintextMessageV2(decryptedMessageContext.plaintextMessage)) {
-      // Try to find the did records that holds the sender and recipient keys
-      const { from } = decryptedMessageContext.plaintextMessage
+      // Try to find the did records that hold the sender and recipient did's
+      const { from, to } = decryptedMessageContext.plaintextMessage
+
       if (!from) return null
-      return this.connectionService.findByTheirDid(agentContext, from)
+      const connection = this.connectionService.findByTheirDid(agentContext, from)
+      if (connection) return connection
+
+      if (!to?.length) return null
+      return this.connectionService.findByOurDid(agentContext, to[0])
     }
 
     return null

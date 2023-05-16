@@ -2,12 +2,12 @@ import type { DidRegistrar, DidResolver } from './domain'
 
 import {
   KeyDidRegistrar,
-  IndySdkSovDidRegistrar,
   PeerDidRegistrar,
   KeyDidResolver,
   PeerDidResolver,
-  IndySdkSovDidResolver,
   WebDidResolver,
+  JwkDidRegistrar,
+  JwkDidResolver,
 } from './methods'
 
 /**
@@ -23,7 +23,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [KeyDidRegistrar, IndySdkSovDidRegistrar, PeerDidRegistrar]
+   * @default [KeyDidRegistrar, PeerDidRegistrar, JwkDidRegistrar]
    */
   registrars?: DidRegistrar[]
 
@@ -35,7 +35,7 @@ export interface DidsModuleConfigOptions {
    * registered, as it is needed for the connections and out of band module to function. Other did methods can be
    * disabled.
    *
-   * @default [IndySdkSovDidResolver, WebDidResolver, KeyDidResolver, PeerDidResolver]
+   * @default [WebDidResolver, KeyDidResolver, PeerDidResolver, JwkDidResolver]
    */
   resolvers?: DidResolver[]
 }
@@ -54,11 +54,7 @@ export class DidsModuleConfig {
     // This prevents creating new instances every time this property is accessed
     if (this._registrars) return this._registrars
 
-    let registrars = this.options.registrars ?? [
-      new KeyDidRegistrar(),
-      new IndySdkSovDidRegistrar(),
-      new PeerDidRegistrar(),
-    ]
+    let registrars = this.options.registrars ?? [new KeyDidRegistrar(), new PeerDidRegistrar(), new JwkDidRegistrar()]
 
     // Add peer did registrar if it is not included yet
     if (!registrars.find((registrar) => registrar instanceof PeerDidRegistrar)) {
@@ -80,10 +76,10 @@ export class DidsModuleConfig {
     if (this._resolvers) return this._resolvers
 
     let resolvers = this.options.resolvers ?? [
-      new IndySdkSovDidResolver(),
       new WebDidResolver(),
       new KeyDidResolver(),
       new PeerDidResolver(),
+      new JwkDidResolver(),
     ]
 
     // Add peer did resolver if it is not included yet

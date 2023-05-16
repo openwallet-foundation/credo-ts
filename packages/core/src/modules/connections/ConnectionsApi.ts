@@ -1,11 +1,11 @@
-import type { Query } from '../../storage/StorageService'
-import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository/ConnectionRecord'
 import type { Routing } from './services'
+import type { Query } from '../../storage/StorageService'
+import type { OutOfBandRecord } from '../oob/repository'
 
 import { AgentContext } from '../../agent'
-import { Dispatcher } from '../../agent/Dispatcher'
+import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
@@ -27,9 +27,22 @@ import {
   DidExchangeResponseHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
+import {
+  TrustPingMessageHandler as V1TrustPingMessageHandler,
+  TrustPingResponseMessageHandler as V1TrustPingResponseMessageHandler,
+} from './protocols/trust-ping/v1'
 import { V1TrustPingService } from './protocols/trust-ping/v1/V1TrustPingService'
+import {
+  TrustPingMessageHandler as V2TrustPingMessageHandler,
+  TrustPingResponseMessageHandler as V2TrustPingResponseMessageHandler,
+} from './protocols/trust-ping/v2'
 import { V2TrustPingService } from './protocols/trust-ping/v2/V2TrustPingService'
 import { ConnectionService } from './services/ConnectionService'
+
+export interface SendPingOptions {
+  responseRequested?: boolean
+  withReturnRouting?: boolean
+}
 
 @injectable()
 export class ConnectionsApi {
@@ -50,7 +63,7 @@ export class ConnectionsApi {
   private agentContext: AgentContext
 
   public constructor(
-    dispatcher: Dispatcher,
+    messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     outOfBandService: OutOfBandService,
@@ -75,7 +88,7 @@ export class ConnectionsApi {
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
 
-    this.registerMessageHandlers(dispatcher)
+    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async acceptOutOfBandInvitation(
@@ -281,17 +294,47 @@ export class ConnectionsApi {
   }
 
   /**
-   * Send Ping message to remote party
+   * Send a trust ping to an established connection
+   *
+   * @param connectionId the id of the connection for which to accept the response
+   * @param responseRequested do we want a response to our ping
+   * @param withReturnRouting do we want a response at the time of posting
+   * @returns TurstPingMessage
    */
-  public async sendPing(connectionId: string) {
+  public async sendPing(
+    connectionId: string,
+    { responseRequested = true, withReturnRouting = undefined }: SendPingOptions
+  ) {
     const connection = await this.getById(connectionId)
-    const message = connection.isDidCommV1Connection
-      ? await this.v1trustPingService.createPing()
-      : await this.v2TrustPingService.createPing(connection)
 
-    await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
-    )
+    if (connection.isDidCommV1Connection) {
+      const { message } = await this.connectionService.createTrustPing(this.agentContext, connection, {
+        responseRequested: responseRequested,
+      })
+
+      if (withReturnRouting === true) {
+        message.setReturnRouting(ReturnRouteTypes.all)
+      }
+
+      // Disable return routing as we don't want to receive a response for this message over the same channel
+      // This has led to long timeouts as not all clients actually close an http socket if there is no response message
+      if (withReturnRouting === false) {
+        message.setReturnRouting(ReturnRouteTypes.none)
+      }
+
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      )
+
+      return message
+    } else {
+      const message = await this.v2TrustPingService.createPing(connection)
+
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      )
+      return message
+    }
   }
 
   /**
@@ -383,8 +426,8 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerMessageHandlers(dispatcher: Dispatcher) {
-    dispatcher.registerMessageHandler(
+  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+    messageHandlerRegistry.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,
         this.outOfBandService,
@@ -393,12 +436,20 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
-    dispatcher.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    messageHandlerRegistry.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    messageHandlerRegistry.registerMessageHandler(
+      new V1TrustPingMessageHandler(this.v1trustPingService, this.connectionService)
+    )
+    messageHandlerRegistry.registerMessageHandler(new V1TrustPingResponseMessageHandler(this.v1trustPingService))
+    messageHandlerRegistry.registerMessageHandler(
+      new V2TrustPingMessageHandler(this.v2TrustPingService, this.connectionService)
+    )
+    messageHandlerRegistry.registerMessageHandler(new V2TrustPingResponseMessageHandler(this.v2TrustPingService))
 
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new DidExchangeRequestHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -408,7 +459,7 @@ export class ConnectionsApi {
       )
     )
 
-    dispatcher.registerMessageHandler(
+    messageHandlerRegistry.registerMessageHandler(
       new DidExchangeResponseHandler(
         this.didExchangeProtocol,
         this.outOfBandService,
@@ -417,6 +468,8 @@ export class ConnectionsApi {
         this.config
       )
     )
-    dispatcher.registerMessageHandler(new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
+    )
   }
 }

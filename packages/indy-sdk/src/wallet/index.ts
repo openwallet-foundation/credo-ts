@@ -1,0 +1,1 @@
+export { IndySdkWallet } from './IndySdkWallet'

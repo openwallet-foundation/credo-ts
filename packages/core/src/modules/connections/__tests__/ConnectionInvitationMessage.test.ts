@@ -65,7 +65,7 @@ describe('ConnectionInvitationMessage', () => {
       expect(invitationUrl).toBe(`${domain}?c_i=${JsonEncoder.toBase64URL(json)}`)
     })
 
-    it('should use did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation as type if useLegacyDidSovPrefix is set to true', async () => {
+    it('should use did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation as type if useDidSovPrefixWhereAllowed is set to true', async () => {
       const invitation = new ConnectionInvitationMessage({
         id: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
         recipientKeys: ['recipientKeyOne', 'recipientKeyTwo'],
@@ -86,7 +86,7 @@ describe('ConnectionInvitationMessage', () => {
 
       const invitationUrl = invitation.toUrl({
         domain: 'https://example.com',
-        useLegacyDidSovPrefix: true,
+        useDidSovPrefixWhereAllowed: true,
       })
 
       const parsedUrl = parseUrl(invitationUrl).query
