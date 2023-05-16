@@ -11,14 +11,16 @@ import type { ConnectionRecord } from '../../repository/ConnectionRecord'
 
 export enum TrustPingEventTypes {
   TrustPingReceivedEvent = 'TrustPingReceivedEvent',
+  V2TrustPingReceivedEvent = 'V2TrustPingReceivedEvent',
   TrustPingResponseReceivedEvent = 'TrustPingResponseReceivedEvent',
+  V2TrustPingResponseReceivedEvent = 'V2TrustPingResponseReceivedEvent',
 }
 
 export interface TrustPingReceivedEvent extends BaseEvent {
   type: typeof TrustPingEventTypes.TrustPingReceivedEvent
   payload: {
     connectionRecord?: ConnectionRecord | null
-    message: V1TrustPingMessage | V2TrustPingMessage
+    message: V1TrustPingMessage
   }
 }
 
@@ -26,6 +28,22 @@ export interface TrustPingResponseReceivedEvent extends BaseEvent {
   type: typeof TrustPingEventTypes.TrustPingResponseReceivedEvent
   payload: {
     connectionRecord?: ConnectionRecord | null
-    message: V1TrustPingResponseMessage | V2TrustPingResponseMessage
+    message: V1TrustPingResponseMessage
+  }
+}
+
+export interface V2TrustPingReceivedEvent extends BaseEvent {
+  type: typeof TrustPingEventTypes.V2TrustPingReceivedEvent
+  payload: {
+    connectionRecord?: ConnectionRecord | null
+    message: V2TrustPingMessage
+  }
+}
+
+export interface V2TrustPingResponseReceivedEvent extends BaseEvent {
+  type: typeof TrustPingEventTypes.V2TrustPingResponseReceivedEvent
+  payload: {
+    connectionRecord?: ConnectionRecord | null
+    message: V2TrustPingResponseMessage
   }
 }

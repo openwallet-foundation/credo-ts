@@ -7,5 +7,6 @@ export * from './versions/v1'
 export * from './versions/v2'
 export * from './types'
 export * from './helpers'
+export * from './JweEnvelope'
 
 export type ConstructableDidCommMessage = Constructor<DidCommV1Message | DidCommV2Message> & { type: ParsedMessageType }

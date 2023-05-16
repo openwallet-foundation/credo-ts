@@ -6,7 +6,6 @@ import type { DidDocumentService } from '../../modules/dids'
 import type { MessageRepository } from '../../storage/MessageRepository'
 import type { OutboundTransport } from '../../transport'
 import type { AgentMessageSentEvent } from '../Events'
-import type { PackMessageParams } from '@aries-framework/core'
 
 import { Subject } from 'rxjs'
 
@@ -656,11 +655,11 @@ describe('MessageSender', () => {
       jest.resetAllMocks()
     })
 
-    test('return outbound message context with connection, payload and endpoint', async () => {
+    test('return outbound message context for DidCommV1 message with connection, payload and endpoint', async () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const params: PackMessageParams = {
+      const params = {
         recipientKeys: [recipientKey],
         routingKeys: [],
         senderKey: senderKey,

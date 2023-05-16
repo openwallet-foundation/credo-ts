@@ -1,46 +1,60 @@
 import type {
   EncryptedMessage,
-  WalletConfig,
-  WalletCreateKeyOptions,
-  WalletSignOptions,
-  UnpackedMessageContext,
-  WalletVerifyOptions,
-  Wallet,
-  WalletConfigRekey,
   KeyPair,
+  UnpackedMessageContext,
+  Wallet,
+  WalletConfig,
+  WalletConfigRekey,
+  WalletCreateKeyOptions,
   WalletExportImportConfig,
   WalletPackOptions,
+  WalletSignOptions,
+  WalletVerifyOptions,
 } from '@aries-framework/core'
 import type { KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
 import {
-  WalletExportPathExistsError,
-  WalletKeyExistsError,
-  isValidSeed,
-  isValidPrivateKey,
-  JsonTransformer,
-  WalletInvalidKeyError,
-  WalletDuplicateError,
-  JsonEncoder,
-  KeyType,
-  Buffer,
   AriesFrameworkError,
-  Logger,
-  WalletError,
-  InjectionSymbols,
-  Key,
-  KeyProviderRegistry,
-  TypedArrayEncoder,
+  Buffer,
+  DidCommMessageVersion,
+  DidCommV2EncryptionAlgs,
+  DidCommV2KeyProtectionAlgs,
+  DidCommV2Types,
+  DidKey,
   FileSystem,
-  WalletNotFoundError,
+  InjectionSymbols,
+  isDidCommV1EncryptedEnvelope,
+  isValidPrivateKey,
+  isValidSeed,
+  JsonEncoder,
+  JsonTransformer,
+  JweEnvelope,
+  JweEnvelopeBuilder,
+  JweRecipient,
+  Key,
   KeyDerivationMethod,
+  KeyProviderRegistry,
+  KeyType,
+  Logger,
+  TypedArrayEncoder,
+  WalletDuplicateError,
+  WalletError,
+  WalletExportPathExistsError,
+  WalletInvalidKeyError,
+  WalletKeyExistsError,
+  WalletNotFoundError,
 } from '@aries-framework/core'
-import { KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
-// eslint-disable-next-line import/order
+import {
+  CryptoBox,
+  Ecdh1PU,
+  EcdhEs,
+  Key as AskarKey,
+  keyAlgFromString,
+  KeyAlgs,
+  Store,
+} from '@hyperledger/aries-askar-shared'
+import { Jwk } from '@hyperledger/aries-askar-shared/build/crypto/Jwk'
 import BigNumber from 'bn.js'
-
-const isError = (error: unknown): error is Error => error instanceof Error
-
 import { inject, injectable } from 'tsyringe'
 
 import {
@@ -51,7 +65,7 @@ import {
   uriFromWalletConfig,
 } from '../utils'
 
-import { JweEnvelope, JweRecipient } from './JweEnvelope'
+const isError = (error: unknown): error is Error => error instanceof Error
 
 @injectable()
 export class AskarWallet implements Wallet {
@@ -68,11 +82,11 @@ export class AskarWallet implements Wallet {
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
-    signingKeyProviderRegistry: KeyProviderRegistry
+    keyProviderRegistry: KeyProviderRegistry
   ) {
     this.logger = logger
     this.fileSystem = fileSystem
-    this.keyProviderRegistry = signingKeyProviderRegistry
+    this.keyProviderRegistry = keyProviderRegistry
   }
 
   public get isProvisioned() {
@@ -366,7 +380,10 @@ export class AskarWallet implements Wallet {
         passKey: importKey,
       })
 
-      await importedWalletStore.rekey({ keyMethod: importWalletConfig.keyMethod, passKey: importWalletConfig.passKey })
+      await importedWalletStore.rekey({
+        keyMethod: importWalletConfig.keyMethod,
+        passKey: importWalletConfig.passKey,
+      })
 
       await importedWalletStore.close()
     } catch (error) {
@@ -577,129 +594,348 @@ export class AskarWallet implements Wallet {
   }
 
   /**
-   * Pack a message using DIDComm V1 algorithm
+   * Pack a message using DIDComm V1 or DIDComm V2 encryption algorithms
    *
    * @param payload message to send
    * @param params packing options specific for envelop version
    * @returns JWE Envelope to send
    */
   public async pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
-    if (params.version === 'v1') {
-      let cek: AskarKey | undefined
-      let senderKey: KeyEntryObject | null | undefined
-      let senderExchangeKey: AskarKey | undefined
+    if (params.didCommVersion === DidCommMessageVersion.V1) {
+      return this.packDidCommV1(payload, params)
+    }
+    if (params.didCommVersion === DidCommMessageVersion.V2) {
+      return this.packDidCommV2(payload, params)
+    }
+    throw new AriesFrameworkError(`Unsupported DidComm version: ${params.didCommVersion}`)
+  }
 
-      const { senderKey: senderVerkey, recipientKeys } = params
+  /**
+   * Pack a message using DIDComm V1 encryption algorithms
+   *
+   * @param payload message to send
+   * @param params packing options specific for envelop version
+   * @returns JWE Envelope to send
+   */
+  private async packDidCommV1(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
+    const { senderKey: senderVerkey, recipientKeys } = params
 
-      try {
-        cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+    let cek: AskarKey | undefined
+    let senderKey: KeyEntryObject | null | undefined
+    let senderExchangeKey: AskarKey | undefined
 
-        senderKey = senderVerkey ? await this.session.fetchKey({ name: senderVerkey }) : undefined
-        if (senderVerkey && !senderKey) {
-          throw new WalletError(`Unable to pack message. Sender key ${senderVerkey} not found in wallet.`)
-        }
+    try {
+      cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
 
-        senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
-
-        const recipients: JweRecipient[] = []
-
-        for (const recipientKey of recipientKeys) {
-          let targetExchangeKey: AskarKey | undefined
-          try {
-            targetExchangeKey = AskarKey.fromPublicBytes({
-              publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
-              algorithm: KeyAlgs.Ed25519,
-            }).convertkey({ algorithm: KeyAlgs.X25519 })
-
-            if (senderVerkey && senderExchangeKey) {
-              const encryptedSender = CryptoBox.seal({
-                recipientKey: targetExchangeKey,
-                message: Buffer.from(senderVerkey),
-              })
-              const nonce = CryptoBox.randomNonce()
-              const encryptedCek = CryptoBox.cryptoBox({
-                recipientKey: targetExchangeKey,
-                senderKey: senderExchangeKey,
-                message: cek.secretBytes,
-                nonce,
-              })
-
-              recipients.push(
-                new JweRecipient({
-                  encryptedKey: encryptedCek,
-                  header: {
-                    kid: recipientKey,
-                    sender: TypedArrayEncoder.toBase64URL(encryptedSender),
-                    iv: TypedArrayEncoder.toBase64URL(nonce),
-                  },
-                })
-              )
-            } else {
-              const encryptedCek = CryptoBox.seal({
-                recipientKey: targetExchangeKey,
-                message: cek.secretBytes,
-              })
-              recipients.push(
-                new JweRecipient({
-                  encryptedKey: encryptedCek,
-                  header: {
-                    kid: recipientKey,
-                  },
-                })
-              )
-            }
-          } finally {
-            targetExchangeKey?.handle.free()
-          }
-        }
-
-        const protectedJson = {
-          enc: 'xchacha20poly1305_ietf',
-          typ: 'JWM/1.0',
-          alg: senderVerkey ? 'Authcrypt' : 'Anoncrypt',
-          recipients: recipients.map((item) => JsonTransformer.toJSON(item)),
-        }
-
-        const { ciphertext, tag, nonce } = cek.aeadEncrypt({
-          message: Buffer.from(JSON.stringify(payload)),
-          aad: Buffer.from(JsonEncoder.toBase64URL(protectedJson)),
-        }).parts
-
-        const envelope = new JweEnvelope({
-          ciphertext: TypedArrayEncoder.toBase64URL(ciphertext),
-          iv: TypedArrayEncoder.toBase64URL(nonce),
-          protected: JsonEncoder.toBase64URL(protectedJson),
-          tag: TypedArrayEncoder.toBase64URL(tag),
-        }).toJson()
-
-        return envelope as EncryptedMessage
-      } finally {
-        cek?.handle.free()
-        senderKey?.key.handle.free()
-        senderExchangeKey?.handle.free()
+      const senderKid = senderVerkey?.publicKeyBase58
+      senderKey = senderKid ? await this.session.fetchKey({ name: senderKid }) : undefined
+      if (senderVerkey && !senderKey) {
+        throw new WalletError(`Unable to pack message. Sender key ${senderVerkey} not found in wallet.`)
       }
-    } else {
-      throw new WalletError(`DIDComm V2 message packing is not supported`)
+
+      senderExchangeKey = senderKey ? senderKey.key.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
+
+      const recipients: JweRecipient[] = []
+
+      for (const recipientKey of recipientKeys) {
+        const recipientKid = recipientKey.publicKeyBase58
+        let targetExchangeKey: AskarKey | undefined
+        try {
+          targetExchangeKey = AskarKey.fromPublicBytes({
+            publicKey: Key.fromPublicKeyBase58(recipientKid, KeyType.Ed25519).publicKey,
+            algorithm: KeyAlgs.Ed25519,
+          }).convertkey({ algorithm: KeyAlgs.X25519 })
+
+          if (senderVerkey && senderExchangeKey && senderKid) {
+            const encryptedSender = CryptoBox.seal({
+              recipientKey: targetExchangeKey,
+              message: Buffer.from(senderKid),
+            })
+            const nonce = CryptoBox.randomNonce()
+            const encryptedCek = CryptoBox.cryptoBox({
+              recipientKey: targetExchangeKey,
+              senderKey: senderExchangeKey,
+              message: cek.secretBytes,
+              nonce,
+            })
+
+            recipients.push(
+              new JweRecipient({
+                encryptedKey: encryptedCek,
+                header: {
+                  kid: recipientKid,
+                  sender: TypedArrayEncoder.toBase64URL(encryptedSender),
+                  iv: TypedArrayEncoder.toBase64URL(nonce),
+                },
+              })
+            )
+          } else {
+            const encryptedCek = CryptoBox.seal({
+              recipientKey: targetExchangeKey,
+              message: cek.secretBytes,
+            })
+            recipients.push(
+              new JweRecipient({
+                encryptedKey: encryptedCek,
+                header: {
+                  kid: recipientKid,
+                },
+              })
+            )
+          }
+        } finally {
+          targetExchangeKey?.handle.free()
+        }
+      }
+
+      const protectedJson = {
+        enc: 'xchacha20poly1305_ietf',
+        typ: 'JWM/1.0',
+        alg: senderVerkey ? 'Authcrypt' : 'Anoncrypt',
+        recipients: recipients.map((item) => JsonTransformer.toJSON(item)),
+      }
+
+      const { ciphertext, tag, nonce } = cek.aeadEncrypt({
+        message: Buffer.from(JSON.stringify(payload)),
+        aad: Buffer.from(JsonEncoder.toBase64URL(protectedJson)),
+      }).parts
+
+      const envelope = new JweEnvelope({
+        ciphertext: TypedArrayEncoder.toBase64URL(ciphertext),
+        iv: TypedArrayEncoder.toBase64URL(nonce),
+        protected: JsonEncoder.toBase64URL(protectedJson),
+        tag: TypedArrayEncoder.toBase64URL(tag),
+      }).toJson()
+
+      return envelope as EncryptedMessage
+    } finally {
+      cek?.handle.free()
+      senderKey?.key.handle.free()
+      senderExchangeKey?.handle.free()
     }
   }
 
   /**
-   * Unpacks a JWE Envelope coded using DIDComm V1 algorithm
+   * Pack a message using DIDComm V2 encryption algorithms
+   *
+   * @param payload message to send
+   * @param params packing options specific for envelop version
+   * @returns JWE Envelope to send
+   */
+  private async packDidCommV2(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
+    if (params.senderKey) {
+      return this.encryptEcdh1Pu(payload, params.senderKey, params.recipientKeys)
+    } else {
+      return this.encryptEcdhEs(payload, params.recipientKeys)
+    }
+  }
+
+  private async encryptEcdhEs(payload: Record<string, unknown>, recipientKeys: Key[]): Promise<EncryptedMessage> {
+    const wrapId = DidCommV2KeyProtectionAlgs.EcdhEsA256Kw
+    const wrapAlg = KeyAlgs.AesA256Kw
+    const encId = DidCommV2EncryptionAlgs.XC20P
+    const encAlg = KeyAlgs.Chacha20XC20P
+    const keyAlg = KeyAlgs.X25519
+
+    let recipientX25519Key: AskarKey | undefined
+    let cek: AskarKey | undefined
+    let epk: AskarKey | undefined
+
+    try {
+      // Generated once for all recipients
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-es-key-wrapping-and-common-protected-headers
+      epk = AskarKey.generate(keyAlg, true)
+
+      const jweBuilder = new JweEnvelopeBuilder({
+        typ: DidCommV2Types.EncryptedJson,
+        enc: encId,
+        alg: wrapId,
+      })
+        .setEpk(JsonEncoder.toString(epk.jwkPublic))
+        .setApv([...recipientKeys].map((recipientKey) => recipientKey.fingerprint))
+
+      // As per spec we firstly need to encrypt the payload and then use tag as part of the key derivation process
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-es-key-wrapping-and-common-protected-headers
+      cek = AskarKey.generate(encAlg)
+
+      const { ciphertext, tag, nonce } = cek.aeadEncrypt({
+        message: Buffer.from(JSON.stringify(payload)),
+        aad: jweBuilder.aad(),
+      }).parts
+
+      for (const recipientKey of recipientKeys) {
+        try {
+          recipientX25519Key = AskarKey.fromPublicBytes({
+            publicKey: recipientKey.publicKey,
+            algorithm: keyAlg,
+          })
+
+          // According to the spec `kid` MUST be a DID URI
+          // https://identity.foundation/didcomm-messaging/spec/#construction
+          const recipientDidKey = new DidKey(recipientKey).did
+          const recipientKid = `${recipientDidKey}#${recipientKey.fingerprint}`
+
+          // Wrap the recipient key using ECDH-ES
+          // FIXME: according to the spec `tag` must be used for the wrapping but there is not such parameter
+          // https://identity.foundation/didcomm-messaging/spec/#ecdh-es-key-wrapping-and-common-protected-headers
+          const encryptedKey = new EcdhEs({
+            algId: jweBuilder.alg(),
+            apu: jweBuilder.apu(),
+            apv: jweBuilder.apv(),
+          }).senderWrapKey({
+            wrapAlg,
+            ephemeralKey: epk,
+            recipientKey: recipientX25519Key,
+            cek,
+          }).ciphertext
+
+          jweBuilder.setRecipient(
+            new JweRecipient({
+              encryptedKey,
+              header: {
+                kid: recipientKid,
+              },
+            })
+          )
+        } finally {
+          recipientX25519Key?.handle.free()
+        }
+      }
+
+      const jwe = jweBuilder.setCiphertext(ciphertext).setIv(nonce).setTag(tag).finalize()
+      return jwe.toJson() as EncryptedMessage
+    } finally {
+      epk?.handle.free()
+      cek?.handle.free()
+    }
+  }
+
+  private async encryptEcdh1Pu(
+    payload: Record<string, unknown>,
+    senderKey: Key,
+    recipientKeys: Key[]
+  ): Promise<EncryptedMessage> {
+    const wrapAlg = KeyAlgs.AesA256Kw
+    const encAlg = KeyAlgs.AesA256CbcHs512
+    const keyAlg = keyAlgFromString(senderKey.keyType)
+
+    let senderAskarKey: KeyEntryObject | undefined | null
+    let recipientAskarKey: AskarKey | undefined
+    let cek: AskarKey | undefined
+    let epk: AskarKey | undefined
+
+    try {
+      // currently, keys are stored in the wallet by their base58 representation
+      senderAskarKey = await this.session.fetchKey({ name: senderKey.publicKeyBase58 })
+      if (!senderAskarKey) {
+        throw new WalletError(`Unable to pack message. Sender key ${senderKey} not found in wallet.`)
+      }
+
+      // According to the spec `skid` MUST be a DID URI
+      const senderDidKey = new DidKey(senderKey).did
+      const senderKid = `${senderDidKey}#${senderKey.fingerprint}`
+
+      // Generated once for all recipients
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-1pu-key-wrapping-and-common-protected-headers
+      epk = AskarKey.generate(keyAlg, true)
+
+      const jweBuilder = new JweEnvelopeBuilder({
+        typ: DidCommV2Types.EncryptedJson,
+        enc: DidCommV2EncryptionAlgs.A256CbcHs512,
+        alg: DidCommV2KeyProtectionAlgs.Ecdh1PuA256Kw,
+      })
+        .setSkid(senderKid)
+        .setEpk(JsonEncoder.toString(epk.jwkPublic))
+        .setApu(senderKid)
+        .setApv([...recipientKeys].map((recipientKey) => recipientKey.fingerprint))
+
+      // As per spec we firstly need to encrypt the payload and then use tag as part of the key derivation process
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-1pu-key-wrapping-and-common-protected-headers
+      cek = AskarKey.generate(encAlg)
+
+      const message = Buffer.from(JSON.stringify(payload))
+      const { ciphertext, tag, nonce } = cek.aeadEncrypt({
+        message,
+        aad: jweBuilder.aad(),
+      }).parts
+
+      for (const recipientKey of recipientKeys) {
+        try {
+          recipientAskarKey = AskarKey.fromPublicBytes({
+            publicKey: recipientKey.publicKey,
+            algorithm: keyAlg,
+          })
+
+          // According to the spec `kid` MUST be a DID URI
+          // https://identity.foundation/didcomm-messaging/spec/#construction
+          const recipientDidKey = new DidKey(recipientKey).did
+          const recipientKid = `${recipientDidKey}#${recipientKey.fingerprint}`
+
+          // Wrap the recipient key using ECDH-1PU
+          const encryptedCek = new Ecdh1PU({
+            algId: jweBuilder.alg(),
+            apv: jweBuilder.apv(),
+            apu: jweBuilder.apu(),
+          }).senderWrapKey({
+            wrapAlg,
+            cek,
+            ephemeralKey: epk,
+            ccTag: tag,
+            senderKey: senderAskarKey.key,
+            recipientKey: recipientAskarKey,
+          }).ciphertext
+
+          jweBuilder.setRecipient(
+            new JweRecipient({
+              encryptedKey: encryptedCek,
+              header: {
+                kid: recipientKid,
+              },
+            })
+          )
+        } finally {
+          recipientAskarKey?.handle.free()
+        }
+      }
+
+      const jwe = jweBuilder.setCiphertext(ciphertext).setIv(nonce).setTag(tag).finalize()
+      return jwe.toJson() as EncryptedMessage
+    } finally {
+      epk?.handle.free()
+      cek?.handle.free()
+      senderAskarKey?.key.handle.free()
+    }
+  }
+
+  /**
+   * Unpacks a JWE Envelope coded using DIDComm V1 of DIDComm V2 encryption algorithms
    *
    * @param messagePackage JWE Envelope
-   * @returns UnpackedMessageContext with plain text message, sender key and recipient key
+   *
+   * @returns UnpackedMessageContext with plain text message, sender key, recipient key, and didcomm message version
    */
   public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
-    const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
-
-    const alg = protectedJson.alg
-    if (!['Anoncrypt', 'Authcrypt'].includes(alg)) {
-      throw new WalletError(`Unsupported pack algorithm: ${alg}`)
+    if (isDidCommV1EncryptedEnvelope(messagePackage)) {
+      return this.unpackDidCommV1(messagePackage)
+    } else {
+      return this.unpackDidCommV2(messagePackage)
     }
+  }
+
+  /**
+   * Unpacks a JWE Envelope coded using DIDComm V1 encryption algorithms
+   *
+   * @param messagePackage JWE Envelope
+   *
+   * @returns UnpackedMessageContext with plain text message, sender key, recipient key, and didcomm message version
+   */
+  private async unpackDidCommV1(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
+    // Decode a message using DIDComm v1 encryption.
+    const protected_ = JsonEncoder.fromBase64(messagePackage.protected)
 
     const recipients = []
 
-    for (const recip of protectedJson.recipients) {
+    for (const recip of protected_.recipients) {
       const kid = recip.header.kid
       if (!kid) {
         throw new WalletError('Blank recipient key')
@@ -765,7 +1001,7 @@ export class AskarWallet implements Wallet {
       throw new WalletError('No corresponding recipient key found')
     }
 
-    if (!senderKey && alg === 'Authcrypt') {
+    if (!senderKey && protected_.alg === 'Authcrypt') {
       throw new WalletError('Sender public key not provided for Authcrypt')
     }
 
@@ -779,13 +1015,194 @@ export class AskarWallet implements Wallet {
         aad: TypedArrayEncoder.fromString(messagePackage.protected),
       })
       return {
+        didCommVersion: DidCommMessageVersion.V1,
         plaintextMessage: JsonEncoder.fromBuffer(message),
-        senderKey,
         recipientKey,
+        senderKey: senderKey ? Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519) : undefined,
       }
     } finally {
       cek?.handle.free()
     }
+  }
+
+  /**
+   * Unpacks a JWE Envelope coded using DIDComm V2 encryption algorithms
+   *
+   * @param messagePackage JWE Envelope
+   *
+   * @returns UnpackedMessageContext with plain text message, sender key, recipient key, and didcomm message version
+   */
+  private async unpackDidCommV2(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
+    const protected_ = JsonEncoder.fromBase64(messagePackage.protected)
+    if (
+      protected_.alg === DidCommV2KeyProtectionAlgs.EcdhEsA128Kw ||
+      protected_.alg === DidCommV2KeyProtectionAlgs.EcdhEsA256Kw
+    ) {
+      return this.decryptEcdhEs(messagePackage, protected_)
+    }
+    if (
+      protected_.alg === DidCommV2KeyProtectionAlgs.Ecdh1PuA128Kw ||
+      protected_.alg === DidCommV2KeyProtectionAlgs.Ecdh1PuA256Kw
+    ) {
+      return this.decryptEcdh1Pu(messagePackage, protected_)
+    }
+    throw new AriesFrameworkError(`Unsupported JWE algorithm: ${protected_.alg}`)
+  }
+
+  private async decryptEcdhEs(jwe: EncryptedMessage, protected_: any): Promise<UnpackedMessageContext> {
+    const { alg, apu, apv, enc } = protected_
+    const wrapAlg = alg.slice(8)
+
+    if (![DidCommV2KeyProtectionAlgs.EcdhEsA128Kw, DidCommV2KeyProtectionAlgs.EcdhEsA256Kw].includes(alg)) {
+      throw new AriesFrameworkError(`Unsupported ECDH-ES algorithm: ${alg}`)
+    }
+    if (!['A128GCM', 'A256GCM', 'A128CBC-HS256', 'A256CBC-HS512', 'XC20P'].includes(enc)) {
+      throw new AriesFrameworkError(`Unsupported ECDH-ES content encryption: ${alg}`)
+    }
+
+    let recipientAskarKey: KeyEntryObject | null | undefined
+    let cek: AskarKey | undefined
+    let epk: AskarKey | undefined
+
+    try {
+      // Generated once for all recipients
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-es-key-wrapping-and-common-protected-headers
+      epk = AskarKey.fromJwk({ jwk: Jwk.fromString(protected_.epk) })
+
+      for (const recipient of jwe.recipients) {
+        try {
+          // currently, keys are stored in the wallet by their base58 representation
+          const recipientKey = Key.fromPublicKeyId(recipient.header.kid)
+          recipientAskarKey = await this.session.fetchKey({ name: recipientKey.publicKeyBase58 })
+          if (!recipientAskarKey) continue
+
+          // unwrap the key using ECDH-ES
+          cek = new EcdhEs({
+            algId: Uint8Array.from(Buffer.from(alg)),
+            apv: Uint8Array.from(Buffer.from(apv ?? [])),
+            apu: Uint8Array.from(Buffer.from(apu ?? [])),
+          }).receiverUnwrapKey({
+            wrapAlg,
+            encAlg: enc,
+            ephemeralKey: epk,
+            recipientKey: recipientAskarKey.key,
+            ciphertext: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
+            // tag: TypedArrayEncoder.fromBase64(jwe.tag),
+          })
+
+          // decrypt the message using the key
+          const plaintext = cek.aeadDecrypt({
+            ciphertext: TypedArrayEncoder.fromBase64(jwe.ciphertext),
+            nonce: TypedArrayEncoder.fromBase64(jwe.iv),
+            tag: TypedArrayEncoder.fromBase64(jwe.tag),
+            aad: TypedArrayEncoder.fromString(jwe.protected),
+          })
+
+          return {
+            didCommVersion: DidCommMessageVersion.V2,
+            plaintextMessage: JsonEncoder.fromBuffer(plaintext),
+            recipientKey,
+          }
+        } finally {
+          recipientAskarKey?.key.handle.free()
+          cek?.handle.free()
+        }
+      }
+    } finally {
+      epk?.handle.free()
+    }
+
+    throw new AriesFrameworkError('Unable to decrypt message')
+  }
+
+  private async decryptEcdh1Pu(jwe: EncryptedMessage, protected_: any): Promise<UnpackedMessageContext> {
+    const { alg, enc, apu, apv, skid } = protected_
+    const wrapAlg = alg.slice(9)
+
+    if (![DidCommV2KeyProtectionAlgs.Ecdh1PuA128Kw, DidCommV2KeyProtectionAlgs.Ecdh1PuA256Kw].includes(alg)) {
+      throw new AriesFrameworkError(`Unsupported ECDH-1PU algorithm: ${alg}`)
+    }
+    if (!['A128CBC-HS256', 'A256CBC-HS512'].includes(enc)) {
+      throw new AriesFrameworkError(`Unsupported ECDH-1PU content encryption: ${alg}`)
+    }
+
+    let recipientAskarKey: KeyEntryObject | null | undefined
+    let senderAskarKey: AskarKey | undefined
+    let cek: AskarKey | undefined
+    let epk: AskarKey | undefined
+
+    try {
+      // Validate the `apu` filed is similar to `skid`
+      // https://identity.foundation/didcomm-messaging/spec/#ecdh-1pu-key-wrapping-and-common-protected-headers
+      const senderKidApu = TypedArrayEncoder.fromBase64(apu).toString('utf-8')
+      if (senderKidApu && skid && senderKidApu !== skid) {
+        throw new AriesFrameworkError('Mismatch between skid and apu')
+      }
+      const senderKid = skid ?? senderKidApu
+      if (!senderKid) {
+        throw new AriesFrameworkError('Sender key ID not provided')
+      }
+
+      // FIXME: Properly, we need to properly resolve sender key doing the following steps:
+      //  1. Extract a DID from DID URL
+      //  2. Resolve DID Doc for sender
+      //  3. Get matching the ID
+      // So it looks like we need to use DidResolver inside of the wallet
+      const senderKey = Key.fromPublicKeyId(senderKid)
+      senderAskarKey = AskarKey.fromPublicBytes({
+        publicKey: senderKey.publicKey,
+        algorithm: keyAlgFromString(senderKey.keyType),
+      })
+
+      // Generated once for all recipients
+      epk = AskarKey.fromJwk({ jwk: Jwk.fromString(protected_.epk) })
+
+      for (const recipient of jwe.recipients) {
+        try {
+          // currently, keys are stored in the wallet by their base58 representation
+          const recipientKey = Key.fromPublicKeyId(recipient.header.kid)
+          recipientAskarKey = await this.session.fetchKey({ name: recipientKey.publicKeyBase58 })
+          if (!recipientAskarKey) continue
+
+          // unwrap the key using ECDH-1PU
+          cek = new Ecdh1PU({
+            apv: Uint8Array.from(Buffer.from(apv)),
+            apu: Uint8Array.from(Buffer.from(apu)),
+            algId: Uint8Array.from(Buffer.from(alg)),
+          }).receiverUnwrapKey({
+            wrapAlg: wrapAlg,
+            encAlg: enc,
+            ephemeralKey: epk,
+            senderKey: senderAskarKey,
+            recipientKey: recipientAskarKey.key,
+            ccTag: TypedArrayEncoder.fromBase64(jwe.tag),
+            ciphertext: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
+          })
+
+          // decrypt the message using the key
+          const plaintext = cek.aeadDecrypt({
+            ciphertext: TypedArrayEncoder.fromBase64(jwe.ciphertext),
+            nonce: TypedArrayEncoder.fromBase64(jwe.iv),
+            tag: TypedArrayEncoder.fromBase64(jwe.tag),
+            aad: TypedArrayEncoder.fromString(jwe.protected),
+          })
+
+          return {
+            didCommVersion: DidCommMessageVersion.V2,
+            plaintextMessage: JsonEncoder.fromBuffer(plaintext),
+            senderKey,
+            recipientKey,
+          }
+        } finally {
+          cek?.handle.free()
+          recipientAskarKey?.key?.handle.free()
+        }
+      }
+    } finally {
+      senderAskarKey?.handle.free()
+      epk?.handle.free()
+    }
+    throw new AriesFrameworkError('Unable to decrypt didcomm v2 envelop')
   }
 
   public async generateNonce(): Promise<string> {
@@ -828,7 +1245,7 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  public async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
+  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
       const entryObject = await this.session.fetch({ category: 'KeyPairRecord', name: `key-${publicKeyBase58}` })
 

@@ -64,10 +64,6 @@ export class MockWallet implements Wallet {
     throw new Error('Method not implemented.')
   }
 
-  public retrieveKeyPair(keyId: string): Promise<KeyPair> {
-    throw new Error('Method not implemented.')
-  }
-
   public dispose() {
     // Nothing to do here
   }

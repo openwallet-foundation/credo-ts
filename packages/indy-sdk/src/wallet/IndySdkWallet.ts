@@ -13,20 +13,21 @@ import type {
   WalletSignOptions,
   WalletVerifyOptions,
 } from '@aries-framework/core'
-import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, WalletStorageConfig } from 'indy-sdk'
-
 // eslint-disable-next-line import/order
+import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, WalletStorageConfig } from 'indy-sdk'
 import {
   AriesFrameworkError,
+  DidCommMessageVersion,
   InjectionSymbols,
+  isDidCommV1EncryptedEnvelope,
   isValidPrivateKey,
   isValidSeed,
   JsonEncoder,
   Key,
+  KeyProviderRegistry,
   KeyType,
   Logger,
   RecordNotFoundError,
-  KeyProviderRegistry,
   TypedArrayEncoder,
   WalletDuplicateError,
   WalletError,
@@ -35,13 +36,12 @@ import {
   WalletKeyExistsError,
   WalletNotFoundError,
 } from '@aries-framework/core'
-
-const isError = (error: unknown): error is Error => error instanceof Error
-
 import { inject, injectable } from 'tsyringe'
 
 import { IndySdkError, isIndyError } from '../error'
 import { IndySdk, IndySdkSymbol } from '../types'
+
+const isError = (error: unknown): error is Error => error instanceof Error
 
 @injectable()
 export class IndySdkWallet implements Wallet {
@@ -55,10 +55,10 @@ export class IndySdkWallet implements Wallet {
   public constructor(
     @inject(IndySdkSymbol) indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    signingKeyProviderRegistry: KeyProviderRegistry
+    keyProviderRegistry: KeyProviderRegistry
   ) {
     this.logger = logger
-    this.keyProviderRegistry = signingKeyProviderRegistry
+    this.keyProviderRegistry = keyProviderRegistry
     this.indySdk = indySdk
   }
 
@@ -547,15 +547,22 @@ export class IndySdkWallet implements Wallet {
   }
 
   public async pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
+    if (params.didCommVersion === DidCommMessageVersion.V1) {
+      return this.packDidCommV1(payload, params)
+    }
+    if (params.didCommVersion === DidCommMessageVersion.V2) {
+      throw new AriesFrameworkError(`DidComm V2 message encryption is not supported for Indy wallet`)
+    }
+    throw new AriesFrameworkError(`Unsupported DidComm version: ${params.didCommVersion}`)
+  }
+
+  private async packDidCommV1(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
     try {
-      if (params.version === 'v1') {
-        const messageRaw = JsonEncoder.toBuffer(payload)
-        const { recipientKeys, senderKey } = params
-        const packedMessage = await this.indySdk.packMessage(this.handle, messageRaw, recipientKeys, senderKey)
-        return JsonEncoder.fromBuffer(packedMessage)
-      } else {
-        throw new AriesFrameworkError('DIDComm V2 message packing is not supported for IndyWallet')
-      }
+      const messageRaw = JsonEncoder.toBuffer(payload)
+      const recipientKeys = params.recipientKeys.map((recipientKey) => recipientKey.publicKeyBase58)
+      const senderKey = params.senderKey?.publicKeyBase58 ?? null
+      const packedMessage = await this.indySdk.packMessage(this.handle, messageRaw, recipientKeys, senderKey)
+      return JsonEncoder.fromBuffer(packedMessage)
     } catch (error) {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
@@ -565,12 +572,23 @@ export class IndySdkWallet implements Wallet {
   }
 
   public async unpack(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
+    if (isDidCommV1EncryptedEnvelope(messagePackage)) {
+      return this.unpackDidCommV1(messagePackage)
+    } else {
+      throw new AriesFrameworkError(`DidComm V2 message encryption is not supported for Indy wallet`)
+    }
+  }
+
+  private async unpackDidCommV1(messagePackage: EncryptedMessage): Promise<UnpackedMessageContext> {
     try {
       const unpackedMessageBuffer = await this.indySdk.unpackMessage(this.handle, JsonEncoder.toBuffer(messagePackage))
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
-        senderKey: unpackedMessage.sender_verkey,
-        recipientKey: unpackedMessage.recipient_verkey,
+        didCommVersion: DidCommMessageVersion.V1,
+        senderKey: unpackedMessage.sender_verkey
+          ? Key.fromPublicKeyBase58(unpackedMessage.sender_verkey, KeyType.Ed25519)
+          : undefined,
+        recipientKey: Key.fromPublicKeyBase58(unpackedMessage.recipient_verkey, KeyType.Ed25519),
         plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }
     } catch (error) {
@@ -592,7 +610,7 @@ export class IndySdkWallet implements Wallet {
     }
   }
 
-  public async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
+  private async retrieveKeyPair(publicKeyBase58: string): Promise<KeyPair> {
     try {
       const { value } = await this.indySdk.getWalletRecord(this.handle, 'KeyPairRecord', `key-${publicKeyBase58}`, {})
       if (value) {

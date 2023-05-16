@@ -9,6 +9,8 @@ import type {
   CredentialStateChangedEvent,
   TrustPingReceivedEvent,
   TrustPingResponseReceivedEvent,
+  V2TrustPingReceivedEvent,
+  V2TrustPingResponseReceivedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
@@ -83,12 +85,27 @@ export class Listener {
 
   public pingListener(agent: Agent, name: string) {
     agent.events.on(TrustPingEventTypes.TrustPingReceivedEvent, async (event: TrustPingReceivedEvent) => {
-      this.ui.updateBottomBar(purpleText(`\n${name} received ping message from ${event.payload}\n`))
+      this.ui.updateBottomBar(
+        purpleText(`\n${name} received ping message from ${event.payload.connectionRecord?.theirDid}\n`)
+      )
     })
     agent.events.on(
       TrustPingEventTypes.TrustPingResponseReceivedEvent,
       async (event: TrustPingResponseReceivedEvent) => {
-        this.ui.updateBottomBar(purpleText(`\n${name} received ping response message from ${event.payload}\n`))
+        this.ui.updateBottomBar(
+          purpleText(`\n${name} received ping response message from ${event.payload.connectionRecord?.theirDid}\n`)
+        )
+      }
+    )
+    agent.events.on(TrustPingEventTypes.V2TrustPingReceivedEvent, async (event: V2TrustPingReceivedEvent) => {
+      this.ui.updateBottomBar(purpleText(`\n${name} received ping message from ${event.payload.message.from}\n`))
+    })
+    agent.events.on(
+      TrustPingEventTypes.V2TrustPingResponseReceivedEvent,
+      async (event: V2TrustPingResponseReceivedEvent) => {
+        this.ui.updateBottomBar(
+          purpleText(`\n${name} received ping response message from ${event.payload.message.from}\n`)
+        )
       }
     )
   }

@@ -1,26 +1,29 @@
 import type { AgentMessage } from './AgentMessage'
+import type { PackMessageParams } from './EnvelopeService'
 import type { AgentMessageSentEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
-import type { EncryptedMessage, OutboundPackage, OutboundPackagePayload } from '../didcomm/types'
-import type { DidCommV1Message, PackMessageParams as DidCommV1PackMessageParams } from '../didcomm/versions/v1'
-import type { V2PackMessageParams as DidCommV2PackMessageParams } from '../didcomm/versions/v2'
-import type { DidCommV2Message } from '../didcomm/versions/v2/DidCommV2Message'
+import type {
+  DidCommV1Message,
+  DidCommV2Message,
+  DidCommV2PackMessageParams,
+  EncryptedMessage,
+  EnvelopeType,
+  OutboundPackage,
+} from '../didcomm'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
-import type { DidCommV2Service, DidDocument, DidDocumentService } from '../modules/dids'
+import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { EnvelopeType } from '../didcomm/types'
-import { isDidCommV1Message } from '../didcomm/versions/v1'
-import { isDidCommV2Message } from '../didcomm/versions/v2'
+import { isDidCommV1Message, isDidCommV2Message } from '../didcomm/'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
-import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
+import { DidCommV2Service, getAuthenticationKeys } from '../modules/dids'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { inject, injectable } from '../plugins'
@@ -82,6 +85,21 @@ export class MessageSender {
     await outboundTransport.stop()
   }
 
+  public async sendMessage(
+    outboundMessage: OutboundMessageContext,
+    options?: {
+      transportPriority?: TransportPriorityOptions
+    }
+  ) {
+    if (isDidCommV1Message(outboundMessage.message)) {
+      return this.sendDIDCommV1Message(outboundMessage, options)
+    }
+    if (isDidCommV2Message(outboundMessage.message)) {
+      return this.sendDIDCommV2Message(outboundMessage, options)
+    }
+    throw new AriesFrameworkError(`Unexpected case`)
+  }
+
   public async packMessage(
     agentContext: AgentContext,
     {
@@ -89,7 +107,7 @@ export class MessageSender {
       message,
       endpoint,
     }: {
-      params: DidCommV1PackMessageParams
+      params: PackMessageParams
       message: AgentMessage
       endpoint: string
     }
@@ -191,21 +209,6 @@ export class MessageSender {
       connection,
     })
     throw new AriesFrameworkError(`Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`)
-  }
-
-  public async sendMessage(
-    outboundMessage: OutboundMessageContext,
-    options?: {
-      transportPriority?: TransportPriorityOptions
-    }
-  ) {
-    if (isDidCommV1Message(outboundMessage.message)) {
-      return this.sendDIDCommV1Message(outboundMessage, options)
-    }
-    if (isDidCommV2Message(outboundMessage.message)) {
-      return this.sendDIDCommV2Message(outboundMessage, options)
-    }
-    throw new AriesFrameworkError(`Unexpected case`)
   }
 
   private async sendDIDCommV1Message(
@@ -338,7 +341,7 @@ export class MessageSender {
     if (queueService) {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
-      const params: DidCommV1PackMessageParams = {
+      const params = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
         senderKey: firstOurAuthenticationKey,
@@ -418,7 +421,7 @@ export class MessageSender {
       service: { ...service, recipientKeys: 'omitted...', routingKeys: 'omitted...' },
     })
 
-    const params: DidCommV1PackMessageParams = {
+    const params = {
       recipientKeys: service.recipientKeys,
       routingKeys: service.routingKeys,
       senderKey,
@@ -559,213 +562,130 @@ export class MessageSender {
   private async sendDIDCommV2Message(
     outboundMessageContext: OutboundMessageContext,
     options?: {
-      envelopeType?: EnvelopeType
       transportPriority?: TransportPriorityOptions
     }
   ) {
     const { agentContext } = outboundMessageContext
     const message = outboundMessageContext.message as DidCommV2Message
-    const envelopeType = options?.envelopeType || EnvelopeType.Encrypted
 
-    // recipient is not specified -> send to defaultTransport
     const recipient = message.firstRecipient
     if (!recipient) {
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      this.logger.error(`Unable to send message. Message doesn't sender DID.`)
       throw new AriesFrameworkError(`Unable to send message. Message doesn't contain recipient DID.`)
     }
-
-    // find service transport supported for both sender and receiver
-    const senderToRecipientService = await this.findCommonSupportedServices(
-      agentContext,
-      recipient,
-      message.from,
-      options?.transportPriority
-    )
-    if (!senderToRecipientService) {
-      this.logger.error(
-        `Unable to send message ${message.id} because there is no any commonly supported service between sender and recipient`
-      )
-      return
+    if (!message.from) {
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      this.logger.error(`Unable to send message. Message doesn't sender DID.`)
+      throw new AriesFrameworkError(`Unable to send message. Message doesn't sender DID.`)
     }
 
-    if (envelopeType === EnvelopeType.Plain) {
-      // send message plaintext
-      return await this.sendDIDCommV2PlaintextMessage(agentContext, message, senderToRecipientService)
+    const { didDocument: senderDidDoc } = await this.didResolverService.resolve(agentContext, message.from)
+    if (!senderDidDoc) {
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      this.logger.error(`Unable to resolve did document for did '${message.from}'`)
+      throw new AriesFrameworkError(`Unable to resolve did document for did '${message.from}'`)
     }
 
-    if (envelopeType === EnvelopeType.Signed) {
-      // send message signed
-      return await this.sendDIDCommV2SignedMessage(agentContext, message, senderToRecipientService)
-    }
-
-    if (envelopeType === EnvelopeType.Encrypted) {
-      // send message encrypted
-      return await this.sendDIDCommV2EncryptedMessage(agentContext, message, senderToRecipientService)
-    }
-  }
-
-  private async findCommonSupportedServices(
-    agentContext: AgentContext,
-    recipient: string,
-    sender?: string,
-    transportPriority?: TransportPriorityOptions
-  ): Promise<DidCommV2Service[] | undefined> {
-    if (!sender) return undefined
-
-    const { didDocument: senderDidDocument } = await this.didResolverService.resolve(agentContext, sender)
-
-    const { didDocument: recipientDidDocument } = await this.didResolverService.resolve(agentContext, recipient)
-    if (!recipientDidDocument) {
+    const { didDocument: recipientDidDoc } = await this.didResolverService.resolve(agentContext, recipient)
+    if (!recipientDidDoc) {
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      this.logger.error(`Unable to resolve did document for did '${recipient}'`)
       throw new AriesFrameworkError(`Unable to resolve did document for did '${recipient}'`)
     }
 
-    const senderServices = senderDidDocument?.service || []
-    const recipientServices = recipientDidDocument?.service || []
-
-    const senderTransports = senderServices.map((service) => service.protocolScheme)
-    const supportedTransports = transportPriority
-      ? [...transportPriority.schemes, ...senderTransports]
-      : senderTransports
-
-    // Sort services according to supported transports
-    const priority = supportedTransports.map((transport) => transport.toString())
-
-    const services = recipientServices.sort(function (a, b) {
-      return priority.indexOf(a.protocolScheme) - priority.indexOf(b.protocolScheme)
-    })
-
-    const commonServices = services.filter((service) => {
-      if (priority.includes(service.protocolScheme)) return service
-    })
-
-    return commonServices
-  }
-
-  private async sendDIDCommV2PlaintextMessage(
-    agentContext: AgentContext,
-    message: DidCommV2Message,
-    services: DidDocumentService[]
-  ) {
-    this.logger.debug(`Sending plaintext message ${message.id}`)
-    const recipientDid = message.firstRecipient
-    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid)
-  }
-
-  private async sendDIDCommV2SignedMessage(
-    agentContext: AgentContext,
-    message: DidCommV2Message,
-    services: DidDocumentService[]
-  ) {
-    this.logger.debug(`Sending JWS message ${message.id}`)
-
-    const recipientDid = message.firstRecipient
-
-    const pack = async (message: DidCommV2Message, service: DidDocumentService) => {
-      if (!message.from) {
-        throw new AriesFrameworkError(`Unable to send message signed. Message doesn't contain sender DID.`)
-      }
-      const params: DidCommV2PackMessageParams = {
-        signByDid: message.from,
-        serviceId: service?.id,
-        envelopeType: EnvelopeType.Signed,
-      }
-      return this.envelopeService.packMessage(agentContext, message, params)
+    // find service transport supported for both sender and receiver
+    const services = this.findCommonSupportedDidCommV2Services(
+      senderDidDoc,
+      recipientDidDoc,
+      options?.transportPriority
+    )
+    if (!services) {
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      this.logger.error(
+        `Unable to send message ${message.id} because there is no any commonly supported service between sender and recipient`
+      )
+      throw new AriesFrameworkError(
+        `Unable to send message ${message.id} because there is no any commonly supported service between sender and recipient`
+      )
     }
 
-    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid, pack)
-  }
-
-  private async sendDIDCommV2EncryptedMessage(
-    agentContext: AgentContext,
-    message: DidCommV2Message,
-    services: DidDocumentService[]
-  ) {
-    const recipientDid = message.firstRecipient
-    if (!recipientDid) {
-      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
-    }
-    this.logger.debug(`Sending JWE message ${message.id}`)
-
-    const pack = async (message: DidCommV2Message, service: DidDocumentService) => {
-      return await this.encryptDIDCommV2Message(agentContext, message, service)
-    }
-
-    return this.sendOutboundDIDCommV2Message(agentContext, message, services, recipientDid, pack)
-  }
-
-  private async encryptDIDCommV2Message(
-    agentContext: AgentContext,
-    message: DidCommV2Message,
-    service: DidDocumentService,
-    forward?: boolean
-  ) {
-    const recipientDid = message.firstRecipient
-    if (!recipientDid) {
-      throw new AriesFrameworkError(`Unable to send message encrypted. Message doesn't contain recipient DID.`)
-    }
-
-    const params: DidCommV2PackMessageParams = {
-      toDid: recipientDid,
-      fromDid: message.from,
-      signByDid: undefined,
-      serviceId: service?.id,
-      wrapIntoForward: forward,
-      envelopeType: EnvelopeType.Encrypted,
-    }
-    return this.envelopeService.packMessage(agentContext, message, params)
-  }
-
-  private async sendOutboundDIDCommV2Message(
-    agentContext: AgentContext,
-    message: DidCommV2Message,
-    services: DidDocumentService[],
-    recipientDid?: string,
-    packMessage?: (message: DidCommV2Message, service: DidDocumentService) => Promise<OutboundPackagePayload>
-  ) {
+    // pack and send message until first success
     for (const service of services) {
       try {
-        this.logger.info(`Sending message to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`)
+        this.logger.info(
+          `Sending message with id: ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+        )
+        const params: DidCommV2PackMessageParams = {
+          recipientDidDoc,
+          senderDidDoc,
+          service,
+        }
+        const payload = await this.envelopeService.packMessage(agentContext, message, params)
 
-        const payload = packMessage ? await packMessage(message, service) : { ...message }
-        const outboundPackage = { payload, recipientDid, endpoint: service.serviceEndpoint }
-
+        const outboundPackage = {
+          payload,
+          endpoint: service.serviceEndpoint,
+        }
         this.logger.trace(`Sending outbound message to transport:`, {
           transport: service.protocolScheme,
           outboundPackage,
         })
-
         for (const outboundTransport of this.outboundTransports) {
           if (outboundTransport.supportedSchemes.includes(service.protocolScheme)) {
             await outboundTransport.sendMessage(outboundPackage)
             break
           }
         }
-
+        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
         this.logger.info(
-          `Message sent ${message.id} to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
+          `Message with id: ${message.id} sent to ${service.serviceEndpoint}. Transport ${service.protocolScheme}`
         )
         return
       } catch (error) {
-        this.logger.warn(`Unable to send message to ${service.serviceEndpoint}. Transport failure `, {
-          errors: error,
-        })
+        this.logger.warn(
+          `Unable to send message with id: ${message.id} to ${service.serviceEndpoint}. Transport failure `,
+          {
+            errors: error,
+          }
+        )
         // ignore and try another transport
       }
     }
+    this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
     this.logger.error(`Unable to send message ${message.id} through any commonly supported transport.`)
+    throw new AriesFrameworkError(`Unable to send message ${message.id} through any commonly supported transport.`)
+  }
+
+  private findCommonSupportedDidCommV2Services(
+    senderDidDocument: DidDocument,
+    recipientDidDocument: DidDocument,
+    transportPriority?: TransportPriorityOptions
+  ): DidCommV2Service[] {
+    const senderServices = senderDidDocument?.service || []
+    const recipientServices = recipientDidDocument?.service || []
+    let services = recipientServices.filter((recipientService) => {
+      return senderServices.find((senderService) => {
+        const service = senderService as DidCommV2Service
+        return (
+          senderService.protocolScheme === recipientService.protocolScheme &&
+          senderService.type === DidCommV2Service.type &&
+          (!service.accept?.length || service.accept.includes('didcomm/v2'))
+        )
+      })
+    })
+    // If transport priority is set we will sort services by our priority
+    if (transportPriority?.schemes) {
+      services = services.sort(function (a, b) {
+        const aScheme = getProtocolScheme(a.serviceEndpoint)
+        const bScheme = getProtocolScheme(b.serviceEndpoint)
+        return transportPriority?.schemes.indexOf(aScheme) - transportPriority?.schemes.indexOf(bScheme)
+      })
+    }
+    return services
   }
 }
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
-}
-
-function getAuthenticationKeys(didDocument: DidDocument) {
-  return (
-    didDocument.authentication?.map((authentication) => {
-      const verificationMethod =
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
-  )
 }

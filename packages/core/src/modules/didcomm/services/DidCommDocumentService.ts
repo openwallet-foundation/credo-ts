@@ -5,7 +5,7 @@ import type { ResolvedDidCommService } from '../types'
 import { AgentConfig } from '../../../agent/AgentConfig'
 import { KeyType } from '../../../crypto'
 import { injectable } from '../../../plugins'
-import { DidResolverService } from '../../dids'
+import { DidCommV2Service, DidResolverService } from '../../dids'
 import { DidCommV1Service, IndyAgentService, keyReferenceToKey } from '../../dids/domain'
 import { verkeyToInstanceOfKey } from '../../dids/helpers'
 import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
@@ -63,6 +63,22 @@ export class DidCommDocumentService {
           recipientKeys,
           routingKeys,
           serviceEndpoint: didCommService.serviceEndpoint,
+        })
+      } else if (didCommService instanceof DidCommV2Service) {
+        // Resolve dids to DIDDocs to retrieve routingKeys
+        const routingKeys = []
+        for (const routingKey of didCommService.routingKeys ?? []) {
+          const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
+          routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
+        }
+
+        // DidCommV2Service has keys encoded as key references
+
+        didCommServices.push({
+          id: didCommService.id,
+          routingKeys,
+          serviceEndpoint: didCommService.serviceEndpoint,
+          recipientKeys: [],
         })
       }
     }

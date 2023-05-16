@@ -12,6 +12,7 @@ export type PlaintextMessage = PlaintextDidCommV1Message | PlaintextDidCommV2Mes
 
 export type EncryptedMessageRecipientHeader = {
   kid: string
+  epk?: string
 }
 
 export type EncryptedMessageRecipient = {

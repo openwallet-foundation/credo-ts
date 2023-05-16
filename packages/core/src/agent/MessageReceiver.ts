@@ -1,14 +1,14 @@
 import type { AgentMessage } from './AgentMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
-import type { EncryptedMessage, PlaintextMessage, SignedMessage } from '../didcomm'
+import type { EncryptedMessage, PlaintextMessage } from '../didcomm'
 import type { DecryptedMessageContext } from '../didcomm/types'
 import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 
 import { InjectionSymbols } from '../constants'
 import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
-import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage, isSignedMessage } from '../didcomm/helpers'
+import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
 import { ConnectionService } from '../modules/connections'
@@ -102,8 +102,6 @@ export class MessageReceiver {
     try {
       if (isEncryptedMessage(inboundMessage)) {
         return await this.receiveEncryptedMessage(agentContext, inboundMessage, session)
-      } else if (isSignedMessage(inboundMessage)) {
-        return await this.receiveSignedMessage(agentContext, inboundMessage, session)
       } else if (isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection)
       } else {
@@ -132,16 +130,6 @@ export class MessageReceiver {
   ) {
     const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
     return this.processUnpackedMessage(agentContext, unpackedMessage, session)
-  }
-
-  private async receiveSignedMessage(
-    agentContext: AgentContext,
-    packedMessage: SignedMessage,
-    session?: TransportSession
-  ) {
-    // FIXME
-    // const unpackedMessage = await this.envelopeService.unpackMessage(agentContext, packedMessage)
-    // return this.processUnpackedMessage(agentContext, undefined, session)
   }
 
   private async processUnpackedMessage(
@@ -243,10 +231,15 @@ export class MessageReceiver {
       })
     }
     if (isPlaintextMessageV2(decryptedMessageContext.plaintextMessage)) {
-      // Try to find the did records that holds the sender and recipient keys
-      const { from } = decryptedMessageContext.plaintextMessage
+      // Try to find the did records that hold the sender and recipient did's
+      const { from, to } = decryptedMessageContext.plaintextMessage
+
       if (!from) return null
-      return this.connectionService.findByTheirDid(agentContext, from)
+      const connection = this.connectionService.findByTheirDid(agentContext, from)
+      if (connection) return connection
+
+      if (!to?.length) return null
+      return this.connectionService.findByOurDid(agentContext, to[0])
     }
 
     return null

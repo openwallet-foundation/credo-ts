@@ -444,7 +444,9 @@ export class ConnectionsApi {
       new V1TrustPingMessageHandler(this.v1trustPingService, this.connectionService)
     )
     messageHandlerRegistry.registerMessageHandler(new V1TrustPingResponseMessageHandler(this.v1trustPingService))
-    messageHandlerRegistry.registerMessageHandler(new V2TrustPingMessageHandler(this.v2TrustPingService))
+    messageHandlerRegistry.registerMessageHandler(
+      new V2TrustPingMessageHandler(this.v2TrustPingService, this.connectionService)
+    )
     messageHandlerRegistry.registerMessageHandler(new V2TrustPingResponseMessageHandler(this.v2TrustPingService))
 
     messageHandlerRegistry.registerMessageHandler(

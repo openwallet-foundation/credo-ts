@@ -1,6 +1,13 @@
 import type { WalletConfig, WalletPackOptions } from '@aries-framework/core'
 
-import { JsonTransformer, BasicMessage, KeyType, KeyProviderRegistry, KeyDerivationMethod } from '@aries-framework/core'
+import {
+  BasicMessage,
+  DidCommMessageVersion,
+  JsonTransformer,
+  KeyDerivationMethod,
+  KeyProviderRegistry,
+  KeyType,
+} from '@aries-framework/core'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { agentDependencies } from '../../../../core/tests/helpers'
@@ -15,6 +22,8 @@ const walletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
+const message = new BasicMessage({ content: 'hello' })
+
 describeRunInNodeVersion([18], 'askarWallet packing', () => {
   let askarWallet: AskarWallet
 
@@ -27,23 +36,69 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
     await askarWallet.delete()
   })
 
-  test('DIDComm V1 packing and unpacking', async () => {
-    // Create both sender and recipient keys
-    const senderKey = await askarWallet.createKey({ keyType: KeyType.Ed25519 })
-    const recipientKey = await askarWallet.createKey({ keyType: KeyType.Ed25519 })
+  describe('DIDComm V1 packing and unpacking', () => {
+    test('Authcrypt', async () => {
+      // Create both sender and recipient keys
+      const senderKey = await askarWallet.createKey({ keyType: KeyType.Ed25519 })
+      const recipientKey = await askarWallet.createKey({ keyType: KeyType.Ed25519 })
 
-    const message = new BasicMessage({ content: 'hello' })
+      const params: WalletPackOptions = {
+        didCommVersion: DidCommMessageVersion.V1,
+        recipientKeys: [recipientKey],
+        senderKey: senderKey,
+      }
 
-    const params: WalletPackOptions = {
-      version: 'v1',
-      recipientKeys: [recipientKey.publicKeyBase58],
-      senderKey: senderKey.publicKeyBase58,
-    }
+      const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
+      const plainTextMessage = await askarWallet.unpack(encryptedMessage)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+    })
 
-    const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
+    test('Anoncrypt', async () => {
+      // Create recipient keys only
+      const recipientKey = await askarWallet.createKey({ keyType: KeyType.Ed25519 })
 
-    const plainTextMessage = await askarWallet.unpack(encryptedMessage)
+      const params: WalletPackOptions = {
+        didCommVersion: DidCommMessageVersion.V1,
+        recipientKeys: [recipientKey],
+        senderKey: null,
+      }
 
-    expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+      const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
+      const plainTextMessage = await askarWallet.unpack(encryptedMessage)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+    })
+  })
+
+  describe('DIDComm V2 packing and unpacking', () => {
+    test('Authcrypt', async () => {
+      // Create both sender and recipient keys
+      const senderKey = await askarWallet.createKey({ keyType: KeyType.X25519 })
+      const recipientKey = await askarWallet.createKey({ keyType: KeyType.X25519 })
+
+      const params: WalletPackOptions = {
+        didCommVersion: DidCommMessageVersion.V2,
+        recipientKeys: [recipientKey],
+        senderKey: senderKey,
+      }
+
+      const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
+      const plainTextMessage = await askarWallet.unpack(encryptedMessage)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+    })
+
+    test('Anoncrypt', async () => {
+      // Create recipient keys only
+      const recipientKey = await askarWallet.createKey({ keyType: KeyType.X25519 })
+
+      const params: WalletPackOptions = {
+        didCommVersion: DidCommMessageVersion.V2,
+        recipientKeys: [recipientKey],
+        senderKey: null,
+      }
+
+      const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
+      const plainTextMessage = await askarWallet.unpack(encryptedMessage)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+    })
   })
 })

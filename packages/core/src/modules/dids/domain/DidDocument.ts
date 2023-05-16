@@ -8,7 +8,7 @@ import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
 import { getKeyFromVerificationMethod } from './key-type'
-import { IndyAgentService, ServiceTransformer, DidCommV1Service } from './service'
+import { IndyAgentService, ServiceTransformer, DidCommV1Service, DidCommV2Service } from './service'
 import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
 
 export type DidPurpose =
@@ -169,8 +169,8 @@ export class DidDocument {
    * Get all DIDComm services ordered by priority descending. This means the highest
    * priority will be the first entry.
    */
-  public get didCommServices(): Array<IndyAgentService | DidCommV1Service> {
-    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type]
+  public get didCommServices(): Array<IndyAgentService | DidCommV1Service | DidCommV2Service> {
+    const didCommServiceTypes = [IndyAgentService.type, DidCommV1Service.type, DidCommV2Service.type]
     const services = (this.service?.filter((service) => didCommServiceTypes.includes(service.type)) ?? []) as Array<
       IndyAgentService | DidCommV1Service
     >
@@ -247,4 +247,26 @@ export async function findVerificationMethodByKeyType(
   }
 
   return null
+}
+
+export function getAuthenticationKeys(didDocument: DidDocument) {
+  return (
+    didDocument.authentication?.map((authentication) => {
+      const verificationMethod =
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
+}
+
+export function getAgreementKeys(didDocument: DidDocument) {
+  return (
+    didDocument.keyAgreement?.map((keyAgreement) => {
+      const verificationMethod =
+        typeof keyAgreement === 'string' ? didDocument.dereferenceVerificationMethod(keyAgreement) : keyAgreement
+      const key = getKeyFromVerificationMethod(verificationMethod)
+      return key
+    }) ?? []
+  )
 }

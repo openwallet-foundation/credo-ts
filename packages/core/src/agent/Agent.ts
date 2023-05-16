@@ -13,7 +13,6 @@ import { concatMap, takeUntil } from 'rxjs/operators'
 import { InjectionSymbols } from '../constants'
 import { KeyProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
-import { X25519KeyProvider } from '../crypto/key-provider/X25519KeyProvider'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
@@ -62,7 +61,12 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
-    dependencyManager.registerInstance(KeyProviderToken, new X25519KeyProvider())
+    // This is a really ugly hack to make tsyringe work without any SigningProviders registered
+    // It is currently impossible to use @injectAll if there are no instances registered for the
+    // token. We register a value of `default` by default and will filter that out in the registry.
+    // Once we have a signing provider that should always be registered we can remove this. We can make an ed25519
+    // signer using the @stablelib/ed25519 library.
+    dependencyManager.registerInstance(KeyProviderToken, 'default')
 
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)

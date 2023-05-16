@@ -1,5 +1,5 @@
-import type { Key, KeyPair, KeyType } from '../crypto'
-import type { EncryptedMessage, PlaintextMessage, EnvelopeType } from '../didcomm/types'
+import type { Key, KeyType } from '../crypto'
+import type { EncryptedMessage, PlaintextMessage, EnvelopeType, DidCommMessageVersion } from '../didcomm/types'
 import type { Disposable } from '../plugins'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
@@ -12,7 +12,6 @@ export interface Wallet extends Disposable {
   createAndOpen(walletConfig: WalletConfig): Promise<void>
   open(walletConfig: WalletConfig): Promise<void>
   rotateKey(walletConfig: WalletConfigRekey): Promise<void>
-  retrieveKeyPair(kid: string): Promise<KeyPair>
   close(): Promise<void>
   delete(): Promise<void>
 
@@ -64,23 +63,15 @@ export interface WalletVerifyOptions {
 }
 
 export interface UnpackedMessageContext {
+  didCommVersion: DidCommMessageVersion
   plaintextMessage: PlaintextMessage
-  senderKey?: string
-  recipientKey?: string
+  senderKey?: Key
+  recipientKey?: Key
 }
 
-export interface WalletPackV1Options {
-  version: 'v1'
-  recipientKeys: string[]
-  senderKey: string | null
+export type WalletPackOptions = {
+  didCommVersion: DidCommMessageVersion
+  recipientKeys: Key[]
+  senderKey?: Key | null
   envelopeType?: EnvelopeType
 }
-export interface WalletPackV2Options {
-  version: 'v2'
-  toDid?: string
-  fromDid?: string
-  serviceId?: string
-  envelopeType?: EnvelopeType
-}
-
-export type WalletPackOptions = WalletPackV1Options | WalletPackV2Options

@@ -4784,16 +4784,6 @@ did-resolver@^4.0.0, did-resolver@^4.1.0:
   resolved "https://registry.yarnpkg.com/did-resolver/-/did-resolver-4.1.0.tgz#740852083c4fd5bf9729d528eca5d105aff45eb6"
   integrity sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==
 
-didcomm-node@0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/didcomm-node/-/didcomm-node-0.4.1.tgz#85f8cd55cb637370d4c0528f06693df5719af700"
-  integrity sha512-5vR2T6AyFhw20LI3Hu7Xps1nYimpooEIbefweIAsZ964p8sSnWW07qulvnRwd1fMihtUaAK+DlwGkR4jZIf6Mg==
-
-didcomm@0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/didcomm/-/didcomm-0.4.1.tgz#f94923f6d7f00dbf27818a5965d9a432874cdf96"
-  integrity sha512-fcGSfLL5ri18vbbjRexHWVk2RAxZ/eBlyKeLCzS/3k5RdogqJbnUEcNsq64at1nA1u16ENa1bsZodGeRoq84ZA==
-
 diff-sequences@^29.4.3:
   version "29.4.3"
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-29.4.3.tgz#9314bc1fabe09267ffeca9cbafc457d8499a13f2"
