@@ -12,10 +12,18 @@ export interface JwkJson {
 
 export abstract class Jwk {
   public abstract publicKey: Buffer
-  public abstract keyType: KeyType
   public abstract supportedSignatureAlgorithms: JwaSignatureAlgorithm[]
   public abstract supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[]
 
+  /**
+   * keyType as used by the rest of the framework, can be used in the
+   * `Wallet`, `Key` and other classes.
+   */
+  public abstract keyType: KeyType
+
+  /**
+   * key type as defined in [JWA Specification](https://tools.ietf.org/html/rfc7518#section-6.1)
+   */
   public abstract kty: JwaKeyType
   public use?: string
 

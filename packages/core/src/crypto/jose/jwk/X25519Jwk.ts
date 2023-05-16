@@ -35,10 +35,10 @@ export class X25519Jwk extends Jwk {
 
   public get supportedEncryptionAlgorithms() {
     return [
-      JwaEncryptionAlgorithm.ECDH_ES_A128KW,
-      JwaEncryptionAlgorithm.ECDH_ES_A192KW,
-      JwaEncryptionAlgorithm.ECDH_ES_A256KW,
-      JwaEncryptionAlgorithm.ECDH_ES,
+      JwaEncryptionAlgorithm.ECDHESA128KW,
+      JwaEncryptionAlgorithm.ECDHESA192KW,
+      JwaEncryptionAlgorithm.ECDHESA256KW,
+      JwaEncryptionAlgorithm.ECDHES,
     ]
   }
 
