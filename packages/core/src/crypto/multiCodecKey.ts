@@ -7,6 +7,9 @@ const multiCodecPrefixMap: Record<string, KeyType> = {
   236: KeyType.X25519,
   237: KeyType.Ed25519,
   238: KeyType.Bls12381g1g2,
+  4608: KeyType.P256,
+  4609: KeyType.P384,
+  4610: KeyType.P521,
 }
 
 export function getKeyTypeByMultiCodecPrefix(multiCodecPrefix: number): KeyType {
@@ -19,7 +22,7 @@ export function getKeyTypeByMultiCodecPrefix(multiCodecPrefix: number): KeyType 
   return keyType
 }
 
-export function getMultiCodecPrefixByKeytype(keyType: KeyType): number {
+export function getMultiCodecPrefixByKeyType(keyType: KeyType): number {
   const codes = Object.keys(multiCodecPrefixMap)
   const code = codes.find((key) => multiCodecPrefixMap[key] === keyType)
 
