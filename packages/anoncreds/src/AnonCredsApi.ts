@@ -2,6 +2,7 @@ import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
 } from './AnonCredsApiOptions'
+import type { AnonCredsSchema } from './models'
 import type {
   AnonCredsRegistry,
   GetCredentialDefinitionReturn,
@@ -10,7 +11,6 @@ import type {
   GetRevocationStatusListReturn,
   GetSchemaReturn,
   RegisterCredentialDefinitionReturn,
-  RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from './services'
 import type { Extensible } from './services/registry/base'
@@ -146,7 +146,9 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerSchema<T extends RegisterSchemaOptions>(options: T): Promise<RegisterSchemaReturn> {
+  public async registerSchema<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterSchema<T>
+  ): Promise<RegisterSchemaReturn> {
     const failedReturnBase = {
       schemaState: {
         state: 'failed' as const,
@@ -188,7 +190,7 @@ export class AnonCredsApi {
   }
 
   /**
-   * Retrieve a {@link AnonCredsCredentialDefinition2} from the registry associated
+   * Retrieve a {@link GetCredentialDefinitionReturn} from the registry associated
    * with the {@link credentialDefinitionId}
    */
   public async getCredentialDefinition(credentialDefinitionId: string): Promise<GetCredentialDefinitionReturn> {
@@ -217,8 +219,8 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerCredentialDefinition<T extends RegisterCredDefOptionsBase>(
-    options: RegisterCredentialDefinitionOptions<T>
+  public async registerCredentialDefinition<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterCredentialDefinition<T>
   ): Promise<RegisterCredentialDefinitionReturn> {
     const failedReturnBase = {
       credentialDefinitionState: {
@@ -293,7 +295,12 @@ export class AnonCredsApi {
         options: options.options,
       })
 
-      await this.storeCredDefPrivateAndKeyCorrectnessRecord(result, credentialDefinitionPrivate, keyCorrectnessProof)
+      // Once a credential definition is created, the credential definition private and the key correctness proof must be stored because they change even if they the credential is recreated with the same arguments. To avoid having unregistered credential definitions in the wallet, the credential definitions itself are stored only when the credential definition status is finished, meaning that the credential definition has been successfully registered.
+      await this.storeCredentialDefinitionPrivateAndKeyCorrectnessRecord(
+        result,
+        credentialDefinitionPrivate,
+        keyCorrectnessProof
+      )
       if (result.credentialDefinitionState.state === 'finished') {
         await this.storeCredentialDefinitionRecord(registry, result)
       }
@@ -392,7 +399,7 @@ export class AnonCredsApi {
     return this.anonCredsHolderService.getCredentials(this.agentContext, options)
   }
 
-  private async storeCredDefPrivateAndKeyCorrectnessRecord(
+  private async storeCredentialDefinitionPrivateAndKeyCorrectnessRecord(
     result: RegisterCredentialDefinitionReturn,
     credentialDefinitionPrivate?: Record<string, unknown>,
     keyCorrectnessProof?: Record<string, unknown>
@@ -488,12 +495,12 @@ export class AnonCredsApi {
   }
 }
 
-interface RegisterCredDefOptionsBase {
+interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensible> {
   credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
-  options: Extensible
+  options: T
 }
 
-interface RegisterCredentialDefinitionOptions<T extends RegisterCredDefOptionsBase = RegisterCredDefOptionsBase> {
-  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
-  options: T['options']
+interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {
+  schema: AnonCredsSchema
+  options: T
 }

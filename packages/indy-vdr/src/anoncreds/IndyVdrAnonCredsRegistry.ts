@@ -9,8 +9,17 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
   AnonCredsCredentialDefinition,
+  RegisterSchemaReturnStateFailed,
+  RegisterSchemaReturnStateFinished,
+  RegisterSchemaReturnStateAction,
+  RegisterSchemaReturnStateWait,
+  RegisterCredentialDefinitionReturnStateAction,
+  RegisterCredentialDefinitionReturnStateWait,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterCredentialDefinitionReturnStateFailed,
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
+import type { SchemaResponse } from '@hyperledger/indy-vdr-shared'
 
 import {
   getUnqualifiedCredentialDefinitionId,
@@ -34,6 +43,7 @@ import {
 
 import { verificationKeyForIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrPoolService } from '../pool'
+import { multiSignRequest } from '../utils/sign'
 
 import {
   indyVdrAnonCredsRegistryIdentifierRegex,
@@ -116,8 +126,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async registerSchema(
     agentContext: AgentContext,
-    options: RegisterSchemaOptionsIndyVdr
-  ): Promise<RegisterSchemaReturn> {
+    options: IndyVdrRegisterSchema
+  ): Promise<IndyVdrRegisterSchemaReturn> {
     const schema = options.schema
     const { issuerId, name, version, attrNames } = schema
     try {
@@ -130,12 +140,16 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
       const pool = indyVdrPoolService.getPoolForNamespace(namespace)
 
-      let writeRequest: SchemaRequest
+      let writeRequest: CustomRequest
       const didIndySchemaId = getDidIndySchemaId(namespace, namespaceIdentifier, schema.name, schema.version)
 
       const endorsedTransaction = options.options.endorsedTransaction
       if (endorsedTransaction) {
-        writeRequest = new CustomRequest({ customRequest: endorsedTransaction }) as SchemaRequest
+        agentContext.config.logger.debug(
+          `Preparing endorsed tx '${endorsedTransaction}' for submission on ledger '${namespace}' with did '${issuerId}'`,
+          schema
+        )
+        writeRequest = new CustomRequest({ customRequest: endorsedTransaction })
       } else {
         agentContext.config.logger.debug(`Create schema tx on ledger '${namespace}' with did '${issuerId}'`, schema)
         const legacySchemaId = getUnqualifiedSchemaId(namespaceIdentifier, name, version)
@@ -145,13 +159,12 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           schema: { id: legacySchemaId, name, ver: '1.0', version, attrNames },
         })
 
-        const signingDid = endorserMode === 'external' ? issuerId : endorserDid
-        const submitterKey = await verificationKeyForIndyDid(agentContext, signingDid)
+        const submitterKey = await verificationKeyForIndyDid(agentContext, issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           schemaRequest,
           submitterKey,
-          endorserMode === 'internal' ? undefined : endorserDid
+          endorserDid !== issuerId ? endorserDid : undefined
         )
 
         if (endorserMode === 'external') {
@@ -167,6 +180,11 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
             registrationMetadata: {},
             schemaMetadata: {},
           }
+        }
+
+        if (endorserMode === 'internal' && endorserDid !== issuerId) {
+          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }
       const response = await pool.submitRequest(writeRequest)
@@ -186,7 +204,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         schemaMetadata: {
           // NOTE: the seqNo is required by the indy-sdk even though not present in AnonCreds v1.
           // For this reason we return it in the metadata.
-          indyLedgerSeqNo: response.result.txnMetadata.seqNo,
+          // Cast to SchemaResponse to pass type check
+          indyLedgerSeqNo: (response as SchemaResponse)?.result?.txnMetadata?.seqNo,
         },
       }
     } catch (error) {
@@ -287,8 +306,8 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
 
   public async registerCredentialDefinition(
     agentContext: AgentContext,
-    options: RegisterCredentialDefinitionOptionsIndyVdr
-  ): Promise<RegisterCredentialDefinitionReturn> {
+    options: IndyVdrRegisterCredentialDefinition
+  ): Promise<IndyVdrRegisterCredentialDefinitionReturn> {
     const credentialDefinition = options.credentialDefinition
     const { schemaId, issuerId, tag, value } = credentialDefinition
 
@@ -305,14 +324,19 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         options.credentialDefinition
       )
 
-      let writeRequest: CredentialDefinitionRequest
+      let writeRequest: CustomRequest
       let didIndyCredentialDefinitionId: string
       let seqNo: number
 
       const endorsedTransaction = options.options.endorsedTransaction
       if (endorsedTransaction) {
-        writeRequest = new CustomRequest({ customRequest: endorsedTransaction }) as CredentialDefinitionRequest
+        agentContext.config.logger.debug(
+          `Preparing endorsed tx '${endorsedTransaction}' for submission on ledger '${namespace}' with did '${issuerId}'`,
+          credentialDefinition
+        )
+        writeRequest = new CustomRequest({ customRequest: endorsedTransaction })
         const operation = JSON.parse(endorsedTransaction)?.operation
+        // extract the seqNo from the endorsed transaction, which is contained in the ref field of the operation
         seqNo = Number(operation?.ref)
         didIndyCredentialDefinitionId = getDidIndyCredentialDefinitionId(namespace, namespaceIdentifier, seqNo, tag)
       } else {
@@ -349,13 +373,12 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           },
         })
 
-        const signingDid = endorserMode === 'external' ? issuerId : endorserDid
-        const submitterKey = await verificationKeyForIndyDid(agentContext, signingDid)
+        const submitterKey = await verificationKeyForIndyDid(agentContext, issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           credentialDefinitionRequest,
           submitterKey,
-          endorserMode === 'internal' ? undefined : endorserDid
+          endorserDid !== issuerId ? endorserDid : undefined
         )
 
         if (endorserMode === 'external') {
@@ -371,6 +394,11 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
             registrationMetadata: {},
             credentialDefinitionMetadata: {},
           }
+        }
+
+        if (endorserMode === 'internal' && endorserDid !== issuerId) {
+          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }
 
@@ -668,47 +696,77 @@ interface SchemaType {
   }
 }
 
-export type InternalEndorsement = { endorserMode: 'internal'; endorserDid: string; endorsedTransaction?: never }
-export type ExternalEndorsementCreate = { endorserMode: 'external'; endorserDid: string; endorsedTransaction?: never }
-export type ExternalEndorsementSubmit = { endorserMode: 'external'; endorserDid?: never; endorsedTransaction: string }
+type InternalEndorsement = { endorserMode: 'internal'; endorserDid: string; endorsedTransaction?: never }
+type ExternalEndorsementCreate = { endorserMode: 'external'; endorserDid: string; endorsedTransaction?: never }
+type ExternalEndorsementSubmit = { endorserMode: 'external'; endorserDid?: never; endorsedTransaction: string }
 
-export interface RegisterSchemaInternalOptions {
+export interface IndyVdrRegisterSchemaInternalOptions {
   schema: AnonCredsSchema
   options: InternalEndorsement
 }
 
-export interface RegisterSchemaExternalCreateOptions {
+export interface IndyVdrRegisterSchemaExternalCreateOptions {
   schema: AnonCredsSchema
   options: ExternalEndorsementCreate
 }
 
-export interface RegisterSchemaExternalSubmitOptions {
+export interface IndyVdrRegisterSchemaExternalSubmitOptions {
   schema: AnonCredsSchema
   options: ExternalEndorsementSubmit
 }
 
-// TODO extends base type
-export type RegisterSchemaOptionsIndyVdr =
-  | RegisterSchemaInternalOptions
-  | RegisterSchemaExternalCreateOptions
-  | RegisterSchemaExternalSubmitOptions
+export interface IndyVdrRegisterSchemaReturnStateAction extends RegisterSchemaReturnStateAction {
+  action: 'endorseIndyTransaction'
+  schemaRequest: string
+}
 
-export interface RegisterCredentialDefinitionInternalOptions {
+export interface IndyVdrRegisterSchemaReturn extends RegisterSchemaReturn {
+  schemaState:
+    | RegisterSchemaReturnStateWait
+    | IndyVdrRegisterSchemaReturnStateAction
+    | RegisterSchemaReturnStateFinished
+    | RegisterSchemaReturnStateFailed
+}
+
+export type IndyVdrRegisterSchema =
+  | IndyVdrRegisterSchemaInternalOptions
+  | IndyVdrRegisterSchemaExternalCreateOptions
+  | IndyVdrRegisterSchemaExternalSubmitOptions
+
+export type IndyVdrRegisterSchemaOptions = IndyVdrRegisterSchema['options']
+
+export interface IndyVdrRegisterCredentialDefinitionInternalOptions {
   credentialDefinition: AnonCredsCredentialDefinition
   options: InternalEndorsement
 }
 
-export interface RegisterCredentialDefinitionExternalCreateOptions {
+export interface IndyVdrRegisterCredentialDefinitionExternalCreateOptions {
   credentialDefinition: AnonCredsCredentialDefinition
   options: ExternalEndorsementCreate
 }
 
-export interface RegisterCredentialDefinitionExternalSubmitOptions {
+export interface IndyVdrRegisterCredentialDefinitionExternalSubmitOptions {
   credentialDefinition: AnonCredsCredentialDefinition
   options: ExternalEndorsementSubmit
 }
 
-export type RegisterCredentialDefinitionOptionsIndyVdr =
-  | RegisterCredentialDefinitionInternalOptions
-  | RegisterCredentialDefinitionExternalCreateOptions
-  | RegisterCredentialDefinitionExternalSubmitOptions
+export interface IndyVdrRegisterCredentialDefinitionReturnStateAction
+  extends RegisterCredentialDefinitionReturnStateAction {
+  action: 'endorseIndyTransaction'
+  credentialDefinitionRequest: string
+}
+
+export interface IndyVdrRegisterCredentialDefinitionReturn extends RegisterCredentialDefinitionReturn {
+  credentialDefinitionState:
+    | RegisterCredentialDefinitionReturnStateWait
+    | IndyVdrRegisterCredentialDefinitionReturnStateAction
+    | RegisterCredentialDefinitionReturnStateFinished
+    | RegisterCredentialDefinitionReturnStateFailed
+}
+
+export type IndyVdrRegisterCredentialDefinition =
+  | IndyVdrRegisterCredentialDefinitionInternalOptions
+  | IndyVdrRegisterCredentialDefinitionExternalCreateOptions
+  | IndyVdrRegisterCredentialDefinitionExternalSubmitOptions
+
+export type IndyVdrRegisterCredentialDefinitionOptions = IndyVdrRegisterCredentialDefinition['options']

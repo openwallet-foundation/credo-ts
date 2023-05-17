@@ -6,7 +6,7 @@ export interface AnonCredsOperationStateWait {
 
 export interface AnonCredsOperationStateAction {
   state: 'action'
-  action: 'endorseIndyTransaction'
+  action: string
 }
 
 export interface AnonCredsOperationStateFinished {

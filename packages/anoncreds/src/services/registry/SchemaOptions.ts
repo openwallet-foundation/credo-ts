@@ -36,7 +36,6 @@ export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationSta
 export interface RegisterSchemaReturnStateAction extends AnonCredsOperationStateAction {
   schema: AnonCredsSchema
   schemaId: string
-  schemaRequest: string
 }
 
 export interface RegisterSchemaReturnStateWait extends AnonCredsOperationStateWait {

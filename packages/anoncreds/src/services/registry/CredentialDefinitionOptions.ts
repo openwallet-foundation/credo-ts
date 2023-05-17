@@ -38,7 +38,6 @@ export interface RegisterCredentialDefinitionReturnStateWait extends AnonCredsOp
 export interface RegisterCredentialDefinitionReturnStateAction extends AnonCredsOperationStateAction {
   credentialDefinitionId: string
   credentialDefinition: AnonCredsCredentialDefinition
-  credentialDefinitionRequest: string
 }
 
 export interface RegisterCredentialDefinitionReturn {

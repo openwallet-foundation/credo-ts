@@ -1,8 +1,8 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type {
-  RegisterCredentialDefinitionOptionsIndyVdr,
-  RegisterSchemaOptionsIndyVdr,
+  IndyVdrRegisterSchemaOptions,
+  IndyVdrRegisterCredentialDefinitionOptions,
 } from '@aries-framework/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
@@ -146,7 +146,7 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
 
-    const { schemaState } = await this.agent.modules.anoncreds.registerSchema<RegisterSchemaOptionsIndyVdr>({
+    const { schemaState } = await this.agent.modules.anoncreds.registerSchema<IndyVdrRegisterSchemaOptions>({
       schema: schemaTemplate,
       options: {
         endorserMode: 'internal',
@@ -170,7 +170,7 @@ export class Faber extends BaseAgent {
 
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
     const { credentialDefinitionState } =
-      await this.agent.modules.anoncreds.registerCredentialDefinition<RegisterCredentialDefinitionOptionsIndyVdr>({
+      await this.agent.modules.anoncreds.registerCredentialDefinition<IndyVdrRegisterCredentialDefinitionOptions>({
         credentialDefinition: {
           schemaId,
           issuerId: this.anonCredsIssuerId,
