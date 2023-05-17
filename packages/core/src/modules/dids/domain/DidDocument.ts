@@ -3,13 +3,13 @@ import type { DidDocumentService } from './service'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { KeyType, Key } from '../../../crypto'
+import { Key, KeyType } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
 import { getKeyFromVerificationMethod } from './key-type'
-import { IndyAgentService, ServiceTransformer, DidCommV1Service, DidCommV2Service } from './service'
-import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, ServiceTransformer } from './service'
+import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
 export type DidPurpose =
   | 'authentication'
@@ -200,6 +200,14 @@ export class DidDocument {
     return recipientKeys
   }
 
+  public get agreementKeys(): Array<VerificationMethod> {
+    return (
+      this.keyAgreement?.map((keyAgreement) => {
+        return typeof keyAgreement === 'string' ? this.dereferenceVerificationMethod(keyAgreement) : keyAgreement
+      }) ?? []
+    )
+  }
+
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
@@ -251,22 +259,16 @@ export async function findVerificationMethodByKeyType(
 
 export function getAuthenticationKeys(didDocument: DidDocument) {
   return (
-    didDocument.authentication?.map((authentication) => {
-      const verificationMethod =
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
+    didDocument.authentication?.map((authentication) => getKeyFromDidDocumentKeyEntry(authentication, didDocument)) ??
+    []
   )
 }
 
 export function getAgreementKeys(didDocument: DidDocument) {
-  return (
-    didDocument.keyAgreement?.map((keyAgreement) => {
-      const verificationMethod =
-        typeof keyAgreement === 'string' ? didDocument.dereferenceVerificationMethod(keyAgreement) : keyAgreement
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
-  )
+  return didDocument.keyAgreement?.map((keyAgreement) => getKeyFromDidDocumentKeyEntry(keyAgreement, didDocument)) ?? []
+}
+
+function getKeyFromDidDocumentKeyEntry(key: string | VerificationMethod, didDocument: DidDocument): Key {
+  const verificationMethod = typeof key === 'string' ? didDocument.dereferenceVerificationMethod(key) : key
+  return getKeyFromVerificationMethod(verificationMethod)
 }

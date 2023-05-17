@@ -22,7 +22,7 @@ export interface ProtectedOptions {
   enc: string
   alg: string
   skid?: string
-  epk?: string
+  epk?: Record<string, unknown>
   apu?: string
   apv?: string
 }
@@ -32,7 +32,7 @@ export class Protected {
   public enc!: string
   public alg!: string
   public skid?: string
-  public epk?: string
+  public epk?: Record<string, unknown>
   public apu?: string
   public apv?: string
 
@@ -153,7 +153,7 @@ export class JweEnvelopeBuilder {
     return this
   }
 
-  public setEpk(epk: string): JweEnvelopeBuilder {
+  public setEpk(epk: Record<string, unknown>): JweEnvelopeBuilder {
     this.protected.epk = epk
     return this
   }
@@ -169,11 +169,11 @@ export class JweEnvelopeBuilder {
   }
 
   public apv(): Uint8Array {
-    return this.protected.apv ? Uint8Array.from(Buffer.from(this.protected.apv)) : Uint8Array.from([])
+    return this.protected.apv ? TypedArrayEncoder.fromBase64(this.protected.apv) : Uint8Array.from([])
   }
 
   public apu(): Uint8Array {
-    return this.protected.apu ? Uint8Array.from(Buffer.from(this.protected.apu)) : Uint8Array.from([])
+    return this.protected.apu ? TypedArrayEncoder.fromBase64(this.protected.apu) : Uint8Array.from([])
   }
 
   public alg(): Uint8Array {
