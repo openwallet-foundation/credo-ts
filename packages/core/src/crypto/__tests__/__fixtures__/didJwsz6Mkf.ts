@@ -1,5 +1,5 @@
 export const SEED = '00000000000000000000000000000My2'
-export const VERKEY = 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn'
+export const PUBLIC_KEY_BASE58 = 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn'
 
 export const DATA_JSON = {
   did: 'did',

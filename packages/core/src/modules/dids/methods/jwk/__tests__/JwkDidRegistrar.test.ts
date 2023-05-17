@@ -2,7 +2,7 @@ import type { Wallet } from '../../../../../wallet'
 
 import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { KeyType } from '../../../../../crypto'
-import { Key } from '../../../../../crypto/Key'
+import { getJwkFromJson } from '../../../../../crypto/jose/jwk'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { WalletError } from '../../../../../wallet/error'
@@ -13,15 +13,14 @@ import { JwkDidRegistrar } from '../JwkDidRegistrar'
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
+const jwk = getJwkFromJson({
+  crv: 'P-256',
+  kty: 'EC',
+  x: 'acbIQiuMs3i8_uszEjJ2tpTtRM4EU3yz91PH6CdH2V0',
+  y: '_KcyLj9vWMptnmKtm46GqDz8wf74I5LKgrl2GzH3nSE',
+})
 const walletMock = {
-  createKey: jest.fn(() =>
-    Key.fromJwk({
-      crv: 'P-256',
-      kty: 'EC',
-      x: 'acbIQiuMs3i8_uszEjJ2tpTtRM4EU3yz91PH6CdH2V0',
-      y: '_KcyLj9vWMptnmKtm46GqDz8wf74I5LKgrl2GzH3nSE',
-    })
-  ),
+  createKey: jest.fn(() => jwk.key),
 } as unknown as Wallet
 
 const didRepositoryMock = new DidRepositoryMock()

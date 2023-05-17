@@ -1,3 +1,4 @@
+import { getJwkFromJson } from '../../../../../crypto/jose/jwk'
 import { DidJwk } from '../DidJwk'
 
 import { p256DidJwkEyJjcnYi0iFixture } from './__fixtures__/p256DidJwkEyJjcnYi0i'
@@ -8,14 +9,14 @@ describe('DidJwk', () => {
     const documentTypes = [p256DidJwkEyJjcnYi0iFixture, x25519DidJwkEyJrdHkiOiJFixture]
 
     for (const documentType of documentTypes) {
-      const didKey = DidJwk.fromDid(documentType.id)
+      const didJwk = DidJwk.fromDid(documentType.id)
 
-      expect(didKey.didDocument.toJSON()).toMatchObject(documentType)
+      expect(didJwk.didDocument.toJSON()).toMatchObject(documentType)
     }
   })
 
   it('creates a DidJwk instance from a jwk instance', async () => {
-    const didJwk = DidJwk.fromJwk(p256DidJwkEyJjcnYi0iFixture.verificationMethod[0].publicKeyJwk)
+    const didJwk = DidJwk.fromJwk(getJwkFromJson(p256DidJwkEyJjcnYi0iFixture.verificationMethod[0].publicKeyJwk))
 
     expect(didJwk.did).toBe(p256DidJwkEyJjcnYi0iFixture.id)
     expect(didJwk.didDocument.toJSON()).toMatchObject(p256DidJwkEyJjcnYi0iFixture)

@@ -3,7 +3,8 @@ import type { VerificationMethod } from '../verificationMethod'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { Key, KeyType } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { KeyType } from '../../../../crypto/KeyType'
 
 export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018 = 'Ed25519VerificationKey2018'
 export const VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020 = 'Ed25519VerificationKey2020'
