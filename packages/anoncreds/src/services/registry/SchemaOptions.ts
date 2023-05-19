@@ -1,9 +1,10 @@
 import type {
-  AnonCredsResolutionMetadata,
-  Extensible,
+  AnonCredsOperationStateAction,
   AnonCredsOperationStateFailed,
   AnonCredsOperationStateFinished,
-  AnonCredsOperationState,
+  AnonCredsOperationStateWait,
+  AnonCredsResolutionMetadata,
+  Extensible,
 } from './base'
 import type { AnonCredsSchema } from '../../models/registry'
 
@@ -17,7 +18,6 @@ export interface GetSchemaReturn {
   schemaMetadata: Extensible
 }
 
-//
 export interface RegisterSchemaOptions {
   schema: AnonCredsSchema
   options: Extensible
@@ -33,14 +33,23 @@ export interface RegisterSchemaReturnStateFinished extends AnonCredsOperationSta
   schemaId: string
 }
 
-export interface RegisterSchemaReturnState extends AnonCredsOperationState {
+export interface RegisterSchemaReturnStateAction extends AnonCredsOperationStateAction {
+  schema: AnonCredsSchema
+  schemaId: string
+}
+
+export interface RegisterSchemaReturnStateWait extends AnonCredsOperationStateWait {
   schema?: AnonCredsSchema
   schemaId?: string
 }
 
 export interface RegisterSchemaReturn {
   jobId?: string
-  schemaState: RegisterSchemaReturnState | RegisterSchemaReturnStateFinished | RegisterSchemaReturnStateFailed
+  schemaState:
+    | RegisterSchemaReturnStateWait
+    | RegisterSchemaReturnStateAction
+    | RegisterSchemaReturnStateFinished
+    | RegisterSchemaReturnStateFailed
   schemaMetadata: Extensible
   registrationMetadata: Extensible
 }

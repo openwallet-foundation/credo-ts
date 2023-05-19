@@ -124,7 +124,7 @@ export class OpenId4VcClientService {
 
       if (jwtKeyAlgMapping[jwt.header.alg].includes(key.keyType)) {
         throw new AriesFrameworkError(
-          `The retreived key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`
+          `The retrieved key's type does't match the JWT algorithm. Key type: ${key.keyType}, JWT algorithm: ${jwt.header.alg}`
         )
       }
 

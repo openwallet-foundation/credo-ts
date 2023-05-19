@@ -2,12 +2,13 @@ import type { Key } from '@aries-framework/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
 import { parseIndyDid } from '@aries-framework/anoncreds'
-import { AgentContext, injectable, TypedArrayEncoder } from '@aries-framework/core'
+import { AgentContext, injectable } from '@aries-framework/core'
 import { CustomRequest } from '@hyperledger/indy-vdr-shared'
 
 import { verificationKeyForIndyDid } from './dids/didIndyUtil'
 import { IndyVdrError } from './error'
 import { IndyVdrPoolService } from './pool'
+import { multiSignRequest, signRequest } from './utils/sign'
 
 @injectable()
 export class IndyVdrApi {
@@ -24,26 +25,12 @@ export class IndyVdrApi {
     signingKey: Key,
     identifier: string
   ) {
-    const signature = await this.agentContext.wallet.sign({
-      data: TypedArrayEncoder.fromString(request.signatureInput),
-      key: signingKey,
-    })
-
-    request.setMultiSignature({
-      signature,
-      identifier,
-    })
-
-    return request
+    return multiSignRequest(this.agentContext, request, signingKey, identifier)
   }
 
   private async signRequest<Request extends IndyVdrRequest>(request: Request, submitterDid: string) {
-    const signingKey = await verificationKeyForIndyDid(this.agentContext, submitterDid)
-
     const { pool } = await this.indyVdrPoolService.getPoolForDid(this.agentContext, submitterDid)
-    const signedRequest = await pool.prepareWriteRequest(this.agentContext, request, signingKey)
-
-    return signedRequest
+    return signRequest(this.agentContext, pool, request, submitterDid)
   }
 
   /**

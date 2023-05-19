@@ -2,6 +2,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
 
+import { isDid } from '../../../utils'
 import { DidDocumentService } from '../../dids'
 
 export class OutOfBandDidCommService extends DidDocumentService {
@@ -44,7 +45,7 @@ function IsDidKeyString(validationOptions?: ValidationOptions): PropertyDecorato
     {
       name: 'isDidKeyString',
       validator: {
-        validate: (value): boolean => isString(value) && value.startsWith('did:key:'),
+        validate: (value): boolean => isString(value) && isDid(value, 'key'),
         defaultMessage: buildMessage(
           (eachPrefix) => eachPrefix + '$property must be a did:key string',
           validationOptions

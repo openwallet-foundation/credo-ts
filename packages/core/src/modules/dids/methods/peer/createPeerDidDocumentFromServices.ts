@@ -2,7 +2,8 @@ import type { ResolvedDidCommService } from '../../../didcomm'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { KeyType, Key } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { KeyType } from '../../../../crypto/KeyType'
 import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'

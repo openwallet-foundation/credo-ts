@@ -2,6 +2,7 @@ import type { DocumentLoader } from './jsonld'
 import type { AgentContext } from '../../../agent/context/AgentContext'
 
 import { AriesFrameworkError } from '../../../error/AriesFrameworkError'
+import { isDid } from '../../../utils'
 import { DidResolverService } from '../../dids'
 
 import jsonld from './jsonld'
@@ -13,7 +14,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
   const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
 
   async function loader(url: string) {
-    if (url.startsWith('did:')) {
+    if (isDid(url)) {
       const result = await didResolver.resolve(agentContext, url)
 
       if (result.didResolutionMetadata.error || !result.didDocument) {
