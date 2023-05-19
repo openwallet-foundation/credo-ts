@@ -27,6 +27,7 @@ import {
   DidExchangeResponseHandler,
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
+  ConnectionProblemReportHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import { ConnectionService } from './services/ConnectionService'
@@ -421,6 +422,7 @@ export class ConnectionsApi {
       new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
     )
     messageHandlerRegistry.registerMessageHandler(new AckMessageHandler(this.connectionService))
+    messageHandlerRegistry.registerMessageHandler(new ConnectionProblemReportHandler(this.connectionService))
     messageHandlerRegistry.registerMessageHandler(
       new TrustPingMessageHandler(this.trustPingService, this.connectionService)
     )
