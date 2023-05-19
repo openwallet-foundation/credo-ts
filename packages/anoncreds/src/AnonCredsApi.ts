@@ -2,7 +2,7 @@ import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
 } from './AnonCredsApiOptions'
-import type { AnonCredsSchema } from './models'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
 import type {
   AnonCredsRegistry,
   GetCredentialDefinitionReturn,
@@ -237,45 +237,31 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
+    let credentialDefinition: AnonCredsCredentialDefinition
+    let credentialDefinitionPrivate: Record<string, unknown> | undefined = undefined
+    let keyCorrectnessProof: Record<string, unknown> | undefined = undefined
+
     try {
-      // if the user has provided an endorsed transaction, just submit the transaction to the ledger
-      if (options.options.endorsedTransaction) {
-        const endorsedTransaction = options.options.endorsedTransaction as string
-        const operation = JSON.parse(endorsedTransaction)?.operation
-        const type = operation?.signature_type
-        const value = operation?.data
-
-        const result = await registry.registerCredentialDefinition(this.agentContext, {
-          credentialDefinition: { ...options.credentialDefinition, type, value },
-          options: options.options,
-        })
-
-        if (result.credentialDefinitionState.state === 'finished') {
-          await this.storeCredentialDefinitionRecord(registry, result)
+      if (isFullCredentialDefinitionInput(options.credentialDefinition)) {
+        credentialDefinition = options.credentialDefinition
+      } else {
+        // If the input credential definition is not a full credential definition, we need to create one first
+        // There's a caveat to when the input contains a full credential, that the credential definition private
+        // and key correctness proof must already be stored in the wallet
+        const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
+        if (!schemaRegistry) {
+          failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
+          return failedReturnBase
         }
-        return result
-      }
-    } catch (error) {
-      failedReturnBase.credentialDefinitionState.reason = `Error registering credential definition: ${error.message}`
-      return failedReturnBase
-    }
 
-    const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
-    if (!schemaRegistry) {
-      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
-      return failedReturnBase
-    }
+        const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
 
-    try {
-      const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
+        if (!schemaResult.schema) {
+          failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
+          return failedReturnBase
+        }
 
-      if (!schemaResult.schema) {
-        failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-        return failedReturnBase
-      }
-
-      const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
-        await this.anonCredsIssuerService.createCredentialDefinition(
+        const createCredentialDefinitionResult = await this.anonCredsIssuerService.createCredentialDefinition(
           this.agentContext,
           {
             issuerId: options.credentialDefinition.issuerId,
@@ -290,12 +276,18 @@ export class AnonCredsApi {
           }
         )
 
+        credentialDefinition = createCredentialDefinitionResult.credentialDefinition
+        credentialDefinitionPrivate = createCredentialDefinitionResult.credentialDefinitionPrivate
+        keyCorrectnessProof = createCredentialDefinitionResult.keyCorrectnessProof
+      }
+
       const result = await registry.registerCredentialDefinition(this.agentContext, {
         credentialDefinition,
         options: options.options,
       })
 
-      // Once a credential definition is created, the credential definition private and the key correctness proof must be stored because they change even if they the credential is recreated with the same arguments. To avoid having unregistered credential definitions in the wallet, the credential definitions itself are stored only when the credential definition status is finished, meaning that the credential definition has been successfully registered.
+      // Once a credential definition is created, the credential definition private and the key correctness proof must be stored because they change even if they the credential is recreated with the same arguments.
+      // To avoid having unregistered credential definitions in the wallet, the credential definitions itself are stored only when the credential definition status is finished, meaning that the credential definition has been successfully registered.
       await this.storeCredentialDefinitionPrivateAndKeyCorrectnessRecord(
         result,
         credentialDefinitionPrivate,
@@ -427,7 +419,9 @@ export class AnonCredsApi {
         await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
       }
     } catch (error) {
-      throw new AnonCredsStoreRecordError(`Error storing credential definition records`, { cause: error })
+      throw new AnonCredsStoreRecordError(`Error storing credential definition key-correctness-proof and private`, {
+        cause: error,
+      })
     }
   }
 
@@ -503,4 +497,10 @@ interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensibl
 interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {
   schema: AnonCredsSchema
   options: T
+}
+
+function isFullCredentialDefinitionInput(
+  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+): credentialDefinition is AnonCredsCredentialDefinition {
+  return 'value' in credentialDefinition
 }
