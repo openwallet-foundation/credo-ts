@@ -1,7 +1,12 @@
 export type Extensible = Record<string, unknown>
 
-export interface AnonCredsOperationState {
-  state: 'action' | 'wait'
+export interface AnonCredsOperationStateWait {
+  state: 'wait'
+}
+
+export interface AnonCredsOperationStateAction {
+  state: 'action'
+  action: string
 }
 
 export interface AnonCredsOperationStateFinished {
