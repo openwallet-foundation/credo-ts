@@ -1,4 +1,4 @@
-import type { Jwk } from '../../../../crypto'
+import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
 
 import { IsString, IsOptional } from 'class-validator'
 
@@ -8,7 +8,7 @@ export interface VerificationMethodOptions {
   controller: string
   publicKeyBase58?: string
   publicKeyBase64?: string
-  publicKeyJwk?: Jwk
+  publicKeyJwk?: JwkJson
   publicKeyHex?: string
   publicKeyMultibase?: string
   publicKeyPem?: string
@@ -51,7 +51,7 @@ export class VerificationMethod {
   public publicKeyBase64?: string
 
   // TODO: validation of JWK
-  public publicKeyJwk?: Jwk
+  public publicKeyJwk?: JwkJson
 
   @IsOptional()
   @IsString()

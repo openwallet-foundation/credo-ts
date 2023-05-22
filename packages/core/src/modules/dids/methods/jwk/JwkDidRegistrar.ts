@@ -4,6 +4,7 @@ import type { Buffer } from '../../../../utils'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
+import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRepository, DidRecord } from '../../repository'
 
@@ -37,7 +38,8 @@ export class JwkDidRegistrar implements DidRegistrar {
         privateKey,
       })
 
-      const didJwk = DidJwk.fromJwk(key.toJwk())
+      const jwk = getJwkFromKey(key)
+      const didJwk = DidJwk.fromJwk(jwk)
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({

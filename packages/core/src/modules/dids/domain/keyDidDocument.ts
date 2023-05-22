@@ -1,7 +1,8 @@
 import type { DidDocument } from './DidDocument'
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
-import { KeyType, Key } from '../../../crypto'
+import { Key } from '../../../crypto/Key'
+import { KeyType } from '../../../crypto/KeyType'
 import { AriesFrameworkError } from '../../../error'
 import { SECURITY_CONTEXT_BBS_URL, SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
 import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/signature-suites/ed25519/constants'
