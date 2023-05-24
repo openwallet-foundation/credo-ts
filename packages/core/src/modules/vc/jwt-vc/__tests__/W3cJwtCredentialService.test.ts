@@ -6,7 +6,7 @@ import { JwsService, KeyType, SigningProviderRegistry } from '../../../../crypto
 import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
 import { getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { AriesFrameworkError, ClassValidationError } from '../../../../error'
-import { JsonTransformer, MessageValidator } from '../../../../utils'
+import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidsModuleConfig } from '../../../dids'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { W3cCredential, W3cPresentation } from '../../models'
