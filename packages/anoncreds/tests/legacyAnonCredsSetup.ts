@@ -27,10 +27,10 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
+import { anoncreds } from '../../anoncreds-rs/tests/helpers'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
