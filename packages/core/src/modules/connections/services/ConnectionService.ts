@@ -431,6 +431,11 @@ export class ConnectionService {
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
     await this.update(messageContext.agentContext, connectionRecord)
+
+    // Marking connection as abandoned in case of problem report from issuer agent
+    // TODO: Can be conditionally abandoned - Like if another user is scanning already used connection invite where issuer will send invite-already-used problem code.
+    await this.updateState(messageContext.agentContext, connectionRecord, DidExchangeState.Abandoned)
+
     return connectionRecord
   }
 
