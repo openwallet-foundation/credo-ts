@@ -1,5 +1,6 @@
 import type { JwkJson } from './Jwk'
 import type { Buffer } from '../../../utils'
+import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
 import { TypedArrayEncoder } from '../../../utils'
 import { KeyType } from '../../KeyType'
@@ -10,6 +11,10 @@ import { Jwk } from './Jwk'
 import { hasKty, hasCrv, hasX, hasValidUse } from './validate'
 
 export class Ed25519Jwk extends Jwk {
+  public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
+  public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.EdDSA]
+  public static readonly keyType = KeyType.Ed25519
+
   public readonly x: string
 
   public constructor({ x }: { x: string }) {
@@ -26,20 +31,20 @@ export class Ed25519Jwk extends Jwk {
     return JwaCurve.Ed25519 as const
   }
 
-  public get keyType() {
-    return KeyType.Ed25519
-  }
-
   public get publicKey() {
     return TypedArrayEncoder.fromBase64(this.x)
   }
 
+  public get keyType() {
+    return Ed25519Jwk.keyType
+  }
+
   public get supportedEncryptionAlgorithms() {
-    return []
+    return Ed25519Jwk.supportedEncryptionAlgorithms
   }
 
   public get supportedSignatureAlgorithms() {
-    return [JwaSignatureAlgorithm.EdDSA]
+    return Ed25519Jwk.supportedSignatureAlgorithms
   }
 
   public toJson() {

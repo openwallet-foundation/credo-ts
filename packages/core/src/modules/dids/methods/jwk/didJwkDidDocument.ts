@@ -3,7 +3,7 @@ import type { DidJwk } from './DidJwk'
 import { AriesFrameworkError } from '../../../../error'
 import { JsonEncoder } from '../../../../utils'
 import { SECURITY_JWS_CONTEXT_URL } from '../../../vc/constants'
-import { getJsonWebKey2020VerificationMethod, DidDocumentBuilder } from '../../domain'
+import { getJsonWebKey2020, DidDocumentBuilder } from '../../domain'
 import { parseDid } from '../../domain/parse'
 
 export function getDidJwkDocument(didJwk: DidJwk) {
@@ -14,7 +14,7 @@ export function getDidJwkDocument(didJwk: DidJwk) {
   const parsed = parseDid(didJwk.did)
   const jwkJson = JsonEncoder.fromBase64(parsed.id)
 
-  const verificationMethod = getJsonWebKey2020VerificationMethod({
+  const verificationMethod = getJsonWebKey2020({
     did: didJwk.did,
     jwk: jwkJson,
     verificationMethodId: `${didJwk.did}#0`,

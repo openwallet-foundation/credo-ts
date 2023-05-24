@@ -87,3 +87,13 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
 
   return keyDid.getKeyFromVerificationMethod(verificationMethod)
 }
+
+export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType) {
+  const keyDid = keyDidMapping[keyType]
+
+  if (!keyDid) {
+    throw new Error(`Unsupported key did from key type '${keyType}'`)
+  }
+
+  return keyDid.supportedVerificationMethodTypes
+}

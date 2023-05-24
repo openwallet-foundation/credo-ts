@@ -1,29 +1,29 @@
-import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository'
-import type { AgentContext, Wallet } from '@aries-framework/core'
+import type { W3cCredentialRepository } from '../../core/src/modules/vc/repository/W3cCredentialRepository'
+import type { AgentContext, W3cJwtCredentialService, Wallet } from '@aries-framework/core'
 
 import {
+  W3cCredentialService,
+  W3cJsonLdVerifiablePresentation,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   KeyType,
   JsonTransformer,
   DidKey,
   SigningProviderRegistry,
-  W3cVerifiableCredential,
-  W3cCredentialService,
   W3cCredential,
   CredentialIssuancePurpose,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
-  orArrayToArray,
   vcLibraries,
-  LinkedDataProof,
   W3cPresentation,
-  W3cVerifiablePresentation,
   Ed25519Signature2018,
   TypedArrayEncoder,
+  W3cJsonLdVerifiableCredential,
 } from '@aries-framework/core'
 
-import { SignatureSuiteRegistry } from '../../core/src/modules/vc/SignatureSuiteRegistry'
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
-import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
+import { SignatureSuiteRegistry } from '../../core/src/modules/vc/data-integrity/SignatureSuiteRegistry'
+import { W3cJsonLdCredentialService } from '../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
+import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
+import { LinkedDataProof } from '../../core/src/modules/vc/data-integrity/models/LinkedDataProof'
 import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { IndySdkWallet } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
@@ -63,6 +63,7 @@ const agentConfig = getAgentConfig('BbsSignaturesE2eTest')
 describeSkipNode17And18('BBS W3cCredentialService', () => {
   let wallet: Wallet
   let agentContext: AgentContext
+  let w3cJsonLdCredentialService: W3cJsonLdCredentialService
   let w3cCredentialService: W3cCredentialService
   const seed = TypedArrayEncoder.fromString('testseed000000000000000000000001')
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
@@ -74,12 +75,16 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
       agentConfig,
       wallet,
     })
-    w3cCredentialService = new W3cCredentialService(
-      {} as unknown as W3cCredentialRepository,
+    w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
       signatureSuiteRegistry,
       new W3cCredentialsModuleConfig({
         documentLoader: customDocumentLoader,
       })
+    )
+    w3cCredentialService = new W3cCredentialService(
+      {} as unknown as W3cCredentialRepository,
+      w3cJsonLdCredentialService,
+      {} as unknown as W3cJwtCredentialService
     )
   })
 
@@ -90,11 +95,11 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   describe('Utility methods', () => {
     describe('getKeyTypesByProofType', () => {
       it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
-        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignature2020')
+        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('BbsBlsSignature2020')
         expect(keyTypes).toEqual([KeyType.Bls12381g2])
       })
       it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
-        const keyTypes = w3cCredentialService.getKeyTypesByProofType('BbsBlsSignatureProof2020')
+        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('BbsBlsSignatureProof2020')
         expect(keyTypes).toEqual([KeyType.Bls12381g2])
       })
     })
@@ -102,12 +107,12 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
     describe('getVerificationMethodTypesByProofType', () => {
       it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
         const verificationMethodTypes =
-          w3cCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignature2020')
+          w3cJsonLdCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignature2020')
         expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020])
       })
       it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
         const verificationMethodTypes =
-          w3cCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignatureProof2020')
+          w3cJsonLdCredentialService.getVerificationMethodTypesByProofType('BbsBlsSignatureProof2020')
         expect(verificationMethodTypes).toEqual([VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020])
       })
     })
@@ -130,13 +135,14 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        const vc = await w3cCredentialService.signCredential(agentContext, {
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: 'ldp_vc',
           credential,
           proofType: 'BbsBlsSignature2020',
           verificationMethod: verificationMethod,
         })
 
-        expect(vc).toBeInstanceOf(W3cVerifiableCredential)
+        expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)
         expect(vc.issuer).toEqual(issuerDidKey.did)
         expect(Array.isArray(vc.proof)).toBe(false)
         expect(vc.proof).toBeInstanceOf(LinkedDataProof)
@@ -148,15 +154,15 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
     describe('verifyCredential', () => {
       it('should verify the credential successfully', async () => {
-        const result = await w3cCredentialService.verifyCredential(agentContext, {
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, {
           credential: JsonTransformer.fromJSON(
             BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED,
-            W3cVerifiableCredential
+            W3cJsonLdVerifiableCredential
           ),
           proofPurpose: new purposes.AssertionProofPurpose(),
         })
 
-        expect(result.verified).toEqual(true)
+        expect(result.isValid).toEqual(true)
       })
     })
 
@@ -164,7 +170,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
       it('should derive proof successfully', async () => {
         const credentialJson = BbsBlsSignature2020Fixtures.TEST_LD_DOCUMENT_SIGNED
 
-        const vc = JsonTransformer.fromJSON(credentialJson, W3cVerifiableCredential)
+        const vc = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)
 
         const revealDocument = {
           '@context': [
@@ -182,14 +188,14 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
           },
         }
 
-        const result = await w3cCredentialService.deriveProof(agentContext, {
+        const result = await w3cJsonLdCredentialService.deriveProof(agentContext, {
           credential: vc,
           revealDocument: revealDocument,
           verificationMethod: verificationMethod,
         })
 
-        // result.proof = result.proof as LinkedDataProof
-        expect(orArrayToArray(result.proof)[0].verificationMethod).toBe(
+        result.proof = result.proof as LinkedDataProof
+        expect(result.proof.verificationMethod).toBe(
           'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN#zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y2cgguc8e9hsGBifnVK67pQ4gve3m6iSboDkmJjxVEb1d6mRAx5fpMAejooNzNqqbTMVeUN'
         )
       })
@@ -197,17 +203,23 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
 
     describe('verifyDerived', () => {
       it('should verify the derived proof successfully', async () => {
-        const result = await w3cCredentialService.verifyCredential(agentContext, {
-          credential: JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential),
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, {
+          credential: JsonTransformer.fromJSON(
+            BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED,
+            W3cJsonLdVerifiableCredential
+          ),
           proofPurpose: new purposes.AssertionProofPurpose(),
         })
-        expect(result.verified).toEqual(true)
+        expect(result.isValid).toEqual(true)
       })
     })
 
     describe('createPresentation', () => {
       it('should create a presentation successfully', async () => {
-        const vc = JsonTransformer.fromJSON(BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED, W3cVerifiableCredential)
+        const vc = JsonTransformer.fromJSON(
+          BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED,
+          W3cJsonLdVerifiableCredential
+        )
         const result = await w3cCredentialService.createPresentation({ credentials: vc })
 
         expect(result).toBeInstanceOf(W3cPresentation)
@@ -236,15 +248,16 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
           date: new Date().toISOString(),
         })
 
-        const verifiablePresentation = await w3cCredentialService.signPresentation(agentContext, {
+        const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
+          format: 'ldp_vp',
           presentation: presentation,
-          purpose: purpose,
-          signatureType: 'Ed25519Signature2018',
+          proofPurpose: purpose,
+          proofType: 'Ed25519Signature2018',
           challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
           verificationMethod: verificationMethod,
         })
 
-        expect(verifiablePresentation).toBeInstanceOf(W3cVerifiablePresentation)
+        expect(verifiablePresentation).toBeInstanceOf(W3cJsonLdVerifiablePresentation)
       })
     })
 
@@ -252,15 +265,15 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
       it('should successfully verify a presentation containing a single verifiable credential bbs', async () => {
         const vp = JsonTransformer.fromJSON(
           BbsBlsSignature2020Fixtures.TEST_VP_DOCUMENT_SIGNED,
-          W3cVerifiablePresentation
+          W3cJsonLdVerifiablePresentation
         )
 
-        const result = await w3cCredentialService.verifyPresentation(agentContext, {
+        const result = await w3cJsonLdCredentialService.verifyPresentation(agentContext, {
           presentation: vp,
           challenge: 'e950bfe5-d7ec-4303-ad61-6983fb976ac9',
         })
 
-        expect(result.verified).toBe(true)
+        expect(result.isValid).toBe(true)
       })
     })
   })

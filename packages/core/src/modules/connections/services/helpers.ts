@@ -3,8 +3,7 @@ import type { DidDoc, PublicKey } from '../models'
 
 import { Key, KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
-import { IndyAgentService, DidCommV1Service, DidDocumentBuilder } from '../../dids'
-import { getEd25519VerificationMethod } from '../../dids/domain/key-type/ed25519'
+import { IndyAgentService, DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../dids'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { EmbeddedAuthentication } from '../models'
 
@@ -100,7 +99,7 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   }
   const publicKeyBase58 = publicKey.value
   const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
-  return getEd25519VerificationMethod({
+  return getEd25519VerificationKey2018({
     id: `#${publicKeyBase58.slice(0, 8)}`,
     key: ed25519Key,
     controller: '#id',

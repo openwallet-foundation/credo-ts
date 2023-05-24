@@ -1,13 +1,13 @@
 import type { JsonObject } from '../../../../types'
 import type { SingleOrArray } from '../../../../utils'
-import type { IssuerOptions } from '../../../vc/models/credential/Issuer'
+import type { W3cIssuerOptions } from '../../../vc/models/credential/W3cIssuer'
 import type { CredentialFormat } from '../CredentialFormat'
 
 export interface JsonCredential {
   '@context': Array<string> | JsonObject
   id?: string
   type: Array<string>
-  issuer: string | IssuerOptions
+  issuer: string | W3cIssuerOptions
   issuanceDate: string
   expirationDate?: string
   credentialSubject: SingleOrArray<JsonObject>

@@ -4,7 +4,7 @@ import { Agent, KeyType, TypedArrayEncoder, W3cCredentialRecord, W3cCredentialsM
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { didKeyToInstanceOfKey } from '../../core/src/modules/dids/helpers'
-import { customDocumentLoader } from '../../core/src/modules/vc/__tests__/documentLoader'
+import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { getAgentOptions, indySdk } from '../../core/tests'
 import { IndySdkModule } from '../../indy-sdk/src'
 
@@ -87,7 +87,7 @@ describe('OpenId4VcClient', () => {
       const w3cCredentialRecord = await agent.modules.openId4VcClient.requestCredentialUsingPreAuthorizedCode({
         issuerUri,
         kid,
-        verifyRevocationState: false,
+        verifyCredentialStatus: false,
       })
 
       expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
@@ -221,7 +221,7 @@ describe('OpenId4VcClient', () => {
         clientId: clientId,
         authorizationCode: 'test-code',
         codeVerifier: codeVerifier,
-        verifyRevocationState: false,
+        verifyCredentialStatus: false,
         kid: kid,
         issuerUri: initiationUri,
         redirectUri: redirectUri,

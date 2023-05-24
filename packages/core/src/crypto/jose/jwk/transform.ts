@@ -1,5 +1,6 @@
 import type { JwkJson, Jwk } from './Jwk'
 import type { Key } from '../../Key'
+import type { JwaSignatureAlgorithm } from '../jwa'
 
 import { KeyType } from '../../KeyType'
 import { JwaCurve, JwaKeyType } from '../jwa'
@@ -10,6 +11,8 @@ import { P384Jwk } from './P384Jwk'
 import { P521Jwk } from './P521Jwk'
 import { X25519Jwk } from './X25519Jwk'
 import { hasCrv } from './validate'
+
+const JwkClasses = [Ed25519Jwk, P256Jwk, P384Jwk, P521Jwk, X25519Jwk] as const
 
 export function getJwkFromJson(jwkJson: JwkJson): Jwk {
   if (jwkJson.kty === JwaKeyType.OKP) {
@@ -35,4 +38,8 @@ export function getJwkFromKey(key: Key) {
   if (key.keyType === KeyType.P521) return P521Jwk.fromPublicKey(key.publicKey)
 
   throw new Error(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
+}
+
+export function getJwkClassFromJwaSignatureAlgorithm(alg: JwaSignatureAlgorithm | string) {
+  return JwkClasses.find((jwkClass) => jwkClass.supportedSignatureAlgorithms.includes(alg as JwaSignatureAlgorithm))
 }

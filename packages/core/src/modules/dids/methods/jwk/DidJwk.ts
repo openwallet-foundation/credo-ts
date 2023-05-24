@@ -30,6 +30,11 @@ export class DidJwk {
     return new DidJwk(did)
   }
 
+  // FIXME: is this the correct name?
+  public get keyReference() {
+    return `${this.did}#0`
+  }
+
   public static fromJwk(jwk: Jwk) {
     const did = `did:jwk:${JsonEncoder.toBase64URL(jwk.toJson())}`
 
