@@ -3,9 +3,7 @@
   "main": "build/index",
   "types": "build/index",
   "version": "0.3.3",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
@@ -25,7 +23,8 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.3.3",
-    "@sphereon/openid4vci-client": "^0.4.0",
+    "@sphereon/oid4vci-client": "file:../../../OID4VCI/packages/client",
+    "@sphereon/oid4vci-common": "file:../../../OID4VCI/packages/common",
     "@stablelib/random": "^1.0.2"
   },
   "devDependencies": {

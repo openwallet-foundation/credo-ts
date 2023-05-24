@@ -1,5 +1,13 @@
-export const getMetadataResponse = {
+export const PRE_AUTHORIZED_OPENID_CREDENTIAL_OFFER =
+  'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22credentialDefinition%22%3A%7B%22%40context%22%3A%5B%22some_context%22%5D%2C%22types%22%3A%5B%22type_one%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22ABC%22%7D%7D%7D'
+
+export const AUTHORIZED_OPENID_CREDENTIAL_OFFER =
+  'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22credentialDefinition%22%3A%7B%22%40context%22%3A%5B%22some_context%22%5D%2C%22types%22%3A%5B%22type_one%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22authorization-code%22%3A%7B%7D%7D%7D'
+
+export const CREDENTIAL_ISSUER_METADATA = {
+  credential_issuer: 'https://launchpad.vii.electron.mattrlabs.io',
   authorization_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/authorize',
+  credential_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/credential',
   token_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/token',
   jwks_uri: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/jwks',
   token_endpoint_auth_methods_supported: [
@@ -15,63 +23,50 @@ export const getMetadataResponse = {
   response_types_supported: ['code id_token', 'code', 'id_token', 'none'],
   scopes_supported: ['OpenBadgeCredential', 'AcademicAward', 'LearnerProfile', 'PermanentResidentCard'],
   token_endpoint_auth_signing_alg_values_supported: ['HS256', 'RS256', 'PS256', 'ES256', 'EdDSA'],
-  credential_endpoint: 'https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/credential',
-  credentials_supported: {
-    OpenBadgeCredential: {
-      formats: {
-        ldp_vc: {
-          name: 'JFF x vc-edu PlugFest 2',
-          description: "MATTR's submission for JFF Plugfest 2",
-          types: ['OpenBadgeCredential'],
-          binding_methods_supported: ['did'],
-          cryptographic_suites_supported: ['Ed25519Signature2018'],
-        },
-      },
+  credentials_supported: [
+    {
+      format: 'ldp_vc',
+      id: 'OpenBadgeCredential',
+      name: 'JFF x vc-edu PlugFest 2',
+      types: ['OpenBadgeCredential'],
+      cryptographic_binding_methods_supported: ['did:key', 'did:web', 'did:jwk'],
+      cryptographic_suites_supported: ['Ed25519Signature2018'],
     },
-    AcademicAward: {
-      formats: {
-        ldp_vc: {
-          name: 'Example Academic Award',
-          description: 'Microcredential from the MyCreds Network.',
-          types: ['AcademicAward'],
-          binding_methods_supported: ['did'],
-          cryptographic_suites_supported: ['Ed25519Signature2018'],
-        },
-      },
+    {
+      format: 'ldp_vc',
+      id: 'AcademicAward',
+      name: 'Example Academic Award',
+      types: ['AcademicAward'],
+      cryptographic_binding_methods_supported: ['did:key', 'did:web', 'did:jwk'],
+      cryptographic_suites_supported: ['Ed25519Signature2018'],
     },
-    LearnerProfile: {
-      formats: {
-        ldp_vc: {
-          name: 'Digitary Learner Profile',
-          description: 'Example',
-          types: ['LearnerProfile'],
-          binding_methods_supported: ['did'],
-          cryptographic_suites_supported: ['Ed25519Signature2018'],
-        },
-      },
+    {
+      format: 'ldp_vc',
+      id: 'LearnerProfile',
+      name: 'Digitary Learner Profile',
+      types: ['LearnerProfile'],
+      cryptographic_binding_methods_supported: ['did:key', 'did:web', 'did:jwk'],
+      cryptographic_suites_supported: ['Ed25519Signature2018'],
     },
-    PermanentResidentCard: {
-      formats: {
-        ldp_vc: {
-          name: 'Permanent Resident Card',
-          description: 'Government of Kakapo',
-          types: ['PermanentResidentCard'],
-          binding_methods_supported: ['did'],
-          cryptographic_suites_supported: ['Ed25519Signature2018'],
-        },
-      },
+    {
+      format: 'ldp_vc',
+      id: 'PermanentResidentCard',
+      name: 'Permanent Resident Card',
+      types: ['PermanentResidentCard'],
+      cryptographic_binding_methods_supported: ['did:key', 'did:web', 'did:jwk'],
+      cryptographic_suites_supported: ['Ed25519Signature2018'],
     },
-  },
+  ],
 }
 
-export const acquireAccessTokenResponse = {
+export const ACCESS_TOKEN_RESPONSE = {
   access_token: '7nikUotMQefxn7oRX56R7MDNE7KJTGfwGjOkHzGaUIG',
   expires_in: 3600,
   scope: 'OpenBadgeCredential',
   token_type: 'Bearer',
 }
 
-export const credentialRequestResponse = {
+export const CREDENTIAL_REQUEST_RESPONSE = {
   format: 'w3cvc-jsonld',
   credential: {
     type: ['VerifiableCredential', 'VerifiableCredentialExtension', 'OpenBadgeCredential'],

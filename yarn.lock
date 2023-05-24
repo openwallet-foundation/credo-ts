@@ -2334,15 +2334,30 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/openid4vci-client@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@sphereon/openid4vci-client/-/openid4vci-client-0.4.0.tgz#f48c2bb42041b9eab13669de23ba917785c83b24"
-  integrity sha512-N9ytyV3DHAjBjd67jMowmBMmD9/4Sxkehsrpd1I9Hxg5TO1K+puUPsPXj8Zh4heIWSzT5xBsGTSqXdF0LlrDwQ==
+"@sphereon/oid4vci-client@file:../OID4VCI/packages/client":
+  version "0.5.0"
   dependencies:
+    "@sphereon/oid4vci-common" "workspace:*"
     "@sphereon/ssi-types" "^0.9.0"
     cross-fetch "^3.1.5"
     debug "^4.3.4"
     uint8arrays "^3.1.1"
+
+"@sphereon/oid4vci-common@file:../OID4VCI/packages/common":
+  version "0.5.0"
+  dependencies:
+    "@sphereon/ssi-types" "^0.9.0"
+    cross-fetch "^3.1.6"
+    jwt-decode "^3.1.2"
+
+"@sphereon/oid4vci-common@workspace:*":
+  version "0.4.1-unstable.253"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.4.1-unstable.253.tgz#66a8aff00dc7ff9c37f7a8b089e1f12a33299f19"
+  integrity sha512-16S/is08A/mo6kgKBtY9h5Uu/mCz07b3qygWjM6gxc5qpn/X2DMGrl73lFiQc2zS/pPJjBWAHEAg+J4MoXWTvw==
+  dependencies:
+    "@sphereon/ssi-types" "^0.9.0"
+    cross-fetch "^3.1.6"
+    jwt-decode "^3.1.2"
 
 "@sphereon/ssi-types@^0.9.0":
   version "0.9.0"
@@ -4528,6 +4543,13 @@ cross-fetch@^3.1.5:
   integrity sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==
   dependencies:
     node-fetch "2.6.7"
+
+cross-fetch@^3.1.6:
+  version "3.1.6"
+  resolved "https://registry.yarnpkg.com/cross-fetch/-/cross-fetch-3.1.6.tgz#bae05aa31a4da760969756318feeee6e70f15d6c"
+  integrity sha512-riRvo06crlE8HiqOwIpQhxwdOk4fOeR7FVM/wXoxchFEqMNUjvbs3bfo4OTgMEMHzppd4DxFBDbyySj8Cv781g==
+  dependencies:
+    node-fetch "^2.6.11"
 
 cross-spawn@^6.0.0:
   version "6.0.5"
@@ -8881,6 +8903,13 @@ node-fetch@^2.2.0, node-fetch@^2.6.0, node-fetch@^2.6.1, node-fetch@^2.6.7:
   version "2.6.9"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.9.tgz#7c7f744b5cc6eb5fd404e0c7a9fec630a55657e6"
   integrity sha512-DJm/CJkZkRjKKj4Zi4BsKVZh3ValV5IR5s7LVZnW+6YMh0W1BfNA8XSs6DLMGYlId5F3KnA70uu2qepcR08Qqg==
+  dependencies:
+    whatwg-url "^5.0.0"
+
+node-fetch@^2.6.11:
+  version "2.6.11"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.11.tgz#cde7fc71deef3131ef80a738919f999e6edfff25"
+  integrity sha512-4I6pdBY1EthSqDmJkiNk3JIT8cswwR9nfeW/cPdUagJYEQG7R95WRH74wpz7ma8Gh/9dI9FP+OU+0E4FvtA55w==
   dependencies:
     whatwg-url "^5.0.0"
 

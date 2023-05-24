@@ -1,5 +1,5 @@
 import type { AgentContext } from '@aries-framework/core'
-import type { AccessTokenResponse, EndpointMetadata, Jwt } from '@sphereon/openid4vci-client'
+import type { AccessTokenResponse, EndpointMetadata, Jwt } from '@sphereon/oid4vci-common'
 
 import {
   AriesFrameworkError,
@@ -19,18 +19,13 @@ import {
   W3cCredentialService,
   W3cVerifiableCredential,
 } from '@aries-framework/core'
-import {
-  Alg,
-  AuthzFlowType,
-  CodeChallengeMethod,
-  CredentialRequestClientBuilder,
-  OpenID4VCIClient,
-  ProofOfPossessionBuilder,
-} from '@sphereon/openid4vci-client'
+import { Alg, AuthzFlowType, CodeChallengeMethod } from '@sphereon/oid4vci-common'
+import { CredentialRequestClientBuilder, OpenID4VCIClient, ProofOfPossessionBuilder } from '@sphereon/oid4vci-client'
 import { randomStringForEntropy } from '@stablelib/random'
 
 export interface PreAuthCodeFlowOptions {
-  issuerUri: string
+  clientId: string
+  openidCredentialOffer: string
   kid: string
   verifyRevocationState: boolean
 }
@@ -43,8 +38,8 @@ export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
 }
 
 export enum AuthFlowType {
-  AuthorizationCodeFlow,
-  PreAuthorizedCodeFlow,
+  AuthorizationCodeFlow = 'authorized code flow',
+  PreAuthorizedCodeFlow = 'pre-authorized code flow',
 }
 
 export type RequestCredentialOptions = { flowType: AuthFlowType } & PreAuthCodeFlowOptions &
@@ -54,7 +49,7 @@ export type RequestCredentialOptions = { flowType: AuthFlowType } & PreAuthCodeF
 // because we assume it will always be SHA256
 // as clear text code_challenges are unsafe
 export interface GenerateAuthorizationUrlOptions {
-  initiationUri: string
+  openidCredentialOffer: string
   clientId: string
   redirectUri: string
   scope?: string[]
@@ -77,7 +72,11 @@ export class OpenId4VcClientService {
   }
 
   private signCallback(agentContext: AgentContext) {
-    return async (jwt: Jwt, kid: string) => {
+    return async (jwt: Jwt, kid?: string) => {
+      if (!kid) {
+        throw new AriesFrameworkError('Kid is not defined')
+      }
+
       if (!jwt.header) {
         throw new AriesFrameworkError('No header present on JWT')
       }
@@ -85,6 +84,7 @@ export class OpenId4VcClientService {
       if (!jwt.payload) {
         throw new AriesFrameworkError('No payload present on JWT')
       }
+
       if (!kid.startsWith('did:')) {
         throw new AriesFrameworkError(`kid '${kid}' is not a valid did. Only dids are supported as kid.`)
       }
@@ -134,6 +134,7 @@ export class OpenId4VcClientService {
         protectedHeaderOptions: {
           alg: jwt.header.alg,
           kid: jwt.header.kid,
+          typ: jwt.header.typ,
         },
       })
 
@@ -147,18 +148,26 @@ export class OpenId4VcClientService {
     }
   }
 
-  private assertCredentialHasFormat(format: string, scope: string, metadata: EndpointMetadata) {
-    if (!metadata.openid4vci_metadata) {
+  private assertCredentialHasFormat(supportedFormats: Array<string>, scope: string, metadata: EndpointMetadata) {
+    if (!metadata.issuerMetadata) {
       throw new AriesFrameworkError(
-        `Server metadata doesn't include OpenID4VCI metadata. Unable to verify if the issuer supports the requested credential format: ${format}`
+        `Server metadata doesn't include OpenID4VCI metadata. Unable to verify if the issuer supports the requested credential format: ${supportedFormats}`
       )
     }
 
-    const supportedFomats = Object.keys(metadata.openid4vci_metadata?.credentials_supported[scope].formats)
+    const supportedCredentialsFromScope = metadata.issuerMetadata.credentials_supported.filter((c) => c.id === scope)
 
-    if (!supportedFomats.includes(format)) {
+    if (supportedCredentialsFromScope.length === 0) {
+      throw new AriesFrameworkError(`Issuer doesn't support the requested credential type '${scope}'`)
+    }
+
+    const supportedFomatsFromMetadata = supportedCredentialsFromScope.map((c) => c.format)
+
+    if (!supportedFormats.some((s) => supportedFormats.includes(s))) {
       throw new AriesFrameworkError(
-        `Issuer doesn't support the requested credential format '${format}'' for requested credential type '${scope}'. Supported formats are: ${supportedFomats}`
+        `Issuer doesn't support the requested credential format '${supportedFormats}'' for requested credential type '${scope}'. Supported formats are: [${supportedFomatsFromMetadata.join(
+          ', '
+        )}]`
       )
     }
   }
@@ -176,8 +185,9 @@ export class OpenId4VcClientService {
       )
     }
 
-    const client = await OpenID4VCIClient.initiateFromURI({
-      issuanceInitiationURI: options.initiationUri,
+    const client = await OpenID4VCIClient.fromURI({
+      uri: options.openidCredentialOffer,
+      clientId: options.clientId,
       flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
     })
     const codeVerifier = this.generateCodeVerifier()
@@ -205,7 +215,7 @@ export class OpenId4VcClientService {
   }
 
   public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {
-    const credentialFormat = 'ldp_vc'
+    const supportedCredentialFormats = ['ldp_vc']
 
     let flowType: AuthzFlowType
     if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
@@ -214,12 +224,12 @@ export class OpenId4VcClientService {
       flowType = AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW
     } else {
       throw new AriesFrameworkError(
-        `Unsupported flowType ${options.flowType}. Valid values are ${Object.values(AuthFlowType)}`
+        `Unsupported flowType ${options.flowType}. Valid values are [${Object.values(AuthFlowType).join(', ')}]`
       )
     }
 
-    const client = await OpenID4VCIClient.initiateFromURI({
-      issuanceInitiationURI: options.issuerUri,
+    const client = await OpenID4VCIClient.fromURI({
+      uri: options.openidCredentialOffer,
       flowType,
       kid: options.kid,
       alg: Alg.EdDSA,
@@ -244,10 +254,10 @@ export class OpenId4VcClientService {
         redirectUri: options.redirectUri,
       })
     } else {
-      accessToken = await client.acquireAccessToken({})
+      accessToken = await client.acquireAccessToken({ clientId: options.clientId })
     }
 
-    const serverMetadata = await client.retrieveServerMetadata()
+    const serverMetadata = client.endpointMetadata
 
     this.logger.info('Fetched server metadata', {
       issuer: serverMetadata.issuer,
@@ -259,35 +269,34 @@ export class OpenId4VcClientService {
 
     if (accessToken.scope) {
       for (const credentialType of accessToken.scope.split(' ')) {
-        this.assertCredentialHasFormat(credentialFormat, credentialType, serverMetadata)
+        this.assertCredentialHasFormat(supportedCredentialFormats, credentialType, serverMetadata)
       }
     }
 
     // proof of possession
     const callbacks = this.getSignCallback(agentContext)
 
-    const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
+    const proofInput = ProofOfPossessionBuilder.fromAccessTokenResponse({
       accessTokenResponse: accessToken,
-      callbacks: callbacks,
+      callbacks,
     })
       .withEndpointMetadata(serverMetadata)
       .withAlg(Alg.EdDSA)
       .withKid(options.kid)
-      .build()
+      .withTyp('openid4vci-proof+jwt')
 
     this.logger.debug('Generated JWS', proofInput)
 
-    const credentialRequestClient = CredentialRequestClientBuilder.fromIssuanceInitiationURI({
-      uri: options.issuerUri,
-      metadata: serverMetadata,
-    })
+    const credentialRequestClient = (
+      await CredentialRequestClientBuilder.fromURI({ uri: options.openidCredentialOffer, metadata: serverMetadata })
+    )
       .withTokenFromResponse(accessToken)
       .build()
 
     const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
       proofInput,
-      credentialType: accessToken.scope,
-      format: credentialFormat,
+      credentialTypes: accessToken.scope,
+      format: supportedCredentialFormats[0],
     })
 
     this.logger.debug('Credential request response', credentialResponse)
