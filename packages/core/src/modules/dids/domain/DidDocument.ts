@@ -264,10 +264,6 @@ export function getAuthenticationKeys(didDocument: DidDocument) {
   )
 }
 
-export function getAgreementKeys(didDocument: DidDocument) {
-  return didDocument.keyAgreement?.map((keyAgreement) => getKeyFromDidDocumentKeyEntry(keyAgreement, didDocument)) ?? []
-}
-
 function getKeyFromDidDocumentKeyEntry(key: string | VerificationMethod, didDocument: DidDocument): Key {
   const verificationMethod = typeof key === 'string' ? didDocument.dereferenceVerificationMethod(key) : key
   return getKeyFromVerificationMethod(verificationMethod)
