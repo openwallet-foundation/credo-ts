@@ -25,12 +25,6 @@ export class Key {
     return Key.fromPublicKey(publicKeyBytes, keyType)
   }
 
-  public static fromPublicKeyId(kid: string) {
-    const key = kid.split('#')[1] ?? kid
-    const multibaseKey = key.startsWith('z') ? key : `z${key}`
-    return Key.fromFingerprint(multibaseKey)
-  }
-
   public static fromFingerprint(fingerprint: string) {
     const { data } = MultiBaseEncoder.decode(fingerprint)
     const [code, byteLength] = VarintEncoder.decode(data)

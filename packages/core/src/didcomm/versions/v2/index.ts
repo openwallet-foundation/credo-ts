@@ -10,4 +10,13 @@ export interface DidCommV2PackMessageParams {
 }
 
 export { isPlaintextMessageV2, isDidCommV2Message } from './helpers'
-export { PlaintextDidCommV2Message, DidCommV2Types, DidCommV2EncryptionAlgs, DidCommV2KeyProtectionAlgs } from './types'
+export {
+  PlaintextDidCommV2Message,
+  DidCommV2Types,
+  DidCommV2EncryptionAlgs,
+  DidCommV2KeyProtectionAlgs,
+  AnoncrypDidCommV2EncryptionAlgs,
+  AuthcryptDidCommV2EncryptionAlgs,
+  AnoncrypDidCommV2KeyWrapAlgs,
+  AuthcryptDidCommV2KeyWrapAlgs,
+} from './types'

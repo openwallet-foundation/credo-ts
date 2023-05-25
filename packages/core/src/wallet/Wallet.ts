@@ -1,5 +1,6 @@
 import type { Key, KeyType } from '../crypto'
 import type { EncryptedMessage, PlaintextMessage, EnvelopeType, DidCommMessageVersion } from '../didcomm/types'
+import type { DidDocument } from '../modules/dids/domain/DidDocument'
 import type { Disposable } from '../plugins'
 import type { WalletConfig, WalletConfigRekey, WalletExportImportConfig } from '../types'
 import type { Buffer } from '../utils/buffer'
@@ -39,8 +40,26 @@ export interface Wallet extends Disposable {
   sign(options: WalletSignOptions): Promise<Buffer>
   verify(options: WalletVerifyOptions): Promise<boolean>
 
+  /**
+   * Pack a message using DIDComm V1 or DIDComm V2 encryption algorithms
+   *
+   * @param payload message to pack
+   * @param params Additional parameter to pack JWE (specific for didcomm version)
+   *
+   * @returns JWE Envelope to send
+   */
   pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage>
-  unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
+
+  /**
+   * Unpacks a JWE Envelope coded using DIDComm V1 of DIDComm V2 encryption algorithms
+   *
+   * @param encryptedMessage packed Json Web Envelope
+   * @param params Additional parameter to unpack JWE (specific for didcomm version)
+   *
+   * @returns UnpackedMessageContext with plain text message, sender key, recipient key, and didcomm message version
+   */
+  unpack(encryptedMessage: EncryptedMessage, params?: WalletUnpackOptions): Promise<UnpackedMessageContext>
+
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
 }
@@ -69,9 +88,23 @@ export interface UnpackedMessageContext {
   recipientKey?: Key
 }
 
-export type WalletPackOptions = {
+export type WalletPackOptions = WalletPackV1Options | WalletPackV2Options
+
+export type WalletPackV1Options = {
   didCommVersion: DidCommMessageVersion
   recipientKeys: Key[]
   senderKey?: Key | null
   envelopeType?: EnvelopeType
+}
+
+export type WalletPackV2Options = {
+  didCommVersion: DidCommMessageVersion
+  recipientDidDocuments: DidDocument[]
+  senderDidDocument?: DidDocument | null
+  envelopeType?: EnvelopeType
+}
+
+export type WalletUnpackOptions = {
+  recipientDidDocuments: DidDocument[]
+  senderDidDocument?: DidDocument | null
 }
