@@ -64,16 +64,24 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     if (!_includesCompatibleContext({ document: document })) {
       // For DID Documents, since keys do not have their own contexts,
       // the suite context is usually provided by the documentLoader logic
-      throw new TypeError(`The verification method (key) must contain "${this.contextUrl}".`)
+      throw new TypeError(
+        `The '@context' of the verification method (key) MUST contain the context url "${this.contextUrl}".`
+      )
     }
 
-    if (!(_isEd2018Key(document) || _isEd2020Key(document))) {
-      throw new Error(`Invalid key type. Key type must be "${this.requiredKeyType}".`)
-    }
-
-    // ensure verification method has not been revoked
-    if (document.revoked !== undefined) {
-      throw new Error('The verification method has been revoked.')
+    if (!_isEd2018Key(document) && !_isEd2020Key(document)) {
+      const verificationMethodType = jsonld.getValues(document, 'type')[0]
+      throw new Error(
+        `Unsupported verification method type '${verificationMethodType}'. Verification method type MUST be 'Ed25519VerificationKey2018' or 'Ed25519VerificationKey2020'.`
+      )
+    } else if (_isEd2018Key(document) && !_includesEd2018Context(document)) {
+      throw new Error(
+        `For verification method type 'Ed25519VerificationKey2018' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2018}".`
+      )
+    } else if (_isEd2020Key(document) && !_includesEd2020Context(document)) {
+      throw new Error(
+        `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
+      )
     }
   }
 
@@ -84,7 +92,7 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
     })
 
     // convert Ed25519VerificationKey2020 to Ed25519VerificationKey2018
-    if (_isEd2020Key(verificationMethod)) {
+    if (_isEd2020Key(verificationMethod) && _includesEd2020Context(verificationMethod)) {
       // -- convert multibase to base58 --
       const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
 
@@ -204,21 +212,21 @@ function _includesCompatibleContext(options: { document: JsonLdDoc }) {
 }
 
 function _isEd2018Key(verificationMethod: JsonLdDoc) {
-  const hasEd2018 = _includesContext({
-    document: verificationMethod,
-    contextUrl: ED25519_SUITE_CONTEXT_URL_2018,
-  })
-
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - .hasValue is not part of the public API
-  return hasEd2018 && jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
+  return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2018')
+}
+
+function _includesEd2018Context(document: JsonLdDoc) {
+  return _includesContext({ document, contextUrl: ED25519_SUITE_CONTEXT_URL_2018 })
 }
 
 function _isEd2020Key(verificationMethod: JsonLdDoc) {
-  const hasEd2020 = _includesContext({
-    document: verificationMethod,
-    contextUrl: ED25519_SUITE_CONTEXT_URL_2020,
-  })
-
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore - .hasValue is not part of the public API
-  return hasEd2020 && jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
+  return jsonld.hasValue(verificationMethod, 'type', 'Ed25519VerificationKey2020')
+}
+
+function _includesEd2020Context(document: JsonLdDoc) {
+  return _includesContext({ document, contextUrl: ED25519_SUITE_CONTEXT_URL_2020 })
 }
