@@ -1,13 +1,12 @@
-import type { CredentialExchangeRecord, ProofExchangeRecord } from '@aries-framework/core'
-
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
 
+import { BaseInquirer, ConfirmOptions } from '../BaseInquirer'
+import { Title } from '../OutputClass'
+
 import { Alice } from './Alice'
-import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
 import { Listener } from './Listener'
-import { Title } from './OutputClass'
 
 export const runAlice = async () => {
   clear()
@@ -18,7 +17,6 @@ export const runAlice = async () => {
 
 enum PromptOptions {
   ReceiveConnectionUrl = 'Receive connection invitation',
-  SendMessage = 'Send message',
   Ping = 'Ping other party',
   Exit = 'Exit',
   Restart = 'Restart',
@@ -34,7 +32,6 @@ export class AliceInquirer extends BaseInquirer {
     this.alice = alice
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
-    this.listener.messageListener(this.alice.agent, this.alice.name)
     this.listener.pingListener(this.alice.agent, this.alice.name)
   }
 
@@ -58,9 +55,6 @@ export class AliceInquirer extends BaseInquirer {
       case PromptOptions.ReceiveConnectionUrl:
         await this.connection()
         break
-      case PromptOptions.SendMessage:
-        await this.message()
-        break
       case PromptOptions.Ping:
         await this.ping()
         break
@@ -74,39 +68,11 @@ export class AliceInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
-    const confirm = await prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.credentials.declineOffer(credentialRecord.id)
-    } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.alice.acceptCredentialOffer(credentialRecord)
-    }
-  }
-
-  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
-    const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
-    if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.proofs.declineRequest({ proofRecordId: proofRecord.id })
-    } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.alice.acceptProofRequest(proofRecord)
-    }
-  }
-
   public async connection() {
     const title = Title.InvitationTitle
     const getUrl = await prompt([this.inquireInput(title)])
     await this.alice.acceptConnection(getUrl.input)
     if (!this.alice.connected) return
-
-    this.listener.credentialOfferListener(this.alice, this)
-    this.listener.proofRequestListener(this.alice, this)
-  }
-
-  public async message() {
-    const message = await this.inquireMessage()
-    if (!message) return
-
-    await this.alice.sendMessage(message)
   }
 
   public async ping() {

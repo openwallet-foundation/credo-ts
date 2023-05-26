@@ -1,27 +1,13 @@
-import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
-import { ui } from 'inquirer'
+import { ConnectionEventTypes, utils } from '@aries-framework/core'
 
-import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, greenText, Output, purpleText, redText } from './OutputClass'
+import { BaseFaber } from '../BaseFaber'
+import { Color, greenText, Output, purpleText, redText } from '../OutputClass'
 
-export enum RegistryOptions {
-  indy = 'did:indy',
-  cheqd = 'did:cheqd',
-}
-
-export class Faber extends BaseAgent {
-  public outOfBandId?: string
-  public credentialDefinition?: RegisterCredentialDefinitionReturnStateFinished
-  public anonCredsIssuerId?: string
-  public ui: BottomBar
-
+export class Faber extends BaseFaber {
   public constructor(port: number, name: string) {
-    super({ port, name, useLegacyIndySdk: true })
-    this.ui = new ui.BottomBar()
+    super(port, name)
   }
 
   public static async build(): Promise<Faber> {
@@ -30,53 +16,7 @@ export class Faber extends BaseAgent {
     return faber
   }
 
-  public async importDid(registry: string) {
-    // NOTE: we assume the did is already registered on the ledger, we just store the private key in the wallet
-    // and store the existing did in the wallet
-    // indy did is based on private key (seed)
-    const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
-    const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
-    const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
-
-    const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
-    await this.agent.dids.import({
-      did,
-      overwrite: true,
-      privateKeys: [
-        {
-          keyType: KeyType.Ed25519,
-          privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
-        },
-      ],
-    })
-    this.anonCredsIssuerId = did
-  }
-
-  private async getConnectionRecord() {
-    if (!this.outOfBandId) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-
-    const [connection] = await this.agent.connections.findAllByOutOfBandId(this.outOfBandId)
-
-    if (!connection) {
-      throw Error(redText(Output.MissingConnectionRecord))
-    }
-
-    return connection
-  }
-
-  private async printConnectionInvite(version: 'v1' | 'v2') {
-    const outOfBandRecord = await this.agent.oob.createInvitation({ version })
-    this.outOfBandId = outOfBandRecord.id
-
-    const outOfBandInvitation = outOfBandRecord.outOfBandInvitation || outOfBandRecord.v2OutOfBandInvitation
-    if (outOfBandInvitation) {
-      console.log(Output.ConnectionLink, outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }), '\n')
-    }
-  }
-
-  private async waitForConnection() {
+  protected async waitForConnection() {
     if (!this.outOfBandId) {
       return
     }
@@ -116,9 +56,9 @@ export class Faber extends BaseAgent {
     console.log(greenText(Output.ConnectionEstablished))
   }
 
-  public async setupConnection(version: 'v1' | 'v2') {
-    await this.printConnectionInvite(version)
-    if (version === 'v1') await this.waitForConnection()
+  public async setupConnection() {
+    await this.printConnectionInvite('v1')
+    await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {
@@ -263,15 +203,5 @@ export class Faber extends BaseAgent {
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
-  }
-
-  public async exit() {
-    console.log(Output.Exit)
-    await this.agent.shutdown()
-    process.exit(0)
-  }
-
-  public async restart() {
-    await this.agent.shutdown()
   }
 }

@@ -7,14 +7,9 @@ import type {
   BasicMessageStateChangedEvent,
   CredentialExchangeRecord,
   CredentialStateChangedEvent,
-  TrustPingReceivedEvent,
-  TrustPingResponseReceivedEvent,
-  V2TrustPingReceivedEvent,
-  V2TrustPingResponseReceivedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
 } from '@aries-framework/core'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
   BasicMessageEventTypes,
@@ -23,29 +18,12 @@ import {
   CredentialState,
   ProofEventTypes,
   ProofState,
-  TrustPingEventTypes,
 } from '@aries-framework/core'
-import { ui } from 'inquirer'
 
-import { Color, purpleText } from './OutputClass'
+import { BaseListener } from '../BaseListener'
+import { Color, purpleText } from '../OutputClass'
 
-export class Listener {
-  public on: boolean
-  private ui: BottomBar
-
-  public constructor() {
-    this.on = false
-    this.ui = new ui.BottomBar()
-  }
-
-  private turnListenerOn() {
-    this.on = true
-  }
-
-  private turnListenerOff() {
-    this.on = false
-  }
-
+export class Listener extends BaseListener {
   private printCredentialAttributes(credentialRecord: CredentialExchangeRecord) {
     if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
@@ -81,33 +59,6 @@ export class Listener {
         this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
       }
     })
-  }
-
-  public pingListener(agent: Agent, name: string) {
-    agent.events.on(TrustPingEventTypes.TrustPingReceivedEvent, async (event: TrustPingReceivedEvent) => {
-      this.ui.updateBottomBar(
-        purpleText(`\n${name} received ping message from ${event.payload.connectionRecord?.theirDid}\n`)
-      )
-    })
-    agent.events.on(
-      TrustPingEventTypes.TrustPingResponseReceivedEvent,
-      async (event: TrustPingResponseReceivedEvent) => {
-        this.ui.updateBottomBar(
-          purpleText(`\n${name} received ping response message from ${event.payload.connectionRecord?.theirDid}\n`)
-        )
-      }
-    )
-    agent.events.on(TrustPingEventTypes.V2TrustPingReceivedEvent, async (event: V2TrustPingReceivedEvent) => {
-      this.ui.updateBottomBar(purpleText(`\n${name} received ping message from ${event.payload.message.from}\n`))
-    })
-    agent.events.on(
-      TrustPingEventTypes.V2TrustPingResponseReceivedEvent,
-      async (event: V2TrustPingResponseReceivedEvent) => {
-        this.ui.updateBottomBar(
-          purpleText(`\n${name} received ping response message from ${event.payload.message.from}\n`)
-        )
-      }
-    )
   }
 
   private async newProofRequestPrompt(proofRecord: ProofExchangeRecord, aliceInquirer: AliceInquirer) {
