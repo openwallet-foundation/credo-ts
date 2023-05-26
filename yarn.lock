@@ -10371,16 +10371,6 @@ ref-napi@3.0.3, "ref-napi@^2.0.1 || ^3.0.2", ref-napi@^3.0.3:
     node-addon-api "^3.0.0"
     node-gyp-build "^4.2.1"
 
-"ref-napi@npm:@2060.io/ref-napi@^3.0.4":
-  version "3.0.4"
-  resolved "https://registry.yarnpkg.com/@2060.io/ref-napi/-/ref-napi-3.0.4.tgz#6a78093b36e8f4ffeb750f706433869382e73eb1"
-  integrity sha512-Aqf699E+DKs2xANx8bSkuzXyG9gcZ2iFkAk1kUTA8KbV5BSPQtIcBJexzohSRi9QWDhP4X54NLm7xwGA0UNCdQ==
-  dependencies:
-    debug "^4.1.1"
-    get-symbol-from-current-process-h "^1.0.2"
-    node-addon-api "^3.0.0"
-    node-gyp-build "^4.2.1"
-
 ref-struct-di@1.1.1, ref-struct-di@^1.1.0, ref-struct-di@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ref-struct-di/-/ref-struct-di-1.1.1.tgz#5827b1d3b32372058f177547093db1fe1602dc10"

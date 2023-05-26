@@ -145,6 +145,32 @@ export class DidDocument {
     throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public dereferenceVerificationMethods(allowedPurposes?: DidPurpose[]) {
+    const allPurposes: DidPurpose[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    const verificationMethods: VerificationMethod[] = []
+
+    for (const purpose of purposes) {
+      for (const verificationMethod of this[purpose] ?? []) {
+        if (typeof verificationMethod === 'string') {
+          verificationMethods.push(this.dereferenceVerificationMethod(verificationMethod))
+        } else {
+          verificationMethods.push(verificationMethod)
+        }
+      }
+    }
+
+    return verificationMethods
+  }
+
   /**
    * Returns all of the service endpoints matching the given type.
    *
@@ -201,11 +227,23 @@ export class DidDocument {
   }
 
   public get agreementKeys(): Array<VerificationMethod> {
-    return (
-      this.keyAgreement?.map((keyAgreement) => {
-        return typeof keyAgreement === 'string' ? this.dereferenceVerificationMethod(keyAgreement) : keyAgreement
-      }) ?? []
-    )
+    return this.dereferenceVerificationMethods(['keyAgreement'])
+  }
+
+  public get authentications(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['authentication'])
+  }
+
+  public get assertionMethods(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['assertionMethod'])
+  }
+
+  public get capabilityInvocations(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['capabilityInvocation'])
+  }
+
+  public get capabilityDelegations(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['capabilityDelegation'])
   }
 
   public toJSON() {
