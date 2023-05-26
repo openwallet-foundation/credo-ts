@@ -7,10 +7,10 @@ import {
   KeyDerivationMethod,
   KeyProviderRegistry,
   KeyType,
-  Key,
   AriesFrameworkError,
   DidKey,
   DidDocument,
+  Buffer,
 } from '@aries-framework/core'
 import { Jwk, Key as AskarKey } from '@hyperledger/aries-askar-shared'
 
@@ -140,24 +140,6 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
   })
 
   describe('DIDComm V2 test vectors', () => {
-    function mockRecipientKey(key: { kid: string; value: any }) {
-      const recipientKeys = {
-        recipientAskarKey: AskarKey.fromJwk({ jwk: Jwk.fromJson(key.value) }),
-        recipientKey: Key.fromJwk(key.value),
-      }
-      jest.spyOn(askarWallet, 'resolveRecipientKey').mockImplementation(({ kid }) => {
-        if (kid === key.kid) {
-          return Promise.resolve(recipientKeys)
-        } else {
-          return Promise.resolve({ recipientAskarKey: undefined, recipientKey: undefined })
-        }
-      })
-    }
-
-    function resetRecipientKeyMock() {
-      jest.spyOn(askarWallet, 'resolveRecipientKey').mockReset()
-    }
-
     describe('Anocrypt', () => {
       const unpackParams = {
         // @ts-ignore
@@ -168,12 +150,13 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
       test.each([bobX25519Secret1, bobX25519Secret2, bobX25519Secret3])(
         'Unpack anoncrypted EcdhEsX25519Xc20P test vector works',
         async (bobX25519Secret) => {
-          mockRecipientKey(bobX25519Secret)
+          await askarWallet.createKey({
+            keyType: KeyType.X25519,
+            privateKey: Buffer.from(AskarKey.fromJwk({ jwk: Jwk.fromJson(bobX25519Secret.value) }).secretBytes),
+          })
 
           const unpackedMessage = await askarWallet.unpack(jweEcdhEsX25519Xc20P_1, unpackParams)
           expect(unpackedMessage.plaintextMessage).toEqual(message)
-
-          resetRecipientKeyMock()
         }
       )
 
@@ -195,37 +178,26 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
       test.each([bobX25519Secret1, bobX25519Secret2, bobX25519Secret3])(
         'Unpack authcrypted Ecdh1PuA256CbcHs512 test vector works',
         async (bobX25519Secret) => {
-          mockRecipientKey(bobX25519Secret)
+          await askarWallet.createKey({
+            keyType: KeyType.X25519,
+            privateKey: Buffer.from(AskarKey.fromJwk({ jwk: Jwk.fromJson(bobX25519Secret.value) }).secretBytes),
+          })
 
           const unpackedMessage = await askarWallet.unpack(jweEcdh1PuA256CbcHs512_1, unpackParams)
           expect(unpackedMessage.plaintextMessage).toEqual(message)
-
-          resetRecipientKeyMock()
         }
       )
 
       test('Unpack fails when there is not recipient key in the wallet', async () => {
-        jest
-          .spyOn(askarWallet, 'resolveRecipientKey')
-          .mockReturnValue(Promise.resolve({ recipientAskarKey: undefined, recipientKey: undefined }))
-
         await expect(() => askarWallet.unpack(jweEcdh1PuA256CbcHs512_1, unpackParams)).rejects.toThrowError(
           AriesFrameworkError
         )
-
-        jest.spyOn(askarWallet, 'resolveRecipientKey').mockReset()
       })
 
       test('Unpack fails when unable to resolve sender', async () => {
-        jest
-          .spyOn(askarWallet, 'resolveSenderKeys')
-          .mockReturnValue({ senderAskarKey: undefined, senderKey: undefined })
-
-        await expect(() => askarWallet.unpack(jweEcdh1PuA256CbcHs512_1, unpackParams)).rejects.toThrowError(
-          AriesFrameworkError
-        )
-
-        jest.spyOn(askarWallet, 'resolveSenderKeys').mockReset()
+        await expect(() =>
+          askarWallet.unpack(jweEcdh1PuA256CbcHs512_1, { ...unpackParams, senderDidDocument: undefined })
+        ).rejects.toThrowError(AriesFrameworkError)
       })
     })
   })

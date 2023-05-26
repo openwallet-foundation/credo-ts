@@ -1296,7 +1296,7 @@ export class AskarWallet implements Wallet {
     throw new AriesFrameworkError('Unable to open jwe: recipient key not found in the wallet')
   }
 
-  public async resolveRecipientKey({
+  private async resolveRecipientKey({
     kid,
     recipientDidDocuments,
   }: {
@@ -1317,7 +1317,7 @@ export class AskarWallet implements Wallet {
     }
   }
 
-  public resolveSenderKeys({
+  private resolveSenderKeys({
     skid,
     didDocument,
     apu,
