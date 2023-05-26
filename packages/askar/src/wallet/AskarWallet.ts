@@ -1424,7 +1424,9 @@ export class AskarWallet implements Wallet {
   }
 
   private findCommonSupportedEncryptionKeys(recipientDidDocuments: DidDocument[], senderDidDocument?: DidDocument) {
-    const recipients = recipientDidDocuments.map((recipientDidDocument) => recipientDidDocument.agreementKeys)
+    const recipients = recipientDidDocuments.map(
+      (recipientDidDocument) => recipientDidDocument.dereferencedKeyAgreement
+    )
 
     if (!senderDidDocument) {
       return {
@@ -1433,7 +1435,7 @@ export class AskarWallet implements Wallet {
       }
     }
 
-    const senderAgreementKeys = senderDidDocument.agreementKeys
+    const senderAgreementKeys = senderDidDocument.dereferencedKeyAgreement
 
     let senderVerificationMethod: VerificationMethod | undefined
     const recipientsVerificationMethods: VerificationMethod[] = []

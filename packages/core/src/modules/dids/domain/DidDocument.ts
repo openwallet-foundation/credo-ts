@@ -226,23 +226,23 @@ export class DidDocument {
     return recipientKeys
   }
 
-  public get agreementKeys(): Array<VerificationMethod> {
+  public get dereferencedKeyAgreement(): Array<VerificationMethod> {
     return this.dereferenceVerificationMethods(['keyAgreement'])
   }
 
-  public get authentications(): Array<VerificationMethod> {
+  public get dereferencedAuthentication(): Array<VerificationMethod> {
     return this.dereferenceVerificationMethods(['authentication'])
   }
 
-  public get assertionMethods(): Array<VerificationMethod> {
+  public get dereferencedAssertionMethod(): Array<VerificationMethod> {
     return this.dereferenceVerificationMethods(['assertionMethod'])
   }
 
-  public get capabilityInvocations(): Array<VerificationMethod> {
+  public get dereferencedCapabilityInvocation(): Array<VerificationMethod> {
     return this.dereferenceVerificationMethods(['capabilityInvocation'])
   }
 
-  public get capabilityDelegations(): Array<VerificationMethod> {
+  public get dereferencedCapabilityDelegation(): Array<VerificationMethod> {
     return this.dereferenceVerificationMethods(['capabilityDelegation'])
   }
 
