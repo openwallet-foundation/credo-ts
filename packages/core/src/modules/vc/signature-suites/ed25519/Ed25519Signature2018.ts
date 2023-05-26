@@ -83,6 +83,11 @@ export class Ed25519Signature2018 extends JwsLinkedDataSignature {
         `For verification method type 'Ed25519VerificationKey2020' the '@context' MUST contain the context url "${ED25519_SUITE_CONTEXT_URL_2020}".`
       )
     }
+
+    // ensure verification method has not been revoked
+    if (document.revoked !== undefined) {
+      throw new Error('The verification method has been revoked.')
+    }
   }
 
   public async getVerificationMethod(options: { proof: Proof; documentLoader?: DocumentLoader }) {
