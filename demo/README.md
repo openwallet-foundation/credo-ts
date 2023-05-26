@@ -1,15 +1,18 @@
 <h1 align="center"><b>DEMO</b></h1>
 
-This is the Aries Framework Javascript demo. Walk through the AFJ flow yourself together with agents Alice and Faber.
+This is the Aries Framework Javascript demos. Walk through the available AFJ flows yourself together with agents Alice and Faber.
 
-Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.
+## Flows
 
-## Features
-
-- ✅ Creating a connection
-- ✅ Offering a credential
-- ✅ Requesting a proof
-- ✅ Sending basic messages
+- `Main` - General flow: Alice, a former student of Faber College, connects with the College, is issued a credential about her degree and then is asked by the College for a proof.  
+  - ✅ Creating a connection
+  - ✅ Offering a credential
+  - ✅ Requesting a proof
+  - ✅ Sending basic messages
+- `DidComm V2` - [DidComm v2 massaging](https://identity.foundation/didcomm-messaging/spec/) usage. In contrast to the `Main` this demo provides functionality limited to sending `ping` message after accepting out-of-band invitation from the invitee.        
+  - ✅ Creating a connection
+  - ✅ Ping
+    > Integration of DidComm V2 protocols is currently under development! In the future, it will cover the same features as the `Main` flow. 
 
 ## Getting Started
 
@@ -19,7 +22,7 @@ In order to use Aries Framework JavaScript some platform specific dependencies a
 
 - [NodeJS](https://aries.js.org/guides/getting-started/installation/nodejs)
 
-### Run the demo
+### Preparation
 
 These are the steps for running the AFJ demo:
 
@@ -41,6 +44,10 @@ Install the project in one of the terminals:
 yarn install
 ```
 
+### Run the demo
+
+#### Main demo
+
 In the left terminal run Alice:
 
 ```sh
@@ -53,7 +60,7 @@ In the right terminal run Faber:
 yarn faber
 ```
 
-### Usage
+##### Usage
 
 To set up a connection:
 
@@ -79,6 +86,43 @@ To send a basic message:
 - Select 'send message' in either one of the Agents
 - Type your message and press enter
 - Message sent!
+
+Exit:
+
+- Select 'exit' to shutdown the agent.
+
+Restart:
+
+- Select 'restart', to shutdown the current agent and start a new one
+
+#### DidComm V2 demo
+
+In the left terminal run Alice:
+
+```sh
+yarn alice-didcommv2
+```
+
+In the right terminal run Faber:
+
+```sh
+yarn faber-didcommv2
+```
+
+##### Usage
+
+To set up a connection:
+
+- Select 'receive connection invitation' in Alice and 'create connection invitation' in Faber
+- Faber will print a invitation link which you then copy and paste to Alice
+- You have now set up a connection!
+
+To send a ping message:
+
+- Establish the connection first
+- Select 'ping' in the Alice Agent
+- Message sent!
+- Faber Agent should print notification about received `ping` message and response with `ping response` message back to Alice.
 
 Exit:
 

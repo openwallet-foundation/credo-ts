@@ -2,10 +2,12 @@ import { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
 
-import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
-import { Faber, RegistryOptions } from './Faber'
+import { RegistryOptions } from '../BaseFaber'
+import { BaseInquirer, ConfirmOptions } from '../BaseInquirer'
+import { Title } from '../OutputClass'
+
+import { Faber } from './Faber'
 import { Listener } from './Listener'
-import { Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
@@ -34,7 +36,6 @@ export class FaberInquirer extends BaseInquirer {
     this.listener = new Listener()
     this.promptOptionsString = Object.values(PromptOptions)
     this.listener.messageListener(this.faber.agent, this.faber.name)
-    this.listener.pingListener(this.faber.agent, this.faber.name)
   }
 
   public static async build(): Promise<FaberInquirer> {
@@ -77,9 +78,7 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async connection() {
-    const title = 'What DidComm messaging version use?'
-    const version = await prompt([this.inquireVersion(title)])
-    await this.faber.setupConnection(version.options)
+    await this.faber.setupConnection()
   }
 
   public async exitUseCase(title: string) {
