@@ -48,6 +48,11 @@ export interface Wallet extends Disposable {
   unpack(encryptedMessage: EncryptedMessage): Promise<UnpackedMessageContext>
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
+
+  /**
+   * Get the key types supported by the wallet implementation.
+   */
+  supportedKeyTypes: KeyType[]
 }
 
 export interface WalletCreateKeyOptions {

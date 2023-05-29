@@ -27,7 +27,6 @@ import type { CredentialExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage'
-import { JsonTransformer } from '../../../utils'
 import { CredentialEventTypes } from '../CredentialEvents'
 import { CredentialState } from '../models/CredentialState'
 import { CredentialRepository } from '../repository'
@@ -187,12 +186,10 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
 
-    const clonedCredential = JsonTransformer.clone(credentialRecord)
-
     eventEmitter.emit<CredentialStateChangedEvent>(agentContext, {
       type: CredentialEventTypes.CredentialStateChanged,
       payload: {
-        credentialRecord: clonedCredential,
+        credentialRecord: credentialRecord.clone(),
         previousState: previousState,
       },
     })

@@ -201,12 +201,10 @@ export class OutOfBandService {
     outOfBandRecord: OutOfBandRecord,
     previousState: OutOfBandState | null
   ) {
-    const clonedOutOfBandRecord = JsonTransformer.clone(outOfBandRecord)
-
     this.eventEmitter.emit<OutOfBandStateChangedEvent>(agentContext, {
       type: OutOfBandEventTypes.OutOfBandStateChanged,
       payload: {
-        outOfBandRecord: clonedOutOfBandRecord,
+        outOfBandRecord: outOfBandRecord.clone(),
         previousState,
       },
     })

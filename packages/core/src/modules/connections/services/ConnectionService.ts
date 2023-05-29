@@ -526,13 +526,11 @@ export class ConnectionService {
     connectionRecord: ConnectionRecord,
     previousState: DidExchangeState | null
   ) {
-    // Connection record in event should be static
-    const clonedConnection = JsonTransformer.clone(connectionRecord)
-
     this.eventEmitter.emit<ConnectionStateChangedEvent>(agentContext, {
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
-        connectionRecord: clonedConnection,
+        // Connection record in event should be static
+        connectionRecord: connectionRecord.clone(),
         previousState,
       },
     })
