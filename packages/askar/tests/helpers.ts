@@ -3,6 +3,7 @@ import type { InitConfig } from '@aries-framework/core'
 
 import { ConnectionsModule, LogLevel, utils } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import path from 'path'
 
 import { TestLogger } from '../../core/tests/logger'
@@ -11,6 +12,7 @@ import { AskarModule } from '../src/AskarModule'
 import { AskarModuleConfig } from '../src/AskarModuleConfig'
 
 export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
+registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
