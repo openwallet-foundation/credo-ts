@@ -17,7 +17,7 @@ import {
   Logger,
   TypedArrayEncoder,
   W3cCredentialService,
-  W3cVerifiableCredential,
+  W3cJsonLdVerifiableCredential,
 } from '@aries-framework/core'
 import {
   Alg,
@@ -32,7 +32,7 @@ import { randomStringForEntropy } from '@stablelib/random'
 export interface PreAuthCodeFlowOptions {
   issuerUri: string
   kid: string
-  verifyRevocationState: boolean
+  verifyCredentialStatus: boolean
 }
 
 export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
@@ -296,15 +296,18 @@ export class OpenId4VcClientService {
       throw new AriesFrameworkError('Did not receive a successful credential response')
     }
 
-    const credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cVerifiableCredential)
+    const credential = JsonTransformer.fromJSON(
+      credentialResponse.successBody.credential,
+      W3cJsonLdVerifiableCredential
+    )
 
     // verify the signature
     const result = await this.w3cCredentialService.verifyCredential(agentContext, {
       credential,
-      verifyRevocationState: options.verifyRevocationState,
+      verifyCredentialStatus: options.verifyCredentialStatus,
     })
 
-    if (result && !result.verified) {
+    if (result && !result.isValid) {
       throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error}`)
     }
 

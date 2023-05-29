@@ -55,8 +55,6 @@ import {
   checkValidCredentialValueEncoding,
   encodeCredentialValue,
   assertNoDuplicateGroupsNamesInProofRequest,
-  unqualifiedCredentialDefinitionIdRegex,
-  unqualifiedSchemaIdRegex,
   getRevocationRegistriesForRequest,
   getRevocationRegistriesForProof,
 } from '../utils'

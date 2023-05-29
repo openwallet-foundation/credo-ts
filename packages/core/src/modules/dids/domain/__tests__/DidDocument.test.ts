@@ -157,7 +157,7 @@ describe('Did | DidDocument', () => {
       JsonTransformer.fromJSON(didExample456Invalid, DidDocument)
     } catch (error) {
       expect(error).toBeInstanceOf(ClassValidationError)
-      expect(error.message).toContain('property type has failed the following constraints: isString')
+      expect(error.message).toMatch(/property type has failed the following constraints: type must be a string/)
       expect(error.validationErrors).toMatchObject([
         {
           children: [],

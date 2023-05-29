@@ -16,7 +16,7 @@ import {
   V2CredentialProtocol,
   W3cCredentialsModule,
 } from '../src'
-import { customDocumentLoader } from '../src/modules/vc/__tests__/documentLoader'
+import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
