@@ -61,4 +61,4 @@ export interface JwsFlattenedDetachedFormat {
   signatures: JwsDetachedFormat[]
 }
 
-export const JWS_COMPACT_FORMAT = /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/
+export const JWS_COMPACT_FORMAT_MATCHER = /^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/

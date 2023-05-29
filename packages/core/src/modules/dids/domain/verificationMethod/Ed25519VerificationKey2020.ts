@@ -35,7 +35,7 @@ export function isEd25519VerificationKey2020(
  */
 export function getKeyFromEd25519VerificationKey2020(verificationMethod: Ed25519VerificationKey2020) {
   if (!verificationMethod.publicKeyMultibase) {
-    throw new Error('verification method is missing publicKeyMultibase')
+    throw new AriesFrameworkError('verification method is missing publicKeyMultibase')
   }
 
   const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)

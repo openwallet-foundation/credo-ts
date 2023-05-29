@@ -61,7 +61,7 @@ export function getKeyDidMappingByKeyType(keyType: KeyType) {
   const keyDid = keyDidMapping[keyType]
 
   if (!keyDid) {
-    throw new Error(`Unsupported key did from key type '${keyType}'`)
+    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
   }
 
   return keyDid
@@ -82,7 +82,7 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
 
   const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
   if (!keyDid) {
-    throw new Error(`Unsupported key did from verification method type '${verificationMethod.type}'`)
+    throw new AriesFrameworkError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
   return keyDid.getKeyFromVerificationMethod(verificationMethod)
@@ -92,7 +92,7 @@ export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType)
   const keyDid = keyDidMapping[keyType]
 
   if (!keyDid) {
-    throw new Error(`Unsupported key did from key type '${keyType}'`)
+    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
   }
 
   return keyDid.supportedVerificationMethodTypes

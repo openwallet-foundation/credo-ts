@@ -17,7 +17,7 @@ export function getDidJwkDocument(didJwk: DidJwk) {
   const verificationMethod = getJsonWebKey2020({
     did: didJwk.did,
     jwk: jwkJson,
-    verificationMethodId: `${didJwk.did}#0`,
+    verificationMethodId: didJwk.verificationMethodId,
   })
 
   const didDocumentBuilder = new DidDocumentBuilder(didJwk.did)

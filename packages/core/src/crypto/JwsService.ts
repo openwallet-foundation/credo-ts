@@ -10,7 +10,7 @@ import { injectable } from '../plugins'
 import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
 import { WalletError } from '../wallet/error'
 
-import { JWS_COMPACT_FORMAT } from './JwsTypes'
+import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
 import { JwtPayload } from './jose/jwt'
 
@@ -96,7 +96,8 @@ export class JwsService {
     let payload: string
 
     if (typeof jws === 'string') {
-      if (!JWS_COMPACT_FORMAT.test(jws)) throw new AriesFrameworkError(`Invalid JWS compact format for value '${jws}'.`)
+      if (!JWS_COMPACT_FORMAT_MATCHER.test(jws))
+        throw new AriesFrameworkError(`Invalid JWS compact format for value '${jws}'.`)
 
       const [protectedHeader, _payload, signature] = jws.split('.')
 
@@ -127,7 +128,7 @@ export class JwsService {
       }
 
       if (!protectedJson.alg || typeof protectedJson.alg !== 'string') {
-        throw new AriesFrameworkError('Unable to verify JWS, protected header alg is not a string.')
+        throw new AriesFrameworkError('Unable to verify JWS, protected header alg is not provided or not a string.')
       }
 
       const jwk = await this.jwkFromJws({

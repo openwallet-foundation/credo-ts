@@ -55,7 +55,7 @@ export class Jwt {
         serializedJwt,
       })
     } catch (error) {
-      throw new AriesFrameworkError(`Invalid JWT. ${error.message}`)
+      throw new AriesFrameworkError(`Invalid JWT. ${error instanceof Error ? error.message : JSON.stringify(error)}`)
     }
   }
 }

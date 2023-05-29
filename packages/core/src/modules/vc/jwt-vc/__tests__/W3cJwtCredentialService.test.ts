@@ -64,7 +64,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
       const vcJwt = await w3cJwtCredentialService.signCredential(agentContext, {
         alg: JwaSignatureAlgorithm.ES256,
         format: 'jwt_vc',
-        verificationMethod: issuerDidJwk.keyReference,
+        verificationMethod: issuerDidJwk.verificationMethodId,
         credential,
       })
 
@@ -96,7 +96,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
       // Throw when not according to data model
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
-          verificationMethod: issuerDidJwk.keyReference,
+          verificationMethod: issuerDidJwk.verificationMethodId,
           alg: JwaSignatureAlgorithm.ES256,
           credential: JsonTransformer.fromJSON({ ...credentialJson, issuanceDate: undefined }, W3cCredential, {
             validate: false,
@@ -110,7 +110,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
       // Throw when verificationMethod id does not exist in did document
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
-          verificationMethod: issuerDidJwk.keyReference + 'extra',
+          verificationMethod: issuerDidJwk.verificationMethodId + 'extra',
           alg: JwaSignatureAlgorithm.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: 'jwt_vc',

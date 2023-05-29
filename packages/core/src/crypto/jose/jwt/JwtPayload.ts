@@ -4,6 +4,8 @@ import { AriesFrameworkError } from '../../../error'
  * The maximum allowed clock skew time in seconds. If an time based validation
  * is performed against current time (`now`), the validation can be of by the skew
  * time.
+ *
+ * See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5
  */
 const DEFAULT_SKEW_TIME = 300
 
@@ -124,14 +126,26 @@ export class JwtPayload {
   public validate(options?: { skewTime?: number; now?: number }) {
     const { nowSkewedFuture, nowSkewedPast } = getNowSkewed(options?.now, options?.skewTime)
 
+    // Validate nbf
+    if (typeof this.nbf !== 'number' && typeof this.nbf !== 'undefined') {
+      throw new AriesFrameworkError(`JWT payload 'nbf' must be a number if provided. Actual type is ${typeof this.nbf}`)
+    }
     if (typeof this.nbf === 'number' && this.nbf > nowSkewedFuture) {
       throw new AriesFrameworkError(`JWT not valid before ${this.nbf}`)
     }
 
+    // Validate iat
+    if (typeof this.iat !== 'number' && typeof this.iat !== 'undefined') {
+      throw new AriesFrameworkError(`JWT payload 'iat' must be a number if provided. Actual type is ${typeof this.iat}`)
+    }
     if (typeof this.iat === 'number' && this.iat > nowSkewedFuture) {
       throw new AriesFrameworkError(`JWT issued in the future at ${this.iat}`)
     }
 
+    // Validate exp
+    if (typeof this.exp !== 'number' && typeof this.exp !== 'undefined') {
+      throw new AriesFrameworkError(`JWT payload 'exp' must be a number if provided. Actual type is ${typeof this.exp}`)
+    }
     if (typeof this.exp === 'number' && this.exp < nowSkewedPast) {
       throw new AriesFrameworkError(`JWT expired at ${this.exp}`)
     }

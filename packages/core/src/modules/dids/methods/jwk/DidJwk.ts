@@ -30,8 +30,11 @@ export class DidJwk {
     return new DidJwk(did)
   }
 
-  // FIXME: is this the correct name?
-  public get keyReference() {
+  /**
+   * A did:jwk DID can only have one verification method, and the verification method
+   * id will always be `<did>#0`.
+   */
+  public get verificationMethodId() {
     return `${this.did}#0`
   }
 

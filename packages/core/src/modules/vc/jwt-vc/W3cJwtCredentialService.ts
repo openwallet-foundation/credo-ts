@@ -497,6 +497,7 @@ export class W3cJwtCredentialService {
       // Find the verificationMethod in the did document based on the alg and proofPurpose
       const jwkClass = getJwkClassFromJwaSignatureAlgorithm(credential.jwt.header.alg)
       if (!jwkClass) throw new AriesFrameworkError(`Unsupported JWT alg '${credential.jwt.header.alg}'`)
+
       const { supportedVerificationMethodTypes } = getKeyDidMappingByKeyType(jwkClass.keyType)
 
       const didDocument = await didResolver.resolveDidDocument(agentContext, signerId)

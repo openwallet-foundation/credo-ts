@@ -1,5 +1,6 @@
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
+import { AriesFrameworkError } from '../../../../error'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -32,7 +33,7 @@ export function isBls12381G1Key2020(verificationMethod: VerificationMethod): ver
  */
 export function getKeyFromBls12381G1Key2020(verificationMethod: Bls12381G1Key2020) {
   if (!verificationMethod.publicKeyBase58) {
-    throw new Error('verification method is missing publicKeyBase58')
+    throw new AriesFrameworkError('verification method is missing publicKeyBase58')
   }
 
   return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Bls12381g1)

@@ -6,7 +6,7 @@ import type { ValidationOptions } from 'class-validator'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, buildMessage, IsOptional, IsRFC3339, ValidateBy, ValidateNested } from 'class-validator'
 
-import { asArray, JsonTransformer } from '../../../../utils'
+import { asArray, JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import { SingleOrArray } from '../../../../utils/type'
 import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_CREDENTIAL_TYPE } from '../../constants'
@@ -40,12 +40,9 @@ export class W3cCredential {
           : new W3cIssuer(options.issuer)
       this.issuanceDate = options.issuanceDate
       this.expirationDate = options.expirationDate
-      this.credentialSubject =
-        options.credentialSubject instanceof W3cCredentialSubject
-          ? options.credentialSubject
-          : !Array.isArray(options.credentialSubject)
-          ? new W3cCredentialSubject(options.credentialSubject)
-          : options.credentialSubject.map((s) => (s instanceof W3cCredentialSubject ? s : new W3cCredentialSubject(s)))
+      this.credentialSubject = mapSingleOrArray(options.credentialSubject, (subject) =>
+        subject instanceof W3cCredentialSubject ? subject : new W3cCredentialSubject(subject)
+      )
 
       if (options.credentialStatus) {
         this.credentialStatus =
