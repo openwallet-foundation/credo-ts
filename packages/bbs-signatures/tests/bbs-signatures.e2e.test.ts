@@ -220,7 +220,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
           BbsBlsSignature2020Fixtures.TEST_VALID_DERIVED,
           W3cJsonLdVerifiableCredential
         )
-        const result = await w3cCredentialService.createPresentation({ credentials: vc })
+        const result = await w3cCredentialService.createPresentation({ credentials: [vc] })
 
         expect(result).toBeInstanceOf(W3cPresentation)
 
