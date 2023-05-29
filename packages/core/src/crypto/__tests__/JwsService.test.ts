@@ -3,6 +3,10 @@ import type { Key, Wallet } from '@aries-framework/core'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { AskarWallet } from '../../../../askar/src'
+// Askar native dependency MUSt be imported, and as we're only using the wallet
+// it isn't already set-up automatically
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
