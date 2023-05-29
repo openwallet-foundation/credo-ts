@@ -19,6 +19,7 @@ import { inject, injectable } from '../../plugins'
 import { isDid } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
+import { base64ToBase64URL } from '../../utils/base64'
 import {
   DidDocument,
   DidRegistrarService,
@@ -519,11 +520,28 @@ export class DidExchangeProtocol {
       throw new DidExchangeProblemReportError('DID Document signature is missing.', { problemCode })
     }
 
-    const json = didDocumentAttachment.getDataAsJson() as Record<string, unknown>
-    this.logger.trace('DidDocument JSON', json)
+    if (!didDocumentAttachment.data.base64) {
+      throw new AriesFrameworkError('DID Document attachment is missing base64 property for signed did document.')
+    }
 
-    const payload = JsonEncoder.toBuffer(json)
-    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
+    // JWS payload must be base64url encoded
+    const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
+    const json = JsonEncoder.fromBase64(didDocumentAttachment.data.base64)
+
+    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+      jws: {
+        ...jws,
+        payload: base64UrlPayload,
+      },
+      jwkResolver: ({ jws: { header } }) => {
+        if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
+          throw new AriesFrameworkError('JWS header kid must be a did:key DID.')
+        }
+
+        const didKey = DidKey.fromDid(header.kid)
+        return getJwkFromKey(didKey.key)
+      },
+    })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication

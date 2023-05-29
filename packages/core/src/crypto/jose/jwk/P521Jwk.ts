@@ -1,4 +1,5 @@
 import type { JwkJson } from './Jwk'
+import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
 import { TypedArrayEncoder, Buffer } from '../../../utils'
 import { KeyType } from '../../KeyType'
@@ -10,6 +11,10 @@ import { compress, expand } from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
 
 export class P521Jwk extends Jwk {
+  public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
+  public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES512]
+  public static readonly keyType = KeyType.P521
+
   public readonly x: string
   public readonly y: string
 
@@ -29,7 +34,15 @@ export class P521Jwk extends Jwk {
   }
 
   public get keyType() {
-    return KeyType.P521
+    return P521Jwk.keyType
+  }
+
+  public get supportedEncryptionAlgorithms() {
+    return P521Jwk.supportedEncryptionAlgorithms
+  }
+
+  public get supportedSignatureAlgorithms() {
+    return P521Jwk.supportedSignatureAlgorithms
   }
 
   /**
@@ -43,14 +56,6 @@ export class P521Jwk extends Jwk {
     const compressedPublicKey = compress(publicKeyBuffer)
 
     return Buffer.from(compressedPublicKey)
-  }
-
-  public get supportedEncryptionAlgorithms() {
-    return []
-  }
-
-  public get supportedSignatureAlgorithms() {
-    return [JwaSignatureAlgorithm.ES512]
   }
 
   public toJson() {

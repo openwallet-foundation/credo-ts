@@ -52,7 +52,7 @@ describe('x25519', () => {
   })
 
   it('supports X25519KeyAgreementKey2019 verification method type', () => {
-    expect(keyDidX25519.supportedVerificationMethodTypes).toMatchObject(['X25519KeyAgreementKey2019'])
+    expect(keyDidX25519.supportedVerificationMethodTypes).toMatchObject(['X25519KeyAgreementKey2019', 'JsonWebKey2020'])
   })
 
   it('returns key for X25519KeyAgreementKey2019 verification method', () => {
@@ -69,7 +69,7 @@ describe('x25519', () => {
     verificationMethod.type = 'SomeRandomType'
 
     expect(() => keyDidX25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
-      'Invalid verification method passed'
+      `Verification method with type 'SomeRandomType' not supported for key type 'x25519'`
     )
   })
 })

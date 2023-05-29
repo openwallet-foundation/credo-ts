@@ -30,6 +30,14 @@ export class DidJwk {
     return new DidJwk(did)
   }
 
+  /**
+   * A did:jwk DID can only have one verification method, and the verification method
+   * id will always be `<did>#0`.
+   */
+  public get verificationMethodId() {
+    return `${this.did}#0`
+  }
+
   public static fromJwk(jwk: Jwk) {
     const did = `did:jwk:${JsonEncoder.toBase64URL(jwk.toJson())}`
 

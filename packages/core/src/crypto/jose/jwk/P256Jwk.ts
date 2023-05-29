@@ -1,4 +1,5 @@
 import type { JwkJson } from './Jwk'
+import type { JwaEncryptionAlgorithm } from '../jwa/alg'
 
 import { TypedArrayEncoder, Buffer } from '../../../utils'
 import { KeyType } from '../../KeyType'
@@ -10,6 +11,10 @@ import { compress, expand } from './ecCompression'
 import { hasKty, hasCrv, hasX, hasY, hasValidUse } from './validate'
 
 export class P256Jwk extends Jwk {
+  public static readonly supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[] = []
+  public static readonly supportedSignatureAlgorithms: JwaSignatureAlgorithm[] = [JwaSignatureAlgorithm.ES256]
+  public static readonly keyType = KeyType.P256
+
   public readonly x: string
   public readonly y: string
 
@@ -28,10 +33,6 @@ export class P256Jwk extends Jwk {
     return JwaCurve.P256 as const
   }
 
-  public get keyType() {
-    return KeyType.P256
-  }
-
   /**
    * Returns the public key of the P-256 JWK.
    *
@@ -45,12 +46,16 @@ export class P256Jwk extends Jwk {
     return Buffer.from(compressedPublicKey)
   }
 
+  public get keyType() {
+    return P256Jwk.keyType
+  }
+
   public get supportedEncryptionAlgorithms() {
-    return []
+    return P256Jwk.supportedEncryptionAlgorithms
   }
 
   public get supportedSignatureAlgorithms() {
-    return [JwaSignatureAlgorithm.ES256]
+    return P256Jwk.supportedSignatureAlgorithms
   }
 
   public toJson() {

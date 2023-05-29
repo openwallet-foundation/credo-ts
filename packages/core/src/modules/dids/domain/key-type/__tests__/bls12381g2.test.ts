@@ -71,7 +71,7 @@ describe('bls12381g2', () => {
     verificationMethod.type = 'SomeRandomType'
 
     expect(() => keyDidBls12381g2.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
-      'Invalid verification method passed'
+      "Verification method with type 'SomeRandomType' not supported for key type 'bls12381g2'"
     )
   })
 })
