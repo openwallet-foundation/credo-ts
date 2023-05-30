@@ -332,24 +332,28 @@ export class OpenId4VcClientService {
       const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
       let potentialSignatureAlgorithm: JwaSignatureAlgorithm | undefined
-      if (potentialCredentialFormat === ClaimFormat.JwtVc) {
-        potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
-          issuerSupportedCryptographicSuites.includes(signatureAlgorithm)
-        )
-      }
 
-      // We need to find it based on the JSON-LD proof type
-      if (potentialCredentialFormat === ClaimFormat.LdpVc) {
-        potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
-          const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-          if (!JwkClass) return false
+      switch (potentialCredentialFormat) {
+        case ClaimFormat.JwtVc:
+          potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
+            issuerSupportedCryptographicSuites.includes(signatureAlgorithm)
+          )
+          break
+        case ClaimFormat.LdpVc:
+          // We need to find it based on the JSON-LD proof type
+          potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find(
+            (signatureAlgorithm) => {
+              const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
+              if (!JwkClass) return false
 
-          // TODO: getByKeyType should return a list
-          const matchingSuite = signatureSuiteRegistry.getByKeyType(JwkClass.keyType)
-          if (!matchingSuite) return false
+              // TODO: getByKeyType should return a list
+              const matchingSuite = signatureSuiteRegistry.getByKeyType(JwkClass.keyType)
+              if (!matchingSuite) return false
 
-          return issuerSupportedCryptographicSuites.includes(matchingSuite.proofType)
-        })
+              return issuerSupportedCryptographicSuites.includes(matchingSuite.proofType)
+            }
+          )
+          break
       }
 
       // If no match, continue to the next one.
@@ -412,13 +416,13 @@ export class OpenId4VcClientService {
 
     let credential: W3cVerifiableCredential
     let result: W3cVerifyCredentialResult
-    if (credentialResponse.successBody.format === 'ldp_vc') {
+    if (credentialResponse.successBody.format === ClaimFormat.LdpVc) {
       credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cJsonLdVerifiableCredential)
       result = await this.w3cCredentialService.verifyCredential(agentContext, {
         credential,
         verifyCredentialStatus: options.verifyCredentialStatus,
       })
-    } else if (credentialResponse.successBody.format === 'jwt_vc') {
+    } else if (credentialResponse.successBody.format === ClaimFormat.JwtVc) {
       credential = W3cJwtVerifiableCredential.fromSerializedJwt(credentialResponse.successBody.credential as string)
       result = await this.w3cCredentialService.verifyCredential(agentContext, {
         credential,

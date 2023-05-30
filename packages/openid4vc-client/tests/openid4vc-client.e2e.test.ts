@@ -1,6 +1,7 @@
 import type { KeyDidCreateOptions } from '@aries-framework/core'
 
 import {
+  ClaimFormat,
   JwaSignatureAlgorithm,
   Agent,
   KeyType,
@@ -140,7 +141,7 @@ describe('OpenId4VcClient', () => {
 
       const w3cCredentialRecords = await agent.modules.openId4VcClient.requestCredentialUsingPreAuthorizedCode({
         issuerUri: waltIdJffJwt.credentialOffer,
-        allowedCredentialFormats: ['jwt_vc'],
+        allowedCredentialFormats: [ClaimFormat.JwtVc],
         allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
         proofOfPossessionVerificationMethodResolver: () => verificationMethod,
         verifyCredentialStatus: false,

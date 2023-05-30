@@ -28,6 +28,7 @@ import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredential
 import { W3cJsonLdVerifiablePresentation } from './data-integrity/models/W3cJsonLdVerifiablePresentation'
 import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
 import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
+import { ClaimFormat } from './models'
 import { W3cPresentation } from './models/presentation/W3cPresentation'
 import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 
@@ -57,9 +58,9 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     options: W3cSignCredentialOptions
   ): Promise<W3cVerifiableCredential<W3cSignCredentialOptions['format']>> {
-    if (options.format === 'jwt_vc') {
+    if (options.format === ClaimFormat.JwtVc) {
       return this.w3cJwtCredentialService.signCredential(agentContext, options)
-    } else if (options.format === 'ldp_vc') {
+    } else if (options.format === ClaimFormat.LdpVc) {
       return this.w3cJsonLdCredentialService.signCredential(agentContext, options)
     } else {
       throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
@@ -113,12 +114,12 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     options: W3cSignPresentationOptions
   ): Promise<W3cVerifiablePresentation<W3cSignPresentationOptions['format']>> {
-    if (options.format === 'jwt_vp') {
+    if (options.format === ClaimFormat.JwtVp) {
       return this.w3cJwtCredentialService.signPresentation(agentContext, options)
-    } else if (options.format === 'ldp_vp') {
+    } else if (options.format === ClaimFormat.LdpVp) {
       return this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
     } else {
-      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
+      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
     }
   }
 

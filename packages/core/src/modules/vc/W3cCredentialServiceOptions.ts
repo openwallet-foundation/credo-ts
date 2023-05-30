@@ -119,7 +119,7 @@ interface W3cSignPresentationOptionsBase {
 }
 
 export interface W3cJsonLdSignPresentationOptions extends W3cSignPresentationOptionsBase {
-  format: ClaimFormat.LdpVc
+  format: ClaimFormat.LdpVp
 
   /**
    * The proofType to be used for signing the presentation.
