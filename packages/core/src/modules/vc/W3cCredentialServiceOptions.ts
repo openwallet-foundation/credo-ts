@@ -2,7 +2,7 @@ import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integ
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
 import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePresentation'
-import type { W3cVerifiableCredential } from './models'
+import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
 import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
@@ -12,12 +12,6 @@ export type W3cSignCredentialOptions = W3cJwtSignCredentialOptions | W3cJsonLdSi
 export type W3cVerifyCredentialOptions = W3cJwtVerifyCredentialOptions | W3cJsonLdVerifyCredentialOptions
 export type W3cSignPresentationOptions = W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
 export type W3cVerifyPresentationOptions = W3cJwtVerifyPresentationOptions | W3cJsonLdVerifyPresentationOptions
-
-/**
- * Defines the claim format based on the formats registered in
- * [DIF Claim Format Registry](https://identity.foundation/claim-format-registry/).
- */
-export type ClaimFormat = 'jwt' | 'jwt_vc' | 'jwt_vp' | 'ldp' | 'ldp_vc' | 'ldp_vp'
 
 interface W3cSignCredentialOptionsBase {
   /**
@@ -41,7 +35,7 @@ interface W3cSignCredentialOptionsBase {
 }
 
 export interface W3cJwtSignCredentialOptions extends W3cSignCredentialOptionsBase {
-  format: 'jwt_vc'
+  format: ClaimFormat.JwtVc
 
   /**
    * The alg to be used for signing the credential.
@@ -56,7 +50,7 @@ export interface W3cJsonLdSignCredentialOptions extends W3cSignCredentialOptions
    * The format of the credential to be signed. Must be either `jwt_vc` or `ldp_vc`.
    * @see https://identity.foundation/claim-format-registry
    */
-  format: 'ldp_vc'
+  format: ClaimFormat.LdpVc
 
   /**
    * The proofType to be used for signing the credential.
@@ -125,7 +119,7 @@ interface W3cSignPresentationOptionsBase {
 }
 
 export interface W3cJsonLdSignPresentationOptions extends W3cSignPresentationOptionsBase {
-  format: 'ldp_vp'
+  format: ClaimFormat.LdpVp
 
   /**
    * The proofType to be used for signing the presentation.
@@ -138,7 +132,7 @@ export interface W3cJsonLdSignPresentationOptions extends W3cSignPresentationOpt
 }
 
 export interface W3cJwtSignPresentationOptions extends W3cSignPresentationOptionsBase {
-  format: 'jwt_vp'
+  format: ClaimFormat.JwtVp
 
   /**
    * The alg to be used for signing the presentation.

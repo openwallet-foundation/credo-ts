@@ -1,4 +1,8 @@
-export { getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from './keyDidMapping'
+export {
+  getKeyDidMappingByKeyType,
+  getKeyFromVerificationMethod,
+  getSupportedVerificationMethodTypesFromKeyType,
+} from './keyDidMapping'
 
 export * from './bls12381g2'
 export * from './bls12381g1'

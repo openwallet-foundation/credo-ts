@@ -12,7 +12,6 @@ import { KeyType } from '../../../crypto'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ConnectionService } from '../../connections'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { didKeyToVerkey, isDidKey, verkeyToDidKey } from '../../dids/helpers'
@@ -245,11 +244,10 @@ export class MediatorService {
     mediationRecord: MediationRecord,
     previousState: MediationState | null
   ) {
-    const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>(agentContext, {
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
-        mediationRecord: clonedMediationRecord,
+        mediationRecord: mediationRecord.clone(),
         previousState,
       },
     })

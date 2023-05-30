@@ -5,7 +5,6 @@ import type { AgentContext } from '../agent'
 import type { EventEmitter } from '../agent/EventEmitter'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
-import { JsonTransformer } from '../utils/JsonTransformer'
 
 import { RepositoryEventTypes } from './RepositoryEvents'
 
@@ -29,12 +28,11 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   public async save(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.save(agentContext, record)
 
-    // Record in event should be static
-    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordSavedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordSaved,
       payload: {
-        record: clonedRecord,
+        // Record in event should be static
+        record: record.clone(),
       },
     })
   }
@@ -43,12 +41,11 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.update(agentContext, record)
 
-    // Record in event should be static
-    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordUpdatedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordUpdated,
       payload: {
-        record: clonedRecord,
+        // Record in event should be static
+        record: record.clone(),
       },
     })
   }
@@ -57,12 +54,11 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
     await this.storageService.delete(agentContext, record)
 
-    // Record in event should be static
-    const clonedRecord = JsonTransformer.clone(record)
     this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordDeleted,
       payload: {
-        record: clonedRecord,
+        // Record in event should be static
+        record: record.clone(),
       },
     })
   }

@@ -1,8 +1,10 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
+import type { Constructable } from '../../../utils/mixins'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../models'
+import { W3cVerifiableCredential, W3cVerifiableCredentialTransformer, ClaimFormat } from '../models'
 
 export interface W3cCredentialRecordOptions {
   id?: string
@@ -65,15 +67,26 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     }
 
     // Proof types is used for ldp_vc credentials
-    if (this.credential.claimFormat === 'ldp_vc') {
+    if (this.credential.claimFormat === ClaimFormat.LdpVc) {
       tags.proofTypes = this.credential.proofTypes
     }
 
     // Algs is used for jwt_vc credentials
-    else if (this.credential.claimFormat === 'jwt_vc') {
+    else if (this.credential.claimFormat === ClaimFormat.JwtVc) {
       tags.algs = [this.credential.jwt.header.alg]
     }
 
     return tags
+  }
+
+  /**
+   * This overwrites the default clone method for records
+   * as the W3cRecord has issues with the default clone method
+   * due to how W3cJwtVerifiableCredential is implemented. This is
+   * a temporary way to make sure the clone still works, but ideally
+   * we find an alternative.
+   */
+  public clone(): this {
+    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 }

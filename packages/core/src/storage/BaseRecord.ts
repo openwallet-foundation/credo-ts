@@ -90,4 +90,11 @@ export abstract class BaseRecord<
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
   }
+
+  /**
+   * Clones the record.
+   */
+  public clone() {
+    return JsonTransformer.clone(this)
+  }
 }

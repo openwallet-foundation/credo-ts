@@ -6,7 +6,6 @@ import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { injectable } from '../../../plugins'
-import { JsonTransformer } from '../../../utils'
 import { BasicMessageEventTypes } from '../BasicMessageEvents'
 import { BasicMessageRole } from '../BasicMessageRole'
 import { BasicMessage } from '../messages'
@@ -72,10 +71,9 @@ export class BasicMessageService {
     basicMessageRecord: BasicMessageRecord,
     basicMessage: BasicMessage
   ) {
-    const clonedBasicMessageRecord = JsonTransformer.clone(basicMessageRecord)
     this.eventEmitter.emit<BasicMessageStateChangedEvent>(agentContext, {
       type: BasicMessageEventTypes.BasicMessageStateChanged,
-      payload: { message: basicMessage, basicMessageRecord: clonedBasicMessageRecord },
+      payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
     })
   }
 

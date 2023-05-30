@@ -1,7 +1,7 @@
-import type { ClaimFormat } from '../W3cCredentialServiceOptions'
 import type { W3cCredential } from '../models/credential/W3cCredential'
 
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
+import { ClaimFormat } from '../models/ClaimFormat'
 
 import { getCredentialFromJwtPayload } from './credentialTransformer'
 
@@ -106,7 +106,7 @@ export class W3cJwtVerifiableCredential {
   /**
    * The {@link ClaimFormat} of the credential. For JWT credentials this is always `jwt_vc`.
    */
-  public get claimFormat(): Extract<ClaimFormat, 'jwt_vc'> {
-    return 'jwt_vc'
+  public get claimFormat(): ClaimFormat.JwtVc {
+    return ClaimFormat.JwtVc
   }
 }
