@@ -468,7 +468,7 @@ export class OpenId4VcClientService {
       }
 
       // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
-      if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c is not supported')
+      if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c and jwk are not supported')
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { x5c: _x5c, jwk: _jwk, ...supportedHeaderOptions } = jwt.header
 
