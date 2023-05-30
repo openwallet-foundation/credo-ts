@@ -1,9 +1,12 @@
-import type { ClaimFormat, JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+
+import { ClaimFormat } from '@aries-framework/core'
 
 /**
  * The credential formats that are supported by the openid4vc client
  */
-export type SupportedCredentialFormats = Extract<ClaimFormat, 'jwt_vc' | 'ldp_vc'>
+export type SupportedCredentialFormats = ClaimFormat.JwtVc | ClaimFormat.LdpVc
+export const supportedCredentialFormats = [ClaimFormat.JwtVc, ClaimFormat.LdpVc] satisfies SupportedCredentialFormats[]
 
 /**
  * Options that are used for the pre-authorized code flow.

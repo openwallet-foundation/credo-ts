@@ -1,5 +1,5 @@
 import type { SingleOrArray } from '../../../../utils'
-import type { ClaimFormat } from '../../W3cCredentialServiceOptions'
+import type { ClaimFormat } from '../ClaimFormat'
 
 import { Transform, TransformationType } from 'class-transformer'
 import { ValidationError } from 'class-validator'
@@ -37,9 +37,9 @@ export function W3cVerifiableCredentialTransformer() {
   })
 }
 
-export type W3cVerifiableCredential<Format extends Extract<ClaimFormat, 'jwt_vc' | 'ldp_vc'> | unknown = unknown> =
-  Format extends 'jwt_vc'
+export type W3cVerifiableCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | unknown = unknown> =
+  Format extends ClaimFormat.JwtVc
     ? W3cJsonLdVerifiableCredential
-    : Format extends 'ldp_vc'
+    : Format extends ClaimFormat.LdpVc
     ? W3cJwtVerifiableCredential
     : W3cJsonLdVerifiableCredential | W3cJwtVerifiableCredential

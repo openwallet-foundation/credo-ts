@@ -13,15 +13,10 @@ import type {
   W3cCredentialRecord,
   W3cVerifyCredentialResult,
 } from '@aries-framework/core'
-import type {
-  CredentialMetadata,
-  CredentialResponse,
-  EndpointMetadata,
-  Jwt,
-  OpenIDResponse,
-} from '@sphereon/openid4vci-client'
+import type { CredentialMetadata, CredentialResponse, Jwt, OpenIDResponse } from '@sphereon/openid4vci-client'
 
 import {
+  ClaimFormat,
   getJwkClassFromJwaSignatureAlgorithm,
   W3cJwtVerifiableCredential,
   AriesFrameworkError,
@@ -52,7 +47,7 @@ import {
 } from '@sphereon/openid4vci-client'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { AuthFlowType } from './OpenId4VcClientServiceOptions'
+import { supportedCredentialFormats, AuthFlowType } from './OpenId4VcClientServiceOptions'
 
 const flowTypeMapping = {
   [AuthFlowType.AuthorizationCodeFlow]: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
@@ -130,7 +125,7 @@ export class OpenId4VcClientService {
       : supportedJwaSignatureAlgorithms
 
     // Take the allowed credential formats from the options or use the default
-    const allowedCredentialFormats = options.allowedCredentialFormats ?? ['jwt_vc', 'ldp_vc']
+    const allowedCredentialFormats = options.allowedCredentialFormats ?? supportedCredentialFormats
 
     const flowType = flowTypeMapping[options.flowType]
     if (!flowType) {
@@ -337,13 +332,14 @@ export class OpenId4VcClientService {
       const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
       let potentialSignatureAlgorithm: JwaSignatureAlgorithm | undefined
-      if (potentialCredentialFormat === 'jwt_vc') {
+      if (potentialCredentialFormat === ClaimFormat.JwtVc) {
         potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
           issuerSupportedCryptographicSuites.includes(signatureAlgorithm)
         )
       }
+
       // We need to find it based on the JSON-LD proof type
-      else if (potentialCredentialFormat === 'ldp_vc') {
+      if (potentialCredentialFormat === ClaimFormat.LdpVc) {
         potentialSignatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
           const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
           if (!JwkClass) return false
@@ -471,13 +467,15 @@ export class OpenId4VcClientService {
         )
       }
 
+      // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
+      if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c is not supported')
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { x5c: _x5c, jwk: _jwk, ...supportedHeaderOptions } = jwt.header
+
       const jws = await this.jwsService.createJwsCompact(agentContext, {
         key,
         payload,
-        protectedHeaderOptions: {
-          alg: jwt.header.alg,
-          kid: jwt.header.kid,
-        },
+        protectedHeaderOptions: supportedHeaderOptions,
       })
 
       return jws
