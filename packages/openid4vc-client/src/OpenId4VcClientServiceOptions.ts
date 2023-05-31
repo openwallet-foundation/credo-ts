@@ -1,18 +1,21 @@
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 
-import { ClaimFormat } from '@aries-framework/core'
+import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 
 /**
  * The credential formats that are supported by the openid4vc client
  */
-export type SupportedCredentialFormats = ClaimFormat.JwtVc | ClaimFormat.LdpVc
-export const supportedCredentialFormats = [ClaimFormat.JwtVc, ClaimFormat.LdpVc] satisfies SupportedCredentialFormats[]
+export type SupportedCredentialFormats = OpenIdCredentialFormatProfile.JwtVcJson | OpenIdCredentialFormatProfile.LdpVc
+export const supportedCredentialFormats = [
+  OpenIdCredentialFormatProfile.JwtVcJson,
+  OpenIdCredentialFormatProfile.LdpVc,
+] satisfies SupportedCredentialFormats[]
 
 /**
  * Options that are used for the pre-authorized code flow.
  */
 export interface PreAuthCodeFlowOptions {
-  issuerUri: string
+  uri: string
   verifyCredentialStatus: boolean
 
   /**
@@ -71,7 +74,7 @@ export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
  * as clear text code challenges are unsafe.
  */
 export interface GenerateAuthorizationUrlOptions {
-  initiationUri: string
+  uri: string
   clientId: string
   redirectUri: string
   scope?: string[]
@@ -109,7 +112,7 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
    * The credential type that will be requested from the issuer. This is
    * based on the credential types that are included the credential offer.
    */
-  credentialType: string
+  supportedCredentialId: string
 
   /**
    * Whether the issuer supports the `did` cryptographic binding method,
