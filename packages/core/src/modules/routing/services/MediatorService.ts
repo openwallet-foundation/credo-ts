@@ -212,6 +212,17 @@ export class MediatorService {
 
     await this.mediatorRoutingRepository.save(agentContext, routingRecord)
 
+    this.eventEmitter.emit(agentContext, {
+      type: RoutingEventTypes.RoutingCreatedEvent,
+      payload: {
+        routing: {
+          endpoints: agentContext.config.endpoints,
+          routingKeys: [],
+          recipientKey: routingKey,
+        },
+      },
+    })
+
     return routingRecord
   }
 
