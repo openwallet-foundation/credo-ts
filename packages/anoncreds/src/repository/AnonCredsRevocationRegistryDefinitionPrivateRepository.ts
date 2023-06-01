@@ -1,4 +1,4 @@
-import type { RevocationRegistryState } from './AnonCredsRevocationRegistryDefinitionPrivateRecord'
+import type { AnonCredsRevocationRegistryState } from './AnonCredsRevocationRegistryDefinitionPrivateRecord'
 import type { AgentContext } from '@aries-framework/core'
 
 import { Repository, InjectionSymbols, StorageService, EventEmitter, injectable, inject } from '@aries-framework/core'
@@ -29,7 +29,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRepository extends Repo
   public async findAllByCredentialDefinitionIdAndState(
     agentContext: AgentContext,
     credentialDefinitionId: string,
-    state?: RevocationRegistryState
+    state?: AnonCredsRevocationRegistryState
   ) {
     return this.findByQuery(agentContext, { credentialDefinitionId, state })
   }

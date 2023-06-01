@@ -30,7 +30,7 @@ import {
   AnonCredsCredentialDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  RevocationRegistryState,
+  AnonCredsRevocationRegistryState,
 } from '@aries-framework/anoncreds'
 import { injectable, AriesFrameworkError } from '@aries-framework/core'
 import {
@@ -140,13 +140,12 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
     agentContext: AgentContext,
     options: CreateRevocationStatusListOptions
   ): Promise<AnonCredsRevocationStatusList> {
-    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, issuanceByDefault, tailsFilePath } =
-      options
+    const { issuerId, revocationRegistryDefinitionId, revocationRegistryDefinition, tailsFilePath } = options
 
     let revocationStatusList: RevocationStatusList | undefined
     try {
       revocationStatusList = RevocationStatusList.create({
-        issuanceByDefault,
+        issuanceByDefault: true,
         revocationRegistryDefinitionId,
         revocationRegistryDefinition: {
           ...revocationRegistryDefinition,
@@ -253,14 +252,18 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       revocationRegistryDefinitionId,
       tailsFilePath,
       revocationStatusList,
+      revocationRegistryIndex,
     } = options
 
-    const definedRevocationOptions = [revocationRegistryDefinitionId, tailsFilePath, revocationStatusList].filter(
-      (e) => e !== undefined
-    )
-    if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 3) {
+    const definedRevocationOptions = [
+      revocationRegistryDefinitionId,
+      tailsFilePath,
+      revocationStatusList,
+      revocationRegistryIndex,
+    ].filter((e) => e !== undefined)
+    if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 4) {
       throw new AriesFrameworkError(
-        'Revocation requires all of revocationRegistryDefinitionId, revocationStatusList and tailsFilePath'
+        'Revocation requires all of revocationRegistryDefinitionId, revocationStatusList, revocationRegistryIndex and tailsFilePath'
       )
     }
 
@@ -299,28 +302,20 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
 
       let revocationConfiguration: CredentialRevocationConfig | undefined
-      if (options.revocationRegistryDefinitionId && options.tailsFilePath) {
+      if (revocationRegistryDefinitionId && tailsFilePath && revocationRegistryIndex) {
         const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
           .resolve(AnonCredsRevocationRegistryDefinitionRepository)
-          .getByRevocationRegistryDefinitionId(agentContext, options.revocationRegistryDefinitionId)
+          .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
         const revocationRegistryDefinitionPrivateRecord = await agentContext.dependencyManager
           .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
-          .getByRevocationRegistryDefinitionId(agentContext, options.revocationRegistryDefinitionId)
+          .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
-        const registryIndex = revocationRegistryDefinitionPrivateRecord.currentIndex + 1
-
-        if (registryIndex >= revocationRegistryDefinitionRecord.revocationRegistryDefinition.value.maxCredNum) {
-          revocationRegistryDefinitionPrivateRecord.state = RevocationRegistryState.Full
+        if (
+          revocationRegistryIndex >= revocationRegistryDefinitionRecord.revocationRegistryDefinition.value.maxCredNum
+        ) {
+          revocationRegistryDefinitionPrivateRecord.state = AnonCredsRevocationRegistryState.Full
         }
-
-        // Update current registry index in storage
-        // Note: if an error is produced or the credential is not effectively sent,
-        // the previous index will be skipped
-        revocationRegistryDefinitionPrivateRecord.currentIndex = registryIndex
-        await agentContext.dependencyManager
-          .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
-          .update(agentContext, revocationRegistryDefinitionPrivateRecord)
 
         revocationConfiguration = new CredentialRevocationConfig({
           registryDefinition: RevocationRegistryDefinition.fromJson(
@@ -329,8 +324,8 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           registryDefinitionPrivate: RevocationRegistryDefinitionPrivate.fromJson(
             revocationRegistryDefinitionPrivateRecord.value
           ),
-          tailsPath: options.tailsFilePath,
-          registryIndex,
+          tailsPath: tailsFilePath,
+          registryIndex: revocationRegistryIndex,
         })
       }
 

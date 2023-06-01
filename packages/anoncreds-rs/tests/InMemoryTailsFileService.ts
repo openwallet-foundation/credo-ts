@@ -1,7 +1,8 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@aries-framework/anoncreds'
-import type { AgentContext } from '@aries-framework/core'
+import type { AgentContext, FileSystem } from '@aries-framework/core'
 
 import { BasicTailsFileService } from '@aries-framework/anoncreds'
+import { InjectionSymbols } from '@aries-framework/core'
 
 export class InMemoryTailsFileService extends BasicTailsFileService {
   private tailsFilePaths: Record<string, string> = {}
@@ -43,7 +44,8 @@ export class InMemoryTailsFileService extends BasicTailsFileService {
 
       if (!tailsExists) {
         agentContext.config.logger.debug(`Retrieving tails file from URL ${tailsLocation}`)
-        // TODO
+        const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+        await fileSystem.downloadToFile(tailsLocation, tailsFilePath)
         agentContext.config.logger.debug(`Saved tails file to FileSystem at path ${tailsFilePath}`)
       }
 

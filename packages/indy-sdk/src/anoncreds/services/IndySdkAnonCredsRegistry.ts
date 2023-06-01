@@ -437,7 +437,6 @@ export class IndySdkAnonCredsRegistry implements AnonCredsRegistry {
           issuerId: did,
           credDefId: credentialDefinitionId,
           value: {
-            issuanceType: revocationRegistryDefinition.value.issuanceType,
             maxCredNum: revocationRegistryDefinition.value.maxCredNum,
             publicKeys: revocationRegistryDefinition.value.publicKeys,
             tailsHash: revocationRegistryDefinition.value.tailsHash,

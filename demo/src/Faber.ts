@@ -174,6 +174,7 @@ export class Faber extends BaseAgent {
         schemaId,
         issuerId: this.anonCredsIssuerId,
         tag: 'latest',
+        supportRevocation: false,
       },
       options: {
         didIndyNamespace: 'bcovrin:test',

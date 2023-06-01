@@ -67,6 +67,7 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
       holderReplay: aliceReplay,
       issuerReplay: faberReplay,
       issuerHolderConnectionId: faberConnectionId,
+      revocationRegistryDefinitionId,
       offer: {
         credentialDefinitionId,
         attributes: [

@@ -2,7 +2,7 @@ import type { TagsBase } from '@aries-framework/core'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
-export enum RevocationRegistryState {
+export enum AnonCredsRevocationRegistryState {
   Created = 'created',
   Active = 'active',
   Full = 'full',
@@ -14,13 +14,13 @@ export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   credentialDefinitionId: string
   value: Record<string, unknown>
   index?: number
-  state?: RevocationRegistryState
+  state?: AnonCredsRevocationRegistryState
 }
 
 export type DefaultAnonCredsRevocationRegistryPrivateTags = {
   revocationRegistryDefinitionId: string
   credentialDefinitionId: string
-  state: RevocationRegistryState
+  state: AnonCredsRevocationRegistryState
 }
 
 export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseRecord<
@@ -34,9 +34,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
   public readonly credentialDefinitionId!: string
   public readonly value!: Record<string, unknown> // TODO: Define structure
 
-  public currentIndex!: number
-
-  public state!: RevocationRegistryState
+  public state!: AnonCredsRevocationRegistryState
 
   public constructor(props: AnonCredsRevocationRegistryDefinitionPrivateRecordProps) {
     super()
@@ -46,8 +44,7 @@ export class AnonCredsRevocationRegistryDefinitionPrivateRecord extends BaseReco
       this.revocationRegistryDefinitionId = props.revocationRegistryDefinitionId
       this.credentialDefinitionId = props.credentialDefinitionId
       this.value = props.value
-      this.currentIndex = props.index ?? 0
-      this.state = props.state ?? RevocationRegistryState.Created
+      this.state = props.state ?? AnonCredsRevocationRegistryState.Created
     }
   }
 

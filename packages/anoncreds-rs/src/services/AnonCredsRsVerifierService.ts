@@ -86,7 +86,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       ...Object.values(proofRequest.requested_attributes),
       ...Object.values(proofRequest.requested_predicates),
     ]) {
-      const nonRevokedInterval = globalNonRevokedInterval ?? value.non_revoked
+      const nonRevokedInterval = value.non_revoked ?? globalNonRevokedInterval
       if (nonRevokedInterval) {
         value.restrictions?.forEach((restriction) =>
           requestedNonRevokedRestrictions.push({

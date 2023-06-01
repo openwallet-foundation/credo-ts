@@ -23,7 +23,6 @@ export interface AnonCredsRevocationRegistryDefinition {
   credDefId: string
   tag: string
   value: {
-    issuanceType: 'ISSUANCE_BY_DEFAULT' | 'ISSUANCE_ON_DEMAND'
     publicKeys: {
       accumKey: {
         z: string

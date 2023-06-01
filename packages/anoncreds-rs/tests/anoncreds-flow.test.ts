@@ -6,9 +6,7 @@ import {
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
   AnonCredsRevocationRegistryDefinitionRepository,
-  AnonCredsRevocationStatusListRecord,
-  AnonCredsRevocationStatusListRepository,
-  RevocationRegistryState,
+  AnonCredsRevocationRegistryState,
   AnonCredsModuleConfig,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -215,7 +213,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     await agentContext.dependencyManager.resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository).save(
       agentContext,
       new AnonCredsRevocationRegistryDefinitionPrivateRecord({
-        state: RevocationRegistryState.Active,
+        state: AnonCredsRevocationRegistryState.Active,
         value: revocationRegistryDefinitionPrivate,
         credentialDefinitionId: revocationRegistryDefinitionState.revocationRegistryDefinition.credDefId,
         revocationRegistryDefinitionId,
@@ -223,7 +221,6 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     )
 
     const createdRevocationStatusList = await anonCredsIssuerService.createRevocationStatusList(agentContext, {
-      issuanceByDefault: true,
       issuerId: indyDid,
       revocationRegistryDefinition,
       revocationRegistryDefinitionId,
@@ -238,14 +235,6 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     if (!revocationStatusListState.revocationStatusList || !revocationStatusListState.timestamp) {
       throw new Error('Failed to create revocation status list')
     }
-
-    await agentContext.dependencyManager.resolve(AnonCredsRevocationStatusListRepository).save(
-      agentContext,
-      new AnonCredsRevocationStatusListRecord({
-        credentialDefinitionId: revocationRegistryDefinition.credDefId,
-        revocationStatusList: revocationStatusListState.revocationStatusList,
-      })
-    )
   }
 
   const linkSecret = await anonCredsHolderService.createLinkSecret(agentContext, { linkSecretId: 'linkSecretId' })
@@ -301,9 +290,16 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   })
   // Set attributes on the credential record, this is normally done by the protocol service
   issuerCredentialRecord.credentialAttributes = credentialAttributes
+
+  // If revocable, specify revocation registry definition id and index
+  const credentialFormats = revocable
+    ? { anoncreds: { revocationRegistryDefinitionId, revocationRegistryIndex: 1 } }
+    : undefined
+
   const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
     credentialRecord: issuerCredentialRecord,
     proposalAttachment: proposalAttachment,
+    credentialFormats,
   })
 
   // Holder processes and accepts offer

@@ -13,10 +13,10 @@ import {
 import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecordSubject } from '../../core/tests'
+import { waitForRevocationNotification } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 
 import { setupAnonCredsTests } from './anoncredsSetup'
-import { waitForRevocationNotification } from './helpers'
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -106,6 +106,8 @@ describeRunInNodeVersion([18], 'IC v2 credential revocation', () => {
         anoncreds: {
           credentialDefinitionId: credentialDefinitionId,
           attributes: credentialPreview.attributes,
+          revocationRegistryDefinitionId,
+          revocationRegistryIndex: 1,
         },
       },
     })

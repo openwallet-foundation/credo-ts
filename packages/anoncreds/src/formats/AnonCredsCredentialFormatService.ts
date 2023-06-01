@@ -48,7 +48,7 @@ import {
   AnonCredsCredentialDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
-  RevocationRegistryState,
+  AnonCredsRevocationRegistryState,
 } from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
@@ -168,6 +168,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       attachmentId,
       attributes,
       credentialDefinitionId,
+      revocationRegistryDefinitionId: anoncredsFormat?.revocationRegistryDefinitionId,
+      revocationRegistryIndex: anoncredsFormat?.revocationRegistryIndex,
       linkedAttachments: anoncredsFormat?.linkedAttachments,
     })
 
@@ -196,6 +198,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       attachmentId,
       attributes: anoncredsFormat.attributes,
       credentialDefinitionId: anoncredsFormat.credentialDefinitionId,
+      revocationRegistryDefinitionId: anoncredsFormat.revocationRegistryDefinitionId,
+      revocationRegistryIndex: anoncredsFormat.revocationRegistryIndex,
       linkedAttachments: anoncredsFormat.linkedAttachments,
     })
 
@@ -320,28 +324,36 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     ).credentialDefinition.value
 
     let revocationRegistryDefinitionId
+    let revocationRegistryIndex
     let revocationStatusList
     let tailsFilePath
 
     if (credentialDefinition.revocation) {
-      const [revocationRegistryDefinitionPrivateRecord] = await agentContext.dependencyManager
-        .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
-        .findAllByCredentialDefinitionIdAndState(
-          agentContext,
-          credentialRequest.cred_def_id,
-          RevocationRegistryState.Active
-        )
-
-      // TODO: should a new revocation registry be generated/published/etc automatically?
-      if (!revocationRegistryDefinitionPrivateRecord) {
-        throw new AriesFrameworkError(`No available revocation registry found for ${credentialRequest.cred_def_id}`)
+      const credentialMetadata =
+        credentialRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
+      revocationRegistryDefinitionId = credentialMetadata?.revocationRegistryId
+      if (credentialMetadata?.credentialRevocationId) {
+        revocationRegistryIndex = Number(credentialMetadata.credentialRevocationId)
       }
 
-      revocationRegistryDefinitionId = revocationRegistryDefinitionPrivateRecord.revocationRegistryDefinitionId
+      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+        throw new AriesFrameworkError(
+          'Revocation registry definition id and revocation index are mandatory to issue AnonCreds revocable credentials'
+        )
+      }
+      const revocationRegistryDefinitionPrivateRecord = await agentContext.dependencyManager
+        .resolve(AnonCredsRevocationRegistryDefinitionPrivateRepository)
+        .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
+
+      if (revocationRegistryDefinitionPrivateRecord.state !== AnonCredsRevocationRegistryState.Active) {
+        throw new AriesFrameworkError(
+          `Revocation registry ${revocationRegistryDefinitionId} is in ${revocationRegistryDefinitionPrivateRecord.state} state`
+        )
+      }
 
       // get current revocation status list
       const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-      const registry = registryService.getRegistryForIdentifier(agentContext, credentialRequest.cred_def_id)
+      const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
       const result = await registry.getRevocationStatusList(
         agentContext,
         revocationRegistryDefinitionId,
@@ -360,30 +372,21 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
       const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-      ;({ tailsFilePath } = await tailsFileService.downloadTailsFile(agentContext, {
+      const downloadTailsFileReturn = await tailsFileService.downloadTailsFile(agentContext, {
         revocationRegistryDefinition,
-      }))
+      })
+      tailsFilePath = downloadTailsFileReturn.tailsFilePath
     }
 
-    const { credential, credentialRevocationId } = await anonCredsIssuerService.createCredential(agentContext, {
+    const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
       credentialOffer,
       credentialRequest,
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
       revocationRegistryDefinitionId,
+      revocationRegistryIndex,
       revocationStatusList,
       tailsFilePath,
     })
-
-    if (credential.rev_reg_id) {
-      credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
-        credentialRevocationId: credentialRevocationId,
-        revocationRegistryId: credential.rev_reg_id,
-      })
-      credentialRecord.setTags({
-        anonCredsRevocationRegistryId: credential.rev_reg_id,
-        anonCredsCredentialRevocationId: credentialRevocationId,
-      })
-    }
 
     const format = new CredentialFormatSpec({
       attachmentId,
@@ -589,10 +592,14 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialRecord,
       attachmentId,
       credentialDefinitionId,
+      revocationRegistryDefinitionId,
+      revocationRegistryIndex,
       attributes,
       linkedAttachments,
     }: {
       credentialDefinitionId: string
+      revocationRegistryDefinitionId?: string
+      revocationRegistryIndex?: number
       credentialRecord: CredentialExchangeRecord
       attachmentId?: string
       attributes: CredentialPreviewAttributeOptions[]
@@ -619,9 +626,34 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     await this.assertPreviewAttributesMatchSchemaAttributes(agentContext, offer, previewAttributes)
 
+    // We check locally for credential definition info. If it supports revocation, revocationRegistryIndex
+    // and revocationRegistryDefinitionId are mandatory
+    const credentialDefinition = (
+      await agentContext.dependencyManager
+        .resolve(AnonCredsCredentialDefinitionRepository)
+        .getByCredentialDefinitionId(agentContext, offer.cred_def_id)
+    ).credentialDefinition.value
+
+    if (credentialDefinition.revocation) {
+      if (!revocationRegistryDefinitionId || !revocationRegistryIndex) {
+        throw new AriesFrameworkError(
+          'AnonCreds revocable credentials require revocationRegistryDefinitionId and revocationRegistryIndex'
+        )
+      }
+
+      // Set revocation tags
+      credentialRecord.setTags({
+        anonCredsRevocationRegistryId: revocationRegistryDefinitionId,
+        anonCredsCredentialRevocationId: revocationRegistryIndex.toString(),
+      })
+    }
+
+    // Set the metadata
     credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: offer.schema_id,
       credentialDefinitionId: offer.cred_def_id,
+      credentialRevocationId: revocationRegistryIndex?.toString(),
+      revocationRegistryId: revocationRegistryDefinitionId,
     })
 
     const attachment = this.getFormatData(offer, format.attachmentId)

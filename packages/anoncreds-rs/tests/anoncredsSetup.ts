@@ -191,6 +191,7 @@ export async function issueAnonCredsCredential({
   holderReplay,
 
   issuerHolderConnectionId,
+  revocationRegistryDefinitionId,
   offer,
 }: {
   issuerAgent: AnonCredsTestsAgent
@@ -200,6 +201,7 @@ export async function issueAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
+  revocationRegistryDefinitionId?: string
   offer: AnonCredsOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
@@ -207,7 +209,7 @@ export async function issueAnonCredsCredential({
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
     credentialFormats: {
-      anoncreds: offer,
+      anoncreds: { ...offer, revocationRegistryDefinitionId, revocationRegistryIndex: 1 },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -426,7 +428,7 @@ export async function prepareForAnonCredsIssuance(
     schemaId: schema.schemaId,
     issuerId,
     tag: 'default',
-    supportRevocation,
+    supportRevocation: supportRevocation ?? false,
   })
 
   // Wait some time pass to let ledger settle the object
@@ -446,7 +448,6 @@ export async function prepareForAnonCredsIssuance(
     await sleep(1000)
 
     revocationStatusList = await registerRevocationStatusList(agent, {
-      issuanceByDefault: true,
       revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
       issuerId,
     })

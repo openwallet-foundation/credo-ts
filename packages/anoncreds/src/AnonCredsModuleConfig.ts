@@ -14,12 +14,6 @@ export interface AnonCredsModuleConfigOptions {
   registries: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 
   /**
-   * Maximum credential number per revocation registry
-   * @default 1000
-   */
-  maximumCredentialNumberPerRevocationRegistry?: number
-
-  /**
    * Tails file service for download/uploading tails files
    * @default BasicTailsFileService (only for downloading tails files)
    */
@@ -39,11 +33,6 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.registries} */
   public get registries() {
     return this.options.registries
-  }
-
-  /** See {@link AnonCredsModuleConfigOptions.maximumCredentialNumberPerRevocationRegistry} */
-  public get maximumCredentialNumberPerRevocationRegistry() {
-    return this.options.maximumCredentialNumberPerRevocationRegistry ?? 1000
   }
 
   /** See {@link AnonCredsModuleConfigOptions.tailsFileService} */

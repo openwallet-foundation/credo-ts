@@ -446,7 +446,6 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         issuerId: did,
         revocDefType: response.result.data.revocDefType,
         value: {
-          issuanceType: response.result.data.value.issuanceType,
           maxCredNum: response.result.data.value.maxCredNum,
           tailsHash: response.result.data.value.tailsHash,
           tailsLocation: response.result.data.value.tailsLocation,

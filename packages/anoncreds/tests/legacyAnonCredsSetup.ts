@@ -465,6 +465,7 @@ export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames
     schemaId: schema.schemaId,
     issuerId: didIndyDid,
     tag: 'default',
+    supportRevocation: false,
   })
 
   const s = parseIndySchemaId(schema.schemaId)

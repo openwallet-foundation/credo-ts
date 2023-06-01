@@ -11,7 +11,6 @@ import {
   AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
-  AnonCredsRevocationStatusListRepository,
 } from '../repository'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 
@@ -40,7 +39,6 @@ describe('AnonCredsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
       AnonCredsRevocationRegistryDefinitionPrivateRepository
     )
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRevocationStatusListRepository)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(AnonCredsModuleConfig, anonCredsModule.config)

@@ -46,7 +46,6 @@ const existingRevocationRegistryDefinitions = {
     issuerId: 'VsKV7grR1BUE29mG2Fm2kX',
     revocDefType: 'CL_ACCUM',
     value: {
-      issuanceType: 'ISSUANCE_BY_DEFAULT',
       publicKeys: {
         accumKey: {
           z: 'ab81257c-be63-4051-9e21-c7d384412f64',
@@ -200,6 +199,7 @@ describe('AnonCreds API', () => {
         issuerId,
         schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
         tag: 'TAG',
+        supportRevocation: false,
       },
       options: {},
     })

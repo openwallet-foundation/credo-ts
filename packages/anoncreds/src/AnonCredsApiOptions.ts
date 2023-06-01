@@ -6,8 +6,8 @@ export interface AnonCredsCreateLinkSecretOptions {
 export interface AnonCredsRegisterCredentialDefinitionOptions {
   issuerId: string
   schemaId: string
-  tag?: string
-  supportRevocation?: boolean
+  tag: string
+  supportRevocation: boolean
 }
 
 export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
@@ -19,7 +19,6 @@ export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {
 
 export interface AnonCredsRegisterRevocationStatusListOptions {
   issuerId: string
-  issuanceByDefault: boolean
   revocationRegistryDefinitionId: string
 }
 

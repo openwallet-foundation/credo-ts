@@ -37,7 +37,6 @@ export interface CreateRevocationRegistryDefinitionOptions {
 
 export interface CreateRevocationStatusListOptions {
   issuerId: string
-  issuanceByDefault: boolean
   revocationRegistryDefinitionId: string
   revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
   tailsFilePath: string
@@ -63,6 +62,7 @@ export interface CreateCredentialOptions {
   revocationRegistryDefinitionId?: string
   tailsFilePath?: string
   revocationStatusList?: AnonCredsRevocationStatusList
+  revocationRegistryIndex?: number
 }
 
 export interface CreateCredentialReturn {
