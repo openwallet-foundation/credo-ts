@@ -480,7 +480,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const { tailsFilePath } = await tailsFileService.downloadTailsFile(this.agentContext, {
+    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
@@ -551,7 +551,7 @@ export class AnonCredsApi {
     }
 
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const { tailsFilePath } = await tailsFileService.downloadTailsFile(this.agentContext, {
+    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 

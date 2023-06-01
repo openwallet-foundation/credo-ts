@@ -372,10 +372,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
 
       const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-      const downloadTailsFileReturn = await tailsFileService.downloadTailsFile(agentContext, {
+      tailsFilePath = await tailsFileService.getTailsFile(agentContext, {
         revocationRegistryDefinition,
       })
-      tailsFilePath = downloadTailsFileReturn.tailsFilePath
     }
 
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {

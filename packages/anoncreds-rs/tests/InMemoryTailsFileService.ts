@@ -19,14 +19,12 @@ export class InMemoryTailsFileService extends BasicTailsFileService {
     return options.revocationRegistryDefinition.value.tailsHash
   }
 
-  public async downloadTailsFile(
+  public async getTailsFile(
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<{
-    tailsFilePath: string
-  }> {
+  ): Promise<string> {
     const { revocationRegistryDefinition } = options
     const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
 
@@ -49,9 +47,7 @@ export class InMemoryTailsFileService extends BasicTailsFileService {
         agentContext.config.logger.debug(`Saved tails file to FileSystem at path ${tailsFilePath}`)
       }
 
-      return {
-        tailsFilePath,
-      }
+      return tailsFilePath
     } catch (error) {
       agentContext.config.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,

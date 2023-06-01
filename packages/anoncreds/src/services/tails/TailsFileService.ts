@@ -2,12 +2,23 @@ import type { AnonCredsRevocationRegistryDefinition } from '../../models'
 import type { AgentContext } from '@aries-framework/core'
 
 export interface TailsFileService {
+  /**
+   * Retrieve base directory for tail file storage
+   *
+   * @param agentContext
+   */
   getTailsBasePath(agentContext: AgentContext): string | Promise<string>
 
-  getTailsFilePath(agentContext: AgentContext, tailsHash: string): string | Promise<string>
-
-  tailsFileExists(agentContext: AgentContext, tailsHash: string): boolean | Promise<boolean>
-
+  /**
+   * Upload the tails file for a given revocation registry definition.
+   *
+   * Optionally, receives revocationRegistryDefinitionId in case the ID is
+   * known beforehand.
+   *
+   * Returns the published tail file URL
+   * @param agentContext
+   * @param options
+   */
   uploadTailsFile(
     agentContext: AgentContext,
     options: {
@@ -16,13 +27,21 @@ export interface TailsFileService {
     }
   ): Promise<string>
 
-  downloadTailsFile(
+  /**
+   * Retrieve the tails file for a given revocation registry, downloading it
+   * from the tailsLocation URL if not present in internal cache
+   *
+   * Classes implementing this interface should verify integrity of the downloaded
+   * file.
+   *
+   * @param agentContext
+   * @param options
+   */
+  getTailsFile(
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
       revocationRegistryDefinitionId?: string
     }
-  ): Promise<{
-    tailsFilePath: string
-  }>
+  ): Promise<string>
 }

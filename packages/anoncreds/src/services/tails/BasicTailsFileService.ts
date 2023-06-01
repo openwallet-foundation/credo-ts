@@ -20,16 +20,6 @@ export class BasicTailsFileService implements TailsFileService {
     return basePath
   }
 
-  public async getTailsFilePath(agentContext: AgentContext, tailsHash: string) {
-    return `${await this.getTailsBasePath(agentContext)}/${tailsHash}`
-  }
-
-  public async tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean> {
-    const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    const tailsFilePath = await this.getTailsFilePath(agentContext, tailsHash)
-    return await fileSystem.exists(tailsFilePath)
-  }
-
   public async uploadTailsFile(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     agentContext: AgentContext,
@@ -41,14 +31,12 @@ export class BasicTailsFileService implements TailsFileService {
     throw new AriesFrameworkError('BasicTailsFileService only supports tails file downloading')
   }
 
-  public async downloadTailsFile(
+  public async getTailsFile(
     agentContext: AgentContext,
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<{
-    tailsFilePath: string
-  }> {
+  ): Promise<string> {
     const { revocationRegistryDefinition } = options
     const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
 
@@ -79,14 +67,22 @@ export class BasicTailsFileService implements TailsFileService {
         agentContext.config.logger.debug(`Saved tails file to FileSystem at path ${tailsFilePath}`)
       }
 
-      return {
-        tailsFilePath,
-      }
+      return tailsFilePath
     } catch (error) {
       agentContext.config.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,
       })
       throw error
     }
+  }
+
+  protected async getTailsFilePath(agentContext: AgentContext, tailsHash: string) {
+    return `${await this.getTailsBasePath(agentContext)}/${tailsHash}`
+  }
+
+  protected async tailsFileExists(agentContext: AgentContext, tailsHash: string): Promise<boolean> {
+    const fileSystem = agentContext.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
+    const tailsFilePath = await this.getTailsFilePath(agentContext, tailsHash)
+    return await fileSystem.exists(tailsFilePath)
   }
 }
