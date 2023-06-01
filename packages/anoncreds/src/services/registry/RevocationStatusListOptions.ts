@@ -1,5 +1,5 @@
 import type {
-  AnonCredsOperationState,
+  AnonCredsOperationStateWait,
   AnonCredsOperationStateFailed,
   AnonCredsOperationStateFinished,
   AnonCredsResolutionMetadata,
@@ -30,7 +30,7 @@ export interface RegisterRevocationStatusListReturnStateFinished extends AnonCre
   timestamp: string
 }
 
-export interface RegisterRevocationStatusListReturnState extends AnonCredsOperationState {
+export interface RegisterRevocationStatusListReturnState extends AnonCredsOperationStateWait {
   revocationStatusList?: AnonCredsRevocationStatusList
   timestamp?: string
 }

@@ -7,7 +7,6 @@ export interface AnonCredsRegisterCredentialDefinitionOptions {
   issuerId: string
   schemaId: string
   tag: string
-  supportRevocation: boolean
 }
 
 export interface AnonCredsRegisterRevocationRegistryDefinitionOptions {

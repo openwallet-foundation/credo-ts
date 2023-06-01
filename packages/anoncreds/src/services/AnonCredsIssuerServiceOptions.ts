@@ -21,7 +21,7 @@ export interface CreateSchemaOptions {
 export interface CreateCredentialDefinitionOptions {
   issuerId: string
   tag: string
-  supportRevocation?: boolean
+  supportRevocation: boolean
   schemaId: string
   schema: AnonCredsSchema
 }

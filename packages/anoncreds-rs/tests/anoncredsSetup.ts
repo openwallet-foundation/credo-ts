@@ -424,12 +424,15 @@ export async function prepareForAnonCredsIssuance(
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  const credentialDefinition = await registerCredentialDefinition(agent, {
-    schemaId: schema.schemaId,
-    issuerId,
-    tag: 'default',
-    supportRevocation: supportRevocation ?? false,
-  })
+  const credentialDefinition = await registerCredentialDefinition(
+    agent,
+    {
+      schemaId: schema.schemaId,
+      issuerId,
+      tag: 'default',
+    },
+    supportRevocation
+  )
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
@@ -497,10 +500,12 @@ async function registerSchema(
 
 async function registerCredentialDefinition(
   agent: AnonCredsTestsAgent,
-  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions,
+  supportRevocation?: boolean
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
   const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
     credentialDefinition,
+    supportRevocation: supportRevocation ?? false,
     options: {},
   })
 
