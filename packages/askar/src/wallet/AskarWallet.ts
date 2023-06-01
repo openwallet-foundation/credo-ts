@@ -34,15 +34,7 @@ import {
   WalletNotFoundError,
   KeyDerivationMethod,
 } from '@aries-framework/core'
-import {
-  KdfMethod,
-  StoreKeyMethod,
-  KeyAlgs,
-  CryptoBox,
-  Store,
-  Key as AskarKey,
-  keyAlgFromString,
-} from '@hyperledger/aries-askar-shared'
+import { KeyAlgs, CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-shared'
 // eslint-disable-next-line import/order
 import BigNumber from 'bn.js'
 
@@ -54,8 +46,9 @@ import {
   AskarErrorCode,
   isAskarError,
   keyDerivationMethodToStoreKeyMethod,
-  keyTypeSupportedByAskar,
+  isKeyTypeSupportedByAskar,
   uriFromWalletConfig,
+  keyTypesSupportedByAskar,
 } from '../utils'
 
 import { JweEnvelope, JweRecipient } from './JweEnvelope'
@@ -106,6 +99,12 @@ export class AskarWallet implements Wallet {
     }
 
     return this._session
+  }
+
+  public get supportedKeyTypes() {
+    const signingKeyProviderSupportedKeyTypes = this.signingKeyProviderRegistry.supportedKeyTypes
+
+    return Array.from(new Set([...keyTypesSupportedByAskar, ...signingKeyProviderSupportedKeyTypes]))
   }
 
   /**
@@ -430,7 +429,7 @@ export class AskarWallet implements Wallet {
         throw new WalletError('Invalid private key provided')
       }
 
-      if (keyTypeSupportedByAskar(keyType)) {
+      if (isKeyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key
@@ -490,7 +489,7 @@ export class AskarWallet implements Wallet {
   public async sign({ data, key }: WalletSignOptions): Promise<Buffer> {
     let keyEntry: KeyEntryObject | null | undefined
     try {
-      if (keyTypeSupportedByAskar(key.keyType)) {
+      if (isKeyTypeSupportedByAskar(key.keyType)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting signing of multiple messages`)
         }
@@ -526,7 +525,7 @@ export class AskarWallet implements Wallet {
       if (!isError(error)) {
         throw new AriesFrameworkError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
-      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}`, { cause: error })
+      throw new WalletError(`Error signing data with verkey ${key.publicKeyBase58}. ${error.message}`, { cause: error })
     }
   }
 
@@ -545,7 +544,7 @@ export class AskarWallet implements Wallet {
   public async verify({ data, key, signature }: WalletVerifyOptions): Promise<boolean> {
     let askarKey: AskarKey | undefined
     try {
-      if (keyTypeSupportedByAskar(key.keyType)) {
+      if (isKeyTypeSupportedByAskar(key.keyType)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting verification of multiple messages`)
         }

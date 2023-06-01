@@ -1,22 +1,32 @@
+import type { DidDocument } from './DidDocument'
 import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
-import { KeyType, Key } from '../../../crypto'
-import { SECURITY_CONTEXT_BBS_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
-import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/signature-suites/ed25519/constants'
+import { Key } from '../../../crypto/Key'
+import { KeyType } from '../../../crypto/KeyType'
+import { AriesFrameworkError } from '../../../error'
+import { SECURITY_CONTEXT_BBS_URL, SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
+import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/data-integrity/signature-suites/ed25519/constants'
 
 import { DidDocumentBuilder } from './DidDocumentBuilder'
-import { getBls12381g1VerificationMethod } from './key-type/bls12381g1'
-import { getBls12381g1g2VerificationMethod } from './key-type/bls12381g1g2'
-import { getBls12381g2VerificationMethod } from './key-type/bls12381g2'
-import { convertPublicKeyToX25519, getEd25519VerificationMethod } from './key-type/ed25519'
-import { getX25519VerificationMethod } from './key-type/x25519'
+import { getBls12381g1g2VerificationMethod } from './key-type'
+import { convertPublicKeyToX25519 } from './key-type/ed25519'
+import {
+  getBls12381G1Key2020,
+  getBls12381G2Key2020,
+  getEd25519VerificationKey2018,
+  getJsonWebKey2020,
+  getX25519KeyAgreementKey2019,
+} from './verificationMethod'
 
-const didDocumentKeyTypeMapping = {
+const didDocumentKeyTypeMapping: Record<KeyType, (did: string, key: Key) => DidDocument> = {
   [KeyType.Ed25519]: getEd25519DidDoc,
   [KeyType.X25519]: getX25519DidDoc,
   [KeyType.Bls12381g1]: getBls12381g1DidDoc,
   [KeyType.Bls12381g2]: getBls12381g2DidDoc,
   [KeyType.Bls12381g1g2]: getBls12381g1g2DidDoc,
+  [KeyType.P256]: getJsonWebKey2020DidDocument,
+  [KeyType.P384]: getJsonWebKey2020DidDocument,
+  [KeyType.P521]: getJsonWebKey2020DidDocument,
 }
 
 export function getDidDocumentForKey(did: string, key: Key) {
@@ -26,7 +36,7 @@ export function getDidDocumentForKey(did: string, key: Key) {
 }
 
 function getBls12381g1DidDoc(did: string, key: Key) {
-  const verificationMethod = getBls12381g1VerificationMethod(did, key)
+  const verificationMethod = getBls12381G1Key2020({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
   return getSignatureKeyBase({
     did,
@@ -54,12 +64,37 @@ function getBls12381g1g2DidDoc(did: string, key: Key) {
   return didDocumentBuilder.addContext(SECURITY_CONTEXT_BBS_URL).build()
 }
 
+export function getJsonWebKey2020DidDocument(did: string, key: Key) {
+  const verificationMethod = getJsonWebKey2020({ did, key })
+
+  const didDocumentBuilder = new DidDocumentBuilder(did)
+  didDocumentBuilder.addContext(SECURITY_JWS_CONTEXT_URL).addVerificationMethod(verificationMethod)
+
+  if (!key.supportsEncrypting && !key.supportsSigning) {
+    throw new AriesFrameworkError('Key must support at least signing or encrypting')
+  }
+
+  if (key.supportsSigning) {
+    didDocumentBuilder
+      .addAuthentication(verificationMethod.id)
+      .addAssertionMethod(verificationMethod.id)
+      .addCapabilityDelegation(verificationMethod.id)
+      .addCapabilityInvocation(verificationMethod.id)
+  }
+
+  if (key.supportsEncrypting) {
+    didDocumentBuilder.addKeyAgreement(verificationMethod.id)
+  }
+
+  return didDocumentBuilder.build()
+}
+
 function getEd25519DidDoc(did: string, key: Key) {
-  const verificationMethod = getEd25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
+  const verificationMethod = getEd25519VerificationKey2018({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
   const publicKeyX25519 = convertPublicKeyToX25519(key.publicKey)
   const didKeyX25519 = Key.fromPublicKey(publicKeyX25519, KeyType.X25519)
-  const x25519VerificationMethod = getX25519VerificationMethod({
+  const x25519VerificationMethod = getX25519KeyAgreementKey2019({
     id: `${did}#${didKeyX25519.fingerprint}`,
     key: didKeyX25519,
     controller: did,
@@ -76,7 +111,7 @@ function getEd25519DidDoc(did: string, key: Key) {
 }
 
 function getX25519DidDoc(did: string, key: Key) {
-  const verificationMethod = getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did })
+  const verificationMethod = getX25519KeyAgreementKey2019({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
   const document = new DidDocumentBuilder(did)
     .addKeyAgreement(verificationMethod)
@@ -87,7 +122,7 @@ function getX25519DidDoc(did: string, key: Key) {
 }
 
 function getBls12381g2DidDoc(did: string, key: Key) {
-  const verificationMethod = getBls12381g2VerificationMethod(did, key)
+  const verificationMethod = getBls12381G2Key2020({ id: `${did}#${key.fingerprint}`, key, controller: did })
 
   return getSignatureKeyBase({
     did,

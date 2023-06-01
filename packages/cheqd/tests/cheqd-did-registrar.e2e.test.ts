@@ -94,6 +94,7 @@ describe('Cheqd DID registrar', () => {
         methodSpecificIdAlgo: 'base58btc',
       },
     })
+
     expect(createResult).toMatchObject({
       didState: {
         state: 'finished',
@@ -119,12 +120,8 @@ describe('Cheqd DID registrar', () => {
     })
 
     const deactivateResult = await agent.dids.deactivate({ did })
-    expect(deactivateResult).toMatchObject({
-      didState: {
-        state: 'finished',
-        didDocument,
-      },
-    })
+    expect(deactivateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
+    expect(deactivateResult.didState.state).toEqual('finished')
 
     const resolvedDocument = await agent.dids.resolve(did)
     expect(resolvedDocument.didDocumentMetadata.deactivated).toBe(true)

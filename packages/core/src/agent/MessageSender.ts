@@ -104,7 +104,7 @@ export class MessageSender {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
-    await session.send(encryptedMessage)
+    await session.send(agentContext, encryptedMessage)
   }
 
   public async sendPackage(
@@ -125,7 +125,7 @@ export class MessageSender {
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
       try {
-        await session.send(encryptedMessage)
+        await session.send(agentContext, encryptedMessage)
         return
       } catch (error) {
         errors.push(error)

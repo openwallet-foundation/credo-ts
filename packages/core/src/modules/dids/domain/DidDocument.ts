@@ -3,7 +3,9 @@ import type { DidDocumentService } from './service'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { KeyType, Key } from '../../../crypto'
+import { Key } from '../../../crypto/Key'
+import { KeyType } from '../../../crypto/KeyType'
+import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
@@ -115,7 +117,7 @@ export class DidDocument {
     const verificationMethod = this.verificationMethod?.find((key) => key.id.endsWith(keyId))
 
     if (!verificationMethod) {
-      throw new Error(`Unable to locate verification method with id '${keyId}'`)
+      throw new AriesFrameworkError(`Unable to locate verification method with id '${keyId}'`)
     }
 
     return verificationMethod
@@ -142,7 +144,7 @@ export class DidDocument {
       }
     }
 
-    throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
+    throw new AriesFrameworkError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
   /**

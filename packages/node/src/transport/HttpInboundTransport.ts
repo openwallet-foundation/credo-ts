@@ -1,4 +1,4 @@
-import type { InboundTransport, Agent, TransportSession, EncryptedMessage } from '@aries-framework/core'
+import type { InboundTransport, Agent, TransportSession, EncryptedMessage, AgentContext } from '@aries-framework/core'
 import type { Express, Request, Response } from 'express'
 import type { Server } from 'http'
 
@@ -97,13 +97,21 @@ export class HttpTransportSession implements TransportSession {
     }
   }
 
-  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
 
-    // FIXME: we should not use json(), but rather the correct
-    // DIDComm content-type based on the req and agent config
-    this.res.status(200).json(encryptedMessage).end()
+    // By default we take the agent config's default DIDComm content-type
+    let responseMimeType = agentContext.config.didCommMimeType as string
+
+    // However, if the request mime-type is a mime-type that is supported by us, we use that
+    // to minimize the chance of interoperability issues
+    const requestMimeType = this.req.headers['content-type']
+    if (requestMimeType && supportedContentTypes.includes(requestMimeType)) {
+      responseMimeType = requestMimeType
+    }
+
+    this.res.status(200).contentType(responseMimeType).json(encryptedMessage).end()
   }
 }

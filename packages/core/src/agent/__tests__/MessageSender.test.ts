@@ -357,7 +357,7 @@ describe('MessageSender', () => {
       })
 
       expect(session.send).toHaveBeenCalledTimes(1)
-      expect(session.send).toHaveBeenNthCalledWith(1, encryptedMessage)
+      expect(session.send).toHaveBeenNthCalledWith(1, agentContext, encryptedMessage)
       expect(sendMessageSpy).toHaveBeenCalledTimes(0)
       expect(sendMessageToServiceSpy).toHaveBeenCalledTimes(0)
       expect(transportServiceFindSessionByIdMock).toHaveBeenCalledWith('session-123')

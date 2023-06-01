@@ -1,17 +1,30 @@
 import type { DidRegistrar, DidResolver } from '../domain'
 
-import { KeyDidRegistrar, PeerDidRegistrar, KeyDidResolver, PeerDidResolver, WebDidResolver } from '..'
 import { DidsModuleConfig } from '../DidsModuleConfig'
+import {
+  KeyDidRegistrar,
+  PeerDidRegistrar,
+  KeyDidResolver,
+  PeerDidResolver,
+  WebDidResolver,
+  JwkDidRegistrar,
+  JwkDidResolver,
+} from '../methods'
 
 describe('DidsModuleConfig', () => {
   test('sets default values', () => {
     const config = new DidsModuleConfig()
 
-    expect(config.registrars).toEqual([expect.any(KeyDidRegistrar), expect.any(PeerDidRegistrar)])
+    expect(config.registrars).toEqual([
+      expect.any(KeyDidRegistrar),
+      expect.any(PeerDidRegistrar),
+      expect.any(JwkDidRegistrar),
+    ])
     expect(config.resolvers).toEqual([
       expect.any(WebDidResolver),
       expect.any(KeyDidResolver),
       expect.any(PeerDidResolver),
+      expect.any(JwkDidResolver),
     ])
   })
 

@@ -2,32 +2,27 @@ import type { ValidationOptions } from 'class-validator'
 
 import { buildMessage, isString, isURL, ValidateBy } from 'class-validator'
 
-import { isJsonObject } from '../../utils/type'
+import { isJsonObject } from '../../utils'
 
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
 
-export function IsJsonLdContext(validationOptions?: ValidationOptions): PropertyDecorator {
+export function IsCredentialJsonLdContext(validationOptions?: ValidationOptions): PropertyDecorator {
   return ValidateBy(
     {
-      name: 'IsJsonLdContext',
+      name: 'IsCredentialJsonLdContext',
       validator: {
         validate: (value): boolean => {
-          // If value is an array, check if all items are strings, are URLs and that
-          // the first entry is a verifiable credential context
-          if (Array.isArray(value)) {
-            return value.every(
-              (v) => (isString(v) && isURL(v)) || (isJsonObject(v) && value[0] === CREDENTIALS_CONTEXT_V1_URL)
-            )
-          }
+          if (!Array.isArray(value)) return false
 
-          // If value is not an array, check if it is an object (assuming it's a JSON-LD context definition)
-          if (typeof value === 'object') {
-            return true
-          }
-          return false
+          // First item must be the verifiable credential context
+          if (value[0] !== CREDENTIALS_CONTEXT_V1_URL) return false
+
+          return value.every((v) => (isString(v) && isURL(v)) || isJsonObject(v))
         },
         defaultMessage: buildMessage(
-          (eachPrefix) => eachPrefix + '$property must be an array of strings or a JSON-LD context definition',
+          (eachPrefix) =>
+            eachPrefix +
+            '$property must be an array of strings or objects, where the first item is the verifiable credential context URL.',
           validationOptions
         ),
       },

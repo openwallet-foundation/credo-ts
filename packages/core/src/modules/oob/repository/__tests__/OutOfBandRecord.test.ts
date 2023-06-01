@@ -69,9 +69,8 @@ describe('OutOfBandRecord', () => {
       }
 
       const oobRecord = JsonTransformer.fromJSON(jsonRecord, OutOfBandRecord)
-      const oobRecordClone = JsonTransformer.clone(oobRecord)
 
-      expect(oobRecord.toJSON()).toMatchObject(oobRecordClone.toJSON())
+      expect(oobRecord.toJSON()).toMatchObject(oobRecord.clone().toJSON())
     })
   })
 })

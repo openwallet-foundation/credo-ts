@@ -1,5 +1,7 @@
+import { JsonEncoder } from '../../../utils'
+
 export const SEED = '00000000000000000000000000000My2'
-export const VERKEY = 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn'
+export const PUBLIC_KEY_BASE58 = 'kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn'
 
 export const DATA_JSON = {
   did: 'did',
@@ -23,4 +25,5 @@ export const JWS_JSON = {
   protected:
     'eyJhbGciOiJFZERTQSIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IkN6cmtiNjQ1MzdrVUVGRkN5SXI4STgxUWJJRGk2MnNrbU41Rm41LU1zVkUifX0',
   signature: 'OsDP4FM8792J9JlessA9IXv4YUYjIGcIAnPPrEJmgxYomMwDoH-h2DMAF5YF2VtsHHyhGN_0HryDjWSEAZdYBQ',
+  payload: JsonEncoder.toBase64URL(DATA_JSON),
 }

@@ -1,5 +1,7 @@
+import { JsonEncoder } from '../../../utils'
+
 export const SEED = '00000000000000000000000000000My1'
-export const VERKEY = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
+export const PUBLIC_KEY_BASE58 = 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa'
 
 export const DATA_JSON = {
   did: 'did',
@@ -19,10 +21,9 @@ export const DATA_JSON = {
 }
 
 export const JWS_JSON = {
-  header: {
-    kid: 'did:key:z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax',
-  },
   protected:
-    'eyJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3ZCcFpUUmI3dGp1VUY1QWttaEcxSkRWOTI4aFpiZzVLQVFKY29ndmh6OWF4IiwiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4IjoiNmNaMmJaS21LaVVpRjlNTEtDVjhJSVlJRXNPTEhzSkc1cUJKOVNyUVlCayIsImtpZCI6ImRpZDprZXk6ejZNa3ZCcFpUUmI3dGp1VUY1QWttaEcxSkRWOTI4aFpiZzVLQVFKY29ndmh6OWF4In19',
-  signature: 'eA3MPRpSTt5NR8EZkDNb849E9qfrlUm8-StWPA4kMp-qcH7oEc2-1En4fgpz_IWinEbVxCLbmKhWNyaTAuHNAg',
+    'eyJhbGciOiJFZERTQSIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6IjZjWjJiWkttS2lVaUY5TUxLQ1Y4SUlZSUVzT0xIc0pHNXFCSjlTclFZQmsifX0',
+  signature: 'Js_ibaz24b4GRikbGPeLvRe5FyrcVR2aNVZSs26CLl3DCMJdPqUNRxVDNOD-dBnLs0HyTh6_mX9cG9vWEimtBA',
+  header: { kid: 'did:key:z6MkvBpZTRb7tjuUF5AkmhG1JDV928hZbg5KAQJcogvhz9ax' },
+  payload: JsonEncoder.toBase64URL(DATA_JSON),
 }

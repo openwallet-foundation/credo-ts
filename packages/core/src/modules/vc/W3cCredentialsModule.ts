@@ -5,14 +5,16 @@ import { KeyType } from '../../crypto'
 import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
-} from '../dids/domain/key-type/ed25519'
+} from '../dids'
 
-import { SignatureSuiteRegistry, SignatureSuiteToken } from './SignatureSuiteRegistry'
 import { W3cCredentialService } from './W3cCredentialService'
 import { W3cCredentialsApi } from './W3cCredentialsApi'
 import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
+import { SignatureSuiteRegistry, SignatureSuiteToken } from './data-integrity/SignatureSuiteRegistry'
+import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
+import { Ed25519Signature2018 } from './data-integrity/signature-suites'
+import { W3cJwtCredentialService } from './jwt-vc'
 import { W3cCredentialRepository } from './repository/W3cCredentialRepository'
-import { Ed25519Signature2018 } from './signature-suites'
 
 /**
  * @public
@@ -28,6 +30,8 @@ export class W3cCredentialsModule implements Module {
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerContextScoped(W3cCredentialsApi)
     dependencyManager.registerSingleton(W3cCredentialService)
+    dependencyManager.registerSingleton(W3cJwtCredentialService)
+    dependencyManager.registerSingleton(W3cJsonLdCredentialService)
     dependencyManager.registerSingleton(W3cCredentialRepository)
 
     dependencyManager.registerSingleton(SignatureSuiteRegistry)

@@ -5,16 +5,16 @@ import type {
   AnonCredsRegisterRevocationStatusListOptions,
   AnonCredsUpdateRevocationStatusListOptions,
 } from './AnonCredsApiOptions'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
 import type {
+  AnonCredsRegistry,
   GetCredentialDefinitionReturn,
-  GetRevocationStatusListReturn,
+  GetCredentialsOptions,
   GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
   GetSchemaReturn,
   RegisterCredentialDefinitionReturn,
-  RegisterSchemaOptions,
   RegisterSchemaReturn,
-  AnonCredsRegistry,
-  GetCredentialsOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
 } from './services'
@@ -45,10 +45,10 @@ import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepositor
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from './repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 import {
-  AnonCredsHolderServiceSymbol,
-  AnonCredsIssuerServiceSymbol,
-  AnonCredsIssuerService,
   AnonCredsHolderService,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsIssuerService,
+  AnonCredsIssuerServiceSymbol,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from './utils/timestamp'
@@ -164,7 +164,9 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerSchema(options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
+  public async registerSchema<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterSchema<T>
+  ): Promise<RegisterSchemaReturn> {
     const failedReturnBase = {
       schemaState: {
         state: 'failed' as const,
@@ -183,7 +185,9 @@ export class AnonCredsApi {
 
     try {
       const result = await registry.registerSchema(this.agentContext, options)
-      await this.storeSchemaRecord(registry, result)
+      if (result.schemaState.state === 'finished') {
+        await this.storeSchemaRecord(registry, result)
+      }
 
       return result
     } catch (error) {
@@ -204,7 +208,7 @@ export class AnonCredsApi {
   }
 
   /**
-   * Retrieve a {@link AnonCredsCredentialDefinition} from the registry associated
+   * Retrieve a {@link GetCredentialDefinitionReturn} from the registry associated
    * with the {@link credentialDefinitionId}
    */
   public async getCredentialDefinition(credentialDefinitionId: string): Promise<GetCredentialDefinitionReturn> {
@@ -233,13 +237,9 @@ export class AnonCredsApi {
     }
   }
 
-  // TODO: Shall we store in Credential Definition Record the currently used revocation registry id? This can be used when accepting credential request to determine
-  // Which one we'll need to use. It can be also a tag in RevocRegDef Record stating which one is the active one for a given CredDefId.
-
-  public async registerCredentialDefinition(options: {
-    credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
-    options: Extensible
-  }): Promise<RegisterCredentialDefinitionReturn> {
+  public async registerCredentialDefinition<T extends Extensible = Extensible>(
+    options: AnonCredsRegisterCredentialDefinition<T>
+  ): Promise<RegisterCredentialDefinitionReturn> {
     const failedReturnBase = {
       credentialDefinitionState: {
         state: 'failed' as const,
@@ -255,28 +255,37 @@ export class AnonCredsApi {
       return failedReturnBase
     }
 
-    const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
-    if (!schemaRegistry) {
-      failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
-      return failedReturnBase
-    }
+    let credentialDefinition: AnonCredsCredentialDefinition
+    let credentialDefinitionPrivate: Record<string, unknown> | undefined = undefined
+    let keyCorrectnessProof: Record<string, unknown> | undefined = undefined
 
     try {
-      const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
+      if (isFullCredentialDefinitionInput(options.credentialDefinition)) {
+        credentialDefinition = options.credentialDefinition
+      } else {
+        // If the input credential definition is not a full credential definition, we need to create one first
+        // There's a caveat to when the input contains a full credential, that the credential definition private
+        // and key correctness proof must already be stored in the wallet
+        const schemaRegistry = this.findRegistryForIdentifier(options.credentialDefinition.schemaId)
+        if (!schemaRegistry) {
+          failedReturnBase.credentialDefinitionState.reason = `Unable to register credential definition. No registry found for schemaId ${options.credentialDefinition.schemaId}`
+          return failedReturnBase
+        }
 
-      if (!schemaResult.schema) {
-        failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
-        return failedReturnBase
-      }
+        const schemaResult = await schemaRegistry.getSchema(this.agentContext, options.credentialDefinition.schemaId)
 
-      const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
-        await this.anonCredsIssuerService.createCredentialDefinition(
+        if (!schemaResult.schema) {
+          failedReturnBase.credentialDefinitionState.reason = `error resolving schema with id ${options.credentialDefinition.schemaId}: ${schemaResult.resolutionMetadata.error} ${schemaResult.resolutionMetadata.message}`
+          return failedReturnBase
+        }
+
+        const createCredentialDefinitionResult = await this.anonCredsIssuerService.createCredentialDefinition(
           this.agentContext,
           {
             issuerId: options.credentialDefinition.issuerId,
             schemaId: options.credentialDefinition.schemaId,
             tag: options.credentialDefinition.tag,
-            supportRevocation: options.credentialDefinition.supportRevocation,
+            supportRevocation: options.supportRevocation,
             schema: schemaResult.schema,
           },
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
@@ -285,12 +294,26 @@ export class AnonCredsApi {
           }
         )
 
+        credentialDefinition = createCredentialDefinitionResult.credentialDefinition
+        credentialDefinitionPrivate = createCredentialDefinitionResult.credentialDefinitionPrivate
+        keyCorrectnessProof = createCredentialDefinitionResult.keyCorrectnessProof
+      }
+
       const result = await registry.registerCredentialDefinition(this.agentContext, {
         credentialDefinition,
         options: options.options,
       })
 
-      await this.storeCredentialDefinitionRecord(registry, result, credentialDefinitionPrivate, keyCorrectnessProof)
+      // Once a credential definition is created, the credential definition private and the key correctness proof must be stored because they change even if they the credential is recreated with the same arguments.
+      // To avoid having unregistered credential definitions in the wallet, the credential definitions itself are stored only when the credential definition status is finished, meaning that the credential definition has been successfully registered.
+      await this.storeCredentialDefinitionPrivateAndKeyCorrectnessRecord(
+        result,
+        credentialDefinitionPrivate,
+        keyCorrectnessProof
+      )
+      if (result.credentialDefinitionState.state === 'finished') {
+        await this.storeCredentialDefinitionRecord(registry, result)
+      }
 
       return result
     } catch (error) {
@@ -643,59 +666,72 @@ export class AnonCredsApi {
     }
   }
 
-  private async storeCredentialDefinitionRecord(
-    registry: AnonCredsRegistry,
+  private async storeCredentialDefinitionPrivateAndKeyCorrectnessRecord(
     result: RegisterCredentialDefinitionReturn,
     credentialDefinitionPrivate?: Record<string, unknown>,
     keyCorrectnessProof?: Record<string, unknown>
   ): Promise<void> {
     try {
+      if (!result.credentialDefinitionState.credentialDefinitionId) return
+
+      // Store Credential Definition private data (if provided by issuer service)
+      if (credentialDefinitionPrivate) {
+        const credentialDefinitionPrivateRecord = new AnonCredsCredentialDefinitionPrivateRecord({
+          credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+          value: credentialDefinitionPrivate,
+        })
+        await this.anonCredsCredentialDefinitionPrivateRepository.save(
+          this.agentContext,
+          credentialDefinitionPrivateRecord
+        )
+      }
+
+      if (keyCorrectnessProof) {
+        const keyCorrectnessProofRecord = new AnonCredsKeyCorrectnessProofRecord({
+          credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+          value: keyCorrectnessProof,
+        })
+        await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
+      }
+    } catch (error) {
+      throw new AnonCredsStoreRecordError(`Error storing credential definition key-correctness-proof and private`, {
+        cause: error,
+      })
+    }
+  }
+
+  private async storeCredentialDefinitionRecord(
+    registry: AnonCredsRegistry,
+    result: RegisterCredentialDefinitionReturn
+  ): Promise<void> {
+    try {
       // If we have both the credentialDefinition and the credentialDefinitionId we will store a copy of the credential definition. We may need to handle an
       // edge case in the future where we e.g. don't have the id yet, and it is registered through a different channel
       if (
-        result.credentialDefinitionState.credentialDefinition &&
-        result.credentialDefinitionState.credentialDefinitionId
+        !result.credentialDefinitionState.credentialDefinition ||
+        !result.credentialDefinitionState.credentialDefinitionId
       ) {
-        const credentialDefinitionRecord = new AnonCredsCredentialDefinitionRecord({
-          credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-          credentialDefinition: result.credentialDefinitionState.credentialDefinition,
-          methodName: registry.methodName,
-        })
-
-        // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
-        // the indyLedgerSeqNo and the didIndyNamespace, but it can get quite big if complete transactions
-        // are stored in the metadata
-        credentialDefinitionRecord.metadata.set(
-          AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
-          result.credentialDefinitionMetadata
-        )
-        credentialDefinitionRecord.metadata.set(
-          AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionRegistrationMetadata,
-          result.registrationMetadata
-        )
-
-        await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, credentialDefinitionRecord)
-
-        // Store Credential Definition private data (if provided by issuer service)
-        if (credentialDefinitionPrivate) {
-          const credentialDefinitionPrivateRecord = new AnonCredsCredentialDefinitionPrivateRecord({
-            credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-            value: credentialDefinitionPrivate,
-          })
-          await this.anonCredsCredentialDefinitionPrivateRepository.save(
-            this.agentContext,
-            credentialDefinitionPrivateRecord
-          )
-        }
-
-        if (keyCorrectnessProof) {
-          const keyCorrectnessProofRecord = new AnonCredsKeyCorrectnessProofRecord({
-            credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
-            value: keyCorrectnessProof,
-          })
-          await this.anonCredsKeyCorrectnessProofRepository.save(this.agentContext, keyCorrectnessProofRecord)
-        }
+        return
       }
+      const credentialDefinitionRecord = new AnonCredsCredentialDefinitionRecord({
+        credentialDefinitionId: result.credentialDefinitionState.credentialDefinitionId,
+        credentialDefinition: result.credentialDefinitionState.credentialDefinition,
+        methodName: registry.methodName,
+      })
+
+      // TODO: do we need to store this metadata? For indy, the registration metadata contains e.g.
+      // the indyLedgerSeqNo and the didIndyNamespace, but it can get quite big if complete transactions
+      // are stored in the metadata
+      credentialDefinitionRecord.metadata.set(
+        AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionMetadata,
+        result.credentialDefinitionMetadata
+      )
+      credentialDefinitionRecord.metadata.set(
+        AnonCredsCredentialDefinitionRecordMetadataKeys.CredentialDefinitionRegistrationMetadata,
+        result.registrationMetadata
+      )
+
+      await this.anonCredsCredentialDefinitionRepository.save(this.agentContext, credentialDefinitionRecord)
     } catch (error) {
       throw new AnonCredsStoreRecordError(`Error storing credential definition records`, { cause: error })
     }
@@ -726,4 +762,21 @@ export class AnonCredsApi {
       return null
     }
   }
+}
+
+interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensible> {
+  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+  supportRevocation: boolean
+  options: T
+}
+
+interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {
+  schema: AnonCredsSchema
+  options: T
+}
+
+function isFullCredentialDefinitionInput(
+  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+): credentialDefinition is AnonCredsCredentialDefinition {
+  return 'value' in credentialDefinition
 }

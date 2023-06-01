@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import '@hyperledger/aries-askar-nodejs'
 
 import type { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord'
 
