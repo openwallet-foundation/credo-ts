@@ -199,8 +199,8 @@ describe('AnonCreds API', () => {
         issuerId,
         schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
         tag: 'TAG',
-        supportRevocation: false,
       },
+      supportRevocation: false,
       options: {},
     })
 
