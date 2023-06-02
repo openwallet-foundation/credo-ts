@@ -52,6 +52,17 @@ describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
     await askarWallet.delete()
   })
 
+  test('supportedKeyTypes', () => {
+    expect(askarWallet.supportedKeyTypes).toEqual([
+      KeyType.Ed25519,
+      KeyType.X25519,
+      KeyType.Bls12381g1,
+      KeyType.Bls12381g2,
+      KeyType.Bls12381g1g2,
+      KeyType.P256,
+    ])
+  })
+
   test('Get the wallet store', () => {
     expect(askarWallet.store).toEqual(expect.any(Store))
   })

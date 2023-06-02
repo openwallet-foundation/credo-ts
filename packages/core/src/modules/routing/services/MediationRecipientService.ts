@@ -303,11 +303,10 @@ export class MediationRecipientService {
     mediationRecord: MediationRecord,
     previousState: MediationState | null
   ) {
-    const clonedMediationRecord = JsonTransformer.clone(mediationRecord)
     this.eventEmitter.emit<MediationStateChangedEvent>(agentContext, {
       type: RoutingEventTypes.MediationStateChanged,
       payload: {
-        mediationRecord: clonedMediationRecord,
+        mediationRecord: mediationRecord.clone(),
         previousState,
       },
     })

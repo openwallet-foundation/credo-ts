@@ -9,7 +9,7 @@ import { AriesFrameworkError, ClassValidationError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidsModuleConfig } from '../../../dids'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
-import { W3cCredential, W3cPresentation } from '../../models'
+import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 
@@ -68,7 +68,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
 
       const vcJwt = await w3cJwtCredentialService.signCredential(agentContext, {
         alg: JwaSignatureAlgorithm.ES256,
-        format: 'jwt_vc',
+        format: ClaimFormat.JwtVc,
         verificationMethod: issuerDidJwk.verificationMethodId,
         credential,
       })
@@ -94,7 +94,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
           verificationMethod: 'hello',
           alg: JwaSignatureAlgorithm.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
-          format: 'jwt_vc',
+          format: ClaimFormat.JwtVc,
         })
       ).rejects.toThrowError('Only did identifiers are supported as verification method')
 
@@ -106,7 +106,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
           credential: JsonTransformer.fromJSON({ ...credentialJson, issuanceDate: undefined }, W3cCredential, {
             validate: false,
           }),
-          format: 'jwt_vc',
+          format: ClaimFormat.JwtVc,
         })
       ).rejects.toThrowError(
         'property issuanceDate has failed the following constraints: issuanceDate must be RFC 3339 date'
@@ -118,7 +118,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
           verificationMethod: issuerDidJwk.verificationMethodId + 'extra',
           alg: JwaSignatureAlgorithm.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
-          format: 'jwt_vc',
+          format: ClaimFormat.JwtVc,
         })
       ).rejects.toThrowError(
         `Unable to locate verification method with id 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InpRT293SUMxZ1dKdGRkZEI1R0F0NGxhdTZMdDhJaHk3NzFpQWZhbS0xcGMiLCJ5IjoiY2pEXzdvM2dkUTF2Z2lReTNfc01HczdXcndDTVU5RlFZaW1BM0h4bk1sdyJ9#0extra' in purposes assertionMethod`
@@ -294,7 +294,7 @@ describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
         alg: JwaSignatureAlgorithm.EdDSA,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
-        format: 'jwt_vp',
+        format: ClaimFormat.JwtVp,
         verificationMethod: `${holderDidKey.did}#${holderDidKey.key.fingerprint}`,
       })
 

@@ -43,3 +43,7 @@ export function getJwkFromKey(key: Key) {
 export function getJwkClassFromJwaSignatureAlgorithm(alg: JwaSignatureAlgorithm | string) {
   return JwkClasses.find((jwkClass) => jwkClass.supportedSignatureAlgorithms.includes(alg as JwaSignatureAlgorithm))
 }
+
+export function getJwkClassFromKeyType(keyType: KeyType) {
+  return JwkClasses.find((jwkClass) => jwkClass.keyType === keyType)
+}

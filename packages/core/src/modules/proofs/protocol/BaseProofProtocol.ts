@@ -29,7 +29,6 @@ import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { DidCommMessageRepository } from '../../../storage'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
 import { ProofRepository } from '../repository'
@@ -155,12 +154,10 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
 
-    const clonedProof = JsonTransformer.clone(proofRecord)
-
     eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
       type: ProofEventTypes.ProofStateChanged,
       payload: {
-        proofRecord: clonedProof,
+        proofRecord: proofRecord.clone(),
         previousState: previousState,
       },
     })

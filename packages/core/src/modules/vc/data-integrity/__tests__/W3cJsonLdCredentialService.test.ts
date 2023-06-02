@@ -15,7 +15,7 @@ import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
 import { W3cCredentialsModuleConfig } from '../../W3cCredentialsModuleConfig'
-import { W3cCredential } from '../../models'
+import { ClaimFormat, W3cCredential } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 import { SignatureSuiteRegistry } from '../SignatureSuiteRegistry'
 import { W3cJsonLdCredentialService } from '../W3cJsonLdCredentialService'
@@ -109,7 +109,7 @@ describe('W3cJsonLdCredentialsService', () => {
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
         const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
-          format: 'ldp_vc',
+          format: ClaimFormat.LdpVc,
           credential,
           proofType: 'Ed25519Signature2018',
           verificationMethod: verificationMethod,
@@ -131,7 +131,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         expect(async () => {
           await w3cJsonLdCredentialService.signCredential(agentContext, {
-            format: 'ldp_vc',
+            format: ClaimFormat.LdpVc,
             credential,
             proofType: 'Ed25519Signature2018',
             verificationMethod:
@@ -247,7 +247,7 @@ describe('W3cJsonLdCredentialsService', () => {
         })
 
         const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
-          format: 'ldp_vp',
+          format: ClaimFormat.LdpVp,
           presentation: presentation,
           proofPurpose: purpose,
           proofType: 'Ed25519Signature2018',

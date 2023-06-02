@@ -79,6 +79,13 @@ export class IndySdkWallet implements Wallet {
     return this.walletHandle
   }
 
+  public get supportedKeyTypes() {
+    const walletSupportedKeyTypes = [KeyType.Ed25519]
+    const signingKeyProviderSupportedKeyTypes = this.signingKeyProviderRegistry.supportedKeyTypes
+
+    return Array.from(new Set([...walletSupportedKeyTypes, ...signingKeyProviderSupportedKeyTypes]))
+  }
+
   /**
    * Dispose method is called when an agent context is disposed.
    */

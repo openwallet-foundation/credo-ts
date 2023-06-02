@@ -30,7 +30,7 @@ import { JsonEncoder, areObjectsEqual } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { findVerificationMethodByKeyType } from '../../../dids/domain/DidDocument'
 import { DidResolverService } from '../../../dids/services/DidResolverService'
-import { W3cCredential, W3cCredentialService, W3cJsonLdVerifiableCredential } from '../../../vc'
+import { ClaimFormat, W3cCredential, W3cCredentialService, W3cJsonLdVerifiableCredential } from '../../../vc'
 import { W3cJsonLdCredentialService } from '../../../vc/data-integrity/W3cJsonLdCredentialService'
 import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 
@@ -247,7 +247,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     const credential = JsonTransformer.fromJSON(credentialRequest.credential, W3cCredential)
 
     const verifiableCredential = await w3cJsonLdCredentialService.signCredential(agentContext, {
-      format: 'ldp_vc',
+      format: ClaimFormat.LdpVc,
       credential,
       proofType: credentialRequest.options.proofType,
       verificationMethod: verificationMethod,

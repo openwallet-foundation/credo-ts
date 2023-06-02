@@ -2,6 +2,7 @@ import type { W3cCredentialRepository } from '../../core/src/modules/vc/reposito
 import type { AgentContext, W3cJwtCredentialService, Wallet } from '@aries-framework/core'
 
 import {
+  ClaimFormat,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
@@ -136,7 +137,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
         const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
-          format: 'ldp_vc',
+          format: ClaimFormat.LdpVc,
           credential,
           proofType: 'BbsBlsSignature2020',
           verificationMethod: verificationMethod,
@@ -249,7 +250,7 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
         })
 
         const verifiablePresentation = await w3cJsonLdCredentialService.signPresentation(agentContext, {
-          format: 'ldp_vp',
+          format: ClaimFormat.LdpVp,
           presentation: presentation,
           proofPurpose: purpose,
           proofType: 'Ed25519Signature2018',

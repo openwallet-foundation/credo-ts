@@ -9,7 +9,7 @@ import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
 import type { AgentContext, InboundMessageContext, Logger, Query } from '@aries-framework/core'
 
-import { AgentConfig, EventEmitter, AriesFrameworkError, injectable, JsonTransformer } from '@aries-framework/core'
+import { AgentConfig, EventEmitter, AriesFrameworkError, injectable } from '@aries-framework/core'
 
 import { ActionMenuEventTypes } from '../ActionMenuEvents'
 import { ActionMenuRole } from '../ActionMenuRole'
@@ -354,12 +354,10 @@ export class ActionMenuService {
     actionMenuRecord: ActionMenuRecord,
     previousState: ActionMenuState | null
   ) {
-    const clonedRecord = JsonTransformer.clone(actionMenuRecord)
-
     this.eventEmitter.emit<ActionMenuStateChangedEvent>(agentContext, {
       type: ActionMenuEventTypes.ActionMenuStateChanged,
       payload: {
-        actionMenuRecord: clonedRecord,
+        actionMenuRecord: actionMenuRecord.clone(),
         previousState: previousState,
       },
     })
