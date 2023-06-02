@@ -1,6 +1,7 @@
 import type { DependencyManager, Module } from '@aries-framework/core'
 
 import {
+  AgentConfig,
   KeyType,
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
@@ -15,6 +16,13 @@ export class BbsModule implements Module {
    * Registers the dependencies of the bbs module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    // Warn about experimental module
+    dependencyManager
+      .resolve(AgentConfig)
+      .logger.warn(
+        "The '@aries-framework/bbs-signatures' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+      )
+
     // Signing providers.
     dependencyManager.registerSingleton(SigningProviderToken, Bls12381g2SigningProvider)
 

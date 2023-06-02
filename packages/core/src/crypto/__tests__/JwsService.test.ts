@@ -1,12 +1,8 @@
-// Askar native dependency MUST be imported, and as we're only using the wallet
-// it isn't already set-up automatically
-// eslint-disable-next-line import/order
-import '../../../../askar/tests/helpers'
 import type { AgentContext } from '../../agent'
 import type { Key, Wallet } from '@aries-framework/core'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
-import { AskarWallet } from '../../../../askar/src'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { JsonEncoder, TypedArrayEncoder } from '../../utils'
@@ -31,7 +27,11 @@ describeRunInNodeVersion([18], 'JwsService', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new AskarWallet(config.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(
+      config.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([])
+    )
     agentContext = getAgentContext({
       wallet,
     })
