@@ -29,9 +29,21 @@ import { getJwtPayloadFromPresentation } from './presentationTransformer'
 @injectable()
 export class W3cJwtCredentialService {
   private jwsService: JwsService
+  private hasWarned = false
 
   public constructor(jwsService: JwsService) {
     this.jwsService = jwsService
+  }
+
+  private warnExperimentalOnce(agentContext: AgentContext) {
+    if (this.hasWarned) return
+
+    // Warn about experimental module
+    agentContext.config.logger.warn(
+      "The 'W3cJwtCredentialService' is experimental and could have unexpected breaking changes. When using this service, make sure to use strict versions for all @aries-framework packages."
+    )
+
+    this.hasWarned = true
   }
 
   /**
@@ -41,6 +53,8 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtSignCredentialOptions
   ): Promise<W3cJwtVerifiableCredential> {
+    this.warnExperimentalOnce(agentContext)
+
     // Validate the instance
     MessageValidator.validateSync(options.credential)
 
@@ -84,6 +98,8 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtVerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
+    this.warnExperimentalOnce(agentContext)
+
     // NOTE: this is mostly from the JSON-LD service that adds this option. Once we support
     // the same granular validation results, we can remove this and the user could just check
     // which of the validations failed. Supporting for consistency with the JSON-LD service for now.
@@ -201,6 +217,7 @@ export class W3cJwtCredentialService {
 
       return validationResults
     } catch (error) {
+      validationResults.error = error
       return validationResults
     }
   }
@@ -215,6 +232,8 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtSignPresentationOptions
   ): Promise<W3cJwtVerifiablePresentation> {
+    this.warnExperimentalOnce(agentContext)
+
     // Validate the instance
     MessageValidator.validateSync(options.presentation)
 
@@ -257,6 +276,8 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     options: W3cJwtVerifyPresentationOptions
   ): Promise<W3cVerifyPresentationResult> {
+    this.warnExperimentalOnce(agentContext)
+
     const validationResults: W3cVerifyPresentationResult = {
       isValid: false,
       validations: {},
@@ -416,6 +437,7 @@ export class W3cJwtCredentialService {
 
       return validationResults
     } catch (error) {
+      validationResults.error = error
       return validationResults
     }
   }
