@@ -3,7 +3,13 @@ import type { W3cCredentialOptions } from '../../models/credential/W3cCredential
 
 import { ValidateNested } from 'class-validator'
 
-import { IsInstanceOrArrayOfInstances, SingleOrArray, asArray, mapSingleOrArray } from '../../../../utils'
+import {
+  IsInstanceOrArrayOfInstances,
+  SingleOrArray,
+  asArray,
+  mapSingleOrArray,
+  JsonTransformer,
+} from '../../../../utils'
 import { ClaimFormat } from '../../models/ClaimFormat'
 import { W3cCredential } from '../../models/credential/W3cCredential'
 
@@ -29,6 +35,10 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
   public get proofTypes(): Array<string> {
     const proofArray = asArray(this.proof) ?? []
     return proofArray.map((proof) => proof.type)
+  }
+
+  public toJson() {
+    return JsonTransformer.toJSON(this)
   }
 
   /**
