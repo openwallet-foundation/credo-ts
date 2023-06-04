@@ -109,4 +109,12 @@ export class W3cJwtVerifiableCredential {
   public get claimFormat(): ClaimFormat.JwtVc {
     return ClaimFormat.JwtVc
   }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Credential. For JWT credentials this is
+   * a JWT string.
+   */
+  public get encoded() {
+    return this.serializedJwt
+  }
 }

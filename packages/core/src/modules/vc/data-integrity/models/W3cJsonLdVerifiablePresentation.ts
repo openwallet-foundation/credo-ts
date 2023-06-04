@@ -33,4 +33,12 @@ export class W3cJsonLdVerifiablePresentation extends W3cPresentation {
   public get claimFormat(): ClaimFormat.LdpVp {
     return ClaimFormat.LdpVp
   }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Presentation. For JSON-LD presentations this is
+   * a JSON object.
+   */
+  public get encoded() {
+    return this.toJson()
+  }
 }

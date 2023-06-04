@@ -47,4 +47,12 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
   public get claimFormat(): ClaimFormat.LdpVc {
     return ClaimFormat.LdpVc
   }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Credential. For JSON-LD credentials this is
+   * a JSON object.
+   */
+  public get encoded() {
+    return this.toJson()
+  }
 }

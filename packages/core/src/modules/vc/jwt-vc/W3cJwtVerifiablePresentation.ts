@@ -86,4 +86,12 @@ export class W3cJwtVerifiablePresentation {
   public get claimFormat(): ClaimFormat.JwtVp {
     return ClaimFormat.JwtVp
   }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Presentation. For JWT presentations this is
+   * a JWT string.
+   */
+  public get encoded() {
+    return this.serializedJwt
+  }
 }
