@@ -1,7 +1,7 @@
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
 
-import { SingleOrArray, IsInstanceOrArrayOfInstances, JsonTransformer } from '../../../../utils'
+import { SingleOrArray, IsInstanceOrArrayOfInstances, JsonTransformer, asArray } from '../../../../utils'
 import { ClaimFormat } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 
@@ -22,6 +22,11 @@ export class W3cJsonLdVerifiablePresentation extends W3cPresentation {
   @LinkedDataProofTransformer()
   @IsInstanceOrArrayOfInstances({ classType: LinkedDataProof })
   public proof!: SingleOrArray<LinkedDataProof>
+
+  public get proofTypes(): Array<string> {
+    const proofArray = asArray(this.proof) ?? []
+    return proofArray.map((proof) => proof.type)
+  }
 
   public toJson() {
     return JsonTransformer.toJSON(this)
