@@ -66,8 +66,11 @@ export class ReactNativeFileSystem implements FileSystem {
     // Make sure parent directories exist
     await RNFS.mkdir(getDirFromFilePath(path))
 
+    // Some characters in the URL might be invalid for
+    // the native os to handle. We need to encode the URL.
+    const encodedFromUrl = encodeURI(url)
     const { promise } = RNFS.downloadFile({
-      fromUrl: url,
+      fromUrl: encodedFromUrl,
       toFile: path,
     })
 
