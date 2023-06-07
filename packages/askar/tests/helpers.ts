@@ -3,14 +3,21 @@ import type { InitConfig } from '@aries-framework/core'
 
 import { ConnectionsModule, LogLevel, utils } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import path from 'path'
 
 import { TestLogger } from '../../core/tests/logger'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
 import { AskarModuleConfig } from '../src/AskarModuleConfig'
+import { AskarWallet } from '../src/wallet'
 
 export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
+registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
+
+// When using the AskarWallet directly, the native dependency won't be loaded by default.
+// So in tests depending on Askar, we import this wallet so we're sure the native dependency is loaded.
+export const RegisteredAskarTestWallet = AskarWallet
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)

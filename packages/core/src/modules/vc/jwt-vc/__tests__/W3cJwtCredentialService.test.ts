@@ -1,5 +1,5 @@
 import { describeRunInNodeVersion } from '../../../../../../../tests/runInVersion'
-import { AskarWallet } from '../../../../../../askar/src'
+import { RegisteredAskarTestWallet } from '../../../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
 import { InjectionSymbols } from '../../../../constants'
 import { JwsService, KeyType, SigningProviderRegistry } from '../../../../crypto'
@@ -24,13 +24,18 @@ import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentat
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 const config = getAgentConfig('W3cJwtCredentialService')
-const wallet = new AskarWallet(config.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+const wallet = new RegisteredAskarTestWallet(
+  config.logger,
+  new agentDependencies.FileSystem(),
+  new SigningProviderRegistry([])
+)
 const agentContext = getAgentContext({
   wallet,
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
   ],
+  agentConfig: config,
 })
 
 const jwsService = new JwsService()
