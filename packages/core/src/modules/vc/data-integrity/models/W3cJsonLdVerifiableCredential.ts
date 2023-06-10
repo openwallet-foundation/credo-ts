@@ -3,7 +3,13 @@ import type { W3cCredentialOptions } from '../../models/credential/W3cCredential
 
 import { ValidateNested } from 'class-validator'
 
-import { IsInstanceOrArrayOfInstances, SingleOrArray, asArray, mapSingleOrArray } from '../../../../utils'
+import {
+  IsInstanceOrArrayOfInstances,
+  SingleOrArray,
+  asArray,
+  mapSingleOrArray,
+  JsonTransformer,
+} from '../../../../utils'
 import { ClaimFormat } from '../../models/ClaimFormat'
 import { W3cCredential } from '../../models/credential/W3cCredential'
 
@@ -31,10 +37,22 @@ export class W3cJsonLdVerifiableCredential extends W3cCredential {
     return proofArray.map((proof) => proof.type)
   }
 
+  public toJson() {
+    return JsonTransformer.toJSON(this)
+  }
+
   /**
    * The {@link ClaimFormat} of the credential. For JSON-LD credentials this is always `ldp_vc`.
    */
   public get claimFormat(): ClaimFormat.LdpVc {
     return ClaimFormat.LdpVc
+  }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Credential. For JSON-LD credentials this is
+   * a JSON object.
+   */
+  public get encoded() {
+    return this.toJson()
   }
 }

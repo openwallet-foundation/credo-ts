@@ -2,6 +2,7 @@ import type { W3cPresentation } from '../models'
 
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
 import { AriesFrameworkError } from '../../../error'
+import { ClaimFormat } from '../models'
 
 import { getPresentationFromJwtPayload } from './presentationTransformer'
 
@@ -77,5 +78,20 @@ export class W3cJwtVerifiablePresentation {
 
   public get holderId() {
     return this.presentation.holderId
+  }
+
+  /**
+   * The {@link ClaimFormat} of the presentation. For JWT presentations this is always `jwt_vp`.
+   */
+  public get claimFormat(): ClaimFormat.JwtVp {
+    return ClaimFormat.JwtVp
+  }
+
+  /**
+   * Get the encoded variant of the W3C Verifiable Presentation. For JWT presentations this is
+   * a JWT string.
+   */
+  public get encoded() {
+    return this.serializedJwt
   }
 }
