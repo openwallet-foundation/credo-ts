@@ -10,6 +10,7 @@ import type {
   WalletCreateKeyOptions,
   WalletExportImportConfig,
   WalletPackOptions,
+  WalletPackV1Options,
   WalletSignOptions,
   WalletVerifyOptions,
 } from '@aries-framework/core'
@@ -548,7 +549,7 @@ export class IndySdkWallet implements Wallet {
 
   public async pack(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
     if (params.didCommVersion === DidCommMessageVersion.V1) {
-      return this.packDidCommV1(payload, params)
+      return this.packDidCommV1(payload, params as WalletPackV1Options)
     }
     if (params.didCommVersion === DidCommMessageVersion.V2) {
       throw new AriesFrameworkError(`DidComm V2 message encryption is not supported for Indy wallet`)
@@ -556,7 +557,10 @@ export class IndySdkWallet implements Wallet {
     throw new AriesFrameworkError(`Unsupported DidComm version: ${params.didCommVersion}`)
   }
 
-  private async packDidCommV1(payload: Record<string, unknown>, params: WalletPackOptions): Promise<EncryptedMessage> {
+  private async packDidCommV1(
+    payload: Record<string, unknown>,
+    params: WalletPackV1Options
+  ): Promise<EncryptedMessage> {
     try {
       const messageRaw = JsonEncoder.toBuffer(payload)
       const recipientKeys = params.recipientKeys.map((recipientKey) => recipientKey.publicKeyBase58)

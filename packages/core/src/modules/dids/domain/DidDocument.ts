@@ -3,13 +3,13 @@ import type { DidDocumentService } from './service'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { KeyType, Key } from '../../../crypto'
+import { Key, KeyType } from '../../../crypto'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
 import { getKeyFromVerificationMethod } from './key-type'
-import { IndyAgentService, ServiceTransformer, DidCommV1Service, DidCommV2Service } from './service'
-import { VerificationMethodTransformer, VerificationMethod, IsStringOrVerificationMethod } from './verificationMethod'
+import { DidCommV1Service, DidCommV2Service, IndyAgentService, ServiceTransformer } from './service'
+import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
 export type DidPurpose =
   | 'authentication'
@@ -145,6 +145,32 @@ export class DidDocument {
     throw new Error(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public dereferenceVerificationMethods(allowedPurposes?: DidPurpose[]) {
+    const allPurposes: DidPurpose[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    const verificationMethods: VerificationMethod[] = []
+
+    for (const purpose of purposes) {
+      for (const verificationMethod of this[purpose] ?? []) {
+        if (typeof verificationMethod === 'string') {
+          verificationMethods.push(this.dereferenceVerificationMethod(verificationMethod))
+        } else {
+          verificationMethods.push(verificationMethod)
+        }
+      }
+    }
+
+    return verificationMethods
+  }
+
   /**
    * Returns all of the service endpoints matching the given type.
    *
@@ -200,6 +226,26 @@ export class DidDocument {
     return recipientKeys
   }
 
+  public get dereferencedKeyAgreement(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['keyAgreement'])
+  }
+
+  public get dereferencedAuthentication(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['authentication'])
+  }
+
+  public get dereferencedAssertionMethod(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['assertionMethod'])
+  }
+
+  public get dereferencedCapabilityInvocation(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['capabilityInvocation'])
+  }
+
+  public get dereferencedCapabilityDelegation(): Array<VerificationMethod> {
+    return this.dereferenceVerificationMethods(['capabilityDelegation'])
+  }
+
   public toJSON() {
     return JsonTransformer.toJSON(this)
   }
@@ -251,22 +297,12 @@ export async function findVerificationMethodByKeyType(
 
 export function getAuthenticationKeys(didDocument: DidDocument) {
   return (
-    didDocument.authentication?.map((authentication) => {
-      const verificationMethod =
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
+    didDocument.authentication?.map((authentication) => getKeyFromDidDocumentKeyEntry(authentication, didDocument)) ??
+    []
   )
 }
 
-export function getAgreementKeys(didDocument: DidDocument) {
-  return (
-    didDocument.keyAgreement?.map((keyAgreement) => {
-      const verificationMethod =
-        typeof keyAgreement === 'string' ? didDocument.dereferenceVerificationMethod(keyAgreement) : keyAgreement
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
-  )
+function getKeyFromDidDocumentKeyEntry(key: string | VerificationMethod, didDocument: DidDocument): Key {
+  const verificationMethod = typeof key === 'string' ? didDocument.dereferenceVerificationMethod(key) : key
+  return getKeyFromVerificationMethod(verificationMethod)
 }

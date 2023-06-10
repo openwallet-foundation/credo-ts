@@ -1,6 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentContext } from './context'
-import type { Key } from '../crypto'
 import type {
   DidCommV1PackMessageParams,
   DidCommV2PackMessageParams,
@@ -8,17 +7,19 @@ import type {
   EncryptedMessage,
 } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
-import type { WalletPackOptions } from '../wallet/Wallet'
+import type { WalletPackOptions, WalletUnpackOptions } from '../wallet/Wallet'
 
 import { InjectionSymbols } from '../constants'
 import { V2Attachment } from '../decorators/attachment'
 import { V2AttachmentData } from '../decorators/attachment/V2Attachment'
+import { isDidCommV1EncryptedEnvelope } from '../didcomm'
 import { DidCommMessageVersion } from '../didcomm/types'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
-import { DidResolverService, getAgreementKeys, keyReferenceToKey } from '../modules/dids'
+import { DidResolverService } from '../modules/dids'
 import { ForwardMessage, V2ForwardMessage } from '../modules/routing/messages'
 import { inject, injectable } from '../plugins'
+import { JsonEncoder } from '../utils'
 
 export type PackMessageParams = DidCommV1PackMessageParams | DidCommV2PackMessageParams
 
@@ -50,7 +51,44 @@ export class EnvelopeService {
     agentContext: AgentContext,
     encryptedMessage: EncryptedMessage
   ): Promise<DecryptedMessageContext> {
-    return await agentContext.wallet.unpack(encryptedMessage)
+    if (isDidCommV1EncryptedEnvelope(encryptedMessage)) {
+      return this.unpackDidCommV1(agentContext, encryptedMessage)
+    } else {
+      return this.unpackDidCommV2(agentContext, encryptedMessage)
+    }
+  }
+
+  public async unpackDidCommV1(
+    agentContext: AgentContext,
+    encryptedMessage: EncryptedMessage
+  ): Promise<DecryptedMessageContext> {
+    return agentContext.wallet.unpack(encryptedMessage)
+  }
+
+  public async unpackDidCommV2(
+    agentContext: AgentContext,
+    encryptedMessage: EncryptedMessage
+  ): Promise<DecryptedMessageContext> {
+    // FIXME: Temporary workaround to extract sender/recipient keys out of JWE and resolve their DidDocuments
+    // In future we are going to completely rework Wallet interface to expose crypto functions and construct / parse JWE here
+    const protected_ = JsonEncoder.fromBase64(encryptedMessage.protected)
+
+    const senderDidDocument = protected_.skid
+      ? await this.didResolverService.resolveDidDocument(agentContext, protected_.skid)
+      : undefined
+
+    const recipientDidDocuments = await Promise.all(
+      encryptedMessage.recipients.map((recipient) =>
+        this.didResolverService.resolveDidDocument(agentContext, recipient.header.kid)
+      )
+    )
+
+    const params: WalletUnpackOptions = {
+      senderDidDocument,
+      recipientDidDocuments,
+    }
+
+    return agentContext.wallet.unpack(encryptedMessage, params)
   }
 
   private async packDIDCommV1Message(
@@ -118,18 +156,11 @@ export class EnvelopeService {
     message: AgentMessage,
     params: DidCommV2PackMessageParams
   ): Promise<EncryptedMessage> {
-    const { recipientDidDoc, senderDidDoc } = params
-    const { senderKey, recipientKey } = EnvelopeService.findCommonSupportedEncryptionKeys(recipientDidDoc, senderDidDoc)
-    if (!recipientKey) {
-      throw new AriesFrameworkError(
-        `Unable to pack message ${message.id} because there is no any commonly supported key types to encrypt message`
-      )
-    }
     const unboundMessage = message.toJSON()
     const packParams: WalletPackOptions = {
       didCommVersion: DidCommMessageVersion.V2,
-      recipientKeys: [recipientKey],
-      senderKey,
+      recipientDidDocuments: [params.recipientDidDoc],
+      senderDidDocument: params.senderDidDoc,
     }
     const encryptedMessage = await agentContext.wallet.pack(unboundMessage, packParams)
     return await this.wrapDIDCommV2MessageInForward(agentContext, encryptedMessage, params)
@@ -145,24 +176,21 @@ export class EnvelopeService {
       return encryptedMessage
     }
 
-    const routings: { did: string; key: Key }[] = []
-    for (const routingKey of service.routingKeys ?? []) {
-      const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-      routings.push({
-        did: routingDidDocument.id,
-        key: keyReferenceToKey(routingDidDocument, routingKey),
-      })
-    }
+    const routingKeys = service.routingKeys ?? []
+    const routingDidDocuments: DidDocument[] = await Promise.all(
+      routingKeys.map((routingKey) => this.didResolverService.resolveDidDocument(agentContext, routingKey))
+    )
 
-    if (!routings.length) {
+    if (!routingDidDocuments.length) {
+      // There is no routing keys defined -> we do not need to wrap the message into Forward
       return encryptedMessage
     }
 
     // If the message has routing keys (mediator) pack for each mediator
     let next = recipientDidDoc.id
-    for (const routing of routings) {
+    for (const routing of routingDidDocuments) {
       const forwardMessage = new V2ForwardMessage({
-        to: [routing.did],
+        to: [routing.id],
         body: { next },
         attachments: [
           new V2Attachment({
@@ -170,7 +198,7 @@ export class EnvelopeService {
           }),
         ],
       })
-      next = routing.did
+      next = routing.id
       this.logger.debug('Forward message created', forwardMessage)
 
       const forwardJson = forwardMessage.toJSON()
@@ -178,40 +206,11 @@ export class EnvelopeService {
       // Forward messages are anon packed
       const forwardParams: WalletPackOptions = {
         didCommVersion: DidCommMessageVersion.V2,
-        recipientKeys: [routing.key],
+        recipientDidDocuments: [routing],
       }
       encryptedMessage = await agentContext.wallet.pack(forwardJson, forwardParams)
     }
 
     return encryptedMessage
-  }
-
-  private static findCommonSupportedEncryptionKeys(recipientDidDocument: DidDocument, senderDidDocument?: DidDocument) {
-    const recipientAgreementKeys = getAgreementKeys(recipientDidDocument)
-
-    if (!senderDidDocument) {
-      return { senderKey: undefined, recipientKey: recipientAgreementKeys[0] }
-    }
-
-    const senderAgreementKeys = getAgreementKeys(senderDidDocument)
-
-    let senderKey: Key | undefined
-    let recipientKey: Key | undefined
-
-    for (const senderAgreementKey of senderAgreementKeys) {
-      for (const recipientAgreementKey of recipientAgreementKeys) {
-        if (senderAgreementKey.keyType === recipientAgreementKey.keyType) {
-          senderKey = senderAgreementKey
-          recipientKey = recipientAgreementKey
-          break
-        }
-      }
-      if (senderKey) break
-    }
-
-    return {
-      senderKey,
-      recipientKey,
-    }
   }
 }
