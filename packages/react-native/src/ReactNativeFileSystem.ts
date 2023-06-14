@@ -66,12 +66,7 @@ export class ReactNativeFileSystem implements FileSystem {
     // Make sure parent directories exist
     await RNFS.mkdir(getDirFromFilePath(path))
 
-    // Some characters in the URL might be invalid for
-    // the native os to handle. Only encode if necessary.
-    let fromUrl = url
-    if (url === decodeURI(url)) {
-      fromUrl = encodeURI(url)
-    }
+    const fromUrl = this.encodeUriIfRequired(url)
 
     const { promise } = RNFS.downloadFile({
       fromUrl,
@@ -95,5 +90,11 @@ export class ReactNativeFileSystem implements FileSystem {
         )
       }
     }
+  }
+
+  private encodeUriIfRequired(uri: string) {
+    // Some characters in the URL might be invalid for
+    // the native os to handle. Only encode if necessary.
+    return uri === decodeURI(uri) ? encodeURI(uri) : uri
   }
 }
