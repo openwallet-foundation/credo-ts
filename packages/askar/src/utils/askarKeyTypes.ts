@@ -10,4 +10,6 @@ const keyTypeToAskarAlg = {
   [KeyType.P256]: KeyAlgs.EcSecp256r1,
 } as const
 
-export const keyTypeSupportedByAskar = (keyType: KeyType) => keyType in keyTypeToAskarAlg
+export const isKeyTypeSupportedByAskar = (keyType: KeyType) => keyType in keyTypeToAskarAlg
+
+export const keyTypesSupportedByAskar = Object.keys(keyTypeToAskarAlg) as KeyType[]

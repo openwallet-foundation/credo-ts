@@ -1,7 +1,7 @@
 import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { DependencyManager, Module } from '@aries-framework/core'
 
-import { AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
+import { AgentConfig, AriesFrameworkError, InjectionSymbols } from '@aries-framework/core'
 
 import { AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
@@ -15,6 +15,13 @@ export class AskarModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
+    // Warn about experimental module
+    dependencyManager
+      .resolve(AgentConfig)
+      .logger.warn(
+        "The '@aries-framework/askar' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+      )
+
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {

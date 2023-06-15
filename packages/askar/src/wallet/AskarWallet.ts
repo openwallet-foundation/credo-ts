@@ -46,8 +46,9 @@ import {
   AskarErrorCode,
   isAskarError,
   keyDerivationMethodToStoreKeyMethod,
-  keyTypeSupportedByAskar,
+  isKeyTypeSupportedByAskar,
   uriFromWalletConfig,
+  keyTypesSupportedByAskar,
 } from '../utils'
 
 import { JweEnvelope, JweRecipient } from './JweEnvelope'
@@ -98,6 +99,12 @@ export class AskarWallet implements Wallet {
     }
 
     return this._session
+  }
+
+  public get supportedKeyTypes() {
+    const signingKeyProviderSupportedKeyTypes = this.signingKeyProviderRegistry.supportedKeyTypes
+
+    return Array.from(new Set([...keyTypesSupportedByAskar, ...signingKeyProviderSupportedKeyTypes]))
   }
 
   /**
@@ -422,7 +429,7 @@ export class AskarWallet implements Wallet {
         throw new WalletError('Invalid private key provided')
       }
 
-      if (keyTypeSupportedByAskar(keyType)) {
+      if (isKeyTypeSupportedByAskar(keyType)) {
         const algorithm = keyAlgFromString(keyType)
 
         // Create key
@@ -482,7 +489,7 @@ export class AskarWallet implements Wallet {
   public async sign({ data, key }: WalletSignOptions): Promise<Buffer> {
     let keyEntry: KeyEntryObject | null | undefined
     try {
-      if (keyTypeSupportedByAskar(key.keyType)) {
+      if (isKeyTypeSupportedByAskar(key.keyType)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting signing of multiple messages`)
         }
@@ -537,7 +544,7 @@ export class AskarWallet implements Wallet {
   public async verify({ data, key, signature }: WalletVerifyOptions): Promise<boolean> {
     let askarKey: AskarKey | undefined
     try {
-      if (keyTypeSupportedByAskar(key.keyType)) {
+      if (isKeyTypeSupportedByAskar(key.keyType)) {
         if (!TypedArrayEncoder.isTypedArray(data)) {
           throw new WalletError(`Currently not supporting verification of multiple messages`)
         }

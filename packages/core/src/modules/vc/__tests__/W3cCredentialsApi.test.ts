@@ -4,11 +4,10 @@ import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
 import { W3cCredentialsModule } from '../W3cCredentialsModule'
-import { W3cVerifiableCredential } from '../models'
+import { customDocumentLoader } from '../data-integrity/__tests__/documentLoader'
+import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtures'
+import { W3cJsonLdVerifiableCredential } from '../data-integrity/models'
 import { W3cCredentialRepository } from '../repository'
-
-import { customDocumentLoader } from './documentLoader'
-import { Ed25519Signature2018Fixtures } from './fixtures'
 
 const modules = {
   indySdk: new IndySdkModule({
@@ -28,7 +27,7 @@ let w3cCredentialService: W3cCredentialService
 
 const testCredential = JsonTransformer.fromJSON(
   Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-  W3cVerifiableCredential
+  W3cJsonLdVerifiableCredential
 )
 
 describe('W3cCredentialsApi', () => {
@@ -77,7 +76,7 @@ describe('W3cCredentialsApi', () => {
   })
 
   it('Should successfully remove a credential by id', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'delete')
+    const repoSpy = jest.spyOn(w3cCredentialRepository, 'deleteById')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
     const storedCredential = await agent.w3cCredentials.storeCredential({

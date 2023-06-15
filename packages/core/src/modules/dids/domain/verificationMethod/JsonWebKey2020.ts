@@ -3,22 +3,21 @@ import type { Key } from '../../../../crypto/Key'
 import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
 
 import { getJwkFromJson, getJwkFromKey } from '../../../../crypto/jose/jwk'
+import { AriesFrameworkError } from '../../../../error'
 
 export const VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 = 'JsonWebKey2020'
 
 type JwkOrKey = { jwk: JwkJson; key?: never } | { key: Key; jwk?: never }
-type GetJsonWebKey2020VerificationMethodOptions = {
+type GetJsonWebKey2020Options = {
   did: string
 
   verificationMethodId?: string
 } & JwkOrKey
 
-export function getJsonWebKey2020VerificationMethod({
-  did,
-  key,
-  jwk,
-  verificationMethodId,
-}: GetJsonWebKey2020VerificationMethodOptions) {
+/**
+ * Get a JsonWebKey2020 verification method.
+ */
+export function getJsonWebKey2020({ did, key, jwk, verificationMethodId }: GetJsonWebKey2020Options) {
   if (!verificationMethodId) {
     const k = key ?? getJwkFromJson(jwk).key
     verificationMethodId = `${did}#${k.fingerprint}`
@@ -32,6 +31,24 @@ export function getJsonWebKey2020VerificationMethod({
   }
 }
 
-export function isJsonWebKey2020(verificationMethod: VerificationMethod) {
+/**
+ * Check whether a verification method is a JsonWebKey2020 verification method.
+ */
+export function isJsonWebKey2020(
+  verificationMethod: VerificationMethod
+): verificationMethod is VerificationMethod & { type: 'JsonWebKey2020' } {
   return verificationMethod.type === VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020
+}
+
+/**
+ * Get a key from a JsonWebKey2020 verification method.
+ */
+export function getKeyFromJsonWebKey2020(verificationMethod: VerificationMethod & { type: 'JsonWebKey2020' }) {
+  if (!verificationMethod.publicKeyJwk) {
+    throw new AriesFrameworkError(
+      `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
+    )
+  }
+
+  return getJwkFromJson(verificationMethod.publicKeyJwk).key
 }

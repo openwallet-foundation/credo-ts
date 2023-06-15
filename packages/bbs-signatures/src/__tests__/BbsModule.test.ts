@@ -14,6 +14,7 @@ import { BbsBlsSignature2020, BbsBlsSignatureProof2020 } from '../signature-suit
 const dependencyManager = {
   registerInstance: jest.fn(),
   registerSingleton: jest.fn(),
+  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
 } as unknown as DependencyManager
 
 describe('BbsModule', () => {

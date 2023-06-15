@@ -1,6 +1,6 @@
 import { JsonTransformer } from '../../../../utils'
-import { Ed25519Signature2018Fixtures } from '../../__tests__/fixtures'
-import { W3cVerifiableCredential } from '../../models'
+import { Ed25519Signature2018Fixtures } from '../../data-integrity/__tests__/fixtures'
+import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models'
 import { W3cCredentialRecord } from '../W3cCredentialRecord'
 
 describe('W3cCredentialRecord', () => {
@@ -8,7 +8,7 @@ describe('W3cCredentialRecord', () => {
     it('should return default tags', () => {
       const credential = JsonTransformer.fromJSON(
         Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-        W3cVerifiableCredential
+        W3cJsonLdVerifiableCredential
       )
 
       const w3cCredentialRecord = new W3cCredentialRecord({
@@ -19,6 +19,7 @@ describe('W3cCredentialRecord', () => {
       })
 
       expect(w3cCredentialRecord.getTags()).toEqual({
+        claimFormat: 'ldp_vc',
         issuerId: credential.issuerId,
         subjectIds: credential.credentialSubjectIds,
         schemaIds: credential.credentialSchemaIds,

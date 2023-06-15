@@ -2,10 +2,10 @@ import type { AgentContext } from '../../agent'
 import type { Key, Wallet } from '@aries-framework/core'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
-import { AskarWallet } from '../../../../askar/src'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
-import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
+import { JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
 import { JwaSignatureAlgorithm } from '../jose/jwa'
@@ -27,7 +27,11 @@ describeRunInNodeVersion([18], 'JwsService', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
-    wallet = new AskarWallet(config.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(
+      config.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([])
+    )
     agentContext = getAgentContext({
       wallet,
     })
@@ -107,10 +111,7 @@ describeRunInNodeVersion([18], 'JwsService', () => {
 
   describe('verifyJws', () => {
     it('returns true if the jws signature matches the payload', async () => {
-      const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-
       const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
-        payload,
         jws: didJwsz6Mkf.JWS_JSON,
       })
 
@@ -118,12 +119,18 @@ describeRunInNodeVersion([18], 'JwsService', () => {
       expect(signerKeys).toEqual([didJwsz6MkfKey])
     })
 
-    it('returns all keys that signed the jws', async () => {
-      const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-
+    it('verifies a compact JWS', async () => {
       const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
-        payload,
-        jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
+        jws: `${didJwsz6Mkf.JWS_JSON.protected}.${didJwsz6Mkf.JWS_JSON.payload}.${didJwsz6Mkf.JWS_JSON.signature}`,
+      })
+
+      expect(isValid).toBe(true)
+      expect(signerKeys).toEqual([didJwsz6MkfKey])
+    })
+
+    it('returns all keys that signed the jws', async () => {
+      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+        jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON], payload: didJwsz6Mkf.JWS_JSON.payload },
       })
 
       expect(isValid).toBe(true)
@@ -131,11 +138,11 @@ describeRunInNodeVersion([18], 'JwsService', () => {
     })
 
     it('returns false if the jws signature does not match the payload', async () => {
-      const payload = JsonEncoder.toBuffer({ ...didJwsz6Mkf.DATA_JSON, did: 'another_did' })
-
       const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
-        payload,
-        jws: didJwsz6Mkf.JWS_JSON,
+        jws: {
+          ...didJwsz6Mkf.JWS_JSON,
+          payload: JsonEncoder.toBase64URL({ ...didJwsz6Mkf, did: 'another_did' }),
+        },
       })
 
       expect(isValid).toBe(false)
@@ -145,10 +152,9 @@ describeRunInNodeVersion([18], 'JwsService', () => {
     it('throws an error if the jws signatures array does not contain a JWS', async () => {
       await expect(
         jwsService.verifyJws(agentContext, {
-          payload: new Buffer([]),
-          jws: { signatures: [] },
+          jws: { signatures: [], payload: '' },
         })
-      ).rejects.toThrowError('Unable to verify JWS: No entries in JWS signatures array.')
+      ).rejects.toThrowError('Unable to verify JWS, no signatures present in JWS.')
     })
   })
 })

@@ -27,7 +27,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
     migrateIndyCredentialTypeToAnonCredsCredential(agent, credentialRecord)
     migrateIndyCredentialMetadataToAnonCredsMetadata(agent, credentialRecord)
 
-    // Save updated did record
+    // Save updated record
     await credentialRepository.update(agent.context, credentialRecord)
 
     agent.config.logger.debug(
