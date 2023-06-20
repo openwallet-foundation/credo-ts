@@ -155,91 +155,17 @@ describe('Indy VDR Indy Did Registrar', () => {
     })
   })
 
-  test('can register a did:indy without services with endorser', async () => {
-    const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
+  test('cannot create a did with TRUSTEE role', async () => {
+    const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
       method: 'indy',
       options: {
-        endorserMode: 'external',
         endorserDid,
-      },
-    })) as IndyVdrDidCreateResult
-
-    const didState = didCreateTobeEndorsedResult.didState
-    if (didState.state !== 'action' || didState.action !== 'endorseIndyTransaction') throw Error('unexpected did state')
-
-    const signedNymRequest = await endorser.modules.indyVdr.endorseTransaction(
-      didState.nymRequest,
-      didState.endorserDid
-    )
-    const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      did: didState.did,
-      options: {
-        endorserMode: 'external',
-        endorsedTransaction: {
-          nymRequest: signedNymRequest,
-        },
-      },
-      secret: didState.secret,
-    })
-
-    expect(JsonTransformer.toJSON(didCreateSubmitResult)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'finished',
-        did: expect.stringMatching(didIndyRegex),
-        didDocument: {
-          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-          id: expect.stringMatching(didIndyRegex),
-          alsoKnownAs: undefined,
-          controller: undefined,
-          verificationMethod: [
-            {
-              type: 'Ed25519VerificationKey2018',
-              controller: expect.stringMatching(didIndyRegex),
-              id: expect.stringContaining('#verkey'),
-              publicKeyBase58: expect.any(String),
-            },
-          ],
-          capabilityDelegation: undefined,
-          capabilityInvocation: undefined,
-          authentication: [expect.stringContaining('#verkey')],
-          service: undefined,
-        },
+        endorserMode: 'internal',
+        role: 'TRUSTEE',
       },
     })
 
-    const did = didCreateSubmitResult.didState.did
-    if (!did) throw Error('did not defined')
-
-    // Wait some time pass to let ledger settle the object
-    await sleep(1000)
-
-    const didResolutionResult = await endorser.dids.resolve(did)
-    expect(JsonTransformer.toJSON(didResolutionResult)).toMatchObject({
-      didDocument: {
-        '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-        id: did,
-        alsoKnownAs: undefined,
-        controller: undefined,
-        verificationMethod: [
-          {
-            type: 'Ed25519VerificationKey2018',
-            controller: did,
-            id: `${did}#verkey`,
-            publicKeyBase58: expect.any(String),
-          },
-        ],
-        capabilityDelegation: undefined,
-        capabilityInvocation: undefined,
-        authentication: [`${did}#verkey`],
-        service: undefined,
-      },
-      didDocumentMetadata: {},
-      didResolutionMetadata: {
-        contentType: 'application/did+ld+json',
-      },
-    })
+    expect(JsonTransformer.toJSON(didRegistrationResult.didState.state)).toBe('failed')
   })
 
   test('can register an endorsed did:indy without services - did and verkey specified', async () => {
