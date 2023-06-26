@@ -14,7 +14,7 @@ export interface AnonCredsModuleConfigOptions {
    * Create a default link secret on module initialization.
    * @defaultValue true
    */
-  createDefaultLinkSecret?: boolean
+  autoCreateLinkSecret?: boolean
 }
 
 /**
@@ -32,7 +32,7 @@ export class AnonCredsModuleConfig {
     return this.options.registries
   }
 
-  public get createDefaultLinkSecret() {
-    return this.options.createDefaultLinkSecret ?? true
+  public get autoCreateLinkSecret() {
+    return this.options.autoCreateLinkSecret ?? true
   }
 }

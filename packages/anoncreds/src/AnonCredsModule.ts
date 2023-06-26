@@ -39,7 +39,7 @@ export class AnonCredsModule implements Module {
   }
 
   public async initalize(agentContext: AgentContext) {
-    if (this.config.createDefaultLinkSecret === false) {
+    if (this.config.autoCreateLinkSecret === false) {
       return
     }
 
