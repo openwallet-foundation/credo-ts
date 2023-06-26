@@ -9,6 +9,12 @@ export interface AnonCredsModuleConfigOptions {
    * A list of AnonCreds registries to make available to the AnonCreds module.
    */
   registries: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+
+  /**
+   * Create a default link secret on module initialization.
+   * @defaultValue true
+   */
+  createDefaultLinkSecret?: boolean
 }
 
 /**
@@ -24,5 +30,9 @@ export class AnonCredsModuleConfig {
   /** See {@link AnonCredsModuleConfigOptions.registries} */
   public get registries() {
     return this.options.registries
+  }
+
+  public get createDefaultLinkSecret() {
+    return this.options.createDefaultLinkSecret ?? true
   }
 }

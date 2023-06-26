@@ -1,5 +1,5 @@
 import type { AnonCredsModuleConfigOptions } from './AnonCredsModuleConfig'
-import type { DependencyManager, Module, Update } from '@aries-framework/core'
+import type { DependencyManager, AgentContext, Module, Update } from '@aries-framework/core'
 
 import { AnonCredsApi } from './AnonCredsApi'
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
@@ -36,6 +36,20 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsCredentialDefinitionPrivateRepository)
     dependencyManager.registerSingleton(AnonCredsKeyCorrectnessProofRepository)
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
+  }
+
+  public async initalize(agentContext: AgentContext) {
+    if (this.config.createDefaultLinkSecret === false) {
+      return
+    }
+
+    const api = agentContext.dependencyManager.resolve(AnonCredsApi)
+    const linkSecretIds = await api.getLinkSecretIds()
+    if (linkSecretIds.length === 0) {
+      await api.createLinkSecret({
+        setAsDefault: true,
+      })
+    }
   }
 
   public updates = [
