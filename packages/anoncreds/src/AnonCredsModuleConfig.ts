@@ -32,6 +32,7 @@ export class AnonCredsModuleConfig {
     return this.options.registries
   }
 
+  /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
   public get autoCreateLinkSecret() {
     return this.options.autoCreateLinkSecret ?? true
   }
