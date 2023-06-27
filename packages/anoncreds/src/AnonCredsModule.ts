@@ -38,15 +38,15 @@ export class AnonCredsModule implements Module {
     dependencyManager.registerSingleton(AnonCredsLinkSecretRepository)
   }
 
-  public async initalize(agentContext: AgentContext) {
+  public async initialize(agentContext: AgentContext): Promise<void> {
     if (this.config.autoCreateLinkSecret === false) {
       return
     }
 
-    const api = agentContext.dependencyManager.resolve(AnonCredsApi)
-    const linkSecretIds = await api.getLinkSecretIds()
+    const anoncredsApi = agentContext.dependencyManager.resolve(AnonCredsApi)
+    const linkSecretIds = await anoncredsApi.getLinkSecretIds()
     if (linkSecretIds.length === 0) {
-      await api.createLinkSecret({
+      await anoncredsApi.createLinkSecret({
         setAsDefault: true,
       })
     }
