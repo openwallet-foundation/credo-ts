@@ -39,9 +39,7 @@ export class AnonCredsModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    if (this.config.autoCreateLinkSecret === false) {
-      return
-    }
+    if (!this.config.autoCreateLinkSecret) return
 
     const anoncredsApi = agentContext.dependencyManager.resolve(AnonCredsApi)
     const linkSecretIds = await anoncredsApi.getLinkSecretIds()
