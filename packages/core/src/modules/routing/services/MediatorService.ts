@@ -9,7 +9,7 @@ import type { ForwardMessage, MediationRequestMessage } from '../messages'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { KeyType } from '../../../crypto'
-import { AriesFrameworkError } from '../../../error'
+import { AriesFrameworkError, RecordDuplicateError } from '../../../error'
 import { Logger } from '../../../logger'
 import { injectable, inject } from '../../../plugins'
 import { ConnectionService } from '../../connections'
@@ -38,7 +38,6 @@ export class MediatorService {
   private mediatorRoutingRepository: MediatorRoutingRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
-  private _mediatorRoutingRecord?: MediatorRoutingRecord
 
   public constructor(
     mediationRepository: MediationRepository,
@@ -209,18 +208,33 @@ export class MediatorService {
       routingKeys: [routingKey.publicKeyBase58],
     })
 
-    await this.mediatorRoutingRepository.save(agentContext, routingRecord)
-
-    this.eventEmitter.emit(agentContext, {
-      type: RoutingEventTypes.RoutingCreatedEvent,
-      payload: {
-        routing: {
-          endpoints: agentContext.config.endpoints,
-          routingKeys: [],
-          recipientKey: routingKey,
+    try {
+      await this.mediatorRoutingRepository.save(agentContext, routingRecord)
+      this.eventEmitter.emit(agentContext, {
+        type: RoutingEventTypes.RoutingCreatedEvent,
+        payload: {
+          routing: {
+            endpoints: agentContext.config.endpoints,
+            routingKeys: [],
+            recipientKey: routingKey,
+          },
         },
-      },
-    })
+      })
+    } catch (error) {
+      // This addresses some race conditions issues where we first check if the record exists
+      // then we create one if it doesn't, but another process has created one in the meantime
+      // Although not the most elegant solution, it addresses the issues
+      if (error instanceof RecordDuplicateError) {
+        // the record already exists, which is our intended end state
+        // we can ignore this error and fetch the existing record
+        return this.mediatorRoutingRepository.getById(
+          agentContext,
+          this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID
+        )
+      } else {
+        throw error
+      }
+    }
 
     return routingRecord
   }
