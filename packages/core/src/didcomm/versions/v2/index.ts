@@ -1,4 +1,5 @@
-import type { DidDocument, DidCommV2Service } from '../../../modules/dids'
+import type { ResolvedDidCommService } from '../../../modules/didcomm'
+import type { DidDocument } from '../../../modules/dids'
 
 export { DidCommV2Message } from './DidCommV2Message'
 export { DidCommV2BaseMessage, DidComV2BaseMessageConstructor, DidCommV2MessageParams } from './DidCommV2BaseMessage'
@@ -6,7 +7,7 @@ export { DidCommV2BaseMessage, DidComV2BaseMessageConstructor, DidCommV2MessageP
 export interface DidCommV2PackMessageParams {
   recipientDidDoc: DidDocument
   senderDidDoc?: DidDocument
-  service: DidCommV2Service
+  service: ResolvedDidCommService
 }
 
 export { isPlaintextMessageV2, isDidCommV2Message } from './helpers'

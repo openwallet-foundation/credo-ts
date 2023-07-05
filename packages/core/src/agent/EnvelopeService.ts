@@ -1,11 +1,13 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentContext } from './context'
+import type { Key } from '../crypto'
 import type {
   DidCommV1PackMessageParams,
   DidCommV2PackMessageParams,
   DecryptedMessageContext,
   EncryptedMessage,
 } from '../didcomm'
+import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
 import type { WalletPackOptions, WalletUnpackOptions } from '../wallet/Wallet'
 
@@ -21,7 +23,14 @@ import { ForwardMessage, V2ForwardMessage } from '../modules/routing/messages'
 import { inject, injectable } from '../plugins'
 import { JsonEncoder } from '../utils'
 
-export type PackMessageParams = DidCommV1PackMessageParams | DidCommV2PackMessageParams
+export interface PackMessageParams {
+  recipientKeys: Key[]
+  routingKeys: Key[]
+  senderKey: Key | null
+  recipientDidDoc?: DidDocument
+  senderDidDoc?: DidDocument
+  service?: ResolvedDidCommService
+}
 
 @injectable()
 export class EnvelopeService {
@@ -39,10 +48,21 @@ export class EnvelopeService {
     params: PackMessageParams
   ): Promise<EncryptedMessage> {
     if (message.didCommVersion === DidCommMessageVersion.V1) {
-      return this.packDIDCommV1Message(agentContext, message, params as DidCommV1PackMessageParams)
+      return this.packDIDCommV1Message(agentContext, message, {
+        recipientKeys: params.recipientKeys,
+        senderKey: params.senderKey,
+        routingKeys: params.routingKeys,
+      })
     }
     if (message.didCommVersion === DidCommMessageVersion.V2) {
-      return this.packDIDCommV2Message(agentContext, message, params as DidCommV2PackMessageParams)
+      if (!params.service || !params.recipientDidDoc) {
+        throw new AriesFrameworkError(`Unexpected to pack DIDComm V2 message. Invalid params provided: ${params}`)
+      }
+      return this.packDIDCommV2Message(agentContext, message, {
+        service: params.service,
+        recipientDidDoc: params.recipientDidDoc,
+        senderDidDoc: params.senderDidDoc,
+      })
     }
     throw new AriesFrameworkError(`Unexpected pack DIDComm message params: ${params}`)
   }
@@ -176,10 +196,7 @@ export class EnvelopeService {
       return encryptedMessage
     }
 
-    const routingKeys = service.routingKeys ?? []
-    const routingDidDocuments: DidDocument[] = await Promise.all(
-      routingKeys.map((routingKey) => this.didResolverService.resolveDidDocument(agentContext, routingKey))
-    )
+    const routingDidDocuments: DidDocument[] = service.routingDidDocuments ?? []
 
     if (!routingDidDocuments.length) {
       // There is no routing keys defined -> we do not need to wrap the message into Forward

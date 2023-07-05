@@ -28,19 +28,23 @@ export class DidCommDocumentService {
     // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
     // yet so this will re-trigger ledger resolves for each one. Should we only resolve the first service, then the second service, etc...?
     for (const didCommService of didDocument.didCommServices) {
+      const routingDidDocuments = []
+      const routingKeys = []
+
       if (didCommService instanceof IndyAgentService) {
         // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
         didCommServices.push({
           id: didCommService.id,
           recipientKeys: didCommService.recipientKeys.map(verkeyToInstanceOfKey),
           routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
+          routingDidDocuments: [],
           serviceEndpoint: didCommService.serviceEndpoint,
         })
       } else if (didCommService instanceof DidCommV1Service) {
         // Resolve dids to DIDDocs to retrieve routingKeys
-        const routingKeys = []
         for (const routingKey of didCommService.routingKeys ?? []) {
           const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
+          routingDidDocuments.push(routingDidDocument)
           routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
         }
 
@@ -62,21 +66,22 @@ export class DidCommDocumentService {
           id: didCommService.id,
           recipientKeys,
           routingKeys,
+          routingDidDocuments,
           serviceEndpoint: didCommService.serviceEndpoint,
         })
       } else if (didCommService instanceof DidCommV2Service) {
         // Resolve dids to DIDDocs to retrieve routingKeys
-        const routingKeys = []
         for (const routingKey of didCommService.routingKeys ?? []) {
           const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
+          routingDidDocuments.push(routingDidDocument)
           routingKeys.push(keyReferenceToKey(routingDidDocument, routingKey))
         }
 
         // DidCommV2Service has keys encoded as key references
-
         didCommServices.push({
           id: didCommService.id,
           routingKeys,
+          routingDidDocuments,
           serviceEndpoint: didCommService.serviceEndpoint,
           recipientKeys: [],
         })
