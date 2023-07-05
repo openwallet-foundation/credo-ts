@@ -51,7 +51,7 @@ export class V2TrustPingService {
 
     if (message.body.responseRequested) {
       return new TrustPingResponseMessage({
-        from: message.to?.length ? message.to[0] : undefined,
+        from: message.firstRecipient,
         to: message.from,
         body: {},
         thid: message.id,

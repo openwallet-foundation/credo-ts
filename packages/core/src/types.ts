@@ -50,6 +50,7 @@ export interface InitConfig {
   useDidSovPrefixWhereAllowed?: boolean
   connectionImageUrl?: string
   autoUpdateStorageOnStartup?: boolean
+  autoCreateConnectionOnPing?: boolean
 }
 
 export type ProtocolVersion = `${number}.${number}`
