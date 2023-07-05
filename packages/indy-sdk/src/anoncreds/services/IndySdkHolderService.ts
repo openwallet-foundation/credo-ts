@@ -28,6 +28,7 @@ import {
   parseIndyCredentialDefinitionId,
   AnonCredsLinkSecretRepository,
   generateLegacyProverDidLikeString,
+  AnonCredsApi,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, injectable, inject, utils } from '@aries-framework/core'
 
@@ -283,15 +284,20 @@ export class IndySdkHolderService implements AnonCredsHolderService {
     const proverDid = generateLegacyProverDidLikeString()
 
     // If a link secret is specified, use it. Otherwise, attempt to use default link secret
-    const linkSecretRecord = options.linkSecretId
+    let linkSecretRecord = options.linkSecretId
       ? await linkSecretRepository.getByLinkSecretId(agentContext, options.linkSecretId)
       : await linkSecretRepository.findDefault(agentContext)
 
+    // No default link secret. Automatically create one if set on module config
     if (!linkSecretRecord) {
-      // No default link secret
-      throw new AriesFrameworkError(
-        'No link secret provided to createCredentialRequest and no default link secret has been found'
-      )
+      const anoncredsApi = agentContext.dependencyManager.resolve(AnonCredsApi)
+      if (!anoncredsApi.config.autoCreateLinkSecret) {
+        throw new AriesFrameworkError(
+          'No link secret provided to createCredentialRequest and no default link secret has been found'
+        )
+      }
+      const linkSecretId = await anoncredsApi.createLinkSecret({ setAsDefault: true })
+      linkSecretRecord = await linkSecretRepository.getByLinkSecretId(agentContext, linkSecretId)
     }
 
     try {

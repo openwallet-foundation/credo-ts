@@ -84,7 +84,7 @@ export class AnonCredsApi {
    * If there is no default Link Secret, this will be set as default (even if setAsDefault is true).
    *
    */
-  public async createLinkSecret(options?: AnonCredsCreateLinkSecretOptions) {
+  public async createLinkSecret(options?: AnonCredsCreateLinkSecretOptions): Promise<string> {
     const { linkSecretId, linkSecretValue } = await this.anonCredsHolderService.createLinkSecret(this.agentContext, {
       linkSecretId: options?.linkSecretId,
     })
@@ -105,6 +105,8 @@ export class AnonCredsApi {
     }
 
     await this.anonCredsLinkSecretRepository.save(this.agentContext, linkSecretRecord)
+
+    return linkSecretId
   }
 
   /**
