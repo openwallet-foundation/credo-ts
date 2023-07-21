@@ -87,7 +87,7 @@ export interface AnonCredsProof {
     >
     self_attested_attrs: Record<string, string>
 
-    requested_predicates: Record<string, { sub_proof_index: number }>
+    predicates: Record<string, { sub_proof_index: number }>
   }
   // TODO: extend types for proof property
   proof: any
