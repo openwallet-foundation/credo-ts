@@ -184,7 +184,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       // Assert
       proofRecord.assertProtocolVersion('v2')
       proofRecord.assertState(ProofState.RequestSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -200,7 +200,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       return proofRecord
     } else {
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No proof record exists with thread id
       proofRecord = new ProofExchangeRecord({
@@ -416,7 +416,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       // Assert
       proofRecord.assertProtocolVersion('v2')
       proofRecord.assertState(ProofState.ProposalSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -431,7 +431,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       return proofRecord
     } else {
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No proof record exists with thread id
       agentContext.config.logger.debug('No proof record found for request, creating a new one')
@@ -661,7 +661,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // Assert
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.RequestSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage,
       previousSentMessage,
     })
@@ -748,7 +748,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // Assert
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.PresentationSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage,
       previousSentMessage,
     })

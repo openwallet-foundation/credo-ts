@@ -175,9 +175,10 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   }
 
   /**
-   * Receive a message. This should mainly be used for receiving connection-less messages.
+   * Receive a message.
    *
-   * If you want to receive messages that originated from e.g. a transport make sure to use the {@link MessageReceiver}
+   * @deprecated Use {@link OutOfBandApi.receiveInvitationFromUrl} instead for receiving legacy connection-less messages.
+   * For receiving messages that originated from a transport, use the {@link MessageReceiver}
    * for this. The `receiveMessage` method on the `Agent` class will associate the current context to the message, which
    * may not be what should happen (e.g. in case of multi tenancy).
    */

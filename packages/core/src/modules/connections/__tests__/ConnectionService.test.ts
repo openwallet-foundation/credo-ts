@@ -30,8 +30,10 @@ import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRegistrarService } from '../../dids/services/DidRegistrarService'
+import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
   Connection,
@@ -48,9 +50,13 @@ import { ConnectionService } from '../services/ConnectionService'
 import { convertToNewDidDocument } from '../services/helpers'
 
 jest.mock('../repository/ConnectionRepository')
+jest.mock('../../oob/repository/OutOfBandRepository')
+jest.mock('../../oob/OutOfBandService')
 jest.mock('../../dids/services/DidRegistrarService')
 jest.mock('../../dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
+const OutOfBandServiceMock = OutOfBandService as jest.Mock<OutOfBandService>
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
 
@@ -72,9 +78,13 @@ const agentConfig = getAgentConfig('ConnectionServiceTest', {
   connectionImageUrl,
 })
 
+const outOfBandRepository = new OutOfBandRepositoryMock()
+const outOfBandService = new OutOfBandServiceMock()
+
 describe('ConnectionService', () => {
   let wallet: Wallet
   let connectionRepository: ConnectionRepository
+
   let didRepository: DidRepository
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
@@ -83,7 +93,14 @@ describe('ConnectionService', () => {
 
   beforeAll(async () => {
     wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
-    agentContext = getAgentContext({ wallet, agentConfig })
+    agentContext = getAgentContext({
+      wallet,
+      agentConfig,
+      registerInstances: [
+        [OutOfBandRepository, outOfBandRepository],
+        [OutOfBandService, outOfBandService],
+      ],
+    })
     await wallet.createAndOpen(agentConfig.walletConfig)
   })
 
@@ -95,13 +112,7 @@ describe('ConnectionService', () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    connectionService = new ConnectionService(
-      agentConfig.logger,
-      connectionRepository,
-      didRepository,
-      didRegistrarService,
-      eventEmitter
-    )
+    connectionService = new ConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
     myRouting = {
       recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
       endpoints: agentConfig.endpoints ?? [],
@@ -755,8 +766,8 @@ describe('ConnectionService', () => {
     })
   })
 
-  describe('assertConnectionOrServiceDecorator', () => {
-    it('should not throw an error when a connection record with state complete is present in the messageContext', () => {
+  describe('assertConnectionOrOutOfBandExchange', () => {
+    it('should not throw an error when a connection record with state complete is present in the messageContext', async () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
@@ -764,10 +775,10 @@ describe('ConnectionService', () => {
         connection: getMockConnection({ state: DidExchangeState.Completed }),
       })
 
-      expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).not.toThrow()
+      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
     })
 
-    it('should throw an error when a connection record is present and state not complete in the messageContext', () => {
+    it('should throw an error when a connection record is present and state not complete in the messageContext', async () => {
       expect.assertions(1)
 
       const messageContext = new InboundMessageContext(new AgentMessage(), {
@@ -775,13 +786,15 @@ describe('ConnectionService', () => {
         connection: getMockConnection({ state: DidExchangeState.InvitationReceived }),
       })
 
-      expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).toThrowError(
+      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).rejects.toThrowError(
         'Connection record is not ready to be used'
       )
     })
 
-    it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', () => {
+    it('should not throw an error when no connection record is present in the messageContext and no additional data, but the message has a ~service decorator', async () => {
       expect.assertions(1)
+
+      mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
 
       const message = new AgentMessage()
       message.setService({
@@ -791,10 +804,10 @@ describe('ConnectionService', () => {
       })
       const messageContext = new InboundMessageContext(message, { agentContext })
 
-      expect(() => connectionService.assertConnectionOrServiceDecorator(messageContext)).not.toThrow()
+      await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
     })
 
-    it('should not throw when a fully valid connection-less input is passed', () => {
+    it('should not throw when a fully valid connection-less input is passed', async () => {
       expect.assertions(1)
 
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
@@ -816,21 +829,21 @@ describe('ConnectionService', () => {
 
       const message = new AgentMessage()
       message.setService({
-        recipientKeys: [],
+        recipientKeys: [senderKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
       const messageContext = new InboundMessageContext(message, { agentContext, recipientKey, senderKey })
 
-      expect(() =>
-        connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           previousReceivedMessage,
           previousSentMessage,
         })
-      ).not.toThrow()
+      ).resolves.not.toThrow()
     })
 
-    it('should throw an error when previousSentMessage is present, but recipientVerkey is not ', () => {
+    it('should throw an error when previousSentMessage is present, but recipientVerkey is not ', async () => {
       expect.assertions(1)
 
       const previousSentMessage = new AgentMessage()
@@ -841,19 +854,27 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
+      message.setService({
+        recipientKeys: [],
+        serviceEndpoint: '',
+        routingKeys: [],
+      })
       const messageContext = new InboundMessageContext(message, { agentContext })
 
-      expect(() =>
-        connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           previousSentMessage,
         })
-      ).toThrowError('Cannot verify service without recipientKey on incoming message')
+      ).rejects.toThrowError(
+        'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are previousSentMessage or previousReceivedMessage.'
+      )
     })
 
-    it('should throw an error when previousSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', () => {
+    it('should throw an error when previousSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', async () => {
       expect.assertions(1)
 
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+      const senderKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
 
       const previousSentMessage = new AgentMessage()
       previousSentMessage.setService({
@@ -863,18 +884,21 @@ describe('ConnectionService', () => {
       })
 
       const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey })
+      message.setService({
+        recipientKeys: [],
+        serviceEndpoint: '',
+        routingKeys: [],
+      })
+      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey, senderKey })
 
-      expect(() =>
-        connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           previousSentMessage,
         })
-      ).toThrowError(
-        'Previously sent message ~service recipientKeys does not include current received message recipient key'
-      )
+      ).rejects.toThrowError('Recipient key 8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K not found in our service')
     })
 
-    it('should throw an error when previousReceivedMessage is present, but senderVerkey is not ', () => {
+    it('should throw an error when previousReceivedMessage is present, but senderVerkey is not ', async () => {
       expect.assertions(1)
 
       const previousReceivedMessage = new AgentMessage()
@@ -887,14 +911,16 @@ describe('ConnectionService', () => {
       const message = new AgentMessage()
       const messageContext = new InboundMessageContext(message, { agentContext })
 
-      expect(() =>
-        connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           previousReceivedMessage,
         })
-      ).toThrowError('Cannot verify service without senderKey on incoming message')
+      ).rejects.toThrowError(
+        'No keys on our side to use for encrypting messages, and previous messages found (in which case our keys MUST also be present).'
+      )
     })
 
-    it('should throw an error when previousReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', () => {
+    it('should throw an error when previousReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
       expect.assertions(1)
 
       const senderKey = 'senderKey'
@@ -906,19 +932,26 @@ describe('ConnectionService', () => {
         routingKeys: [],
       })
 
+      const previousSentMessage = new AgentMessage()
+      previousSentMessage.setService({
+        recipientKeys: [senderKey],
+        serviceEndpoint: '',
+        routingKeys: [],
+      })
+
       const message = new AgentMessage()
       const messageContext = new InboundMessageContext(message, {
         agentContext,
-        senderKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),
+        senderKey: Key.fromPublicKeyBase58('randomKey', KeyType.Ed25519),
+        recipientKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),
       })
 
-      expect(() =>
-        connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await expect(
+        connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           previousReceivedMessage,
+          previousSentMessage,
         })
-      ).toThrowError(
-        'Previously received message ~service recipientKeys does not include current received message sender key'
-      )
+      ).rejects.toThrowError('Sender key randomKey not found in their service')
     })
   })
 

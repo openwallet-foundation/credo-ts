@@ -187,7 +187,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
         associatedRecordId: proofRecord.id,
         messageClass: V1RequestPresentationMessage,
       })
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -212,7 +212,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       })
 
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
         agentMessage: proposalMessage,
@@ -437,7 +437,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       // Assert
       proofRecord.assertProtocolVersion('v1')
       proofRecord.assertState(ProofState.ProposalSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -475,7 +475,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       })
 
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // Save in repository
       await proofRepository.save(agentContext, proofRecord)
@@ -764,7 +764,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // Assert
     proofRecord.assertState(ProofState.RequestSent)
     proofRecord.assertProtocolVersion('v1')
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage: proposalMessage,
       previousSentMessage: requestMessage,
     })
@@ -852,7 +852,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.PresentationSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage,
       previousSentMessage,
     })

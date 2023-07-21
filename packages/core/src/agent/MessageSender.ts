@@ -197,6 +197,10 @@ export class MessageSender {
     const { agentContext, connection, outOfBand, message } = outboundMessageContext
     const errors: Error[] = []
 
+    if (outboundMessageContext.isOutboundServiceMessage()) {
+      return this.sendMessageToService(outboundMessageContext)
+    }
+
     if (!connection) {
       this.logger.error('Outbound message has no associated connection')
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
@@ -343,6 +347,9 @@ export class MessageSender {
     )
   }
 
+  /**
+   * @deprecated Use `sendMessage` directly instead. Will be made private in 0.5.0
+   */
   public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
 

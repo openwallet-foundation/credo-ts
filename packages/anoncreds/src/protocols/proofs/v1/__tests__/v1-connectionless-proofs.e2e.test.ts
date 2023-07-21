@@ -119,12 +119,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
+    const outOfBandRecord = await faberAgent.oob.createInvitation({
+      messages: [message],
+      handshake: false,
     })
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -328,8 +327,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
+    const { invitationUrl, message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       message,
       domain: 'https://a-domain.com',
     })
@@ -338,7 +336,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       await faberAgent.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,

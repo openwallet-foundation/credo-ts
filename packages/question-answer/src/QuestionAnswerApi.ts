@@ -2,6 +2,7 @@ import type { QuestionAnswerRecord } from './repository'
 import type { Query } from '@aries-framework/core'
 
 import {
+  getOutboundMessageContext,
   AgentContext,
   ConnectionService,
   OutboundMessageContext,
@@ -65,10 +66,10 @@ export class QuestionAnswerApi {
         detail: config?.detail,
       }
     )
-    const outboundMessageContext = new OutboundMessageContext(questionMessage, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message: questionMessage,
       associatedRecord: questionAnswerRecord,
+      connectionRecord: connection,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -94,10 +95,10 @@ export class QuestionAnswerApi {
 
     const connection = await this.connectionService.getById(this.agentContext, questionRecord.connectionId)
 
-    const outboundMessageContext = new OutboundMessageContext(answerMessage, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message: answerMessage,
       associatedRecord: questionAnswerRecord,
+      connectionRecord: connection,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)

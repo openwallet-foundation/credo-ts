@@ -2,11 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../.
 import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
-import { ServiceDecorator } from '../../../../../decorators/service/ServiceDecorator'
-import { DidCommMessageRole } from '../../../../../storage'
-import { DidCommMessageRepository } from '../../../../../storage/didcomm/DidCommMessageRepository'
-import { RoutingService } from '../../../../routing'
+import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
 import { V2RequestPresentationMessage } from '../messages/V2RequestPresentationMessage'
 
 export class V2RequestPresentationHandler implements MessageHandler {
@@ -42,40 +38,11 @@ export class V2RequestPresentationHandler implements MessageHandler {
       proofRecord,
     })
 
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: proofRecord,
-      })
-    } else if (messageContext.message.service) {
-      const routingService = messageContext.agentContext.dependencyManager.resolve<RoutingService>(RoutingService)
-      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
-
-      const routing = await routingService.getRouting(messageContext.agentContext)
-      message.service = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-      })
-      const recipientService = messageContext.message.service
-
-      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
-        agentMessage: message,
-        associatedRecordId: proofRecord.id,
-        role: DidCommMessageRole.Sender,
-      })
-
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: message.service.resolvedDidCommService.recipientKeys[0],
-          returnRoute: true,
-        },
-      })
-    }
-
-    messageContext.agentContext.config.logger.error(`Could not automatically create presentation`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      message,
+      lastReceivedMessage: messageContext.message,
+      associatedRecord: proofRecord,
+      connectionRecord: messageContext.connection,
+    })
   }
 }

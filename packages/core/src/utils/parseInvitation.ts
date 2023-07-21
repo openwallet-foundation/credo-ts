@@ -4,11 +4,14 @@ import type { Response } from 'node-fetch'
 import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
+import { AgentMessage } from '../agent/AgentMessage'
 import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
+import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { convertToNewInvitation } from '../modules/oob/helpers'
 import { OutOfBandInvitation } from '../modules/oob/messages'
 
+import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
@@ -102,9 +105,33 @@ export const parseInvitationShortUrl = async (
   if (parsedUrl['oob']) {
     const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
     return outOfBandInvitation
-  } else if (parsedUrl['c_i'] || parsedUrl['d_m']) {
+  } else if (parsedUrl['c_i']) {
     const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     return convertToNewInvitation(invitation)
+  }
+  // Legacy connectionless invitation
+  else if (parsedUrl['d_m']) {
+    const messageJson = JsonEncoder.fromBase64(parsedUrl['d_m'] as string)
+    const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
+
+    // ~service is required for legacy connectionless invitations
+    if (!agentMessage.service) {
+      throw new AriesFrameworkError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { '~service': service, ...messageWithoutService } = messageJson
+
+    // transform into out of band invitation
+    const invitation = new OutOfBandInvitation({
+      // TODO: what to do with the label?
+      label: '',
+      services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
+    })
+
+    invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
+
+    return invitation
   } else {
     try {
       return oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))

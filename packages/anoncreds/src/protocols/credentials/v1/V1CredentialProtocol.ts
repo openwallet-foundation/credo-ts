@@ -224,7 +224,7 @@ export class V1CredentialProtocol
         messageClass: V1OfferCredentialMessage,
       })
 
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -257,7 +257,7 @@ export class V1CredentialProtocol
       })
 
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // Save record
       await credentialRepository.save(messageContext.agentContext, credentialRecord)
@@ -518,7 +518,7 @@ export class V1CredentialProtocol
       // Assert
       credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.ProposalSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         previousReceivedMessage,
         previousSentMessage,
       })
@@ -546,7 +546,7 @@ export class V1CredentialProtocol
       })
 
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       await this.indyCredentialFormat.processOffer(messageContext.agentContext, {
         credentialRecord,
@@ -750,7 +750,7 @@ export class V1CredentialProtocol
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage: proposalMessage ?? undefined,
       previousSentMessage: offerMessage ?? undefined,
     })
@@ -886,7 +886,7 @@ export class V1CredentialProtocol
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.RequestSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage: offerCredentialMessage,
       previousSentMessage: requestCredentialMessage,
     })
@@ -981,7 +981,7 @@ export class V1CredentialProtocol
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.CredentialIssued)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       previousReceivedMessage: requestCredentialMessage,
       previousSentMessage: issueCredentialMessage,
     })

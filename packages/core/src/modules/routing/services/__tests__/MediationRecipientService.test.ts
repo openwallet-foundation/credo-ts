@@ -73,13 +73,7 @@ describe('MediationRecipientService', () => {
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
     didRegistrarService = new DidRegistrarServiceMock()
-    connectionService = new ConnectionService(
-      config.logger,
-      connectionRepository,
-      didRepository,
-      didRegistrarService,
-      eventEmitter
-    )
+    connectionService = new ConnectionService(config.logger, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 
