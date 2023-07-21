@@ -13,13 +13,14 @@ env:
   ENDORSER_AGENT_PUBLIC_DID_SEED: 00000000000000000000000Endorser9
   GENESIS_TXN_PATH: network/genesis/local-genesis.txn
   LIB_INDY_STRG_POSTGRES: /home/runner/work/aries-framework-javascript/indy-sdk/experimental/plugins/postgres_storage/target/release # for Linux
-  NODE_OPTIONS: --max_old_space_size=4096
+  NODE_OPTIONS: --max_old_space_size=6144
 
 # Make sure we're not running multiple release steps at the same time as this can give issues with determining the next npm version to release.
 # Ideally we only add this to the 'release' job so it doesn't limit PR runs, but github can't guarantee the job order in that case:
 # "When concurrency is specified at the job level, order is not guaranteed for jobs or runs that queue within 5 minutes of each other."
 concurrency:
-  group: aries-framework-${{ github.ref }}-${{ github.repository }}-${{ github.event_name }}
+  # Cancel previous runs that are not completed yet
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -43,26 +44,27 @@ jobs:
           fi
 
           echo "SHOULD_RUN: ${SHOULD_RUN}"
-          echo "::set-output name=triggered::${SHOULD_RUN}"
+          echo triggered="${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
 
   validate:
     runs-on: aries-ubuntu-2004
     name: Validate
     steps:
       - name: Checkout aries-framework-javascript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # setup dependencies
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
           node-version: 16
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Linting
         run: yarn lint
@@ -86,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout aries-framework-javascript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # setup dependencies
 
@@ -109,16 +111,17 @@ jobs:
         uses: ./.github/actions/setup-postgres-wallet-plugin
 
       - name: Setup NodeJS
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
 
       - name: Add ref-napi resolution in Node18
-        run: node ./scripts/add-ref-napi-resolution.js
         if: matrix.node-version == '18.x'
+        run: node ./scripts/add-ref-napi-resolution.js
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Run tests
         run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} ENDORSER_AGENT_PUBLIC_DID_SEED=${ENDORSER_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
@@ -133,19 +136,21 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout aries-framework-javascript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           # pulls all commits (needed for lerna to correctly version)
           fetch-depth: 0
+          persist-credentials: false
 
       # setup dependencies
       - name: Setup Libindy
         uses: ./.github/actions/setup-libindy
 
       - name: Setup NodeJS
-        uses: ./.github/actions/setup-node
+        uses: actions/setup-node@v3
         with:
           node-version: 16
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -174,8 +179,7 @@ jobs:
         run: |
           NEW_VERSION=$(node -p "require('./lerna.json').version")
           echo $NEW_VERSION
-
-          echo "::set-output name=version::$NEW_VERSION"
+          echo version="${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
