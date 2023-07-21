@@ -5,7 +5,6 @@ import {
   getOutboundMessageContext,
   AgentContext,
   ConnectionService,
-  OutboundMessageContext,
   injectable,
   MessageSender,
 } from '@aries-framework/core'

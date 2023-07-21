@@ -11,7 +11,6 @@ import {
   AriesFrameworkError,
   ConnectionService,
   MessageSender,
-  OutboundMessageContext,
   injectable,
   getOutboundMessageContext,
 } from '@aries-framework/core'

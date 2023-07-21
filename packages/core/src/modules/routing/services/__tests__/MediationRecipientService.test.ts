@@ -12,7 +12,6 @@ import { ConnectionMetadataKeys } from '../../../connections/repository/Connecti
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
 import { ConnectionService } from '../../../connections/services/ConnectionService'
 import { DidRepository } from '../../../dids/repository/DidRepository'
-import { DidRegistrarService } from '../../../dids/services/DidRegistrarService'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import {
   KeylistUpdateAction,
@@ -40,9 +39,6 @@ const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 jest.mock('../../../../agent/MessageSender')
 const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
 
-jest.mock('../../../dids/services/DidRegistrarService')
-const DidRegistrarServiceMock = DidRegistrarService as jest.Mock<DidRegistrarService>
-
 const connectionImageUrl = 'https://example.com/image.png'
 
 describe('MediationRecipientService', () => {
@@ -53,7 +49,6 @@ describe('MediationRecipientService', () => {
 
   let mediationRepository: MediationRepository
   let didRepository: DidRepository
-  let didRegistrarService: DidRegistrarService
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
@@ -72,7 +67,6 @@ describe('MediationRecipientService', () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    didRegistrarService = new DidRegistrarServiceMock()
     connectionService = new ConnectionService(config.logger, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()

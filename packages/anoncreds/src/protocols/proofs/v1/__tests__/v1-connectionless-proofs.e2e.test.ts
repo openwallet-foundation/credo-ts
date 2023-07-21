@@ -294,7 +294,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    const { message } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
