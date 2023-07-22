@@ -34,8 +34,6 @@ import {
   AnonCredsRestrictionWrapper,
   unqualifiedCredentialDefinitionIdRegex,
   AnonCredsRegistryService,
-  AnonCredsApi,
-  AnonCredsLinkSecretRecord,
   storeLinkSecret,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
