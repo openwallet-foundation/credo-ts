@@ -325,7 +325,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     let revocationRegistryDefinitionId
     let revocationRegistryIndex
-    let revocationStatusList
     let tailsFilePath
 
     if (credentialDefinition.revocation) {
