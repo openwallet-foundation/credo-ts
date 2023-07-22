@@ -351,22 +351,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         )
       }
 
-      // get current revocation status list
-      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
-      const registry = registryService.getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
-      const result = await registry.getRevocationStatusList(
-        agentContext,
-        revocationRegistryDefinitionId,
-        dateToTimestamp(new Date())
-      )
-
-      if (!result.revocationStatusList) {
-        throw new AriesFrameworkError(
-          `Could not get current revocation status list for ${revocationRegistryDefinitionId}`
-        )
-      }
-      revocationStatusList = result.revocationStatusList
-
       const { revocationRegistryDefinition } = await agentContext.dependencyManager
         .resolve(AnonCredsRevocationRegistryDefinitionRepository)
         .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
@@ -383,7 +367,6 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
       revocationRegistryDefinitionId,
       revocationRegistryIndex,
-      revocationStatusList,
       tailsFilePath,
     })
 

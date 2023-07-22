@@ -251,19 +251,15 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       credentialValues,
       revocationRegistryDefinitionId,
       tailsFilePath,
-      revocationStatusList,
       revocationRegistryIndex,
     } = options
 
-    const definedRevocationOptions = [
-      revocationRegistryDefinitionId,
-      tailsFilePath,
-      revocationStatusList,
-      revocationRegistryIndex,
-    ].filter((e) => e !== undefined)
-    if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 4) {
+    const definedRevocationOptions = [revocationRegistryDefinitionId, tailsFilePath, revocationRegistryIndex].filter(
+      (e) => e !== undefined
+    )
+    if (definedRevocationOptions.length > 0 && definedRevocationOptions.length < 3) {
       throw new AriesFrameworkError(
-        'Revocation requires all of revocationRegistryDefinitionId, revocationStatusList, revocationRegistryIndex and tailsFilePath'
+        'Revocation requires all of revocationRegistryDefinitionId, revocationRegistryIndex and tailsFilePath'
       )
     }
 
@@ -302,6 +298,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
       }
 
       let revocationConfiguration: CredentialRevocationConfig | undefined
+      let revocationStatusList: RevocationStatusList | undefined
       if (revocationRegistryDefinitionId && tailsFilePath && revocationRegistryIndex) {
         const revocationRegistryDefinitionRecord = await agentContext.dependencyManager
           .resolve(AnonCredsRevocationRegistryDefinitionRepository)
@@ -327,6 +324,21 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           tailsPath: tailsFilePath,
           registryIndex: revocationRegistryIndex,
         })
+
+        // Dummy revocation status list object to pass to anoncreds library
+        // (FIXME: remove as soon as it is not required anymore by anoncreds-rs)
+        revocationStatusList = RevocationStatusList.create({
+          issuanceByDefault: true,
+          issuerId: revocationRegistryDefinitionRecord.revocationRegistryDefinition.issuerId,
+          revocationRegistryDefinition: {
+            ...revocationRegistryDefinitionRecord.revocationRegistryDefinition,
+            value: {
+              ...revocationRegistryDefinitionRecord.revocationRegistryDefinition.value,
+              tailsLocation: tailsFilePath,
+            },
+          } as unknown as JsonObject,
+          revocationRegistryDefinitionId: revocationRegistryDefinitionRecord.revocationRegistryDefinitionId,
+        })
       }
 
       credential = Credential.create({
@@ -338,7 +350,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
         attributeRawValues,
         credentialDefinitionPrivate: credentialDefinitionPrivateRecord.value,
         revocationConfiguration,
-        revocationStatusList: revocationStatusList ? (revocationStatusList as unknown as JsonObject) : undefined,
+        revocationStatusList,
       })
 
       return {
