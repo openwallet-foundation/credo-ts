@@ -60,7 +60,6 @@ import {
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
-import { dateToTimestamp } from '../utils/timestamp'
 
 const ANONCREDS_CREDENTIAL_OFFER = 'anoncreds/credential-offer@v1.0'
 const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
