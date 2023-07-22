@@ -35,6 +35,8 @@ import {
   unqualifiedCredentialDefinitionIdRegex,
   AnonCredsRegistryService,
   AnonCredsApi,
+  AnonCredsLinkSecretRecord,
+  storeLinkSecret,
 } from '@aries-framework/anoncreds'
 import { AriesFrameworkError, JsonTransformer, TypedArrayEncoder, injectable, utils } from '@aries-framework/core'
 import {
@@ -48,6 +50,7 @@ import {
   anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
+import { AnonCredsRsModuleConfig } from '../AnonCredsRsModuleConfig'
 import { AnonCredsRsError } from '../errors/AnonCredsRsError'
 
 @injectable()
@@ -205,14 +208,14 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
       // No default link secret. Automatically create one if set on module config
       if (!linkSecretRecord) {
-        const anoncredsApi = agentContext.dependencyManager.resolve(AnonCredsApi)
-        if (!anoncredsApi.config.autoCreateLinkSecret) {
+        const moduleConfig = agentContext.dependencyManager.resolve(AnonCredsRsModuleConfig)
+        if (!moduleConfig.autoCreateLinkSecret) {
           throw new AnonCredsRsError(
             'No link secret provided to createCredentialRequest and no default link secret has been found'
           )
         }
-        const linkSecretId = await anoncredsApi.createLinkSecret({ setAsDefault: true })
-        linkSecretRecord = await linkSecretRepository.getByLinkSecretId(agentContext, linkSecretId)
+        const { linkSecretId, linkSecretValue } = await this.createLinkSecret(agentContext, {})
+        linkSecretRecord = await storeLinkSecret(agentContext, { linkSecretId, linkSecretValue, setAsDefault: true })
       }
 
       if (!linkSecretRecord.value) {
