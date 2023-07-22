@@ -391,21 +391,6 @@ export class OutOfBandApi {
       )
     }
 
-    // Make sure we haven't received this invitation before
-    // It's fine if we created it (means that we are connnecting to ourselves) or if it's an implicit
-    // invitation (it allows to connect multiple times to the same public did)
-    if (!config.isImplicit) {
-      const existingOobRecordsFromThisId = await this.outOfBandService.findAllByQuery(this.agentContext, {
-        invitationId: outOfBandInvitation.id,
-        role: OutOfBandRole.Receiver,
-      })
-      if (existingOobRecordsFromThisId.length > 0) {
-        throw new AriesFrameworkError(
-          `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
-        )
-      }
-    }
-
     const recipientKeyFingerprints: string[] = []
     for (const service of outOfBandInvitation.getServices()) {
       // Resolve dids to DIDDocs to retrieve services
