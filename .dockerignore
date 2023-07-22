@@ -1,2 +1,4 @@
+# Skip unncecessary folders
 node_modules
 build
+.github

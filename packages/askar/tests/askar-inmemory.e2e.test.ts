@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 
 import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
@@ -9,28 +8,25 @@ import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
-import { e2eTest, getPostgresAgentOptions } from './helpers'
+import { e2eTest, getSqliteAgentOptions } from './helpers'
 
-const storageConfig: AskarWalletPostgresStorageConfig = {
-  type: 'postgres',
-  config: {
-    host: 'localhost:5432',
+const aliceInMemoryAgentOptions = getSqliteAgentOptions(
+  'AgentsAlice',
+  {
+    endpoints: ['rxjs:alice'],
   },
-  credentials: {
-    account: 'postgres',
-    password: 'postgres',
+  true
+)
+const bobInMemoryAgentOptions = getSqliteAgentOptions(
+  'AgentsBob',
+  {
+    endpoints: ['rxjs:bob'],
   },
-}
-
-const alicePostgresAgentOptions = getPostgresAgentOptions('AgentsAlice', storageConfig, {
-  endpoints: ['rxjs:alice'],
-})
-const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', storageConfig, {
-  endpoints: ['rxjs:bob'],
-})
+  true
+)
 
 // FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
+describeRunInNodeVersion([18], 'Askar In Memory agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
@@ -46,7 +42,7 @@ describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
     }
   })
 
-  test('Postgres Askar wallets E2E test', async () => {
+  test('In memory Askar wallets E2E test', async () => {
     const aliceMessages = new Subject<SubjectMessage>()
     const bobMessages = new Subject<SubjectMessage>()
 
@@ -55,12 +51,12 @@ describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
       'rxjs:bob': bobMessages,
     }
 
-    aliceAgent = new Agent(alicePostgresAgentOptions)
+    aliceAgent = new Agent(aliceInMemoryAgentOptions)
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    bobAgent = new Agent(bobPostgresAgentOptions)
+    bobAgent = new Agent(bobInMemoryAgentOptions)
     bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
