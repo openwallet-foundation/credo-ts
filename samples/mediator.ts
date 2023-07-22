@@ -16,6 +16,7 @@ import type { InitConfig } from '@aries-framework/core'
 import type { Socket } from 'net'
 
 import express from 'express'
+import * as indySdk from 'indy-sdk'
 import { Server } from 'ws'
 
 import { TestLogger } from '../packages/core/tests/logger'
@@ -29,6 +30,7 @@ import {
   LogLevel,
   WsOutboundTransport,
 } from '@aries-framework/core'
+import { IndySdkModule } from '@aries-framework/indy-sdk'
 import { HttpInboundTransport, agentDependencies, WsInboundTransport } from '@aries-framework/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
@@ -58,6 +60,7 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
+    indySdk: new IndySdkModule({ indySdk }),
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),

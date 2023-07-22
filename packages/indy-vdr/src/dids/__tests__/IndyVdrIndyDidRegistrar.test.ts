@@ -241,6 +241,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       verificationKey: expect.any(Key),
       alias: 'Hello',
       diddocContent: undefined,
+      role: 'STEWARD',
     })
 
     expect(registerPublicDidSpy).toHaveBeenCalledWith(agentContext, poolMock, undefined)
@@ -307,6 +308,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       verificationKey: expect.any(Key),
       alias: 'Hello',
       diddocContent: undefined,
+      role: 'STEWARD',
     })
 
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
@@ -402,6 +404,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
       verificationKey: expect.any(Key),
       alias: 'Hello',
+      role: 'STEWARD',
       diddocContent: {
         '@context': [],
         authentication: [],
@@ -583,6 +586,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       verificationKey: expect.any(Key),
       alias: 'Hello',
       diddocContent: undefined,
+      role: 'STEWARD',
     })
 
     expect(registerPublicDidSpy).toHaveBeenCalledWith(
