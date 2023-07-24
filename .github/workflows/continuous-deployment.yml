@@ -30,6 +30,7 @@ jobs:
         with:
           node-version: 16
           cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -78,6 +79,7 @@ jobs:
         with:
           node-version: 16
           cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -91,7 +93,7 @@ jobs:
           echo version="${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create Tag
-        uses: mathieudutour/github-tag-action@v6.0
+        uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{ steps.new-version.outputs.version }}
