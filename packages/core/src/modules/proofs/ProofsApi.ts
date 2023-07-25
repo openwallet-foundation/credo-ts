@@ -29,13 +29,9 @@ import { injectable } from 'tsyringe'
 
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
-import { OutboundMessageContext } from '../../agent/models'
-import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
+import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { AriesFrameworkError } from '../../error'
-import { DidCommMessageRepository } from '../../storage'
-import { DidCommMessageRole } from '../../storage/didcomm/DidCommMessageRole'
 import { ConnectionService } from '../connections/services/ConnectionService'
-import { RoutingService } from '../routing/services/RoutingService'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'
@@ -98,9 +94,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
   private connectionService: ConnectionService
   private messageSender: MessageSender
-  private routingService: RoutingService
   private proofRepository: ProofRepository
-  private didCommMessageRepository: DidCommMessageRepository
   private agentContext: AgentContext
 
   public constructor(
@@ -108,16 +102,12 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     connectionService: ConnectionService,
     agentContext: AgentContext,
     proofRepository: ProofRepository,
-    routingService: RoutingService,
-    didCommMessageRepository: DidCommMessageRepository,
     config: ProofsModuleConfig<PPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.proofRepository = proofRepository
     this.agentContext = agentContext
-    this.routingService = routingService
-    this.didCommMessageRepository = didCommMessageRepository
     this.config = config
   }
 
@@ -155,10 +145,10 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       parentThreadId: options.parentThreadId,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: proofRecord,
+      connectionRecord,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -198,10 +188,10 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     })
 
     // send the message
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: proofRecord,
+      connectionRecord,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -240,10 +230,10 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: proofRecord,
+      connectionRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
@@ -274,10 +264,10 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: proofRecord,
+      connectionRecord,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -298,75 +288,33 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+    }
 
     // Use connection if present
-    if (proofRecord.connectionId) {
-      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    const connectionRecord = proofRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+      : undefined
+    connectionRecord?.assertReady()
 
-      // Assert
-      connectionRecord.assertReady()
+    const { message } = await protocol.acceptRequest(this.agentContext, {
+      proofFormats: options.proofFormats,
+      proofRecord,
+      comment: options.comment,
+      autoAcceptProof: options.autoAcceptProof,
+      goalCode: options.goalCode,
+    })
 
-      const { message } = await protocol.acceptRequest(this.agentContext, {
-        proofFormats: options.proofFormats,
-        proofRecord,
-        comment: options.comment,
-        autoAcceptProof: options.autoAcceptProof,
-        goalCode: options.goalCode,
-      })
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
+      connectionRecord,
+      associatedRecord: proofRecord,
+      lastReceivedMessage: requestMessage,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
-      const outboundMessageContext = new OutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-        associatedRecord: proofRecord,
-      })
-      await this.messageSender.sendMessage(outboundMessageContext)
-
-      return proofRecord
-    }
-
-    // Use ~service decorator otherwise
-    else if (requestMessage?.service) {
-      // Create ~service decorator
-      const routing = await this.routingService.getRouting(this.agentContext)
-      const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-      })
-      const recipientService = requestMessage.service
-
-      const { message } = await protocol.acceptRequest(this.agentContext, {
-        proofFormats: options.proofFormats,
-        proofRecord,
-        comment: options.comment,
-        autoAcceptProof: options.autoAcceptProof,
-        goalCode: options.goalCode,
-      })
-      // Set and save ~service decorator to record (to remember our verkey)
-      message.service = ourService
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: proofRecord.id,
-      })
-      await this.messageSender.sendMessageToService(
-        new OutboundMessageContext(message, {
-          agentContext: this.agentContext,
-          serviceParams: {
-            service: recipientService.resolvedDidCommService,
-            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: options.useReturnRoute ?? true, // defaults to true if missing
-          },
-        })
-      )
-      return proofRecord
-    }
-    // Cannot send message without connectionId or ~service decorator
-    else {
-      throw new AriesFrameworkError(
-        `Cannot accept presentation request without connectionId or ~service decorator on presentation request.`
-      )
-    }
+    return proofRecord
   }
 
   public async declineRequest(options: DeclineProofRequestOptions): Promise<ProofExchangeRecord> {
@@ -414,13 +362,13 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       comment: options.comment,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection: connectionRecord,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
+      connectionRecord,
       associatedRecord: proofRecord,
     })
-
     await this.messageSender.sendMessage(outboundMessageContext)
+
     return proofRecord
   }
 
@@ -460,56 +408,36 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+    }
+
     const presentationMessage = await protocol.findPresentationMessage(this.agentContext, proofRecord.id)
+    if (!presentationMessage) {
+      throw new AriesFrameworkError(`No presentation message found for proof record with id '${proofRecord.id}'`)
+    }
 
     // Use connection if present
-    if (proofRecord.connectionId) {
-      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    const connectionRecord = proofRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+      : undefined
+    connectionRecord?.assertReady()
 
-      // Assert
-      connectionRecord.assertReady()
+    const { message } = await protocol.acceptPresentation(this.agentContext, {
+      proofRecord,
+    })
 
-      const { message } = await protocol.acceptPresentation(this.agentContext, {
-        proofRecord,
-      })
+    // FIXME: returnRoute: false
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
+      connectionRecord,
+      associatedRecord: proofRecord,
+      lastSentMessage: requestMessage,
+      lastReceivedMessage: presentationMessage,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
 
-      const outboundMessageContext = new OutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-        associatedRecord: proofRecord,
-      })
-      await this.messageSender.sendMessage(outboundMessageContext)
-
-      return proofRecord
-    }
-    // Use ~service decorator otherwise
-    else if (requestMessage?.service && presentationMessage?.service) {
-      const recipientService = presentationMessage.service
-      const ourService = requestMessage.service
-
-      const { message } = await protocol.acceptPresentation(this.agentContext, {
-        proofRecord,
-      })
-
-      await this.messageSender.sendMessageToService(
-        new OutboundMessageContext(message, {
-          agentContext: this.agentContext,
-          serviceParams: {
-            service: recipientService.resolvedDidCommService,
-            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: false, // hard wire to be false since it's the end of the protocol so not needed here
-          },
-        })
-      )
-
-      return proofRecord
-    }
-    // Cannot send message without credentialId or ~service decorator
-    else {
-      throw new AriesFrameworkError(
-        `Cannot accept presentation without connectionId or ~service decorator on presentation message.`
-      )
-    }
+    return proofRecord
   }
 
   /**
@@ -570,50 +498,30 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       description: options.description,
     })
 
-    if (proofRecord.connectionId) {
-      const connectionRecord = await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+    // Use connection if present
+    const connectionRecord = proofRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, proofRecord.connectionId)
+      : undefined
+    connectionRecord?.assertReady()
 
-      // Assert
-      connectionRecord.assertReady()
-
-      const outboundMessageContext = new OutboundMessageContext(problemReport, {
-        agentContext: this.agentContext,
-        connection: connectionRecord,
-        associatedRecord: proofRecord,
-      })
-
-      await this.messageSender.sendMessage(outboundMessageContext)
-      return proofRecord
-    } else if (requestMessage?.service) {
+    // If there's no connection (so connection-less, we require the state to be request received)
+    if (!connectionRecord) {
       proofRecord.assertState(ProofState.RequestReceived)
 
-      // Create ~service decorator
-      const routing = await this.routingService.getRouting(this.agentContext)
-      const ourService = new ServiceDecorator({
-        serviceEndpoint: routing.endpoints[0],
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
-        routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
-      })
-      const recipientService = requestMessage.service
-
-      await this.messageSender.sendMessageToService(
-        new OutboundMessageContext(problemReport, {
-          agentContext: this.agentContext,
-          serviceParams: {
-            service: recipientService.resolvedDidCommService,
-            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-          },
-        })
-      )
-
-      return proofRecord
+      if (!requestMessage) {
+        throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
+      }
     }
-    // Cannot send message without connectionId or ~service decorator
-    else {
-      throw new AriesFrameworkError(
-        `Cannot send problem report without connectionId or ~service decorator on presentation request.`
-      )
-    }
+
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message: problemReport,
+      connectionRecord,
+      associatedRecord: proofRecord,
+      lastReceivedMessage: requestMessage ?? undefined,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
+
+    return proofRecord
   }
 
   public async getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>> {
