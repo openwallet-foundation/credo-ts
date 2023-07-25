@@ -215,18 +215,18 @@ export class V1CredentialProtocol
       credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.OfferSent)
 
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
       })
-      const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+      const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
       })
 
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       await this.indyCredentialFormat.processProposal(messageContext.agentContext, {
@@ -506,11 +506,11 @@ export class V1CredentialProtocol
     }
 
     if (credentialRecord) {
-      const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+      const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1ProposeCredentialMessage,
       })
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: credentialRecord.id,
         messageClass: V1OfferCredentialMessage,
       })
@@ -519,8 +519,8 @@ export class V1CredentialProtocol
       credentialRecord.assertProtocolVersion('v1')
       credentialRecord.assertState(CredentialState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       await this.indyCredentialFormat.processOffer(messageContext.agentContext, {
@@ -751,8 +751,8 @@ export class V1CredentialProtocol
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage: proposalMessage ?? undefined,
-      previousSentMessage: offerMessage ?? undefined,
+      lastReceivedMessage: proposalMessage ?? undefined,
+      lastSentMessage: offerMessage ?? undefined,
     })
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
@@ -887,8 +887,8 @@ export class V1CredentialProtocol
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.RequestSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage: offerCredentialMessage,
-      previousSentMessage: requestCredentialMessage,
+      lastReceivedMessage: offerCredentialMessage,
+      lastSentMessage: requestCredentialMessage,
     })
 
     const issueAttachment = issueMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
@@ -982,8 +982,8 @@ export class V1CredentialProtocol
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.CredentialIssued)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage: requestCredentialMessage,
-      previousSentMessage: issueCredentialMessage,
+      lastReceivedMessage: requestCredentialMessage,
+      lastSentMessage: issueCredentialMessage,
     })
 
     // Update record

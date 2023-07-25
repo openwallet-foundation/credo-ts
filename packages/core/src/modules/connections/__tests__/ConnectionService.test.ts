@@ -813,15 +813,15 @@ describe('ConnectionService', () => {
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
       const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
 
-      const previousSentMessage = new AgentMessage()
-      previousSentMessage.setService({
+      const lastSentMessage = new AgentMessage()
+      lastSentMessage.setService({
         recipientKeys: [recipientKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const previousReceivedMessage = new AgentMessage()
-      previousReceivedMessage.setService({
+      const lastReceivedMessage = new AgentMessage()
+      lastReceivedMessage.setService({
         recipientKeys: [senderKey.publicKeyBase58],
         serviceEndpoint: '',
         routingKeys: [],
@@ -837,17 +837,17 @@ describe('ConnectionService', () => {
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-          previousReceivedMessage,
-          previousSentMessage,
+          lastReceivedMessage,
+          lastSentMessage,
         })
       ).resolves.not.toThrow()
     })
 
-    it('should throw an error when previousSentMessage is present, but recipientVerkey is not ', async () => {
+    it('should throw an error when lastSentMessage is present, but recipientVerkey is not ', async () => {
       expect.assertions(1)
 
-      const previousSentMessage = new AgentMessage()
-      previousSentMessage.setService({
+      const lastSentMessage = new AgentMessage()
+      lastSentMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
@@ -863,21 +863,21 @@ describe('ConnectionService', () => {
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-          previousSentMessage,
+          lastSentMessage,
         })
       ).rejects.toThrowError(
-        'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are previousSentMessage or previousReceivedMessage.'
+        'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are lastSentMessage or lastReceivedMessage.'
       )
     })
 
-    it('should throw an error when previousSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', async () => {
+    it('should throw an error when lastSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', async () => {
       expect.assertions(1)
 
       const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
       const senderKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
 
-      const previousSentMessage = new AgentMessage()
-      previousSentMessage.setService({
+      const lastSentMessage = new AgentMessage()
+      lastSentMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
@@ -893,16 +893,16 @@ describe('ConnectionService', () => {
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-          previousSentMessage,
+          lastSentMessage,
         })
       ).rejects.toThrowError('Recipient key 8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K not found in our service')
     })
 
-    it('should throw an error when previousReceivedMessage is present, but senderVerkey is not ', async () => {
+    it('should throw an error when lastReceivedMessage is present, but senderVerkey is not ', async () => {
       expect.assertions(1)
 
-      const previousReceivedMessage = new AgentMessage()
-      previousReceivedMessage.setService({
+      const lastReceivedMessage = new AgentMessage()
+      lastReceivedMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
@@ -913,27 +913,27 @@ describe('ConnectionService', () => {
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-          previousReceivedMessage,
+          lastReceivedMessage,
         })
       ).rejects.toThrowError(
         'No keys on our side to use for encrypting messages, and previous messages found (in which case our keys MUST also be present).'
       )
     })
 
-    it('should throw an error when previousReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
+    it('should throw an error when lastReceivedMessage and senderKey are present, but sender key is not present in recipientKeys of previously received message ~service decorator', async () => {
       expect.assertions(1)
 
       const senderKey = 'senderKey'
 
-      const previousReceivedMessage = new AgentMessage()
-      previousReceivedMessage.setService({
+      const lastReceivedMessage = new AgentMessage()
+      lastReceivedMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const previousSentMessage = new AgentMessage()
-      previousSentMessage.setService({
+      const lastSentMessage = new AgentMessage()
+      lastSentMessage.setService({
         recipientKeys: [senderKey],
         serviceEndpoint: '',
         routingKeys: [],
@@ -948,8 +948,8 @@ describe('ConnectionService', () => {
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-          previousReceivedMessage,
-          previousSentMessage,
+          lastReceivedMessage,
+          lastSentMessage,
         })
       ).rejects.toThrowError('Sender key randomKey not found in their service')
     })

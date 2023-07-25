@@ -172,11 +172,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // credential record already exists
     if (proofRecord) {
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V2ProposePresentationMessage,
       })
-      const previousSentMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastSentMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V2RequestPresentationMessage,
       })
@@ -185,8 +185,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord.assertProtocolVersion('v2')
       proofRecord.assertState(ProofState.RequestSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       await this.proofFormatCoordinator.processProposal(messageContext.agentContext, {
@@ -403,12 +403,12 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // proof record already exists
     if (proofRecord) {
-      const previousSentMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastSentMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V2ProposeCredentialMessage,
       })
 
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V2RequestPresentationMessage,
       })
@@ -417,8 +417,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       proofRecord.assertProtocolVersion('v2')
       proofRecord.assertState(ProofState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       await this.proofFormatCoordinator.processRequest(messageContext.agentContext, {
@@ -648,12 +648,12 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       connection?.id
     )
 
-    const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+    const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
-    const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+    const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2ProposePresentationMessage,
     })
@@ -662,8 +662,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.RequestSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage,
-      previousSentMessage,
+      lastReceivedMessage,
+      lastSentMessage,
     })
 
     const formatServices = this.getFormatServicesFromMessage(presentationMessage.formats)
@@ -674,7 +674,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const isValid = await this.proofFormatCoordinator.processPresentation(messageContext.agentContext, {
       proofRecord,
       formatServices,
-      requestMessage: previousSentMessage,
+      requestMessage: lastSentMessage,
       message: presentationMessage,
     })
 
@@ -735,12 +735,12 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     )
     proofRecord.connectionId = connection?.id
 
-    const previousReceivedMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+    const lastReceivedMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
-    const previousSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
+    const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2PresentationMessage,
     })
@@ -749,8 +749,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     proofRecord.assertProtocolVersion('v2')
     proofRecord.assertState(ProofState.PresentationSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage,
-      previousSentMessage,
+      lastReceivedMessage,
+      lastSentMessage,
     })
 
     // Update record

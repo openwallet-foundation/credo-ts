@@ -179,17 +179,17 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord.assertState(ProofState.RequestSent)
       proofRecord.assertProtocolVersion('v1')
 
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1ProposePresentationMessage,
       })
-      const previousSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+      const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1RequestPresentationMessage,
       })
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       // Update record
@@ -425,11 +425,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // proof record already exists, this means we are the message is sent as reply to a proposal we sent
     if (proofRecord) {
-      const previousReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
+      const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1RequestPresentationMessage,
       })
-      const previousSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+      const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
         messageClass: V1ProposePresentationMessage,
       })
@@ -438,8 +438,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord.assertProtocolVersion('v1')
       proofRecord.assertState(ProofState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        previousReceivedMessage,
-        previousSentMessage,
+        lastReceivedMessage,
+        lastSentMessage,
       })
 
       await this.indyProofFormat.processRequest(agentContext, {
@@ -765,8 +765,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     proofRecord.assertState(ProofState.RequestSent)
     proofRecord.assertProtocolVersion('v1')
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage: proposalMessage,
-      previousSentMessage: requestMessage,
+      lastReceivedMessage: proposalMessage,
+      lastSentMessage: requestMessage,
     })
 
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
@@ -839,12 +839,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       connection?.id
     )
 
-    const previousReceivedMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+    const lastReceivedMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1RequestPresentationMessage,
     })
 
-    const previousSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
+    const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V1PresentationMessage,
     })
@@ -853,8 +853,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.PresentationSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      previousReceivedMessage,
-      previousSentMessage,
+      lastReceivedMessage,
+      lastSentMessage,
     })
 
     // Update record
