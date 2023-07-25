@@ -1,7 +1,11 @@
 import type { AgentMessage } from './AgentMessage'
 import type { AgentContext } from './context'
 import type { ConnectionRecord, Routing } from '../modules/connections'
-import type { BaseRecord } from '../storage/BaseRecord'
+import type { ResolvedDidCommService } from '../modules/didcomm'
+import type { OutOfBandRecord } from '../modules/oob'
+import type { BaseRecordAny } from '../storage/BaseRecord'
+
+import { Agent } from 'http'
 
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
@@ -34,8 +38,7 @@ export async function getOutboundMessageContext(
     lastSentMessage,
   }: {
     connectionRecord?: ConnectionRecord
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    associatedRecord?: BaseRecord<any, any, any>
+    associatedRecord?: BaseRecordAny
     message: AgentMessage
     lastReceivedMessage?: AgentMessage
     lastSentMessage?: AgentMessage
@@ -84,8 +87,7 @@ export async function getConnectionlessOutboundMessageContext(
     associatedRecord,
   }: {
     message: AgentMessage
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    associatedRecord: BaseRecord<any, any, any>
+    associatedRecord: BaseRecordAny
     lastReceivedMessage: AgentMessage
     lastSentMessage?: AgentMessage
   }
@@ -93,18 +95,89 @@ export async function getConnectionlessOutboundMessageContext(
   agentContext.config.logger.debug(
     `Creating outbound message context for message ${message.id} using connection-less exchange`
   )
-  let ourService = lastSentMessage?.service?.resolvedDidCommService
-  let recipientService = lastReceivedMessage.service?.resolvedDidCommService
 
+  const outOfBandRecord = await getOutOfBandRecordForMessage(agentContext, message)
+  // eslint-disable-next-line prefer-const
+  let { recipientService, ourService } = await getServicesForMessage(agentContext, {
+    lastReceivedMessage,
+    lastSentMessage,
+    message,
+    outOfBandRecord,
+  })
+
+  // We need to set up routing for this exchange if we haven't sent any messages yet.
+  if (!lastSentMessage) {
+    ourService = await createOurService(agentContext, { outOfBandRecord, message })
+  }
+
+  // These errors should not happen as they will be caught by the checks above. But if there's a path missed,
+  // and to make typescript happy we add these checks.
+  if (!ourService) {
+    throw new AriesFrameworkError(
+      `Could not determine our service for connection-less exchange for message ${message.id}.`
+    )
+  }
+  if (!recipientService) {
+    throw new AriesFrameworkError(
+      `Could not determine recipient service for connection-less exchange for message ${message.id}.`
+    )
+  }
+
+  // Adds the ~service and ~thread.pthid (if oob is used) to the message and updates it in storage.
+  await addExchangeDataToMessage(agentContext, { message, ourService, outOfBandRecord, associatedRecord })
+
+  return new OutboundMessageContext(message, {
+    agentContext: agentContext,
+    associatedRecord,
+    serviceParams: {
+      service: recipientService,
+      senderKey: ourService.recipientKeys[0],
+      returnRoute: true,
+    },
+  })
+}
+
+/**
+ * Retrieves the out of band record associated with the message based on the thread id of the message.
+ */
+async function getOutOfBandRecordForMessage(agentContext: AgentContext, message: AgentMessage) {
   agentContext.config.logger.debug(
-    `Looking for out-of-band record for connection-less exchange for message ${message.id}`
+    `Looking for out-of-band record for message ${message.id} with thread id ${message.threadId}`
   )
   const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
-  const outOfBandService = agentContext.dependencyManager.resolve(OutOfBandService)
 
   const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
     invitationRequestsThreadIds: [message.threadId],
   })
+
+  return outOfBandRecord ?? undefined
+}
+
+/**
+ * Returns the services to use for the message. When available it will extract the services from the
+ * lastSentMessage and lastReceivedMessage. If not available it will try to extract the services from
+ * the out of band record.
+ *
+ * If the required services and fields are not available, an error will be thrown.
+ */
+async function getServicesForMessage(
+  agentContext: AgentContext,
+  {
+    lastSentMessage,
+    lastReceivedMessage,
+    message,
+    outOfBandRecord,
+  }: {
+    lastSentMessage?: AgentMessage
+    lastReceivedMessage: AgentMessage
+    message: AgentMessage
+    outOfBandRecord?: OutOfBandRecord
+  }
+) {
+  let ourService = lastSentMessage?.service?.resolvedDidCommService
+  let recipientService = lastReceivedMessage.service?.resolvedDidCommService
+
+  const outOfBandService = agentContext.dependencyManager.resolve(OutOfBandService)
 
   // Check if valid
   if (outOfBandRecord?.role === OutOfBandRole.Sender) {
@@ -163,42 +236,67 @@ export async function getConnectionlessOutboundMessageContext(
     }
   }
 
-  // We need to set up routing for this exchange if we haven't sent any messages yet.
-  if (!lastSentMessage) {
-    agentContext.config.logger.debug(
-      `No previous sent message in thread for outbound message ${message.id}, setting up routing`
-    )
+  return { ourService, recipientService }
+}
 
-    let routing: Routing | undefined = undefined
+/**
+ * Creates a new service for us as the sender to be used in a connection-less exchange.
+ *
+ * Will creating routing, which takes into account mediators, and will optionally extract
+ * routing configuration from the out of band record if available.
+ */
+async function createOurService(
+  agentContext: AgentContext,
+  { outOfBandRecord, message }: { outOfBandRecord?: OutOfBandRecord; message: AgentMessage }
+): Promise<ResolvedDidCommService> {
+  agentContext.config.logger.debug(
+    `No previous sent message in thread for outbound message ${message.id}, setting up routing`
+  )
 
-    // Extract routing from out of band record if possible
-    const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
-    if (oobRecordRecipientRouting) {
-      routing = {
-        recipientKey: Key.fromFingerprint(oobRecordRecipientRouting.recipientKeyFingerprint),
-        routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map((fingerprint) =>
-          Key.fromFingerprint(fingerprint)
-        ),
-        endpoints: oobRecordRecipientRouting.endpoints,
-        mediatorId: oobRecordRecipientRouting.mediatorId,
-      }
-    }
+  let routing: Routing | undefined = undefined
 
-    if (!routing) {
-      const routingService = agentContext.dependencyManager.resolve(RoutingService)
-      routing = await routingService.getRouting(agentContext, {
-        mediatorId: outOfBandRecord?.mediatorId,
-      })
-    }
-
-    ourService = {
-      id: uuid(),
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey],
-      routingKeys: routing.routingKeys,
+  // Extract routing from out of band record if possible
+  const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+  if (oobRecordRecipientRouting) {
+    routing = {
+      recipientKey: Key.fromFingerprint(oobRecordRecipientRouting.recipientKeyFingerprint),
+      routingKeys: oobRecordRecipientRouting.routingKeyFingerprints.map((fingerprint) =>
+        Key.fromFingerprint(fingerprint)
+      ),
+      endpoints: oobRecordRecipientRouting.endpoints,
+      mediatorId: oobRecordRecipientRouting.mediatorId,
     }
   }
 
+  if (!routing) {
+    const routingService = agentContext.dependencyManager.resolve(RoutingService)
+    routing = await routingService.getRouting(agentContext, {
+      mediatorId: outOfBandRecord?.mediatorId,
+    })
+  }
+
+  return {
+    id: uuid(),
+    serviceEndpoint: routing.endpoints[0],
+    recipientKeys: [routing.recipientKey],
+    routingKeys: routing.routingKeys,
+  }
+}
+
+async function addExchangeDataToMessage(
+  agentContext: AgentContext,
+  {
+    message,
+    ourService,
+    outOfBandRecord,
+    associatedRecord,
+  }: {
+    message: AgentMessage
+    ourService: ResolvedDidCommService
+    outOfBandRecord?: OutOfBandRecord
+    associatedRecord: BaseRecordAny
+  }
+) {
   // Set the parentThreadId on the message from the oob invitation
   if (outOfBandRecord) {
     if (!message.thread) {
@@ -210,38 +308,14 @@ export async function getConnectionlessOutboundMessageContext(
     }
   }
 
-  // These errors should not happen as they will be caught by the checks above. But if there's a path missed,
-  // and to make typescript happy we add these checks.
-  if (!ourService) {
-    throw new AriesFrameworkError(
-      `Could not determine our service for connection-less exchange for message ${message.id}.`
-    )
-  }
-  if (!recipientService) {
-    throw new AriesFrameworkError(
-      `Could not determine recipient service for connection-less exchange for message ${message.id}.`
-    )
-  }
-
   // Set the service on the message and save service decorator to record (to remember our verkey)
   // TODO: we should store this in the OOB record, but that would be a breaking change for now.
   // We can change this in 0.5.0
   message.service = ServiceDecorator.fromResolvedDidCommService(ourService)
 
-  const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-  await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
+  await agentContext.dependencyManager.resolve(DidCommMessageRepository).saveOrUpdateAgentMessage(agentContext, {
     agentMessage: message,
     role: DidCommMessageRole.Sender,
-    associatedRecordId: associatedRecord?.id,
-  })
-
-  return new OutboundMessageContext(message, {
-    agentContext: agentContext,
-    associatedRecord,
-    serviceParams: {
-      service: recipientService,
-      senderKey: ourService.recipientKeys[0],
-      returnRoute: true,
-    },
+    associatedRecordId: associatedRecord.id,
   })
 }

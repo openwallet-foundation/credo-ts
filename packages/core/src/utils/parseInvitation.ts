@@ -119,6 +119,8 @@ export const parseInvitationShortUrl = async (
       throw new AriesFrameworkError('Invalid legacy connectionless invitation url. Missing ~service decorator.')
     }
 
+    // This destructuring removes the ~service property from the message, and
+    // we can can use messageWithoutService to create the out of band invitation
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { '~service': service, ...messageWithoutService } = messageJson
 

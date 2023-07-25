@@ -443,16 +443,15 @@ export class ConnectionService {
    * or has everything correctly set up for connection-less exchange (optionally with out of band)
    *
    * @param messageContext - the inbound message context
-   * @param previousRespondence - previous sent and received message to determine if a valid service decorator is present
    */
   public async assertConnectionOrOutOfBandExchange(
     messageContext: InboundMessageContext,
     {
-      previousSentMessage,
-      previousReceivedMessage,
+      lastSentMessage,
+      lastReceivedMessage,
     }: {
-      previousSentMessage?: AgentMessage | null
-      previousReceivedMessage?: AgentMessage | null
+      lastSentMessage?: AgentMessage | null
+      lastReceivedMessage?: AgentMessage | null
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -473,9 +472,8 @@ export class ConnectionService {
 
       // set theirService to the value of lastReceivedMessage.service
       let theirService =
-        messageContext.message?.service?.resolvedDidCommService ??
-        previousReceivedMessage?.service?.resolvedDidCommService
-      let ourService = previousSentMessage?.service?.resolvedDidCommService
+        messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
+      let ourService = lastSentMessage?.service?.resolvedDidCommService
 
       // 1. check if there's an oob record associated.
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(OutOfBandRepository)
@@ -508,7 +506,7 @@ export class ConnectionService {
 
       // ourService can be null when we receive an oob invitation or legacy connectionless message and process the message.
       // In this case lastSentMessage and lastReceivedMessage MUST be null, because there shouldn't be any previous exchange
-      if (!ourService && (previousReceivedMessage || previousSentMessage)) {
+      if (!ourService && (lastReceivedMessage || lastSentMessage)) {
         throw new AriesFrameworkError(
           'No keys on our side to use for encrypting messages, and previous messages found (in which case our keys MUST also be present).'
         )
@@ -516,9 +514,9 @@ export class ConnectionService {
 
       // If the message is unpacked or AuthCrypt, there cannot be any previous exchange (this must be the first message).
       // All exchange after the first unpacked oob exchange MUST be encrypted.
-      if ((!senderKey || !recipientKey) && (previousSentMessage || previousReceivedMessage)) {
+      if ((!senderKey || !recipientKey) && (lastSentMessage || lastReceivedMessage)) {
         throw new AriesFrameworkError(
-          'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are previousSentMessage or previousReceivedMessage.'
+          'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are lastSentMessage or lastReceivedMessage.'
         )
       }
 
