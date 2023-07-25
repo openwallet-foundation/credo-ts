@@ -126,7 +126,8 @@ export const parseInvitationShortUrl = async (
 
     // transform into out of band invitation
     const invitation = new OutOfBandInvitation({
-      // TODO: what to do with the label?
+      // The label is currently required by the OutOfBandInvitation class, but not according to the specification.
+      // FIXME: In 0.5.0 we will make this optional: https://github.com/hyperledger/aries-framework-javascript/issues/1524
       label: '',
       services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
     })
