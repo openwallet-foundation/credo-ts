@@ -20,14 +20,13 @@ import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
+import { DidCommMessageRepository } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationShortUrl } from '../../utils/parseInvitation'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
-import { didKeyToVerkey } from '../dids/helpers'
 import { RoutingService } from '../routing/services/RoutingService'
 
 import { OutOfBandService } from './OutOfBandService'
@@ -40,6 +39,7 @@ import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAccepted
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
 import { OutOfBandInvitation } from './messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { OutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
@@ -253,32 +253,32 @@ export class OutOfBandApi {
   }
 
   public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
-    recordId: string
+    /**
+     * @deprecated this value is not used anymore, as the legacy connection-less exchange is now
+     * integrated with the out of band protocol. The value is kept to not break the API, but will
+     * be removed in a future version, and has no effect.
+     */
+    recordId?: string
     message: Message
     domain: string
     routing?: Routing
-  }): Promise<{ message: Message; invitationUrl: string }> {
-    // Create keys (and optionally register them at the mediator)
-    const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext))
-
-    // Set the service on the message
-    config.message.service = new ServiceDecorator({
-      serviceEndpoint: routing.endpoints[0],
-      recipientKeys: [routing.recipientKey].map((key) => key.publicKeyBase58),
-      routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+  }): Promise<{ message: Message; invitationUrl: string; outOfBandRecord: OutOfBandRecord }> {
+    const outOfBandRecord = await this.createInvitation({
+      messages: [config.message],
+      routing: config.routing,
     })
 
-    // We need to update the message with the new service, so we can
-    // retrieve it from storage later on.
-    await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
-      agentMessage: config.message,
-      associatedRecordId: config.recordId,
-      role: DidCommMessageRole.Sender,
-    })
+    // Resolve the service and set it on the message
+    const resolvedService = await this.outOfBandService.getResolvedServiceForOutOfBandServices(
+      this.agentContext,
+      outOfBandRecord.outOfBandInvitation.getServices()
+    )
+    config.message.service = ServiceDecorator.fromResolvedDidCommService(resolvedService)
 
     return {
       message: config.message,
       invitationUrl: `${config.domain}?d_m=${JsonEncoder.toBase64URL(JsonTransformer.toJSON(config.message))}`,
+      outOfBandRecord,
     }
   }
 
@@ -385,6 +385,8 @@ export class OutOfBandApi {
 
     const messages = outOfBandInvitation.getRequests()
 
+    const isConnectionless = handshakeProtocols === undefined || handshakeProtocols.length === 0
+
     if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
       throw new AriesFrameworkError(
         'One or both of handshake_protocols and requests~attach MUST be included in the message.'
@@ -392,7 +394,7 @@ export class OutOfBandApi {
     }
 
     // Make sure we haven't received this invitation before
-    // It's fine if we created it (means that we are connnecting to ourselves) or if it's an implicit
+    // It's fine if we created it (means that we are connecting to ourselves) or if it's an implicit
     // invitation (it allows to connect multiple times to the same public did)
     if (!config.isImplicit) {
       const existingOobRecordsFromThisId = await this.outOfBandService.findAllByQuery(this.agentContext, {
@@ -431,7 +433,20 @@ export class OutOfBandApi {
       outOfBandInvitation: outOfBandInvitation,
       autoAcceptConnection,
       tags: { recipientKeyFingerprints },
+      mediatorId: routing?.mediatorId,
     })
+
+    // If we have routing, and this is a connectionless exchange, or we are not auto accepting the connection
+    // we need to store the routing, so it can be used when we send the first message in response to this invitation
+    if (routing && (isConnectionless || !autoAcceptInvitation)) {
+      this.logger.debug('Storing routing for out of band invitation.')
+      outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.RecipientRouting, {
+        recipientKeyFingerprint: routing.recipientKey.fingerprint,
+        routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
+        endpoints: routing.endpoints,
+        mediatorId: routing.mediatorId,
+      })
+    }
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)
     this.outOfBandService.emitStateChangedEvent(this.agentContext, outOfBandRecord, null)
@@ -473,6 +488,11 @@ export class OutOfBandApi {
       label?: string
       alias?: string
       imageUrl?: string
+      /**
+       * Routing for the exchange (either connection or connection-less exchange).
+       *
+       * If a connection is reused, the routing WILL NOT be used.
+       */
       routing?: Routing
       timeoutMs?: number
     }
@@ -480,10 +500,23 @@ export class OutOfBandApi {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     const { outOfBandInvitation } = outOfBandRecord
-    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection, routing } = config
+    const { label, alias, imageUrl, autoAcceptConnection, reuseConnection } = config
     const services = outOfBandInvitation.getServices()
     const messages = outOfBandInvitation.getRequests()
     const timeoutMs = config.timeoutMs ?? 20000
+
+    let routing = config.routing
+
+    // recipient routing from the receiveInvitation method.
+    const recipientRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+    if (!routing && recipientRouting) {
+      routing = {
+        recipientKey: Key.fromFingerprint(recipientRouting.recipientKeyFingerprint),
+        routingKeys: recipientRouting.routingKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint)),
+        endpoints: recipientRouting.endpoints,
+        mediatorId: recipientRouting.mediatorId,
+      }
+    }
 
     const { handshakeProtocols } = outOfBandInvitation
 
@@ -747,39 +780,6 @@ export class OutOfBandApi {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
-    let serviceEndpoint: string | undefined
-    let recipientKeys: string[] | undefined
-    let routingKeys: string[] = []
-
-    // The framework currently supports only older OOB messages with `~service` decorator.
-    // TODO: support receiving messages with other services so we don't have to transform the service
-    // to ~service decorator
-    const [service] = services
-
-    if (typeof service === 'string') {
-      const [didService] = await this.didCommDocumentService.resolveServicesFromDid(this.agentContext, service)
-      if (didService) {
-        serviceEndpoint = didService.serviceEndpoint
-        recipientKeys = didService.recipientKeys.map((key) => key.publicKeyBase58)
-        routingKeys = didService.routingKeys.map((key) => key.publicKeyBase58) || []
-      }
-    } else {
-      serviceEndpoint = service.serviceEndpoint
-      recipientKeys = service.recipientKeys.map(didKeyToVerkey)
-      routingKeys = service.routingKeys?.map(didKeyToVerkey) || []
-    }
-
-    if (!serviceEndpoint || !recipientKeys) {
-      throw new AriesFrameworkError('Service not found')
-    }
-
-    const serviceDecorator = new ServiceDecorator({
-      recipientKeys,
-      routingKeys,
-      serviceEndpoint,
-    })
-
-    plaintextMessage['~service'] = JsonTransformer.toJSON(serviceDecorator)
     this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
       type: AgentEventTypes.AgentMessageReceived,
       payload: {

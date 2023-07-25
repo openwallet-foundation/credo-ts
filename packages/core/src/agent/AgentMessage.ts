@@ -1,3 +1,4 @@
+import type { PlaintextMessage } from '../types'
 import type { ParsedMessageType } from '../utils/messageType'
 import type { Constructor } from '../utils/mixins'
 
@@ -31,10 +32,7 @@ export class AgentMessage extends Decorated {
   @Exclude()
   public readonly allowDidSovPrefix: boolean = false
 
-  public toJSON({ useDidSovPrefixWhereAllowed }: { useDidSovPrefixWhereAllowed?: boolean } = {}): Record<
-    string,
-    unknown
-  > {
+  public toJSON({ useDidSovPrefixWhereAllowed }: { useDidSovPrefixWhereAllowed?: boolean } = {}): PlaintextMessage {
     const json = JsonTransformer.toJSON(this)
 
     // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
@@ -44,7 +42,7 @@ export class AgentMessage extends Decorated {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
     }
 
-    return json
+    return json as PlaintextMessage
   }
 
   public is<C extends typeof AgentMessage>(Class: C): this is InstanceType<C> {
