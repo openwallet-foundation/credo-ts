@@ -19,7 +19,6 @@ jobs:
         with:
           # pulls all commits (needed for lerna to correctly version)
           fetch-depth: 0
-          persist-credentials: false
 
       # setup dependencies
       - name: Setup Libindy
