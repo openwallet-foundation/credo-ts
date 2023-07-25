@@ -66,12 +66,6 @@ describe('V2 Connectionless Credentials', () => {
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
-    // Create link secret for alice
-    await aliceAgent.modules.anoncreds.createLinkSecret({
-      linkSecretId: 'default',
-      setAsDefault: true,
-    })
-
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age'],
     })

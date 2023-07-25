@@ -240,7 +240,11 @@ export class AskarWallet implements Wallet {
 
       this.walletConfig = walletConfig
     } catch (error) {
-      if (isAskarError(error) && error.code === AskarErrorCode.NotFound) {
+      if (
+        isAskarError(error) &&
+        (error.code === AskarErrorCode.NotFound ||
+          (error.code === AskarErrorCode.Backend && walletConfig.storage?.inMemory))
+      ) {
         const errorMessage = `Wallet '${walletConfig.id}' not found`
         this.logger.debug(errorMessage)
 

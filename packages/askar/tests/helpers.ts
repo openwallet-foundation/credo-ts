@@ -1,11 +1,12 @@
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
-import type { InitConfig } from '@aries-framework/core'
+import type { Agent, InitConfig } from '@aries-framework/core'
 
-import { ConnectionsModule, LogLevel, utils } from '@aries-framework/core'
+import { ConnectionsModule, HandshakeProtocol, LogLevel, utils } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import path from 'path'
 
+import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
@@ -54,14 +55,14 @@ export function getPostgresAgentOptions(
   } as const
 }
 
-export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}) {
+export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitConfig> = {}, inMemory?: boolean) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `SQLiteAgent: ${name} - ${random}`,
     walletConfig: {
       id: `SQLiteWallet${name} - ${random}`,
       key: `Key${name}`,
-      storage: { type: 'sqlite' },
+      storage: { type: 'sqlite', inMemory },
     },
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
@@ -77,4 +78,42 @@ export function getSqliteAgentOptions(name: string, extraConfig: Partial<InitCon
       }),
     },
   } as const
+}
+
+/**
+ * Basic E2E test: connect two agents, send a basic message and verify it they can be re initialized
+ * @param senderAgent
+ * @param receiverAgent
+ */
+export async function e2eTest(senderAgent: Agent, receiverAgent: Agent) {
+  const senderReceiverOutOfBandRecord = await senderAgent.oob.createInvitation({
+    handshakeProtocols: [HandshakeProtocol.Connections],
+  })
+
+  const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.oob.receiveInvitation(
+    senderReceiverOutOfBandRecord.outOfBandInvitation
+  )
+  if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
+
+  await receiverAgent.connections.returnWhenIsConnected(bobConnectionAtReceiversender.id)
+
+  const [senderConnectionAtReceiver] = await senderAgent.connections.findAllByOutOfBandId(
+    senderReceiverOutOfBandRecord.id
+  )
+  const senderConnection = await senderAgent.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
+
+  const message = 'hello, world'
+  await senderAgent.basicMessages.sendMessage(senderConnection.id, message)
+
+  const basicMessage = await waitForBasicMessage(receiverAgent, {
+    content: message,
+  })
+
+  expect(basicMessage.content).toBe(message)
+
+  expect(senderAgent.isInitialized).toBe(true)
+  await senderAgent.shutdown()
+  expect(senderAgent.isInitialized).toBe(false)
+  await senderAgent.initialize()
+  expect(senderAgent.isInitialized).toBe(true)
 }
