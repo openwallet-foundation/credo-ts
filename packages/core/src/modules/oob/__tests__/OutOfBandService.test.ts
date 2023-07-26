@@ -1,3 +1,5 @@
+import type { DidCommDocumentService } from '../../didcomm'
+
 import { Subject } from 'rxjs'
 
 import {
@@ -30,12 +32,14 @@ const agentContext = getAgentContext()
 describe('OutOfBandService', () => {
   let outOfBandRepository: OutOfBandRepository
   let outOfBandService: OutOfBandService
+  let didCommDocumentService: DidCommDocumentService
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentDependencies, new Subject())
     outOfBandRepository = new OutOfBandRepositoryMock()
-    outOfBandService = new OutOfBandService(outOfBandRepository, eventEmitter)
+    didCommDocumentService = {} as DidCommDocumentService
+    outOfBandService = new OutOfBandService(outOfBandRepository, eventEmitter, didCommDocumentService)
   })
 
   describe('processHandshakeReuse', () => {

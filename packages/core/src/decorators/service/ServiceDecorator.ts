@@ -46,4 +46,12 @@ export class ServiceDecorator {
       serviceEndpoint: this.serviceEndpoint,
     }
   }
+
+  public static fromResolvedDidCommService(service: ResolvedDidCommService): ServiceDecorator {
+    return new ServiceDecorator({
+      recipientKeys: service.recipientKeys.map((k) => k.publicKeyBase58),
+      routingKeys: service.routingKeys.map((k) => k.publicKeyBase58),
+      serviceEndpoint: service.serviceEndpoint,
+    })
+  }
 }

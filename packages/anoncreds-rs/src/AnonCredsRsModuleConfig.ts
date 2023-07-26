@@ -40,6 +40,12 @@ export interface AnonCredsRsModuleConfigOptions {
    * ```
    */
   anoncreds: Anoncreds
+
+  /**
+   * Create a default link secret if there are no created link secrets.
+   * @defaultValue true
+   */
+  autoCreateLinkSecret?: boolean
 }
 
 /**
@@ -54,5 +60,10 @@ export class AnonCredsRsModuleConfig {
 
   public get anoncreds() {
     return this.options.anoncreds
+  }
+
+  /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
+  public get autoCreateLinkSecret() {
+    return this.options.autoCreateLinkSecret ?? true
   }
 }

@@ -1,9 +1,9 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage, CredentialExchangeRecord } from '@aries-framework/core'
 
-import { DidCommMessageRepository, OutboundMessageContext } from '@aries-framework/core'
+import { AriesFrameworkError, getOutboundMessageContext } from '@aries-framework/core'
 
-import { V1IssueCredentialMessage, V1RequestCredentialMessage } from '../messages'
+import { V1IssueCredentialMessage } from '../messages'
 
 export class V1IssueCredentialHandler implements MessageHandler {
   private credentialProtocol: V1CredentialProtocol
@@ -36,31 +36,20 @@ export class V1IssueCredentialHandler implements MessageHandler {
       credentialRecord,
     })
 
-    const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const requestMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V1RequestCredentialMessage,
-    })
-
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: credentialRecord,
-      })
-    } else if (messageContext.message.service && requestMessage.service) {
-      const recipientService = messageContext.message.service
-      const ourService = requestMessage.service
-
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        },
-      })
+    const requestMessage = await this.credentialProtocol.findRequestMessage(
+      messageContext.agentContext,
+      credentialRecord.id
+    )
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
-    messageContext.agentContext.config.logger.error(`Could not automatically create credential ack`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      connectionRecord: messageContext.connection,
+      message,
+      associatedRecord: credentialRecord,
+      lastReceivedMessage: messageContext.message,
+      lastSentMessage: requestMessage,
+    })
   }
 }

@@ -126,7 +126,7 @@ jobs:
       - name: Run tests
         run: TEST_AGENT_PUBLIC_DID_SEED=${TEST_AGENT_PUBLIC_DID_SEED} ENDORSER_AGENT_PUBLIC_DID_SEED=${ENDORSER_AGENT_PUBLIC_DID_SEED} GENESIS_TXN_PATH=${GENESIS_TXN_PATH} yarn test --coverage --forceExit --bail
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v3
         if: always()
 
   version-stable:
@@ -182,7 +182,7 @@ jobs:
           echo version="${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: |
             chore(release): v${{ steps.new-version.outputs.version }}
