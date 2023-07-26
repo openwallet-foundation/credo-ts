@@ -156,7 +156,8 @@ export class IndySdkHolderService implements AnonCredsHolderService {
         indyProof,
       })
 
-      return indyProof
+      // FIXME IndyProof if badly typed in indy-sdk. It contains a `requested_predicates` property, which should be `predicates`.
+      return indyProof as unknown as AnonCredsProof
     } catch (error) {
       agentContext.config.logger.error(`Error creating Indy Proof`, {
         error,
