@@ -83,7 +83,6 @@ export class BaseAgent {
         key: name,
       },
       endpoints: [`http://localhost:${this.port}`],
-      autoCreateConnectionOnPing: true,
     }
 
     this.config = config
