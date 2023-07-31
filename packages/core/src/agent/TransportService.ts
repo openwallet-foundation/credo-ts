@@ -1,5 +1,5 @@
 import type { AgentMessage } from './AgentMessage'
-import type { PackMessageParams } from './EnvelopeService'
+import type { Key } from '../crypto'
 import type { EncryptedMessage } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
 
@@ -45,6 +45,12 @@ interface TransportSessionTable {
   [sessionId: string]: TransportSession | undefined
 }
 
+export interface SessionKeys {
+  recipientKeys: Key[]
+  routingKeys: Key[]
+  senderKey: Key | null
+}
+
 // In the framework Transport sessions are used for communication. A session is
 // associated with a connection and it can be reused when we want to respond to
 // a message. If the message, for example, does not contain any way to reply to
@@ -62,7 +68,7 @@ export interface TransportSession {
 
   // The enveloping keys that can be used during the transport. This is used so the framework
   // does not have to look up the associated keys for sending a message.
-  keys?: PackMessageParams
+  keys?: SessionKeys
 
   // A received message that will be used to check whether it has any return routing.
   inboundMessage?: AgentMessage

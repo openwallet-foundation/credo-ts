@@ -5,8 +5,8 @@ export { DidCommV2Message } from './DidCommV2Message'
 export { DidCommV2BaseMessage, DidComV2BaseMessageConstructor, DidCommV2MessageParams } from './DidCommV2BaseMessage'
 
 export interface DidCommV2PackMessageParams {
-  recipientDidDoc: DidDocument
-  senderDidDoc?: DidDocument
+  recipientDidDocument: DidDocument
+  senderDidDocument?: DidDocument
   service: ResolvedDidCommService
 }
 

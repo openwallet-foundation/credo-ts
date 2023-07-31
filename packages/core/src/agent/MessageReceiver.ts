@@ -11,7 +11,13 @@ import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
 import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
-import { ConnectionService } from '../modules/connections'
+import {
+  ConnectionService,
+  ConnectionsModuleConfig,
+  DidExchangeRole,
+  DidExchangeState,
+  HandshakeProtocol,
+} from '../modules/connections'
 import {
   buildProblemReportV1Message,
   buildProblemReportV2Message,
@@ -42,6 +48,7 @@ export class MessageReceiver {
   private connectionService: ConnectionService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
+  private connectionsModuleConfig: ConnectionsModuleConfig
   private _inboundTransports: InboundTransport[] = []
 
   public constructor(
@@ -52,7 +59,8 @@ export class MessageReceiver {
     dispatcher: Dispatcher,
     messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
-    @inject(InjectionSymbols.Logger) logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    connectionsModuleConfig: ConnectionsModuleConfig
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
@@ -62,6 +70,7 @@ export class MessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
+    this.connectionsModuleConfig = connectionsModuleConfig
     this._inboundTransports = []
   }
 
@@ -234,12 +243,34 @@ export class MessageReceiver {
       // Try to find the did records that hold the sender and recipient did's
       const { from, to } = decryptedMessageContext.plaintextMessage
 
+      if (to && to.length > 1) {
+        throw new AriesFrameworkError(
+          `The capability of multiple message recipients is not currently supported: ${decryptedMessageContext.plaintextMessage}`
+        )
+      }
+
       if (!from) return null
-      const connection = this.connectionService.findByTheirDid(agentContext, from)
+      let connection = await this.connectionService.findByTheirDid(agentContext, from)
       if (connection) return connection
 
       if (!to?.length) return null
-      return this.connectionService.findByOurDid(agentContext, to[0])
+      const recipient = to[0]
+      connection = await this.connectionService.findByOurDid(agentContext, recipient)
+      if (connection) return connection
+
+      // If we received a message for nonexisting connection record,
+      // create a connection record when the corresponding option is set in the config
+      if (this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
+        connection = await this.connectionService.createConnection(agentContext, {
+          protocol: HandshakeProtocol.None,
+          role: DidExchangeRole.Requester,
+          state: DidExchangeState.Completed,
+          theirDid: from,
+          did: recipient,
+        })
+      }
+
+      return connection
     }
 
     return null

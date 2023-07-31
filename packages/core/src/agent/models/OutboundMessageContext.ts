@@ -25,8 +25,8 @@ export interface OutboundMessageContextParams {
   serviceParams?: ServiceMessageParams
   outOfBand?: OutOfBandRecord
   sessionId?: string
-  recipientDidDoc?: DidDocument
-  senderDidDoc?: DidDocument
+  recipientDidDocument?: DidDocument
+  senderDidDocument?: DidDocument
 }
 
 export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
@@ -37,8 +37,8 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
   public inboundMessageContext?: InboundMessageContext
-  public recipientDidDoc?: DidDocument
-  public senderDidDoc?: DidDocument
+  public recipientDidDocument?: DidDocument
+  public senderDidDocument?: DidDocument
   public readonly agentContext: AgentContext
 
   public constructor(message: T, context: OutboundMessageContextParams) {
@@ -50,8 +50,8 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.associatedRecord = context.associatedRecord
     this.inboundMessageContext = context.inboundMessageContext
     this.agentContext = context.agentContext
-    this.recipientDidDoc = context.recipientDidDoc
-    this.senderDidDoc = context.senderDidDoc
+    this.recipientDidDocument = context.recipientDidDocument
+    this.senderDidDocument = context.senderDidDocument
   }
 
   /**

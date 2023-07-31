@@ -12,6 +12,7 @@ import type { OutboundTransport } from '../transport/OutboundTransport'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
+import { DidCommV2Message } from '../didcomm'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm/services/DidCommDocumentService'
@@ -103,7 +104,28 @@ export class MessageSender {
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
-    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+
+    let senderDidDocument: DidDocument | undefined
+    let recipientDidDocument: DidDocument | undefined
+    if (message instanceof DidCommV2Message) {
+      const from = message.from
+      const to = message.firstRecipient
+      if (from) senderDidDocument = await this.didResolverService.resolveDidDocument(agentContext, from)
+      if (to) recipientDidDocument = await this.didResolverService.resolveDidDocument(agentContext, to)
+    }
+
+    const params = {
+      senderKey: session.keys.senderKey,
+      recipientDidDocument,
+      senderDidDocument,
+      service: {
+        id: session.id,
+        serviceEndpoint: session.type,
+        recipientKeys: session.keys.recipientKeys,
+        routingKeys: session.keys.routingKeys,
+      },
+    }
+    const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, params)
     await session.send(encryptedMessage)
   }
 
@@ -310,8 +332,8 @@ export class MessageSender {
               senderKey: firstOurAuthenticationKey,
               returnRoute: shouldAddReturnRoute,
             },
-            senderDidDoc: ourDidDocument,
-            recipientDidDoc: theirDidDocument,
+            senderDidDocument: ourDidDocument,
+            recipientDidDocument: theirDidDocument,
           })
         )
         this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.SentToTransport)
@@ -334,11 +356,9 @@ export class MessageSender {
       this.logger.debug(`Queue message for connection ${connection.id} (${connection.theirLabel})`)
 
       const params = {
-        recipientKeys: queueService.recipientKeys,
-        routingKeys: queueService.routingKeys,
         senderKey: firstOurAuthenticationKey,
-        recipientDidDoc: outboundMessageContext.recipientDidDoc,
-        senderDidDoc: outboundMessageContext.senderDidDoc,
+        recipientDidDocument: outboundMessageContext.recipientDidDocument,
+        senderDidDocument: outboundMessageContext.senderDidDocument,
         service: queueService,
       }
 
@@ -417,11 +437,9 @@ export class MessageSender {
     })
 
     const params = {
-      recipientKeys: service.recipientKeys,
-      routingKeys: service.routingKeys,
       senderKey,
-      recipientDidDoc: outboundMessageContext.recipientDidDoc,
-      senderDidDoc: outboundMessageContext.senderDidDoc,
+      recipientDidDocument: outboundMessageContext.recipientDidDocument,
+      senderDidDocument: outboundMessageContext.senderDidDocument,
       service,
     }
 

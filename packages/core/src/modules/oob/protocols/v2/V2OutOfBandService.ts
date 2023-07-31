@@ -18,7 +18,7 @@ import { PeerDidNumAlgo } from '../../../dids/methods/peer'
 import { DidRegistrarService } from '../../../dids/services'
 
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './../../../connections/models'
-import { OutOfBandGoalCode, OutOfBandInvitation } from './messages'
+import { V2OutOfBandGoalCode, V2OutOfBandInvitation } from './messages'
 
 export interface DidRoutingParams {
   endpoint?: string
@@ -52,14 +52,14 @@ export class V2OutOfBandService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createInvitation(agentContext: AgentContext): Promise<OutOfBandInvitation> {
+  public async createInvitation(agentContext: AgentContext): Promise<V2OutOfBandInvitation> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
-    const invitation = new OutOfBandInvitation({
+    const invitation = new V2OutOfBandInvitation({
       from: didResult.didState.did,
       body: {
-        goalCode: OutOfBandGoalCode.DidExchange,
+        goalCode: V2OutOfBandGoalCode.DidExchange,
       },
     })
     return invitation
@@ -67,13 +67,13 @@ export class V2OutOfBandService {
 
   public async acceptInvitation(
     agentContext: AgentContext,
-    invitation: OutOfBandInvitation
+    invitation: V2OutOfBandInvitation
   ): Promise<{ connectionRecord: ConnectionRecord }> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
-      protocol: HandshakeProtocol.V2DidExchange,
+      protocol: HandshakeProtocol.None,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.Completed,
       theirLabel: invitation.body.goal,

@@ -15,7 +15,7 @@ import {
 import { Jwk, Key as AskarKey } from '@hyperledger/aries-askar-shared'
 
 import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
-import { TrustPingMessage } from '../../../../core/src/modules/connections/protocols/trust-ping/v2'
+import { V2TrustPingMessage } from '../../../../core/src/modules/connections/protocols/trust-ping/v2'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { AskarWallet } from '../AskarWallet'
@@ -92,7 +92,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
   })
 
   describe('DIDComm V2 packing and unpacking', () => {
-    const message = new TrustPingMessage({
+    const message = new V2TrustPingMessage({
       body: {
         responseRequested: false,
       },
@@ -116,7 +116,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
       }
       const plainTextMessage = await askarWallet.unpack(encryptedMessage, unpackParams)
 
-      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, TrustPingMessage)).toEqual(message)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, V2TrustPingMessage)).toEqual(message)
     })
 
     test('Anoncrypt pack/unpack works', async () => {
@@ -135,7 +135,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
       }
       const plainTextMessage = await askarWallet.unpack(encryptedMessage, unpackParams)
 
-      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, TrustPingMessage)).toEqual(message)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, V2TrustPingMessage)).toEqual(message)
     })
   })
 

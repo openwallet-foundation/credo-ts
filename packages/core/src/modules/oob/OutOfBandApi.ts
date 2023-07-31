@@ -40,7 +40,7 @@ import { HandshakeReuseHandler } from './protocols/v1/handlers'
 import { HandshakeReuseAcceptedHandler } from './protocols/v1/handlers/HandshakeReuseAcceptedHandler'
 import { OutOfBandInvitation } from './protocols/v1/messages'
 import { V2OutOfBandService } from './protocols/v2/V2OutOfBandService'
-import { OutOfBandInvitation as V2OutOfBandInvitation } from './protocols/v2/messages'
+import { V2OutOfBandInvitation as V2OutOfBandInvitation } from './protocols/v2/messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']

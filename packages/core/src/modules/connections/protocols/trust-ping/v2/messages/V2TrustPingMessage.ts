@@ -16,7 +16,7 @@ class TrustPingBody {
   public responseRequested = true
 }
 
-export class TrustPingMessage extends DidCommV2Message {
+export class V2TrustPingMessage extends DidCommV2Message {
   @IsString()
   @IsNotEmpty()
   public from!: string
@@ -26,8 +26,8 @@ export class TrustPingMessage extends DidCommV2Message {
   @Type(() => TrustPingBody)
   public body!: TrustPingBody
 
-  @IsValidMessageType(TrustPingMessage.type)
-  public readonly type = TrustPingMessage.type.messageTypeUri
+  @IsValidMessageType(V2TrustPingMessage.type)
+  public readonly type = V2TrustPingMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/trust-ping/2.0/ping')
 
   public constructor(options: TrustPingMessageOptions) {

@@ -24,12 +24,10 @@ import { inject, injectable } from '../plugins'
 import { JsonEncoder } from '../utils'
 
 export interface PackMessageParams {
-  recipientKeys: Key[]
-  routingKeys: Key[]
   senderKey: Key | null
-  recipientDidDoc?: DidDocument
-  senderDidDoc?: DidDocument
-  service?: ResolvedDidCommService
+  recipientDidDocument?: DidDocument
+  senderDidDocument?: DidDocument
+  service: ResolvedDidCommService
 }
 
 @injectable()
@@ -49,19 +47,19 @@ export class EnvelopeService {
   ): Promise<EncryptedMessage> {
     if (message.didCommVersion === DidCommMessageVersion.V1) {
       return this.packDIDCommV1Message(agentContext, message, {
-        recipientKeys: params.recipientKeys,
+        recipientKeys: params.service.recipientKeys,
         senderKey: params.senderKey,
-        routingKeys: params.routingKeys,
+        routingKeys: params.service.routingKeys,
       })
     }
     if (message.didCommVersion === DidCommMessageVersion.V2) {
-      if (!params.service || !params.recipientDidDoc) {
+      if (!params.service || !params.recipientDidDocument) {
         throw new AriesFrameworkError(`Unexpected to pack DIDComm V2 message. Invalid params provided: ${params}`)
       }
       return this.packDIDCommV2Message(agentContext, message, {
         service: params.service,
-        recipientDidDoc: params.recipientDidDoc,
-        senderDidDoc: params.senderDidDoc,
+        recipientDidDocument: params.recipientDidDocument,
+        senderDidDocument: params.senderDidDocument,
       })
     }
     throw new AriesFrameworkError(`Unexpected pack DIDComm message params: ${params}`)
@@ -179,8 +177,8 @@ export class EnvelopeService {
     const unboundMessage = message.toJSON()
     const packParams: WalletPackOptions = {
       didCommVersion: DidCommMessageVersion.V2,
-      recipientDidDocuments: [params.recipientDidDoc],
-      senderDidDocument: params.senderDidDoc,
+      recipientDidDocuments: [params.recipientDidDocument],
+      senderDidDocument: params.senderDidDocument,
     }
     const encryptedMessage = await agentContext.wallet.pack(unboundMessage, packParams)
     return await this.wrapDIDCommV2MessageInForward(agentContext, encryptedMessage, params)
@@ -191,8 +189,8 @@ export class EnvelopeService {
     encryptedMessage: EncryptedMessage,
     params: DidCommV2PackMessageParams
   ): Promise<EncryptedMessage> {
-    const { recipientDidDoc, service } = params
-    if (!recipientDidDoc) {
+    const { recipientDidDocument, service } = params
+    if (!recipientDidDocument) {
       return encryptedMessage
     }
 
@@ -204,7 +202,7 @@ export class EnvelopeService {
     }
 
     // If the message has routing keys (mediator) pack for each mediator
-    let next = recipientDidDoc.id
+    let next = recipientDidDocument.id
     for (const routing of routingDidDocuments) {
       const forwardMessage = new V2ForwardMessage({
         to: [routing.id],

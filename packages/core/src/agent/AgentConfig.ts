@@ -71,17 +71,6 @@ export class AgentConfig {
     return this.initConfig.autoUpdateStorageOnStartup ?? false
   }
 
-  /**
-   * DidCommV2 specific.
-   * Automatically create a connection state record when we receive a trust ping message targeted to the DID in the wallet,
-   * but with non-existing pairwise record.
-   * Reason for this behavior: Did Comm V2 does not define DID exchange protocol, but we need to have a connection record to act properly.
-   *
-   */
-  public get autoCreateConnectionOnPing() {
-    return this.initConfig.autoCreateConnectionOnPing ?? false
-  }
-
   public extend(config: Partial<InitConfig>): AgentConfig {
     return new AgentConfig(
       { ...this.initConfig, logger: this.logger, label: this.label, ...config },

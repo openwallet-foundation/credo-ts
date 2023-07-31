@@ -1,1 +1,1 @@
-export * from './OutOfBandInvitation'
+export * from './V2OutOfBandInvitation'

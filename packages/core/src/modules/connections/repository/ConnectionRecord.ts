@@ -152,6 +152,6 @@ export class ConnectionRecord
   }
 
   public get isDidCommV2Connection() {
-    return this.protocol === HandshakeProtocol.V2DidExchange
+    return this.protocol === HandshakeProtocol.None
   }
 }

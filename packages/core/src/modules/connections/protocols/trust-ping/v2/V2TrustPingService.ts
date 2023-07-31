@@ -9,8 +9,8 @@ import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
 import { TrustPingEventTypes } from '../TrustPingEvents'
 
-import { TrustPingMessage } from './messages/TrustPingMessage'
-import { TrustPingResponseMessage } from './messages/TrustPingResponseMessage'
+import { V2TrustPingMessage } from './messages/V2TrustPingMessage'
+import { V2TrustPingResponseMessage } from './messages/V2TrustPingResponseMessage'
 
 @injectable()
 export class V2TrustPingService {
@@ -28,9 +28,9 @@ export class V2TrustPingService {
     this.eventEmitter = eventEmitter
   }
 
-  public createPing(connection: ConnectionRecord): TrustPingMessage {
+  public createPing(connection: ConnectionRecord): V2TrustPingMessage {
     this.logger.info(`Send Trust Ping message to DID ${connection.theirDid}.`)
-    return new TrustPingMessage({
+    return new V2TrustPingMessage({
       from: connection.did,
       to: connection.theirDid,
       body: {
@@ -39,7 +39,7 @@ export class V2TrustPingService {
     })
   }
 
-  public processPing({ agentContext, message }: InboundMessageContext<TrustPingMessage>) {
+  public processPing({ agentContext, message }: InboundMessageContext<V2TrustPingMessage>) {
     this.logger.info('Trust Ping message received.', message)
 
     this.eventEmitter.emit<V2TrustPingReceivedEvent>(agentContext, {
@@ -50,7 +50,7 @@ export class V2TrustPingService {
     })
 
     if (message.body.responseRequested) {
-      return new TrustPingResponseMessage({
+      return new V2TrustPingResponseMessage({
         from: message.firstRecipient,
         to: message.from,
         body: {},
@@ -59,7 +59,7 @@ export class V2TrustPingService {
     }
   }
 
-  public processPingResponse({ agentContext, message, connection }: InboundMessageContext<TrustPingResponseMessage>) {
+  public processPingResponse({ agentContext, message, connection }: InboundMessageContext<V2TrustPingResponseMessage>) {
     this.logger.info('Trust Ping Response message received.', message)
 
     this.eventEmitter.emit<V2TrustPingResponseReceivedEvent>(agentContext, {
