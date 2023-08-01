@@ -11547,9 +11547,9 @@ tsutils@^3.21.0:
     tslib "^1.8.1"
 
 tsyringe@^4.7.0:
-  version "4.7.0"
-  resolved "https://registry.yarnpkg.com/tsyringe/-/tsyringe-4.7.0.tgz#aea0a9d565385deebb6def60cda342b15016f283"
-  integrity sha512-ncFDM1jTLsok4ejMvSW5jN1VGPQD48y2tfAR0pdptWRKYX4bkbqPt92k7KJ5RFJ1KV36JEs/+TMh7I6OUgj74g==
+  version "4.8.0"
+  resolved "https://registry.yarnpkg.com/tsyringe/-/tsyringe-4.8.0.tgz#d599651b36793ba872870fee4f845bd484a5cac1"
+  integrity sha512-YB1FG+axdxADa3ncEtRnQCFq/M0lALGLxSZeVNbTU8NqhOVc51nnv2CISTcvc1kyv6EGPtXVr0v6lWeDxiijOA==
   dependencies:
     tslib "^1.9.3"
 
