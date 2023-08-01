@@ -19,9 +19,9 @@ export interface DidsModuleConfigOptions {
    * List of did registrars that should be used by the dids module. The registrar must
    * be an instance of the {@link DidRegistrar} interface.
    *
-   * If no registrars are provided, the default registrars will be used. The `PeerDidRegistrar` will ALWAYS be
-   * registered, as it is needed for the connections and out of band module to function. Other did methods can be
-   * disabled.
+   * If no registrars are provided, the default registrars will be used. `PeerDidRegistrar` and `KeyDidRegistrar`
+   * will ALWAYS be registered, as they are needed for connections, mediation and out of band modules to function.
+   * Other did methods can be disabled.
    *
    * @default [KeyDidRegistrar, PeerDidRegistrar, JwkDidRegistrar]
    */
@@ -31,9 +31,9 @@ export interface DidsModuleConfigOptions {
    * List of did resolvers that should be used by the dids module. The resolver must
    * be an instance of the {@link DidResolver} interface.
    *
-   * If no resolvers are provided, the default resolvers will be used. The `PeerDidResolver` will ALWAYS be
-   * registered, as it is needed for the connections and out of band module to function. Other did methods can be
-   * disabled.
+   * If no resolvers are provided, the default resolvers will be used. `PeerDidResolver` and `KeyDidResolver`
+   * will ALWAYS be registered, as they are needed for connections, mediation and out of band modules to function.
+   * Other did methods can be disabled.
    *
    * @default [WebDidResolver, KeyDidResolver, PeerDidResolver, JwkDidResolver]
    */
@@ -62,6 +62,12 @@ export class DidsModuleConfig {
       registrars = [...registrars, new PeerDidRegistrar()]
     }
 
+    // Add key did registrar if it is not included yet
+    if (!registrars.find((registrar) => registrar instanceof KeyDidRegistrar)) {
+      // Do not modify original options array
+      registrars = [...registrars, new KeyDidRegistrar()]
+    }
+
     this._registrars = registrars
     return registrars
   }
@@ -86,6 +92,12 @@ export class DidsModuleConfig {
     if (!resolvers.find((resolver) => resolver instanceof PeerDidResolver)) {
       // Do not modify original options array
       resolvers = [...resolvers, new PeerDidResolver()]
+    }
+
+    // Add key did resolver if it is not included yet
+    if (!resolvers.find((resolver) => resolver instanceof KeyDidResolver)) {
+      // Do not modify original options array
+      resolvers = [...resolvers, new KeyDidResolver()]
     }
 
     this._resolvers = resolvers
