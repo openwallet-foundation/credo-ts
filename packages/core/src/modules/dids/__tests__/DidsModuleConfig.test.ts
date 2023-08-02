@@ -29,8 +29,8 @@ describe('DidsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const registrars = [new PeerDidRegistrar(), {} as DidRegistrar]
-    const resolvers = [new PeerDidResolver(), {} as DidResolver]
+    const registrars = [new PeerDidRegistrar(), new KeyDidRegistrar(), {} as DidRegistrar]
+    const resolvers = [new PeerDidResolver(), new KeyDidResolver(), {} as DidResolver]
     const config = new DidsModuleConfig({
       registrars,
       resolvers,
