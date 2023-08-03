@@ -255,8 +255,6 @@ export class MessageReceiver {
 
       if (!to?.length) return null
       const recipient = to[0]
-      connection = await this.connectionService.findByOurDid(agentContext, recipient)
-      if (connection) return connection
 
       // If we received a message for nonexisting connection record,
       // create a connection record when the corresponding option is set in the config

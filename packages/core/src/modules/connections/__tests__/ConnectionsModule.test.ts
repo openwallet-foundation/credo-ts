@@ -4,6 +4,7 @@ import { ConnectionsApi } from '../ConnectionsApi'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
+import { V2TrustPingService } from '../protocols/trust-ping'
 import { V1TrustPingService } from '../protocols/trust-ping/v1/V1TrustPingService'
 import { ConnectionRepository } from '../repository'
 import { ConnectionService } from '../services'
@@ -33,6 +34,7 @@ describe('ConnectionsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidExchangeProtocol)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1TrustPingService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2TrustPingService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(ConnectionRepository)
   })
 })

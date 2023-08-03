@@ -2,7 +2,7 @@ import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-fra
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes } from '@aries-framework/core'
+import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes, OutOfBandVersion } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
@@ -66,7 +66,7 @@ export class Faber extends BaseAgent {
     return connection
   }
 
-  private async printConnectionInvite(version: 'v1' | 'v2') {
+  private async printConnectionInvite(version: OutOfBandVersion) {
     const outOfBandRecord = await this.agent.oob.createInvitation({ version })
     this.outOfBandId = outOfBandRecord.id
 
@@ -116,9 +116,9 @@ export class Faber extends BaseAgent {
     console.log(greenText(Output.ConnectionEstablished))
   }
 
-  public async setupConnection(version: 'v1' | 'v2') {
+  public async setupConnection(version: OutOfBandVersion) {
     await this.printConnectionInvite(version)
-    if (version === 'v1') await this.waitForConnection()
+    if (version === OutOfBandVersion.V11) await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {
@@ -263,6 +263,15 @@ export class Faber extends BaseAgent {
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
+  }
+
+  public async listConnections() {
+    const connections = await this.agent.connections.getAll()
+    this.ui.updateBottomBar(
+      `\nConnections:\n\n${JSON.stringify(
+        connections.map((connection) => ({ id: connection.id, protocol: connection.protocol }))
+      )}`
+    )
   }
 
   public async exit() {

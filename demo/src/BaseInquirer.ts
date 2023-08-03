@@ -1,3 +1,4 @@
+import { OutOfBandVersion } from '@aries-framework/core'
 import { prompt } from 'inquirer'
 
 import { Title } from './OutputClass'
@@ -5,11 +6,6 @@ import { Title } from './OutputClass'
 export enum ConfirmOptions {
   Yes = 'yes',
   No = 'no',
-}
-
-export enum VersionOptions {
-  DidCommV1 = 'v1',
-  DidCommV2 = 'v2',
 }
 
 export class BaseInquirer {
@@ -53,7 +49,7 @@ export class BaseInquirer {
 
   public inquireVersion(title: string) {
     this.optionsInquirer.message = title
-    this.optionsInquirer.choices = [VersionOptions.DidCommV1, VersionOptions.DidCommV2]
+    this.optionsInquirer.choices = [OutOfBandVersion.V11, OutOfBandVersion.V20]
     return this.optionsInquirer
   }
 

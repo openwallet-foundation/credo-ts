@@ -19,6 +19,7 @@ enum PromptOptions {
   OfferCredential = 'Offer credential',
   RequestProof = 'Request proof',
   SendMessage = 'Send message',
+  ListConnections = 'List connections',
   Exit = 'Exit',
   Restart = 'Restart',
 }
@@ -45,7 +46,12 @@ export class FaberInquirer extends BaseInquirer {
   private async getPromptChoice() {
     if (this.faber.outOfBandId) return prompt([this.inquireOptions(this.promptOptionsString)])
 
-    const reducedOption = [PromptOptions.CreateConnection, PromptOptions.Exit, PromptOptions.Restart]
+    const reducedOption = [
+      PromptOptions.CreateConnection,
+      PromptOptions.ListConnections,
+      PromptOptions.Exit,
+      PromptOptions.Restart,
+    ]
     return prompt([this.inquireOptions(reducedOption)])
   }
 
@@ -65,6 +71,9 @@ export class FaberInquirer extends BaseInquirer {
         return
       case PromptOptions.SendMessage:
         await this.message()
+        break
+      case PromptOptions.ListConnections:
+        await this.listConnections()
         break
       case PromptOptions.Exit:
         await this.exit()
@@ -110,6 +119,10 @@ export class FaberInquirer extends BaseInquirer {
     if (!message) return
 
     await this.faber.sendMessage(message)
+  }
+
+  public async listConnections() {
+    await this.faber.listConnections()
   }
 
   public async exit() {

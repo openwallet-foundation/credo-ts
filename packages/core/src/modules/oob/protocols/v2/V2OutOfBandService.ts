@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto'
+import type { V2Attachment } from '../../../../decorators/attachment'
 import type { ConnectionRecord } from '../../../connections/repository'
 import type { DidDocument } from '../../../dids/domain'
 import type { DidCreateResult } from '../../../dids/types'
@@ -52,7 +53,10 @@ export class V2OutOfBandService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createInvitation(agentContext: AgentContext): Promise<V2OutOfBandInvitation> {
+  public async createInvitation(
+    agentContext: AgentContext,
+    attachments?: Array<V2Attachment>
+  ): Promise<V2OutOfBandInvitation> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
@@ -61,6 +65,7 @@ export class V2OutOfBandService {
       body: {
         goalCode: V2OutOfBandGoalCode.DidExchange,
       },
+      attachments,
     })
     return invitation
   }
