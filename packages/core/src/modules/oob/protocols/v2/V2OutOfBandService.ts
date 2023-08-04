@@ -19,7 +19,7 @@ import { PeerDidNumAlgo } from '../../../dids/methods/peer'
 import { DidRegistrarService } from '../../../dids/services'
 
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './../../../connections/models'
-import { V2OutOfBandGoalCode, V2OutOfBandInvitation } from './messages'
+import { V2OutOfBandInvitation } from './messages'
 
 export interface DidRoutingParams {
   endpoint?: string
@@ -55,17 +55,25 @@ export class V2OutOfBandService {
 
   public async createInvitation(
     agentContext: AgentContext,
-    attachments?: Array<V2Attachment>
+    params: {
+      goalCode?: string
+      goal?: string
+      accept?: Array<string>
+      attachments: Array<V2Attachment>
+    }
   ): Promise<V2OutOfBandInvitation> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
+
     const invitation = new V2OutOfBandInvitation({
       from: didResult.didState.did,
       body: {
-        goalCode: V2OutOfBandGoalCode.DidExchange,
+        goal: params.goal,
+        goalCode: params.goalCode,
+        accept: params.accept,
       },
-      attachments,
+      attachments: params.attachments,
     })
     return invitation
   }

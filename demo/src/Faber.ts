@@ -118,7 +118,7 @@ export class Faber extends BaseAgent {
 
   public async setupConnection(version: OutOfBandVersion) {
     await this.printConnectionInvite(version)
-    if (version === OutOfBandVersion.V11) await this.waitForConnection()
+    if (version === OutOfBandVersion.V1) await this.waitForConnection()
   }
 
   private printSchema(name: string, version: string, attributes: string[]) {

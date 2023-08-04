@@ -49,7 +49,7 @@ export class BaseInquirer {
 
   public inquireVersion(title: string) {
     this.optionsInquirer.message = title
-    this.optionsInquirer.choices = [OutOfBandVersion.V11, OutOfBandVersion.V20]
+    this.optionsInquirer.choices = [OutOfBandVersion.V1, OutOfBandVersion.V2]
     return this.optionsInquirer
   }
 

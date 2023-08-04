@@ -3,7 +3,6 @@ import type { ConnectionService } from '../../../../services/ConnectionService'
 import type { V2TrustPingService } from '../V2TrustPingService'
 
 import { OutboundMessageContext } from '../../../../../../agent/models'
-import { AriesFrameworkError } from '../../../../../../error'
 import { V2TrustPingMessage } from '../messages/V2TrustPingMessage'
 
 export class V2TrustPingMessageHandler implements MessageHandler {
@@ -17,16 +16,13 @@ export class V2TrustPingMessageHandler implements MessageHandler {
   }
 
   public async handle(messageContext: MessageHandlerInboundMessage<V2TrustPingMessageHandler>) {
-    const { connection, message } = messageContext
-    if (!connection) {
-      throw new AriesFrameworkError(`Connection for recipient ${message?.firstRecipient} not found!`)
-    }
+    messageContext.assertReadyConnection()
 
     const response = await this.v2TrustPingService.processPing(messageContext)
     if (response) {
       return new OutboundMessageContext(response, {
         agentContext: messageContext.agentContext,
-        connection,
+        connection: messageContext.connection,
       })
     }
   }

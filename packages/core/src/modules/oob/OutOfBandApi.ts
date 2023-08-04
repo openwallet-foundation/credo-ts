@@ -43,25 +43,28 @@ import { HandshakeReuseHandler } from './protocols/v1/handlers'
 import { HandshakeReuseAcceptedHandler } from './protocols/v1/handlers/HandshakeReuseAcceptedHandler'
 import { OutOfBandInvitation } from './protocols/v1/messages'
 import { V2OutOfBandService } from './protocols/v2/V2OutOfBandService'
-import { V2OutOfBandInvitation as V2OutOfBandInvitation } from './protocols/v2/messages'
+import { V2OutOfBandInvitation } from './protocols/v2/messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
 export enum OutOfBandVersion {
-  V11 = '1.1',
-  V20 = '2.0',
+  V1 = 'v1',
+  V2 = 'v2',
 }
 
 export type CreateOutOfBandInvitationConfig = CreateV11OutOfBandInvitationConfig | CreateV20OutOfBandInvitationConfig
 
-export interface CreateV11OutOfBandInvitationConfig {
-  version?: OutOfBandVersion.V11
-  label?: string
+export interface BaseCreateOutOfBandInvitationConfig {
   alias?: string // alias for a connection record to be created
-  imageUrl?: string
   goalCode?: string
   goal?: string
+}
+
+export interface CreateV11OutOfBandInvitationConfig extends BaseCreateOutOfBandInvitationConfig {
+  version?: OutOfBandVersion.V1
+  label?: string
+  imageUrl?: string
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
   messages?: DidCommV1Message[]
@@ -71,11 +74,9 @@ export interface CreateV11OutOfBandInvitationConfig {
   appendedAttachments?: V1Attachment[]
 }
 
-export interface CreateV20OutOfBandInvitationConfig {
-  version: OutOfBandVersion.V20
-  alias?: string // alias for a connection record to be created
-  goalCode?: string
-  goal?: string
+export interface CreateV20OutOfBandInvitationConfig extends BaseCreateOutOfBandInvitationConfig {
+  version: OutOfBandVersion.V2
+  accept?: Array<string>
   messages?: DidCommV2Message[]
   appendedAttachments?: V2Attachment[]
 }
@@ -152,8 +153,8 @@ export class OutOfBandApi {
 
   /**
    * Creates an outbound out-of-band record containing out-of-band invitation message of requested version
-   *  - `1.1` and default -  Aries RFC 0434: Out-of-Band Protocol 1.1.
-   *  - `2.0` -  DIDComm Messaging v2.x: Out-of-Band Protocol 2.0.
+   *  - `v1` and default -  Aries RFC 0434: Out-of-Band Protocol 1.1.
+   *  - `v2` -  DIDComm Messaging v2.x: Out-of-Band Protocol 2.0.
    *
    * For `v1`:
    *    It automatically adds all supported handshake protocols by agent to `handshake_protocols`. You
@@ -169,12 +170,18 @@ export class OutOfBandApi {
    */
   public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<OutOfBandRecord> {
     let outOfBandRecord: OutOfBandRecord | null
-    if (config.version === OutOfBandVersion.V20) {
+    if (config.version === OutOfBandVersion.V2) {
       const attachments: Array<V2Attachment> = config.appendedAttachments || []
       for (const message of config.messages || []) {
         attachments.push(createJSONAttachment(uuid(), message.toJSON()))
       }
-      const outOfBandInvitation = await this.v2OutOfBandService.createInvitation(this.agentContext, attachments)
+      const params = {
+        goal: config.goal,
+        goalCode: config.goalCode,
+        accept: config.accept,
+        attachments,
+      }
+      const outOfBandInvitation = await this.v2OutOfBandService.createInvitation(this.agentContext, params)
       outOfBandRecord = new OutOfBandRecord({
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,

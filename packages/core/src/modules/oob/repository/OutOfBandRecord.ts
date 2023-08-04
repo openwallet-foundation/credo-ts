@@ -9,7 +9,7 @@ import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 import { OutOfBandInvitation } from '../protocols/v1/messages'
-import { V2OutOfBandInvitation as V2OutOfBandInvitation } from '../protocols/v2/messages'
+import { V2OutOfBandInvitation } from '../protocols/v2/messages'
 
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
