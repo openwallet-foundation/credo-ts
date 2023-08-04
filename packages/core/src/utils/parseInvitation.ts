@@ -8,7 +8,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { convertToNewInvitation } from '../modules/oob/helpers'
 import { OutOfBandInvitation } from '../modules/oob/protocols/v1/messages'
-import { OutOfBandInvitation as V2OutOfBandInvitation } from '../modules/oob/protocols/v2/messages'
+import { V2OutOfBandInvitation } from '../modules/oob/protocols/v2/messages'
 
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'

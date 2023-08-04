@@ -3,6 +3,7 @@ import type { InboundMessageContext } from './InboundMessageContext'
 import type { Key } from '../../crypto'
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
+import type { DidDocument } from '../../modules/dids/domain/DidDocument'
 import type { OutOfBandRecord } from '../../modules/oob'
 import type { BaseRecord } from '../../storage/BaseRecord'
 import type { AgentMessage } from '../AgentMessage'
@@ -24,6 +25,8 @@ export interface OutboundMessageContextParams {
   serviceParams?: ServiceMessageParams
   outOfBand?: OutOfBandRecord
   sessionId?: string
+  recipientDidDocument?: DidDocument
+  senderDidDocument?: DidDocument
 }
 
 export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
@@ -34,6 +37,8 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
   public inboundMessageContext?: InboundMessageContext
+  public recipientDidDocument?: DidDocument
+  public senderDidDocument?: DidDocument
   public readonly agentContext: AgentContext
 
   public constructor(message: T, context: OutboundMessageContextParams) {
@@ -45,6 +50,8 @@ export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
     this.associatedRecord = context.associatedRecord
     this.inboundMessageContext = context.inboundMessageContext
     this.agentContext = context.agentContext
+    this.recipientDidDocument = context.recipientDidDocument
+    this.senderDidDocument = context.senderDidDocument
   }
 
   /**

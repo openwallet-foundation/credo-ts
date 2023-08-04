@@ -2,10 +2,7 @@ import type {
   TrustPingMessage as V1TrustPingMessage,
   TrustPingResponseMessage as V1TrustPingResponseMessage,
 } from './v1'
-import type {
-  TrustPingMessage as V2TrustPingMessage,
-  TrustPingResponseMessage as V2TrustPingResponseMessage,
-} from './v2'
+import type { V2TrustPingMessage, V2TrustPingResponseMessage } from './v2'
 import type { BaseEvent } from '../../../../agent/Events'
 import type { ConnectionRecord } from '../../repository/ConnectionRecord'
 

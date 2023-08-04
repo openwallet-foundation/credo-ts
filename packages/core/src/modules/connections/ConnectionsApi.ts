@@ -32,10 +32,7 @@ import {
   TrustPingResponseMessageHandler as V1TrustPingResponseMessageHandler,
 } from './protocols/trust-ping/v1'
 import { V1TrustPingService } from './protocols/trust-ping/v1/V1TrustPingService'
-import {
-  TrustPingMessageHandler as V2TrustPingMessageHandler,
-  TrustPingResponseMessageHandler as V2TrustPingResponseMessageHandler,
-} from './protocols/trust-ping/v2'
+import { V2TrustPingMessageHandler, V2TrustPingResponseMessageHandler } from './protocols/trust-ping/v2'
 import { V2TrustPingService } from './protocols/trust-ping/v2/V2TrustPingService'
 import { ConnectionService } from './services/ConnectionService'
 

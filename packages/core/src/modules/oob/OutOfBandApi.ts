@@ -1,7 +1,8 @@
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
+import type { V2Attachment } from '../../decorators/attachment'
 import type { V1Attachment } from '../../decorators/attachment/V1Attachment'
-import type { DidCommV1Message, PlaintextMessage } from '../../didcomm'
+import type { PlaintextMessage, DidCommV2Message, DidCommV1Message } from '../../didcomm'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
 
@@ -15,6 +16,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { Key } from '../../crypto'
+import { createJSONAttachment } from '../../decorators/attachment/V2Attachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { getPlaintextMessageType } from '../../didcomm'
 import { AriesFrameworkError } from '../../error'
@@ -24,6 +26,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../storage'
 import { JsonEncoder, JsonTransformer } from '../../utils'
 import { parseMessageType, supportsIncomingMessageType } from '../../utils/messageType'
 import { parseInvitationShortUrl } from '../../utils/parseInvitation'
+import { uuid } from '../../utils/uuid'
 import { ConnectionsApi, DidExchangeState, HandshakeProtocol } from '../connections'
 import { DidCommDocumentService } from '../didcomm'
 import { DidKey } from '../dids'
@@ -40,18 +43,28 @@ import { HandshakeReuseHandler } from './protocols/v1/handlers'
 import { HandshakeReuseAcceptedHandler } from './protocols/v1/handlers/HandshakeReuseAcceptedHandler'
 import { OutOfBandInvitation } from './protocols/v1/messages'
 import { V2OutOfBandService } from './protocols/v2/V2OutOfBandService'
-import { OutOfBandInvitation as V2OutOfBandInvitation } from './protocols/v2/messages'
+import { V2OutOfBandInvitation } from './protocols/v2/messages'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
 
-export interface CreateOutOfBandInvitationConfig {
-  version?: 'v1' | 'v2'
-  label?: string
+export enum OutOfBandVersion {
+  V1 = 'v1',
+  V2 = 'v2',
+}
+
+export type CreateOutOfBandInvitationConfig = CreateV11OutOfBandInvitationConfig | CreateV20OutOfBandInvitationConfig
+
+export interface BaseCreateOutOfBandInvitationConfig {
   alias?: string // alias for a connection record to be created
-  imageUrl?: string
   goalCode?: string
   goal?: string
+}
+
+export interface CreateV11OutOfBandInvitationConfig extends BaseCreateOutOfBandInvitationConfig {
+  version?: OutOfBandVersion.V1
+  label?: string
+  imageUrl?: string
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
   messages?: DidCommV1Message[]
@@ -59,6 +72,13 @@ export interface CreateOutOfBandInvitationConfig {
   autoAcceptConnection?: boolean
   routing?: Routing
   appendedAttachments?: V1Attachment[]
+}
+
+export interface CreateV20OutOfBandInvitationConfig extends BaseCreateOutOfBandInvitationConfig {
+  version: OutOfBandVersion.V2
+  accept?: Array<string>
+  messages?: DidCommV2Message[]
+  appendedAttachments?: V2Attachment[]
 }
 
 export interface CreateLegacyInvitationConfig {
@@ -150,8 +170,18 @@ export class OutOfBandApi {
    */
   public async createInvitation(config: CreateOutOfBandInvitationConfig = {}): Promise<OutOfBandRecord> {
     let outOfBandRecord: OutOfBandRecord | null
-    if (config.version === 'v2') {
-      const outOfBandInvitation = await this.v2OutOfBandService.createInvitation(this.agentContext)
+    if (config.version === OutOfBandVersion.V2) {
+      const attachments: Array<V2Attachment> = config.appendedAttachments || []
+      for (const message of config.messages || []) {
+        attachments.push(createJSONAttachment(uuid(), message.toJSON()))
+      }
+      const params = {
+        goal: config.goal,
+        goalCode: config.goalCode,
+        accept: config.accept,
+        attachments,
+      }
+      const outOfBandInvitation = await this.v2OutOfBandService.createInvitation(this.agentContext, params)
       outOfBandRecord = new OutOfBandRecord({
         role: OutOfBandRole.Sender,
         state: OutOfBandState.AwaitResponse,

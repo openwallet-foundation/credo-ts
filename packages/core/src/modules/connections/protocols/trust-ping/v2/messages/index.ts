@@ -1,2 +1,2 @@
-export * from './TrustPingMessage'
-export * from './TrustPingResponseMessage'
+export * from './V2TrustPingMessage'
+export * from './V2TrustPingResponseMessage'

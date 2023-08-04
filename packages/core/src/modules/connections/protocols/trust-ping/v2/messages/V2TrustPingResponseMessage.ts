@@ -7,7 +7,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../../utils/me
 
 export type TrustPingResponseMessageParams = { thid: string } & DidCommV2MessageParams
 
-export class TrustPingResponseMessage extends DidCommV2Message {
+export class V2TrustPingResponseMessage extends DidCommV2Message {
   public constructor(options: TrustPingResponseMessageParams) {
     super(options)
     if (options) {
@@ -19,8 +19,8 @@ export class TrustPingResponseMessage extends DidCommV2Message {
   @IsNotEmpty()
   public from!: string
 
-  @IsValidMessageType(TrustPingResponseMessage.type)
-  public readonly type = TrustPingResponseMessage.type.messageTypeUri
+  @IsValidMessageType(V2TrustPingResponseMessage.type)
+  public readonly type = V2TrustPingResponseMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/trust-ping/2.0/ping-response')
 
   @IsString()

@@ -104,9 +104,9 @@ describe('MessageSender', () => {
   const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
   const session = new DummyTransportSession('session-123')
   session.keys = {
+    senderKey: senderKey,
     recipientKeys: [recipientKey],
     routingKeys: [],
-    senderKey: senderKey,
   }
   session.inboundMessage = inboundMessage
   session.send = jest.fn()
@@ -659,10 +659,15 @@ describe('MessageSender', () => {
       const message = new TestMessage()
       const endpoint = 'https://example.com'
 
-      const params = {
+      const service = {
+        id: 'service',
+        serviceEndpoint: 'http://example.com',
         recipientKeys: [recipientKey],
         routingKeys: [],
+      }
+      const params = {
         senderKey: senderKey,
+        service,
       }
       const result = await messageSender.packMessage(agentContext, { message, params, endpoint })
 

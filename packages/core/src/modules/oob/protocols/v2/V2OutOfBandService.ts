@@ -1,5 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { Key } from '../../../../crypto'
+import type { V2Attachment } from '../../../../decorators/attachment'
 import type { ConnectionRecord } from '../../../connections/repository'
 import type { DidDocument } from '../../../dids/domain'
 import type { DidCreateResult } from '../../../dids/types'
@@ -18,7 +19,7 @@ import { PeerDidNumAlgo } from '../../../dids/methods/peer'
 import { DidRegistrarService } from '../../../dids/services'
 
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './../../../connections/models'
-import { OutOfBandGoalCode, OutOfBandInvitation } from './messages'
+import { V2OutOfBandInvitation } from './messages'
 
 export interface DidRoutingParams {
   endpoint?: string
@@ -52,28 +53,40 @@ export class V2OutOfBandService {
     this.eventEmitter = eventEmitter
   }
 
-  public async createInvitation(agentContext: AgentContext): Promise<OutOfBandInvitation> {
+  public async createInvitation(
+    agentContext: AgentContext,
+    params: {
+      goalCode?: string
+      goal?: string
+      accept?: Array<string>
+      attachments: Array<V2Attachment>
+    }
+  ): Promise<V2OutOfBandInvitation> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
-    const invitation = new OutOfBandInvitation({
+
+    const invitation = new V2OutOfBandInvitation({
       from: didResult.didState.did,
       body: {
-        goalCode: OutOfBandGoalCode.DidExchange,
+        goal: params.goal,
+        goalCode: params.goalCode,
+        accept: params.accept,
       },
+      attachments: params.attachments,
     })
     return invitation
   }
 
   public async acceptInvitation(
     agentContext: AgentContext,
-    invitation: OutOfBandInvitation
+    invitation: V2OutOfBandInvitation
   ): Promise<{ connectionRecord: ConnectionRecord }> {
     const didResult = await this.createDid(agentContext, {
       routing: { endpoint: agentContext.config.endpoints[0], mediator: undefined },
     })
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
-      protocol: HandshakeProtocol.V2DidExchange,
+      protocol: HandshakeProtocol.None,
       role: DidExchangeRole.Responder,
       state: DidExchangeState.Completed,
       theirLabel: invitation.body.goal,

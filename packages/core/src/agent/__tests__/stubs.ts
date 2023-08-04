@@ -1,11 +1,10 @@
 import type { AgentMessage } from '../AgentMessage'
-import type { PackMessageParams } from '../EnvelopeService'
-import type { TransportSession } from '../TransportService'
+import type { TransportSession, SessionKeys } from '../TransportService'
 
 export class DummyTransportSession implements TransportSession {
   public id: string
   public readonly type = 'http'
-  public keys?: PackMessageParams
+  public keys?: SessionKeys
   public inboundMessage?: AgentMessage
   public connectionId?: string
 

@@ -9,43 +9,43 @@ import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { JsonEncoder, JsonTransformer } from '../../../../../utils'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
-export enum OutOfBandGoalCode {
+export enum V2OutOfBandGoalCode {
   DidExchange = 'did-exchange',
 }
 
 const LINK_PARAM = 'oob'
 
-export type OutOfBandInvitationParams = DidCommV2MessageParams
+export type V2OutOfBandInvitationParams = DidCommV2MessageParams
 
-export class OutOfBandInvitationBody {
+export class V2OutOfBandInvitationBody {
   @IsString()
   @Expose({ name: 'goal_code' })
-  public goalCode!: OutOfBandGoalCode
+  public goalCode!: V2OutOfBandGoalCode
 
   @IsString()
   @IsOptional()
   public goal?: string
 }
 
-export class OutOfBandInvitation extends DidCommV2Message {
-  public constructor(options?: OutOfBandInvitationParams) {
+export class V2OutOfBandInvitation extends DidCommV2Message {
+  public constructor(options?: V2OutOfBandInvitationParams) {
     super(options)
   }
 
   @IsString()
   public from!: string
 
-  @Type(() => OutOfBandInvitationBody)
+  @Type(() => V2OutOfBandInvitationBody)
   @ValidateNested()
-  @IsInstance(OutOfBandInvitationBody)
-  public body!: OutOfBandInvitationBody
+  @IsInstance(V2OutOfBandInvitationBody)
+  public body!: V2OutOfBandInvitationBody
 
-  @IsValidMessageType(OutOfBandInvitation.type)
-  public readonly type: string = OutOfBandInvitation.type.messageTypeUri
+  @IsValidMessageType(V2OutOfBandInvitation.type)
+  public readonly type: string = V2OutOfBandInvitation.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/out-of-band/2.0/invitation')
 
   public static fromJson(json: Record<string, unknown>) {
-    return JsonTransformer.fromJSON(json, OutOfBandInvitation)
+    return JsonTransformer.fromJSON(json, V2OutOfBandInvitation)
   }
 
   public getOutOfBandAttachment(id?: string): Record<string, unknown> | null {
