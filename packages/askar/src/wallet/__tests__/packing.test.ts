@@ -5,7 +5,7 @@ import {
   DidCommMessageVersion,
   JsonTransformer,
   KeyDerivationMethod,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   KeyType,
   AriesFrameworkError,
   DidKey,
@@ -48,7 +48,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
   }
 
   beforeEach(async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     await askarWallet.createAndOpen(walletConfig)
   })
 

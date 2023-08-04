@@ -1,5 +1,5 @@
 import type {
-  KeyProvider,
+  SigningProvider,
   WalletConfig,
   CreateKeyPairOptions,
   KeyPair,
@@ -15,7 +15,7 @@ import {
   WalletNotFoundError,
   WalletInvalidKeyError,
   KeyType,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
   Buffer,
@@ -44,7 +44,7 @@ describeRunInNodeVersion([18], 'AskarWallet basic operations', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     await askarWallet.createAndOpen(walletConfig)
   })
 
@@ -146,7 +146,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
     const seed = TypedArrayEncoder.fromString('sample-seed')
     const message = TypedArrayEncoder.fromString('sample-message')
 
-    class DummySigningProvider implements KeyProvider {
+    class DummySigningProvider implements SigningProvider {
       public keyType: KeyType = KeyType.Bls12381g1g2
 
       public async createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair> {
@@ -172,7 +172,7 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
       askarWallet = new AskarWallet(
         testLogger,
         new agentDependencies.FileSystem(),
-        new KeyProviderRegistry([new DummySigningProvider()])
+        new SigningProviderRegistry([new DummySigningProvider()])
       )
       await askarWallet.createAndOpen(walletConfig)
     })
@@ -228,7 +228,7 @@ describeRunInNodeVersion([18], 'AskarWallet management', () => {
   })
 
   test('Create', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
 
     const initialKey = Store.generateRawKey()
     const anotherKey = Store.generateRawKey()
@@ -244,7 +244,7 @@ describeRunInNodeVersion([18], 'AskarWallet management', () => {
   })
 
   test('Open', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
 
     const initialKey = Store.generateRawKey()
     const wrongKey = Store.generateRawKey()
@@ -265,7 +265,7 @@ describeRunInNodeVersion([18], 'AskarWallet management', () => {
   })
 
   test('Rotate key', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new KeyProviderRegistry([]))
+    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
 
     const initialKey = Store.generateRawKey()
     await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })

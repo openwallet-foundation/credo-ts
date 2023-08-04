@@ -4,7 +4,7 @@ import { IndySdkWallet } from '../../../../indy-sdk/src'
 import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
-import { KeyProviderRegistry } from '../../crypto/key-provider'
+import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { TypedArrayEncoder } from '../../utils'
 
 import { SignatureDecorator } from './SignatureDecorator'
@@ -47,7 +47,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new IndySdkWallet(indySdk, config.logger, new KeyProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })

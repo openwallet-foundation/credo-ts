@@ -14,7 +14,7 @@ import {
   Key,
   KeyType,
   RepositoryEventTypes,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   TypedArrayEncoder,
   VerificationMethod,
 } from '@aries-framework/core'
@@ -33,7 +33,7 @@ mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
 
 jest
   .spyOn(wallet, 'createKey')

@@ -42,7 +42,7 @@ import {
   JweRecipient,
   Key,
   KeyDerivationMethod,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   keyReferenceToKey,
   KeyType,
   Logger,
@@ -87,16 +87,16 @@ export class AskarWallet implements Wallet {
   private logger: Logger
   private fileSystem: FileSystem
 
-  private keyProviderRegistry: KeyProviderRegistry
+  private signingProviderRegistry: SigningProviderRegistry
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
-    keyProviderRegistry: KeyProviderRegistry
+    signingProviderRegistry: SigningProviderRegistry
   ) {
     this.logger = logger
     this.fileSystem = fileSystem
-    this.keyProviderRegistry = keyProviderRegistry
+    this.signingProviderRegistry = signingProviderRegistry
   }
 
   public get isProvisioned() {
@@ -480,8 +480,8 @@ export class AskarWallet implements Wallet {
         }
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.keyProviderRegistry.hasProviderForKeyType(keyType)) {
-          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(keyType)
+        if (this.signingProviderRegistry.hasProviderForKeyType(keyType)) {
+          const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(keyType)
 
           const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
           await this.storeKeyPair(keyPair)
@@ -528,8 +528,8 @@ export class AskarWallet implements Wallet {
         return Buffer.from(signed)
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
+        if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
+          const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
 
           const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
           const signed = await signingKeyProvider.sign({
@@ -580,8 +580,8 @@ export class AskarWallet implements Wallet {
         return verified
       } else {
         // Check if there is a signing key provider for the specified key type.
-        if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-          const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
+        if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
+          const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
 
           const signed = await signingKeyProvider.verify({
             data,

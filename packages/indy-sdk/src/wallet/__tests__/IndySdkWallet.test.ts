@@ -1,10 +1,10 @@
-import type { KeyProvider, WalletConfig } from '@aries-framework/core'
+import type { SigningProvider, WalletConfig } from '@aries-framework/core'
 
 import {
   Key,
   WalletKeyExistsError,
   KeyType,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   TypedArrayEncoder,
   KeyDerivationMethod,
 } from '@aries-framework/core'
@@ -36,7 +36,7 @@ describe('IndySdkWallet', () => {
     indySdkWallet = new IndySdkWallet(
       indySdk,
       testLogger,
-      new KeyProviderRegistry([signingProvider as unknown as KeyProvider])
+      new SigningProviderRegistry([signingProvider as unknown as SigningProvider])
     )
     await indySdkWallet.createAndOpen(walletConfig)
   })

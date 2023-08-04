@@ -24,7 +24,7 @@ export interface CreateKeyPairOptions {
   privateKey?: Buffer
 }
 
-export interface KeyProvider {
+export interface SigningProvider {
   readonly keyType: KeyType
 
   createKeyPair(options: CreateKeyPairOptions): Promise<KeyPair>

@@ -1,22 +1,22 @@
-import type { KeyProvider } from './KeyProvider'
+import type { SigningProvider } from './SigningProvider'
 import type { KeyType } from '..'
 
 import { AriesFrameworkError } from '../../error'
 import { injectable, injectAll } from '../../plugins'
 
-export const KeyProviderToken = Symbol('KeyProviderToken')
+export const SigningProviderToken = Symbol('SigningProviderToken')
 
 @injectable()
-export class KeyProviderRegistry {
-  public keyProviders: KeyProvider[]
+export class SigningProviderRegistry {
+  public keyProviders: SigningProvider[]
 
-  public constructor(@injectAll(KeyProviderToken) keyProviders: Array<'default' | KeyProvider>) {
+  public constructor(@injectAll(SigningProviderToken) keyProviders: Array<'default' | SigningProvider>) {
     // This is a really ugly hack to make tsyringe work without any SigningProviders registered
     // It is currently impossible to use @injectAll if there are no instances registered for the
     // token. We register a value of `default` by default and will filter that out in the registry.
     // Once we have a signing provider that should always be registered we can remove this. We can make an ed25519
     // signer using the @stablelib/ed25519 library.
-    this.keyProviders = keyProviders.filter((provider) => provider !== 'default') as KeyProvider[]
+    this.keyProviders = keyProviders.filter((provider) => provider !== 'default') as SigningProvider[]
   }
 
   public hasProviderForKeyType(keyType: KeyType): boolean {
@@ -25,7 +25,7 @@ export class KeyProviderRegistry {
     return signingKeyProvider !== undefined
   }
 
-  public getProviderForKeyType(keyType: KeyType): KeyProvider {
+  public getProviderForKeyType(keyType: KeyType): SigningProvider {
     const signingKeyProvider = this.keyProviders.find((x) => x.keyType === keyType)
 
     if (!signingKeyProvider) {

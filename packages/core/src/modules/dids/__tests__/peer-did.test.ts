@@ -10,7 +10,7 @@ import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
-import { KeyProviderRegistry } from '../../../crypto/key-provider'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
@@ -36,7 +36,7 @@ describe('peer dids', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, config.logger, new KeyProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
     const storageService = new InMemoryStorageService<DidRecord>()
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)

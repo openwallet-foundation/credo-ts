@@ -25,7 +25,7 @@ import {
   isValidSeed,
   JsonEncoder,
   Key,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   KeyType,
   Logger,
   RecordNotFoundError,
@@ -50,16 +50,16 @@ export class IndySdkWallet implements Wallet {
   private walletHandle?: number
 
   private logger: Logger
-  private keyProviderRegistry: KeyProviderRegistry
+  private signingProviderRegistry: SigningProviderRegistry
   private indySdk: IndySdk
 
   public constructor(
     @inject(IndySdkSymbol) indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    keyProviderRegistry: KeyProviderRegistry
+    signingProviderRegistry: SigningProviderRegistry
   ) {
     this.logger = logger
-    this.keyProviderRegistry = keyProviderRegistry
+    this.signingProviderRegistry = signingProviderRegistry
     this.indySdk = indySdk
   }
 
@@ -433,8 +433,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.keyProviderRegistry.hasProviderForKeyType(keyType)) {
-        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(keyType)
+      if (this.signingProviderRegistry.hasProviderForKeyType(keyType)) {
+        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(keyType)
 
         const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
@@ -478,8 +478,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
 
         const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
         const signed = await signingKeyProvider.sign({
@@ -525,8 +525,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.keyProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.keyProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
 
         const signed = await signingKeyProvider.verify({
           data,
