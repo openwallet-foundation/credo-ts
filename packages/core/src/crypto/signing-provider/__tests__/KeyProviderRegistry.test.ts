@@ -4,7 +4,7 @@ import type { SigningProvider, KeyPair } from '../SigningProvider'
 import { KeyType } from '../../KeyType'
 import { SigningProviderRegistry } from '../SigningProviderRegistry'
 
-class KeyProviderMock implements SigningProvider {
+class SigningProviderMock implements SigningProvider {
   public readonly keyType = KeyType.Bls12381g2
 
   public async createKeyPair(): Promise<KeyPair> {
@@ -18,8 +18,8 @@ class KeyProviderMock implements SigningProvider {
   }
 }
 
-const keyProvider = new KeyProviderMock()
-const signingProviderRegistry = new SigningProviderRegistry([keyProvider])
+const signingProvider = new SigningProviderMock()
+const signingProviderRegistry = new SigningProviderRegistry([signingProvider])
 
 describe('SigningProviderRegistry', () => {
   describe('hasProviderForKeyType', () => {
@@ -34,7 +34,7 @@ describe('SigningProviderRegistry', () => {
 
   describe('getProviderForKeyType', () => {
     test('returns the correct provider  true if the key type is registered', () => {
-      expect(signingProviderRegistry.getProviderForKeyType(KeyType.Bls12381g2)).toBe(keyProvider)
+      expect(signingProviderRegistry.getProviderForKeyType(KeyType.Bls12381g2)).toBe(signingProvider)
     })
 
     test('throws error if the key type is not registered', () => {
