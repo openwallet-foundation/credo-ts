@@ -1,6 +1,6 @@
 import type { Key } from '../../../crypto'
 
-export { DidCommV1Message } from './DidCommV1Message'
+export { DidCommV1Message, AgentMessage } from './DidCommV1Message'
 export { DidCommV1BaseMessage, DidComV1BaseMessageConstructor } from './DidCommV1BaseMessage'
 
 export interface DidCommV1PackMessageParams {

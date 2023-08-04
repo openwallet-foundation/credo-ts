@@ -376,7 +376,7 @@ export class OutOfBandApi {
   public async receiveInvitation(
     invitation: OutOfBandInvitation | ConnectionInvitationMessage | V2OutOfBandInvitation,
     config: ReceiveOutOfBandInvitationConfig = {}
-  ): Promise<{ outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     return this._receiveInvitation(invitation, config)
   }
 
@@ -414,7 +414,7 @@ export class OutOfBandApi {
   private async _receiveInvitation(
     invitation: OutOfBandInvitation | ConnectionInvitationMessage | V2OutOfBandInvitation,
     config: BaseReceiveOutOfBandInvitationConfig = {}
-  ): Promise<{ outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
+  ): Promise<{ outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord }> {
     const { routing } = config
 
     const autoAcceptInvitation = config.autoAcceptInvitation ?? true
@@ -546,7 +546,11 @@ export class OutOfBandApi {
     const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, outOfBandId)
 
     if (outOfBandRecord.v2OutOfBandInvitation) {
-      return this.v2OutOfBandService.acceptInvitation(this.agentContext, outOfBandRecord.v2OutOfBandInvitation)
+      const { connectionRecord } = await this.v2OutOfBandService.acceptInvitation(
+        this.agentContext,
+        outOfBandRecord.v2OutOfBandInvitation
+      )
+      return { outOfBandRecord, connectionRecord }
     }
     const timeoutMs = config.timeoutMs ?? 20000
 

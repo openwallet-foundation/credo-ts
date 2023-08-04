@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { AgentMessageProcessedEvent } from './Events'
 import type { InboundMessageContext } from './models/InboundMessageContext'
 
@@ -42,7 +42,7 @@ class Dispatcher {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)
     }
 
-    let outboundMessage: OutboundMessageContext<AgentMessage> | void
+    let outboundMessage: OutboundMessageContext<AgentBaseMessage> | void
 
     try {
       outboundMessage = await messageHandler.handle(messageContext)

@@ -1,10 +1,10 @@
-import { DidCommV1Message, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@aries-framework/core'
+import { AgentMessage, IsValidMessageType, parseMessageType, ReturnRouteTypes } from '@aries-framework/core'
 
 export interface DummyRequestMessageOptions {
   id?: string
 }
 
-export class DummyRequestMessage extends DidCommV1Message {
+export class DummyRequestMessage extends AgentMessage {
   public constructor(options: DummyRequestMessageOptions) {
     super()
 

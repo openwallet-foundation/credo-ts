@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
 import { AriesFrameworkError } from '../../../error'
@@ -7,7 +7,7 @@ import { DidCommMessageVersion } from '../../types'
 
 import { DidCommV2BaseMessage } from './DidCommV2BaseMessage'
 
-export class DidCommV2Message extends DidCommV2BaseMessage implements AgentMessage {
+export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseMessage {
   public get didCommVersion(): DidCommMessageVersion {
     return DidCommMessageVersion.V2
   }

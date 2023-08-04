@@ -6,7 +6,7 @@ import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocument } from '../../modules/dids/domain/DidDocument'
 import type { OutOfBandRecord } from '../../modules/oob'
 import type { BaseRecord } from '../../storage/BaseRecord'
-import type { AgentMessage } from '../AgentMessage'
+import type { AgentBaseMessage } from '../AgentBaseMessage'
 import type { AgentContext } from '../context'
 
 import { AriesFrameworkError } from '../../error'
@@ -29,7 +29,7 @@ export interface OutboundMessageContextParams {
   senderDidDocument?: DidDocument
 }
 
-export class OutboundMessageContext<T extends AgentMessage = AgentMessage> {
+export class OutboundMessageContext<T extends AgentBaseMessage = AgentBaseMessage> {
   public message: T
   public connection?: ConnectionRecord
   public serviceParams?: ServiceMessageParams

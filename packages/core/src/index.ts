@@ -12,7 +12,7 @@ export { MessageHandler, MessageHandlerInboundMessage } from './agent/MessageHan
 export { MessageHandlerRegistry } from './agent/MessageHandlerRegistry'
 export * from './agent/models'
 export { AgentConfig } from './agent/AgentConfig'
-export { AgentMessage } from './agent/AgentMessage'
+export { AgentBaseMessage } from './agent/AgentBaseMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'

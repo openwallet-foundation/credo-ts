@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
 import { Exclude } from 'class-transformer'
@@ -22,7 +22,7 @@ const Decorated = ThreadDecorated(
   )
 )
 
-export class DidCommV1Message extends Decorated implements AgentMessage {
+export class DidCommV1Message extends Decorated implements AgentBaseMessage {
   /**
    * Whether the protocol RFC was initially written using the legacy did:prefix instead of the
    * new https://didcomm.org message type prefix.
@@ -60,3 +60,6 @@ export class DidCommV1Message extends Decorated implements AgentMessage {
     return this.type === Class.type.messageTypeUri
   }
 }
+
+// type alias to keep backward compatibility
+export class AgentMessage extends DidCommV1Message {}

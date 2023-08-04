@@ -1,6 +1,6 @@
 import type { DidCommV1Message } from './DidCommV1Message'
 import type { PlaintextDidCommV1Message } from './types'
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { EncryptedMessage, ProtectedMessage } from '../../types'
 
 import { AriesFrameworkError } from '../../../error'
@@ -9,7 +9,7 @@ import { DidCommMessageVersion } from '../../types'
 
 import { DidCommV1Algorithms, DidCommV1Types } from './types'
 
-export function isDidCommV1Message(message: AgentMessage): message is DidCommV1Message {
+export function isDidCommV1Message(message: AgentBaseMessage): message is DidCommV1Message {
   return message.didCommVersion == DidCommMessageVersion.V1
 }
 

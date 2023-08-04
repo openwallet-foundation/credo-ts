@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { AgentContext } from './context'
 import type { Key } from '../crypto'
 import type {
@@ -41,7 +41,7 @@ export class EnvelopeService {
 
   public async packMessage(
     agentContext: AgentContext,
-    message: AgentMessage,
+    message: AgentBaseMessage,
     params: PackMessageParams
   ): Promise<EncryptedMessage> {
     if (message.didCommVersion === DidCommMessageVersion.V1) {
@@ -110,7 +110,7 @@ export class EnvelopeService {
 
   private async packDIDCommV1Message(
     agentContext: AgentContext,
-    message: AgentMessage,
+    message: AgentBaseMessage,
     params: DidCommV1PackMessageParams
   ): Promise<EncryptedMessage> {
     const { recipientKeys, senderKey } = params
@@ -170,7 +170,7 @@ export class EnvelopeService {
 
   private async packDIDCommV2Message(
     agentContext: AgentContext,
-    message: AgentMessage,
+    message: AgentBaseMessage,
     params: DidCommV2PackMessageParams
   ): Promise<EncryptedMessage> {
     const unboundMessage = message.toJSON()

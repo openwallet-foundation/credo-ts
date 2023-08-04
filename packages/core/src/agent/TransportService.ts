@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { Key } from '../crypto'
 import type { EncryptedMessage } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
@@ -71,7 +71,7 @@ export interface TransportSession {
   keys?: SessionKeys
 
   // A received message that will be used to check whether it has any return routing.
-  inboundMessage?: AgentMessage
+  inboundMessage?: AgentBaseMessage
 
   // A stored connection id used to find this session via the `TransportService` for a specific connection
   connectionId?: string
