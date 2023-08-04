@@ -1,6 +1,6 @@
 import type { Jwk } from '../../../../crypto'
 
-import { Key } from '../../../../crypto/Key'
+import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { JsonEncoder } from '../../../../utils'
 import { parseDid } from '../../domain/parse'
 
@@ -22,31 +22,43 @@ export class DidJwk {
   }
 
   public static fromDid(did: string) {
-    // We create a `Key` instance form the jwk, as that validates the jwk
     const parsed = parseDid(did)
-    const jwk = JsonEncoder.fromBase64(parsed.id) as Jwk
-    Key.fromJwk(jwk)
+    const jwkJson = JsonEncoder.fromBase64(parsed.id)
+    // This validates the jwk
+    getJwkFromJson(jwkJson)
 
     return new DidJwk(did)
   }
 
+  /**
+   * A did:jwk DID can only have one verification method, and the verification method
+   * id will always be `<did>#0`.
+   */
+  public get verificationMethodId() {
+    return `${this.did}#0`
+  }
+
   public static fromJwk(jwk: Jwk) {
-    // We create a `Key` instance form the jwk, as that validates the jwk
-    Key.fromJwk(jwk)
-    const did = `did:jwk:${JsonEncoder.toBase64URL(jwk)}`
+    const did = `did:jwk:${JsonEncoder.toBase64URL(jwk.toJson())}`
 
     return new DidJwk(did)
   }
 
   public get key() {
-    return Key.fromJwk(this.jwk)
+    return this.jwk.key
   }
 
   public get jwk() {
-    const parsed = parseDid(this.did)
-    const jwk = JsonEncoder.fromBase64(parsed.id) as Jwk
+    const jwk = getJwkFromJson(this.jwkJson)
 
     return jwk
+  }
+
+  public get jwkJson() {
+    const parsed = parseDid(this.did)
+    const jwkJson = JsonEncoder.fromBase64(parsed.id)
+
+    return jwkJson
   }
 
   public get didDocument() {

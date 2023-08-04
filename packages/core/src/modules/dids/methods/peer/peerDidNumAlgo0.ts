@@ -1,4 +1,5 @@
-import { Key } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { AriesFrameworkError } from '../../../../error'
 import { getDidDocumentForKey } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
@@ -15,11 +16,11 @@ export function didToNumAlgo0DidDocument(did: string) {
   const numAlgo = getNumAlgoFromPeerDid(did)
 
   if (!isValidPeerDid(did)) {
-    throw new Error(`Invalid peer did '${did}'`)
+    throw new AriesFrameworkError(`Invalid peer did '${did}'`)
   }
 
   if (numAlgo !== PeerDidNumAlgo.InceptionKeyWithoutDoc) {
-    throw new Error(`Invalid numAlgo ${numAlgo}, expected ${PeerDidNumAlgo.InceptionKeyWithoutDoc}`)
+    throw new AriesFrameworkError(`Invalid numAlgo ${numAlgo}, expected ${PeerDidNumAlgo.InceptionKeyWithoutDoc}`)
   }
 
   const key = Key.fromFingerprint(parsed.id.substring(1))

@@ -88,7 +88,7 @@ describe('DIDCommV1Message', () => {
       } catch (error) {
         const thrownError = error as ClassValidationError
         expect(thrownError.message).toEqual(
-          'CustomProtocolMessage: Failed to validate class.\nAn instance of CustomProtocolMessage has failed the validation:\n - property type has failed the following constraints: isValidMessageType \n'
+          'CustomProtocolMessage: Failed to validate class.\nAn instance of CustomProtocolMessage has failed the validation:\n - property type has failed the following constraints: type does not match the expected message type (only minor version may be lower) \n'
         )
         expect(thrownError.validationErrors).toMatchObject([
           {

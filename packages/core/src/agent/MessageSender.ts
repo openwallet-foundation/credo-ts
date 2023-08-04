@@ -147,7 +147,7 @@ export class MessageSender {
     const session = this.transportService.findSessionByConnectionId(connection.id)
     if (session?.inboundMessage?.hasReturnRouting()) {
       try {
-        await session.send(encryptedMessage)
+        await session.send(agentContext, encryptedMessage)
         return
       } catch (error) {
         errors.push(error)
@@ -220,6 +220,10 @@ export class MessageSender {
     const message = outboundMessageContext.message as DidCommV1Message
 
     const errors: Error[] = []
+
+    if (outboundMessageContext.isOutboundServiceMessage()) {
+      return this.sendMessageToService(outboundMessageContext)
+    }
 
     if (!connection) {
       this.logger.error('Outbound message has no associated connection')
@@ -384,6 +388,9 @@ export class MessageSender {
     )
   }
 
+  /**
+   * @deprecated Use `sendMessage` directly instead. Will be made private in 0.5.0
+   */
   public async sendMessageToService(outboundMessageContext: OutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
 

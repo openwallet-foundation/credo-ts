@@ -55,6 +55,7 @@ describe('ed25519', () => {
     expect(keyDidEd25519.supportedVerificationMethodTypes).toMatchObject([
       'Ed25519VerificationKey2018',
       'Ed25519VerificationKey2020',
+      'JsonWebKey2020',
     ])
   })
 
@@ -88,7 +89,7 @@ describe('ed25519', () => {
     verificationMethod.type = 'SomeRandomType'
 
     expect(() => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
-      'Invalid verification method passed'
+      "Verification method with type 'SomeRandomType' not supported for key type 'ed25519'"
     )
   })
 })

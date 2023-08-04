@@ -5,4 +5,6 @@ export interface AnonCredsCreateLinkSecretOptions {
   setAsDefault?: boolean
 }
 
-export type AnonCredsRegisterCredentialDefinitionOptions = Omit<AnonCredsCredentialDefinition, 'value' | 'type'>
+export type AnonCredsRegisterCredentialDefinitionOptions =
+  | Omit<AnonCredsCredentialDefinition, 'value' | 'type'>
+  | AnonCredsCredentialDefinition

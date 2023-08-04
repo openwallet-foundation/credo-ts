@@ -1,7 +1,7 @@
 import { Attachment } from '../../../decorators/attachment'
 import { JsonTransformer } from '../../../utils'
 import { ConnectionInvitationMessage } from '../../connections'
-import { DidCommV1Service } from '../../dids'
+import { OutOfBandDidCommService } from '../domain'
 import { convertToNewInvitation, convertToOldInvitation } from '../helpers'
 import { OutOfBandInvitation } from '../protocols/v1/messages'
 
@@ -120,7 +120,7 @@ describe('convertToOldInvitation', () => {
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       services: [
-        new DidCommV1Service({
+        new OutOfBandDidCommService({
           id: '#inline',
           recipientKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
           routingKeys: ['did:key:z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'],

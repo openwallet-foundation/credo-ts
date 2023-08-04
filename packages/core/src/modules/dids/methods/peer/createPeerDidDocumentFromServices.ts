@@ -2,12 +2,12 @@ import type { ResolvedDidCommService } from '../../../didcomm'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { KeyType, Key } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { KeyType } from '../../../../crypto/KeyType'
 import { AriesFrameworkError } from '../../../../error'
 import { uuid } from '../../../../utils/uuid'
+import { getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { getEd25519VerificationMethod } from '../../domain/key-type/ed25519'
-import { getX25519VerificationMethod } from '../../domain/key-type/x25519'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
 import { DidKey } from '../key'
 
@@ -30,12 +30,12 @@ export function createPeerDidDocumentFromServices(services: ResolvedDidCommServi
       }
       const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(recipientKey.publicKey), KeyType.X25519)
 
-      const ed25519VerificationMethod = getEd25519VerificationMethod({
+      const ed25519VerificationMethod = getEd25519VerificationKey2018({
         id: `#${uuid()}`,
         key: recipientKey,
         controller: '#id',
       })
-      const x25519VerificationMethod = getX25519VerificationMethod({
+      const x25519VerificationMethod = getX25519KeyAgreementKey2019({
         id: `#${uuid()}`,
         key: x25519Key,
         controller: '#id',

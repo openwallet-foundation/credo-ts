@@ -1,12 +1,16 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@aries-framework/anoncreds'
 import type { ConnectionRecord, ConnectionStateChangedEvent } from '@aries-framework/core'
+import type {
+  IndyVdrRegisterSchemaOptions,
+  IndyVdrRegisterCredentialDefinitionOptions,
+} from '@aries-framework/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import { KeyType, TypedArrayEncoder, utils, ConnectionEventTypes, OutOfBandVersion } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, greenText, Output, purpleText, redText } from './OutputClass'
+import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 
 export enum RegistryOptions {
   indy = 'did:indy',
@@ -78,7 +82,7 @@ export class Faber extends BaseAgent {
 
   private async waitForConnection() {
     if (!this.outOfBandId) {
-      return
+      throw new Error(redText(Output.MissingConnectionRecord))
     }
 
     console.log('Waiting for Alice to finish connection...')
@@ -96,7 +100,7 @@ export class Faber extends BaseAgent {
           resolve(e.payload.connectionRecord)
         })
 
-        // Also retrieve the connection outOfBandRecord by invitation if the event has already fired
+        // Also retrieve the connection record by invitation if the event has already fired
         void this.agent.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
           if (connectionRecord) {
             clearTimeout(timeoutId)
@@ -141,9 +145,12 @@ export class Faber extends BaseAgent {
     this.printSchema(schemaTemplate.name, schemaTemplate.version, schemaTemplate.attrNames)
     this.ui.updateBottomBar(greenText('\nRegistering schema...\n', false))
 
-    const { schemaState } = await this.agent.modules.anoncreds.registerSchema({
+    const { schemaState } = await this.agent.modules.anoncreds.registerSchema<IndyVdrRegisterSchemaOptions>({
       schema: schemaTemplate,
-      options: {},
+      options: {
+        endorserMode: 'internal',
+        endorserDid: this.anonCredsIssuerId,
+      },
     })
 
     if (schemaState.state !== 'finished') {
@@ -161,14 +168,18 @@ export class Faber extends BaseAgent {
     }
 
     this.ui.updateBottomBar('\nRegistering credential definition...\n')
-    const { credentialDefinitionState } = await this.agent.modules.anoncreds.registerCredentialDefinition({
-      credentialDefinition: {
-        schemaId,
-        issuerId: this.anonCredsIssuerId,
-        tag: 'latest',
-      },
-      options: {},
-    })
+    const { credentialDefinitionState } =
+      await this.agent.modules.anoncreds.registerCredentialDefinition<IndyVdrRegisterCredentialDefinitionOptions>({
+        credentialDefinition: {
+          schemaId,
+          issuerId: this.anonCredsIssuerId,
+          tag: 'latest',
+        },
+        options: {
+          endorserMode: 'internal',
+          endorserDid: this.anonCredsIssuerId,
+        },
+      })
 
     if (credentialDefinitionState.state !== 'finished') {
       throw new Error(

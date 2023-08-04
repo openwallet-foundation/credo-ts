@@ -1,4 +1,6 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
+import type { ConstructableAgentMessage } from '../../agent/AgentMessage'
+import type { PlaintextMessage } from '../../types'
 import type { ConstructableDidCommMessage } from '../../didcomm'
 import type { JsonObject } from '../../types'
 
@@ -25,14 +27,14 @@ export type DefaultDidCommMessageTags = {
 
 export interface DidCommMessageRecordProps {
   role: DidCommMessageRole
-  message: JsonObject
+  message: PlaintextMessage
   id?: string
   createdAt?: Date
   associatedRecordId?: string
 }
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
-  public message!: JsonObject
+  public message!: PlaintextMessage
   public role!: DidCommMessageRole
 
   /**

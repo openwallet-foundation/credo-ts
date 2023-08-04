@@ -16,6 +16,7 @@ export { AgentBaseMessage } from './agent/AgentBaseMessage'
 export { Dispatcher } from './agent/Dispatcher'
 export { MessageSender } from './agent/MessageSender'
 export type { AgentDependencies } from './agent/AgentDependencies'
+export { getOutboundMessageContext } from './agent/getOutboundMessageContext'
 export type {
   InitConfig,
   WalletConfig,

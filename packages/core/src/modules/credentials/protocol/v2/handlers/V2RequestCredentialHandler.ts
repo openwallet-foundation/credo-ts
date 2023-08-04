@@ -3,9 +3,8 @@ import type { InboundMessageContext } from '../../../../../agent/models/InboundM
 import type { CredentialExchangeRecord } from '../../../repository'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../storage'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
+import { AriesFrameworkError } from '../../../../../error'
 import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2RequestCredentialHandler implements MessageHandler {
@@ -35,44 +34,25 @@ export class V2RequestCredentialHandler implements MessageHandler {
     messageContext: InboundMessageContext<V2RequestCredentialMessage>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending credential with autoAccept`)
-    const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    const offerMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2OfferCredentialMessage,
-    })
+    const offerMessage = await this.credentialProtocol.findOfferMessage(
+      messageContext.agentContext,
+      credentialRecord.id
+    )
+    if (!offerMessage) {
+      throw new AriesFrameworkError(`Could not find offer message for credential record with id ${credentialRecord.id}`)
+    }
 
     const { message } = await this.credentialProtocol.acceptRequest(messageContext.agentContext, {
       credentialRecord,
     })
 
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: credentialRecord,
-      })
-    } else if (messageContext.message.service && offerMessage?.service) {
-      const recipientService = messageContext.message.service
-      const ourService = offerMessage.service
-
-      // Set ~service, update message in record (for later use)
-      message.setService(ourService)
-      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
-        agentMessage: message,
-        associatedRecordId: credentialRecord.id,
-        role: DidCommMessageRole.Sender,
-      })
-
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        },
-      })
-    }
-
-    messageContext.agentContext.config.logger.error(`Could not automatically issue credential`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      connectionRecord: messageContext.connection,
+      message,
+      associatedRecord: credentialRecord,
+      lastReceivedMessage: messageContext.message,
+      lastSentMessage: offerMessage,
+    })
   }
 }

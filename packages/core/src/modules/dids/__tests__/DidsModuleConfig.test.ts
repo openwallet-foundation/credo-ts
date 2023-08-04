@@ -29,8 +29,8 @@ describe('DidsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const registrars = [new PeerDidRegistrar(), {} as DidRegistrar]
-    const resolvers = [new PeerDidResolver(), {} as DidResolver]
+    const registrars = [new PeerDidRegistrar(), new KeyDidRegistrar(), {} as DidRegistrar]
+    const resolvers = [new PeerDidResolver(), new KeyDidResolver(), {} as DidResolver]
     const config = new DidsModuleConfig({
       registrars,
       resolvers,
@@ -40,7 +40,7 @@ describe('DidsModuleConfig', () => {
     expect(config.resolvers).toEqual(resolvers)
   })
 
-  test('adds peer did resolver and registrar if not provided in config', () => {
+  test('adds peer and key did resolvers and registrars if not provided in config', () => {
     const registrar = {} as DidRegistrar
     const resolver = {} as DidResolver
     const config = new DidsModuleConfig({
@@ -48,8 +48,8 @@ describe('DidsModuleConfig', () => {
       resolvers: [resolver],
     })
 
-    expect(config.registrars).toEqual([registrar, expect.any(PeerDidRegistrar)])
-    expect(config.resolvers).toEqual([resolver, expect.any(PeerDidResolver)])
+    expect(config.registrars).toEqual([registrar, expect.any(PeerDidRegistrar), expect.any(KeyDidRegistrar)])
+    expect(config.resolvers).toEqual([resolver, expect.any(PeerDidResolver), expect.any(KeyDidResolver)])
   })
 
   test('add resolver and registrar after creation', () => {

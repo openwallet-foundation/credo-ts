@@ -13,10 +13,15 @@ import { Key, KeyType } from '../../../crypto'
 import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
 import { DidsModuleConfig } from '../DidsModuleConfig'
-import { DidCommV1Service, DidDocument, DidDocumentBuilder } from '../domain'
+import {
+  DidCommV1Service,
+  DidDocument,
+  DidDocumentBuilder,
+  convertPublicKeyToX25519,
+  getEd25519VerificationKey2018,
+  getX25519KeyAgreementKey2019,
+} from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
-import { convertPublicKeyToX25519, getEd25519VerificationMethod } from '../domain/key-type/ed25519'
-import { getX25519VerificationMethod } from '../domain/key-type/x25519'
 import { PeerDidResolver } from '../methods'
 import { DidKey } from '../methods/key'
 import { getNumAlgoFromPeerDid, PeerDidNumAlgo } from '../methods/peer/didPeer'
@@ -74,7 +79,7 @@ describe('peer dids', () => {
 
     const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
 
-    const ed25519VerificationMethod = getEd25519VerificationMethod({
+    const ed25519VerificationMethod = getEd25519VerificationKey2018({
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes
@@ -83,7 +88,7 @@ describe('peer dids', () => {
       // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
     })
-    const x25519VerificationMethod = getX25519VerificationMethod({
+    const x25519VerificationMethod = getX25519KeyAgreementKey2019({
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes

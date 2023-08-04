@@ -1,5 +1,5 @@
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
-import { defaultDocumentLoader } from '../libraries/documentLoader'
+import { defaultDocumentLoader } from '../data-integrity/libraries/documentLoader'
 
 describe('W3cCredentialsModuleConfig', () => {
   test('sets default values', () => {

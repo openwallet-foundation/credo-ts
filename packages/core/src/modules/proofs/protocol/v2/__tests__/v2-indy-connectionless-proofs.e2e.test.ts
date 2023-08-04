@@ -345,11 +345,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
     )
     agents = [aliceAgent, faberAgent, mediatorAgent]
 
-    await aliceAgent.modules.anoncreds.createLinkSecret({
-      linkSecretId: 'default',
-      setAsDefault: true,
-    })
-
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'image_0', 'image_1'],
     })

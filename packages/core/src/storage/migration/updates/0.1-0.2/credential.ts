@@ -1,6 +1,6 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { CredentialExchangeRecord } from '../../../../modules/credentials'
-import type { JsonObject } from '../../../../types'
+import type { JsonObject, PlaintextMessage } from '../../../../types'
 
 import { CredentialState } from '../../../../modules/credentials/models/CredentialState'
 import { CredentialRepository } from '../../../../modules/credentials/repository/CredentialRepository'
@@ -224,7 +224,7 @@ export async function moveDidCommMessages<Agent extends BaseAgent>(
       `Starting move of ${messageKey} from credential record with id ${credentialRecord.id} to DIDCommMessageRecord`
     )
     const credentialRecordJson = credentialRecord as unknown as JsonObject
-    const message = credentialRecordJson[messageKey] as JsonObject | undefined
+    const message = credentialRecordJson[messageKey] as PlaintextMessage | undefined
 
     if (message) {
       const credentialRole = getCredentialRole(credentialRecord)

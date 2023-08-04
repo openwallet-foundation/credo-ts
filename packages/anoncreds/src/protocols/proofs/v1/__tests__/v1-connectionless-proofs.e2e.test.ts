@@ -119,12 +119,11 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
+    const outOfBandRecord = await faberAgent.oob.createInvitation({
+      messages: [message],
+      handshake: false,
     })
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -295,7 +294,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.proofs.createRequest({
+    const { message } = await faberAgent.proofs.createRequest({
       protocolVersion: 'v1',
       proofFormats: {
         indy: {
@@ -328,8 +327,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
+    const { invitationUrl, message: requestMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       message,
       domain: 'https://a-domain.com',
     })
@@ -338,7 +336,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       await faberAgent.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.receiveMessage(requestMessage.toJSON())
+    await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -447,11 +445,6 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     const [faberConnection, aliceConnection] = await makeConnection(faberAgent, aliceAgent)
     expect(faberConnection.isReady).toBe(true)
     expect(aliceConnection.isReady).toBe(true)
-
-    await aliceAgent.modules.anoncreds.createLinkSecret({
-      linkSecretId: 'default',
-      setAsDefault: true,
-    })
 
     await issueLegacyAnonCredsCredential({
       issuerAgent: faberAgent as AnonCredsTestsAgent,

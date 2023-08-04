@@ -50,6 +50,12 @@ export interface IndySdkModuleConfigOptions {
    * ```
    */
   networks?: IndySdkPoolConfig[]
+
+  /**
+   * Create a default link secret if there are no created link secrets.
+   * @defaultValue true
+   */
+  autoCreateLinkSecret?: boolean
 }
 
 export class IndySdkModuleConfig {
@@ -66,5 +72,10 @@ export class IndySdkModuleConfig {
 
   public get networks() {
     return this.options.networks ?? []
+  }
+
+  /** See {@link AnonCredsModuleConfigOptions.autoCreateLinkSecret} */
+  public get autoCreateLinkSecret() {
+    return this.options.autoCreateLinkSecret ?? true
   }
 }

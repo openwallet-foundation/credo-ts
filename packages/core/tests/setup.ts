@@ -2,6 +2,9 @@ import 'reflect-metadata'
 
 import type { ConnectionRecord } from '../src/modules/connections/repository/ConnectionRecord'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { askarModuleConfig } from '../../askar/tests/helpers'
+
 jest.setTimeout(120000)
 expect.extend({ toBeConnectedWith })
 

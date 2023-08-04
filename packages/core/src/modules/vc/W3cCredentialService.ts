@@ -1,50 +1,51 @@
-import type { W3cVerifyCredentialResult } from './models'
 import type {
-  CreatePresentationOptions,
-  DeriveProofOptions,
-  SignCredentialOptions,
-  SignPresentationOptions,
   StoreCredentialOptions,
-  VerifyCredentialOptions,
-  VerifyPresentationOptions,
-} from './models/W3cCredentialServiceOptions'
-import type { VerifyPresentationResult } from './models/presentation/VerifyPresentationResult'
+  W3cCreatePresentationOptions,
+  W3cJsonLdVerifyCredentialOptions,
+  W3cJsonLdVerifyPresentationOptions,
+  W3cJwtVerifyCredentialOptions,
+  W3cJwtVerifyPresentationOptions,
+  W3cSignCredentialOptions,
+  W3cSignPresentationOptions,
+  W3cVerifyCredentialOptions,
+  W3cVerifyPresentationOptions,
+} from './W3cCredentialServiceOptions'
+import type {
+  W3cVerifiableCredential,
+  W3cVerifiablePresentation,
+  W3cVerifyCredentialResult,
+  W3cVerifyPresentationResult,
+} from './models'
 import type { AgentContext } from '../../agent/context'
-import type { Key } from '../../crypto/Key'
 import type { Query } from '../../storage/StorageService'
 
-import { createWalletKeyPairClass } from '../../crypto/WalletKeyPair'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
-import { JsonTransformer } from '../../utils'
-import { VerificationMethod } from '../dids'
-import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
 
-import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
-import { W3cCredentialsModuleConfig } from './W3cCredentialsModuleConfig'
-import { deriveProof } from './deriveProof'
-import { orArrayToArray, w3cDate } from './jsonldUtil'
-import jsonld from './libraries/jsonld'
-import vc from './libraries/vc'
-import { W3cVerifiableCredential } from './models'
+import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
+import { W3cJsonLdVerifiableCredential } from './data-integrity'
+import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
+import { W3cJsonLdVerifiablePresentation } from './data-integrity/models/W3cJsonLdVerifiablePresentation'
+import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
+import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
+import { ClaimFormat } from './models'
 import { W3cPresentation } from './models/presentation/W3cPresentation'
-import { W3cVerifiablePresentation } from './models/presentation/W3cVerifiablePresentation'
 import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 
 @injectable()
 export class W3cCredentialService {
   private w3cCredentialRepository: W3cCredentialRepository
-  private signatureSuiteRegistry: SignatureSuiteRegistry
-  private w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
+  private w3cJsonLdCredentialService: W3cJsonLdCredentialService
+  private w3cJwtCredentialService: W3cJwtCredentialService
 
   public constructor(
     w3cCredentialRepository: W3cCredentialRepository,
-    signatureSuiteRegistry: SignatureSuiteRegistry,
-    w3cCredentialsModuleConfig: W3cCredentialsModuleConfig
+    w3cJsonLdCredentialService: W3cJsonLdCredentialService,
+    w3cJwtCredentialService: W3cJwtCredentialService
   ) {
     this.w3cCredentialRepository = w3cCredentialRepository
-    this.signatureSuiteRegistry = signatureSuiteRegistry
-    this.w3cCredentialsModuleConfig = w3cCredentialsModuleConfig
+    this.w3cJsonLdCredentialService = w3cJsonLdCredentialService
+    this.w3cJwtCredentialService = w3cJwtCredentialService
   }
 
   /**
@@ -55,106 +56,52 @@ export class W3cCredentialService {
    */
   public async signCredential(
     agentContext: AgentContext,
-    options: SignCredentialOptions
-  ): Promise<W3cVerifiableCredential> {
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
-
-    const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
-
-    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
-      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
+    options: W3cSignCredentialOptions
+  ): Promise<W3cVerifiableCredential<W3cSignCredentialOptions['format']>> {
+    if (options.format === ClaimFormat.JwtVc) {
+      return this.w3cJwtCredentialService.signCredential(agentContext, options)
+    } else if (options.format === ClaimFormat.LdpVc) {
+      return this.w3cJsonLdCredentialService.signCredential(agentContext, options)
+    } else {
+      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vc' or 'ldp_vc'`)
     }
-
-    const keyPair = new WalletKeyPair({
-      controller: options.credential.issuerId, // should we check this against the verificationMethod.controller?
-      id: options.verificationMethod,
-      key: signingKey,
-      wallet: agentContext.wallet,
-    })
-
-    const SuiteClass = suiteInfo.suiteClass
-
-    const suite = new SuiteClass({
-      key: keyPair,
-      LDKeyClass: WalletKeyPair,
-      proof: {
-        verificationMethod: options.verificationMethod,
-      },
-      useNativeCanonize: false,
-      date: options.created ?? w3cDate(),
-    })
-
-    const result = await vc.issue({
-      credential: JsonTransformer.toJSON(options.credential),
-      suite: suite,
-      purpose: options.proofPurpose,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
-
-    return JsonTransformer.fromJSON(result, W3cVerifiableCredential)
   }
 
   /**
    * Verifies the signature(s) of a credential
-   *
-   * @param credential the credential to be verified
-   * @returns the verification result
    */
   public async verifyCredential(
     agentContext: AgentContext,
-    options: VerifyCredentialOptions
+    options: W3cVerifyCredentialOptions
   ): Promise<W3cVerifyCredentialResult> {
-    const verifyRevocationState = options.verifyRevocationState ?? true
-
-    const suites = this.getSignatureSuitesForCredential(agentContext, options.credential)
-
-    const verifyOptions: Record<string, unknown> = {
-      credential: JsonTransformer.toJSON(options.credential),
-      suite: suites,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-      checkStatus: () => {
-        if (verifyRevocationState) {
-          throw new AriesFrameworkError('Revocation for W3C credentials is currently not supported')
-        }
-        return {
-          verified: true,
-        }
-      },
+    if (options.credential instanceof W3cJsonLdVerifiableCredential) {
+      return this.w3cJsonLdCredentialService.verifyCredential(agentContext, options as W3cJsonLdVerifyCredentialOptions)
+    } else if (options.credential instanceof W3cJwtVerifiableCredential || typeof options.credential === 'string') {
+      return this.w3cJwtCredentialService.verifyCredential(agentContext, options as W3cJwtVerifyCredentialOptions)
+    } else {
+      throw new AriesFrameworkError(
+        `Unsupported credential type in options. Credential must be either a W3cJsonLdVerifiableCredential or a W3cJwtVerifiableCredential`
+      )
     }
-
-    // this is a hack because vcjs throws if purpose is passed as undefined or null
-    if (options.proofPurpose) {
-      verifyOptions['purpose'] = options.proofPurpose
-    }
-
-    const result = await vc.verifyCredential(verifyOptions)
-
-    return result as unknown as W3cVerifyCredentialResult
   }
 
   /**
-   * Utility method that creates a {@link W3cPresentation} from one or more {@link W3cVerifiableCredential}s.
+   * Utility method that creates a {@link W3cPresentation} from one or more {@link W3cJsonLdVerifiableCredential}s.
    *
    * **NOTE: the presentation that is returned is unsigned.**
    *
-   * @param credentials One or more instances of {@link W3cVerifiableCredential}
-   * @param [id] an optional unique identifier for the presentation
-   * @param [holderUrl] an optional identifier identifying the entity that is generating the presentation
    * @returns An instance of {@link W3cPresentation}
    */
-  public async createPresentation(options: CreatePresentationOptions): Promise<W3cPresentation> {
-    if (!Array.isArray(options.credentials)) {
-      options.credentials = [options.credentials]
-    }
-
-    const presentationJson = vc.createPresentation({
-      verifiableCredential: options.credentials.map((credential) => JsonTransformer.toJSON(credential)),
+  public async createPresentation(options: W3cCreatePresentationOptions): Promise<W3cPresentation> {
+    const presentation = new W3cPresentation({
+      context: [CREDENTIALS_CONTEXT_V1_URL],
+      type: ['VerifiablePresentation'],
+      verifiableCredential: options.credentials,
+      holder: options.holder,
       id: options.id,
-      holder: options.holderUrl,
     })
 
-    return JsonTransformer.fromJSON(presentationJson, W3cPresentation)
+    return presentation
   }
 
   /**
@@ -165,54 +112,15 @@ export class W3cCredentialService {
    */
   public async signPresentation(
     agentContext: AgentContext,
-    options: SignPresentationOptions
-  ): Promise<W3cVerifiablePresentation> {
-    // create keyPair
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
-
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.signatureType)
-
-    if (!suiteInfo) {
-      throw new AriesFrameworkError(`The requested proofType ${options.signatureType} is not supported`)
+    options: W3cSignPresentationOptions
+  ): Promise<W3cVerifiablePresentation<W3cSignPresentationOptions['format']>> {
+    if (options.format === ClaimFormat.JwtVp) {
+      return this.w3cJwtCredentialService.signPresentation(agentContext, options)
+    } else if (options.format === ClaimFormat.LdpVp) {
+      return this.w3cJsonLdCredentialService.signPresentation(agentContext, options)
+    } else {
+      throw new AriesFrameworkError(`Unsupported format in options. Format must be either 'jwt_vp' or 'ldp_vp'`)
     }
-
-    const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
-
-    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
-      throw new AriesFrameworkError('The key type of the verification method does not match the suite')
-    }
-
-    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
-    const verificationMethodObject = (await documentLoader(options.verificationMethod)).document as Record<
-      string,
-      unknown
-    >
-
-    const keyPair = new WalletKeyPair({
-      controller: verificationMethodObject['controller'] as string,
-      id: options.verificationMethod,
-      key: signingKey,
-      wallet: agentContext.wallet,
-    })
-
-    const suite = new suiteInfo.suiteClass({
-      LDKeyClass: WalletKeyPair,
-      proof: {
-        verificationMethod: options.verificationMethod,
-      },
-      date: new Date().toISOString(),
-      key: keyPair,
-      useNativeCanonize: false,
-    })
-
-    const result = await vc.signPresentation({
-      presentation: JsonTransformer.toJSON(options.presentation),
-      suite: suite,
-      challenge: options.challenge,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
-
-    return JsonTransformer.fromJSON(result, W3cVerifiablePresentation)
   }
 
   /**
@@ -223,83 +131,23 @@ export class W3cCredentialService {
    */
   public async verifyPresentation(
     agentContext: AgentContext,
-    options: VerifyPresentationOptions
-  ): Promise<VerifyPresentationResult> {
-    // create keyPair
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
-
-    let proofs = options.presentation.proof
-
-    if (!Array.isArray(proofs)) {
-      proofs = [proofs]
+    options: W3cVerifyPresentationOptions
+  ): Promise<W3cVerifyPresentationResult> {
+    if (options.presentation instanceof W3cJsonLdVerifiablePresentation) {
+      return this.w3cJsonLdCredentialService.verifyPresentation(
+        agentContext,
+        options as W3cJsonLdVerifyPresentationOptions
+      )
+    } else if (
+      options.presentation instanceof W3cJwtVerifiablePresentation ||
+      typeof options.presentation === 'string'
+    ) {
+      return this.w3cJwtCredentialService.verifyPresentation(agentContext, options as W3cJwtVerifyPresentationOptions)
+    } else {
+      throw new AriesFrameworkError(
+        'Unsupported credential type in options. Presentation must be either a W3cJsonLdVerifiablePresentation or a W3cJwtVerifiablePresentation'
+      )
     }
-    if (options.purpose) {
-      proofs = proofs.filter((proof) => proof.proofPurpose === options.purpose.term)
-    }
-
-    const presentationSuites = proofs.map((proof) => {
-      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type).suiteClass
-      return new SuiteClass({
-        LDKeyClass: WalletKeyPair,
-        proof: {
-          verificationMethod: proof.verificationMethod,
-        },
-        date: proof.created,
-        useNativeCanonize: false,
-      })
-    })
-
-    const credentials = Array.isArray(options.presentation.verifiableCredential)
-      ? options.presentation.verifiableCredential
-      : [options.presentation.verifiableCredential]
-
-    const credentialSuites = credentials.map((credential) =>
-      this.getSignatureSuitesForCredential(agentContext, credential)
-    )
-    const allSuites = presentationSuites.concat(...credentialSuites)
-
-    const verifyOptions: Record<string, unknown> = {
-      presentation: JsonTransformer.toJSON(options.presentation),
-      suite: allSuites,
-      challenge: options.challenge,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    }
-
-    // this is a hack because vcjs throws if purpose is passed as undefined or null
-    if (options.purpose) {
-      verifyOptions['presentationPurpose'] = options.purpose
-    }
-
-    const result = await vc.verify(verifyOptions)
-
-    return result as unknown as VerifyPresentationResult
-  }
-
-  public async deriveProof(agentContext: AgentContext, options: DeriveProofOptions): Promise<W3cVerifiableCredential> {
-    // TODO: make suite dynamic
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType('BbsBlsSignatureProof2020')
-    const SuiteClass = suiteInfo.suiteClass
-
-    const suite = new SuiteClass()
-
-    const proof = await deriveProof(JsonTransformer.toJSON(options.credential), options.revealDocument, {
-      suite: suite,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
-
-    return proof
-  }
-
-  private async getPublicKeyFromVerificationMethod(
-    agentContext: AgentContext,
-    verificationMethod: string
-  ): Promise<Key> {
-    const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
-    const verificationMethodObject = await documentLoader(verificationMethod)
-    const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
-
-    const key = getKeyFromVerificationMethod(verificationMethodClass)
-    return key
   }
 
   /**
@@ -312,16 +160,19 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     options: StoreCredentialOptions
   ): Promise<W3cCredentialRecord> {
-    // Get the expanded types
-    const expandedTypes = (
-      await jsonld.expand(JsonTransformer.toJSON(options.credential), {
-        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-      })
-    )[0]['@type']
+    let expandedTypes: string[] = []
+
+    // JsonLd credentials need expanded types to be stored.
+    if (options.credential instanceof W3cJsonLdVerifiableCredential) {
+      expandedTypes = await this.w3cJsonLdCredentialService.getExpandedTypesForCredential(
+        agentContext,
+        options.credential
+      )
+    }
 
     // Create an instance of the w3cCredentialRecord
     const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes: orArrayToArray<string>(expandedTypes) },
+      tags: { expandedTypes },
       credential: options.credential,
     })
 
@@ -332,8 +183,7 @@ export class W3cCredentialService {
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {
-    const credential = await this.w3cCredentialRepository.getById(agentContext, id)
-    await this.w3cCredentialRepository.delete(agentContext, credential)
+    await this.w3cCredentialRepository.deleteById(agentContext, id)
   }
 
   public async getAllCredentialRecords(agentContext: AgentContext): Promise<W3cCredentialRecord[]> {
@@ -352,52 +202,11 @@ export class W3cCredentialService {
     return result.map((record) => record.credential)
   }
 
-  public getVerificationMethodTypesByProofType(proofType: string): string[] {
-    return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
-  }
-
-  public getKeyTypesByProofType(proofType: string): string[] {
-    return this.signatureSuiteRegistry.getByProofType(proofType).keyTypes
-  }
-
   public async findCredentialRecordByQuery(
     agentContext: AgentContext,
     query: Query<W3cCredentialRecord>
   ): Promise<W3cVerifiableCredential | undefined> {
     const result = await this.w3cCredentialRepository.findSingleByQuery(agentContext, query)
     return result?.credential
-  }
-  public getProofTypeByVerificationMethodType(verificationMethodType: string): string {
-    const suite = this.signatureSuiteRegistry.getByVerificationMethodType(verificationMethodType)
-
-    if (!suite) {
-      throw new AriesFrameworkError(`No suite found for verification method type ${verificationMethodType}}`)
-    }
-
-    return suite.proofType
-  }
-
-  private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cVerifiableCredential) {
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
-
-    let proofs = credential.proof
-
-    if (!Array.isArray(proofs)) {
-      proofs = [proofs]
-    }
-
-    return proofs.map((proof) => {
-      const SuiteClass = this.signatureSuiteRegistry.getByProofType(proof.type)?.suiteClass
-      if (SuiteClass) {
-        return new SuiteClass({
-          LDKeyClass: WalletKeyPair,
-          proof: {
-            verificationMethod: proof.verificationMethod,
-          },
-          date: proof.created,
-          useNativeCanonize: false,
-        })
-      }
-    })
   }
 }

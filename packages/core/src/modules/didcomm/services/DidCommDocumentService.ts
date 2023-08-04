@@ -1,8 +1,6 @@
 import type { AgentContext } from '../../../agent'
-import type { Logger } from '../../../logger'
 import type { ResolvedDidCommService } from '../types'
 
-import { AgentConfig } from '../../../agent/AgentConfig'
 import { KeyType } from '../../../crypto'
 import { injectable } from '../../../plugins'
 import { DidCommV2Service, DidResolverService } from '../../dids'
@@ -12,11 +10,9 @@ import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
 
 @injectable()
 export class DidCommDocumentService {
-  private logger: Logger
   private didResolverService: DidResolverService
 
-  public constructor(agentConfig: AgentConfig, didResolverService: DidResolverService) {
-    this.logger = agentConfig.logger
+  public constructor(didResolverService: DidResolverService) {
     this.didResolverService = didResolverService
   }
 

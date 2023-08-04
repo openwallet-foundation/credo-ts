@@ -108,17 +108,21 @@ describe('Decorators | Attachment', () => {
 
       expect(attachment.data.jws).toBeUndefined()
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { payload, ...detachedJws } = didJwsz6Mkf.JWS_JSON
       attachment.addJws(didJwsz6Mkf.JWS_JSON)
-      expect(attachment.data.jws).toEqual(didJwsz6Mkf.JWS_JSON)
+      expect(attachment.data.jws).toEqual(detachedJws)
 
       attachment.addJws(didJwsz6Mkv.JWS_JSON)
-      expect(attachment.data.jws).toEqual({ signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { payload: payload2, ...detachedJws2 } = didJwsz6Mkv.JWS_JSON
+      expect(attachment.data.jws).toEqual({ signatures: [detachedJws, detachedJws2] })
 
       expect(JsonTransformer.toJSON(attachment)).toMatchObject({
         '@id': 'some-uuid',
         data: {
           base64: JsonEncoder.toBase64(didJwsz6Mkf.DATA_JSON),
-          jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON] },
+          jws: { signatures: [detachedJws, detachedJws2] },
         },
       })
     })

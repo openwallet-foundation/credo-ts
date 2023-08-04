@@ -2,7 +2,7 @@ import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../.
 import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
+import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
@@ -38,31 +38,17 @@ export class V2PresentationHandler implements MessageHandler {
     })
 
     const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const requestMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
+    const requestMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
       messageClass: V2RequestPresentationMessage,
     })
 
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: proofRecord,
-      })
-    } else if (requestMessage?.service && messageContext.message?.service) {
-      const recipientService = messageContext.message?.service
-      const ourService = requestMessage?.service
-
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-          returnRoute: true,
-        },
-      })
-    }
-
-    messageContext.agentContext.config.logger.error(`Could not automatically create presentation ack`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      connectionRecord: messageContext.connection,
+      message,
+      associatedRecord: proofRecord,
+      lastReceivedMessage: messageContext.message,
+      lastSentMessage: requestMessage,
+    })
   }
 }

@@ -1,3 +1,5 @@
+import { AriesFrameworkError } from '../../../../error'
+
 const PEER_DID_REGEX = new RegExp(
   '^did:peer:(([01](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))|(2((.[AEVID](z)([1-9a-km-zA-HJ-NP-Z]{5,200}))+(.(S)[0-9a-zA-Z=]*)?)))$'
 )
@@ -22,7 +24,7 @@ export function getNumAlgoFromPeerDid(did: string) {
     numAlgo !== PeerDidNumAlgo.GenesisDoc &&
     numAlgo !== PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
   ) {
-    throw new Error(`Invalid peer did numAlgo: ${numAlgo}`)
+    throw new AriesFrameworkError(`Invalid peer did numAlgo: ${numAlgo}`)
   }
 
   return numAlgo as PeerDidNumAlgo

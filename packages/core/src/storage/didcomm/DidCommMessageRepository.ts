@@ -1,5 +1,6 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
 import type { AgentContext } from '../../agent'
+import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { AgentBaseMessage } from '../../agent/AgentBaseMessage'
 import type { ConstructableDidCommMessage } from '../../didcomm'
 import type { JsonObject } from '../../types'
@@ -27,7 +28,7 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     { role, agentMessage, associatedRecordId }: SaveAgentMessageOptions
   ) {
     const didCommMessageRecord = new DidCommMessageRecord({
-      message: agentMessage.toJSON() as JsonObject,
+      message: agentMessage.toJSON(),
       role,
       associatedRecordId,
     })
@@ -46,7 +47,7 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
     })
 
     if (record) {
-      record.message = options.agentMessage.toJSON() as JsonObject
+      record.message = options.agentMessage.toJSON()
       record.role = options.role
       await this.update(agentContext, record)
       return

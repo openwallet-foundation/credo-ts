@@ -1,9 +1,10 @@
 import type {
-  AnonCredsResolutionMetadata,
-  Extensible,
+  AnonCredsOperationStateAction,
   AnonCredsOperationStateFailed,
   AnonCredsOperationStateFinished,
-  AnonCredsOperationState,
+  AnonCredsOperationStateWait,
+  AnonCredsResolutionMetadata,
+  Extensible,
 } from './base'
 import type { AnonCredsCredentialDefinition } from '../../models/registry'
 
@@ -29,15 +30,21 @@ export interface RegisterCredentialDefinitionReturnStateFinished extends AnonCre
   credentialDefinitionId: string
 }
 
-export interface RegisterCredentialDefinitionReturnState extends AnonCredsOperationState {
+export interface RegisterCredentialDefinitionReturnStateWait extends AnonCredsOperationStateWait {
   credentialDefinition?: AnonCredsCredentialDefinition
   credentialDefinitionId?: string
+}
+
+export interface RegisterCredentialDefinitionReturnStateAction extends AnonCredsOperationStateAction {
+  credentialDefinitionId: string
+  credentialDefinition: AnonCredsCredentialDefinition
 }
 
 export interface RegisterCredentialDefinitionReturn {
   jobId?: string
   credentialDefinitionState:
-    | RegisterCredentialDefinitionReturnState
+    | RegisterCredentialDefinitionReturnStateWait
+    | RegisterCredentialDefinitionReturnStateAction
     | RegisterCredentialDefinitionReturnStateFinished
     | RegisterCredentialDefinitionReturnStateFailed
   credentialDefinitionMetadata: Extensible

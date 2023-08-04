@@ -23,14 +23,16 @@ import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../utils/did'
-import { DidKey, DidRegistrarService, IndyAgentService } from '../../dids'
+import { DidKey, IndyAgentService } from '../../dids'
 import { DidDocumentRole } from '../../dids/domain/DidDocumentRole'
 import { didKeyToVerkey } from '../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
+import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandRepository } from '../../oob/repository'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage } from '../messages'
@@ -62,7 +64,6 @@ export interface ConnectionRequestParams {
 export class ConnectionService {
   private connectionRepository: ConnectionRepository
   private didRepository: DidRepository
-  private didRegistrarService: DidRegistrarService
   private eventEmitter: EventEmitter
   private logger: Logger
 
@@ -70,12 +71,10 @@ export class ConnectionService {
     @inject(InjectionSymbols.Logger) logger: Logger,
     connectionRepository: ConnectionRepository,
     didRepository: DidRepository,
-    didRegistrarService: DidRegistrarService,
     eventEmitter: EventEmitter
   ) {
     this.connectionRepository = connectionRepository
     this.didRepository = didRepository
-    this.didRegistrarService = didRegistrarService
     this.eventEmitter = eventEmitter
     this.logger = logger
   }
@@ -434,24 +433,28 @@ export class ConnectionService {
 
     connectionRecord.errorMessage = `${connectionProblemReportMessage.description.code} : ${connectionProblemReportMessage.description.en}`
     await this.update(messageContext.agentContext, connectionRecord)
+
+    // Marking connection as abandoned in case of problem report from issuer agent
+    // TODO: Can be conditionally abandoned - Like if another user is scanning already used connection invite where issuer will send invite-already-used problem code.
+    await this.updateState(messageContext.agentContext, connectionRecord, DidExchangeState.Abandoned)
+
     return connectionRecord
   }
 
   /**
    * Assert that an inbound message either has a connection associated with it,
-   * or has everything correctly set up for connection-less exchange.
+   * or has everything correctly set up for connection-less exchange (optionally with out of band)
    *
    * @param messageContext - the inbound message context
-   * @param previousRespondence - previous sent and received message to determine if a valid service decorator is present
    */
-  public assertConnectionOrServiceDecorator(
-    messageContext: InboundMessageContext<DidCommV1Message>,
+  public async assertConnectionOrOutOfBandExchange(
+      messageContext: InboundMessageContext<DidCommV1Message>,
     {
-      previousSentMessage,
-      previousReceivedMessage,
+      lastSentMessage,
+      lastReceivedMessage,
     }: {
-      previousSentMessage?: DidCommV1Message | null
-      previousReceivedMessage?: DidCommV1Message | null
+      lastSentMessage?: DidCommV1Message | null
+      lastReceivedMessage?: DidCommV1Message | null
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -470,43 +473,70 @@ export class ConnectionService {
       const recipientKey = messageContext.recipientKey && messageContext.recipientKey.publicKeyBase58
       const senderKey = messageContext.senderKey && messageContext.senderKey.publicKeyBase58
 
-      if (previousSentMessage) {
-        // If we have previously sent a message, it is not allowed to receive an OOB/unpacked message
-        if (!recipientKey) {
-          throw new AriesFrameworkError(
-            'Cannot verify service without recipientKey on incoming message (received unpacked message)'
-          )
-        }
+      // set theirService to the value of lastReceivedMessage.service
+      let theirService =
+        messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
+      let ourService = lastSentMessage?.service?.resolvedDidCommService
 
-        // Check if the inbound message recipient key is present
-        // in the recipientKeys of previously sent message ~service decorator
-        if (!previousSentMessage?.service || !previousSentMessage.service.recipientKeys.includes(recipientKey)) {
-          throw new AriesFrameworkError(
-            'Previously sent message ~service recipientKeys does not include current received message recipient key'
-          )
+      // 1. check if there's an oob record associated.
+      const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(OutOfBandRepository)
+      const outOfBandService = messageContext.agentContext.dependencyManager.resolve(OutOfBandService)
+      const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+        invitationRequestsThreadIds: [message.threadId],
+      })
+
+      // If we have an out of band record, we can extract the service for our/the other party from the oob record
+      if (outOfBandRecord?.role === OutOfBandRole.Sender) {
+        ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
+          messageContext.agentContext,
+          outOfBandRecord.outOfBandInvitation.getServices()
+        )
+      } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
+        theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
+          messageContext.agentContext,
+          outOfBandRecord.outOfBandInvitation.getServices()
+        )
+      }
+
+      // theirService can be null when we receive an oob invitation and process the message.
+      // In this case there MUST be an oob record, otherwise there is no way for us to reply
+      // to the message
+      if (!theirService && !outOfBandRecord) {
+        throw new AriesFrameworkError(
+          'No service for incoming connection-less message and no associated out of band record found.'
+        )
+      }
+
+      // ourService can be null when we receive an oob invitation or legacy connectionless message and process the message.
+      // In this case lastSentMessage and lastReceivedMessage MUST be null, because there shouldn't be any previous exchange
+      if (!ourService && (lastReceivedMessage || lastSentMessage)) {
+        throw new AriesFrameworkError(
+          'No keys on our side to use for encrypting messages, and previous messages found (in which case our keys MUST also be present).'
+        )
+      }
+
+      // If the message is unpacked or AuthCrypt, there cannot be any previous exchange (this must be the first message).
+      // All exchange after the first unpacked oob exchange MUST be encrypted.
+      if ((!senderKey || !recipientKey) && (lastSentMessage || lastReceivedMessage)) {
+        throw new AriesFrameworkError(
+          'Incoming message must have recipientKey and senderKey (so cannot be AuthCrypt or unpacked) if there are lastSentMessage or lastReceivedMessage.'
+        )
+      }
+
+      // Check if recipientKey is in ourService
+      if (recipientKey && ourService) {
+        const recipientKeyFound = ourService.recipientKeys.some((key) => key.publicKeyBase58 === recipientKey)
+        if (!recipientKeyFound) {
+          throw new AriesFrameworkError(`Recipient key ${recipientKey} not found in our service`)
         }
       }
 
-      if (previousReceivedMessage) {
-        // If we have previously received a message, it is not allowed to receive an OOB/unpacked/AnonCrypt message
-        if (!senderKey) {
-          throw new AriesFrameworkError(
-            'Cannot verify service without senderKey on incoming message (received AnonCrypt or unpacked message)'
-          )
+      // Check if senderKey is in theirService
+      if (senderKey && theirService) {
+        const senderKeyFound = theirService.recipientKeys.some((key) => key.publicKeyBase58 === senderKey)
+        if (!senderKeyFound) {
+          throw new AriesFrameworkError(`Sender key ${senderKey} not found in their service.`)
         }
-
-        // Check if the inbound message sender key is present
-        // in the recipientKeys of previously received message ~service decorator
-        if (!previousReceivedMessage.service || !previousReceivedMessage.service.recipientKeys.includes(senderKey)) {
-          throw new AriesFrameworkError(
-            'Previously received message ~service recipientKeys does not include current received message sender key'
-          )
-        }
-      }
-
-      // If message is received unpacked/, we need to make sure it included a ~service decorator
-      if (!message.serviceDecorator() && !recipientKey) {
-        throw new AriesFrameworkError('Message recipientKey must have ~service decorator')
       }
     }
   }
@@ -524,13 +554,11 @@ export class ConnectionService {
     connectionRecord: ConnectionRecord,
     previousState: DidExchangeState | null
   ) {
-    // Connection record in event should be static
-    const clonedConnection = JsonTransformer.clone(connectionRecord)
-
     this.eventEmitter.emit<ConnectionStateChangedEvent>(agentContext, {
       type: ConnectionEventTypes.ConnectionStateChanged,
       payload: {
-        connectionRecord: clonedConnection,
+        // Connection record in event should be static
+        connectionRecord: connectionRecord.clone(),
         previousState,
       },
     })
