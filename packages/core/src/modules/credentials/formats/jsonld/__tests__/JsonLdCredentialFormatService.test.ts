@@ -5,7 +5,7 @@ import type { CustomCredentialTags } from '../../../repository/CredentialExchang
 import type { JsonCredential, JsonLdCredentialFormat, JsonLdCredentialDetailFormat } from '../JsonLdCredentialFormat'
 
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
-import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment'
 import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { DidDocument } from '../../../../dids'
@@ -74,17 +74,17 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   age: '99',
 })
 
-const offerAttachment = new V1Attachment({
+const offerAttachment = new Attachment({
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const credentialAttachment = new V1Attachment({
+const credentialAttachment = new Attachment({
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64: JsonEncoder.toBase64(vcJson),
   }),
 })
@@ -141,9 +141,9 @@ const signCredentialOptions: JsonLdCredentialDetailFormat = {
   },
 }
 
-const requestAttachment = new V1Attachment({
+const requestAttachment = new Attachment({
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64: JsonEncoder.toBase64(signCredentialOptions),
   }),
 })
@@ -398,9 +398,9 @@ describe('JsonLd CredentialFormatService', () => {
         },
       }
 
-      const credentialAttachment = new V1Attachment({
+      const credentialAttachment = new Attachment({
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(vcJson),
         }),
       })
@@ -423,9 +423,9 @@ describe('JsonLd CredentialFormatService', () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.domain = 'https://test.com'
-      const requestAttachmentWithDomain = new V1Attachment({
+      const requestAttachmentWithDomain = new Attachment({
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -448,9 +448,9 @@ describe('JsonLd CredentialFormatService', () => {
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
 
-      const requestAttachmentWithChallenge = new V1Attachment({
+      const requestAttachmentWithChallenge = new Attachment({
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -470,9 +470,9 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential proof type not equal to request proof type', async () => {
       signCredentialOptionsWithProperty.options.proofType = 'Ed25519Signature2016'
-      const requestAttachmentWithProofType = new V1Attachment({
+      const requestAttachmentWithProofType = new Attachment({
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -492,9 +492,9 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential proof purpose not equal to request proof purpose', async () => {
       signCredentialOptionsWithProperty.options.proofPurpose = 'authentication'
-      const requestAttachmentWithProofPurpose = new V1Attachment({
+      const requestAttachmentWithProofPurpose = new Attachment({
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -513,18 +513,18 @@ describe('JsonLd CredentialFormatService', () => {
     })
 
     test('are credentials equal', async () => {
-      const message1 = new V1Attachment({
+      const message1 = new Attachment({
         id: 'cdb0669b-7cd6-46bc-b1c7-7034f86083ac',
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
 
-      const message2 = new V1Attachment({
+      const message2 = new Attachment({
         id: '9a8ff4fb-ac86-478f-b7f9-fbf3f9cc60e6',
         mimeType: 'application/json',
-        data: new V1AttachmentData({
+        data: new AttachmentData({
           base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
@@ -544,7 +544,7 @@ describe('JsonLd CredentialFormatService', () => {
           'https://w3id.org/security/bbs/v1',
         ],
       }
-      message2.data = new V1AttachmentData({
+      message2.data = new AttachmentData({
         base64: JsonEncoder.toBase64(inputDoc2),
       })
 

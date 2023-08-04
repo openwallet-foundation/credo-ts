@@ -38,8 +38,8 @@ import {
   utils,
   CredentialProblemReportReason,
   JsonTransformer,
-  V1Attachment,
-  V1AttachmentData,
+  Attachment,
+  AttachmentData,
 } from '@aries-framework/core'
 
 import { AnonCredsError } from '../error'
@@ -451,7 +451,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: V1Attachment[]): V1Attachment | undefined {
+  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
@@ -595,7 +595,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     attributes?: CredentialPreviewAttributeOptions[],
     linkedAttachments?: LinkedAttachment[]
   ): {
-    attachments?: V1Attachment[]
+    attachments?: Attachment[]
     previewAttributes?: CredentialPreviewAttributeOptions[]
   } {
     if (!linkedAttachments && !attributes) {
@@ -603,7 +603,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     }
 
     let previewAttributes = attributes ?? []
-    let attachments: V1Attachment[] | undefined
+    let attachments: Attachment[] | undefined
 
     if (linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
@@ -622,11 +622,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): V1Attachment {
-    const attachment = new V1Attachment({
+  public getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
       id,
       mimeType: 'application/json',
-      data: new V1AttachmentData({
+      data: new AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

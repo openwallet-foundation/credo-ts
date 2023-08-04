@@ -13,8 +13,8 @@ import {
   HandshakeProtocol,
   MediatorPickupStrategy,
   LinkedAttachment,
-  V1Attachment,
-  V1AttachmentData,
+  Attachment,
+  AttachmentData,
   ProofEventTypes,
   MediatorModule,
   MediationRecipientModule,
@@ -465,16 +465,16 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',
-            attachment: new V1Attachment({
+            attachment: new Attachment({
               filename: 'picture-of-a-cat.png',
-              data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
           new LinkedAttachment({
             name: 'image_1',
-            attachment: new V1Attachment({
+            attachment: new Attachment({
               filename: 'picture-of-a-dog.png',
-              data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

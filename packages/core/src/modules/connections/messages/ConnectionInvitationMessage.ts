@@ -1,4 +1,4 @@
-import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
+import type { Attachment } from '../../../decorators/attachment'
 
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
@@ -14,7 +14,7 @@ export interface BaseInvitationOptions {
   id?: string
   label: string
   imageUrl?: string
-  appendedAttachments?: V1Attachment[]
+  appendedAttachments?: Attachment[]
 }
 
 export interface InlineInvitationOptions {

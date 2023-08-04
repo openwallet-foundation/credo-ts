@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../../../decorators/attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { uuid } from '../../../../../utils/uuid'
@@ -14,7 +14,7 @@ export interface V2RequestPresentationMessageOptions {
   presentMultiple?: boolean
   willConfirm?: boolean
   formats: ProofFormatSpec[]
-  requestAttachments: V1Attachment[]
+  requestAttachments: Attachment[]
 }
 
 export class V2RequestPresentationMessage extends DidCommV1Message {
@@ -63,13 +63,13 @@ export class V2RequestPresentationMessage extends DidCommV1Message {
   public formats!: ProofFormatSpec[]
 
   @Expose({ name: 'request_presentations~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({ each: true })
-  @IsInstance(V1Attachment, { each: true })
-  public requestAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public requestAttachments!: Attachment[]
 
-  public getRequestAttachmentById(id: string): V1Attachment | undefined {
+  public getRequestAttachmentById(id: string): Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

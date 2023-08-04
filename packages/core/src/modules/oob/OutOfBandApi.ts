@@ -1,7 +1,6 @@
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 import type { AgentMessageReceivedEvent } from '../../agent/Events'
-import type { V2Attachment } from '../../decorators/attachment'
-import type { V1Attachment } from '../../decorators/attachment/V1Attachment'
+import type { V2Attachment, Attachment } from '../../decorators/attachment'
 import type { PlaintextMessage, DidCommV2Message, DidCommV1Message } from '../../didcomm'
 import type { Query } from '../../storage/StorageService'
 import type { ConnectionInvitationMessage, ConnectionRecord, Routing } from '../connections'
@@ -16,7 +15,7 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { Key } from '../../crypto'
-import { createJSONAttachment } from '../../decorators/attachment/V2Attachment'
+import { createJSONV2Attachment } from '../../decorators/attachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { getPlaintextMessageType } from '../../didcomm'
 import { AriesFrameworkError } from '../../error'
@@ -71,7 +70,7 @@ export interface CreateV11OutOfBandInvitationConfig extends BaseCreateOutOfBandI
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: Routing
-  appendedAttachments?: V1Attachment[]
+  appendedAttachments?: Attachment[]
 }
 
 export interface CreateV20OutOfBandInvitationConfig extends BaseCreateOutOfBandInvitationConfig {
@@ -173,7 +172,7 @@ export class OutOfBandApi {
     if (config.version === OutOfBandVersion.V2) {
       const attachments: Array<V2Attachment> = config.appendedAttachments || []
       for (const message of config.messages || []) {
-        attachments.push(createJSONAttachment(uuid(), message.toJSON()))
+        attachments.push(createJSONV2Attachment(uuid(), message.toJSON()))
       }
       const params = {
         goal: config.goal,

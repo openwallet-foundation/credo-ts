@@ -7,7 +7,7 @@ import { Subject } from 'rxjs'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { uuid } from '../../../../../utils/uuid'
 import { ConnectionService, DidExchangeState } from '../../../../connections'
@@ -58,10 +58,10 @@ const connection = getMockConnection({
   state: DidExchangeState.Completed,
 })
 
-const requestAttachment = new V1Attachment({
+const requestAttachment = new Attachment({
   id: 'abdc8b63-29c6-49ad-9e10-98f9d85db9a2',
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64:
       'eyJuYW1lIjogIlByb29mIHJlcXVlc3QiLCAibm9uX3Jldm9rZWQiOiB7ImZyb20iOiAxNjQwOTk1MTk5LCAidG8iOiAxNjQwOTk1MTk5fSwgIm5vbmNlIjogIjEiLCAicmVxdWVzdGVkX2F0dHJpYnV0ZXMiOiB7ImFkZGl0aW9uYWxQcm9wMSI6IHsibmFtZSI6ICJmYXZvdXJpdGVEcmluayIsICJub25fcmV2b2tlZCI6IHsiZnJvbSI6IDE2NDA5OTUxOTksICJ0byI6IDE2NDA5OTUxOTl9LCAicmVzdHJpY3Rpb25zIjogW3siY3JlZF9kZWZfaWQiOiAiV2dXeHF6dHJOb29HOTJSWHZ4U1RXdjozOkNMOjIwOnRhZyJ9XX19LCAicmVxdWVzdGVkX3ByZWRpY2F0ZXMiOiB7fSwgInZlcnNpb24iOiAiMS4wIn0=',
   }),

@@ -1,6 +1,6 @@
 import type { ProofFormat, ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
-import type { V1Attachment } from '../../../decorators/attachment/V1Attachment'
+import type { Attachment } from '../../../decorators/attachment'
 import type { ProofFormatSpec } from '../models/ProofFormatSpec'
 import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
 
@@ -39,19 +39,19 @@ export type ExtractProofFormats<PFs extends ProofFormatService[]> = {
  */
 export interface ProofFormatCreateReturn {
   format: ProofFormatSpec
-  attachment: V1Attachment
+  attachment: Attachment
 }
 
 /**
  * Base type for all proof process methods.
  */
 export interface ProofFormatProcessOptions {
-  attachment: V1Attachment
+  attachment: Attachment
   proofRecord: ProofExchangeRecord
 }
 
 export interface ProofFormatProcessPresentationOptions extends ProofFormatProcessOptions {
-  requestAttachment: V1Attachment
+  requestAttachment: Attachment
 }
 
 export interface ProofFormatCreateProposalOptions<PF extends ProofFormat> {
@@ -65,7 +65,7 @@ export interface ProofFormatAcceptProposalOptions<PF extends ProofFormat> {
   proofFormats?: ProofFormatPayload<[PF], 'acceptProposal'>
   attachmentId?: string
 
-  proposalAttachment: V1Attachment
+  proposalAttachment: Attachment
 }
 
 export interface FormatCreateRequestOptions<PF extends ProofFormat> {
@@ -79,16 +79,16 @@ export interface ProofFormatAcceptRequestOptions<PF extends ProofFormat> {
   proofFormats?: ProofFormatPayload<[PF], 'acceptRequest'>
   attachmentId?: string
 
-  requestAttachment: V1Attachment
-  proposalAttachment?: V1Attachment
+  requestAttachment: Attachment
+  proposalAttachment?: Attachment
 }
 
 export interface ProofFormatGetCredentialsForRequestOptions<PF extends ProofFormat> {
   proofRecord: ProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<[PF], 'getCredentialsForRequest', 'input'>
 
-  requestAttachment: V1Attachment
-  proposalAttachment?: V1Attachment
+  requestAttachment: Attachment
+  proposalAttachment?: Attachment
 }
 
 export type ProofFormatGetCredentialsForRequestReturn<PF extends ProofFormat> =
@@ -98,8 +98,8 @@ export interface ProofFormatSelectCredentialsForRequestOptions<PF extends ProofF
   proofRecord: ProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<[PF], 'selectCredentialsForRequest', 'input'>
 
-  requestAttachment: V1Attachment
-  proposalAttachment?: V1Attachment
+  requestAttachment: Attachment
+  proposalAttachment?: Attachment
 }
 
 export type ProofFormatSelectCredentialsForRequestReturn<PF extends ProofFormat> =
@@ -107,19 +107,19 @@ export type ProofFormatSelectCredentialsForRequestReturn<PF extends ProofFormat>
 
 export interface ProofFormatAutoRespondProposalOptions {
   proofRecord: ProofExchangeRecord
-  proposalAttachment: V1Attachment
-  requestAttachment: V1Attachment
+  proposalAttachment: Attachment
+  requestAttachment: Attachment
 }
 
 export interface ProofFormatAutoRespondRequestOptions {
   proofRecord: ProofExchangeRecord
-  requestAttachment: V1Attachment
-  proposalAttachment: V1Attachment
+  requestAttachment: Attachment
+  proposalAttachment: Attachment
 }
 
 export interface ProofFormatAutoRespondPresentationOptions {
   proofRecord: ProofExchangeRecord
-  proposalAttachment?: V1Attachment
-  requestAttachment: V1Attachment
-  presentationAttachment: V1Attachment
+  proposalAttachment?: Attachment
+  requestAttachment: Attachment
+  presentationAttachment: Attachment
 }

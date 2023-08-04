@@ -1,10 +1,10 @@
 import { Expose, Type } from 'class-transformer'
 import { IsBase64, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Jws } from '../../crypto/JwsTypes'
-import { AriesFrameworkError } from '../../error'
-import { JsonEncoder } from '../../utils/JsonEncoder'
-import { uuid } from '../../utils/uuid'
+import { Jws } from '../../../crypto/JwsTypes'
+import { AriesFrameworkError } from '../../../error'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { uuid } from '../../../utils/uuid'
 
 export const ATTACHMENT_MEDIA_TYPE = 'application/json'
 
@@ -129,7 +129,7 @@ export class V2Attachment {
   }
 }
 
-export function createJSONAttachment(id: string, message: Record<string, unknown>): V2Attachment {
+export function createJSONV2Attachment(id: string, message: Record<string, unknown>): V2Attachment {
   return new V2Attachment({
     id: id,
     mediaType: ATTACHMENT_MEDIA_TYPE,
@@ -139,7 +139,7 @@ export function createJSONAttachment(id: string, message: Record<string, unknown
   })
 }
 
-export function createBase64Attachment(id: string, message: Record<string, unknown>): V2Attachment {
+export function createBase64V2Attachment(id: string, message: Record<string, unknown>): V2Attachment {
   return new V2Attachment({
     id: id,
     mediaType: ATTACHMENT_MEDIA_TYPE,

@@ -41,7 +41,7 @@ export * from './wallet'
 export type { TransportSession } from './agent/TransportService'
 export { TransportService } from './agent/TransportService'
 export { ServiceDecorator, ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
-export { V1Attachment, V1AttachmentData } from './decorators/attachment/V1Attachment'
+export { Attachment, AttachmentData } from './decorators/attachment'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 
 export * from './plugins'

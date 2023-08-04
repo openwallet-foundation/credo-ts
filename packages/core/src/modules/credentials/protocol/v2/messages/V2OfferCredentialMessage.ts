@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../../../decorators/attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../models'
@@ -11,7 +11,7 @@ import { V2CredentialPreview } from './V2CredentialPreview'
 export interface V2OfferCredentialMessageOptions {
   id?: string
   formats: CredentialFormatSpec[]
-  offerAttachments: V1Attachment[]
+  offerAttachments: Attachment[]
   credentialPreview: V2CredentialPreview
   replacementId?: string
   comment?: string
@@ -50,20 +50,20 @@ export class V2OfferCredentialMessage extends DidCommV1Message {
   public credentialPreview?: V2CredentialPreview
 
   @Expose({ name: 'offers~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public offerAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public offerAttachments!: Attachment[]
 
   @Expose({ name: 'replacement_id' })
   @IsString()
   @IsOptional()
   public replacementId?: string
 
-  public getOfferAttachmentById(id: string): V1Attachment | undefined {
+  public getOfferAttachmentById(id: string): Attachment | undefined {
     return this.offerAttachments.find((attachment) => attachment.id === id)
   }
 }

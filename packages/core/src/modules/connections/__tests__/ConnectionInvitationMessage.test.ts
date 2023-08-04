@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { V1Attachment } from '../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../decorators/attachment'
 import { ClassValidationError } from '../../../error/ClassValidationError'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -73,7 +73,7 @@ describe('ConnectionInvitationMessage', () => {
         label: 'test',
         imageUrl: 'test-image-path',
         appendedAttachments: [
-          new V1Attachment({
+          new Attachment({
             id: 'test-attachment',
             data: {
               json: {

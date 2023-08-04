@@ -1,6 +1,6 @@
 import type { AnonCredsProof } from '../../../../models'
 
-import { IsValidMessageType, parseMessageType, DidCommV1Message, V1Attachment } from '@aries-framework/core'
+import { IsValidMessageType, parseMessageType, DidCommV1Message, Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
@@ -9,8 +9,8 @@ export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 export interface V1PresentationMessageOptions {
   id?: string
   comment?: string
-  presentationAttachments: V1Attachment[]
-  attachments?: V1Attachment[]
+  presentationAttachments: Attachment[]
+  attachments?: Attachment[]
 }
 
 /**
@@ -48,13 +48,13 @@ export class V1PresentationMessage extends DidCommV1Message {
    * An array of attachments containing the presentation in the requested format(s).
    */
   @Expose({ name: 'presentations~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public presentationAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public presentationAttachments!: Attachment[]
 
   public get indyProof(): AnonCredsProof | null {
     const attachment =
@@ -65,7 +65,7 @@ export class V1PresentationMessage extends DidCommV1Message {
     return proofJson
   }
 
-  public getPresentationAttachmentById(id: string): V1Attachment | undefined {
+  public getPresentationAttachmentById(id: string): Attachment | undefined {
     return this.presentationAttachments.find((attachment) => attachment.id === id)
   }
 }

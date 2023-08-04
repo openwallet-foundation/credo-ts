@@ -1,4 +1,4 @@
-import type { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import type { Attachment } from '../../../../../decorators/attachment'
 
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
@@ -11,7 +11,7 @@ export interface V2MessageDeliveryMessageOptions {
   id?: string
   recipientKey?: string
   threadId: string
-  attachments: V1Attachment[]
+  attachments: Attachment[]
 }
 
 export class V2MessageDeliveryMessage extends DidCommV1Message {

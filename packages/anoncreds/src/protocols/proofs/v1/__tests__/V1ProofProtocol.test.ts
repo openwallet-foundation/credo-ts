@@ -4,8 +4,8 @@ import { Subject } from 'rxjs'
 
 import {
   DidExchangeState,
-  V1Attachment,
-  V1AttachmentData,
+  Attachment,
+  AttachmentData,
   ProofState,
   ProofExchangeRecord,
   InboundMessageContext,
@@ -44,10 +44,10 @@ const connection = getMockConnection({
   state: DidExchangeState.Completed,
 })
 
-const requestAttachment = new V1Attachment({
+const requestAttachment = new Attachment({
   id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64:
       'eyJuYW1lIjogIlByb29mIHJlcXVlc3QiLCAibm9uX3Jldm9rZWQiOiB7ImZyb20iOiAxNjQwOTk1MTk5LCAidG8iOiAxNjQwOTk1MTk5fSwgIm5vbmNlIjogIjEiLCAicmVxdWVzdGVkX2F0dHJpYnV0ZXMiOiB7ImFkZGl0aW9uYWxQcm9wMSI6IHsibmFtZSI6ICJmYXZvdXJpdGVEcmluayIsICJub25fcmV2b2tlZCI6IHsiZnJvbSI6IDE2NDA5OTUxOTksICJ0byI6IDE2NDA5OTUxOTl9LCAicmVzdHJpY3Rpb25zIjogW3siY3JlZF9kZWZfaWQiOiAiV2dXeHF6dHJOb29HOTJSWHZ4U1RXdjozOkNMOjIwOnRhZyJ9XX19LCAicmVxdWVzdGVkX3ByZWRpY2F0ZXMiOiB7fSwgInZlcnNpb24iOiAiMS4wIn0=',
   }),

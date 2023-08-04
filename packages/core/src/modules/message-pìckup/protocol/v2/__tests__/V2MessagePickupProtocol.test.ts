@@ -6,7 +6,7 @@ import { AgentEventTypes } from '../../../../../agent/Events'
 import { MessageSender } from '../../../../../agent/MessageSender'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import { InjectionSymbols } from '../../../../../constants'
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../../../decorators/attachment'
 import { AriesFrameworkError } from '../../../../../error'
 import { InMemoryMessageRepository } from '../../../../../storage/InMemoryMessageRepository'
 import { uuid } from '../../../../../utils/uuid'
@@ -332,7 +332,7 @@ describe('V2MessagePickupService', () => {
       const messageDeliveryMessage = new V2MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new V1Attachment({
+          new Attachment({
             id: '1',
             data: {
               json: {
@@ -364,7 +364,7 @@ describe('V2MessagePickupService', () => {
       const messageDeliveryMessage = new V2MessageDeliveryMessage({
         threadId: uuid(),
         attachments: [
-          new V1Attachment({
+          new Attachment({
             id: '1',
             data: {
               json: {
@@ -372,7 +372,7 @@ describe('V2MessagePickupService', () => {
               },
             },
           }),
-          new V1Attachment({
+          new Attachment({
             id: '2',
             data: {
               json: {

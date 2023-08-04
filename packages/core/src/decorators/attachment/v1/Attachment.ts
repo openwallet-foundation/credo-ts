@@ -1,4 +1,4 @@
-import type { JwsGeneralFormat } from '../../crypto/JwsTypes'
+import type { JwsGeneralFormat } from '../../../crypto/JwsTypes'
 
 import { Expose, Type } from 'class-transformer'
 import {
@@ -13,22 +13,22 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { Jws } from '../../crypto/JwsTypes'
-import { AriesFrameworkError } from '../../error'
-import { JsonEncoder } from '../../utils/JsonEncoder'
-import { uuid } from '../../utils/uuid'
+import { Jws } from '../../../crypto/JwsTypes'
+import { AriesFrameworkError } from '../../../error'
+import { JsonEncoder } from '../../../utils/JsonEncoder'
+import { uuid } from '../../../utils/uuid'
 
-export interface V1AttachmentOptions {
+export interface AttachmentOptions {
   id?: string
   description?: string
   filename?: string
   mimeType?: string
   lastmodTime?: Date
   byteCount?: number
-  data: V1AttachmentData
+  data: AttachmentData
 }
 
-export interface V1AttachmentDataOptions {
+export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
   links?: string[]
@@ -39,7 +39,7 @@ export interface V1AttachmentDataOptions {
 /**
  * A JSON object that gives access to the actual content of the attachment
  */
-export class V1AttachmentData {
+export class AttachmentData {
   /**
    * Base64-encoded data, when representing arbitrary content inline instead of via links. Optional.
    */
@@ -73,7 +73,7 @@ export class V1AttachmentData {
   @IsHash('sha256')
   public sha256?: string
 
-  public constructor(options: V1AttachmentDataOptions) {
+  public constructor(options: AttachmentDataOptions) {
     if (options) {
       this.base64 = options.base64
       this.json = options.json
@@ -88,8 +88,8 @@ export class V1AttachmentData {
  * Represents DIDComm attachment
  * https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0017-attachments/README.md
  */
-export class V1Attachment {
-  public constructor(options: V1AttachmentOptions) {
+export class Attachment {
+  public constructor(options: AttachmentOptions) {
     if (options) {
       this.id = options.id ?? uuid()
       this.description = options.description
@@ -143,10 +143,10 @@ export class V1Attachment {
   @IsInt()
   public byteCount?: number
 
-  @Type(() => V1AttachmentData)
+  @Type(() => AttachmentData)
   @ValidateNested()
-  @IsInstance(V1AttachmentData)
-  public data!: V1AttachmentData
+  @IsInstance(AttachmentData)
+  public data!: AttachmentData
 
   /*
    * Helper function returning JSON representation of attachment data (if present). Tries to obtain the data from .base64 or .json, throws an error otherwise

@@ -1,6 +1,6 @@
-import { JsonEncoder } from '../../../utils/JsonEncoder'
-import { JsonTransformer } from '../../../utils/JsonTransformer'
-import { V2Attachment, V2AttachmentData } from '../V2Attachment'
+import { JsonEncoder } from '../../../../utils/JsonEncoder'
+import { JsonTransformer } from '../../../../utils/JsonTransformer'
+import { V2Attachment, V2AttachmentData } from '../../v2/V2Attachment'
 
 const mockJson = {
   id: 'ceffce22-6471-43e4-8945-b604091981c9',

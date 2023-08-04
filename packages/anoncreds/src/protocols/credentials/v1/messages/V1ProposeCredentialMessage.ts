@@ -1,4 +1,4 @@
-import type { V1Attachment } from '@aries-framework/core'
+import type { Attachment } from '@aries-framework/core'
 
 import { DidCommV1Message, IsValidMessageType, parseMessageType } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
@@ -23,7 +23,7 @@ export interface V1ProposeCredentialMessageOptions {
   schemaVersion?: string
   credentialDefinitionId?: string
   issuerDid?: string
-  attachments?: V1Attachment[]
+  attachments?: Attachment[]
 }
 
 /**
@@ -128,7 +128,7 @@ export class V1ProposeCredentialMessage extends DidCommV1Message {
   @Matches(unqualifiedIndyDidRegex)
   public issuerDid?: string
 
-  public getAttachment(): V1Attachment | undefined {
+  public getAttachment(): Attachment | undefined {
     if (this.appendedAttachments) {
       return this.appendedAttachments[0]
     } else {

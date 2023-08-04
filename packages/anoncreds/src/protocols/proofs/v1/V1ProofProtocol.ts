@@ -23,7 +23,7 @@ import {
   ProofState,
   DidCommMessageRole,
   ConnectionService,
-  V1Attachment,
+  Attachment,
   JsonTransformer,
   PresentationProblemReportReason,
   AckStatus,
@@ -261,7 +261,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       nonce: await agentContext.wallet.generateNonce(),
     })
 
-    const proposalAttachment = new V1Attachment({
+    const proposalAttachment = new Attachment({
       data: {
         json: JsonTransformer.toJSON(requestFromPreview),
       },
@@ -573,7 +573,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new V1Attachment({
+      ? new Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -643,7 +643,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new V1Attachment({
+      ? new Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -703,7 +703,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new V1Attachment({
+      ? new Attachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -919,7 +919,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToProposal(agentContext, {
       proofRecord,
-      proposalAttachment: new V1Attachment({
+      proposalAttachment: new Attachment({
         data: {
           json: rfc0592Proposal,
         },
@@ -962,7 +962,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToRequest(agentContext, {
       proofRecord,
-      proposalAttachment: new V1Attachment({
+      proposalAttachment: new Attachment({
         data: {
           base64: JsonEncoder.toBase64(rfc0592Proposal),
         },
@@ -1015,7 +1015,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord,
       requestAttachment,
       presentationAttachment,
-      proposalAttachment: new V1Attachment({
+      proposalAttachment: new Attachment({
         data: {
           json: rfc0592Proposal,
         },

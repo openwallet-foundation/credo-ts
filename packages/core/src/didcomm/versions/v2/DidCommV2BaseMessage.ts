@@ -4,7 +4,7 @@ import type { Constructor } from '../../../utils/mixins'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsNumber, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
-import { V2Attachment } from '../../../decorators/attachment/V2Attachment'
+import { V2Attachment } from '../../../decorators/attachment'
 import { uuid } from '../../../utils/uuid'
 import { MessageIdRegExp, MessageTypeRegExp } from '../../validation'
 
