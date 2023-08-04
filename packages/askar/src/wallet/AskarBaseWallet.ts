@@ -445,9 +445,9 @@ export abstract class AskarBaseWallet implements Wallet {
     try {
       cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgs.Chacha20C20P, secretKey: payloadKey })
       const message = cek.aeadDecrypt({
-        ciphertext: TypedArrayEncoder.fromBase64(messagePackage.ciphertext as any),
-        nonce: TypedArrayEncoder.fromBase64(messagePackage.iv as any),
-        tag: TypedArrayEncoder.fromBase64(messagePackage.tag as any),
+        ciphertext: TypedArrayEncoder.fromBase64(messagePackage.ciphertext),
+        nonce: TypedArrayEncoder.fromBase64(messagePackage.iv),
+        tag: TypedArrayEncoder.fromBase64(messagePackage.tag),
         aad: TypedArrayEncoder.fromString(messagePackage.protected),
       })
       return {
