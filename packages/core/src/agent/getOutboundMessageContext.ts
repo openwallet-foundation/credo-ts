@@ -1,11 +1,9 @@
-import type { AgentMessage } from './AgentMessage'
 import type { AgentContext } from './context'
+import type { DidCommV1Message } from '../didcomm/versions/v1'
 import type { ConnectionRecord, Routing } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { OutOfBandRecord } from '../modules/oob'
 import type { BaseRecordAny } from '../storage/BaseRecord'
-
-import { Agent } from 'http'
 
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
@@ -39,9 +37,9 @@ export async function getOutboundMessageContext(
   }: {
     connectionRecord?: ConnectionRecord
     associatedRecord?: BaseRecordAny
-    message: AgentMessage
-    lastReceivedMessage?: AgentMessage
-    lastSentMessage?: AgentMessage
+    message: DidCommV1Message
+    lastReceivedMessage?: DidCommV1Message
+    lastSentMessage?: DidCommV1Message
   }
 ) {
   // TODO: even if using a connection record, we should check if there's an oob record associated and this
@@ -86,10 +84,10 @@ export async function getConnectionlessOutboundMessageContext(
     lastSentMessage,
     associatedRecord,
   }: {
-    message: AgentMessage
+    message: DidCommV1Message
     associatedRecord: BaseRecordAny
-    lastReceivedMessage: AgentMessage
-    lastSentMessage?: AgentMessage
+    lastReceivedMessage: DidCommV1Message
+    lastSentMessage?: DidCommV1Message
   }
 ) {
   agentContext.config.logger.debug(
@@ -140,7 +138,7 @@ export async function getConnectionlessOutboundMessageContext(
 /**
  * Retrieves the out of band record associated with the message based on the thread id of the message.
  */
-async function getOutOfBandRecordForMessage(agentContext: AgentContext, message: AgentMessage) {
+async function getOutOfBandRecordForMessage(agentContext: AgentContext, message: DidCommV1Message) {
   agentContext.config.logger.debug(
     `Looking for out-of-band record for message ${message.id} with thread id ${message.threadId}`
   )
@@ -168,9 +166,9 @@ async function getServicesForMessage(
     message,
     outOfBandRecord,
   }: {
-    lastSentMessage?: AgentMessage
-    lastReceivedMessage: AgentMessage
-    message: AgentMessage
+    lastSentMessage?: DidCommV1Message
+    lastReceivedMessage: DidCommV1Message
+    message: DidCommV1Message
     outOfBandRecord?: OutOfBandRecord
   }
 ) {
@@ -185,7 +183,7 @@ async function getServicesForMessage(
     if (!ourService) {
       ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
-        outOfBandRecord.outOfBandInvitation.getServices()
+        outOfBandRecord.getOutOfBandInvitation().getServices()
       )
     }
 
@@ -204,7 +202,7 @@ async function getServicesForMessage(
     if (!recipientService) {
       recipientService = await outOfBandService.getResolvedServiceForOutOfBandServices(
         agentContext,
-        outOfBandRecord.outOfBandInvitation.getServices()
+        outOfBandRecord.getOutOfBandInvitation().getServices()
       )
     }
 
@@ -247,7 +245,7 @@ async function getServicesForMessage(
  */
 async function createOurService(
   agentContext: AgentContext,
-  { outOfBandRecord, message }: { outOfBandRecord?: OutOfBandRecord; message: AgentMessage }
+  { outOfBandRecord, message }: { outOfBandRecord?: OutOfBandRecord; message: DidCommV1Message }
 ): Promise<ResolvedDidCommService> {
   agentContext.config.logger.debug(
     `No previous sent message in thread for outbound message ${message.id}, setting up routing`
@@ -291,7 +289,7 @@ async function addExchangeDataToMessage(
     outOfBandRecord,
     associatedRecord,
   }: {
-    message: AgentMessage
+    message: DidCommV1Message
     ourService: ResolvedDidCommService
     outOfBandRecord?: OutOfBandRecord
     associatedRecord: BaseRecordAny
@@ -301,10 +299,10 @@ async function addExchangeDataToMessage(
   if (outOfBandRecord) {
     if (!message.thread) {
       message.setThread({
-        parentThreadId: outOfBandRecord.outOfBandInvitation.id,
+        parentThreadId: outOfBandRecord.outOfBandInvitation?.id,
       })
     } else {
-      message.thread.parentThreadId = outOfBandRecord.outOfBandInvitation.id
+      message.thread.parentThreadId = outOfBandRecord.outOfBandInvitation?.id
     }
   }
 

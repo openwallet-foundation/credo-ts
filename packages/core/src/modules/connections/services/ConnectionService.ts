@@ -29,9 +29,9 @@ import { didKeyToVerkey } from '../../dids/helpers'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTypes'
-import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import { OutOfBandRepository } from '../../oob/repository'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
@@ -448,7 +448,7 @@ export class ConnectionService {
    * @param messageContext - the inbound message context
    */
   public async assertConnectionOrOutOfBandExchange(
-      messageContext: InboundMessageContext<DidCommV1Message>,
+    messageContext: InboundMessageContext<DidCommV1Message>,
     {
       lastSentMessage,
       lastReceivedMessage,
@@ -489,12 +489,12 @@ export class ConnectionService {
       if (outOfBandRecord?.role === OutOfBandRole.Sender) {
         ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
-          outOfBandRecord.outOfBandInvitation.getServices()
+          outOfBandRecord.getOutOfBandInvitation().getServices()
         )
       } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
         theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
-          outOfBandRecord.outOfBandInvitation.getServices()
+          outOfBandRecord.getOutOfBandInvitation().getServices()
         )
       }
 

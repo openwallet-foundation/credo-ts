@@ -21,9 +21,7 @@ import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages'
-import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
-import { JsonEncoder } from '../src/utils'
-import { JsonTransformer } from '../src/utils'
+import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
@@ -756,9 +754,7 @@ describe('out of band', () => {
         handshake: false,
         messages: [message],
       })
-      const { outOfBandInvitation } = outOfBandRecord
-
-      await aliceAgent.oob.receiveInvitation(outOfBandInvitation)
+      await aliceAgent.oob.receiveInvitation(outOfBandRecord.getOutOfBandInvitation())
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: CredentialState.OfferReceived,
@@ -789,7 +785,7 @@ describe('out of band', () => {
         handshake: false,
         messages: [message],
       })
-      const { outOfBandInvitation } = outOfBandRecord
+      const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
 
       const routing = await aliceAgent.mediationRecipient.getRouting({})
 

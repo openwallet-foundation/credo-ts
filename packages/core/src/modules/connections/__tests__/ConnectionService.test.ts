@@ -29,12 +29,12 @@ import { DidCommV1Service } from '../../dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../dids/repository'
 import { DidRegistrarService } from '../../dids/services/DidRegistrarService'
-import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
-import { ConnectionRequestMessage, ConnectionResponseMessage } from '../messages'
+import { OutOfBandService } from '../../oob/protocols/v1/OutOfBandService'
 import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
-import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
+import { ConnectionRequestMessage } from '../messages/ConnectionRequestMessage'
+import { ConnectionResponseMessage } from '../messages/ConnectionResponseMessage'
 import {
   Connection,
   DidDoc,
@@ -821,7 +821,7 @@ describe('ConnectionService', () => {
         routingKeys: [],
       })
 
-      const previousReceivedMessage = new DidCommV1Message()
+      const lastReceivedMessage = new DidCommV1Message()
       lastReceivedMessage.setService({
         recipientKeys: [senderKey.publicKeyBase58],
         serviceEndpoint: '',
@@ -940,7 +940,7 @@ describe('ConnectionService', () => {
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DidCommV1Message()
       const messageContext = new InboundMessageContext(message, {
         agentContext,
         senderKey: Key.fromPublicKeyBase58('randomKey', KeyType.Ed25519),

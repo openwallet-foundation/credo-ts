@@ -1,6 +1,6 @@
 import type { ServiceDecorator } from '../decorators/service/ServiceDecorator'
 import type { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import type { DidCommMessageVersion } from '../didcomm/types'
+import type { DidCommMessageVersion, PlaintextMessage } from '../didcomm/types'
 
 export interface AgentBaseMessage {
   readonly type: string
@@ -16,5 +16,5 @@ export interface AgentBaseMessage {
   hasReturnRouting(threadId?: string): boolean
   setReturnRouting(type: ReturnRouteTypes, thread?: string): void
 
-  toJSON(params?: { useDidSovPrefixWhereAllowed?: boolean }): Record<string, unknown>
+  toJSON(params?: { useDidSovPrefixWhereAllowed?: boolean }): PlaintextMessage
 }

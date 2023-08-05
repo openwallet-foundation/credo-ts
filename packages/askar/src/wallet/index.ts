@@ -1,2 +1,3 @@
 export { AskarWallet } from './AskarWallet'
+export { AskarProfileWallet } from './AskarProfileWallet'
 export * from './AskarWalletPostgresStorageConfig'

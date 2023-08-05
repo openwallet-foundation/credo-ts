@@ -1,4 +1,4 @@
-import type { PlaintextMessage } from '../../../../../didcomm/types'
+import type { PlaintextDidCommV1Message } from '../../../../../didcomm'
 import type { HandshakeProtocol } from '../../../../connections'
 
 import { Expose, Transform, TransformationType, Type } from 'class-transformer'
@@ -56,7 +56,7 @@ export class OutOfBandInvitation extends DidCommV1Message {
     this.requests.push(requestAttachment)
   }
 
-  public getRequests(): PlaintextMessage[] | undefined {
+  public getRequests(): PlaintextDidCommV1Message[] | undefined {
     return this.requests?.map((request) => request.getDataAsJson())
   }
 

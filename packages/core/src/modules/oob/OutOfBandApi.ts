@@ -300,7 +300,7 @@ export class OutOfBandApi {
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.getOutOfBandInvitation()) }
   }
 
-  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+  public async createLegacyConnectionlessInvitation<Message extends DidCommV1Message>(config: {
     /**
      * @deprecated this value is not used anymore, as the legacy connection-less exchange is now
      * integrated with the out of band protocol. The value is kept to not break the API, but will
@@ -319,7 +319,7 @@ export class OutOfBandApi {
     // Resolve the service and set it on the message
     const resolvedService = await this.outOfBandService.getResolvedServiceForOutOfBandServices(
       this.agentContext,
-      outOfBandRecord.outOfBandInvitation.getServices()
+      outOfBandRecord.getOutOfBandInvitation().getServices()
     )
     config.message.service = ServiceDecorator.fromResolvedDidCommService(resolvedService)
 
@@ -438,9 +438,9 @@ export class OutOfBandApi {
     } else {
       // Convert to out of band invitation if needed
       const outOfBandInvitation =
-          invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
+        invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
 
-      const {handshakeProtocols} = outOfBandInvitation
+      const { handshakeProtocols } = outOfBandInvitation
 
       const messages = outOfBandInvitation.getRequests()
 
@@ -448,7 +448,7 @@ export class OutOfBandApi {
 
       if ((!handshakeProtocols || handshakeProtocols.length === 0) && (!messages || messages?.length === 0)) {
         throw new AriesFrameworkError(
-            'One or both of handshake_protocols and requests~attach MUST be included in the message.'
+          'One or both of handshake_protocols and requests~attach MUST be included in the message.'
         )
       }
 
@@ -462,7 +462,7 @@ export class OutOfBandApi {
         })
         if (existingOobRecordsFromThisId.length > 0) {
           throw new AriesFrameworkError(
-              `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
+            `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
           )
         }
       }
@@ -473,27 +473,27 @@ export class OutOfBandApi {
         if (typeof service === 'string') {
           this.logger.debug(`Resolving services for did ${service}.`)
           const resolvedDidCommServices = await this.didCommDocumentService.resolveServicesFromDid(
-              this.agentContext,
-              service
+            this.agentContext,
+            service
           )
           recipientKeyFingerprints.push(
-              ...resolvedDidCommServices
-                  .reduce<Key[]>((aggr, {recipientKeys}) => [ ...aggr, ...recipientKeys ], [])
-                  .map((key) => key.fingerprint)
+            ...resolvedDidCommServices
+              .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+              .map((key) => key.fingerprint)
           )
         } else {
           recipientKeyFingerprints.push(
-              ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
+            ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
           )
         }
       }
 
-      const outOfBandRecord = new OutOfBandRecord({
+      outOfBandRecord = new OutOfBandRecord({
         role: OutOfBandRole.Receiver,
         state: OutOfBandState.Initial,
         outOfBandInvitation: outOfBandInvitation,
         autoAcceptConnection,
-        tags: {recipientKeyFingerprints},
+        tags: { recipientKeyFingerprints },
         mediatorId: routing?.mediatorId,
       })
 
@@ -572,8 +572,6 @@ export class OutOfBandApi {
       )
       return { outOfBandRecord, connectionRecord }
     }
-    const timeoutMs = config.timeoutMs ?? 20000
-
     if (outOfBandRecord.outOfBandInvitation) {
       const { outOfBandInvitation } = outOfBandRecord
       const { label, alias, imageUrl, autoAcceptConnection, reuseConnection } = config
@@ -593,6 +591,9 @@ export class OutOfBandApi {
           mediatorId: recipientRouting.mediatorId,
         }
       }
+
+      const { handshakeProtocols } = outOfBandInvitation
+
       const existingConnection = await this.findExistingConnection(outOfBandInvitation)
 
       await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.PrepareResponse)

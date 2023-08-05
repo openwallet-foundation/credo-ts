@@ -1,3 +1,4 @@
+import type { PlaintextDidCommV1Message } from './types'
 import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
@@ -40,10 +41,9 @@ export class DidCommV1Message extends Decorated implements AgentBaseMessage {
     return this.service
   }
 
-  public toJSON({ useDidSovPrefixWhereAllowed = false }: { useDidSovPrefixWhereAllowed?: boolean } = {}): Record<
-    string,
-    unknown
-  > {
+  public toJSON({
+    useDidSovPrefixWhereAllowed,
+  }: { useDidSovPrefixWhereAllowed?: boolean } = {}): PlaintextDidCommV1Message {
     const json = JsonTransformer.toJSON(this)
 
     // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.
@@ -53,7 +53,7 @@ export class DidCommV1Message extends Decorated implements AgentBaseMessage {
       replaceNewDidCommPrefixWithLegacyDidSovOnMessage(json)
     }
 
-    return json
+    return json as PlaintextDidCommV1Message
   }
 
   public is<C extends typeof DidCommV1Message>(Class: C): this is InstanceType<C> {

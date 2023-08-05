@@ -126,7 +126,7 @@ export class MessageSender {
       },
     }
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, params)
-    await session.send(encryptedMessage)
+    await session.send(agentContext, encryptedMessage)
   }
 
   public async sendPackage(

@@ -1,8 +1,8 @@
 import type { AgentBaseMessage } from './AgentBaseMessage'
+import type { AgentContext } from './context'
 import type { Key } from '../crypto'
 import type { EncryptedMessage } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
-import type { AgentContext } from './context'
 
 import { DID_COMM_TRANSPORT_QUEUE } from '../constants'
 import { AriesFrameworkError } from '../error'

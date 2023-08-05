@@ -123,7 +123,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       messages: [message],
       handshake: false,
     })
-    await aliceAgent.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
+    await aliceAgent.oob.receiveInvitation(outOfBandRecord.getOutOfBandInvitation())
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {

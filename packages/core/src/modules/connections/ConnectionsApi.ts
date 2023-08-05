@@ -25,7 +25,7 @@ import {
   DidExchangeCompleteHandler,
   DidExchangeRequestHandler,
   DidExchangeResponseHandler,
-  ConnectionProblemReportHandler
+  ConnectionProblemReportHandler,
 } from './handlers'
 import { HandshakeProtocol } from './models'
 import {

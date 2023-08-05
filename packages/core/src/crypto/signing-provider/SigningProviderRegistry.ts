@@ -36,6 +36,6 @@ export class SigningProviderRegistry {
   }
 
   public get supportedKeyTypes(): KeyType[] {
-    return Array.from(new Set(this.signingKeyProviders.map((provider) => provider.keyType)))
+    return Array.from(new Set(this.signingProviders.map((provider) => provider.keyType)))
   }
 }

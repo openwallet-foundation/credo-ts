@@ -4,7 +4,7 @@ import type { Response } from 'node-fetch'
 import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../agent/AgentMessage'
+import { DidCommV1Message } from '../didcomm/versions/v1'
 import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
@@ -122,7 +122,7 @@ export const parseInvitationShortUrl = async (
   // Legacy connectionless invitation
   else if (parsedUrl['d_m']) {
     const messageJson = JsonEncoder.fromBase64(parsedUrl['d_m'] as string)
-    const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
+    const agentMessage = JsonTransformer.fromJSON(messageJson, DidCommV1Message)
 
     // ~service is required for legacy connectionless invitations
     if (!agentMessage.service) {
@@ -142,7 +142,7 @@ export const parseInvitationShortUrl = async (
       services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
     })
 
-    invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
+    invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, DidCommV1Message))
 
     return invitation
   } else {

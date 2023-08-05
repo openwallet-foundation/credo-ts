@@ -1,22 +1,8 @@
-import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '../../crypto/JwsTypes'
+import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '../../../crypto/JwsTypes'
 
 import { Expose, Type } from 'class-transformer'
-import {
-  IsBase64,
-  IsDate,
-  IsHash,
-  IsInstance,
-  IsInt,
-  IsMimeType,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator'
+import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AriesFrameworkError } from '../../error'
-import { JsonEncoder } from '../../utils/JsonEncoder'
-import { uuid } from '../../utils/uuid'
-import { Jws } from '../../../crypto/JwsTypes'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'

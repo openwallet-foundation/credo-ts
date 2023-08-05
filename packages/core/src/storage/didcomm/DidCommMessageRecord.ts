@@ -1,8 +1,5 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
-import type { ConstructableAgentMessage } from '../../agent/AgentMessage'
-import type { PlaintextMessage } from '../../types'
-import type { ConstructableDidCommMessage } from '../../didcomm'
-import type { JsonObject } from '../../types'
+import type { ConstructableDidCommMessage, PlaintextMessage } from '../../didcomm'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'

@@ -96,7 +96,7 @@ export class OutOfBandRecord extends BaseRecord<
       invitationId: this.outOfBandInvitation?.id,
       threadId: this.outOfBandInvitation?.threadId,
       invitationRequestsThreadIds: this.outOfBandInvitation
-        .getRequests()
+        ?.getRequests()
         ?.map((r) => getThreadIdFromPlainTextMessage(r)),
     }
   }

@@ -1,5 +1,7 @@
+import type { PlaintextDidCommV2Message } from './types'
 import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
+import type { PlaintextMessage } from '../../types'
 
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -12,8 +14,8 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseM
     return DidCommMessageVersion.V2
   }
 
-  public toJSON(): Record<string, unknown> {
-    return JsonTransformer.toJSON(this)
+  public toJSON(): PlaintextMessage {
+    return JsonTransformer.toJSON(this) as PlaintextDidCommV2Message
   }
 
   public serviceDecorator(): ServiceDecorator | undefined {

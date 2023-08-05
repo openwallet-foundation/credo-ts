@@ -292,8 +292,6 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       throw new AriesFrameworkError(`No request message found for proof record with id '${proofRecord.id}'`)
     }
 
-    const recipientService = requestMessage?.serviceDecorator()
-
     // Use connection if present
     const connectionRecord = proofRecord.connectionId
       ? await this.connectionService.getById(this.agentContext, proofRecord.connectionId)

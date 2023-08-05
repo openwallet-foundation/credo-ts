@@ -1,9 +1,7 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
 import type { AgentContext } from '../../agent'
-import type { AgentMessage, ConstructableAgentMessage } from '../../agent/AgentMessage'
 import type { AgentBaseMessage } from '../../agent/AgentBaseMessage'
 import type { ConstructableDidCommMessage } from '../../didcomm'
-import type { JsonObject } from '../../types'
 
 import { EventEmitter } from '../../agent/EventEmitter'
 import { InjectionSymbols } from '../../constants'

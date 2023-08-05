@@ -91,7 +91,7 @@ export async function e2eTest(senderAgent: Agent, receiverAgent: Agent) {
   })
 
   const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.oob.receiveInvitation(
-    senderReceiverOutOfBandRecord.outOfBandInvitation
+    senderReceiverOutOfBandRecord.getOutOfBandInvitation()
   )
   if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
 
