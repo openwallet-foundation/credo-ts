@@ -19,8 +19,9 @@ export type V2OutOfBandInvitationParams = DidCommV2MessageParams
 
 export class V2OutOfBandInvitationBody {
   @IsString()
+  @IsOptional()
   @Expose({ name: 'goal_code' })
-  public goalCode!: V2OutOfBandGoalCode
+  public goalCode?: V2OutOfBandGoalCode
 
   @IsString()
   @IsOptional()

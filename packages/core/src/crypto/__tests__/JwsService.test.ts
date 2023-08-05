@@ -8,7 +8,7 @@ import { DidKey } from '../../modules/dids'
 import { Buffer, JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
 import { KeyType } from '../KeyType'
-import { KeyProviderRegistry } from '../key-provider'
+import { SigningProviderRegistry } from '../signing-provider'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
@@ -22,7 +22,7 @@ describe('JwsService', () => {
   beforeAll(async () => {
     const config = getAgentConfig('JwsService')
     // TODO: update to InMemoryWallet
-    wallet = new IndySdkWallet(indySdk, config.logger, new KeyProviderRegistry([]))
+    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
     agentContext = getAgentContext({
       wallet,
     })

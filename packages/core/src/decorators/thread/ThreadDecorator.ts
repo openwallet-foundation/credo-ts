@@ -24,7 +24,7 @@ export class ThreadDecorator {
   public threadId?: string
 
   /**
-   * An optional parent `threadId`. Used when branching or nesting a new interaction off of an existing one.
+   * An optional parent `thid`. Used when branching or nesting a new interaction off of an existing one.
    */
   @Expose({ name: 'pthid' })
   @Matches(MessageIdRegExp)

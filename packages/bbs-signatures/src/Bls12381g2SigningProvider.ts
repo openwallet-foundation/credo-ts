@@ -1,23 +1,23 @@
-import type { KeyProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@aries-framework/core'
+import type { SigningProvider, CreateKeyPairOptions, KeyPair, SignOptions, VerifyOptions } from '@aries-framework/core'
 
-import { KeyType, injectable, TypedArrayEncoder, KeyProviderError, Buffer } from '@aries-framework/core'
+import { KeyType, injectable, TypedArrayEncoder, SigningProviderError, Buffer } from '@aries-framework/core'
 import { bls12381toBbs, verify, sign, generateBls12381G2KeyPair } from '@mattrglobal/bbs-signatures'
 
 /**
  * This will be extracted to the bbs package.
  */
 @injectable()
-export class Bls12381g2KeyProvider implements KeyProvider {
+export class Bls12381g2SigningProvider implements SigningProvider {
   public readonly keyType = KeyType.Bls12381g2
 
   /**
    * Create a KeyPair with type Bls12381g2
    *
-   * @throws {KeyProviderError} When a key could not be created
+   * @throws {SigningProviderError} When a key could not be created
    */
   public async createKeyPair({ seed, privateKey }: CreateKeyPairOptions): Promise<KeyPair> {
     if (privateKey) {
-      throw new KeyProviderError('Cannot create keypair from private key')
+      throw new SigningProviderError('Cannot create keypair from private key')
     }
 
     const blsKeyPair = await generateBls12381G2KeyPair(seed)
@@ -38,10 +38,10 @@ export class Bls12381g2KeyProvider implements KeyProvider {
    *
    * @returns A Buffer containing the signature of the messages
    *
-   * @throws {KeyProviderError} When there are no supplied messages
+   * @throws {SigningProviderError} When there are no supplied messages
    */
   public async sign({ data, publicKeyBase58, privateKeyBase58 }: SignOptions): Promise<Buffer> {
-    if (data.length === 0) throw new KeyProviderError('Unable to create a signature without any messages')
+    if (data.length === 0) throw new SigningProviderError('Unable to create a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
     const normalizedMessages = (TypedArrayEncoder.isTypedArray(data) ? [data as Buffer] : data) as Buffer[]
 
@@ -75,11 +75,11 @@ export class Bls12381g2KeyProvider implements KeyProvider {
    *
    * @returns A boolean whether the signature is create with the public key over the messages
    *
-   * @throws {KeyProviderError} When the message list is empty
-   * @throws {KeyProviderError} When the verification process failed
+   * @throws {SigningProviderError} When the message list is empty
+   * @throws {SigningProviderError} When the verification process failed
    */
   public async verify({ data, publicKeyBase58, signature }: VerifyOptions): Promise<boolean> {
-    if (data.length === 0) throw new KeyProviderError('Unable to create a signature without any messages')
+    if (data.length === 0) throw new SigningProviderError('Unable to create a signature without any messages')
     // Check if it is a single message or list and if it is a single message convert it to a list
     const normalizedMessages = (TypedArrayEncoder.isTypedArray(data) ? [data as Buffer] : data) as Buffer[]
 
@@ -98,7 +98,7 @@ export class Bls12381g2KeyProvider implements KeyProvider {
 
     // If the messages could not be verified and an error occurred
     if (!verified && error) {
-      throw new KeyProviderError(`Could not verify the signature against the messages: ${error}`)
+      throw new SigningProviderError(`Could not verify the signature against the messages: ${error}`)
     }
 
     return verified

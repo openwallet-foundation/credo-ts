@@ -19,8 +19,8 @@ import {
   CredentialState,
   JsonTransformer,
   ConnectionService,
-  V1Attachment,
-  V1AttachmentData,
+  Attachment,
+  AttachmentData,
   AckStatus,
   CredentialProblemReportReason,
   CredentialsModuleConfig,
@@ -231,8 +231,8 @@ export class V1CredentialProtocol
 
       await this.indyCredentialFormat.processProposal(messageContext.agentContext, {
         credentialRecord,
-        attachment: new V1Attachment({
-          data: new V1AttachmentData({
+        attachment: new Attachment({
+          data: new AttachmentData({
             json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
           }),
         }),
@@ -307,8 +307,8 @@ export class V1CredentialProtocol
       attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
       credentialRecord,
-      proposalAttachment: new V1Attachment({
-        data: new V1AttachmentData({
+      proposalAttachment: new Attachment({
+        data: new AttachmentData({
           json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
         }),
       }),

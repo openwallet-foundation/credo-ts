@@ -11,7 +11,7 @@ import { Subject } from 'rxjs'
 import { concatMap, takeUntil } from 'rxjs/operators'
 
 import { InjectionSymbols } from '../constants'
-import { KeyProviderToken } from '../crypto'
+import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
@@ -66,7 +66,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // token. We register a value of `default` by default and will filter that out in the registry.
     // Once we have a signing provider that should always be registered we can remove this. We can make an ed25519
     // signer using the @stablelib/ed25519 library.
-    dependencyManager.registerInstance(KeyProviderToken, 'default')
+    dependencyManager.registerInstance(SigningProviderToken, 'default')
 
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)

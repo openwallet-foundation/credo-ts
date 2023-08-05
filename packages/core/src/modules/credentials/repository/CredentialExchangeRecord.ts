@@ -5,7 +5,7 @@ import type { RevocationNotification } from '../models/RevocationNotification'
 
 import { Type } from 'class-transformer'
 
-import { V1Attachment } from '../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../decorators/attachment'
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
@@ -22,7 +22,7 @@ export interface CredentialExchangeRecordProps {
   tags?: CustomCredentialTags
   credentialAttributes?: CredentialPreviewAttribute[]
   autoAcceptCredential?: AutoAcceptCredential
-  linkedAttachments?: V1Attachment[]
+  linkedAttachments?: Attachment[]
   revocationNotification?: RevocationNotification
   errorMessage?: string
   credentials?: CredentialRecordBinding[]
@@ -54,8 +54,8 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   @Type(() => CredentialPreviewAttribute)
   public credentialAttributes?: CredentialPreviewAttribute[]
 
-  @Type(() => V1Attachment)
-  public linkedAttachments?: V1Attachment[]
+  @Type(() => Attachment)
+  public linkedAttachments?: Attachment[]
 
   // Type is CredentialRecord on purpose (without Exchange) as this is how the record was initially called.
   public static readonly type = 'CredentialRecord'

@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { EncryptedMessage, PlaintextMessage } from '../didcomm'
@@ -169,7 +169,7 @@ export class MessageReceiver {
 
     // We want to save a session if there is a chance of returning outbound message via inbound transport.
     // That can happen when inbound message has `return_route` set to `all` or `thread`.
-    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `threadId`.
+    // If `return_route` defines just `thread`, we decide later whether to use session according to outbound message `thid`.
     if (senderKey && recipientKey && message.hasAnyReturnRoute() && session) {
       this.logger.debug(`Storing session for inbound message '${message.id}'`)
       const keys = {
@@ -197,8 +197,8 @@ export class MessageReceiver {
     agentContext: AgentContext,
     plaintextMessage: PlaintextMessage,
     connection?: ConnectionRecord | null
-  ): Promise<AgentMessage> {
-    let message: AgentMessage
+  ): Promise<AgentBaseMessage> {
+    let message: AgentBaseMessage
     try {
       message = await this.transformMessage(plaintextMessage)
     } catch (error) {
@@ -207,7 +207,7 @@ export class MessageReceiver {
         throw new AriesFrameworkError(`Not sending problem report in response to problem report: ${error.message}`)
       }
 
-      const problemReportMessage: AgentMessage | undefined = isPlaintextMessageV1(plaintextMessage)
+      const problemReportMessage: AgentBaseMessage | undefined = isPlaintextMessageV1(plaintextMessage)
         ? buildProblemReportV1Message(plaintextMessage, error.message)
         : buildProblemReportV2Message(plaintextMessage, error.message)
 
@@ -279,7 +279,7 @@ export class MessageReceiver {
    *
    * @param message the plaintext message for which to transform the message in to a class instance
    */
-  private async transformMessage(message: PlaintextMessage): Promise<AgentMessage> {
+  private async transformMessage(message: PlaintextMessage): Promise<AgentBaseMessage> {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
     if (message['@type']) {
       // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for record type with https://didcomm.org
@@ -300,7 +300,7 @@ export class MessageReceiver {
     }
 
     // Cast the plain JSON object to specific instance of Message extended from AgentMessage
-    let messageTransformed: AgentMessage
+    let messageTransformed: AgentBaseMessage
     try {
       messageTransformed = JsonTransformer.fromJSON(message, MessageClass)
     } catch (error) {

@@ -13,7 +13,7 @@ import { AgentEventTypes } from '../../../../agent/Events'
 import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
-import { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../../decorators/attachment'
 import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { ConnectionService } from '../../../connections'
@@ -123,7 +123,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // of delivery message
     const attachments = messages.map(
       (msg) =>
-        new V1Attachment({
+        new Attachment({
           data: {
             json: msg,
           },

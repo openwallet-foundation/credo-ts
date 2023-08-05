@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { V1Attachment } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../../../decorators/attachment'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 import { CredentialFormatSpec } from '../../../models'
@@ -11,10 +11,10 @@ import { V2CredentialPreview } from './V2CredentialPreview'
 export interface V2ProposeCredentialMessageOptions {
   id?: string
   formats: CredentialFormatSpec[]
-  proposalAttachments: V1Attachment[]
+  proposalAttachments: Attachment[]
   comment?: string
   credentialPreview?: V2CredentialPreview
-  attachments?: V1Attachment[]
+  attachments?: Attachment[]
 }
 
 export class V2ProposeCredentialMessage extends DidCommV1Message {
@@ -48,13 +48,13 @@ export class V2ProposeCredentialMessage extends DidCommV1Message {
   public credentialPreview?: V2CredentialPreview
 
   @Expose({ name: 'filters~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public proposalAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public proposalAttachments!: Attachment[]
 
   /**
    * Human readable information about this Credential Proposal,
@@ -64,7 +64,7 @@ export class V2ProposeCredentialMessage extends DidCommV1Message {
   @IsString()
   public comment?: string
 
-  public getProposalAttachmentById(id: string): V1Attachment | undefined {
+  public getProposalAttachmentById(id: string): Attachment | undefined {
     return this.proposalAttachments.find((attachment) => attachment.id === id)
   }
 }

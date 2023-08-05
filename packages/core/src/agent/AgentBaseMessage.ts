@@ -2,7 +2,7 @@ import type { ServiceDecorator } from '../decorators/service/ServiceDecorator'
 import type { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import type { DidCommMessageVersion } from '../didcomm/types'
 
-export interface AgentMessage {
+export interface AgentBaseMessage {
   readonly type: string
 
   get didCommVersion(): DidCommMessageVersion

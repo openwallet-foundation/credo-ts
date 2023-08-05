@@ -110,7 +110,7 @@ describe('connections', () => {
       multiUseInvitation: true,
     })
 
-    const invitation = faberOutOfBandRecord.outOfBandInvitation!
+    const invitation = faberOutOfBandRecord.getOutOfBandInvitation()
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent

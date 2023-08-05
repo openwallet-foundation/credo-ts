@@ -17,7 +17,7 @@ import { AriesFrameworkError, CredentialFormatSpec } from '../../../../..'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../tests/helpers'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment'
 import { DidCommMessageRecord, DidCommMessageRole, DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
@@ -72,27 +72,27 @@ const connection = getMockConnection({
   state: DidExchangeState.Completed,
 })
 
-const offerAttachment = new V1Attachment({
+const offerAttachment = new Attachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const requestAttachment = new V1Attachment({
+const requestAttachment = new Attachment({
   id: 'request-attachment-id',
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64: JsonEncoder.toBase64(credReq),
   }),
 })
 
-const credentialAttachment = new V1Attachment({
+const credentialAttachment = new Attachment({
   id: 'credential-attachment-id',
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64: JsonEncoder.toBase64({
       values: {},
     }),
@@ -104,9 +104,9 @@ const requestFormat = new CredentialFormatSpec({
   format: 'hlindy/cred-filter@v2.0',
 })
 
-const proposalAttachment = new V1Attachment({
+const proposalAttachment = new Attachment({
   id: 'proposal-attachment-id',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     json: {
       any: 'value',
     },

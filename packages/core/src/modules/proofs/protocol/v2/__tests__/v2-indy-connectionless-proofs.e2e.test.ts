@@ -21,7 +21,7 @@ import {
   waitForProofExchangeRecord,
 } from '../../../../../../tests'
 import { Agent } from '../../../../../agent/Agent'
-import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment'
 import { LinkedAttachment } from '../../../../../utils/LinkedAttachment'
 import { uuid } from '../../../../../utils/uuid'
 import { HandshakeProtocol } from '../../../../connections'
@@ -369,16 +369,16 @@ describe('V2 Connectionless Proofs - Indy', () => {
         linkedAttachments: [
           new LinkedAttachment({
             name: 'image_0',
-            attachment: new V1Attachment({
+            attachment: new Attachment({
               filename: 'picture-of-a-cat.png',
-              data: new V1AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
           new LinkedAttachment({
             name: 'image_1',
-            attachment: new V1Attachment({
+            attachment: new Attachment({
               filename: 'picture-of-a-dog.png',
-              data: new V1AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

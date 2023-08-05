@@ -5,7 +5,7 @@ import { IndySdkWallet } from '../../../../../indy-sdk/src'
 import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests/helpers'
 import { KeyType } from '../../../crypto'
-import { KeyProviderRegistry } from '../../../crypto/key-provider'
+import { SigningProviderRegistry } from '../../../crypto/signing-provider'
 import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { WalletError } from '../../../wallet/error'
@@ -43,7 +43,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
-const keyProviderRegistry = new KeyProviderRegistry([])
+const signingProviderRegistry = new SigningProviderRegistry([])
 
 jest.mock('../repository/W3cCredentialRepository')
 const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
@@ -71,7 +71,7 @@ describe('W3cCredentialsService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, keyProviderRegistry)
+    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

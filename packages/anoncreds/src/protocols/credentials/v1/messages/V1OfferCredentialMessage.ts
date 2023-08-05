@@ -1,6 +1,6 @@
 import type { AnonCredsCredentialOffer } from '../../../../models'
 
-import { DidCommV1Message, IsValidMessageType, parseMessageType, V1Attachment } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType, Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -11,9 +11,9 @@ export const INDY_CREDENTIAL_OFFER_ATTACHMENT_ID = 'libindy-cred-offer-0'
 export interface V1OfferCredentialMessageOptions {
   id?: string
   comment?: string
-  offerAttachments: V1Attachment[]
+  offerAttachments: Attachment[]
   credentialPreview: V1CredentialPreview
-  attachments?: V1Attachment[]
+  attachments?: Attachment[]
 }
 
 /**
@@ -51,13 +51,13 @@ export class V1OfferCredentialMessage extends DidCommV1Message {
   public credentialPreview!: V1CredentialPreview
 
   @Expose({ name: 'offers~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public offerAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public offerAttachments!: Attachment[]
 
   public get indyCredentialOffer(): AnonCredsCredentialOffer | null {
     const attachment = this.offerAttachments.find((attachment) => attachment.id === INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -68,7 +68,7 @@ export class V1OfferCredentialMessage extends DidCommV1Message {
     return credentialOfferJson
   }
 
-  public getOfferAttachmentById(id: string): V1Attachment | undefined {
+  public getOfferAttachmentById(id: string): Attachment | undefined {
     return this.offerAttachments.find((attachment) => attachment.id == id)
   }
 }

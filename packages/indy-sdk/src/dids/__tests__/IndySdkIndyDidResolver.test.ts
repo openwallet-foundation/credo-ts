@@ -2,7 +2,7 @@ import type { IndySdkPool } from '../../ledger'
 import type { IndyEndpointAttrib } from '../didSovUtil'
 import type { GetNymResponse } from 'indy-sdk'
 
-import { KeyProviderRegistry, JsonTransformer } from '@aries-framework/core'
+import { SigningProviderRegistry, JsonTransformer } from '@aries-framework/core'
 import indySdk from 'indy-sdk'
 
 import { mockFunction, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -24,7 +24,7 @@ mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue({
 
 const agentConfig = getAgentConfig('IndySdkIndyDidResolver')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
 
 const agentContext = getAgentContext({
   wallet,

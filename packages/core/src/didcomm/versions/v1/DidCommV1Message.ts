@@ -1,10 +1,10 @@
-import type { AgentMessage } from '../../../agent/AgentMessage'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
 
 import { Exclude } from 'class-transformer'
 
 import { AckDecorated } from '../../../decorators/ack/AckDecoratorExtension'
-import { V1AttachmentDecorated } from '../../../decorators/attachment/V1AttachmentExtension'
+import { AttachmentDecorated } from '../../../decorators/attachment'
 import { L10nDecorated } from '../../../decorators/l10n/L10nDecoratorExtension'
 import { ServiceDecorated } from '../../../decorators/service/ServiceDecoratorExtension'
 import { ThreadDecorated } from '../../../decorators/thread/ThreadDecoratorExtension'
@@ -18,11 +18,11 @@ import { DidCommV1BaseMessage } from './DidCommV1BaseMessage'
 
 const Decorated = ThreadDecorated(
   L10nDecorated(
-    TransportDecorated(TimingDecorated(AckDecorated(V1AttachmentDecorated(ServiceDecorated(DidCommV1BaseMessage)))))
+    TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(DidCommV1BaseMessage)))))
   )
 )
 
-export class DidCommV1Message extends Decorated implements AgentMessage {
+export class DidCommV1Message extends Decorated implements AgentBaseMessage {
   /**
    * Whether the protocol RFC was initially written using the legacy did:prefix instead of the
    * new https://didcomm.org message type prefix.
@@ -60,3 +60,6 @@ export class DidCommV1Message extends Decorated implements AgentMessage {
     return this.type === Class.type.messageTypeUri
   }
 }
+
+// type alias to keep backward compatibility
+export class AgentMessage extends DidCommV1Message {}

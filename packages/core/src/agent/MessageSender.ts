@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { PackMessageParams } from './EnvelopeService'
 import type { AgentMessageSentEvent } from './Events'
 import type { TransportSession } from './TransportService'
@@ -86,7 +86,7 @@ export class MessageSender {
       endpoint,
     }: {
       params: PackMessageParams
-      message: AgentMessage
+      message: AgentBaseMessage
       endpoint: string
     }
   ): Promise<OutboundPackage> {
@@ -99,7 +99,7 @@ export class MessageSender {
     }
   }
 
-  private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
+  private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentBaseMessage) {
     this.logger.debug(`Existing ${session.type} transport session has been found.`)
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
@@ -517,7 +517,7 @@ export class MessageSender {
     } else if (outOfBand) {
       this.logger.debug(`Resolving services from out-of-band record ${outOfBand.id}.`)
       if (connection.isRequester) {
-        const services = outOfBand.outOfBandInvitation?.getServices() || []
+        const services = outOfBand.getOutOfBandInvitation().getServices() || []
         for (const service of services) {
           // Resolve dids to DIDDocs to retrieve services
           if (typeof service === 'string') {

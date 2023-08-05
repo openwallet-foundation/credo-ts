@@ -35,8 +35,8 @@ import type {
 
 import {
   AriesFrameworkError,
-  V1Attachment,
-  V1AttachmentData,
+  Attachment,
+  AttachmentData,
   JsonEncoder,
   ProofFormatSpec,
   JsonTransformer,
@@ -613,11 +613,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): V1Attachment {
-    const attachment = new V1Attachment({
+  private getFormatData(data: unknown, id: string): Attachment {
+    const attachment = new Attachment({
       id,
       mimeType: 'application/json',
-      data: new V1AttachmentData({
+      data: new AttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

@@ -1,13 +1,13 @@
 import type { LegacyIndyProofRequest } from '../../../../formats'
 
-import { V1Attachment, IsValidMessageType, parseMessageType, DidCommV1Message } from '@aries-framework/core'
+import { Attachment, IsValidMessageType, parseMessageType, DidCommV1Message } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsString, ValidateNested, IsOptional, IsInstance } from 'class-validator'
 
 export interface V1RequestPresentationMessageOptions {
   id?: string
   comment?: string
-  requestAttachments: V1Attachment[]
+  requestAttachments: Attachment[]
 }
 
 export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
@@ -45,13 +45,13 @@ export class V1RequestPresentationMessage extends DidCommV1Message {
    * An array of attachments defining the acceptable formats for the presentation.
    */
   @Expose({ name: 'request_presentations~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public requestAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public requestAttachments!: Attachment[]
 
   public get indyProofRequest(): LegacyIndyProofRequest | null {
     const attachment = this.requestAttachments.find((attachment) => attachment.id === INDY_PROOF_REQUEST_ATTACHMENT_ID)
@@ -59,7 +59,7 @@ export class V1RequestPresentationMessage extends DidCommV1Message {
     return attachment?.getDataAsJson<LegacyIndyProofRequest>() ?? null
   }
 
-  public getRequestAttachmentById(id: string): V1Attachment | undefined {
+  public getRequestAttachmentById(id: string): Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

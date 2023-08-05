@@ -1,6 +1,6 @@
 import type { ClassValidationError } from '../../../error/ClassValidationError'
 
-import { V1Attachment } from '../../../decorators/attachment/V1Attachment'
+import { Attachment } from '../../../decorators/attachment'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { OutOfBandInvitation } from '../protocols/v1/messages/OutOfBandInvitation'
@@ -125,7 +125,7 @@ describe('fromJson', () => {
     expect(invitation.appendedAttachments).toBeDefined()
     expect(invitation.appendedAttachments?.length).toEqual(2)
     expect(invitation.getAppendedAttachmentById('view-1')).toEqual(
-      new V1Attachment({
+      new Attachment({
         id: 'view-1',
         mimeType: 'image/png',
         filename: 'IMG1092348.png',
@@ -137,7 +137,7 @@ describe('fromJson', () => {
       })
     )
     expect(invitation.getAppendedAttachmentById('view-2')).toEqual(
-      new V1Attachment({
+      new Attachment({
         id: 'view-2',
         mimeType: 'image/png',
         filename: 'IMG1092349.png',

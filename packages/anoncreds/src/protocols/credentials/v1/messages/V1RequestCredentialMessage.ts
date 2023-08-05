@@ -1,6 +1,6 @@
 import type { LegacyIndyCredentialRequest } from '../../../../formats'
 
-import { DidCommV1Message, IsValidMessageType, parseMessageType, V1Attachment } from '@aries-framework/core'
+import { DidCommV1Message, IsValidMessageType, parseMessageType, Attachment } from '@aries-framework/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -9,8 +9,8 @@ export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 export interface V1RequestCredentialMessageOptions {
   id?: string
   comment?: string
-  requestAttachments: V1Attachment[]
-  attachments?: V1Attachment[]
+  requestAttachments: Attachment[]
+  attachments?: Attachment[]
 }
 
 export class V1RequestCredentialMessage extends DidCommV1Message {
@@ -36,13 +36,13 @@ export class V1RequestCredentialMessage extends DidCommV1Message {
   public comment?: string
 
   @Expose({ name: 'requests~attach' })
-  @Type(() => V1Attachment)
+  @Type(() => Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
-  @IsInstance(V1Attachment, { each: true })
-  public requestAttachments!: V1Attachment[]
+  @IsInstance(Attachment, { each: true })
+  public requestAttachments!: Attachment[]
 
   public get indyCredentialRequest(): LegacyIndyCredentialRequest | null {
     const attachment = this.requestAttachments.find(
@@ -54,7 +54,7 @@ export class V1RequestCredentialMessage extends DidCommV1Message {
     return credentialReqJson
   }
 
-  public getRequestAttachmentById(id: string): V1Attachment | undefined {
+  public getRequestAttachmentById(id: string): Attachment | undefined {
     return this.requestAttachments.find((attachment) => attachment.id === id)
   }
 }

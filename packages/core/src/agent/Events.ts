@@ -1,4 +1,4 @@
-import type { AgentMessage } from './AgentMessage'
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { ConnectionRecord } from '../modules/connections'
 import type { Observable } from 'rxjs'
@@ -39,7 +39,7 @@ export interface AgentMessageReceivedEvent extends BaseEvent {
 export interface AgentMessageProcessedEvent extends BaseEvent {
   type: typeof AgentEventTypes.AgentMessageProcessed
   payload: {
-    message: AgentMessage
+    message: AgentBaseMessage
     connection?: ConnectionRecord
   }
 }

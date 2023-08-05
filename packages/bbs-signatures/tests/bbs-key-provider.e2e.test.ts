@@ -5,14 +5,14 @@ import {
   KeyType,
   WalletError,
   TypedArrayEncoder,
-  KeyProviderRegistry,
+  SigningProviderRegistry,
 } from '@aries-framework/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import testLogger from '../../core/tests/logger'
 import { IndySdkWallet } from '../../indy-sdk/src'
 import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
-import { Bls12381g2KeyProvider } from '../src'
+import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'
 
@@ -30,7 +30,7 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, testLogger, new KeyProviderRegistry([new Bls12381g2KeyProvider()]))
+    wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([new Bls12381g2SigningProvider()]))
     await wallet.createAndOpen(walletConfig)
   })
 

@@ -6,4 +6,4 @@ export * from './keyUtils'
 
 export { KeyType } from './KeyType'
 export { Key } from './Key'
-export * from './key-provider'
+export * from './signing-provider'

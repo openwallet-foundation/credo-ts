@@ -3,7 +3,7 @@ import type { IndySdkPool } from '../../ledger/IndySdkPool'
 import type { DidRecord, RecordSavedEvent } from '@aries-framework/core'
 
 import {
-  KeyProviderRegistry,
+  SigningProviderRegistry,
   DidsApi,
   DidDocument,
   VerificationMethod,
@@ -34,7 +34,7 @@ const pool = {
 mockFunction(indySdkPoolServiceMock.getPoolForNamespace).mockReturnValue(pool)
 
 const agentConfig = getAgentConfig('IndySdkIndyDidRegistrar')
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new KeyProviderRegistry([]))
+const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
 
 jest
   .spyOn(wallet, 'createKey')

@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { V1Attachment } from '../../../../decorators/attachment/V1Attachment'
+import type { Attachment } from '../../../../decorators/attachment'
 import type {
   ExtractProofFormats,
   ProofFormatCredentialForRequestPayload,
@@ -42,7 +42,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: ProofFormatSpec[] = []
-    const proposalAttachments: V1Attachment[] = []
+    const proposalAttachments: Attachment[] = []
 
     for (const formatService of formatServices) {
       const { format, attachment } = await formatService.createProposal(agentContext, {
@@ -127,7 +127,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: ProofFormatSpec[] = []
-    const requestAttachments: V1Attachment[] = []
+    const requestAttachments: Attachment[] = []
 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
@@ -202,7 +202,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: ProofFormatSpec[] = []
-    const requestAttachments: V1Attachment[] = []
+    const requestAttachments: Attachment[] = []
 
     for (const formatService of formatServices) {
       const { format, attachment } = await formatService.createRequest(agentContext, {
@@ -296,7 +296,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
 
     // create message. there are two arrays in each message, one for formats the other for attachments
     const formats: ProofFormatSpec[] = []
-    const presentationAttachments: V1Attachment[] = []
+    const presentationAttachments: Attachment[] = []
 
     for (const formatService of formatServices) {
       const requestAttachment = this.getAttachmentForService(
@@ -497,7 +497,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
   public getAttachmentForService(
     credentialFormatService: ProofFormatService,
     formats: ProofFormatSpec[],
-    attachments: V1Attachment[]
+    attachments: Attachment[]
   ) {
     const attachmentId = this.getAttachmentIdForService(credentialFormatService, formats)
     const attachment = attachments.find((attachment) => attachment.id === attachmentId)

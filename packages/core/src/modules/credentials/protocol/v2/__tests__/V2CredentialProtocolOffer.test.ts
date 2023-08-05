@@ -10,7 +10,7 @@ import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from
 import { Dispatcher } from '../../../../../agent/Dispatcher'
 import { EventEmitter } from '../../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
-import { V1Attachment, V1AttachmentData } from '../../../../../decorators/attachment/V1Attachment'
+import { Attachment, AttachmentData } from '../../../../../decorators/attachment'
 import { DidCommMessageRepository } from '../../../../../storage'
 import { JsonTransformer } from '../../../../../utils'
 import { DidExchangeState } from '../../../../connections'
@@ -30,10 +30,10 @@ const offerFormat = new CredentialFormatSpec({
   format: 'hlindy/cred-abstract@v2.0',
 })
 
-const offerAttachment = new V1Attachment({
+const offerAttachment = new Attachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new V1AttachmentData({
+  data: new AttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
