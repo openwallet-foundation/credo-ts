@@ -301,8 +301,8 @@ export abstract class AskarBaseWallet implements Wallet {
    * @returns JWE Envelope to send
    */
   private async packDidCommV1(
-      payload: Record<string, unknown>,
-      params: WalletPackV1Options
+    payload: Record<string, unknown>,
+    params: WalletPackV1Options
   ): Promise<EncryptedMessage> {
     const { senderKey: senderVerkey, recipientKeys } = params
 
@@ -346,14 +346,14 @@ export abstract class AskarBaseWallet implements Wallet {
             })
 
             recipients.push(
-                new JweRecipient({
-                  encryptedKey: encryptedCek,
-                  header: {
-                    kid: recipientKid,
-                    sender: TypedArrayEncoder.toBase64URL(encryptedSender),
-                    iv: TypedArrayEncoder.toBase64URL(nonce),
-                  },
-                })
+              new JweRecipient({
+                encryptedKey: encryptedCek,
+                header: {
+                  kid: recipientKid,
+                  sender: TypedArrayEncoder.toBase64URL(encryptedSender),
+                  iv: TypedArrayEncoder.toBase64URL(nonce),
+                },
+              })
             )
           } else {
             const encryptedCek = CryptoBox.seal({
@@ -361,12 +361,12 @@ export abstract class AskarBaseWallet implements Wallet {
               message: cek.secretBytes,
             })
             recipients.push(
-                new JweRecipient({
-                  encryptedKey: encryptedCek,
-                  header: {
-                    kid: recipientKid,
-                  },
-                })
+              new JweRecipient({
+                encryptedKey: encryptedCek,
+                header: {
+                  kid: recipientKid,
+                },
+              })
             )
           }
         } finally {
