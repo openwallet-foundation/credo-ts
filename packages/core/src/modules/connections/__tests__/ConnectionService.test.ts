@@ -52,7 +52,7 @@ import { convertToNewDidDocument } from '../services/helpers'
 
 jest.mock('../repository/ConnectionRepository')
 jest.mock('../../oob/repository/OutOfBandRepository')
-jest.mock('../../oob/OutOfBandService')
+jest.mock('../../oob/protocols/v1/OutOfBandService')
 jest.mock('../../dids/services/DidRegistrarService')
 jest.mock('../../dids/repository/DidRepository')
 const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
