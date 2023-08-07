@@ -1,7 +1,7 @@
 import type { DummyStateChangedEvent } from './DummyEvents'
 import type { Query, AgentContext, ConnectionRecord, InboundMessageContext } from '@aries-framework/core'
 
-import { injectable, JsonTransformer, EventEmitter } from '@aries-framework/core'
+import { injectable, EventEmitter } from '@aries-framework/core'
 
 import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
@@ -187,12 +187,13 @@ export class DummyService {
     dummyRecord: DummyRecord,
     previousState: DummyState | null
   ) {
-    // we need to clone the dummy record to avoid mutating records after they're emitted in an event
-    const clonedDummyRecord = JsonTransformer.clone(dummyRecord)
-
     this.eventEmitter.emit<DummyStateChangedEvent>(agentContext, {
       type: DummyEventTypes.StateChanged,
-      payload: { dummyRecord: clonedDummyRecord, previousState: previousState },
+      payload: {
+        // we need to clone the dummy record to avoid mutating records after they're emitted in an event
+        dummyRecord: dummyRecord.clone(),
+        previousState: previousState,
+      },
     })
   }
 }

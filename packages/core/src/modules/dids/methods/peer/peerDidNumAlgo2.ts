@@ -2,7 +2,8 @@ import type { JsonObject } from '../../../../types'
 import type { OutOfBandDidCommService } from '../../../oob/domain/OutOfBandDidCommService'
 import type { DidDocument, VerificationMethod } from '../../domain'
 
-import { Key } from '../../../../crypto'
+import { Key } from '../../../../crypto/Key'
+import { AriesFrameworkError } from '../../../../error'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
 import { DidCommV1Service, DidCommV2Service, DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
@@ -232,6 +233,6 @@ function addVerificationMethodToDidDocument(
     // Add the verification method based on the method from the mapping
     addVerificationMethod(verificationMethod)
   } else {
-    throw new Error(`Unsupported peer did purpose '${purpose}'`)
+    throw new AriesFrameworkError(`Unsupported peer did purpose '${purpose}'`)
   }
 }

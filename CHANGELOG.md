@@ -3,6 +3,120 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
+
+### Bug Fixes
+
+- add reflect-metadata ([#1409](https://github.com/hyperledger/aries-framework-javascript/issues/1409)) ([692defa](https://github.com/hyperledger/aries-framework-javascript/commit/692defa45ffcb4f36b0fa36970c4dc27aa75317c))
+- **anoncreds-rs:** revocation status list as JSON ([#1422](https://github.com/hyperledger/aries-framework-javascript/issues/1422)) ([ec5c233](https://github.com/hyperledger/aries-framework-javascript/commit/ec5c2335394e2df6bd8717907f03e5d2a430e9f9))
+- **anoncreds-rs:** save revocation registry index ([#1351](https://github.com/hyperledger/aries-framework-javascript/issues/1351)) ([1bda3f0](https://github.com/hyperledger/aries-framework-javascript/commit/1bda3f0733a472b536059cee8d34e25fb04c9f2d))
+- **anoncreds:** Buffer not imported from core ([#1367](https://github.com/hyperledger/aries-framework-javascript/issues/1367)) ([c133538](https://github.com/hyperledger/aries-framework-javascript/commit/c133538356471a6a0887322a3f6245aa5193e7e4))
+- **anoncreds:** include prover_did for legacy indy ([#1342](https://github.com/hyperledger/aries-framework-javascript/issues/1342)) ([d38ecb1](https://github.com/hyperledger/aries-framework-javascript/commit/d38ecb14cb58f1eb78e01c91699bb990d805dc08))
+- **anoncreds:** make revocation status list inline with the spec ([#1421](https://github.com/hyperledger/aries-framework-javascript/issues/1421)) ([644e860](https://github.com/hyperledger/aries-framework-javascript/commit/644e860a05f40166e26c497a2e8619c9a38df11d))
+- **askar:** anoncrypt messages unpacking ([#1332](https://github.com/hyperledger/aries-framework-javascript/issues/1332)) ([1c6aeae](https://github.com/hyperledger/aries-framework-javascript/commit/1c6aeae31ac57e83f4059f3dba35ccb1ca36926e))
+- **askar:** custom error handling ([#1372](https://github.com/hyperledger/aries-framework-javascript/issues/1372)) ([c72ba14](https://github.com/hyperledger/aries-framework-javascript/commit/c72ba149bad3a4596f5818b28516f6286b9088bf))
+- **askar:** default key derivation method ([#1420](https://github.com/hyperledger/aries-framework-javascript/issues/1420)) ([7b59629](https://github.com/hyperledger/aries-framework-javascript/commit/7b5962917488cfd0c5adc170d3c3fc64aa82ef2c))
+- **askar:** generate nonce suitable for anoncreds ([#1295](https://github.com/hyperledger/aries-framework-javascript/issues/1295)) ([ecce0a7](https://github.com/hyperledger/aries-framework-javascript/commit/ecce0a71578f45f55743198a1f3699bd257dc74b))
+- connection id in sessions for new connections ([#1383](https://github.com/hyperledger/aries-framework-javascript/issues/1383)) ([0351eec](https://github.com/hyperledger/aries-framework-javascript/commit/0351eec52a9f5e581508819df3005be7b995e59e))
+- **connections:** store imageUrl when using DIDExchange ([#1433](https://github.com/hyperledger/aries-framework-javascript/issues/1433)) ([66afda2](https://github.com/hyperledger/aries-framework-javascript/commit/66afda2fe7311977047928e0b1c857ed2c5602c7))
+- **core:** repository event when calling deleteById ([#1356](https://github.com/hyperledger/aries-framework-javascript/issues/1356)) ([953069a](https://github.com/hyperledger/aries-framework-javascript/commit/953069a785f2a6b8d1e11123aab3a09aab1e65ff))
+- create new socket if socket state is 'closing' ([#1337](https://github.com/hyperledger/aries-framework-javascript/issues/1337)) ([da8f2ad](https://github.com/hyperledger/aries-framework-javascript/commit/da8f2ad36c386497b16075790a364faae50fcd47))
+- did cache key not being set correctly ([#1394](https://github.com/hyperledger/aries-framework-javascript/issues/1394)) ([1125e81](https://github.com/hyperledger/aries-framework-javascript/commit/1125e81962ffa752bf40fa8f7f4226e186f22013))
+- Emit RoutingCreated event for mediator routing record ([#1445](https://github.com/hyperledger/aries-framework-javascript/issues/1445)) ([4145957](https://github.com/hyperledger/aries-framework-javascript/commit/414595727d611ff774c4f404a4eeea509cf03a71))
+- expose indy pool configs and action menu messages ([#1333](https://github.com/hyperledger/aries-framework-javascript/issues/1333)) ([518e5e4](https://github.com/hyperledger/aries-framework-javascript/commit/518e5e4dfb59f9c0457bfd233409e9f4b3c429ee))
+- imports from core ([#1303](https://github.com/hyperledger/aries-framework-javascript/issues/1303)) ([3e02227](https://github.com/hyperledger/aries-framework-javascript/commit/3e02227a7b23677e9886eb1c03d1a3ec154947a9))
+- incorrect type for anoncreds registration ([#1396](https://github.com/hyperledger/aries-framework-javascript/issues/1396)) ([9f0f8f2](https://github.com/hyperledger/aries-framework-javascript/commit/9f0f8f21e7436c0a422d8c3a42a4cb601bcf7c77))
+- **indy-sdk:** import from core ([#1346](https://github.com/hyperledger/aries-framework-javascript/issues/1346)) ([254f661](https://github.com/hyperledger/aries-framework-javascript/commit/254f661c2e925b62dd07c3565099f9e226bd2b41))
+- **indy-vdr:** do not force indy-vdr version ([#1434](https://github.com/hyperledger/aries-framework-javascript/issues/1434)) ([8a933c0](https://github.com/hyperledger/aries-framework-javascript/commit/8a933c057e0c88870779bf8eb98b4684de4745de))
+- **indy-vdr:** export relevant packages from root ([#1291](https://github.com/hyperledger/aries-framework-javascript/issues/1291)) ([b570e0f](https://github.com/hyperledger/aries-framework-javascript/commit/b570e0f923fc46adef3ce20ee76a683a867b85f4))
+- isNewSocket logic ([#1355](https://github.com/hyperledger/aries-framework-javascript/issues/1355)) ([18abb18](https://github.com/hyperledger/aries-framework-javascript/commit/18abb18316f155d0375af477dedef9cdfdada70e))
+- issuance with unqualified identifiers ([#1431](https://github.com/hyperledger/aries-framework-javascript/issues/1431)) ([de90caf](https://github.com/hyperledger/aries-framework-javascript/commit/de90cafb8d12b7a940f881184cd745c4b5043cbc))
+- jsonld credential format identifier version ([#1412](https://github.com/hyperledger/aries-framework-javascript/issues/1412)) ([c46a6b8](https://github.com/hyperledger/aries-framework-javascript/commit/c46a6b81b8a1e28e05013c27ffe2eeaee4724130))
+- loosen base64 validation ([#1312](https://github.com/hyperledger/aries-framework-javascript/issues/1312)) ([af384e8](https://github.com/hyperledger/aries-framework-javascript/commit/af384e8a92f877c647999f9356b72a8017308230))
+- migration of link secret ([#1444](https://github.com/hyperledger/aries-framework-javascript/issues/1444)) ([9a43afe](https://github.com/hyperledger/aries-framework-javascript/commit/9a43afec7ea72a6fa8c6133f0fad05d8a3d2a595))
+- reference to indyLedgers in IndyXXXNotConfiguredError ([#1397](https://github.com/hyperledger/aries-framework-javascript/issues/1397)) ([d6e2ea2](https://github.com/hyperledger/aries-framework-javascript/commit/d6e2ea2194a4860265fe299ef8ee4cb4799ab1a6))
+- registered connection problem report message handler ([#1462](https://github.com/hyperledger/aries-framework-javascript/issues/1462)) ([d2d8ee0](https://github.com/hyperledger/aries-framework-javascript/commit/d2d8ee09c4eb6c050660b2bf9973195fd531df18))
+- remove `deleteOnFinish` and added documentation ([#1418](https://github.com/hyperledger/aries-framework-javascript/issues/1418)) ([c8b16a6](https://github.com/hyperledger/aries-framework-javascript/commit/c8b16a6fec8bb693e67e65709ded05d19fd1919f))
+- remove named capture groups ([#1378](https://github.com/hyperledger/aries-framework-javascript/issues/1378)) ([a4204ef](https://github.com/hyperledger/aries-framework-javascript/commit/a4204ef2db769de53d12f0d881d2c4422545c390))
+- remove scope check from response ([#1450](https://github.com/hyperledger/aries-framework-javascript/issues/1450)) ([7dd4061](https://github.com/hyperledger/aries-framework-javascript/commit/7dd406170c75801529daf4bebebde81e84a4cb79))
+- return HTTP 415 if unsupported content type ([#1313](https://github.com/hyperledger/aries-framework-javascript/issues/1313)) ([122cdde](https://github.com/hyperledger/aries-framework-javascript/commit/122cdde6982174a8e9cf70ef26a1393cb3912066))
+- **samples:** dummy module response message type ([#1321](https://github.com/hyperledger/aries-framework-javascript/issues/1321)) ([64a5da9](https://github.com/hyperledger/aries-framework-javascript/commit/64a5da937059d25e693e2491af329548b2975ef6))
+- seed and private key validation and return type in registrars ([#1324](https://github.com/hyperledger/aries-framework-javascript/issues/1324)) ([c0e5339](https://github.com/hyperledger/aries-framework-javascript/commit/c0e5339edfa32df92f23fb9c920796b4b59adf52))
+- set updateAt on records when updating a record ([#1272](https://github.com/hyperledger/aries-framework-javascript/issues/1272)) ([2669d7d](https://github.com/hyperledger/aries-framework-javascript/commit/2669d7dd3d7c0ddfd1108dfd65e6115dd3418500))
+- small issues with migration and WAL files ([#1443](https://github.com/hyperledger/aries-framework-javascript/issues/1443)) ([83cf387](https://github.com/hyperledger/aries-framework-javascript/commit/83cf387fa52bb51d8adb2d5fedc5111994d4dde1))
+- small updates to cheqd module and demo ([#1439](https://github.com/hyperledger/aries-framework-javascript/issues/1439)) ([61daf0c](https://github.com/hyperledger/aries-framework-javascript/commit/61daf0cb27de80a5e728e2e9dad13d729baf476c))
+- **tenant:** Correctly configure storage for multi tenant agents ([#1359](https://github.com/hyperledger/aries-framework-javascript/issues/1359)) ([7795975](https://github.com/hyperledger/aries-framework-javascript/commit/779597563a4236fdab851df9e102dca18ce2d4e4)), closes [hyperledger#1353](https://github.com/hyperledger/issues/1353)
+- thread id improvements ([#1311](https://github.com/hyperledger/aries-framework-javascript/issues/1311)) ([229ed1b](https://github.com/hyperledger/aries-framework-javascript/commit/229ed1b9540ca0c9380b5cca6c763fefd6628960))
+- various anoncreds revocation fixes ([#1416](https://github.com/hyperledger/aries-framework-javascript/issues/1416)) ([d9cfc7d](https://github.com/hyperledger/aries-framework-javascript/commit/d9cfc7df6679d2008d66070a6c8a818440d066ab))
+
+- refactor!: remove Dispatcher.registerMessageHandler (#1354) ([78ecf1e](https://github.com/hyperledger/aries-framework-javascript/commit/78ecf1ed959c9daba1c119d03f4596f1db16c57c)), closes [#1354](https://github.com/hyperledger/aries-framework-javascript/issues/1354)
+- refactor!: set default outbound content type to didcomm v1 (#1314) ([4ab3b54](https://github.com/hyperledger/aries-framework-javascript/commit/4ab3b54e9db630a6ba022af6becdd7276692afc5)), closes [#1314](https://github.com/hyperledger/aries-framework-javascript/issues/1314)
+- feat!: add data, cache and temp dirs to FileSystem (#1306) ([ff5596d](https://github.com/hyperledger/aries-framework-javascript/commit/ff5596d0631e93746494c017797d0191b6bdb0b1)), closes [#1306](https://github.com/hyperledger/aries-framework-javascript/issues/1306)
+
+### Features
+
+- 0.4.0 migration script ([#1392](https://github.com/hyperledger/aries-framework-javascript/issues/1392)) ([bc5455f](https://github.com/hyperledger/aries-framework-javascript/commit/bc5455f7b42612a2b85e504bc6ddd36283a42bfa))
+- add anoncreds-rs package ([#1275](https://github.com/hyperledger/aries-framework-javascript/issues/1275)) ([efe0271](https://github.com/hyperledger/aries-framework-javascript/commit/efe0271198f21f1307df0f934c380f7a5c720b06))
+- Add cheqd demo and localnet for tests ([#1435](https://github.com/hyperledger/aries-framework-javascript/issues/1435)) ([1ffb011](https://github.com/hyperledger/aries-framework-javascript/commit/1ffb0111fc3db170e5623d350cb912b22027387a))
+- Add cheqd-sdk module ([#1334](https://github.com/hyperledger/aries-framework-javascript/issues/1334)) ([b38525f](https://github.com/hyperledger/aries-framework-javascript/commit/b38525f3433e50418ea149949108b4218ac9ba2a))
+- add devcontainer support ([#1282](https://github.com/hyperledger/aries-framework-javascript/issues/1282)) ([4ac5332](https://github.com/hyperledger/aries-framework-javascript/commit/4ac533231ff8126c73ccc071adbf5a415fd3d6e9))
+- add fetch indy schema method ([#1290](https://github.com/hyperledger/aries-framework-javascript/issues/1290)) ([1d782f5](https://github.com/hyperledger/aries-framework-javascript/commit/1d782f54bbb4abfeb6b6db6cd4f7164501b6c3d9))
+- add initial askar package ([#1211](https://github.com/hyperledger/aries-framework-javascript/issues/1211)) ([f18d189](https://github.com/hyperledger/aries-framework-javascript/commit/f18d1890546f7d66571fe80f2f3fc1fead1cd4c3))
+- add message pickup module ([#1413](https://github.com/hyperledger/aries-framework-javascript/issues/1413)) ([a8439db](https://github.com/hyperledger/aries-framework-javascript/commit/a8439db90fd11e014b457db476e8327b6ced6358))
+- added endpoint setter to agent InitConfig ([#1278](https://github.com/hyperledger/aries-framework-javascript/issues/1278)) ([1d487b1](https://github.com/hyperledger/aries-framework-javascript/commit/1d487b1a7e11b3f18b5229ba580bd035a7f564a0))
+- allow sending problem report when declining a proof request ([#1408](https://github.com/hyperledger/aries-framework-javascript/issues/1408)) ([b35fec4](https://github.com/hyperledger/aries-framework-javascript/commit/b35fec433f8fab513be2b8b6d073f23c6371b2ee))
+- **anoncreds-rs:** use new API methods for json conversion ([#1373](https://github.com/hyperledger/aries-framework-javascript/issues/1373)) ([dd6c020](https://github.com/hyperledger/aries-framework-javascript/commit/dd6c02005135fb0260f589658643d68089233bab))
+- **anoncreds:** add anoncreds API ([#1232](https://github.com/hyperledger/aries-framework-javascript/issues/1232)) ([3a4c5ec](https://github.com/hyperledger/aries-framework-javascript/commit/3a4c5ecd940e49d4d192eef1d41f2aaedb34d85a))
+- **anoncreds:** add AnonCreds format services ([#1385](https://github.com/hyperledger/aries-framework-javascript/issues/1385)) ([5f71dc2](https://github.com/hyperledger/aries-framework-javascript/commit/5f71dc2b403f6cb0fc9bb13f35051d377c2d1250))
+- **anoncreds:** add getCredential(s) methods ([#1386](https://github.com/hyperledger/aries-framework-javascript/issues/1386)) ([2efc009](https://github.com/hyperledger/aries-framework-javascript/commit/2efc0097138585391940fbb2eb504e50df57ec87))
+- **anoncreds:** add legacy indy credential format ([#1220](https://github.com/hyperledger/aries-framework-javascript/issues/1220)) ([13f3740](https://github.com/hyperledger/aries-framework-javascript/commit/13f374079262168f90ec7de7c3393beb9651295c))
+- **anoncreds:** legacy indy proof format service ([#1283](https://github.com/hyperledger/aries-framework-javascript/issues/1283)) ([c72fd74](https://github.com/hyperledger/aries-framework-javascript/commit/c72fd7416f2c1bc0497a84036e16adfa80585e49))
+- **anoncreds:** store method name in records ([#1387](https://github.com/hyperledger/aries-framework-javascript/issues/1387)) ([47636b4](https://github.com/hyperledger/aries-framework-javascript/commit/47636b4a08ffbfa9a3f2a5a3c5aebda44f7d16c8))
+- **anoncreds:** support credential attribute value and marker ([#1369](https://github.com/hyperledger/aries-framework-javascript/issues/1369)) ([5559996](https://github.com/hyperledger/aries-framework-javascript/commit/555999686a831e6988564fd5c9c937fc1023f567))
+- **anoncreds:** use legacy prover did ([#1374](https://github.com/hyperledger/aries-framework-javascript/issues/1374)) ([c17013c](https://github.com/hyperledger/aries-framework-javascript/commit/c17013c808a278d624210ce9e4333860cd78fc19))
+- **askar:** import/export wallet support for SQLite ([#1377](https://github.com/hyperledger/aries-framework-javascript/issues/1377)) ([19cefa5](https://github.com/hyperledger/aries-framework-javascript/commit/19cefa54596a4e4848bdbe89306a884a5ce2e991))
+- basic message pthid/thid support ([#1381](https://github.com/hyperledger/aries-framework-javascript/issues/1381)) ([f27fb99](https://github.com/hyperledger/aries-framework-javascript/commit/f27fb9921e11e5bcd654611d97d9fa1c446bc2d5))
+- **cache:** add caching interface ([#1229](https://github.com/hyperledger/aries-framework-javascript/issues/1229)) ([25b2bcf](https://github.com/hyperledger/aries-framework-javascript/commit/25b2bcf81648100b572784e4489a288cc9da0557))
+- **core:** add W3cCredentialsApi ([c888736](https://github.com/hyperledger/aries-framework-javascript/commit/c888736cb6b51014e23f5520fbc4074cf0e49e15))
+- default return route ([#1327](https://github.com/hyperledger/aries-framework-javascript/issues/1327)) ([dbfebb4](https://github.com/hyperledger/aries-framework-javascript/commit/dbfebb4720da731dbe11efdccdd061d1da3d1323))
+- indy sdk aries askar migration script ([#1289](https://github.com/hyperledger/aries-framework-javascript/issues/1289)) ([4a6b99c](https://github.com/hyperledger/aries-framework-javascript/commit/4a6b99c617de06edbaf1cb07c8adfa8de9b3ec15))
+- **indy-vdr:** add indy-vdr package and indy vdr pool ([#1160](https://github.com/hyperledger/aries-framework-javascript/issues/1160)) ([e8d6ac3](https://github.com/hyperledger/aries-framework-javascript/commit/e8d6ac31a8e18847d99d7998bd7658439e48875b))
+- **indy-vdr:** add IndyVdrAnonCredsRegistry ([#1270](https://github.com/hyperledger/aries-framework-javascript/issues/1270)) ([d056316](https://github.com/hyperledger/aries-framework-javascript/commit/d056316712b5ee5c42a159816b5dda0b05ad84a8))
+- **indy-vdr:** did:sov resolver ([#1247](https://github.com/hyperledger/aries-framework-javascript/issues/1247)) ([b5eb08e](https://github.com/hyperledger/aries-framework-javascript/commit/b5eb08e99d7ea61adefb8c6c0c5c99c6c1ba1597))
+- **indy-vdr:** module registration ([#1285](https://github.com/hyperledger/aries-framework-javascript/issues/1285)) ([51030d4](https://github.com/hyperledger/aries-framework-javascript/commit/51030d43a7e3cca3da29c5add38e35f731576927))
+- **indy-vdr:** resolver and registrar for did:indy ([#1253](https://github.com/hyperledger/aries-framework-javascript/issues/1253)) ([efab8dd](https://github.com/hyperledger/aries-framework-javascript/commit/efab8ddfc34e47a3f0ffe35b55fa5018a7e96544))
+- **indy-vdr:** schema + credential definition endorsement ([#1451](https://github.com/hyperledger/aries-framework-javascript/issues/1451)) ([25b981b](https://github.com/hyperledger/aries-framework-javascript/commit/25b981b6e23d02409e90dabdccdccc8904d4e357))
+- **indy-vdr:** use [@hyperledger](https://github.com/hyperledger) packages ([#1252](https://github.com/hyperledger/aries-framework-javascript/issues/1252)) ([acdb20a](https://github.com/hyperledger/aries-framework-javascript/commit/acdb20a79d038fb4163d281ee8de0ccb649fdc32))
+- IndyVdrAnonCredsRegistry revocation methods ([#1328](https://github.com/hyperledger/aries-framework-javascript/issues/1328)) ([fb7ee50](https://github.com/hyperledger/aries-framework-javascript/commit/fb7ee5048c33d5335cd9f07cad3dffc60dee7376))
+- **oob:** implicit invitations ([#1348](https://github.com/hyperledger/aries-framework-javascript/issues/1348)) ([fd13bb8](https://github.com/hyperledger/aries-framework-javascript/commit/fd13bb87a9ce9efb73bd780bd076b1da867688c5))
+- **openid4vc-client:** openid authorization flow ([#1384](https://github.com/hyperledger/aries-framework-javascript/issues/1384)) ([996c08f](https://github.com/hyperledger/aries-framework-javascript/commit/996c08f8e32e58605408f5ed5b6d8116cea3b00c))
+- **openid4vc-client:** pre-authorized ([#1243](https://github.com/hyperledger/aries-framework-javascript/issues/1243)) ([3d86e78](https://github.com/hyperledger/aries-framework-javascript/commit/3d86e78a4df87869aa5df4e28b79cd91787b61fb))
+- **openid4vc:** jwt format and more crypto ([#1472](https://github.com/hyperledger/aries-framework-javascript/issues/1472)) ([bd4932d](https://github.com/hyperledger/aries-framework-javascript/commit/bd4932d34f7314a6d49097b6460c7570e1ebc7a8))
+- optional routing for legacy connectionless invitation ([#1271](https://github.com/hyperledger/aries-framework-javascript/issues/1271)) ([7f65ba9](https://github.com/hyperledger/aries-framework-javascript/commit/7f65ba999ad1f49065d24966a1d7f3b82264ea55))
+- outbound message send via session ([#1335](https://github.com/hyperledger/aries-framework-javascript/issues/1335)) ([582c711](https://github.com/hyperledger/aries-framework-javascript/commit/582c711728db12b7d38a0be2e9fa78dbf31b34c6))
+- **proofs:** sort credentials based on revocation ([#1225](https://github.com/hyperledger/aries-framework-javascript/issues/1225)) ([0f6d231](https://github.com/hyperledger/aries-framework-javascript/commit/0f6d2312471efab20f560782c171434f907b6b9d))
+- support for did:jwk and p-256, p-384, p-512 ([#1446](https://github.com/hyperledger/aries-framework-javascript/issues/1446)) ([700d3f8](https://github.com/hyperledger/aries-framework-javascript/commit/700d3f89728ce9d35e22519e505d8203a4c9031e))
+- support more key types in jws service ([#1453](https://github.com/hyperledger/aries-framework-javascript/issues/1453)) ([8a3f03e](https://github.com/hyperledger/aries-framework-javascript/commit/8a3f03eb0dffcf46635556defdcebe1d329cf428))
+
+### BREAKING CHANGES
+
+- `Dispatcher.registerMessageHandler` has been removed in favour of `MessageHandlerRegistry.registerMessageHandler`. If you want to register message handlers in an extension module, you can use directly `agentContext.dependencyManager.registerMessageHandlers`.
+
+Signed-off-by: Ariel Gentile <gentilester@gmail.com>
+
+- Agent default outbound content type has been changed to DIDComm V1. If you want to use former behaviour, you can do it so by manually setting `didcommMimeType` in `Agent`'s init config:
+
+```
+  const agent = new Agent({ config: {
+     ...
+     didCommMimeType: DidCommMimeType.V0
+  }, ...  })
+```
+
+- Agent-produced files will now be divided in different system paths depending on their nature: data, temp and cache. Previously, they were located at a single location, defaulting to a temporary directory.
+
+If you specified a custom path in `FileSystem` object constructor, you now must provide an object containing `baseDataPath`, `baseTempPath` and `baseCachePath`. They can point to the same path, although it's recommended to specify different path to avoid future file clashes.
+
 ## [0.3.3](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.2...v0.3.3) (2023-01-18)
 
 ### Bug Fixes

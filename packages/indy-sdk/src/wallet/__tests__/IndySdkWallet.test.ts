@@ -49,6 +49,11 @@ describe('IndySdkWallet', () => {
     expect(indySdkWallet.handle).toEqual(expect.any(Number))
   })
 
+  test('supportedKeyTypes', () => {
+    // indy supports ed25519, signing provider supports x25519
+    expect(indySdkWallet.supportedKeyTypes).toEqual([KeyType.Ed25519, KeyType.X25519])
+  })
+
   test('Generate Nonce', async () => {
     await expect(indySdkWallet.generateNonce()).resolves.toEqual(expect.any(String))
   })

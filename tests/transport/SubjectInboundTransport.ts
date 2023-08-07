@@ -1,4 +1,4 @@
-import type { InboundTransport, Agent, EncryptedMessage } from '../../packages/core/src'
+import type { InboundTransport, Agent, AgentContext, EncryptedMessage } from '../../packages/core/src'
 import type { TransportSession } from '../../packages/core/src/agent/TransportService'
 import type { OutboundPackagePayload } from '@aries-framework/core/src/didcomm'
 import type { Subscription } from 'rxjs'
@@ -64,7 +64,7 @@ export class SubjectTransportSession implements TransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
 

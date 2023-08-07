@@ -126,7 +126,7 @@ const credentialIssueMessage = new V1IssueCredentialMessage({
 
 const didCommMessageRecord = new DidCommMessageRecord({
   associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-  message: {},
+  message: { '@id': '123', '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential' },
   role: DidCommMessageRole.Receiver,
 })
 

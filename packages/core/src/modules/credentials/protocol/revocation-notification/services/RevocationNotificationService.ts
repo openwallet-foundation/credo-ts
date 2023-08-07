@@ -11,7 +11,6 @@ import { InjectionSymbols } from '../../../../../constants'
 import { AriesFrameworkError } from '../../../../../error/AriesFrameworkError'
 import { Logger } from '../../../../../logger'
 import { inject, injectable } from '../../../../../plugins'
-import { JsonTransformer } from '../../../../../utils'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
 import { CredentialRepository } from '../../../repository'
@@ -53,14 +52,12 @@ export class RevocationNotificationService {
     credentialRecord.revocationNotification = new RevocationNotification(comment)
     await this.credentialRepository.update(agentContext, credentialRecord)
 
-    // Clone record to prevent mutations after emitting event.
-    const clonedCredentialRecord = JsonTransformer.clone(credentialRecord)
-
     this.logger.trace('Emitting RevocationNotificationReceivedEvent')
     this.eventEmitter.emit<RevocationNotificationReceivedEvent>(agentContext, {
       type: CredentialEventTypes.RevocationNotificationReceived,
       payload: {
-        credentialRecord: clonedCredentialRecord,
+        // Clone record to prevent mutations after emitting event.
+        credentialRecord: credentialRecord.clone(),
       },
     })
   }

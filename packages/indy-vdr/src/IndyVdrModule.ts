@@ -1,6 +1,8 @@
 import type { IndyVdrModuleConfigOptions } from './IndyVdrModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
 
+import { AgentConfig } from '@aries-framework/core'
+
 import { IndyVdrApi } from './IndyVdrApi'
 import { IndyVdrModuleConfig } from './IndyVdrModuleConfig'
 import { IndyVdrPoolService } from './pool/IndyVdrPoolService'
@@ -17,6 +19,13 @@ export class IndyVdrModule implements Module {
   }
 
   public register(dependencyManager: DependencyManager) {
+    // Warn about experimental module
+    dependencyManager
+      .resolve(AgentConfig)
+      .logger.warn(
+        "The '@aries-framework/indy-vdr' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+      )
+
     // Config
     dependencyManager.registerInstance(IndyVdrModuleConfig, this.config)
 

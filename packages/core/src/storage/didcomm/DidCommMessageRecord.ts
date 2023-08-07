@@ -1,6 +1,5 @@
 import type { DidCommMessageRole } from './DidCommMessageRole'
-import type { ConstructableDidCommMessage } from '../../didcomm'
-import type { JsonObject } from '../../types'
+import type { ConstructableDidCommMessage, PlaintextMessage } from '../../didcomm'
 
 import { AriesFrameworkError } from '../../error'
 import { JsonTransformer } from '../../utils/JsonTransformer'
@@ -25,14 +24,14 @@ export type DefaultDidCommMessageTags = {
 
 export interface DidCommMessageRecordProps {
   role: DidCommMessageRole
-  message: JsonObject
+  message: PlaintextMessage
   id?: string
   createdAt?: Date
   associatedRecordId?: string
 }
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
-  public message!: JsonObject
+  public message!: PlaintextMessage
   public role!: DidCommMessageRole
 
   /**

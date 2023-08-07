@@ -6,9 +6,8 @@ import { Key } from '../../../../../crypto/Key'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { WalletError } from '../../../../../wallet/error'
-import { DidCommV1Service, DidDocumentBuilder } from '../../../domain'
+import { DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
-import { getEd25519VerificationMethod } from '../../../domain/key-type/ed25519'
 import { DidRepository } from '../../../repository/DidRepository'
 import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import { PeerDidNumAlgo } from '../didPeer'
@@ -134,7 +133,7 @@ describe('DidRegistrar', () => {
     })
 
     describe('did:peer:1', () => {
-      const verificationMethod = getEd25519VerificationMethod({
+      const verificationMethod = getEd25519VerificationKey2018({
         key: Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'),
         // controller in method 1 did should be #id
         controller: '#id',
@@ -229,7 +228,7 @@ describe('DidRegistrar', () => {
 
     describe('did:peer:2', () => {
       const key = Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz')
-      const verificationMethod = getEd25519VerificationMethod({
+      const verificationMethod = getEd25519VerificationKey2018({
         key,
         // controller in method 1 did should be #id
         controller: '#id',

@@ -1,8 +1,10 @@
+import type { ResolvedDidCommService } from '../../didcomm'
 import type { ValidationOptions } from 'class-validator'
 
 import { ArrayNotEmpty, buildMessage, IsOptional, isString, IsString, ValidateBy } from 'class-validator'
 
-import { DidDocumentService } from '../../dids'
+import { isDid } from '../../../utils'
+import { DidDocumentService, DidKey } from '../../dids'
 
 export class OutOfBandDidCommService extends DidDocumentService {
   public constructor(options: {
@@ -34,6 +36,24 @@ export class OutOfBandDidCommService extends DidDocumentService {
   @IsString({ each: true })
   @IsOptional()
   public accept?: string[]
+
+  public get resolvedDidCommService(): ResolvedDidCommService {
+    return {
+      id: this.id,
+      recipientKeys: this.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key),
+      routingKeys: this.routingKeys?.map((didKey) => DidKey.fromDid(didKey).key) ?? [],
+      serviceEndpoint: this.serviceEndpoint,
+    }
+  }
+
+  public static fromResolvedDidCommService(service: ResolvedDidCommService) {
+    return new OutOfBandDidCommService({
+      id: service.id,
+      recipientKeys: service.recipientKeys.map((key) => new DidKey(key).did),
+      routingKeys: service.routingKeys.map((key) => new DidKey(key).did),
+      serviceEndpoint: service.serviceEndpoint,
+    })
+  }
 }
 
 /**
@@ -44,7 +64,7 @@ function IsDidKeyString(validationOptions?: ValidationOptions): PropertyDecorato
     {
       name: 'isDidKeyString',
       validator: {
-        validate: (value): boolean => isString(value) && value.startsWith('did:key:'),
+        validate: (value): boolean => isString(value) && isDid(value, 'key'),
         defaultMessage: buildMessage(
           (eachPrefix) => eachPrefix + '$property must be a did:key string',
           validationOptions

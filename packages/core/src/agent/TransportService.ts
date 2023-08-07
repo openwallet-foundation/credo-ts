@@ -1,4 +1,5 @@
 import type { AgentBaseMessage } from './AgentBaseMessage'
+import type { AgentContext } from './context'
 import type { Key } from '../crypto'
 import type { EncryptedMessage } from '../didcomm'
 import type { DidDocument } from '../modules/dids'
@@ -77,7 +78,7 @@ export interface TransportSession {
   connectionId?: string
 
   // Send an encrypted message
-  send(encryptedMessage: EncryptedMessage): Promise<void>
+  send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void>
 
   // Close the session to prevent dangling sessions.
   close(): Promise<void>

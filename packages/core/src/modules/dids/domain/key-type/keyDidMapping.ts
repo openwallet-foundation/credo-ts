@@ -1,7 +1,8 @@
+import type { Key } from '../../../../crypto/Key'
 import type { VerificationMethod } from '../verificationMethod'
 
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
+import { KeyType } from '../../../../crypto/KeyType'
+import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { AriesFrameworkError } from '../../../../error'
 import { isJsonWebKey2020, VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 } from '../verificationMethod/JsonWebKey2020'
 
@@ -60,7 +61,7 @@ export function getKeyDidMappingByKeyType(keyType: KeyType) {
   const keyDid = keyDidMapping[keyType]
 
   if (!keyDid) {
-    throw new Error(`Unsupported key did from key type '${keyType}'`)
+    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
   }
 
   return keyDid
@@ -76,13 +77,23 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
       )
     }
 
-    return Key.fromJwk(verificationMethod.publicKeyJwk)
+    return getJwkFromJson(verificationMethod.publicKeyJwk).key
   }
 
   const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
   if (!keyDid) {
-    throw new Error(`Unsupported key did from verification method type '${verificationMethod.type}'`)
+    throw new AriesFrameworkError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
   return keyDid.getKeyFromVerificationMethod(verificationMethod)
+}
+
+export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType) {
+  const keyDid = keyDidMapping[keyType]
+
+  if (!keyDid) {
+    throw new AriesFrameworkError(`Unsupported key did from key type '${keyType}'`)
+  }
+
+  return keyDid.supportedVerificationMethodTypes
 }

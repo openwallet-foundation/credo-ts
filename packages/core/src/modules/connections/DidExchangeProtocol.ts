@@ -10,12 +10,16 @@ import type { OutOfBandRecord } from '../oob/repository'
 import { InjectionSymbols } from '../../constants'
 import { Key, KeyType } from '../../crypto'
 import { JwsService } from '../../crypto/JwsService'
+import { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
+import { getJwkFromKey } from '../../crypto/jose/jwk'
 import { Attachment, AttachmentData } from '../../decorators/attachment'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
+import { isDid } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
+import { base64ToBase64URL } from '../../utils/base64'
 import {
   DidDocument,
   DidRegistrarService,
@@ -98,7 +102,7 @@ export class DidExchangeProtocol {
       alias,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
-      mediatorId: routing.mediatorId ?? outOfBandRecord.mediatorId,
+      mediatorId: routing.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,
@@ -165,7 +169,7 @@ export class DidExchangeProtocol {
     }
 
     // If the responder wishes to continue the exchange, they will persist the received information in their wallet.
-    if (!message.did.startsWith('did:peer:')) {
+    if (!isDid(message.did, 'peer')) {
       throw new DidExchangeProblemReportError(
         `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
         {
@@ -306,7 +310,7 @@ export class DidExchangeProtocol {
       })
     }
 
-    if (!message.did.startsWith('did:peer:')) {
+    if (!isDid(message.did, 'peer')) {
       throw new DidExchangeProblemReportError(
         `Message contains unsupported did ${message.did}. Supported dids are [did:peer]`,
         {
@@ -479,8 +483,8 @@ export class DidExchangeProtocol {
             kid,
           },
           protectedHeaderOptions: {
-            alg: 'EdDSA',
-            jwk: key.toJwk(),
+            alg: JwaSignatureAlgorithm.EdDSA,
+            jwk: getJwkFromKey(key),
           },
         })
         didDocAttach.addJws(jws)
@@ -520,11 +524,28 @@ export class DidExchangeProtocol {
       throw new DidExchangeProblemReportError('DID Document signature is missing.', { problemCode })
     }
 
-    const json = didDocumentAttachment.getDataAsJson() as Record<string, unknown>
-    this.logger.trace('DidDocument JSON', json)
+    if (!didDocumentAttachment.data.base64) {
+      throw new AriesFrameworkError('DID Document attachment is missing base64 property for signed did document.')
+    }
 
-    const payload = JsonEncoder.toBuffer(json)
-    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, { jws, payload })
+    // JWS payload must be base64url encoded
+    const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
+    const json = JsonEncoder.fromBase64(didDocumentAttachment.data.base64)
+
+    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+      jws: {
+        ...jws,
+        payload: base64UrlPayload,
+      },
+      jwkResolver: ({ jws: { header } }) => {
+        if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
+          throw new AriesFrameworkError('JWS header kid must be a did:key DID.')
+        }
+
+        const didKey = DidKey.fromDid(header.kid)
+        return getJwkFromKey(didKey.key)
+      },
+    })
 
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
     const didDocumentKeysBase58 = didDocument.authentication

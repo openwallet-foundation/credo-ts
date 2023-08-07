@@ -1,7 +1,7 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
-import { DidCommMessageRepository, DidCommMessageRole, OutboundMessageContext } from '@aries-framework/core'
+import { AriesFrameworkError, getOutboundMessageContext } from '@aries-framework/core'
 
 import { V1RequestCredentialMessage } from '../messages'
 
@@ -36,40 +36,20 @@ export class V1RequestCredentialHandler implements MessageHandler {
       messageContext.agentContext,
       credentialRecord.id
     )
+    if (!offerMessage) {
+      throw new AriesFrameworkError(`Could not find offer message for credential record with id ${credentialRecord.id}`)
+    }
 
     const { message } = await this.credentialProtocol.acceptRequest(messageContext.agentContext, {
       credentialRecord,
     })
 
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: credentialRecord,
-      })
-    } else if (messageContext.message.service && offerMessage?.service) {
-      const recipientService = messageContext.message.service
-      const ourService = offerMessage.service
-
-      // Set ~service, update message in record (for later use)
-      message.setService(ourService)
-
-      const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
-      await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
-
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        },
-      })
-    }
-
-    messageContext.agentContext.config.logger.error(`Could not automatically create credential request`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      connectionRecord: messageContext.connection,
+      message,
+      associatedRecord: credentialRecord,
+      lastReceivedMessage: messageContext.message,
+      lastSentMessage: offerMessage,
+    })
   }
 }

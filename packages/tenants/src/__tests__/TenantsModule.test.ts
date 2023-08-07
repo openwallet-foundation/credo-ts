@@ -1,6 +1,7 @@
 import { InjectionSymbols } from '@aries-framework/core'
 
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
+import { mockFunction } from '../../../core/tests'
 import { TenantsApi } from '../TenantsApi'
 import { TenantsModule } from '../TenantsModule'
 import { TenantsModuleConfig } from '../TenantsModuleConfig'
@@ -13,6 +14,8 @@ jest.mock('../../../core/src/plugins/DependencyManager')
 const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
+
+mockFunction(dependencyManager.resolve).mockReturnValue({ logger: { warn: jest.fn() } })
 
 describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {

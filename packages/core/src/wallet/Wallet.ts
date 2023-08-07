@@ -62,6 +62,11 @@ export interface Wallet extends Disposable {
 
   generateNonce(): Promise<string>
   generateWalletKey(): Promise<string>
+
+  /**
+   * Get the key types supported by the wallet implementation.
+   */
+  supportedKeyTypes: KeyType[]
 }
 
 export interface WalletCreateKeyOptions {

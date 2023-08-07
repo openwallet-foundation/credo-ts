@@ -186,7 +186,7 @@ Although Aries Framework JavaScript tries to follow the standards as described i
 
 If you would like to contribute to the framework, please read the [Framework Developers README](/DEVREADME.md) and the [CONTRIBUTING](/CONTRIBUTING.md) guidelines. These documents will provide more information to get you started!
 
-The Aries Framework JavaScript call takes place every week at Thursday, 14:00 UTC via [Zoom](https://zoom.us/j/92215586249?pwd=Vm5ZTGV4T0cwVEl4blh3MjBzYjVYZz09).
+The Aries Framework JavaScript call takes place every week at Thursday, 6AM Pacific Time. See [World Time Buddy](https://www.worldtimebuddy.com/?qm=1&lid=5,2759794,8&h=5&date=2023-5-19&sln=9-10&hf=1) for the time in your timezone. The meeting is held on [Zoom](https://zoom.us/j/99751084865?pwd=TW1rU0FDVTBqUlhnWnY2NERkd1diZz09).
 This meeting is for contributors to groom and plan the backlog, and discuss issues.
 Meeting agendas and recordings can be found [here](https://wiki.hyperledger.org/display/ARIES/Framework+JS+Meetings).
 Feel free to join!

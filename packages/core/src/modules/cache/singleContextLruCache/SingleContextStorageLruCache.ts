@@ -4,7 +4,7 @@ import type { Cache } from '../Cache'
 
 import { LRUMap } from 'lru_map'
 
-import { AriesFrameworkError } from '../../../error'
+import { AriesFrameworkError, RecordDuplicateError } from '../../../error'
 
 import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
 import { SingleContextLruCacheRepository } from './SingleContextLruCacheRepository'
@@ -114,7 +114,20 @@ export class SingleContextStorageLruCache implements Cache {
         entries: new Map(),
       })
 
-      await cacheRepository.save(agentContext, cacheRecord)
+      try {
+        await cacheRepository.save(agentContext, cacheRecord)
+      } catch (error) {
+        // This addresses some race conditions issues where we first check if the record exists
+        // then we create one if it doesn't, but another process has created one in the meantime
+        // Although not the most elegant solution, it addresses the issues
+        if (error instanceof RecordDuplicateError) {
+          // the record already exists, which is our intended end state
+          // we can ignore this error and fetch the existing record
+          return cacheRepository.getById(agentContext, CONTEXT_STORAGE_LRU_CACHE_ID)
+        } else {
+          throw error
+        }
+      }
     }
 
     return cacheRecord

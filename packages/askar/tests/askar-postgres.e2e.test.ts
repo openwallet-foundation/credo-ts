@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
-import type { ConnectionRecord } from '@aries-framework/core'
 
-import { Agent, HandshakeProtocol } from '@aries-framework/core'
+import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
 import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { waitForBasicMessage } from '../../core/tests/helpers'
 
-import { getPostgresAgentOptions } from './helpers'
+import { e2eTest, getPostgresAgentOptions } from './helpers'
 
 const storageConfig: AskarWalletPostgresStorageConfig = {
   type: 'postgres',
@@ -35,8 +33,6 @@ const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', storageConf
 describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let bobConnection: ConnectionRecord
 
   afterAll(async () => {
     if (bobAgent) {
@@ -50,7 +46,7 @@ describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
     }
   })
 
-  test('make a connection between postgres agents', async () => {
+  test('Postgres Askar wallets E2E test', async () => {
     const aliceMessages = new Subject<SubjectMessage>()
     const bobMessages = new Subject<SubjectMessage>()
 
@@ -69,35 +65,6 @@ describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
     bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
-    const aliceBobOutOfBandRecord = await aliceAgent.oob.createInvitation({
-      handshakeProtocols: [HandshakeProtocol.Connections],
-    })
-
-    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.oob.receiveInvitation(
-      aliceBobOutOfBandRecord.getOutOfBandInvitation()
-    )
-    bobConnection = await bobAgent.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
-
-    const [aliceConnectionAtAliceBob] = await aliceAgent.connections.findAllByOutOfBandId(aliceBobOutOfBandRecord.id)
-    aliceConnection = await aliceAgent.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
-  })
-
-  test('send a message to connection', async () => {
-    const message = 'hello, world'
-    await aliceAgent.basicMessages.sendMessage(aliceConnection.id, message)
-
-    const basicMessage = await waitForBasicMessage(bobAgent, {
-      content: message,
-    })
-
-    expect(basicMessage.content).toBe(message)
-  })
-
-  test('can shutdown and re-initialize the same postgres agent', async () => {
-    expect(aliceAgent.isInitialized).toBe(true)
-    await aliceAgent.shutdown()
-    expect(aliceAgent.isInitialized).toBe(false)
-    await aliceAgent.initialize()
-    expect(aliceAgent.isInitialized).toBe(true)
+    await e2eTest(aliceAgent, bobAgent)
   })
 })

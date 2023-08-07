@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
+
+### Bug Fixes
+
+- **tenant:** Correctly configure storage for multi tenant agents ([#1359](https://github.com/hyperledger/aries-framework-javascript/issues/1359)) ([7795975](https://github.com/hyperledger/aries-framework-javascript/commit/779597563a4236fdab851df9e102dca18ce2d4e4)), closes [hyperledger#1353](https://github.com/hyperledger/issues/1353)
+
 ## [0.3.3](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.2...v0.3.3) (2023-01-18)
 
 ### Bug Fixes

@@ -21,8 +21,7 @@ import { OutOfBandEventTypes } from '../src/modules/oob/domain/OutOfBandEvents'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/protocols/v1/messages'
-import { DidCommMessageRepository, DidCommMessageRole } from '../src/storage'
-import { JsonEncoder } from '../src/utils'
+import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
@@ -88,6 +87,8 @@ describe('out of band', () => {
     aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
+
+    await aliceAgent.modules.anoncreds.createLinkSecret()
 
     const { credentialDefinition } = await prepareForAnonCredsIssuance(faberAgent, {
       attributeNames: ['name', 'age', 'profile_picture', 'x-ray'],
@@ -746,8 +747,190 @@ describe('out of band', () => {
     })
   })
 
-  describe('createLegacyConnectionlessInvitation', () => {
-    test('add ~service decorator to the message and returns invitation url', async () => {
+  describe('connection-less exchange', () => {
+    test('oob exchange without handshake where response is received to invitation', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.oob.createInvitation({
+        handshake: false,
+        messages: [message],
+      })
+      await aliceAgent.oob.receiveInvitation(outOfBandRecord.getOutOfBandInvitation())
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      await faberCredentialRecordPromise
+    })
+
+    test('oob exchange without handshake where response is received and custom routing is used on recipient', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.oob.createInvitation({
+        handshake: false,
+        messages: [message],
+      })
+      const outOfBandInvitation = outOfBandRecord.getOutOfBandInvitation()
+
+      const routing = await aliceAgent.mediationRecipient.getRouting({})
+
+      await aliceAgent.oob.receiveInvitation(outOfBandInvitation, {
+        routing,
+      })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      const faberCredentialRecord = await faberCredentialRecordPromise
+
+      const faberCredentialRequest = await faberAgent.credentials.findRequestMessage(faberCredentialRecord.id)
+
+      expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        serviceEndpoint: routing.endpoints[0],
+        routingKeys: routing.routingKeys.map((r) => r.publicKeyBase58),
+      })
+    })
+
+    test('legacy connectionless exchange where response is received to invitation', async () => {
+      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const { invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+        domain: 'http://example.com',
+        message,
+        recordId: credentialRecord.id,
+      })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      await faberCredentialRecordPromise
+    })
+
+    test('legacy connectionless exchange where response is received to invitation and custom routing is used on recipient', async () => {
+      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const { invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+        domain: 'http://example.com',
+        message,
+        recordId: credentialRecord.id,
+      })
+
+      const routing = await aliceAgent.mediationRecipient.getRouting({})
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl, { routing })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      const faberCredentialRecord = await faberCredentialRecordPromise
+
+      const faberCredentialRequest = await faberAgent.credentials.findRequestMessage(faberCredentialRecord.id)
+
+      expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
+        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        serviceEndpoint: routing.endpoints[0],
+        routingKeys: routing.routingKeys.map((r) => r.publicKeyBase58),
+      })
+    })
+
+    test('legacy connectionless exchange without receiving message through oob receiveInvitation, where response is received to invitation', async () => {
+      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const { message: messageWithService } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+        domain: 'http://example.com',
+        message,
+        recordId: credentialRecord.id,
+      })
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+      await aliceAgent.receiveMessage(messageWithService.toJSON())
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      await faberCredentialRecordPromise
+    })
+
+    test('add ~service decorator to the message and returns invitation url in createLegacyConnectionlessInvitation', async () => {
       const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
 
       const { message: offerMessage, invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
@@ -769,27 +952,6 @@ describe('out of band', () => {
       expect(JsonEncoder.fromBase64(messageBase64)).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/offer-credential',
-      })
-    })
-
-    test('updates the message in the didCommMessageRepository', async () => {
-      const { message, credentialRecord } = await faberAgent.credentials.createOffer(credentialTemplate)
-
-      const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
-
-      const saveOrUpdateSpy = jest.spyOn(didCommMessageRepository, 'saveOrUpdateAgentMessage')
-      saveOrUpdateSpy.mockResolvedValue()
-
-      await faberAgent.oob.createLegacyConnectionlessInvitation({
-        recordId: credentialRecord.id,
-        domain: 'https://test.com',
-        message,
-      })
-
-      expect(saveOrUpdateSpy).toHaveBeenCalledWith(expect.anything(), {
-        agentMessage: message,
-        associatedRecordId: credentialRecord.id,
-        role: DidCommMessageRole.Sender,
       })
     })
   })

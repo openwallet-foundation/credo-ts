@@ -11,9 +11,7 @@ import { KeyType } from '../../../../crypto'
 import { injectable } from '../../../../plugins'
 import { uuid } from '../../../../utils/uuid'
 import { ConnectionService } from '../../../connections/services'
-import { DidDocumentBuilder } from '../../../dids/domain'
-import { getEd25519VerificationMethod } from '../../../dids/domain/key-type/ed25519'
-import { getX25519VerificationMethod } from '../../../dids/domain/key-type/x25519'
+import { DidDocumentBuilder, getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../../dids/domain'
 import { DidCommV2Service } from '../../../dids/domain/service'
 import { PeerDidNumAlgo } from '../../../dids/methods/peer'
 import { DidRegistrarService } from '../../../dids/services'
@@ -152,7 +150,7 @@ export class V2OutOfBandService {
 
     authentications.forEach((authentication) =>
       didDocumentBuilder.addAuthentication(
-        getEd25519VerificationMethod({
+        getEd25519VerificationKey2018({
           id: `#${uuid()}`,
           key: authentication,
           controller: '#id',
@@ -161,7 +159,7 @@ export class V2OutOfBandService {
     )
     keyAgreements.forEach((keyAgreement) =>
       didDocumentBuilder.addKeyAgreement(
-        getX25519VerificationMethod({
+        getX25519KeyAgreementKey2019({
           id: `#${uuid()}`,
           key: keyAgreement,
           controller: '#id',

@@ -1,10 +1,8 @@
-import type { Jwk } from './JwkTypes'
 import type { KeyType } from './KeyType'
 
 import { Buffer, MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../utils'
 
-import { getJwkFromKey, getKeyDataFromJwk } from './Jwk'
-import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './JwkTypes'
+import { isEncryptionSupportedForKeyType, isSigningSupportedForKeyType } from './keyUtils'
 import { getKeyTypeByMultiCodecPrefix, getMultiCodecPrefixByKeyType } from './multiCodecKey'
 
 export class Key {
@@ -59,15 +57,5 @@ export class Key {
 
   public get supportsSigning() {
     return isSigningSupportedForKeyType(this.keyType)
-  }
-
-  public toJwk(): Jwk {
-    return getJwkFromKey(this)
-  }
-
-  public static fromJwk(jwk: Jwk) {
-    const { keyType, publicKey } = getKeyDataFromJwk(jwk)
-
-    return Key.fromPublicKey(publicKey, keyType)
   }
 }

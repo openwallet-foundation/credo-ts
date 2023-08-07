@@ -14,8 +14,9 @@ import type {
   WalletSignOptions,
   WalletVerifyOptions,
 } from '@aries-framework/core'
-// eslint-disable-next-line import/order
 import type { OpenWalletCredentials, WalletConfig as IndySdkWalletConfig, WalletStorageConfig } from 'indy-sdk'
+
+// eslint-disable-next-line import/order
 import {
   AriesFrameworkError,
   DidCommMessageVersion,
@@ -25,10 +26,10 @@ import {
   isValidSeed,
   JsonEncoder,
   Key,
-  SigningProviderRegistry,
   KeyType,
   Logger,
   RecordNotFoundError,
+  SigningProviderRegistry,
   TypedArrayEncoder,
   WalletDuplicateError,
   WalletError,
@@ -37,12 +38,13 @@ import {
   WalletKeyExistsError,
   WalletNotFoundError,
 } from '@aries-framework/core'
+
+const isError = (error: unknown): error is Error => error instanceof Error
+
 import { inject, injectable } from 'tsyringe'
 
 import { IndySdkError, isIndyError } from '../error'
 import { IndySdk, IndySdkSymbol } from '../types'
-
-const isError = (error: unknown): error is Error => error instanceof Error
 
 @injectable()
 export class IndySdkWallet implements Wallet {
@@ -50,16 +52,16 @@ export class IndySdkWallet implements Wallet {
   private walletHandle?: number
 
   private logger: Logger
-  private signingProviderRegistry: SigningProviderRegistry
+  private signingKeyProviderRegistry: SigningProviderRegistry
   private indySdk: IndySdk
 
   public constructor(
     @inject(IndySdkSymbol) indySdk: IndySdk,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    signingProviderRegistry: SigningProviderRegistry
+    signingKeyProviderRegistry: SigningProviderRegistry
   ) {
     this.logger = logger
-    this.signingProviderRegistry = signingProviderRegistry
+    this.signingKeyProviderRegistry = signingKeyProviderRegistry
     this.indySdk = indySdk
   }
 
@@ -79,6 +81,13 @@ export class IndySdkWallet implements Wallet {
     }
 
     return this.walletHandle
+  }
+
+  public get supportedKeyTypes() {
+    const walletSupportedKeyTypes = [KeyType.Ed25519]
+    const signingKeyProviderSupportedKeyTypes = this.signingKeyProviderRegistry.supportedKeyTypes
+
+    return Array.from(new Set([...walletSupportedKeyTypes, ...signingKeyProviderSupportedKeyTypes]))
   }
 
   /**
@@ -433,8 +442,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingProviderRegistry.hasProviderForKeyType(keyType)) {
-        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(keyType)
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(keyType)
 
         const keyPair = await signingKeyProvider.createKeyPair({ seed, privateKey })
         await this.storeKeyPair(keyPair)
@@ -478,8 +487,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
 
         const keyPair = await this.retrieveKeyPair(key.publicKeyBase58)
         const signed = await signingKeyProvider.sign({
@@ -525,8 +534,8 @@ export class IndySdkWallet implements Wallet {
       }
 
       // Check if there is a signing key provider for the specified key type.
-      if (this.signingProviderRegistry.hasProviderForKeyType(key.keyType)) {
-        const signingKeyProvider = this.signingProviderRegistry.getProviderForKeyType(key.keyType)
+      if (this.signingKeyProviderRegistry.hasProviderForKeyType(key.keyType)) {
+        const signingKeyProvider = this.signingKeyProviderRegistry.getProviderForKeyType(key.keyType)
 
         const signed = await signingKeyProvider.verify({
           data,
@@ -589,9 +598,7 @@ export class IndySdkWallet implements Wallet {
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
         didCommVersion: DidCommMessageVersion.V1,
-        senderKey: unpackedMessage.sender_verkey
-          ? Key.fromPublicKeyBase58(unpackedMessage.sender_verkey, KeyType.Ed25519)
-          : undefined,
+        senderKey: unpackedMessage.sender_verkey ? Key.fromPublicKeyBase58(unpackedMessage.sender_verkey, KeyType.Ed25519): undefined,
         recipientKey: Key.fromPublicKeyBase58(unpackedMessage.recipient_verkey, KeyType.Ed25519),
         plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }

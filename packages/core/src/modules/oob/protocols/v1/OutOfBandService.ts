@@ -4,12 +4,13 @@ import type { Key } from '../../../../crypto'
 import type { Query } from '../../../../storage/StorageService'
 import type { ConnectionRecord } from '../../../connections'
 import type { HandshakeProtocol } from '../../../connections/models'
+import type { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from '../../domain/OutOfBandEvents'
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
-import { JsonTransformer } from '../../../../utils'
+import { DidCommDocumentService } from '../../../didcomm/services/DidCommDocumentService'
 import { DidsApi } from '../../../dids'
 import { parseDid } from '../../../dids/domain/parse'
 import { OutOfBandEventTypes } from '../../domain/OutOfBandEvents'
@@ -32,10 +33,16 @@ export interface CreateFromImplicitInvitationConfig {
 export class OutOfBandService {
   private outOfBandRepository: OutOfBandRepository
   private eventEmitter: EventEmitter
+  private didCommDocumentService: DidCommDocumentService
 
-  public constructor(outOfBandRepository: OutOfBandRepository, eventEmitter: EventEmitter) {
+  public constructor(
+    outOfBandRepository: OutOfBandRepository,
+    eventEmitter: EventEmitter,
+    didCommDocumentService: DidCommDocumentService
+  ) {
     this.outOfBandRepository = outOfBandRepository
     this.eventEmitter = eventEmitter
+    this.didCommDocumentService = didCommDocumentService
   }
 
   /**
@@ -201,12 +208,10 @@ export class OutOfBandService {
     outOfBandRecord: OutOfBandRecord,
     previousState: OutOfBandState | null
   ) {
-    const clonedOutOfBandRecord = JsonTransformer.clone(outOfBandRecord)
-
     this.eventEmitter.emit<OutOfBandStateChangedEvent>(agentContext, {
       type: OutOfBandEventTypes.OutOfBandStateChanged,
       payload: {
-        outOfBandRecord: clonedOutOfBandRecord,
+        outOfBandRecord: outOfBandRecord.clone(),
         previousState,
       },
     })
@@ -253,5 +258,27 @@ export class OutOfBandService {
   public async deleteById(agentContext: AgentContext, outOfBandId: string) {
     const outOfBandRecord = await this.getById(agentContext, outOfBandId)
     return this.outOfBandRepository.delete(agentContext, outOfBandRecord)
+  }
+
+  /**
+   * Extract a resolved didcomm service from an out of band invitation.
+   *
+   * Currently the first service that can be resolved is returned.
+   */
+  public async getResolvedServiceForOutOfBandServices(
+    agentContext: AgentContext,
+    services: Array<string | OutOfBandDidCommService>
+  ) {
+    for (const service of services) {
+      if (typeof service === 'string') {
+        const [didService] = await this.didCommDocumentService.resolveServicesFromDid(agentContext, service)
+
+        if (didService) return didService
+      } else {
+        return service.resolvedDidCommService
+      }
+    }
+
+    throw new AriesFrameworkError('Could not extract a service from the out of band invitation.')
   }
 }

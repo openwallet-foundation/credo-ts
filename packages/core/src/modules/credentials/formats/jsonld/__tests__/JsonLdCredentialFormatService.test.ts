@@ -10,19 +10,21 @@ import { JsonTransformer } from '../../../../../utils'
 import { JsonEncoder } from '../../../../../utils/JsonEncoder'
 import { DidDocument } from '../../../../dids'
 import { DidResolverService } from '../../../../dids/services/DidResolverService'
-import { W3cCredentialRecord, W3cCredentialService } from '../../../../vc'
-import { Ed25519Signature2018Fixtures } from '../../../../vc/__tests__/fixtures'
-import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../vc/constants'
-import { W3cVerifiableCredential } from '../../../../vc/models'
+import { CREDENTIALS_CONTEXT_V1_URL, W3cCredentialRecord, W3cJsonLdVerifiableCredential } from '../../../../vc'
+import { W3cCredentialService } from '../../../../vc/W3cCredentialService'
+import { W3cJsonLdCredentialService } from '../../../../vc/data-integrity/W3cJsonLdCredentialService'
+import { Ed25519Signature2018Fixtures } from '../../../../vc/data-integrity/__tests__/fixtures'
 import { CredentialState } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
 
 jest.mock('../../../../vc/W3cCredentialService')
+jest.mock('../../../../vc/data-integrity/W3cJsonLdCredentialService')
 jest.mock('../../../../dids/services/DidResolverService')
 
 const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
+const W3cJsonLdCredentialServiceMock = W3cJsonLdCredentialService as jest.Mock<W3cJsonLdCredentialService>
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 const didDocument = JsonTransformer.fromJSON(
@@ -67,7 +69,7 @@ const vcJson = {
   },
 }
 
-const vc = JsonTransformer.fromJSON(vcJson, W3cVerifiableCredential)
+const vc = JsonTransformer.fromJSON(vcJson, W3cJsonLdVerifiableCredential)
 
 const credentialPreview = V2CredentialPreview.fromRecord({
   name: 'John',
@@ -149,12 +151,14 @@ const requestAttachment = new Attachment({
 })
 let jsonLdFormatService: CredentialFormatService<JsonLdCredentialFormat>
 let w3cCredentialService: W3cCredentialService
+let w3cJsonLdCredentialService: W3cJsonLdCredentialService
 let didResolver: DidResolverService
 
 describe('JsonLd CredentialFormatService', () => {
   let agentContext: AgentContext
   beforeEach(async () => {
     w3cCredentialService = new W3cCredentialServiceMock()
+    w3cJsonLdCredentialService = new W3cJsonLdCredentialServiceMock()
     didResolver = new DidResolverServiceMock()
 
     const agentConfig = getAgentConfig('JsonLdCredentialFormatServiceTest')
@@ -162,6 +166,7 @@ describe('JsonLd CredentialFormatService', () => {
       registerInstances: [
         [DidResolverService, didResolver],
         [W3cCredentialService, w3cCredentialService],
+        [W3cJsonLdCredentialService, w3cJsonLdCredentialService],
       ],
       agentConfig,
     })
@@ -283,7 +288,7 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('Derive Verification Method', async () => {
       mockFunction(didResolver.resolveDidDocument).mockReturnValue(Promise.resolve(didDocument))
-      mockFunction(w3cCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
+      mockFunction(w3cJsonLdCredentialService.getVerificationMethodTypesByProofType).mockReturnValue([
         'Ed25519VerificationKey2018',
       ])
 
@@ -303,7 +308,7 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('Creates a credential', async () => {
       // given
-      mockFunction(w3cCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
+      mockFunction(w3cJsonLdCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
 
       const credentialRecord = mockCredentialRecord({
         state: CredentialState.RequestReceived,
@@ -322,7 +327,7 @@ describe('JsonLd CredentialFormatService', () => {
         offerAttachment,
       })
       //then
-      expect(w3cCredentialService.signCredential).toHaveBeenCalledTimes(1)
+      expect(w3cJsonLdCredentialService.signCredential).toHaveBeenCalledTimes(1)
 
       expect(attachment).toMatchObject({
         id: expect.any(String),

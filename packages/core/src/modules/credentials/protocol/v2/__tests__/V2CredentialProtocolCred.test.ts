@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { AgentContext } from '../../../../../agent'
 import type { GetAgentMessageOptions } from '../../../../../storage'
+import type { PlaintextMessage } from '../../../../../types'
 import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
 import type {
   CredentialFormat,
@@ -154,7 +155,7 @@ credentialIssueMessage.setThread({ threadId: 'somethreadid' })
 
 const didCommMessageRecord = new DidCommMessageRecord({
   associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-  message: {},
+  message: {} as PlaintextMessage,
   role: DidCommMessageRole.Receiver,
 })
 

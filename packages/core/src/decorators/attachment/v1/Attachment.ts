@@ -1,19 +1,8 @@
-import type { JwsGeneralFormat } from '../../../crypto/JwsTypes'
+import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '../../../crypto/JwsTypes'
 
 import { Expose, Type } from 'class-transformer'
-import {
-  IsBase64,
-  IsDate,
-  IsHash,
-  IsInstance,
-  IsInt,
-  IsMimeType,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator'
+import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { Jws } from '../../../crypto/JwsTypes'
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
@@ -32,7 +21,7 @@ export interface AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
   links?: string[]
-  jws?: Jws
+  jws?: JwsDetachedFormat | JwsFlattenedDetachedFormat
   sha256?: string
 }
 
@@ -44,7 +33,7 @@ export class AttachmentData {
    * Base64-encoded data, when representing arbitrary content inline instead of via links. Optional.
    */
   @IsOptional()
-  @IsBase64()
+  @IsString()
   public base64?: string
 
   /**
@@ -64,7 +53,8 @@ export class AttachmentData {
    * A JSON Web Signature over the content of the attachment. Optional.
    */
   @IsOptional()
-  public jws?: Jws
+  // Signed attachments use JWS detached format
+  public jws?: JwsDetachedFormat | JwsFlattenedDetachedFormat
 
   /**
    * The hash of the content. Optional.
@@ -161,19 +151,23 @@ export class Attachment {
     }
   }
 
-  public addJws(jws: JwsGeneralFormat) {
+  public addJws(jws: JwsDetachedFormat) {
+    // Remove payload if user provided a non-detached JWS
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { payload, ...detachedJws } = jws as JwsGeneralFormat
+
     // If no JWS yet, assign to current JWS
     if (!this.data.jws) {
-      this.data.jws = jws
+      this.data.jws = detachedJws
     }
     // Is already jws array, add to it
     else if ('signatures' in this.data.jws) {
-      this.data.jws.signatures.push(jws)
+      this.data.jws.signatures.push(detachedJws)
     }
     // If already single JWS, transform to general jws format
     else {
       this.data.jws = {
-        signatures: [this.data.jws, jws],
+        signatures: [this.data.jws, detachedJws],
       }
     }
   }

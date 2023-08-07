@@ -15,6 +15,8 @@ export class MockWallet implements Wallet {
   public isInitialized = true
   public isProvisioned = true
 
+  public supportedKeyTypes = []
+
   public create(walletConfig: WalletConfig): Promise<void> {
     throw new Error('Method not implemented.')
   }

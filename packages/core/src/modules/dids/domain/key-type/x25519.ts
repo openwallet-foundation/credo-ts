@@ -1,34 +1,37 @@
 import type { KeyDidMapping } from './keyDidMapping'
 import type { VerificationMethod } from '../verificationMethod'
 
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
-
-const VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019 = 'X25519KeyAgreementKey2019'
-
-export function getX25519VerificationMethod({ key, id, controller }: { id: string; key: Key; controller: string }) {
-  return {
-    id,
-    type: VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
-    controller,
-    publicKeyBase58: key.publicKeyBase58,
-  }
-}
+import { KeyType } from '../../../../crypto/KeyType'
+import { AriesFrameworkError } from '../../../../error'
+import {
+  getKeyFromX25519KeyAgreementKey2019,
+  VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
+  getX25519KeyAgreementKey2019,
+  isX25519KeyAgreementKey2019,
+  getKeyFromJsonWebKey2020,
+  isJsonWebKey2020,
+  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+} from '../verificationMethod'
 
 export const keyDidX25519: KeyDidMapping = {
-  supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019],
-
+  supportedVerificationMethodTypes: [
+    VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
+    VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  ],
   getVerificationMethods: (did, key) => [
-    getX25519VerificationMethod({ id: `${did}#${key.fingerprint}`, key, controller: did }),
+    getX25519KeyAgreementKey2019({ id: `${did}#${key.fingerprint}`, key, controller: did }),
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
-    if (
-      verificationMethod.type !== VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019 ||
-      !verificationMethod.publicKeyBase58
-    ) {
-      throw new Error('Invalid verification method passed')
+    if (isJsonWebKey2020(verificationMethod)) {
+      return getKeyFromJsonWebKey2020(verificationMethod)
     }
 
-    return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.X25519)
+    if (isX25519KeyAgreementKey2019(verificationMethod)) {
+      return getKeyFromX25519KeyAgreementKey2019(verificationMethod)
+    }
+
+    throw new AriesFrameworkError(
+      `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.X25519}'`
+    )
   },
 }

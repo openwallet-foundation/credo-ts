@@ -82,7 +82,8 @@ export class IndySdkVerifierService implements AnonCredsVerifierService {
 
       return await this.indySdk.verifierVerifyProof(
         options.proofRequest as IndyProofRequest,
-        options.proof as IndyProof,
+        // FIXME IndyProof if badly typed in indy-sdk. It contains a `requested_predicates` property, which should be `predicates`.
+        options.proof as unknown as IndyProof,
         indySchemas,
         indyCredentialDefinitions,
         indyRevocationDefinitions,

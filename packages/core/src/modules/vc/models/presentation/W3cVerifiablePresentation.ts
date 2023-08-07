@@ -1,25 +1,10 @@
-import type { W3cPresentationOptions } from './W3cPresentation'
-import type { LinkedDataProofOptions } from '../LinkedDataProof'
+import type { W3cJsonLdVerifiablePresentation } from '../../data-integrity'
+import type { W3cJwtVerifiablePresentation } from '../../jwt-vc'
+import type { ClaimFormat } from '../ClaimFormat'
 
-import { SingleOrArray } from '../../../../utils/type'
-import { IsInstanceOrArrayOfInstances } from '../../../../utils/validators'
-import { LinkedDataProof, LinkedDataProofTransformer } from '../LinkedDataProof'
-
-import { W3cPresentation } from './W3cPresentation'
-
-export interface W3cVerifiablePresentationOptions extends W3cPresentationOptions {
-  proof: LinkedDataProofOptions
-}
-
-export class W3cVerifiablePresentation extends W3cPresentation {
-  public constructor(options: W3cVerifiablePresentationOptions) {
-    super(options)
-    if (options) {
-      this.proof = new LinkedDataProof(options.proof)
-    }
-  }
-
-  @LinkedDataProofTransformer()
-  @IsInstanceOrArrayOfInstances({ classType: LinkedDataProof })
-  public proof!: SingleOrArray<LinkedDataProof>
-}
+export type W3cVerifiablePresentation<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp | unknown = unknown> =
+  Format extends ClaimFormat.JwtVp
+    ? W3cJsonLdVerifiablePresentation
+    : Format extends ClaimFormat.LdpVp
+    ? W3cJwtVerifiablePresentation
+    : W3cJsonLdVerifiablePresentation | W3cJwtVerifiablePresentation
