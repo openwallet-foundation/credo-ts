@@ -34,7 +34,7 @@ import { KeyType } from '../../../../../crypto'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CacheModule, InMemoryLruCache } from '../../../../cache'
-import { DidsModule, KeyDidRegistrar, KeyDidResolver } from '../../../../dids'
+import { DidsModule } from '../../../../dids'
 import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
 import { W3cCredentialsModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/data-integrity/__tests__/documentLoader'
@@ -108,8 +108,8 @@ const getIndyJsonLdModules = () =>
       registries: [new IndySdkAnonCredsRegistry()],
     }),
     dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver(), new KeyDidResolver()],
-      registrars: [new IndySdkIndyDidRegistrar(), new KeyDidRegistrar()],
+      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
+      registrars: [new IndySdkIndyDidRegistrar()],
     }),
     indySdk: new IndySdkModule({
       indySdk,

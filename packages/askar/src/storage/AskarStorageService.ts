@@ -140,15 +140,16 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>
   ): Promise<T[]> {
-    assertAskarWallet(agentContext.wallet)
-    const store = agentContext.wallet.store
+    const wallet = agentContext.wallet
+    assertAskarWallet(wallet)
 
     const askarQuery = askarQueryFromSearchQuery(query)
 
     const scan = new Scan({
       category: recordClass.type,
-      store,
+      store: wallet.store,
       tagFilter: askarQuery,
+      profile: wallet.profile,
     })
 
     const instances = []
