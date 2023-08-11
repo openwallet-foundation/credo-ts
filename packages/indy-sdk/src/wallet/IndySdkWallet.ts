@@ -598,7 +598,9 @@ export class IndySdkWallet implements Wallet {
       const unpackedMessage = JsonEncoder.fromBuffer(unpackedMessageBuffer)
       return {
         didCommVersion: DidCommMessageVersion.V1,
-        senderKey: unpackedMessage.sender_verkey ? Key.fromPublicKeyBase58(unpackedMessage.sender_verkey, KeyType.Ed25519): undefined,
+        senderKey: unpackedMessage.sender_verkey
+          ? Key.fromPublicKeyBase58(unpackedMessage.sender_verkey, KeyType.Ed25519)
+          : undefined,
         recipientKey: Key.fromPublicKeyBase58(unpackedMessage.recipient_verkey, KeyType.Ed25519),
         plaintextMessage: JsonEncoder.fromString(unpackedMessage.message),
       }
