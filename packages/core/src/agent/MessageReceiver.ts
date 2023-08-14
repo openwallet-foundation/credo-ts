@@ -18,6 +18,7 @@ import {
   DidExchangeState,
   HandshakeProtocol,
 } from '../modules/connections'
+import { OutOfBandService } from '../modules/oob'
 import {
   buildProblemReportV1Message,
   buildProblemReportV2Message,
@@ -46,6 +47,7 @@ export class MessageReceiver {
   private dispatcher: Dispatcher
   private logger: Logger
   private connectionService: ConnectionService
+  private outOfBandService: OutOfBandService
   private messageHandlerRegistry: MessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
   private connectionsModuleConfig: ConnectionsModuleConfig
@@ -56,6 +58,7 @@ export class MessageReceiver {
     transportService: TransportService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
+    outOfBandService: OutOfBandService,
     dispatcher: Dispatcher,
     messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
@@ -66,6 +69,7 @@ export class MessageReceiver {
     this.transportService = transportService
     this.messageSender = messageSender
     this.connectionService = connectionService
+    this.outOfBandService = outOfBandService
     this.dispatcher = dispatcher
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
@@ -259,12 +263,17 @@ export class MessageReceiver {
       // If we received a message for nonexisting connection record,
       // create a connection record when the corresponding option is set in the config
       if (this.connectionsModuleConfig.autoCreateConnectionOnFirstMessage) {
+        // Get related out of band record
+        const outOfBandRecord = await this.outOfBandService.findCreatedByRecipientDid(agentContext, recipient)
+        if (!outOfBandRecord) throw new AriesFrameworkError(`No OOB record found for recipient did: ${recipient}`)
+
         connection = await this.connectionService.createConnection(agentContext, {
           protocol: HandshakeProtocol.None,
           role: DidExchangeRole.Requester,
           state: DidExchangeState.Completed,
           theirDid: from,
           did: recipient,
+          outOfBandId: outOfBandRecord.id,
         })
       }
 

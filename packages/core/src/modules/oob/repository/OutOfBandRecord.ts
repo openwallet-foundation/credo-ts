@@ -27,6 +27,7 @@ type DefaultOutOfBandRecordTags = {
 
 interface CustomOutOfBandRecordTags extends TagsBase {
   recipientKeyFingerprints: string[]
+  recipientDid?: string
 }
 
 export interface OutOfBandRecordProps {
@@ -84,7 +85,7 @@ export class OutOfBandRecord extends BaseRecord<
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
-      this._tags = props.tags ?? { recipientKeyFingerprints: [] }
+      this._tags = props.tags ?? { recipientKeyFingerprints: [], recipientDid: this.v2OutOfBandInvitation?.from }
     }
   }
 
