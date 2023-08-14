@@ -98,6 +98,28 @@ export const bobX25519Secret3 = {
   },
 }
 
+export const carolX25519Secret1 = {
+  kid: 'did:key:zDnaecpEz4aZZKFY9PrH4Jsk1QDWDfKLVYdDNXm2vQbZXJNUv',
+  value: {
+    kty: 'EC',
+    crv: 'P-256',
+    x: 'uAEK5vb-1lWLIAKd7_tUie1G3OnN5sKX0oxbroNqF88',
+    y: '8rWj-Ynt1xqmbrr0kflxiuzRd9KTX7r8J2AO_QGkQLY',
+    d: 'DgsPMYNChPZgA17fFiJvfWSKVt8Y6jeQVrQYu15x_44',
+  },
+}
+
+export const carolX25519Secret2 = {
+  kid: 'did:key:zDnaep56aqRCVi2TFfVKaWbPMdhrvYMytJT4ZZ7KMewTq7fbC',
+  value: {
+    kty: 'EC',
+    crv: 'P-256',
+    x: 'Xz_P_ojVcmn3gRCc1ufCinCpOyr3lQlyxYn5ka4PU0c',
+    y: '__XxsnpPjUDoFRG8jmfbFI5mtR7_gI7dDcinzFxFu78',
+    d: 'XLHQaQrJKYlWwoMIXMhGstkUuYjjHEpZDG5DjTE580I',
+  },
+}
+
 export const message = {
   id: '1234567890',
   typ: 'application/didcomm-plain+json',
@@ -177,6 +199,17 @@ export const aliceDidDocument = {
         crv: 'P-521',
         x: 'AHBEVPRhAv-WHDEvxVM9S0px9WxxwHL641Pemgk9sDdxvli9VpKCBdra5gg_4kupBDhz__AlaBgKOC_15J2Byptz',
         y: 'AciGcHJCD_yMikQvlmqpkBbVqqbg93mMVcgvXBYAQPP-u9AF7adybwZrNfHWCKAQwGF9ugd0Zhg7mLMEszIONFRk',
+      },
+    },
+    {
+      id: 'did:key:zDnaeSjdZfMjMGbJyZyB1PmpmjsQyAHy59oAatpA8YhouzxpT',
+      type: 'JsonWebKey2020',
+      controller: 'did:example:alice',
+      publicKeyJwk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'Ij3MvkVybOseeEXfzTfUFSKGaOKtsXt3TBOuhXYn7uQ',
+        y: 'fZK7YPgBJ79_g6Aodlrr3cr_ZSChmP09xFVP5TzByWo',
       },
     },
   ],
@@ -283,4 +316,79 @@ export const bobDidDocument = {
       },
     },
   ],
+}
+
+export const carolDidDocument = {
+  '@context': ['https://www.w3.org/ns/did/v2'],
+  id: 'did:example:carol',
+  keyAgreement: [
+    {
+      id: 'did:key:zDnaecpEz4aZZKFY9PrH4Jsk1QDWDfKLVYdDNXm2vQbZXJNUv',
+      type: 'JsonWebKey2020',
+      controller: 'did:example:carol',
+      publicKeyJwk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'uAEK5vb-1lWLIAKd7_tUie1G3OnN5sKX0oxbroNqF88',
+        y: '8rWj-Ynt1xqmbrr0kflxiuzRd9KTX7r8J2AO_QGkQLY',
+      },
+    },
+    {
+      id: 'did:key:zDnaep56aqRCVi2TFfVKaWbPMdhrvYMytJT4ZZ7KMewTq7fbC',
+      type: 'JsonWebKey2020',
+      controller: 'did:example:carol',
+      publicKeyJwk: {
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'Xz_P_ojVcmn3gRCc1ufCinCpOyr3lQlyxYn5ka4PU0c',
+        y: '__XxsnpPjUDoFRG8jmfbFI5mtR7_gI7dDcinzFxFu78',
+      },
+    },
+  ],
+}
+
+export const AFGoAuthcryptedEncryptedMessage1 = {
+  protected:
+    'eyJhbGciOiJFQ0RILTFQVStBMjU2S1ciLCJhcHUiOiJaR2xrT210bGVUcDZSRzVoWlZOcVpGcG1UV3BOUjJKS2VWcDVRakZRYlhCdGFuTlJlVUZJZVRVNWIwRmhkSEJCT0Zsb2IzVjZlSEJVIiwiYXB2IjoiWXRCZjNxYk42TTZOOC1ncGxhRVc3UjlWMFdyLVlEYld5U2lfcy15TTNfQSIsImN0eSI6ImFwcGxpY2F0aW9uL2pzb247Zmxhdm9yPWRpZGNvbW0tbXNnIiwiZW5jIjoiQTI1NkNCQy1IUzUxMiIsImVwayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IjU4LS1wUlBVSFk3Q2xiRFd5MDFySlJCVjdjTUtPYWctUEJ5bEhzbjBRdzgiLCJ5IjoiN09vcGkwbGVIYUxLbVdjeE1tYUpwQW5yeVZLMXo5MHpkN1dMM0F6c1dHcyJ9LCJza2lkIjoiZGlkOmtleTp6RG5hZVNqZFpmTWpNR2JKeVp5QjFQbXBtanNReUFIeTU5b0FhdHBBOFlob3V6eHBUIiwidHlwIjoiYXBwbGljYXRpb24vZGlkY29tbS1lbmNyeXB0ZWQranNvbiJ9',
+  recipients: [
+    {
+      header: {
+        kid: 'did:key:zDnaecpEz4aZZKFY9PrH4Jsk1QDWDfKLVYdDNXm2vQbZXJNUv',
+      },
+      encrypted_key: 'bwsJqmmvQec0gRfJTOWlWQTX93ES2ZelfXQ08RQ3ft4OU_cu6IwKSqWO94reH48RPrsUKI3Wnb_TNedzK9mijoipR69dGzD_',
+    },
+    {
+      header: {
+        kid: 'did:key:zDnaep56aqRCVi2TFfVKaWbPMdhrvYMytJT4ZZ7KMewTq7fbC',
+      },
+      encrypted_key: '--HXkxBgfzJw0lLQGbnLTGGWU_rHg6cX1rDo5MBKmdamFCc-nHnhHCwO-IPoSkCPK2e5guURPlVoHOhELyALhCsakkGt0b_2',
+    },
+  ],
+  iv: 'sQj08y0PNrftdr9jNyiCZQ',
+  ciphertext:
+    'K8fD9lThjBBLRjWQEPdKtlIZDORYhCAKABIsu5sZmGjSf4TorLoMWAhgwSMf8jpLzHyXXoGDabZh2bk6mCEqtuM8aAn-WuDuP6iIlbdc7Cej64mFEd24Nwy_QfHJiYqyVY1TkL9MnhvytH46p-CQbNHM-9rHfi6j6nErDENRS2f0X-NXUH78jukT4-phinyjrDA7mlKGteEwiWDPvU7yqDklsijJ9bwTjq0wmQ6a0vPMLDUX1BrWq_jbF6xUHFJQZD9mCdtmsOrNY_7VnrBOJI7cwZkFIbqkz2kPCPxPBizTPgaLVHBJPcMhNTJABLej2uVl8gFP8qpUrHmEiwqAJUDwCUlTx7l1k0PiGpg2sZlH9Y3FZqAVGt_xqIlMGFqp',
+  tag: '3kuEK628Bi32Lclh336ruumJRzZQPLsnMvy5VVblp68',
+}
+
+export const AFGoAuthcryptedEncryptedMessage2 = {
+  protected:
+    'eyJhbGciOiJFQ0RILTFQVStBMjU2S1ciLCJhcHUiOiJaR2xrT210bGVUcDZSRzVoWlZOcVpGcG1UV3BOUjJKS2VWcDVRakZRYlhCdGFuTlJlVUZJZVRVNWIwRmhkSEJCT0Zsb2IzVjZlSEJVIiwiYXB2IjoiWXRCZjNxYk42TTZOOC1ncGxhRVc3UjlWMFdyLVlEYld5U2lfcy15TTNfQSIsImN0eSI6ImFwcGxpY2F0aW9uL2pzb247Zmxhdm9yPWRpZGNvbW0tbXNnIiwiZW5jIjoiQTI1NkNCQy1IUzUxMiIsImVwayI6eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6IjU4LS1wUlBVSFk3Q2xiRFd5MDFySlJCVjdjTUtPYWctUEJ5bEhzbjBRdzgiLCJ5IjoiN09vcGkwbGVIYUxLbVdjeE1tYUpwQW5yeVZLMXo5MHpkN1dMM0F6c1dHcyJ9LCJza2lkIjoiZGlkOmtleTp6RG5hZVNqZFpmTWpNR2JKeVp5QjFQbXBtanNReUFIeTU5b0FhdHBBOFlob3V6eHBUIiwidHlwIjoiYXBwbGljYXRpb24vZGlkY29tbS1lbmNyeXB0ZWQranNvbiJ9',
+  recipients: [
+    {
+      header: {
+        kid: 'did:key:zDnaecpEz4aZZKFY9PrH4Jsk1QDWDfKLVYdDNXm2vQbZXJNUv',
+      },
+      encrypted_key: 'bwsJqmmvQec0gRfJTOWlWQTX93ES2ZelfXQ08RQ3ft4OU_cu6IwKSqWO94reH48RPrsUKI3Wnb_TNedzK9mijoipR69dGzD_',
+    },
+    {
+      header: {
+        kid: 'did:key:zDnaep56aqRCVi2TFfVKaWbPMdhrvYMytJT4ZZ7KMewTq7fbC',
+      },
+      encrypted_key: '--HXkxBgfzJw0lLQGbnLTGGWU_rHg6cX1rDo5MBKmdamFCc-nHnhHCwO-IPoSkCPK2e5guURPlVoHOhELyALhCsakkGt0b_2',
+    },
+  ],
+  iv: 'sQj08y0PNrftdr9jNyiCZQ',
+  ciphertext:
+    'K8fD9lThjBBLRjWQEPdKtlIZDORYhCAKABIsu5sZmGjSf4TorLoMWAhgwSMf8jpLzHyXXoGDabZh2bk6mCEqtuM8aAn-WuDuP6iIlbdc7Cej64mFEd24Nwy_QfHJiYqyVY1TkL9MnhvytH46p-CQbNHM-9rHfi6j6nErDENRS2f0X-NXUH78jukT4-phinyjrDA7mlKGteEwiWDPvU7yqDklsijJ9bwTjq0wmQ6a0vPMLDUX1BrWq_jbF6xUHFJQZD9mCdtmsOrNY_7VnrBOJI7cwZkFIbqkz2kPCPxPBizTPgaLVHBJPcMhNTJABLej2uVl8gFP8qpUrHmEiwqAJUDwCUlTx7l1k0PiGpg2sZlH9Y3FZqAVGt_xqIlMGFqp',
+  tag: '3kuEK628Bi32Lclh336ruumJRzZQPLsnMvy5VVblp68',
 }

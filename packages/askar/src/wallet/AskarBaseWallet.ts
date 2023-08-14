@@ -759,6 +759,8 @@ export abstract class AskarBaseWallet implements Wallet {
   /**
    * Unpacks a JWE Envelope coded using DIDComm V2 encryption algorithms
    *
+   *  Note: `P-384` and `P-521` key types are not currently supported.
+   *
    * @param messagePackage JWE Envelope
    * @param params Resolved Did Documents of the sender and recipients
    *
