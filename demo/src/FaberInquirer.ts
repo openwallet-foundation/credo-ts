@@ -18,6 +18,7 @@ enum PromptOptions {
   CreateConnection = 'Create connection invitation',
   OfferCredential = 'Offer credential',
   RequestProof = 'Request proof',
+  Ping = 'Ping other party',
   SendMessage = 'Send message',
   ListConnections = 'List connections',
   Exit = 'Exit',
@@ -69,6 +70,9 @@ export class FaberInquirer extends BaseInquirer {
       case PromptOptions.RequestProof:
         await this.proof()
         return
+      case PromptOptions.Ping:
+        await this.ping()
+        break
       case PromptOptions.SendMessage:
         await this.message()
         break
@@ -112,6 +116,10 @@ export class FaberInquirer extends BaseInquirer {
     await this.faber.sendProofRequest()
     const title = 'Is the proof request accepted?'
     await this.listener.newAcceptedPrompt(title, this)
+  }
+
+  public async ping() {
+    await this.faber.ping()
   }
 
   public async message() {

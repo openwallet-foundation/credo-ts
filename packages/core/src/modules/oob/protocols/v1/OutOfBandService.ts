@@ -247,6 +247,13 @@ export class OutOfBandService {
     })
   }
 
+  public async findCreatedByRecipientDid(agentContext: AgentContext, recipientDid: string) {
+    return this.outOfBandRepository.findSingleByQuery(agentContext, {
+      recipientDid,
+      role: OutOfBandRole.Sender,
+    })
+  }
+
   public async getAll(agentContext: AgentContext) {
     return this.outOfBandRepository.getAll(agentContext)
   }

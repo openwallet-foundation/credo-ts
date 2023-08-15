@@ -271,6 +271,11 @@ export class Faber extends BaseAgent {
     )
   }
 
+  public async ping() {
+    const connectionRecord = await this.getConnectionRecord()
+    await this.agent.connections.sendPing(connectionRecord.id, {})
+  }
+
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
     await this.agent.basicMessages.sendMessage(connectionRecord.id, message)
