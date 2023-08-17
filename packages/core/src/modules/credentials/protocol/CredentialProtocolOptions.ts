@@ -1,5 +1,5 @@
 import type { CredentialProtocol } from './CredentialProtocol'
-import type { DidCommV1Message } from '../../../didcomm'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ConnectionRecord } from '../../connections/repository/ConnectionRecord'
 import type {
   CredentialFormat,
@@ -155,7 +155,7 @@ export interface CreateCredentialProblemReportOptions {
   description: string
 }
 
-export interface CredentialProtocolMsgReturnType<MessageType extends DidCommV1Message> {
+export interface CredentialProtocolMsgReturnType<MessageType extends AgentBaseMessage> {
   message: MessageType
   credentialRecord: CredentialExchangeRecord
 }
