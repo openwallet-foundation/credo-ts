@@ -11,7 +11,7 @@ import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../.
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
 import { MessageSendingError, RecordNotFoundError } from '../../../error'
-import { BasicMessage } from '../messages'
+import { V1BasicMessage } from '../protocols'
 import { BasicMessageRecord } from '../repository'
 
 const faberConfig = getAgentOptions(
@@ -101,9 +101,9 @@ describe('Basic Messages E2E', () => {
     expect(replyRecord.parentThreadId).toBe(helloMessage.id)
 
     testLogger.test('Alice waits until she receives message from faber')
-    const replyMessage = await waitForBasicMessage(aliceAgent, {
+    const replyMessage = (await waitForBasicMessage(aliceAgent, {
       content: 'How are you?',
-    })
+    })) as V1BasicMessage
     expect(replyMessage.content).toBe('How are you?')
     expect(replyMessage.thread?.parentThreadId).toBe(helloMessage.id)
 
@@ -151,8 +151,8 @@ describe('Basic Messages E2E', () => {
 
       testLogger.test('Error thrown includes the outbound message and recently created record id')
       expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(BasicMessageRecord)
-      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(BasicMessage)
-      expect((thrownError.outboundMessageContext.message as BasicMessage).content).toBe('Hello undeliverable')
+      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(V1BasicMessage)
+      expect((thrownError.outboundMessageContext.message as V1BasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
       const storedRecord = await aliceAgent.basicMessages.getById(

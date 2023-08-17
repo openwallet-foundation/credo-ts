@@ -20,6 +20,7 @@ export type DidCommV2MessageParams = {
   createdTime?: number
   expiresTime?: number
   fromPrior?: string
+  language?: string
   attachments?: Array<V2Attachment>
   body?: unknown
 }
@@ -67,6 +68,11 @@ export class DidCommV2BaseMessage {
   @IsString()
   @IsOptional()
   public fromPrior?: string
+
+  @Expose({ name: 'lang' })
+  @IsString()
+  @IsOptional()
+  public language?: string
 
   public body!: unknown
 

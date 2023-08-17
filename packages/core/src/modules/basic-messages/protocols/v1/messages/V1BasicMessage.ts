@@ -1,11 +1,11 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsDate, IsString } from 'class-validator'
 
-import { DidCommV1Message } from '../../../didcomm'
-import { IsValidMessageType, parseMessageType } from '../../../utils/messageType'
-import { DateParser } from '../../../utils/transformers'
+import { DidCommV1Message } from '../../../../../didcomm'
+import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
+import { DateParser } from '../../../../../utils/transformers'
 
-export class BasicMessage extends DidCommV1Message {
+export class V1BasicMessage extends DidCommV1Message {
   public readonly allowDidSovPrefix = true
 
   /**
@@ -24,8 +24,8 @@ export class BasicMessage extends DidCommV1Message {
     }
   }
 
-  @IsValidMessageType(BasicMessage.type)
-  public readonly type = BasicMessage.type.messageTypeUri
+  @IsValidMessageType(V1BasicMessage.type)
+  public readonly type = V1BasicMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/basicmessage/1.0/message')
 
   @Expose({ name: 'sent_time' })

@@ -24,6 +24,7 @@ import {
   ProofEventTypes,
   ProofState,
   TrustPingEventTypes,
+  V1BasicMessage,
 } from '@aries-framework/core'
 import { ui } from 'inquirer'
 
@@ -78,7 +79,9 @@ export class Listener {
   public messageListener(agent: Agent, name: string) {
     agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
       if (event.payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
-        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
+        const message = event.payload.message
+        const content = message instanceof V1BasicMessage ? message.content : message.body.content
+        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${content}\n`))
       }
     })
   }

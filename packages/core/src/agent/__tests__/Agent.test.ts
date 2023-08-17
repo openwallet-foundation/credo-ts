@@ -5,7 +5,7 @@ import { injectable } from 'tsyringe'
 import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
-import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
+import { BasicMessageRepository, V1BasicMessageProtocol } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
 import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
 import { V1TrustPingService } from '../../modules/connections/protocols/trust-ping/v1/V1TrustPingService'
@@ -167,7 +167,7 @@ describe('Agent', () => {
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
       expect(container.resolve(BasicMessagesApi)).toBeInstanceOf(BasicMessagesApi)
-      expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
+      expect(container.resolve(V1BasicMessageProtocol)).toBeInstanceOf(V1BasicMessageProtocol)
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
       expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
@@ -205,7 +205,7 @@ describe('Agent', () => {
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
       expect(container.resolve(BasicMessagesApi)).toBe(container.resolve(BasicMessagesApi))
-      expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
+      expect(container.resolve(V1BasicMessageProtocol)).toBe(container.resolve(V1BasicMessageProtocol))
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
       expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))

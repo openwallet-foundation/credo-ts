@@ -1,5 +1,4 @@
-export * from './messages'
-export * from './services'
+export * from './protocols'
 export * from './repository'
 export * from './BasicMessageEvents'
 export * from './BasicMessagesApi'
