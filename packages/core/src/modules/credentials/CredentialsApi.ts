@@ -418,7 +418,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     }
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
     if (!offerMessage) {
-      throw new AriesFrameworkError(`No offer message found for proof record with id '${credentialRecord.id}'`)
+      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
     }
 
     const { message } = await protocol.acceptRequest(this.agentContext, {
@@ -508,47 +508,27 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     const protocol = this.getProtocol(credentialRecord.protocolVersion)
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
+    }
+
     const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    if (!offerMessage) {
+      throw new AriesFrameworkError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+    }
 
     // Use connection if present
-    if (credentialRecord.connectionId) {
-      const connection = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-      const outboundMessageContext = new OutboundMessageContext(message, {
-        agentContext: this.agentContext,
-        connection,
-        associatedRecord: credentialRecord,
-      })
-      await this.messageSender.sendMessage(outboundMessageContext)
-    }
-    // Use ~service decorator otherwise
-    else if (requestMessage?.service && offerMessage?.service) {
-      const recipientService = requestMessage.service
-      const ourService = offerMessage.service
+    const connectionRecord = credentialRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+      : undefined
+    connectionRecord?.assertReady()
 
-      message.service = ourService
-      await this.didCommMessageRepository.saveOrUpdateAgentMessage(this.agentContext, {
-        agentMessage: message,
-        role: DidCommMessageRole.Sender,
-        associatedRecordId: credentialRecord.id,
-      })
-
-      await this.messageSender.sendMessageToService(
-        new OutboundMessageContext(message, {
-          agentContext: this.agentContext,
-          serviceParams: {
-            service: recipientService.resolvedDidCommService,
-            senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-            returnRoute: true,
-          },
-        })
-      )
-    }
-    // Cannot send message without connectionId or ~service decorator
-    else {
-      throw new AriesFrameworkError(
-        `Cannot send revocation notification for credential record without connectionId or ~service decorator on credential offer / request.`
-      )
-    }
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
+      connectionRecord,
+      associatedRecord: credentialRecord,
+    })
+    await this.messageSender.sendMessage(outboundMessageContext)
   }
 
   /**
