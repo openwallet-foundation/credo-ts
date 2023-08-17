@@ -189,9 +189,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       // Assert
       credentialRecord.assertProtocolVersion('v2')
       credentialRecord.assertState(CredentialState.OfferSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalCredentialMessage ?? undefined,
-        previousSentMessage: offerCredentialMessage ?? undefined,
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+        lastReceivedMessage: proposalCredentialMessage ?? undefined,
+        lastSentMessage: offerCredentialMessage ?? undefined,
       })
 
       await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
@@ -205,7 +205,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       return credentialRecord
     } else {
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No credential record exists with thread id
       credentialRecord = new CredentialExchangeRecord({
@@ -399,9 +399,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
       credentialRecord.assertProtocolVersion('v2')
       credentialRecord.assertState(CredentialState.ProposalSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: offerCredentialMessage ?? undefined,
-        previousSentMessage: proposeCredentialMessage ?? undefined,
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+        lastReceivedMessage: offerCredentialMessage ?? undefined,
+        lastSentMessage: proposeCredentialMessage ?? undefined,
       })
 
       await this.credentialFormatCoordinator.processOffer(messageContext.agentContext, {
@@ -414,7 +414,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       return credentialRecord
     } else {
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No credential record exists with thread id
       agentContext.config.logger.debug('No credential record found for offer, creating a new one')
@@ -612,9 +612,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       // Assert
       credentialRecord.assertProtocolVersion('v2')
       credentialRecord.assertState(CredentialState.OfferSent)
-      connectionService.assertConnectionOrServiceDecorator(messageContext, {
-        previousReceivedMessage: proposalMessage ?? undefined,
-        previousSentMessage: offerMessage ?? undefined,
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+        lastReceivedMessage: proposalMessage ?? undefined,
+        lastSentMessage: offerMessage ?? undefined,
       })
 
       await this.credentialFormatCoordinator.processRequest(messageContext.agentContext, {
@@ -627,7 +627,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       return credentialRecord
     } else {
       // Assert
-      connectionService.assertConnectionOrServiceDecorator(messageContext)
+      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No credential record exists with thread id
       agentContext.config.logger.debug('No credential record found for request, creating a new one')
@@ -736,9 +736,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // Assert
     credentialRecord.assertProtocolVersion('v2')
     credentialRecord.assertState(CredentialState.RequestSent)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: offerMessage ?? undefined,
-      previousSentMessage: requestMessage,
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+      lastReceivedMessage: offerMessage ?? undefined,
+      lastSentMessage: requestMessage,
     })
 
     const formatServices = this.getFormatServicesFromMessage(credentialMessage.formats)
@@ -820,9 +820,9 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // Assert
     credentialRecord.assertProtocolVersion('v2')
     credentialRecord.assertState(CredentialState.CredentialIssued)
-    connectionService.assertConnectionOrServiceDecorator(messageContext, {
-      previousReceivedMessage: requestMessage,
-      previousSentMessage: credentialMessage,
+    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
+      lastReceivedMessage: requestMessage,
+      lastSentMessage: credentialMessage,
     })
 
     // Update record

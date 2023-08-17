@@ -17,6 +17,7 @@ import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../
 import {
   IndySdkHolderService,
   IndySdkIssuerService,
+  IndySdkModuleConfig,
   IndySdkStorageService,
   IndySdkVerifierService,
   IndySdkWallet,
@@ -63,6 +64,7 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
+    [IndySdkModuleConfig, new IndySdkModuleConfig({ indySdk, autoCreateLinkSecret: false })],
   ],
   agentConfig,
   wallet,

@@ -33,7 +33,6 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRecord,
   AnonCredsKeyCorrectnessProofRepository,
-  AnonCredsLinkSecretRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
   AnonCredsRevocationRegistryState,
@@ -51,7 +50,7 @@ import {
   AnonCredsIssuerServiceSymbol,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
-import { dateToTimestamp } from './utils/timestamp'
+import { dateToTimestamp, storeLinkSecret } from './utils'
 
 @injectable()
 export class AnonCredsApi {
@@ -99,30 +98,21 @@ export class AnonCredsApi {
 
   /**
    * Create a Link Secret, optionally indicating its ID and if it will be the default one
-   * If there is no default Link Secret, this will be set as default (even if setAsDefault is true).
+   * If there is no default Link Secret, this will be set as default (even if setAsDefault is false).
    *
    */
-  public async createLinkSecret(options?: AnonCredsCreateLinkSecretOptions) {
+  public async createLinkSecret(options?: AnonCredsCreateLinkSecretOptions): Promise<string> {
     const { linkSecretId, linkSecretValue } = await this.anonCredsHolderService.createLinkSecret(this.agentContext, {
       linkSecretId: options?.linkSecretId,
     })
 
-    // In some cases we don't have the linkSecretValue. However we still want a record so we know which link secret ids are valid
-    const linkSecretRecord = new AnonCredsLinkSecretRecord({ linkSecretId, value: linkSecretValue })
+    await storeLinkSecret(this.agentContext, {
+      linkSecretId,
+      linkSecretValue,
+      setAsDefault: options?.setAsDefault,
+    })
 
-    // If it is the first link secret registered, set as default
-    const defaultLinkSecretRecord = await this.anonCredsLinkSecretRepository.findDefault(this.agentContext)
-    if (!defaultLinkSecretRecord || options?.setAsDefault) {
-      linkSecretRecord.setTag('isDefault', true)
-    }
-
-    // Set the current default link secret as not default
-    if (defaultLinkSecretRecord && options?.setAsDefault) {
-      defaultLinkSecretRecord.setTag('isDefault', false)
-      await this.anonCredsLinkSecretRepository.update(this.agentContext, defaultLinkSecretRecord)
-    }
-
-    await this.anonCredsLinkSecretRepository.save(this.agentContext, linkSecretRecord)
+    return linkSecretId
   }
 
   /**

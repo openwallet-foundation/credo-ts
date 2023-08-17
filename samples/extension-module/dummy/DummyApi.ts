@@ -2,7 +2,7 @@ import type { DummyRecord } from './repository/DummyRecord'
 import type { Query } from '@aries-framework/core'
 
 import {
-  OutboundMessageContext,
+  getOutboundMessageContext,
   AgentContext,
   ConnectionService,
   injectable,
@@ -48,7 +48,11 @@ export class DummyApi {
     const { record, message } = await this.dummyService.createRequest(this.agentContext, connection)
 
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      await getOutboundMessageContext(this.agentContext, {
+        message,
+        associatedRecord: record,
+        connectionRecord: connection,
+      })
     )
 
     await this.dummyService.updateState(this.agentContext, record, DummyState.RequestSent)
@@ -69,7 +73,11 @@ export class DummyApi {
     const message = await this.dummyService.createResponse(this.agentContext, record)
 
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection, associatedRecord: record })
+      await getOutboundMessageContext(this.agentContext, {
+        message,
+        associatedRecord: record,
+        connectionRecord: connection,
+      })
     )
 
     await this.dummyService.updateState(this.agentContext, record, DummyState.ResponseSent)

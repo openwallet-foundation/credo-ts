@@ -29,6 +29,7 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
+  OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
   TypedArrayEncoder,
@@ -46,7 +47,6 @@ import {
   TrustPingEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
-import { DidCommV1Service } from '../src/modules/dids'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
@@ -548,9 +548,8 @@ export function getMockOutOfBand({
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [
-      new DidCommV1Service({
+      new OutOfBandDidCommService({
         id: `#inline-0`,
-        priority: 0,
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
         recipientKeys,
         routingKeys: [],

@@ -11,8 +11,8 @@ import {
   AriesFrameworkError,
   ConnectionService,
   MessageSender,
-  OutboundMessageContext,
   injectable,
+  getOutboundMessageContext,
 } from '@aries-framework/core'
 
 import { ActionMenuRole } from './ActionMenuRole'
@@ -66,10 +66,10 @@ export class ActionMenuApi {
       connection,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: record,
+      connectionRecord: connection,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -92,10 +92,10 @@ export class ActionMenuApi {
       menu: options.menu,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: record,
+      connectionRecord: connection,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
@@ -126,10 +126,10 @@ export class ActionMenuApi {
       performedAction: options.performedAction,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message,
       associatedRecord: record,
+      connectionRecord: connection,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)

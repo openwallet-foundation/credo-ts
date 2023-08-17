@@ -402,12 +402,6 @@ export async function setupAnonCredsTests<
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  // Create default link secret for holder
-  await holderAgent.modules.anoncreds.createLinkSecret({
-    linkSecretId: 'default',
-    setAsDefault: true,
-  })
-
   const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
     attributeNames,
   })

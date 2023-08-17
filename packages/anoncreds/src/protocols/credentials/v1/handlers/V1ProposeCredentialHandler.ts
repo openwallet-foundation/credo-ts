@@ -1,7 +1,7 @@
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@aries-framework/core'
 
-import { OutboundMessageContext } from '@aries-framework/core'
+import { getOutboundMessageContext } from '@aries-framework/core'
 
 import { V1ProposeCredentialMessage } from '../messages'
 
@@ -44,9 +44,9 @@ export class V1ProposeCredentialHandler implements MessageHandler {
       credentialRecord,
     })
 
-    return new OutboundMessageContext(message, {
-      agentContext: messageContext.agentContext,
-      connection: messageContext.connection,
+    return getOutboundMessageContext(messageContext.agentContext, {
+      message,
+      connectionRecord: messageContext.connection,
       associatedRecord: credentialRecord,
     })
   }

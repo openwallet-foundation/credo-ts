@@ -15,6 +15,13 @@ export type Tags<DefaultTags extends TagsBase, CustomTags extends TagsBase> = Cu
 
 export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']>
 
+// The BaseRecord requires a DefaultTags and CustomTags type, but we want to be
+// able to use the BaseRecord without specifying these types. If we don't specify
+// these types, the default TagsBase will be used, but this is not compatible
+// with records that have specified a custom type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type BaseRecordAny = BaseRecord<any, any, any>
+
 export abstract class BaseRecord<
   DefaultTags extends TagsBase = TagsBase,
   CustomTags extends TagsBase = TagsBase,

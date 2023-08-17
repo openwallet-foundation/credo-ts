@@ -1,6 +1,6 @@
 import type { BaseAgent } from '../../../../agent/BaseAgent'
 import type { ProofExchangeRecord } from '../../../../modules/proofs'
-import type { JsonObject } from '../../../../types'
+import type { JsonObject, PlaintextMessage } from '../../../../types'
 
 import { ProofState } from '../../../../modules/proofs/models'
 import { ProofRepository } from '../../../../modules/proofs/repository/ProofRepository'
@@ -131,7 +131,7 @@ export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent,
       `Starting move of ${messageKey} from proof record with id ${proofRecord.id} to DIDCommMessageRecord`
     )
     const proofRecordJson = proofRecord as unknown as JsonObject
-    const message = proofRecordJson[messageKey] as JsonObject | undefined
+    const message = proofRecordJson[messageKey] as PlaintextMessage | undefined
 
     if (message) {
       const proofRole = getProofRole(proofRecord)

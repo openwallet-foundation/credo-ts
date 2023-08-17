@@ -59,13 +59,13 @@ describe('V1 Connectionless Credentials', () => {
       protocolVersion: 'v1',
     })
 
-    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -162,7 +162,6 @@ describe('V1 Connectionless Credentials', () => {
     })
 
     const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
-      recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
