@@ -41,7 +41,7 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 // Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
-  public messageSubscription?: Subscription
+  private messageSubscription?: Subscription
 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
