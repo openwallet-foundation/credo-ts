@@ -1,3 +1,4 @@
+import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
@@ -6,6 +7,7 @@ import { Type } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { getThreadIdFromPlainTextMessage } from '../../../utils/thread'
 import { uuid } from '../../../utils/uuid'
 import { OutOfBandInvitation } from '../messages'
 
@@ -14,6 +16,11 @@ type DefaultOutOfBandRecordTags = {
   state: OutOfBandState
   invitationId: string
   threadId?: string
+  /**
+   * The thread ids from the attached request messages from the out
+   * of band invitation.
+   */
+  invitationRequestsThreadIds?: string[]
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
@@ -36,7 +43,11 @@ export interface OutOfBandRecordProps {
   threadId?: string
 }
 
-export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, CustomOutOfBandRecordTags> {
+export class OutOfBandRecord extends BaseRecord<
+  DefaultOutOfBandRecordTags,
+  CustomOutOfBandRecordTags,
+  OutOfBandRecordMetadata
+> {
   @Type(() => OutOfBandInvitation)
   public outOfBandInvitation!: OutOfBandInvitation
   public role!: OutOfBandRole
@@ -75,6 +86,9 @@ export class OutOfBandRecord extends BaseRecord<DefaultOutOfBandRecordTags, Cust
       state: this.state,
       invitationId: this.outOfBandInvitation.id,
       threadId: this.outOfBandInvitation.threadId,
+      invitationRequestsThreadIds: this.outOfBandInvitation
+        .getRequests()
+        ?.map((r) => getThreadIdFromPlainTextMessage(r)),
     }
   }
 

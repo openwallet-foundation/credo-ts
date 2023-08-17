@@ -319,6 +319,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           verificationKey,
           alias,
           diddocContent,
+          role: options.options.role,
         })
 
         if (services && useEndpointAttrib) {
@@ -388,6 +389,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     signingKey?: Key
     alias: string | undefined
     diddocContent?: Record<string, unknown>
+    role?: NymRequestRole
   }) {
     const {
       agentContext,
@@ -397,6 +399,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       verificationKey,
       alias,
       signingKey,
+      role,
     } = options
 
     // FIXME: Add diddocContent when supported by indy-vdr
@@ -408,7 +411,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       submitterDid: submitterNamespaceIdentifier,
       dest: namespaceIdentifier,
       verkey: verificationKey.publicKeyBase58,
-      alias: alias,
+      alias,
+      role,
     })
 
     if (!signingKey) return request
@@ -487,7 +491,7 @@ interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
   didDocument?: never // Not yet supported
   options: {
     alias?: string
-    role?: string
+    role?: NymRequestRole
     services?: DidDocumentService[]
     useEndpointAttrib?: boolean
     verkey?: string
@@ -566,3 +570,5 @@ export interface EndorseDidTxAction extends DidOperationStateActionBase {
 }
 
 export type IndyVdrDidCreateResult = DidCreateResult<EndorseDidTxAction>
+
+export type NymRequestRole = 'STEWARD' | 'TRUSTEE' | 'ENDORSER' | 'NETWORK_MONITOR'

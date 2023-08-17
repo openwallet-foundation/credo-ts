@@ -3,10 +3,9 @@ import type { InboundMessageContext } from '../../../../../agent/models/InboundM
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../../agent/models'
-import { DidCommMessageRepository } from '../../../../../storage'
+import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
+import { AriesFrameworkError } from '../../../../../error'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
-import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
 
 export class V2IssueCredentialHandler implements MessageHandler {
   private credentialProtocol: V2CredentialProtocol
@@ -34,36 +33,24 @@ export class V2IssueCredentialHandler implements MessageHandler {
     messageContext: MessageHandlerInboundMessage<V2IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending acknowledgement with autoAccept`)
-
-    const didCommMessageRepository = messageContext.agentContext.dependencyManager.resolve(DidCommMessageRepository)
-
-    const requestMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V2RequestCredentialMessage,
-    })
-
     const { message } = await this.credentialProtocol.acceptCredential(messageContext.agentContext, {
       credentialRecord,
     })
-    if (messageContext.connection) {
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        connection: messageContext.connection,
-        associatedRecord: credentialRecord,
-      })
-    } else if (requestMessage?.service && messageContext.message.service) {
-      const recipientService = messageContext.message.service
-      const ourService = requestMessage.service
 
-      return new OutboundMessageContext(message, {
-        agentContext: messageContext.agentContext,
-        serviceParams: {
-          service: recipientService.resolvedDidCommService,
-          senderKey: ourService.resolvedDidCommService.recipientKeys[0],
-        },
-      })
+    const requestMessage = await this.credentialProtocol.findRequestMessage(
+      messageContext.agentContext,
+      credentialRecord.id
+    )
+    if (!requestMessage) {
+      throw new AriesFrameworkError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
-    messageContext.agentContext.config.logger.error(`Could not automatically create credential ack`)
+    return getOutboundMessageContext(messageContext.agentContext, {
+      connectionRecord: messageContext.connection,
+      message,
+      associatedRecord: credentialRecord,
+      lastReceivedMessage: messageContext.message,
+      lastSentMessage: requestMessage,
+    })
   }
 }

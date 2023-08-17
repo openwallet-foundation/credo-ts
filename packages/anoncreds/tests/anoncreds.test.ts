@@ -83,6 +83,7 @@ const agent = new Agent({
   modules: {
     indySdk: new IndySdkModule({
       indySdk,
+      autoCreateLinkSecret: false,
     }),
     anoncreds: new AnonCredsModule({
       registries: [

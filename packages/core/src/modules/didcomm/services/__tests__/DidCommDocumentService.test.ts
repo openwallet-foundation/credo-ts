@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../../../agent'
 import type { VerificationMethod } from '../../../dids'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
+import { getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { Key, KeyType } from '../../../../crypto'
 import { DidCommV1Service, DidDocument, IndyAgentService } from '../../../dids'
 import { verkeyToInstanceOfKey } from '../../../dids/helpers'
@@ -12,14 +12,13 @@ jest.mock('../../../dids/services/DidResolverService')
 const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
 
 describe('DidCommDocumentService', () => {
-  const agentConfig = getAgentConfig('DidCommDocumentService')
   let didCommDocumentService: DidCommDocumentService
   let didResolverService: DidResolverService
   let agentContext: AgentContext
 
   beforeEach(async () => {
     didResolverService = new DidResolverServiceMock()
-    didCommDocumentService = new DidCommDocumentService(agentConfig, didResolverService)
+    didCommDocumentService = new DidCommDocumentService(didResolverService)
     agentContext = getAgentContext()
   })
 

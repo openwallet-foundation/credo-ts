@@ -98,7 +98,7 @@ export class DidExchangeProtocol {
       alias,
       state: DidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
-      mediatorId: routing.mediatorId ?? outOfBandRecord.mediatorId,
+      mediatorId: routing.mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
       outOfBandId: outOfBandRecord.id,
       invitationDid,

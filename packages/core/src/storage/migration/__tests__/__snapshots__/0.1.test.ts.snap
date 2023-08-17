@@ -783,6 +783,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "d56fd7af-852e-458e-b750-7a4f4e53d6e6",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -849,6 +850,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "2-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "d939d371-3155-4d9c-87d1-46447f624f44",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
       ],
@@ -915,6 +917,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "3-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "21ef606f-b25b-48c6-bafa-e79193732413",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
       ],
@@ -981,6 +984,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "4-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "08eb8d8b-67cf-4ce2-9aca-c7d260a5c143",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6Mkmod8vp2nURVktVC5ceQeyr2VUz26iu2ZANLNVg9pMawa",
       ],
@@ -1047,6 +1051,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "5-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "cc67fb5e-1414-4ba6-9030-7456ccd2aaea",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
       ],
@@ -1113,6 +1118,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "6-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "f0ca03d8-2e11-4ff2-a5fc-e0137a434b7e",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
       ],
@@ -1174,6 +1180,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "id": "7-4e4f-41d9-94c4-f49351b811f1",
     "tags": {
       "invitationId": "1f516e35-08d3-43d8-900c-99d5239f54da",
+      "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
         "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
       ],
