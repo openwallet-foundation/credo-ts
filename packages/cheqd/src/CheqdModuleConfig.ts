@@ -7,7 +7,7 @@ export interface CheqdModuleConfigOptions {
 
 export interface NetworkConfig {
   rpcUrl?: string
-  cosmosPayerSeed: string
+  cosmosPayerSeed?: string
   network: string
 }
 
