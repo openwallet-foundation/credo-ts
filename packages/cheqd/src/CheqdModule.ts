@@ -1,7 +1,7 @@
 import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
 
-import { AgentConfig } from '@aries-framework/core'
+import { AgentConfig, Buffer } from '@aries-framework/core'
 
 import { CheqdModuleConfig } from './CheqdModuleConfig'
 import { CheqdLedgerService } from './ledger'
@@ -25,6 +25,11 @@ export class CheqdModule implements Module {
     dependencyManager.registerInstance(CheqdModuleConfig, this.config)
 
     dependencyManager.registerSingleton(CheqdLedgerService)
+
+    // Cheqd module needs Buffer to be available globally
+    // If it is not available yet, we overwrite it with the
+    // Buffer implementation from AFJ
+    global.Buffer = global.Buffer || Buffer
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
