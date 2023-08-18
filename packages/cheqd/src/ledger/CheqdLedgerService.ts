@@ -3,7 +3,7 @@ import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 
-import { injectable } from '@aries-framework/core'
+import { AriesFrameworkError, injectable } from '@aries-framework/core'
 import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
@@ -42,8 +42,8 @@ export class CheqdLedgerService {
       network.sdk = await createCheqdSDK({
         modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
         rpcUrl: network.rpcUrl,
-        wallet: await network.cosmosPayerWallet.catch(() => {
-          throw new Error(`[did-provider-cheqd]: valid cosmosPayerSeed is required`)
+        wallet: await network.cosmosPayerWallet.catch((error) => {
+          throw new AriesFrameworkError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })
         }),
       })
     }

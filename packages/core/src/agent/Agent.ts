@@ -41,7 +41,7 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 // Any makes sure you can use Agent as a type without always needing to specify the exact generics for the agent
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
-  public messageSubscription: Subscription
+  private messageSubscription?: Subscription
 
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
     const agentConfig = new AgentConfig(options.config, options.dependencies)
@@ -110,26 +110,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
 
     super(agentConfig, dependencyManager)
-
-    const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
-
-    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    this.messageSubscription = this.eventEmitter
-      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
-      .pipe(
-        takeUntil(stop$),
-        concatMap((e) =>
-          this.messageReceiver
-            .receiveMessage(e.payload.message, {
-              connection: e.payload.connection,
-              contextCorrelationId: e.payload.contextCorrelationId,
-            })
-            .catch((error) => {
-              this.logger.error('Failed to process message', { error })
-            })
-        )
-      )
-      .subscribe()
   }
 
   public registerInboundTransport(inboundTransport: InboundTransport) {
@@ -198,6 +178,26 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
     await this.mediator.initialize()
     await this.mediationRecipient.initialize()
+
+    const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+
+    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
+    this.messageSubscription = this.eventEmitter
+      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .pipe(
+        takeUntil(stop$),
+        concatMap((e) =>
+          this.messageReceiver
+            .receiveMessage(e.payload.message, {
+              connection: e.payload.connection,
+              contextCorrelationId: e.payload.contextCorrelationId,
+            })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
+        )
+      )
+      .subscribe()
 
     this._isInitialized = true
   }
