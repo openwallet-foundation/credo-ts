@@ -54,6 +54,10 @@ export class V2BasicMessage extends DidCommV2Message {
     }
   }
 
+  public get content() {
+    return this.body.content
+  }
+
   @IsValidMessageType(V2BasicMessage.type)
   public readonly type = V2BasicMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/basicmessage/2.0/message')

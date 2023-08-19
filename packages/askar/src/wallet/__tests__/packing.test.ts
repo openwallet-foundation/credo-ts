@@ -2,7 +2,7 @@ import type { WalletConfig, WalletPackOptions, WalletUnpackOptions } from '@arie
 import type { JwkProps } from '@hyperledger/aries-askar-shared'
 
 import {
-  BasicMessage,
+  V1BasicMessage,
   DidCommMessageVersion,
   JsonTransformer,
   KeyDerivationMethod,
@@ -71,7 +71,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
   })
 
   describe('DIDComm V1 packing and unpacking', () => {
-    const message = new BasicMessage({ content: 'hello' })
+    const message = new V1BasicMessage({ content: 'hello' })
 
     test('Authcrypt', async () => {
       // Create both sender and recipient keys
@@ -86,7 +86,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
 
       const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
       const plainTextMessage = await askarWallet.unpack(encryptedMessage)
-      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, V1BasicMessage)).toEqual(message)
     })
 
     test('Anoncrypt', async () => {
@@ -101,7 +101,7 @@ describeRunInNodeVersion([18], 'askarWallet packing', () => {
 
       const encryptedMessage = await askarWallet.pack(message.toJSON(), params)
       const plainTextMessage = await askarWallet.unpack(encryptedMessage)
-      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, BasicMessage)).toEqual(message)
+      expect(JsonTransformer.fromJSON(plainTextMessage.plaintextMessage, V1BasicMessage)).toEqual(message)
     })
   })
 

@@ -23,7 +23,7 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseM
   }
 
   public get threadId(): string | undefined {
-    return this.thid
+    return this.thid ?? this.id
   }
 
   public hasAnyReturnRoute() {
