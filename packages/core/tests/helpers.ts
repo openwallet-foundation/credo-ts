@@ -13,6 +13,8 @@ import type {
   CredentialState,
   ConnectionStateChangedEvent,
   Buffer,
+  V1BasicMessage,
+  V2BasicMessage,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type {
@@ -31,8 +33,6 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
   OutOfBandVersion,
-  V1BasicMessage,
-  V2BasicMessage,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
@@ -455,16 +455,12 @@ export async function waitForBasicMessage(
 ): Promise<V1BasicMessage | V2BasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: BasicMessageStateChangedEvent) => {
-      const message = event.payload.message
-      const contentMatches =
-        content === undefined ||
-        (message instanceof V1BasicMessage && message.content === content) ||
-        (message instanceof V2BasicMessage && message.body.content === content)
+      const contentMatches = content === undefined || event.payload.message.content === content
 
       if (contentMatches) {
         agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
 
-        resolve(message)
+        resolve(event.payload.message)
       }
     }
 
