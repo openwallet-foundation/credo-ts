@@ -58,13 +58,13 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   }
 
   public getTags() {
-    const messageId = this.message['@id'] as string
-    const messageType = this.message['@type'] as string
+    const messageId = (this.message['@id'] ?? this.message['id']) as string
+    const messageType = (this.message['@type'] ?? this.message['type']) as string
 
     const { protocolName, protocolMajorVersion, protocolMinorVersion, messageName } = parseMessageType(messageType)
 
     const thread = this.message['~thread']
-    let threadId = messageId
+    let threadId = (this.message['thid'] ?? messageId) as string
 
     if (isJsonObject(thread) && typeof thread.thid === 'string') {
       threadId = thread.thid
@@ -89,7 +89,7 @@ export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> 
   public getMessageInstance<MessageClass extends ConstructableDidCommMessage = ConstructableDidCommMessage>(
     messageClass: MessageClass
   ): InstanceType<MessageClass> {
-    const messageType = parseMessageType(this.message['@type'] as string)
+    const messageType = parseMessageType((this.message['@type'] ?? this.message['type']) as string)
 
     if (!canHandleMessageType(messageClass, messageType)) {
       throw new AriesFrameworkError('Provided message class type does not match type of stored message')

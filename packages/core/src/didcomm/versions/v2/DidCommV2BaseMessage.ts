@@ -17,12 +17,20 @@ export type DidCommV2MessageParams = {
   to?: string | string[]
   thid?: string
   parentThreadId?: string
+  senderOrder?: number
+  receivedOrders?: { [key: string]: number } // TODO: Update to DIDComm V2 format
   createdTime?: number
   expiresTime?: number
   fromPrior?: string
   language?: string
   attachments?: Array<V2Attachment>
   body?: unknown
+}
+
+type DidCommV2ReceiverOrder = {
+  id: string
+  last: number
+  gaps: number[]
 }
 
 export class DidCommV2BaseMessage {
@@ -64,6 +72,16 @@ export class DidCommV2BaseMessage {
   @IsOptional()
   public parentThreadId?: string
 
+  @Expose({ name: 'sender_order' })
+  @IsNumber()
+  @IsOptional()
+  public senderOrder?: number
+
+  @Expose({ name: 'received_orders' })
+  @IsOptional()
+  @IsArray()
+  public receivedOrders?: DidCommV2ReceiverOrder[]
+
   @Expose({ name: 'from_prior' })
   @IsString()
   @IsOptional()
@@ -92,6 +110,12 @@ export class DidCommV2BaseMessage {
       this.to = typeof options.to === 'string' ? [options.to] : options.to
       this.thid = options.thid
       this.parentThreadId = options.parentThreadId
+      this.senderOrder = options.senderOrder
+      this.receivedOrders = Object.entries(options.receivedOrders ?? {}).map(([id, last]) => ({
+        id,
+        last,
+        gaps: [],
+      }))
       this.createdTime = options.createdTime
       this.expiresTime = options.expiresTime
       this.fromPrior = options.fromPrior
