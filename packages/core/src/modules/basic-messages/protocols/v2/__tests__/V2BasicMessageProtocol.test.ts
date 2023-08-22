@@ -63,8 +63,6 @@ describe('V2BasicMessageProtocol', () => {
     it(`stores record and emits message and basic message record`, async () => {
       const basicMessage = new V2BasicMessage({
         id: '123',
-        from: 'did:from',
-        to: 'did:to',
         content: 'message',
       })
 
