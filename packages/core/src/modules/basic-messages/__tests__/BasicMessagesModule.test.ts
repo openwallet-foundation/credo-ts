@@ -2,7 +2,7 @@ import { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { BasicMessagesApi } from '../BasicMessagesApi'
 import { BasicMessagesModule } from '../BasicMessagesModule'
-import { V1BasicMessageProtocol, V2BasicMessageProtocol } from '../protocols'
+import { BasicMessagesModuleConfig } from '../BasicMessagesModuleConfig'
 import { BasicMessageRepository } from '../repository'
 
 jest.mock('../../../plugins/DependencyManager')
@@ -17,14 +17,16 @@ const featureRegistry = new FeatureRegistryMock()
 
 describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new BasicMessagesModule().register(dependencyManager, featureRegistry)
+    const module = new BasicMessagesModule()
+    module.register(dependencyManager, featureRegistry)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(BasicMessagesApi)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1BasicMessageProtocol)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2BasicMessageProtocol)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageRepository)
+
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(BasicMessagesModuleConfig, module.config)
   })
 })
