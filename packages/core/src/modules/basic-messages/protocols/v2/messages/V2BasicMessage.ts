@@ -20,10 +20,6 @@ export class V2BasicMessage extends DidCommV2Message {
   @IsNotEmpty()
   public createdTime!: number
 
-  @IsString()
-  @IsNotEmpty()
-  public from!: string
-
   @IsObject()
   @ValidateNested()
   @Type(() => V2BasicMessageBody)
@@ -34,21 +30,12 @@ export class V2BasicMessage extends DidCommV2Message {
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */
-  public constructor(options: {
-    from: string
-    to: string
-    content: string
-    sentTime?: Date
-    id?: string
-    locale?: string
-  }) {
+  public constructor(options: { content: string; sentTime?: Date; id?: string; locale?: string }) {
     super()
 
     if (options) {
       this.id = options.id || this.generateId()
       this.createdTime = options.sentTime?.getTime() || new Date().getTime()
-      this.from = options.from
-      this.to = [options.to]
       this.body = new V2BasicMessageBody({ content: options.content })
       this.language = options.locale || 'en'
     }
