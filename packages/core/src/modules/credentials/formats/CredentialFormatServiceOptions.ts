@@ -1,6 +1,6 @@
 import type { CredentialFormat, CredentialFormatPayload } from './CredentialFormat'
 import type { CredentialFormatService } from './CredentialFormatService'
-import type { Attachment, V2Attachment } from '../../../decorators/attachment'
+import type { Attachment } from '../../../decorators/attachment'
 import type { CredentialFormatSpec } from '../models/CredentialFormatSpec'
 import type { CredentialPreviewAttributeOptions } from '../models/CredentialPreviewAttribute'
 import type { CredentialExchangeRecord } from '../repository/CredentialExchangeRecord'
@@ -42,19 +42,19 @@ export type ExtractCredentialFormats<CFs extends CredentialFormatService[]> = {
  */
 export interface CredentialFormatCreateReturn {
   format: CredentialFormatSpec
-  attachment: Attachment | V2Attachment
+  attachment: Attachment
 }
 
 /**
  * Base return type for all credential process methods.
  */
 export interface CredentialFormatProcessOptions {
-  attachment: Attachment | V2Attachment
+  attachment: Attachment
   credentialRecord: CredentialExchangeRecord
 }
 
 export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
-  requestAttachment: Attachment | V2Attachment
+  requestAttachment: Attachment
 }
 
 export interface CredentialFormatCreateProposalOptions<CF extends CredentialFormat> {
@@ -68,7 +68,7 @@ export interface CredentialFormatAcceptProposalOptions<CF extends CredentialForm
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptProposal'>
   attachmentId?: string
 
-  proposalAttachment: Attachment | V2Attachment
+  proposalAttachment: Attachment
 }
 
 export interface CredentialFormatCreateProposalReturn extends CredentialFormatCreateReturn {
@@ -86,7 +86,7 @@ export interface CredentialFormatAcceptOfferOptions<CF extends CredentialFormat>
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptOffer'>
   attachmentId?: string
 
-  offerAttachment: Attachment | V2Attachment
+  offerAttachment: Attachment
 }
 
 export interface CredentialFormatCreateOfferReturn extends CredentialFormatCreateReturn {
@@ -103,34 +103,34 @@ export interface CredentialFormatAcceptRequestOptions<CF extends CredentialForma
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
   attachmentId?: string
 
-  requestAttachment: Attachment | V2Attachment
-  offerAttachment?: Attachment | V2Attachment
+  requestAttachment: Attachment
+  offerAttachment?: Attachment
 }
 
 // Auto accept method interfaces
 export interface CredentialFormatAutoRespondProposalOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment: Attachment | V2Attachment
-  offerAttachment: Attachment | V2Attachment
+  proposalAttachment: Attachment
+  offerAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondOfferOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment: Attachment | V2Attachment
-  offerAttachment: Attachment | V2Attachment
+  proposalAttachment: Attachment
+  offerAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondRequestOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment?: Attachment | V2Attachment
-  offerAttachment: Attachment | V2Attachment
-  requestAttachment: Attachment | V2Attachment
+  proposalAttachment?: Attachment
+  offerAttachment: Attachment
+  requestAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondCredentialOptions {
   credentialRecord: CredentialExchangeRecord
-  proposalAttachment?: Attachment | V2Attachment
-  offerAttachment?: Attachment | V2Attachment
-  requestAttachment: Attachment | V2Attachment
-  credentialAttachment: Attachment | V2Attachment
+  proposalAttachment?: Attachment
+  offerAttachment?: Attachment
+  requestAttachment: Attachment
+  credentialAttachment: Attachment
 }

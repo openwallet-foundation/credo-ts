@@ -1,9 +1,10 @@
 import type { AgentContext } from '../../../../agent'
-import type { Attachment, V2Attachment } from '../../../../decorators/attachment'
+import type { V2Attachment } from '../../../../decorators/attachment'
 import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentialFormats } from '../../formats'
 import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
+import { toV1Attachment, toV2Attachment } from '../../../../didcomm'
 import { AriesFrameworkError } from '../../../../error/AriesFrameworkError'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../storage'
 
@@ -56,7 +57,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      proposalAttachments.push(attachment as V2Attachment)
+      proposalAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -161,7 +162,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(attachment as V2Attachment)
+      offerAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -233,7 +234,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(attachment as V2Attachment)
+      offerAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -333,7 +334,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      requestAttachments.push(attachment as V2Attachment)
+      requestAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -389,7 +390,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialRecord,
       })
 
-      requestAttachments.push(attachment as V2Attachment)
+      requestAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -488,7 +489,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      credentialAttachments.push(attachment as V2Attachment)
+      credentialAttachments.push(toV2Attachment(attachment))
       formats.push(format)
     }
 
@@ -560,7 +561,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
     }
 
-    return attachment
+    return toV1Attachment(attachment)
   }
 
   private getAttachmentIdForService(credentialFormatService: CredentialFormatService, formats: CredentialFormatSpec[]) {
