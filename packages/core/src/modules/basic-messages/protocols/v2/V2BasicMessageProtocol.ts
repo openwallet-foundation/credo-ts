@@ -43,15 +43,7 @@ export class V2BasicMessageProtocol extends BaseBasicMessageProtocol {
 
   public async createMessage(agentContext: AgentContext, options: CreateMessageOptions) {
     const { content, parentThreadId, connectionRecord } = options
-    if (!connectionRecord.did || !connectionRecord.theirDid) {
-      throw new AriesFrameworkError('Connection Record must have both our and their did')
-    }
-
-    const basicMessage = new V2BasicMessage({
-      from: connectionRecord.did,
-      to: connectionRecord.theirDid,
-      content,
-    })
+    const basicMessage = new V2BasicMessage({ content })
 
     const basicMessageRepository = agentContext.dependencyManager.resolve(BasicMessageRepository)
 

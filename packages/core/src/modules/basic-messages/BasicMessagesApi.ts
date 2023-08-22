@@ -1,10 +1,10 @@
-import type { BasicMessageProtocol, V2BasicMessage } from './protocols'
+import type { BasicMessageProtocol } from './protocols'
 import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
-import { OutboundMessageContext } from '../../agent/models'
+import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections'
@@ -79,9 +79,9 @@ export class BasicMessagesApi<BMPs extends BasicMessageProtocol[]> implements Ba
         parentThreadId,
       }
     )
-    const outboundMessageContext = new OutboundMessageContext(basicMessage as V2BasicMessage, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message: basicMessage,
+      connectionRecord: connection,
       associatedRecord: basicMessageRecord,
     })
 
