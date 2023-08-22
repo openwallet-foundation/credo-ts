@@ -1,6 +1,7 @@
 import type { PlaintextDidCommV2Message } from './types'
 import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
+import type { ThreadDecorator } from '../../../decorators/thread/ThreadDecorator'
 import type { PlaintextMessage } from '../../types'
 
 import { AriesFrameworkError } from '../../../error'
@@ -24,6 +25,17 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseM
 
   public get threadId(): string | undefined {
     return this.thid ?? this.id
+  }
+
+  public setThread(options: Partial<ThreadDecorator>) {
+    this.thid = options.threadId
+    this.parentThreadId = options.parentThreadId
+    this.senderOrder = options.senderOrder
+    this.receivedOrders = Object.entries(options.receivedOrders ?? {}).map(([id, last]) => ({
+      id,
+      last,
+      gaps: [],
+    }))
   }
 
   public hasAnyReturnRoute() {
