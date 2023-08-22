@@ -4,7 +4,7 @@ import type { MessageHandlerInboundMessage } from '../../../../agent/MessageHand
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DidCommV2Message } from '../../../../didcomm'
 import type { DependencyManager } from '../../../../plugins'
-import type { ProblemReportMessage, V2ProblemReportMessage } from '../../../problem-reports'
+import type { V2ProblemReportMessage } from '../../../problem-reports'
 import type {
   CredentialFormat,
   CredentialFormatPayload,
@@ -34,7 +34,6 @@ import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
 import { AckStatus } from '../../../common'
-import { ConnectionService } from '../../../connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { AutoAcceptCredential, CredentialProblemReportReason, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
@@ -49,8 +48,8 @@ import {
   V3IssueCredentialHandler,
   V3ProposeCredentialHandler,
   V3RequestCredentialHandler,
+  V3CredentialProblemReportHandler,
 } from './handlers'
-import { V3CredentialProblemReportHandler } from './handlers/V3CredentialProblemReportHandler'
 import {
   V3CredentialAckMessage,
   V3CredentialProblemReportMessage,
@@ -99,7 +98,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // Register Issue Credential V3 in feature registry, with supported roles
     featureRegistry.register(
       new Protocol({
-        id: 'https://didcomm.org/issue-credential/2.0',
+        id: 'https://didcomm.org/issue-credential/3.0',
         roles: ['holder', 'issuer'],
       })
     )
@@ -161,8 +160,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     agentContext.config.logger.debug(`Processing credential proposal with id ${proposalMessage.id}`)
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
-    const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
     let credentialRecord = await this.findByThreadAndConnectionId(
       messageContext.agentContext,
@@ -177,22 +174,9 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // credential record already exists
     if (credentialRecord) {
-      const proposalCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3ProposeCredentialMessage,
-      })
-      const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3OfferCredentialMessage,
-      })
-
       // Assert
       credentialRecord.assertProtocolVersion('v3')
       credentialRecord.assertState(CredentialState.OfferSent)
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        lastReceivedMessage: proposalCredentialMessage ?? undefined,
-        lastSentMessage: offerCredentialMessage ?? undefined,
-      })
 
       await this.credentialFormatCoordinator.processProposal(messageContext.agentContext, {
         credentialRecord,
@@ -205,7 +189,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       return credentialRecord
     } else {
       // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No credential record exists with thread id
       credentialRecord = new CredentialExchangeRecord({
@@ -372,8 +355,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     agentContext.config.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
-    const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
     let credentialRecord = await this.findByThreadAndConnectionId(
       messageContext.agentContext,
@@ -388,21 +369,8 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // credential record already exists
     if (credentialRecord) {
-      const proposeCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3ProposeCredentialMessage,
-      })
-      const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3OfferCredentialMessage,
-      })
-
       credentialRecord.assertProtocolVersion('v3')
       credentialRecord.assertState(CredentialState.ProposalSent)
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        lastReceivedMessage: offerCredentialMessage ?? undefined,
-        lastSentMessage: proposeCredentialMessage ?? undefined,
-      })
 
       await this.credentialFormatCoordinator.processOffer(messageContext.agentContext, {
         credentialRecord,
@@ -413,9 +381,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.OfferReceived)
       return credentialRecord
     } else {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
-
       // No credential record exists with thread id
       agentContext.config.logger.debug('No credential record found for offer, creating a new one')
       credentialRecord = new CredentialExchangeRecord({
@@ -581,8 +546,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     const { message: requestMessage, connection, agentContext } = messageContext
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
-    const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
     agentContext.config.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
@@ -599,23 +562,9 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // credential record already exists
     if (credentialRecord) {
-      const proposalMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3ProposeCredentialMessage,
-      })
-
-      const offerMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
-        messageClass: V3OfferCredentialMessage,
-      })
-
       // Assert
       credentialRecord.assertProtocolVersion('v3')
       credentialRecord.assertState(CredentialState.OfferSent)
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-        lastReceivedMessage: proposalMessage ?? undefined,
-        lastSentMessage: offerMessage ?? undefined,
-      })
 
       await this.credentialFormatCoordinator.processRequest(messageContext.agentContext, {
         credentialRecord,
@@ -626,9 +575,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.RequestReceived)
       return credentialRecord
     } else {
-      // Assert
-      await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
-
       // No credential record exists with thread id
       agentContext.config.logger.debug('No credential record found for request, creating a new one')
       credentialRecord = new CredentialExchangeRecord({
@@ -714,7 +660,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     const { message: credentialMessage, connection, agentContext } = messageContext
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
     agentContext.config.logger.debug(`Processing credential with id ${credentialMessage.id}`)
 
@@ -728,18 +673,10 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       associatedRecordId: credentialRecord.id,
       messageClass: V3RequestCredentialMessage,
     })
-    const offerMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V3OfferCredentialMessage,
-    })
 
     // Assert
     credentialRecord.assertProtocolVersion('v3')
     credentialRecord.assertState(CredentialState.RequestSent)
-    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      lastReceivedMessage: offerMessage ?? undefined,
-      lastSentMessage: requestMessage,
-    })
 
     const formatServices = this.getFormatServicesFromMessage(credentialMessage.formats)
     if (formatServices.length === 0) {
@@ -797,9 +734,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     agentContext.config.logger.debug(`Processing credential ack with id ${ackMessage.id}`)
 
-    const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
-
     const credentialRecord = await this.getByThreadAndConnectionId(
       messageContext.agentContext,
       ackMessage.threadId,
@@ -807,23 +741,9 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     )
     credentialRecord.connectionId = connection?.id
 
-    const requestMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V3RequestCredentialMessage,
-    })
-
-    const credentialMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
-      messageClass: V3IssueCredentialMessage,
-    })
-
     // Assert
     credentialRecord.assertProtocolVersion('v3')
     credentialRecord.assertState(CredentialState.CredentialIssued)
-    await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      lastReceivedMessage: requestMessage,
-      lastSentMessage: credentialMessage,
-    })
 
     // Update record
     await this.updateState(messageContext.agentContext, credentialRecord, CredentialState.Done)

@@ -1,18 +1,18 @@
 import type { MessageHandler } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { CredentialExchangeRecord } from '../../../repository'
-import type { V2CredentialProtocol } from '../V3CredentialProtocol'
+import type { V3CredentialProtocol } from '../V3CredentialProtocol'
 
 import { getOutboundMessageContext } from '../../../../../agent/getOutboundMessageContext'
 import { AriesFrameworkError } from '../../../../../error'
 import { V3RequestCredentialMessage } from '../messages/V3RequestCredentialMessage'
 
-export class V2RequestCredentialHandler implements MessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+export class V3RequestCredentialHandler implements MessageHandler {
+  private credentialProtocol: V3CredentialProtocol
 
   public supportedMessages = [V3RequestCredentialMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V3CredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 
@@ -51,8 +51,6 @@ export class V2RequestCredentialHandler implements MessageHandler {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialRecord,
-      lastReceivedMessage: messageContext.message,
-      lastSentMessage: offerMessage,
     })
   }
 }

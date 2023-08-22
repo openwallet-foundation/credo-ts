@@ -1,17 +1,17 @@
 import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../../agent/models/InboundMessageContext'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialProtocol } from '../V3CredentialProtocol'
+import type { V3CredentialProtocol } from '../V3CredentialProtocol'
 
 import { OutboundMessageContext } from '../../../../../agent/models'
 import { V3ProposeCredentialMessage } from '../messages/V3ProposeCredentialMessage'
 
-export class V2ProposeCredentialHandler implements MessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+export class V3ProposeCredentialHandler implements MessageHandler {
+  private credentialProtocol: V3CredentialProtocol
 
   public supportedMessages = [V3ProposeCredentialMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V3CredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 
@@ -30,7 +30,7 @@ export class V2ProposeCredentialHandler implements MessageHandler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2ProposeCredentialHandler>
+    messageContext: MessageHandlerInboundMessage<V3ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info(`Automatically sending offer with autoAccept`)
 

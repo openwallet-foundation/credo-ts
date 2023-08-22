@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { DidCommV2Message } from '../../../didcomm'
+import type { DidCommV1Message } from '../../../didcomm'
 import type { Query } from '../../../storage/StorageService'
 import type { AckMessage } from '../../common'
 import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
@@ -18,7 +18,6 @@ import { filterContextCorrelationId } from '../../../agent/Events'
 import { InjectionSymbols } from '../../../constants'
 import { Key } from '../../../crypto'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { DidCommV1Message } from '../../../didcomm'
 import { AriesFrameworkError } from '../../../error'
 import { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
@@ -449,13 +448,13 @@ export class ConnectionService {
    * @param messageContext - the inbound message context
    */
   public async assertConnectionOrOutOfBandExchange(
-    messageContext: InboundMessageContext<DidCommV1Message | DidCommV2Message>,
+    messageContext: InboundMessageContext<DidCommV1Message>,
     {
       lastSentMessage,
       lastReceivedMessage,
     }: {
-      lastSentMessage?: DidCommV1Message | DidCommV2Message | null
-      lastReceivedMessage?: DidCommV1Message | DidCommV2Message | null
+      lastSentMessage?: DidCommV1Message | null
+      lastReceivedMessage?: DidCommV1Message | null
     } = {}
   ) {
     const { connection, message } = messageContext
@@ -475,9 +474,7 @@ export class ConnectionService {
       const senderKey = messageContext.senderKey && messageContext.senderKey.publicKeyBase58
 
       // set theirService to the value of lastReceivedMessage.service
-      let theirService =
-        (message instanceof DidCommV1Message && message.service?.resolvedDidCommService) ??
-        (lastReceivedMessage instanceof DidCommV1Message && lastReceivedMessage?.service?.resolvedDidCommService)
+      let theirService = message.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
       // 1. check if there's an oob record associated.

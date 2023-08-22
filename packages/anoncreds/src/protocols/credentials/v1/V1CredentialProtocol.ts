@@ -320,7 +320,7 @@ export class V1CredentialProtocol
 
     const message = new V1OfferCredentialMessage({
       comment,
-      offerAttachments: [attachment],
+      offerAttachments: [attachment as Attachment],
       credentialPreview: new V1CredentialPreview({
         attributes: previewAttributes,
       }),
@@ -378,7 +378,7 @@ export class V1CredentialProtocol
 
     const message = new V1OfferCredentialMessage({
       comment,
-      offerAttachments: [attachment],
+      offerAttachments: [attachment as Attachment],
       credentialPreview: new V1CredentialPreview({
         attributes: previewAttributes,
       }),
@@ -455,7 +455,7 @@ export class V1CredentialProtocol
         attributes: previewAttributes,
       }),
       comment,
-      offerAttachments: [attachment],
+      offerAttachments: [attachment as Attachment],
       attachments: credentialFormats.indy.linkedAttachments?.map((linkedAttachments) => linkedAttachments.attachment),
     })
 
@@ -609,7 +609,7 @@ export class V1CredentialProtocol
 
     const requestMessage = new V1RequestCredentialMessage({
       comment,
-      requestAttachments: [attachment],
+      requestAttachments: [attachment as Attachment],
       attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
     requestMessage.setThread({ threadId: credentialRecord.threadId })
@@ -829,7 +829,7 @@ export class V1CredentialProtocol
 
     const issueMessage = new V1IssueCredentialMessage({
       comment,
-      credentialAttachments: [attachment],
+      credentialAttachments: [attachment as Attachment],
       attachments: credentialRecord.linkedAttachments,
     })
 

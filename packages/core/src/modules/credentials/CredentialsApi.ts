@@ -19,13 +19,13 @@ import type {
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 import type { CredentialFormatsFromProtocols } from './protocol/CredentialProtocolOptions'
 import type { CredentialExchangeRecord } from './repository/CredentialExchangeRecord'
-import type { DidCommV1Message } from '../../didcomm/versions/v1'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { MessageSender } from '../../agent/MessageSender'
 import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { InjectionSymbols } from '../../constants'
+import { isDidCommV1Message, type DidCommV1Message } from '../../didcomm/versions/v1'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
@@ -383,6 +383,10 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
 
     this.logger.debug('Offer Message successfully created', { message })
+
+    if (!isDidCommV1Message(message)) {
+      throw new AriesFrameworkError('out-of-band credential offer is only supported for DIDComm V1')
+    }
 
     return { message, credentialRecord }
   }

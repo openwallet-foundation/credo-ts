@@ -5,6 +5,7 @@ import type {
   JsonLdFormatDataVerifiableCredential,
 } from './JsonLdCredentialFormat'
 import type { AgentContext } from '../../../../agent'
+import type { V2Attachment } from '../../../../decorators/attachment'
 import type { CredentialFormatService } from '../CredentialFormatService'
 import type {
   CredentialFormatAcceptOfferOptions,
@@ -385,7 +386,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     throw new Error('Not implemented.')
   }
 
-  public areCredentialsEqual = (message1: Attachment, message2: Attachment): boolean => {
+  public areCredentialsEqual = (message1: Attachment | V2Attachment, message2: Attachment | V2Attachment): boolean => {
     const obj1 = message1.getDataAsJson()
     const obj2 = message2.getDataAsJson()
 
