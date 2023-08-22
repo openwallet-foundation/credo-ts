@@ -9,8 +9,8 @@ import { Protocol } from '../../agent/models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
+import { V2CredentialProtocol, V3CredentialProtocol } from './protocol'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
-import { V2CredentialProtocol } from './protocol/v2'
 import { CredentialRepository } from './repository'
 
 /**
@@ -37,7 +37,10 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
       ...config,
       // NOTE: the credentialProtocols defaults are set in the CredentialsModule rather than the CredentialsModuleConfig to
       // avoid dependency cycles.
-      credentialProtocols: config?.credentialProtocols ?? [new V2CredentialProtocol({ credentialFormats: [] })],
+      credentialProtocols: config?.credentialProtocols ?? [
+        new V2CredentialProtocol({ credentialFormats: [] }), // FIXME: Default credential formats?
+        new V3CredentialProtocol({ credentialFormats: [] }),
+      ],
     }) as CredentialsModuleConfig<CredentialProtocols>
   }
 

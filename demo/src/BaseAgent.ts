@@ -23,6 +23,7 @@ import {
   DidsModule,
   V2ProofProtocol,
   V2CredentialProtocol,
+  V3CredentialProtocol,
   ProofsModule,
   AutoAcceptProof,
   AutoAcceptCredential,
@@ -120,6 +121,9 @@ function getAskarAnonCredsIndyModules() {
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
         new V2CredentialProtocol({
+          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
+        }),
+        new V3CredentialProtocol({
           credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],
