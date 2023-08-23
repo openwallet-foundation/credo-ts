@@ -1,20 +1,22 @@
-import type { AckMessageOptions } from '../../../../common'
-
+import { DidCommV2Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { AckMessage } from '../../../../common'
 
-export type V3CredentialAckMessageOptions = AckMessageOptions
+export type V3CredentialAckMessageOptions = {
+  id?: string
+  threadId: string
+}
 
-/**
- * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
- */
-export class V3CredentialAckMessage extends AckMessage {
+export class V3CredentialAckMessage extends DidCommV2Message {
   /**
    * Create new CredentialAckMessage instance.
    * @param options
    */
   public constructor(options: V3CredentialAckMessageOptions) {
-    super(options)
+    super()
+    if (options) {
+      this.id = options.id ?? this.generateId()
+      this.thid = options.threadId
+    }
   }
 
   @IsValidMessageType(V3CredentialAckMessage.type)

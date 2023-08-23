@@ -33,7 +33,6 @@ import { Protocol } from '../../../../agent/models/features/Protocol'
 import { AriesFrameworkError } from '../../../../error'
 import { DidCommMessageRepository } from '../../../../storage'
 import { uuid } from '../../../../utils/uuid'
-import { AckStatus } from '../../../common'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
 import { AutoAcceptCredential, CredentialProblemReportReason, CredentialState } from '../../models'
 import { CredentialExchangeRecord, CredentialRepository } from '../../repository'
@@ -711,7 +710,6 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // Create message
     const ackMessage = new V3CredentialAckMessage({
-      status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })
 
