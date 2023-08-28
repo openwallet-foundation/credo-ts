@@ -41,7 +41,11 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
     }
   })
 
-  didDoc.didCommServices.forEach((service) => {
+  // FIXME: we reverse the didCommServices here, as the previous implementation was wrong
+  // and we need to keep the same order to not break the did creation process.
+  // When we implement the migration to did:peer:2 and did:peer:3 according to the
+  // RFCs we can change it.
+  didDoc.didCommServices.reverse().forEach((service) => {
     const serviceId = normalizeId(service.id)
 
     // For didcommv1, we need to replace the old id with the new ones

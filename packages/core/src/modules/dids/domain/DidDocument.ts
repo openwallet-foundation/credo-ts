@@ -178,7 +178,7 @@ export class DidDocument {
     >
 
     // Sort services based on indicated priority
-    return services.sort((a, b) => b.priority - a.priority)
+    return services.sort((a, b) => a.priority - b.priority)
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
