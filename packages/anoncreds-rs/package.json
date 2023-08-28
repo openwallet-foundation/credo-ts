@@ -2,7 +2,7 @@
   "name": "@aries-framework/anoncreds-rs",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "files": [
     "build"
   ],
@@ -24,8 +24,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/anoncreds": "0.4.0",
-    "@aries-framework/core": "0.4.0",
+    "@aries-framework/anoncreds": "0.4.1",
+    "@aries-framework/core": "0.4.1",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.0",
     "rxjs": "^7.2.0",
