@@ -2,7 +2,6 @@
 import type {
   AgentDependencies,
   BaseEvent,
-  BasicMessageStateChangedEvent,
   ConnectionRecordProps,
   CredentialStateChangedEvent,
   InitConfig,
@@ -13,8 +12,7 @@ import type {
   CredentialState,
   ConnectionStateChangedEvent,
   Buffer,
-  V1BasicMessage,
-  V2BasicMessage,
+  AgentMessageProcessedEvent,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type {
@@ -32,6 +30,8 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
+  V1BasicMessage,
+  V2BasicMessage,
   OutOfBandVersion,
   OutOfBandDidCommService,
   ConnectionsModule,
@@ -39,7 +39,6 @@ import {
   TypedArrayEncoder,
   AgentConfig,
   AgentContext,
-  BasicMessageEventTypes,
   ConnectionRecord,
   CredentialEventTypes,
   DependencyManager,
@@ -49,6 +48,7 @@ import {
   InjectionSymbols,
   ProofEventTypes,
   TrustPingEventTypes,
+  AgentEventTypes,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -222,6 +222,8 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent || e.type === TrustPingEventTypes.V2TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
+  e.type === AgentEventTypes.AgentMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -451,21 +453,38 @@ export async function waitForConnectionRecord(
 
 export async function waitForBasicMessage(
   agent: Agent,
-  { content }: { content?: string }
+  { content, timeoutMs }: { content?: string; timeoutMs?: number }
 ): Promise<V1BasicMessage | V2BasicMessage> {
-  return new Promise((resolve) => {
-    const listener = (event: BasicMessageStateChangedEvent) => {
-      const contentMatches = content === undefined || event.payload.message.content === content
+  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+  return waitForBasicMessageSubject(observable, { content, timeoutMs })
+}
 
-      if (contentMatches) {
-        agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
+export function waitForBasicMessageSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    content,
+    timeoutMs = 5000,
+  }: {
+    content?: string
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-        resolve(event.payload.message)
-      }
-    }
-
-    agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
-  })
+  return firstValueFrom(
+    observable.pipe(
+      filter(isAgentMessageProcessedEvent),
+      map((e) => e.payload.message),
+      filter((e): e is V1BasicMessage | V2BasicMessage =>
+        [V1BasicMessage.type.messageTypeUri, V2BasicMessage.type.messageTypeUri].includes(e.type)
+      ),
+      filter((e) => content === undefined || e.content === content),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`Basic Message not received within specified timeout: { content: ${content} }`)
+      })
+    )
+  )
 }
 
 export function getMockConnection({

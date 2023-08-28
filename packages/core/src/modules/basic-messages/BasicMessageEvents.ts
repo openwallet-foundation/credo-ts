@@ -1,4 +1,4 @@
-import type { V1BasicMessage, V2BasicMessage } from './protocols'
+import type { V1BasicMessage } from './protocols'
 import type { BasicMessageRecord } from './repository'
 import type { BaseEvent } from '../../agent/Events'
 
@@ -8,7 +8,7 @@ export enum BasicMessageEventTypes {
 export interface BasicMessageStateChangedEvent extends BaseEvent {
   type: typeof BasicMessageEventTypes.BasicMessageStateChanged
   payload: {
-    message: V1BasicMessage | V2BasicMessage
+    message: V1BasicMessage
     basicMessageRecord: BasicMessageRecord
   }
 }

@@ -3,14 +3,10 @@ import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
 import type { ConnectionRecord } from '../../../connections/repository/ConnectionRecord'
-import type { BasicMessageStateChangedEvent } from '../../BasicMessageEvents'
 import type { CreateMessageOptions } from '../BasicMessageProtocolOptions'
 
-import { EventEmitter } from '../../../../agent/EventEmitter'
 import { Protocol } from '../../../../agent/models'
-import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
-import { BasicMessageEventTypes } from '../../BasicMessageEvents'
 import { BasicMessageRole } from '../../BasicMessageRole'
 import { BasicMessageRecord, BasicMessageRepository } from '../../repository'
 import { BaseBasicMessageProtocol } from '../BaseBasicMessageProtocol'
@@ -62,7 +58,7 @@ export class V2BasicMessageProtocol extends BaseBasicMessageProtocol {
     })
 
     await basicMessageRepository.save(agentContext, basicMessageRecord)
-    this.emitStateChangedEvent(agentContext, basicMessageRecord, basicMessage)
+    // TODO: Emit BasicStateChangedEvent when it is updated to accept V2 Basic Messages
 
     return { message: basicMessage, record: basicMessageRecord }
   }
@@ -83,18 +79,6 @@ export class V2BasicMessageProtocol extends BaseBasicMessageProtocol {
     })
 
     await basicMessageRepository.save(agentContext, basicMessageRecord)
-    this.emitStateChangedEvent(agentContext, basicMessageRecord, message)
-  }
-
-  protected emitStateChangedEvent(
-    agentContext: AgentContext,
-    basicMessageRecord: BasicMessageRecord,
-    basicMessage: V2BasicMessage
-  ) {
-    const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-    eventEmitter.emit<BasicMessageStateChangedEvent>(agentContext, {
-      type: BasicMessageEventTypes.BasicMessageStateChanged,
-      payload: { message: basicMessage, basicMessageRecord: basicMessageRecord.clone() },
-    })
+    // TODO: Emit BasicStateChangedEvent when it is updated to accept V2 Basic Messages
   }
 }
