@@ -56,7 +56,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      proposalAttachments.push(attachment as Attachment)
+      proposalAttachments.push(attachment)
       formats.push(format)
     }
 
@@ -161,7 +161,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(attachment as Attachment)
+      offerAttachments.push(attachment)
       formats.push(format)
     }
 
@@ -233,7 +233,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(attachment as Attachment)
+      offerAttachments.push(attachment)
       formats.push(format)
     }
 
@@ -333,7 +333,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      requestAttachments.push(attachment as Attachment)
+      requestAttachments.push(attachment)
       formats.push(format)
     }
 
@@ -389,7 +389,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialRecord,
       })
 
-      requestAttachments.push(attachment as Attachment)
+      requestAttachments.push(attachment)
       formats.push(format)
     }
 
@@ -488,7 +488,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      credentialAttachments.push(attachment as Attachment)
+      credentialAttachments.push(attachment)
       formats.push(format)
     }
 
