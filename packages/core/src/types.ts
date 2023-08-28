@@ -70,6 +70,9 @@ export enum DidCommMimeType {
 }
 
 export interface InitConfig {
+  /**
+   * Agent public endpoints, sorted by priority (higher priority first)
+   */
   endpoints?: string[]
   label: string
   walletConfig?: WalletConfig
