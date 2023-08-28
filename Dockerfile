@@ -14,7 +14,7 @@ ENV PACKAGES software-properties-common ca-certificates \
 RUN apt-get update -y \
     && apt-get install -y $PACKAGES
 
-RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.23_amd64.deb -o libssl1.1.deb \
+RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1ubuntu2.1~18.04.23_amd64.deb -o libssl1.1.deb \ 
     # libssl1.1 (required by libindy)
     && dpkg -i libssl1.1.deb \
     && curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1-1ubuntu2.1~18.04.23_amd64.deb -o libssl-dev1.1.deb \
