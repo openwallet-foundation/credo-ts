@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
+
+### Bug Fixes
+
+- check if URL already encoded ([#1485](https://github.com/hyperledger/aries-framework-javascript/issues/1485)) ([38a0578](https://github.com/hyperledger/aries-framework-javascript/commit/38a0578011896cfcf217713d34f285cd381ad72c))
+- encode tails url ([#1479](https://github.com/hyperledger/aries-framework-javascript/issues/1479)) ([fd190b9](https://github.com/hyperledger/aries-framework-javascript/commit/fd190b96106ca4916539d96ff6c4ecef7833f148))
+
 # [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
 
 - feat!: add data, cache and temp dirs to FileSystem (#1306) ([ff5596d](https://github.com/hyperledger/aries-framework-javascript/commit/ff5596d0631e93746494c017797d0191b6bdb0b1)), closes [#1306](https://github.com/hyperledger/aries-framework-javascript/issues/1306)

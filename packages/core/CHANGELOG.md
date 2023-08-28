@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
+
+### Bug Fixes
+
+- create message subscription first ([#1549](https://github.com/hyperledger/aries-framework-javascript/issues/1549)) ([93276de](https://github.com/hyperledger/aries-framework-javascript/commit/93276debeff1e56c9803e7700875c4254a48236b))
+- force did:key resolver/registrar presence ([#1535](https://github.com/hyperledger/aries-framework-javascript/issues/1535)) ([aaa13dc](https://github.com/hyperledger/aries-framework-javascript/commit/aaa13dc77d6d5133cd02e768e4173462fa65064a))
+- listen to incoming messages on agent initialize not constructor ([#1542](https://github.com/hyperledger/aries-framework-javascript/issues/1542)) ([8f2d593](https://github.com/hyperledger/aries-framework-javascript/commit/8f2d593bcda0bb2d7bea25ad06b9e37784961997))
+- priority sorting for didcomm services ([#1555](https://github.com/hyperledger/aries-framework-javascript/issues/1555)) ([80c37b3](https://github.com/hyperledger/aries-framework-javascript/commit/80c37b30eb9ac3b438288e14c252f79f619dd12f))
+- race condition singleton records ([#1495](https://github.com/hyperledger/aries-framework-javascript/issues/1495)) ([6c2dda5](https://github.com/hyperledger/aries-framework-javascript/commit/6c2dda544bf5f5d3a972a778c389340da6df97c4))
+- **transport:** Use connection in WebSocket ID ([#1551](https://github.com/hyperledger/aries-framework-javascript/issues/1551)) ([8d2057f](https://github.com/hyperledger/aries-framework-javascript/commit/8d2057f3fe6f3ba236ba5a811b57a7256eae92bf))
+
+### Features
+
+- **anoncreds:** auto create link secret ([#1521](https://github.com/hyperledger/aries-framework-javascript/issues/1521)) ([c6f03e4](https://github.com/hyperledger/aries-framework-javascript/commit/c6f03e49d79a33b1c4b459cef11add93dee051d0))
+- oob without handhsake improvements and routing ([#1511](https://github.com/hyperledger/aries-framework-javascript/issues/1511)) ([9e69cf4](https://github.com/hyperledger/aries-framework-javascript/commit/9e69cf441a75bf7a3c5556cf59e730ee3fce8c28))
+- support askar profiles for multi-tenancy ([#1538](https://github.com/hyperledger/aries-framework-javascript/issues/1538)) ([e448a2a](https://github.com/hyperledger/aries-framework-javascript/commit/e448a2a58dddff2cdf80c4549ea2d842a54b43d1))
+- **w3c:** add convenience methods to vc and vp ([#1477](https://github.com/hyperledger/aries-framework-javascript/issues/1477)) ([83cbfe3](https://github.com/hyperledger/aries-framework-javascript/commit/83cbfe38e788366b616dc244fe34cc49a5a4d331))
+
 # [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
 
 ### Bug Fixes
