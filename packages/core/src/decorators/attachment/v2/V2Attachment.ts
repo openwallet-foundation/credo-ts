@@ -13,6 +13,7 @@ export interface V2AttachmentOptions {
   id?: string
   description?: string
   filename?: string
+  format?: string
   lastmodTime?: Date
   mediaType?: string
   byteCount?: number
@@ -86,6 +87,7 @@ export class V2Attachment {
       this.description = options.description
       this.byteCount = options.byteCount
       this.filename = options.filename
+      this.format = options.format
       this.lastmodTime = options.lastmodTime
       this.mediaType = options.mediaType
       this.data = options.data

@@ -256,7 +256,7 @@ export class Faber extends BaseAgent {
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
     await this.agent.proofs.requestProof({
-      protocolVersion: 'v2',
+      protocolVersion: connectionRecord.isDidCommV1Connection ? 'v2' : 'v3',
       connectionId: connectionRecord.id,
       proofFormats: {
         anoncreds: {

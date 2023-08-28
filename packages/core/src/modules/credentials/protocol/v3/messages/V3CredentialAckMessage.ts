@@ -8,7 +8,7 @@ export type V3CredentialAckMessageOptions = {
 
 export class V3CredentialAckMessage extends DidCommV2Message {
   /**
-   * Create new CredentialAckMessage instance.
+   * Create new V3CredentialAckMessage instance.
    * @param options
    */
   public constructor(options: V3CredentialAckMessageOptions) {

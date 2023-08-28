@@ -30,6 +30,7 @@ import { injectable } from 'tsyringe'
 import { MessageSender } from '../../agent/MessageSender'
 import { AgentContext } from '../../agent/context/AgentContext'
 import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
+import { isDidCommV1Message } from '../../didcomm'
 import { AriesFrameworkError } from '../../error'
 import { ConnectionService } from '../connections/services/ConnectionService'
 
@@ -385,7 +386,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
   }> {
     const protocol = this.getProtocol(options.protocolVersion)
 
-    return await protocol.createRequest(this.agentContext, {
+    const { message, proofRecord } = await protocol.createRequest(this.agentContext, {
       proofFormats: options.proofFormats,
       autoAcceptProof: options.autoAcceptProof,
       comment: options.comment,
@@ -393,6 +394,12 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       goalCode: options.goalCode,
       willConfirm: options.willConfirm,
     })
+
+    if (!isDidCommV1Message(message)) {
+      throw new AriesFrameworkError('out-of-band credential offer is only supported for DIDComm V1')
+    }
+
+    return { message, proofRecord }
   }
 
   /**

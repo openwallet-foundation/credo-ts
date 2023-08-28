@@ -244,7 +244,9 @@ describe('Agent', () => {
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/coordinate-mediation/1.0',
         'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/issue-credential/3.0',
         'https://didcomm.org/present-proof/2.0',
+        'https://didcomm.org/present-proof/3.0',
         'https://didcomm.org/didexchange/1.0',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
@@ -255,6 +257,6 @@ describe('Agent', () => {
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(14)
+    expect(protocols.length).toEqual(16)
   })
 })

@@ -1,0 +1,5 @@
+export * from './V3PresentationAckMessage'
+export * from './V3PresentationMessage'
+export * from './V3PresentationProblemReportMessage'
+export * from './V3ProposePresentationMessage'
+export * from './V3RequestPresentationMessage'

@@ -30,6 +30,7 @@ import {
   CredentialsModule,
   Agent,
   HttpOutboundTransport,
+  V3ProofProtocol,
 } from '@aries-framework/core'
 import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@aries-framework/indy-sdk'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@aries-framework/indy-vdr'
@@ -135,6 +136,9 @@ function getAskarAnonCredsIndyModules() {
           indyProofFormat: legacyIndyProofFormatService,
         }),
         new V2ProofProtocol({
+          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
+        }),
+        new V3ProofProtocol({
           proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],

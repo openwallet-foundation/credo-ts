@@ -15,13 +15,13 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { DidCommV1Message } from '../../../didcomm'
 import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
-import type { ProblemReportMessage } from '../../problem-reports'
+import type { ProblemReportMessage, V2ProblemReportMessage } from '../../problem-reports'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofState } from '../models/ProofState'
 import type { ProofExchangeRecord } from '../repository'
@@ -33,31 +33,31 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   createProposal(
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
-  processProposal(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
+  processProposal(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
   negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // methods for request
   createRequest(
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
-  processRequest(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
+  processRequest(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
   negotiateRequest(
     agentContext: AgentContext,
     options: NegotiateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // retrieving credentials for request
   getCredentialsForRequest(
@@ -70,25 +70,27 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  processPresentation(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  processPresentation(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // methods for ack
-  processAck(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  processAck(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
 
   // method for problem report
   createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
-  ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
-  processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage | V2ProblemReportMessage>>
+  processProblemReport(
+    messageContext: InboundMessageContext<ProblemReportMessage | V2ProblemReportMessage>
+  ): Promise<ProofExchangeRecord>
 
-  findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommV1Message | null>
-  findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommV1Message | null>
-  findPresentationMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommV1Message | null>
+  findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<AgentBaseMessage | null>
+  findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<AgentBaseMessage | null>
+  findPresentationMessage(agentContext: AgentContext, proofExchangeId: string): Promise<AgentBaseMessage | null>
   getFormatData(
     agentContext: AgentContext,
     proofExchangeId: string
