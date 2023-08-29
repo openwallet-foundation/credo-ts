@@ -6,7 +6,7 @@ import { DependencyManager } from '../../../plugins/DependencyManager'
 import { CredentialsApi } from '../CredentialsApi'
 import { CredentialsModule } from '../CredentialsModule'
 import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
-import { V2CredentialProtocol } from '../protocol'
+import { V2CredentialProtocol, V3CredentialProtocol } from '../protocol'
 import { RevocationNotificationService } from '../protocol/revocation-notification/services'
 import { CredentialRepository } from '../repository'
 
@@ -54,7 +54,10 @@ describe('CredentialsModule', () => {
   test('registers V2CredentialProtocol if no credentialProtocols are configured', () => {
     const credentialsModule = new CredentialsModule()
 
-    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2CredentialProtocol)])
+    expect(credentialsModule.config.credentialProtocols).toEqual([
+      expect.any(V2CredentialProtocol),
+      expect.any(V3CredentialProtocol),
+    ])
   })
 
   test('calls register on the provided CredentialProtocols', () => {

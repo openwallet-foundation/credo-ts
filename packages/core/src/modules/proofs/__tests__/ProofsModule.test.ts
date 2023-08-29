@@ -5,7 +5,7 @@ import { DependencyManager } from '../../../plugins/DependencyManager'
 import { ProofsApi } from '../ProofsApi'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
-import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
+import { V2ProofProtocol, V3ProofProtocol } from '../protocol'
 import { ProofRepository } from '../repository'
 
 jest.mock('../../../plugins/DependencyManager')
@@ -36,7 +36,7 @@ describe('ProofsModule', () => {
   test('registers V2ProofProtocol if no proofProtocols are configured', () => {
     const proofsModule = new ProofsModule()
 
-    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol)])
+    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2ProofProtocol), expect.any(V3ProofProtocol)])
   })
 
   test('calls register on the provided ProofProtocols', () => {
