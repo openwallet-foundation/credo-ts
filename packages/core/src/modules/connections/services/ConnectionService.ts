@@ -33,6 +33,7 @@ import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { OutOfBandRepository } from '../../oob/repository'
+import { OutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
@@ -574,11 +575,13 @@ export class ConnectionService {
       )
     }
 
-    // Technically we should throw an error if there's no outOfBandInvitationId (pthid) on the message. However,
-    // we're currently flexible with this requirement, as we otherwise loose support for legacy connectionless
-    // exchanges, which do not have the parentThreadId.
-    // TODO: should we add a property to the oob record, to indicate it's used as a legacy connectionless invitation?
-    if (outOfBandInvitationId && outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId) {
+    const legacyInvitationMetadata = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
+
+    // If the original invitation was a legacy connectionless invitation, it's okay if the message does not have a pthid.
+    if (
+      legacyInvitationMetadata?.legacyInvitationType !== 'connectionless' &&
+      outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
+    ) {
       throw new AriesFrameworkError(
         'Response messages to out of band invitation requests MUST have a parent thread id that matches the out of band invitation id.'
       )

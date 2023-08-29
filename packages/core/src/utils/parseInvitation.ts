@@ -104,10 +104,13 @@ export const parseInvitationShortUrl = async (
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
     const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
+    outOfBandInvitation.invitationType = 'out-of-band/1.x'
     return outOfBandInvitation
   } else if (parsedUrl['c_i']) {
     const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
-    return convertToNewInvitation(invitation)
+    const outOfBandInvitation = convertToNewInvitation(invitation)
+    outOfBandInvitation.invitationType = 'connections/1.x'
+    return outOfBandInvitation
   }
   // Legacy connectionless invitation
   else if (parsedUrl['d_m']) {
@@ -132,12 +135,15 @@ export const parseInvitationShortUrl = async (
       services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
     })
 
+    invitation.invitationType = 'connectionless'
     invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
 
     return invitation
   } else {
     try {
-      return oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+      const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
+      outOfBandInvitation.invitationType = 'out-of-band/1.x'
+      return outOfBandInvitation
     } catch (error) {
       throw new AriesFrameworkError(
         'InvitationUrl is invalid. It needs to contain one, and only one, of the following parameters: `oob`, `c_i` or `d_m`, or be valid shortened URL'

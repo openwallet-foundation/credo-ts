@@ -1,7 +1,7 @@
 import type { PlaintextMessage } from '../../../types'
 import type { HandshakeProtocol } from '../../connections'
 
-import { Expose, Transform, TransformationType, Type } from 'class-transformer'
+import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
@@ -43,6 +43,13 @@ export class OutOfBandInvitation extends AgentMessage {
       this.appendedAttachments = options.appendedAttachments
     }
   }
+
+  /**
+   * The original type of the invitation. This is not part of the RFC, but allows to identify
+   * from what the oob invitation was originally created (e.g. legacy connectionless invitation).
+   */
+  @Exclude()
+  public invitationType?: InvitationType
 
   public addRequest(message: AgentMessage) {
     if (!this.requests) this.requests = []
@@ -179,3 +186,8 @@ function OutOfBandServiceTransformer() {
     return value
   })
 }
+
+/**
+ * The original invitation an out of band invitation was derived from.
+ */
+export type InvitationType = 'out-of-band/1.x' | 'connections/1.x' | 'connectionless'

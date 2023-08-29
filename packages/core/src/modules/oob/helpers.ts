@@ -32,7 +32,9 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     handshakeProtocols: [HandshakeProtocol.Connections],
   }
 
-  return new OutOfBandInvitation(options)
+  const outOfBandInvitation = new OutOfBandInvitation(options)
+  outOfBandInvitation.invitationType = 'connections/1.x'
+  return outOfBandInvitation
 }
 
 export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {

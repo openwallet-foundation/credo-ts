@@ -297,8 +297,11 @@ async function addExchangeDataToMessage(
     associatedRecord: BaseRecordAny
   }
 ) {
+  const legacyInvitationMetadata = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
+
   // Set the parentThreadId on the message from the oob invitation
-  if (outOfBandRecord) {
+  // If connectionless is used, we should not add the parentThreadId
+  if (outOfBandRecord && legacyInvitationMetadata?.legacyInvitationType !== 'connectionless') {
     if (!message.thread) {
       message.setThread({
         parentThreadId: outOfBandRecord.outOfBandInvitation.id,
