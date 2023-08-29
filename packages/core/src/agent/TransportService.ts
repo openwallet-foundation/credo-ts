@@ -13,8 +13,8 @@ export class TransportService {
   public transportSessionTable: TransportSessionTable = {}
 
   public saveSession(session: TransportSession) {
-    if (session.type === 'WebSocket' && session.connectionId) {
-      const oldSessions = this.getWebSocketSessionsForConnectionId(session.connectionId)
+    if (session.connectionId) {
+      const oldSessions = this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
       oldSessions.forEach((oldSession) => {
         if (oldSession) {
           this.removeSession(oldSession)
@@ -49,9 +49,9 @@ export class TransportService {
     delete this.transportSessionTable[session.id]
   }
 
-  private getWebSocketSessionsForConnectionId(connectionId: string) {
+  private getExistingSessionsForConnectionIdAndType(connectionId: string, type: string) {
     return Object.values(this.transportSessionTable).filter(
-      (session) => session?.connectionId === connectionId && session.type === 'WebSocket'
+      (session) => session?.connectionId === connectionId && session.type === type
     )
   }
 }
