@@ -43,7 +43,7 @@ describe('V2BasicMessageProtocol', () => {
       expect(message.body.content).toBe('hello')
 
       expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(BasicMessageRecord))
-      expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith(agentContext, {
         type: 'BasicMessageStateChanged',
         payload: {
           basicMessageRecord: expect.objectContaining({
@@ -71,7 +71,7 @@ describe('V2BasicMessageProtocol', () => {
       await basicMessageProtocol.save(messageContext, mockConnectionRecord)
 
       expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(BasicMessageRecord))
-      expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith(agentContext, {
         type: 'BasicMessageStateChanged',
         payload: {
           basicMessageRecord: expect.objectContaining({
