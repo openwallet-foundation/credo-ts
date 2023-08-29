@@ -1,35 +1,59 @@
+import type { BasicMessageProtocol } from './protocols'
 import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 import type { Query } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
-import { MessageHandlerRegistry } from '../../agent/MessageHandlerRegistry'
 import { MessageSender } from '../../agent/MessageSender'
-import { OutboundMessageContext } from '../../agent/models'
+import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
+import { AriesFrameworkError } from '../../error'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections'
 
-import { BasicMessageHandler } from './handlers'
-import { BasicMessageService } from './services'
+import { BasicMessagesModuleConfig } from './BasicMessagesModuleConfig'
+import { BasicMessageRepository } from './repository'
+
+export interface BasicMessagesApi<BMPs extends BasicMessageProtocol[]> {
+  sendMessage(connectionId: string, message: string, parentThreadId?: string): Promise<BasicMessageRecord>
+
+  findAllByQuery(query: Query<BasicMessageRecord>): Promise<BasicMessageRecord[]>
+  getById(basicMessageRecordId: string): Promise<BasicMessageRecord>
+  getByThreadId(threadId: string): Promise<BasicMessageRecord>
+  deleteById(basicMessageRecordId: string): Promise<void>
+}
 
 @injectable()
-export class BasicMessagesApi {
-  private basicMessageService: BasicMessageService
+export class BasicMessagesApi<BMPs extends BasicMessageProtocol[]> implements BasicMessagesApi<BMPs> {
+  public readonly config: BasicMessagesModuleConfig<BMPs>
+
+  private basicMessageRepository: BasicMessageRepository
   private messageSender: MessageSender
   private connectionService: ConnectionService
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
-    basicMessageService: BasicMessageService,
+    basicMessageRepository: BasicMessageRepository,
     messageSender: MessageSender,
     connectionService: ConnectionService,
-    agentContext: AgentContext
+    agentContext: AgentContext,
+    config: BasicMessagesModuleConfig<BMPs>
   ) {
-    this.basicMessageService = basicMessageService
+    this.basicMessageRepository = basicMessageRepository
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(messageHandlerRegistry)
+    this.config = config
+  }
+
+  private getProtocol<PVT extends BMPs[number]['version']>(protocolVersion: PVT): BasicMessageProtocol {
+    const basicMessageProtocol = this.config.basicMessageProtocols.find(
+      (protocol) => protocol.version === protocolVersion
+    )
+
+    if (!basicMessageProtocol) {
+      throw new AriesFrameworkError(`No basic message protocol registered for protocol version ${protocolVersion}`)
+    }
+
+    return basicMessageProtocol
   }
 
   /**
@@ -44,15 +68,20 @@ export class BasicMessagesApi {
   public async sendMessage(connectionId: string, message: string, parentThreadId?: string) {
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
-    const { message: basicMessage, record: basicMessageRecord } = await this.basicMessageService.createMessage(
+    // TODO: Parameterize in API
+    const basicMessageProtocol = this.getProtocol(connection.isDidCommV1Connection ? 'v1' : 'v2')
+
+    const { message: basicMessage, record: basicMessageRecord } = await basicMessageProtocol.createMessage(
       this.agentContext,
-      message,
-      connection,
-      parentThreadId
+      {
+        content: message,
+        connectionRecord: connection,
+        parentThreadId,
+      }
     )
-    const outboundMessageContext = new OutboundMessageContext(basicMessage, {
-      agentContext: this.agentContext,
-      connection,
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+      message: basicMessage,
+      connectionRecord: connection,
       associatedRecord: basicMessageRecord,
     })
 
@@ -67,7 +96,7 @@ export class BasicMessagesApi {
    * @returns array containing all matching records
    */
   public async findAllByQuery(query: Query<BasicMessageRecord>) {
-    return this.basicMessageService.findAllByQuery(this.agentContext, query)
+    return this.basicMessageRepository.findByQuery(this.agentContext, query)
   }
 
   /**
@@ -79,7 +108,7 @@ export class BasicMessagesApi {
    *
    */
   public async getById(basicMessageRecordId: string) {
-    return this.basicMessageService.getById(this.agentContext, basicMessageRecordId)
+    return this.basicMessageRepository.getById(this.agentContext, basicMessageRecordId)
   }
 
   /**
@@ -90,8 +119,8 @@ export class BasicMessagesApi {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The connection record
    */
-  public async getByThreadId(basicMessageRecordId: string) {
-    return this.basicMessageService.getByThreadId(this.agentContext, basicMessageRecordId)
+  public async getByThreadId(threadId: string) {
+    return this.basicMessageRepository.getSingleByQuery(this.agentContext, { threadId })
   }
 
   /**
@@ -101,10 +130,6 @@ export class BasicMessagesApi {
    * @throws {RecordNotFoundError} If no record is found
    */
   public async deleteById(basicMessageRecordId: string) {
-    await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
+    await this.basicMessageRepository.deleteById(this.agentContext, basicMessageRecordId)
   }
 }

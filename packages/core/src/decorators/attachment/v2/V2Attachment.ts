@@ -1,7 +1,8 @@
-import { Expose, Type } from 'class-transformer'
-import { IsBase64, IsInstance, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
+import type { JwsDetachedFormat, JwsFlattenedDetachedFormat } from '../../../crypto/JwsTypes'
 
-import { Jws } from '../../../crypto/JwsTypes'
+import { Expose, Type } from 'class-transformer'
+import { IsBase64, IsDate, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
+
 import { AriesFrameworkError } from '../../../error'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { uuid } from '../../../utils/uuid'
@@ -12,6 +13,8 @@ export interface V2AttachmentOptions {
   id?: string
   description?: string
   filename?: string
+  format?: string
+  lastmodTime?: Date
   mediaType?: string
   byteCount?: number
   data: V2AttachmentData
@@ -21,7 +24,8 @@ export interface V2AttachmentDataOptions {
   base64?: string
   json?: Record<string, unknown>
   links?: string[]
-  jws?: Jws
+  jws?: JwsDetachedFormat | JwsFlattenedDetachedFormat
+  hash?: string
 }
 
 /**
@@ -52,7 +56,14 @@ export class V2AttachmentData {
    * A JSON Web Signature over the content of the attachment. Optional.
    */
   @IsOptional()
-  public jws?: Jws
+  public jws?: JwsDetachedFormat | JwsFlattenedDetachedFormat
+
+  /**
+   * The hash of the content encoded in multi-hash format. Used as an integrity check for the attachment, and MUST be used if the data is referenced via the links data attribute.
+   */
+  @IsOptional()
+  @IsString()
+  public hash?: string
 
   public constructor(options: V2AttachmentDataOptions) {
     if (options) {
@@ -60,6 +71,7 @@ export class V2AttachmentData {
       this.json = options.json
       this.links = options.links
       this.jws = options.jws
+      this.hash = options.hash
     }
   }
 }
@@ -73,7 +85,10 @@ export class V2Attachment {
     if (options) {
       this.id = options.id ?? uuid()
       this.description = options.description
+      this.byteCount = options.byteCount
       this.filename = options.filename
+      this.format = options.format
+      this.lastmodTime = options.lastmodTime
       this.mediaType = options.mediaType
       this.data = options.data
     }
@@ -109,6 +124,23 @@ export class V2Attachment {
   @IsOptional()
   @IsMimeType()
   public mediaType?: string
+
+  /**
+   * A hint about when the content in this attachment was last modified.
+   */
+  @Expose({ name: 'lastmod_time' })
+  @Type(() => Date)
+  @IsOptional()
+  @IsDate()
+  public lastmodTime?: Date
+
+  /**
+   * Optional, and mostly relevant when content is included by reference instead of by value. Lets the receiver guess how expensive it will be, in time, bandwidth, and storage, to fully fetch the attachment.
+   */
+  @Expose({ name: 'byte_count' })
+  @IsOptional()
+  @IsInt()
+  public byteCount?: number
 
   @Type(() => V2AttachmentData)
   @ValidateNested()

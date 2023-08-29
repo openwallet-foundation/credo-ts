@@ -5,7 +5,7 @@ import { injectable } from 'tsyringe'
 import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
-import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
+import { BasicMessageRepository } from '../../modules/basic-messages'
 import { BasicMessagesApi } from '../../modules/basic-messages/BasicMessagesApi'
 import { ConnectionsApi } from '../../modules/connections/ConnectionsApi'
 import { V1TrustPingService } from '../../modules/connections/protocols/trust-ping/v1/V1TrustPingService'
@@ -167,7 +167,6 @@ describe('Agent', () => {
       expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
 
       expect(container.resolve(BasicMessagesApi)).toBeInstanceOf(BasicMessagesApi)
-      expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
       expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
 
       expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
@@ -205,7 +204,6 @@ describe('Agent', () => {
       expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
 
       expect(container.resolve(BasicMessagesApi)).toBe(container.resolve(BasicMessagesApi))
-      expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
       expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
 
       expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
@@ -242,10 +240,13 @@ describe('Agent', () => {
     expect(protocols).toEqual(
       expect.arrayContaining([
         'https://didcomm.org/basicmessage/1.0',
+        'https://didcomm.org/basicmessage/2.0',
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/coordinate-mediation/1.0',
         'https://didcomm.org/issue-credential/2.0',
+        'https://didcomm.org/issue-credential/3.0',
         'https://didcomm.org/present-proof/2.0',
+        'https://didcomm.org/present-proof/3.0',
         'https://didcomm.org/didexchange/1.0',
         'https://didcomm.org/discover-features/1.0',
         'https://didcomm.org/discover-features/2.0',
@@ -256,6 +257,6 @@ describe('Agent', () => {
         'https://didcomm.org/revocation_notification/2.0',
       ])
     )
-    expect(protocols.length).toEqual(13)
+    expect(protocols.length).toEqual(16)
   })
 })

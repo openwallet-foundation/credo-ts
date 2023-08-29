@@ -2,6 +2,7 @@ import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, CustomOrDefaultApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
 import type { TransportSession } from './TransportService'
 import type { Logger } from '../logger'
+import type { BasicMessagesModule } from '../modules/basic-messages'
 import type { CredentialsModule } from '../modules/credentials'
 import type { MessagePickupModule } from '../modules/message-pìckup'
 import type { ProofsModule } from '../modules/proofs'
@@ -51,7 +52,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly mediator: MediatorApi
   public readonly mediationRecipient: MediationRecipientApi
   public readonly messagePickup: CustomOrDefaultApi<AgentModules['messagePickup'], MessagePickupModule>
-  public readonly basicMessages: BasicMessagesApi
+  public readonly basicMessages: CustomOrDefaultApi<AgentModules['basicMessages'], BasicMessagesModule>
   public readonly genericRecords: GenericRecordsApi
   public readonly discovery: DiscoverFeaturesApi
   public readonly dids: DidsApi
@@ -99,7 +100,10 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       AgentModules['messagePickup'],
       MessagePickupModule
     >
-    this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi)
+    this.basicMessages = this.dependencyManager.resolve(BasicMessagesApi) as CustomOrDefaultApi<
+      AgentModules['basicMessages'],
+      BasicMessagesModule
+    >
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.discovery = this.dependencyManager.resolve(DiscoverFeaturesApi)
     this.dids = this.dependencyManager.resolve(DidsApi)

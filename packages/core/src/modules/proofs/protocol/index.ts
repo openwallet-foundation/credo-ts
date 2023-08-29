@@ -1,4 +1,5 @@
 export * from './v2'
+export * from './v3'
 import * as ProofProtocolOptions from './ProofProtocolOptions'
 
 export { ProofProtocol } from './ProofProtocol'

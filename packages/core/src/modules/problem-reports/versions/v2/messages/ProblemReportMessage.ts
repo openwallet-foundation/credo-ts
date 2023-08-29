@@ -27,7 +27,7 @@ export class ProblemReportBody {
   public args?: string[]
 }
 
-export class ProblemReportMessage extends DidCommV2Message {
+export class V2ProblemReportMessage extends DidCommV2Message {
   public constructor(options?: V2ProblemReportMessageOptions) {
     super(options)
     if (options) {
@@ -36,8 +36,8 @@ export class ProblemReportMessage extends DidCommV2Message {
     }
   }
 
-  @IsValidMessageType(ProblemReportMessage.type)
-  public readonly type = ProblemReportMessage.type.messageTypeUri
+  @IsValidMessageType(V2ProblemReportMessage.type)
+  public readonly type = V2ProblemReportMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/report-problem/2.0/problem-report')
 
   @Expose({ name: 'body' })

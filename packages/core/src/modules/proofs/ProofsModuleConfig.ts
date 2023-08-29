@@ -18,11 +18,11 @@ export interface ProofsModuleConfigOptions<ProofProtocols extends ProofProtocol[
    * Proof protocols to make available to the proofs module. Only one proof protocol should be registered for each proof
    * protocol version.
    *
-   * When not provided, the `V2ProofProtocol` is registered by default.
+   * When not provided, `V2ProofProtocol` and `V3ProofProtocol` are registered by default.
    *
    * @default
    * ```
-   * [V2ProofProtocol]
+   * [V2ProofProtocol, V3ProofProtocol]
    * ```
    */
   proofProtocols: ProofProtocols

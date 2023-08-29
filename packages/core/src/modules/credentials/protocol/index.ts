@@ -1,4 +1,5 @@
 export * from './v2'
+export * from './v3'
 export * from './revocation-notification'
 import * as CredentialProtocolOptions from './CredentialProtocolOptions'
 

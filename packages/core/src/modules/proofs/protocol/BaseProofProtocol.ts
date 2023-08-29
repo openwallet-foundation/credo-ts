@@ -16,18 +16,19 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './ProofProtocolOptions'
+import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { FeatureRegistry } from '../../../agent/FeatureRegistry'
 import type { AgentContext } from '../../../agent/context/AgentContext'
 import type { InboundMessageContext } from '../../../agent/models/InboundMessageContext'
-import type { DidCommV1Message } from '../../../didcomm'
 import type { DependencyManager } from '../../../plugins'
 import type { Query } from '../../../storage/StorageService'
-import type { ProblemReportMessage } from '../../problem-reports'
+import type { ProblemReportMessage, V2ProblemReportMessage } from '../../problem-reports'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofExchangeRecord } from '../repository'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
+import { DidCommV1Message } from '../../../didcomm'
 import { DidCommMessageRepository } from '../../../storage'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
@@ -44,31 +45,31 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   public abstract createProposal(
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
-  public abstract processProposal(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
+  public abstract processProposal(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
   public abstract negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // methods for request
   public abstract createRequest(
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
-  public abstract processRequest(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
+  public abstract processRequest(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
   public abstract negotiateRequest(
     agentContext: AgentContext,
     options: NegotiateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // retrieving credentials for request
   public abstract getCredentialsForRequest(
@@ -82,40 +83,40 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
   // methods for presentation
   public abstract processPresentation(
-    messageContext: InboundMessageContext<DidCommV1Message>
+    messageContext: InboundMessageContext<AgentBaseMessage>
   ): Promise<ProofExchangeRecord>
   public abstract acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
-  ): Promise<ProofProtocolMsgReturnType<DidCommV1Message>>
+  ): Promise<ProofProtocolMsgReturnType<AgentBaseMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundMessageContext<DidCommV1Message>): Promise<ProofExchangeRecord>
+  public abstract processAck(messageContext: InboundMessageContext<AgentBaseMessage>): Promise<ProofExchangeRecord>
   // method for problem report
   public abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
-  ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
+  ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage | V2ProblemReportMessage>>
 
   public abstract findProposalMessage(
     agentContext: AgentContext,
     proofExchangeId: string
-  ): Promise<DidCommV1Message | null>
+  ): Promise<AgentBaseMessage | null>
   public abstract findRequestMessage(
     agentContext: AgentContext,
     proofExchangeId: string
-  ): Promise<DidCommV1Message | null>
+  ): Promise<AgentBaseMessage | null>
   public abstract findPresentationMessage(
     agentContext: AgentContext,
     proofExchangeId: string
-  ): Promise<DidCommV1Message | null>
+  ): Promise<AgentBaseMessage | null>
   public abstract getFormatData(
     agentContext: AgentContext,
     proofExchangeId: string
   ): Promise<GetProofFormatDataReturn<ExtractProofFormats<PFs>>>
 
   public async processProblemReport(
-    messageContext: InboundMessageContext<ProblemReportMessage>
+    messageContext: InboundMessageContext<ProblemReportMessage | V2ProblemReportMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: proofProblemReportMessage, agentContext, connection } = messageContext
 
@@ -128,7 +129,10 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     )
 
     // Update record
-    proofRecord.errorMessage = `${proofProblemReportMessage.description.code}: ${proofProblemReportMessage.description.en}`
+    proofRecord.errorMessage =
+      proofProblemReportMessage instanceof DidCommV1Message
+        ? `${proofProblemReportMessage.description.code}: ${proofProblemReportMessage.description.en}`
+        : `${proofProblemReportMessage.body.code}: ${proofProblemReportMessage.body.comment}`
     await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
     return proofRecord
   }

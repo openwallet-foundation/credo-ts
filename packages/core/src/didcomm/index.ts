@@ -6,6 +6,7 @@ import type { Constructor } from '../utils/mixins'
 export * from './versions/v1'
 export * from './versions/v2'
 export * from './types'
+export * from './transformers'
 export * from './helpers'
 export * from './JweEnvelope'
 

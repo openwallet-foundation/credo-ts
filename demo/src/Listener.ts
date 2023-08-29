@@ -4,7 +4,6 @@ import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
 import type {
   Agent,
-  BasicMessageStateChangedEvent,
   CredentialExchangeRecord,
   CredentialStateChangedEvent,
   TrustPingReceivedEvent,
@@ -13,12 +12,15 @@ import type {
   V2TrustPingResponseReceivedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
+  AgentMessageProcessedEvent,
+  AgentBaseMessage,
 } from '@aries-framework/core'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import {
-  BasicMessageEventTypes,
-  BasicMessageRole,
+  V1BasicMessage,
+  V2BasicMessage,
+  AgentEventTypes,
   CredentialEventTypes,
   CredentialState,
   ProofEventTypes,
@@ -76,9 +78,14 @@ export class Listener {
   }
 
   public messageListener(agent: Agent, name: string) {
-    agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
-      if (event.payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
-        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
+    const isBasicMessage = (message: AgentBaseMessage): message is V1BasicMessage | V2BasicMessage =>
+      [V1BasicMessage.type.messageTypeUri, V2BasicMessage.type.messageTypeUri].includes(message.type)
+
+    agent.events.on(AgentEventTypes.AgentMessageProcessed, async (event: AgentMessageProcessedEvent) => {
+      const message = event.payload.message
+
+      if (isBasicMessage(message)) {
+        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${message.content}\n`))
       }
     })
   }

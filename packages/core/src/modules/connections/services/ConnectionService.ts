@@ -474,8 +474,7 @@ export class ConnectionService {
       const senderKey = messageContext.senderKey && messageContext.senderKey.publicKeyBase58
 
       // set theirService to the value of lastReceivedMessage.service
-      let theirService =
-        messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
+      let theirService = message.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
       // 1. check if there's an oob record associated.
