@@ -13,6 +13,14 @@ export class TransportService {
   public transportSessionTable: TransportSessionTable = {}
 
   public saveSession(session: TransportSession) {
+    if (session.type === 'WebSocket' && session.connectionId) {
+      const oldSessions = this.getWebSocketSessionsForConnectionId(session.connectionId)
+      oldSessions.forEach((oldSession) => {
+        if (oldSession) {
+          this.removeSession(oldSession)
+        }
+      })
+    }
     this.transportSessionTable[session.id] = session
   }
 
@@ -39,6 +47,12 @@ export class TransportService {
 
   public removeSession(session: TransportSession) {
     delete this.transportSessionTable[session.id]
+  }
+
+  private getWebSocketSessionsForConnectionId(connectionId: string) {
+    return Object.values(this.transportSessionTable).filter(
+      (session) => session?.connectionId === connectionId && session.type === 'WebSocket'
+    )
   }
 }
 
