@@ -2,6 +2,7 @@ import type { AgentContext } from '../../../../agent'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { MessageHandlerInboundMessage } from '../../../../agent/MessageHandler'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
+import type { V2Attachment } from '../../../../decorators/attachment'
 import type { DidCommV2Message } from '../../../../didcomm'
 import type { DependencyManager } from '../../../../plugins'
 import type { V2ProblemReportMessage } from '../../../problem-reports'
@@ -11,7 +12,6 @@ import type {
   CredentialFormatService,
   ExtractCredentialFormats,
 } from '../../formats'
-import type { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
 import type { CredentialProtocol } from '../CredentialProtocol'
 import type {
   AcceptCredentialOptions,
@@ -166,7 +166,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connection?.id
     )
 
-    const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(proposalMessage.attachments)
     if (formatServices.length === 0) {
       throw new AriesFrameworkError(`Unable to process proposal. No supported formats`)
     }
@@ -232,7 +232,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         messageClass: V3ProposeCredentialMessage,
       })
 
-      formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
+      formatServices = this.getFormatServicesFromAttachments(proposalMessage.attachments)
     }
 
     // If the format services list is still empty, throw an error as we don't support any
@@ -361,7 +361,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connection?.id
     )
 
-    const formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(offerMessage.attachments)
     if (formatServices.length === 0) {
       throw new AriesFrameworkError(`Unable to process offer. No supported formats`)
     }
@@ -425,7 +425,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         messageClass: V3OfferCredentialMessage,
       })
 
-      formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
+      formatServices = this.getFormatServicesFromAttachments(offerMessage.attachments)
     }
 
     // If the format services list is still empty, throw an error as we don't support any
@@ -554,7 +554,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       connection?.id
     )
 
-    const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(requestMessage.attachments)
     if (formatServices.length === 0) {
       throw new AriesFrameworkError(`Unable to process request. No supported formats`)
     }
@@ -619,7 +619,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         messageClass: V3RequestCredentialMessage,
       })
 
-      formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
+      formatServices = this.getFormatServicesFromAttachments(requestMessage.attachments)
     }
 
     // If the format services list is still empty, throw an error as we don't support any
@@ -677,7 +677,7 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     credentialRecord.assertProtocolVersion('v3')
     credentialRecord.assertState(CredentialState.RequestSent)
 
-    const formatServices = this.getFormatServicesFromMessage(credentialMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(credentialMessage.attachments)
     if (formatServices.length === 0) {
       throw new AriesFrameworkError(`Unable to process credential. No supported formats`)
     }
@@ -797,19 +797,17 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // NOTE: we take the formats from the offerMessage so we always check all services that we last sent
     // Otherwise we'll only check the formats from the proposal, which could be different from the formats
     // we use.
-    const formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(offerMessage.attachments)
 
     for (const formatService of formatServices) {
       const offerAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        offerMessage.formats,
-        offerMessage.offerAttachments
+        offerMessage.attachments
       )
 
       const proposalAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        proposalMessage.formats,
-        proposalMessage.proposalAttachments
+        proposalMessage.attachments
       )
 
       const shouldAutoRespondToFormat = await formatService.shouldAutoRespondToProposal(agentContext, {
@@ -823,14 +821,14 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // not all formats use the proposal and preview, we only check if they're present on
     // either or both of the messages
-    if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
+    if (proposalMessage.body.credentialPreview || offerMessage.body.credentialPreview) {
       // if one of the message doesn't have a preview, we should not auto accept
-      if (!proposalMessage.credentialPreview || !offerMessage.credentialPreview) return false
+      if (!proposalMessage.body.credentialPreview || !offerMessage.body.credentialPreview) return false
 
       // Check if preview values match
       return arePreviewAttributesEqual(
-        proposalMessage.credentialPreview.attributes,
-        offerMessage.credentialPreview.attributes
+        proposalMessage.body.credentialPreview.attributes,
+        offerMessage.body.credentialPreview.attributes
       )
     }
 
@@ -861,19 +859,17 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // NOTE: we take the formats from the proposalMessage so we always check all services that we last sent
     // Otherwise we'll only check the formats from the offer, which could be different from the formats
     // we use.
-    const formatServices = this.getFormatServicesFromMessage(proposalMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(proposalMessage.attachments)
 
     for (const formatService of formatServices) {
       const offerAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        offerMessage.formats,
-        offerMessage.offerAttachments
+        offerMessage.attachments
       )
 
       const proposalAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        proposalMessage.formats,
-        proposalMessage.proposalAttachments
+        proposalMessage.attachments
       )
 
       const shouldAutoRespondToFormat = await formatService.shouldAutoRespondToOffer(agentContext, {
@@ -888,11 +884,11 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     }
 
     // if one of the message doesn't have a preview, we should not auto accept
-    if (proposalMessage.credentialPreview || offerMessage.credentialPreview) {
+    if (proposalMessage.body.credentialPreview || offerMessage.body.credentialPreview) {
       // Check if preview values match
       return arePreviewAttributesEqual(
-        proposalMessage.credentialPreview?.attributes ?? [],
-        offerMessage.credentialPreview?.attributes ?? []
+        proposalMessage.body.credentialPreview?.attributes ?? [],
+        offerMessage.body.credentialPreview?.attributes ?? []
       )
     }
     return true
@@ -925,27 +921,21 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // NOTE: we take the formats from the offerMessage so we always check all services that we last sent
     // Otherwise we'll only check the formats from the request, which could be different from the formats
     // we use.
-    const formatServices = this.getFormatServicesFromMessage(offerMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(offerMessage.attachments)
 
     for (const formatService of formatServices) {
       const offerAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        offerMessage.formats,
-        offerMessage.offerAttachments
+        offerMessage.attachments
       )
 
       const proposalAttachment = proposalMessage
-        ? this.credentialFormatCoordinator.getAttachmentForService(
-            formatService,
-            proposalMessage.formats,
-            proposalMessage.proposalAttachments
-          )
+        ? this.credentialFormatCoordinator.getAttachmentForService(formatService, proposalMessage.attachments)
         : undefined
 
       const requestAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        requestMessage.formats,
-        requestMessage.requestAttachments
+        requestMessage.attachments
       )
 
       const shouldAutoRespondToFormat = await formatService.shouldAutoRespondToRequest(agentContext, {
@@ -990,35 +980,25 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // NOTE: we take the formats from the requestMessage so we always check all services that we last sent
     // Otherwise we'll only check the formats from the credential, which could be different from the formats
     // we use.
-    const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
+    const formatServices = this.getFormatServicesFromAttachments(requestMessage.attachments)
 
     for (const formatService of formatServices) {
       const offerAttachment = offerMessage
-        ? this.credentialFormatCoordinator.getAttachmentForService(
-            formatService,
-            offerMessage.formats,
-            offerMessage.offerAttachments
-          )
+        ? this.credentialFormatCoordinator.getAttachmentForService(formatService, offerMessage.attachments)
         : undefined
 
       const proposalAttachment = proposalMessage
-        ? this.credentialFormatCoordinator.getAttachmentForService(
-            formatService,
-            proposalMessage.formats,
-            proposalMessage.proposalAttachments
-          )
+        ? this.credentialFormatCoordinator.getAttachmentForService(formatService, proposalMessage.attachments)
         : undefined
 
       const requestAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        requestMessage.formats,
-        requestMessage.requestAttachments
+        requestMessage.attachments
       )
 
       const credentialAttachment = this.credentialFormatCoordinator.getAttachmentForService(
         formatService,
-        credentialMessage.formats,
-        credentialMessage.credentialAttachments
+        credentialMessage.attachments
       )
 
       const shouldAutoRespondToFormat = await formatService.shouldAutoRespondToCredential(agentContext, {
@@ -1086,30 +1066,30 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
     // Create object with the keys and the message formats/attachments. We can then loop over this in a generic
     // way so we don't have to add the same operation code four times
     const messages = {
-      proposal: [proposalMessage?.formats, proposalMessage?.proposalAttachments],
-      offer: [offerMessage?.formats, offerMessage?.offerAttachments],
-      request: [requestMessage?.formats, requestMessage?.requestAttachments],
-      credential: [credentialMessage?.formats, credentialMessage?.credentialAttachments],
+      proposal: proposalMessage?.attachments,
+      offer: offerMessage?.attachments,
+      request: requestMessage?.attachments,
+      credential: credentialMessage?.attachments,
     } as const
 
     const formatData: GetCredentialFormatDataReturn = {
-      proposalAttributes: proposalMessage?.credentialPreview?.attributes,
-      offerAttributes: offerMessage?.credentialPreview?.attributes,
+      proposalAttributes: proposalMessage?.body.credentialPreview?.attributes,
+      offerAttributes: offerMessage?.body.credentialPreview?.attributes,
     }
 
     // We loop through all of the message keys as defined above
-    for (const [messageKey, [formats, attachments]] of Object.entries(messages)) {
+    for (const [messageKey, attachments] of Object.entries(messages)) {
       // Message can be undefined, so we continue if it is not defined
-      if (!formats || !attachments) continue
+      if (!attachments) continue
 
       // Find all format services associated with the message
-      const formatServices = this.getFormatServicesFromMessage(formats)
+      const formatServices = this.getFormatServicesFromAttachments(attachments)
       const messageFormatData: CredentialFormatDataMessagePayload = {}
 
       // Loop through all of the format services, for each we will extract the attachment data and assign this to the object
       // using the unique format key (e.g. indy)
       for (const formatService of formatServices) {
-        const attachment = this.credentialFormatCoordinator.getAttachmentForService(formatService, formats, attachments)
+        const attachment = this.credentialFormatCoordinator.getAttachmentForService(formatService, attachments)
 
         messageFormatData[formatService.formatKey] = attachment.getDataAsJson()
       }
@@ -1123,14 +1103,14 @@ export class V3CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
   /**
    * Get all the format service objects for a given credential format from an incoming message
-   * @param messageFormats the format objects containing the format name (eg indy)
+   * @param attachments the attachment objects containing the format name (eg indy)
    * @return the credential format service objects in an array - derived from format object keys
    */
-  private getFormatServicesFromMessage(messageFormats: CredentialFormatSpec[]): CredentialFormatService[] {
+  private getFormatServicesFromAttachments(attachments: V2Attachment[]): CredentialFormatService[] {
     const formatServices = new Set<CredentialFormatService>()
 
-    for (const msg of messageFormats) {
-      const service = this.getFormatServiceForFormat(msg.format)
+    for (const attachment of attachments) {
+      const service = attachment.format ? this.getFormatServiceForFormat(attachment.format) : undefined
       if (service) formatServices.add(service)
     }
 

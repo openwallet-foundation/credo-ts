@@ -1,47 +1,43 @@
 import { Expose, Type } from 'class-transformer'
-import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsInstance, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { V2Attachment } from '../../../../../decorators/attachment'
 import { DidCommV2Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-import { CredentialFormatSpec } from '../../../models'
 
 import { V3CredentialPreview } from './V3CredentialPreview'
 
 export interface V3OfferCredentialMessageOptions {
   id?: string
-  formats: CredentialFormatSpec[]
-  offerAttachments: V2Attachment[]
+  attachments: V2Attachment[]
   credentialPreview: V3CredentialPreview
   replacementId?: string
   comment?: string
 }
 
-export class V3OfferCredentialMessage extends DidCommV2Message {
-  public constructor(options: V3OfferCredentialMessageOptions) {
-    super()
+class V3OfferCredentialMessageBody {
+  public constructor(options: {
+    goalCode?: string
+    comment?: string
+    credentialPreview?: V3CredentialPreview
+    replacementId?: string
+  }) {
     if (options) {
-      this.id = options.id ?? this.generateId()
       this.comment = options.comment
-      this.formats = options.formats
       this.credentialPreview = options.credentialPreview
-      this.offerAttachments = options.offerAttachments
+      this.goalCode = options.goalCode
+      this.replacementId = options.replacementId
     }
   }
-
-  @Type(() => CredentialFormatSpec)
-  @ValidateNested()
-  @IsArray()
-  @IsInstance(CredentialFormatSpec, { each: true })
-  public formats!: CredentialFormatSpec[]
-
-  @IsValidMessageType(V3OfferCredentialMessage.type)
-  public readonly type = V3OfferCredentialMessage.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/3.0/offer-credential')
 
   @IsString()
   @IsOptional()
   public comment?: string
+
+  @Expose({ name: 'goal_code' })
+  @IsString()
+  @IsOptional()
+  public goalCode?: string
 
   @Expose({ name: 'credential_preview' })
   @Type(() => V3CredentialPreview)
@@ -49,21 +45,36 @@ export class V3OfferCredentialMessage extends DidCommV2Message {
   @IsInstance(V3CredentialPreview)
   public credentialPreview?: V3CredentialPreview
 
-  @Expose({ name: 'offers~attach' })
+  @Expose({ name: 'replacement_id' })
+  @IsString()
+  @IsOptional()
+  public replacementId?: string
+}
+
+export class V3OfferCredentialMessage extends DidCommV2Message {
+  public constructor(options: V3OfferCredentialMessageOptions) {
+    super()
+    if (options) {
+      this.id = options.id ?? this.generateId()
+      this.body = new V3OfferCredentialMessageBody(options)
+      this.attachments = options.attachments
+    }
+  }
+
+  @IsValidMessageType(V3OfferCredentialMessage.type)
+  public readonly type = V3OfferCredentialMessage.type.messageTypeUri
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/3.0/offer-credential')
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => V3OfferCredentialMessageBody)
+  public body!: V3OfferCredentialMessageBody
+
   @Type(() => V2Attachment)
   @IsArray()
   @ValidateNested({
     each: true,
   })
   @IsInstance(V2Attachment, { each: true })
-  public offerAttachments!: V2Attachment[]
-
-  @Expose({ name: 'replacement_id' })
-  @IsString()
-  @IsOptional()
-  public replacementId?: string
-
-  public getOfferAttachmentById(id: string): V2Attachment | undefined {
-    return this.offerAttachments.find((attachment) => attachment.id === id)
-  }
+  public attachments!: V2Attachment[]
 }

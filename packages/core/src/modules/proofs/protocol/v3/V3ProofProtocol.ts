@@ -923,7 +923,7 @@ export class V3ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   /**
    * Get all the format service objects for a given proof format from an incoming message
-   * @param messageFormats the format objects containing the format name (eg indy)
+   * @param attachments the attachment objects containing the format name (eg indy)
    * @return the proof format service objects in an array - derived from format object keys
    */
   private getFormatServicesFromAttachments(attachments: V2Attachment[]): ProofFormatService[] {

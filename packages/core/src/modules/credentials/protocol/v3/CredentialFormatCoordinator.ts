@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../../../agent'
 import type { V2Attachment } from '../../../../decorators/attachment'
 import type { CredentialFormatPayload, CredentialFormatService, ExtractCredentialFormats } from '../../formats'
-import type { CredentialFormatSpec } from '../../models'
 import type { CredentialExchangeRecord } from '../../repository/CredentialExchangeRecord'
 
 import { toV1Attachment, toV2Attachment } from '../../../../didcomm'
@@ -40,8 +39,6 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   ): Promise<V3ProposeCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const proposalAttachments: V2Attachment[] = []
     let credentialPreview: V3CredentialPreview | undefined
 
@@ -57,16 +54,16 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      proposalAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      proposalAttachments.push(v2Attachment)
     }
 
     credentialRecord.credentialAttributes = credentialPreview?.attributes
 
     const message = new V3ProposeCredentialMessage({
       id: credentialRecord.threadId,
-      formats,
-      proposalAttachments,
+      attachments: proposalAttachments,
       comment: comment,
       credentialPreview,
     })
@@ -97,7 +94,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     for (const formatService of formatServices) {
-      const attachment = this.getAttachmentForService(formatService, message.formats, message.proposalAttachments)
+      const attachment = this.getAttachmentForService(formatService, message.attachments)
 
       await formatService.processProposal(agentContext, {
         attachment,
@@ -128,8 +125,6 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   ) {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const offerAttachments: V2Attachment[] = []
     let credentialPreview: V3CredentialPreview | undefined
 
@@ -141,14 +136,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
+    credentialRecord.credentialAttributes = proposalMessage.body.credentialPreview?.attributes
 
     for (const formatService of formatServices) {
-      const proposalAttachment = this.getAttachmentForService(
-        formatService,
-        proposalMessage.formats,
-        proposalMessage.proposalAttachments
-      )
+      const proposalAttachment = this.getAttachmentForService(formatService, proposalMessage.attachments)
 
       const { attachment, format, previewAttributes } = await formatService.acceptProposal(agentContext, {
         credentialRecord,
@@ -162,8 +153,9 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      offerAttachments.push(v2Attachment)
     }
 
     credentialRecord.credentialAttributes = credentialPreview?.attributes
@@ -177,9 +169,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     }
 
     const message = new V3OfferCredentialMessage({
-      formats,
       credentialPreview,
-      offerAttachments,
+      attachments: offerAttachments,
       comment,
     })
 
@@ -217,8 +208,6 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   ): Promise<V3OfferCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const offerAttachments: V2Attachment[] = []
     let credentialPreview: V3CredentialPreview | undefined
 
@@ -234,8 +223,9 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         })
       }
 
-      offerAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      offerAttachments.push(v2Attachment)
     }
 
     credentialRecord.credentialAttributes = credentialPreview?.attributes
@@ -249,9 +239,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     }
 
     const message = new V3OfferCredentialMessage({
-      formats,
       comment,
-      offerAttachments,
+      attachments: offerAttachments,
       credentialPreview,
     })
 
@@ -281,7 +270,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     for (const formatService of formatServices) {
-      const attachment = this.getAttachmentForService(formatService, message.formats, message.offerAttachments)
+      const attachment = this.getAttachmentForService(formatService, message.attachments)
 
       await formatService.processOffer(agentContext, {
         attachment,
@@ -317,16 +306,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       messageClass: V3OfferCredentialMessage,
     })
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const requestAttachments: V2Attachment[] = []
 
     for (const formatService of formatServices) {
-      const offerAttachment = this.getAttachmentForService(
-        formatService,
-        offerMessage.formats,
-        offerMessage.offerAttachments
-      )
+      const offerAttachment = this.getAttachmentForService(formatService, offerMessage.attachments)
 
       const { attachment, format } = await formatService.acceptOffer(agentContext, {
         offerAttachment,
@@ -334,15 +317,15 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      requestAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      requestAttachments.push(v2Attachment)
     }
 
-    credentialRecord.credentialAttributes = offerMessage.credentialPreview?.attributes
+    credentialRecord.credentialAttributes = offerMessage.body.credentialPreview?.attributes
 
     const message = new V3RequestCredentialMessage({
-      formats,
-      requestAttachments: requestAttachments,
+      attachments: requestAttachments,
       comment,
     })
 
@@ -380,8 +363,6 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   ): Promise<V3RequestCredentialMessage> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const requestAttachments: V2Attachment[] = []
 
     for (const formatService of formatServices) {
@@ -390,14 +371,14 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialRecord,
       })
 
-      requestAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      requestAttachments.push(v2Attachment)
     }
 
     const message = new V3RequestCredentialMessage({
-      formats,
       comment,
-      requestAttachments: requestAttachments,
+      attachments: requestAttachments,
     })
 
     message.thid = credentialRecord.threadId
@@ -426,7 +407,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     for (const formatService of formatServices) {
-      const attachment = this.getAttachmentForService(formatService, message.formats, message.requestAttachments)
+      const attachment = this.getAttachmentForService(formatService, message.attachments)
 
       await formatService.processRequest(agentContext, {
         attachment,
@@ -467,19 +448,13 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       messageClass: V3OfferCredentialMessage,
     })
 
-    // create message. there are two arrays in each message, one for formats the other for attachments
-    const formats: CredentialFormatSpec[] = []
     const credentialAttachments: V2Attachment[] = []
 
     for (const formatService of formatServices) {
-      const requestAttachment = this.getAttachmentForService(
-        formatService,
-        requestMessage.formats,
-        requestMessage.requestAttachments
-      )
+      const requestAttachment = this.getAttachmentForService(formatService, requestMessage.attachments)
 
       const offerAttachment = offerMessage
-        ? this.getAttachmentForService(formatService, offerMessage.formats, offerMessage.offerAttachments)
+        ? this.getAttachmentForService(formatService, offerMessage.attachments)
         : undefined
 
       const { attachment, format } = await formatService.acceptRequest(agentContext, {
@@ -489,13 +464,13 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         credentialFormats,
       })
 
-      credentialAttachments.push(toV2Attachment(attachment))
-      formats.push(format)
+      const v2Attachment = toV2Attachment(attachment)
+      v2Attachment.format = format.format
+      credentialAttachments.push(v2Attachment)
     }
 
     const message = new V3IssueCredentialMessage({
-      formats,
-      credentialAttachments: credentialAttachments,
+      attachments: credentialAttachments,
       comment,
     })
 
@@ -528,12 +503,8 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     for (const formatService of formatServices) {
-      const attachment = this.getAttachmentForService(formatService, message.formats, message.credentialAttachments)
-      const requestAttachment = this.getAttachmentForService(
-        formatService,
-        requestMessage.formats,
-        requestMessage.requestAttachments
-      )
+      const attachment = this.getAttachmentForService(formatService, message.attachments)
+      const requestAttachment = this.getAttachmentForService(formatService, requestMessage.attachments)
 
       await formatService.processCredential(agentContext, {
         attachment,
@@ -549,26 +520,17 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     })
   }
 
-  public getAttachmentForService(
-    credentialFormatService: CredentialFormatService,
-    formats: CredentialFormatSpec[],
-    attachments: V2Attachment[]
-  ) {
-    const attachmentId = this.getAttachmentIdForService(credentialFormatService, formats)
-    const attachment = attachments.find((attachment) => attachment.id === attachmentId)
+  public getAttachmentForService(credentialFormatService: CredentialFormatService, attachments: V2Attachment[]) {
+    const attachment = attachments.find(
+      (attachment) => attachment.format && credentialFormatService.supportsFormat(attachment.format)
+    )
 
     if (!attachment) {
-      throw new AriesFrameworkError(`Attachment with id ${attachmentId} not found in attachments.`)
+      throw new AriesFrameworkError(
+        `Attachment with format ${credentialFormatService.formatKey} not found in attachments.`
+      )
     }
 
     return toV1Attachment(attachment)
-  }
-
-  private getAttachmentIdForService(credentialFormatService: CredentialFormatService, formats: CredentialFormatSpec[]) {
-    const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
-
-    if (!format) throw new AriesFrameworkError(`No attachment found for service ${credentialFormatService.formatKey}`)
-
-    return format.attachmentId
   }
 }
