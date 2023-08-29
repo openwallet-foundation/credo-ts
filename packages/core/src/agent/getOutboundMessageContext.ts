@@ -81,8 +81,8 @@ export async function getOutboundMessageContext(
 
   if (
     !(message instanceof DidCommV1Message) ||
-    !(lastReceivedMessage instanceof DidCommV1Message) ||
-    !(lastSentMessage instanceof DidCommV1Message)
+    (lastReceivedMessage !== undefined && !(lastReceivedMessage instanceof DidCommV1Message)) ||
+    (lastSentMessage !== undefined && !(lastSentMessage instanceof DidCommV1Message))
   ) {
     throw new AriesFrameworkError('No connection record associated with DIDComm V2 messages exchange')
   }
