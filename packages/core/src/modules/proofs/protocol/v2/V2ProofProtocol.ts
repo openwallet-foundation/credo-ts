@@ -642,11 +642,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     agentContext.config.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      messageContext.agentContext,
-      presentationMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByThreadAndConnectionId(messageContext.agentContext, presentationMessage.threadId)
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
       associatedRecordId: proofRecord.id,
@@ -665,6 +661,15 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       lastReceivedMessage,
       lastSentMessage,
     })
+
+    // This makes sure that the sender of the incoming message is authorized to do so.
+    if (!proofRecord.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        knownConnectionId: proofRecord.connectionId,
+      })
+
+      proofRecord.connectionId = connection?.id
+    }
 
     const formatServices = this.getFormatServicesFromMessage(presentationMessage.formats)
     if (formatServices.length === 0) {
@@ -708,6 +713,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const message = new V2PresentationAckMessage({
       threadId: proofRecord.threadId,
       status: AckStatus.OK,
+    })
+
+    message.setThread({
+      threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     await this.updateState(agentContext, proofRecord, ProofState.Done)

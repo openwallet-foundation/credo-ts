@@ -327,7 +327,7 @@ export class V1CredentialProtocol
       attachments: credentialRecord.linkedAttachments,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     credentialRecord.credentialAttributes = message.credentialPreview.attributes
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -384,7 +384,7 @@ export class V1CredentialProtocol
       }),
       attachments: credentialRecord.linkedAttachments,
     })
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     credentialRecord.credentialAttributes = message.credentialPreview.attributes
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -541,6 +541,7 @@ export class V1CredentialProtocol
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: offerMessage.threadId,
+        parentThreadId: offerMessage.thread?.parentThreadId,
         state: CredentialState.OfferReceived,
         protocolVersion: 'v1',
       })
@@ -612,7 +613,7 @@ export class V1CredentialProtocol
       requestAttachments: [attachment],
       attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-    requestMessage.setThread({ threadId: credentialRecord.threadId })
+    requestMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     credentialRecord.credentialAttributes = offerMessage.credentialPreview.attributes
     credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
@@ -691,7 +692,7 @@ export class V1CredentialProtocol
       comment,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -731,11 +732,7 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    const credentialRecord = await this.getByThreadAndConnectionId(
-      messageContext.agentContext,
-      requestMessage.threadId,
-      connection?.id
-    )
+    const credentialRecord = await this.getByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
     agentContext.config.logger.trace('Credential record found when processing credential request', credentialRecord)
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
@@ -754,6 +751,15 @@ export class V1CredentialProtocol
       lastReceivedMessage: proposalMessage ?? undefined,
       lastSentMessage: offerMessage ?? undefined,
     })
+
+    // This makes sure that the sender of the incoming message is authorized to do so.
+    if (!credentialRecord.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        knownConnectionId: credentialRecord.connectionId,
+      })
+
+      credentialRecord.connectionId = connection?.id
+    }
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
 
@@ -833,7 +839,7 @@ export class V1CredentialProtocol
       attachments: credentialRecord.linkedAttachments,
     })
 
-    issueMessage.setThread({ threadId: credentialRecord.threadId })
+    issueMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
     issueMessage.setPleaseAck()
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
@@ -937,6 +943,8 @@ export class V1CredentialProtocol
       status: AckStatus.OK,
       threadId: credentialRecord.threadId,
     })
+
+    ackMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await this.updateState(agentContext, credentialRecord, CredentialState.Done)
 

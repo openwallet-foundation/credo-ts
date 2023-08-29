@@ -572,12 +572,12 @@ export class OutOfBandApi {
       if (messages) {
         this.logger.debug('Out of band message contains request messages.')
         if (connectionRecord.isReady) {
-          await this.emitWithConnection(connectionRecord, messages)
+          await this.emitWithConnection(outOfBandRecord, connectionRecord, messages)
         } else {
           // Wait until the connection is ready and then pass the messages to the agent for further processing
           this.connectionsApi
             .returnWhenIsConnected(connectionRecord.id, { timeoutMs })
-            .then((connectionRecord) => this.emitWithConnection(connectionRecord, messages))
+            .then((connectionRecord) => this.emitWithConnection(outOfBandRecord, connectionRecord, messages))
             .catch((error) => {
               if (error instanceof EmptyError) {
                 this.logger.warn(
@@ -595,9 +595,9 @@ export class OutOfBandApi {
       this.logger.debug('Out of band message contains only request messages.')
       if (existingConnection) {
         this.logger.debug('Connection already exists.', { connectionId: existingConnection.id })
-        await this.emitWithConnection(existingConnection, messages)
+        await this.emitWithConnection(outOfBandRecord, existingConnection, messages)
       } else {
-        await this.emitWithServices(services, messages)
+        await this.emitWithServices(outOfBandRecord, services, messages)
       }
     }
     return { outOfBandRecord }
@@ -740,7 +740,11 @@ export class OutOfBandApi {
     }
   }
 
-  private async emitWithConnection(connectionRecord: ConnectionRecord, messages: PlaintextMessage[]) {
+  private async emitWithConnection(
+    outOfBandRecord: OutOfBandRecord,
+    connectionRecord: ConnectionRecord,
+    messages: PlaintextMessage[]
+  ) {
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
       const parsedMessageType = parseMessageType(message['@type'])
@@ -750,6 +754,9 @@ export class OutOfBandApi {
     if (!plaintextMessage) {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
+
+    // Make sure message has correct parent thread id
+    this.ensureParentThreadId(plaintextMessage, outOfBandRecord.outOfBandInvitation.id)
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
@@ -763,7 +770,11 @@ export class OutOfBandApi {
     })
   }
 
-  private async emitWithServices(services: Array<OutOfBandDidCommService | string>, messages: PlaintextMessage[]) {
+  private async emitWithServices(
+    outOfBandRecord: OutOfBandRecord,
+    services: Array<OutOfBandDidCommService | string>,
+    messages: PlaintextMessage[]
+  ) {
     if (!services || services.length === 0) {
       throw new AriesFrameworkError(`There are no services. We can not emit messages`)
     }
@@ -778,6 +789,9 @@ export class OutOfBandApi {
       throw new AriesFrameworkError('There is no message in requests~attach supported by agent.')
     }
 
+    // Make sure message has correct parent thread id
+    this.ensureParentThreadId(plaintextMessage, outOfBandRecord.outOfBandInvitation.id)
+
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
     this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
@@ -787,6 +801,24 @@ export class OutOfBandApi {
         contextCorrelationId: this.agentContext.contextCorrelationId,
       },
     })
+  }
+
+  private ensureParentThreadId(plaintextMessage: PlaintextMessage, parentThreadId: string) {
+    // We need to set the parent thread id to the invitation id, according to RFC 0434.
+    // So if it already has a pthid and it is not the same as the invitation id, we throw an error
+    if (plaintextMessage['~thread']?.pthid && plaintextMessage['~thread'].pthid !== parentThreadId) {
+      throw new AriesFrameworkError(
+        `Out of band invitation requests~attach message contains parent thread id ${plaintextMessage['~thread'].pthid} that does not match the invitation id ${parentThreadId}`
+      )
+    }
+
+    if (!plaintextMessage['~thread']) {
+      plaintextMessage['~thread'] = {}
+    }
+
+    // The response to an out-of-band message MUST set its ~thread.pthid equal to the @id property of the out-of-band message.
+    // By adding the pthid to the message, we ensure that the response will take over this pthid
+    plaintextMessage['~thread'].pthid = parentThreadId
   }
 
   private async handleHandshakeReuse(outOfBandRecord: OutOfBandRecord, connectionRecord: ConnectionRecord) {

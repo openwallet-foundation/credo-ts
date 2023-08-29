@@ -328,7 +328,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       goalCode,
     })
 
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
     message.setPleaseAck()
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
