@@ -42,7 +42,7 @@ const socketServer = new Server({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 
-const logger = new TestLogger(LogLevel.info)
+const logger = new TestLogger(LogLevel.info, undefined, undefined, false)
 
 const agentConfig: InitConfig = {
   endpoints,

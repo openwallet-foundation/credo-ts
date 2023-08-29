@@ -28,7 +28,7 @@ export class TestLogger extends BaseLogger {
   } as const
 
   // Map our log levels to tslog levels
-  private tsLogLevelNumgerMap = {
+  private tsLogLevelNumberMap = {
     [LogLevel.test]: 0,
     [LogLevel.trace]: 1,
     [LogLevel.debug]: 2,
@@ -42,19 +42,23 @@ export class TestLogger extends BaseLogger {
     return new TestLogger(logger.logLevel, name, logger.logger)
   }
 
-  public constructor(logLevel: LogLevel, name?: string, logger?: Logger<ILogObj>) {
+  public constructor(logLevel: LogLevel, name?: string, logger?: Logger<ILogObj>, prettify?: boolean) {
     super(logLevel)
+
+    if ( typeof prettify == undefined )
+        prettify = true
 
     if (logger) {
       this.logger = logger.getSubLogger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumgerMap[this.logLevel],
+        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
       })
     } else {
       this.logger = new Logger({
         name,
-        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumgerMap[this.logLevel],
+        minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
         attachedTransports: [logToTransport],
+        stylePrettyLogs: prettify
       })
     }
   }
