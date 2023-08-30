@@ -13,6 +13,8 @@ function logToTransport(logObject: ILogObj) {
   appendFileSync('logs.txt', JSON.stringify(logObject) + '\n')
 }
 
+const LOG_TEMPLATE = "{{rawIsoStr}}\t{{logLevelName}}\t"
+
 export class TestLogger extends BaseLogger {
   public readonly logger: Logger<ILogObj>
 
@@ -58,6 +60,7 @@ export class TestLogger extends BaseLogger {
         name,
         minLevel: this.logLevel == LogLevel.off ? undefined : this.tsLogLevelNumberMap[this.logLevel],
         attachedTransports: [logToTransport],
+        prettyLogTemplate: LOG_TEMPLATE,
         stylePrettyLogs: prettify
       })
     }
