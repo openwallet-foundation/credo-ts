@@ -27,7 +27,7 @@
     "@aries-framework/anoncreds": "0.4.1",
     "@aries-framework/core": "0.4.1",
     "@stablelib/ed25519": "^1.0.3",
-    "@types/indy-sdk": "1.16.26",
+    "@types/indy-sdk": "1.16.27",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
     "rxjs": "^7.2.0",
