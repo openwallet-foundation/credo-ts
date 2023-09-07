@@ -2725,10 +2725,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/indy-sdk@*", "@types/indy-sdk@1.16.26", "@types/indy-sdk@^1.16.26":
-  version "1.16.26"
-  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.26.tgz#871f82c3f7d241d649aff5eb6800048890efb8f8"
-  integrity sha512-KlnjsVsX/7yTmyyIlHWcytlBHoQ1vPGeiLnLv5y1vDftL6OQ5V+hebfAr7d3roMEsjCTH3qKkklwGcj1qS90YA==
+"@types/indy-sdk@*", "@types/indy-sdk@1.16.27", "@types/indy-sdk@^1.16.26":
+  version "1.16.27"
+  resolved "https://registry.yarnpkg.com/@types/indy-sdk/-/indy-sdk-1.16.27.tgz#f5f01fe2cd39b74cacf91ea84d46a2e351cefa3b"
+  integrity sha512-ASEGYOuz8Acbybz4W2CYTG/fF7H9UQmJIG5wz8PSAvme07QU04Yzj4RJ5Nzzjej0X/AApEHS/5Jpk3iXTOs9HQ==
   dependencies:
     buffer "^6.0.0"
 
