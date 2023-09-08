@@ -38,7 +38,7 @@ export class WsInboundTransport implements InboundTransport {
       if (!this.socketIds[socketId]) {
         this.logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket
-        const session = new WebSocketTransportSession(socketId, socket)
+        const session = new WebSocketTransportSession(socketId, socket, this.logger)
         this.listenOnWebSocketMessages(agent, socket, session)
         socket.on('close', () => {
           this.logger.debug('Socket closed.')
@@ -58,7 +58,6 @@ export class WsInboundTransport implements InboundTransport {
         if (error) {
           reject(error)
         }
-
         resolve()
       })
     })
@@ -73,7 +72,7 @@ export class WsInboundTransport implements InboundTransport {
       try {
         await messageReceiver.receiveMessage(JSON.parse(event.data), { session })
       } catch (error) {
-        this.logger.error('Error processing message')
+        this.logger.error('Error processing message: ' + error)
       }
     })
   }
@@ -83,18 +82,26 @@ export class WebSocketTransportSession implements TransportSession {
   public id: string
   public readonly type = 'WebSocket'
   public socket: WebSocket
+  private logger!: Logger
 
-  public constructor(id: string, socket: WebSocket) {
+  public constructor(id: string, socket: WebSocket, logger: Logger) {
     this.id = id
     this.socket = socket
+    this.logger = logger
   }
 
   public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new AriesFrameworkError(`${this.type} transport session has been closed.`)
     }
-
-    this.socket.send(JSON.stringify(encryptedMessage))
+    this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
+      if (error != undefined) {
+        this.logger.error('Error sending message: ' + error)
+        throw new AriesFrameworkError(`${this.type} send message failed.`)
+      } else {
+        this.logger.debug(`${this.type} sent message successfully.`)
+      }
+    })
   }
 
   public async close(): Promise<void> {
