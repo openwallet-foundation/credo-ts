@@ -14,7 +14,7 @@ import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { Logger } from '../../logger/Logger'
-import { injectable } from '../../plugins'
+import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
@@ -40,7 +40,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     agentContext: AgentContext,
     connectionService: ConnectionService,
     config: MessagePickupModuleConfig<MPPs>,
-    logger: Logger
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
