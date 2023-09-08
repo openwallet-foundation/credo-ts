@@ -13,11 +13,11 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
+import { Logger } from '../../logger/Logger'
 import { injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
-import { Logger } from '@aries-framework/core'
 
 export interface MessagePickupApi<MPPs extends MessagePickupProtocol[]> {
   queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType>
