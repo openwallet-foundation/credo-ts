@@ -42,11 +42,7 @@ const socketServer = new Server({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 
-<<<<<<< HEAD
-const logger = new TestLogger(LogLevel.debug, undefined, undefined, false)
-=======
 const logger = new TestLogger(LogLevel.info)
->>>>>>> fix-cryptic-logs
 
 const agentConfig: InitConfig = {
   endpoints,
