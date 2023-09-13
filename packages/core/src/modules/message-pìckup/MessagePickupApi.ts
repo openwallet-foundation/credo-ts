@@ -13,7 +13,8 @@ import { MessageSender } from '../../agent/MessageSender'
 import { OutboundMessageContext } from '../../agent/models'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
-import { injectable } from '../../plugins'
+import { Logger } from '../../logger/Logger'
+import { inject, injectable } from '../../plugins'
 import { ConnectionService } from '../connections/services'
 
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
@@ -32,17 +33,20 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
   private messageSender: MessageSender
   private agentContext: AgentContext
   private connectionService: ConnectionService
+  private logger!: Logger
 
   public constructor(
     messageSender: MessageSender,
     agentContext: AgentContext,
     connectionService: ConnectionService,
-    config: MessagePickupModuleConfig<MPPs>
+    config: MessagePickupModuleConfig<MPPs>,
+    @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
     this.config = config
+    this.logger = logger
   }
 
   private getProtocol<MPP extends MPPs[number]['version']>(protocolVersion: MPP): MessagePickupProtocol {
@@ -61,6 +65,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    * @param options: connectionId associated to the message and the encrypted message itself
    */
   public async queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType> {
+    this.logger.debug(`Queuing message...`)
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
     const messageRepository = this.agentContext.dependencyManager.resolve<MessageRepository>(

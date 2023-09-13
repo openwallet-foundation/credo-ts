@@ -99,11 +99,12 @@ export class MessageSender {
   }
 
   private async sendMessageToSession(agentContext: AgentContext, session: TransportSession, message: AgentMessage) {
-    this.logger.debug(`Existing ${session.type} transport session has been found.`)
+    this.logger.debug(`Existing ${session.type} transport session has been found, sending message.`)
     if (!session.keys) {
       throw new AriesFrameworkError(`There are no keys for the given ${session.type} transport session.`)
     }
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, session.keys)
+    this.logger.debug(`Sending message`)
     await session.send(agentContext, encryptedMessage)
   }
 
