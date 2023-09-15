@@ -300,7 +300,9 @@ export class MessageReceiver {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
 
-    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType)
+    const didcommVersion = isPlaintextMessageV1(message) ? DidCommMessageVersion.V1 : DidCommMessageVersion.V2
+
+    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType, didcommVersion)
 
     if (!MessageClass) {
       throw new ProblemReportError(`No message class found for message type "${messageType}"`, {

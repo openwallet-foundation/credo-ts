@@ -4,8 +4,8 @@ import type { DidCommMessageVersion, PlaintextMessage } from '../didcomm/types'
 
 export interface AgentBaseMessage {
   readonly type: string
+  readonly didCommVersion: DidCommMessageVersion
 
-  get didCommVersion(): DidCommMessageVersion
   get id(): string
   get threadId(): string | undefined
 

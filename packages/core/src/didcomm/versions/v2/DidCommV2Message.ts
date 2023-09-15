@@ -4,6 +4,8 @@ import type { ServiceDecorator } from '../../../decorators/service/ServiceDecora
 import type { ThreadDecorator } from '../../../decorators/thread/ThreadDecorator'
 import type { PlaintextMessage } from '../../types'
 
+import { Exclude } from 'class-transformer'
+
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { DidCommMessageVersion } from '../../types'
@@ -11,9 +13,9 @@ import { DidCommMessageVersion } from '../../types'
 import { DidCommV2BaseMessage } from './DidCommV2BaseMessage'
 
 export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseMessage {
-  public get didCommVersion(): DidCommMessageVersion {
-    return DidCommMessageVersion.V2
-  }
+  @Exclude()
+  public readonly didCommVersion = DidCommMessageVersion.V2
+  public static readonly didCommVersion = DidCommMessageVersion.V2
 
   public toJSON(): PlaintextMessage {
     return JsonTransformer.toJSON(this) as PlaintextDidCommV2Message

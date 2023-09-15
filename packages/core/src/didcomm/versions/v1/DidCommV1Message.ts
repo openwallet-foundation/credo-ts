@@ -33,9 +33,9 @@ export class DidCommV1Message extends Decorated implements AgentBaseMessage {
   @Exclude()
   public readonly allowDidSovPrefix: boolean = false
 
-  public get didCommVersion(): DidCommMessageVersion {
-    return DidCommMessageVersion.V1
-  }
+  @Exclude()
+  public readonly didCommVersion = DidCommMessageVersion.V1
+  public static readonly didCommVersion = DidCommMessageVersion.V1
 
   public serviceDecorator(): ServiceDecorator | undefined {
     return this.service
