@@ -137,7 +137,7 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       const schema = await this.getSchema(agentContext, credentialDefinition.schemaId)
 
       const credDefName = `${schema.schema?.name}-${credentialDefinition.tag}`
-      const credDefNameHashBuffer = Hasher.hash(Buffer.from(credDefName), 'sha2-256');
+      const credDefNameHashBuffer = Hasher.hash(Buffer.from(credDefName), 'sha2-256')
 
       const credDefResource = {
         id: utils.uuid(),
