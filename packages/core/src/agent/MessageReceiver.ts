@@ -7,7 +7,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 
 import { InjectionSymbols } from '../constants'
-import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
+import { DidCommMessageVersion, isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
 import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'

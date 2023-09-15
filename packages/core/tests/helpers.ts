@@ -31,6 +31,7 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
 import {
+  OutOfBandVersion,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
@@ -217,7 +218,7 @@ const isCredentialStateChangedEvent = (e: BaseEvent): e is CredentialStateChange
 const isConnectionStateChangedEvent = (e: BaseEvent): e is ConnectionStateChangedEvent =>
   e.type === ConnectionEventTypes.ConnectionStateChanged
 const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
-  e.type === TrustPingEventTypes.TrustPingReceivedEvent
+  e.type === TrustPingEventTypes.TrustPingReceivedEvent || e.type === TrustPingEventTypes.V2TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
 
@@ -267,11 +268,16 @@ export function waitForProofExchangeRecordSubject(
 export async function waitForTrustPingReceivedEvent(
   agent: Agent,
   options: {
+    protocolVersion?: 'v1' | 'v2'
     threadId?: string
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+  const observable = agent.events.observable(
+    options.protocolVersion === 'v2'
+      ? TrustPingEventTypes.V2TrustPingReceivedEvent
+      : TrustPingEventTypes.TrustPingReceivedEvent
+  )
 
   return waitForTrustPingReceivedEventSubject(observable, options)
 }
@@ -532,20 +538,36 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const agentAOutOfBand = await agentA.oob.createInvitation({
-    handshakeProtocols: [HandshakeProtocol.Connections],
-  })
+export async function makeConnection(agentA: Agent, agentB: Agent, version?: OutOfBandVersion) {
+  if (version === OutOfBandVersion.V2) {
+    const agentAOutOfBand = await agentA.oob.createInvitation({
+      version,
+    })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(
-    agentAOutOfBand.getOutOfBandInvitation()
-  )
+    const { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(
+      agentAOutOfBand.v2OutOfBandInvitation!
+    )
+    if (!agentBConnection) throw new Error('No connection for receiver')
+    await agentB.connections.sendPing(agentBConnection.id, {})
+    await waitForTrustPingReceivedEvent(agentA, { protocolVersion: 'v2', timeoutMs: 4000 })
+    const [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+    if (!agentAConnection) throw new Error('No connection for inviter')
+    return [agentAConnection, agentBConnection]
+  } else {
+    const agentAOutOfBand = await agentA.oob.createInvitation({
+      handshakeProtocols: [HandshakeProtocol.Connections],
+    })
 
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
-  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
+    let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(
+      agentAOutOfBand.getOutOfBandInvitation()
+    )
 
-  return [agentAConnection, agentBConnection]
+    agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
+    let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+    agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
+
+    return [agentAConnection, agentBConnection]
+  }
 }
 
 /**

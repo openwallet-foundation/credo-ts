@@ -3,7 +3,7 @@ import type { PackMessageParams } from './EnvelopeService'
 import type { AgentMessageSentEvent } from './Events'
 import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
-import type { DidCommV1Message, EncryptedMessage, OutboundPackage } from '../didcomm'
+import type { EncryptedMessage, OutboundPackage } from '../didcomm'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { DidDocument } from '../modules/dids'
@@ -217,7 +217,7 @@ export class MessageSender {
     }
   ) {
     const { agentContext, connection, outOfBand } = outboundMessageContext
-    const message = outboundMessageContext.message as DidCommV1Message
+    const message = outboundMessageContext.message
 
     const errors: Error[] = []
 
@@ -320,8 +320,7 @@ export class MessageSender {
     // an incoming message.
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
-    const shouldAddReturnRoute =
-      message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
+    const shouldAddReturnRoute = !message.hasAnyReturnRoute && !this.transportService.hasInboundEndpoint(ourDidDocument)
 
     // Loop through all available services and try to send the message
     for await (const service of services) {
