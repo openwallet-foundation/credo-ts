@@ -96,8 +96,8 @@ export class WebSocketTransportSession implements TransportSession {
     }
     this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
       if (error != undefined) {
-        this.logger.debug('Error sending message.', { cause: error } )
-        throw new AriesFrameworkError(`${this.type} send message failed.`)
+        this.logger.debug('Error sending message: ' + error )
+        throw new AriesFrameworkError(`${this.type} send message failed.`, { cause: error })
       } else {
         this.logger.debug(`${this.type} sent message successfully.`)
       }
