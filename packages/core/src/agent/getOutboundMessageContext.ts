@@ -7,12 +7,14 @@ import type { BaseRecordAny } from '../storage/BaseRecord'
 
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
-import { DidCommV1Message, DidCommV2Message } from '../didcomm'
+import { DidCommMessageVersion, DidCommV1Message, DidCommV2Message } from '../didcomm'
 import { AriesFrameworkError } from '../error'
-import { OutOfBandService, OutOfBandRole, OutOfBandRepository } from '../modules/oob'
+import { OutOfBandRole } from '../modules/oob/domain'
+import { OutOfBandService } from '../modules/oob/protocols'
+import { OutOfBandRepository } from '../modules/oob/repository'
 import { OutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
-import { RoutingService } from '../modules/routing'
-import { DidCommMessageRepository, DidCommMessageRole } from '../storage'
+import { RoutingService } from '../modules/routing/services'
+import { DidCommMessageRepository, DidCommMessageRole } from '../storage/didcomm'
 import { uuid } from '../utils/uuid'
 
 import { OutboundMessageContext } from './models'
@@ -49,6 +51,16 @@ export async function getOutboundMessageContext(
     agentContext.config.logger.debug(
       `Creating outbound message context for message ${message.id} with connection ${connectionRecord.id}`
     )
+
+    // Check that message DIDComm version matches connection
+    if (
+      (connectionRecord.isDidCommV1Connection && message.didCommVersion !== DidCommMessageVersion.V1) ||
+      (connectionRecord.isDidCommV2Connection && message.didCommVersion !== DidCommMessageVersion.V2)
+    ) {
+      throw new AriesFrameworkError(
+        `Message DIDComm version ${message.didCommVersion} does not match connection ${connectionRecord.id}`
+      )
+    }
 
     // Attach 'from' and 'to' fields according to connection record (unless they are previously defined)
     if (message instanceof DidCommV2Message) {

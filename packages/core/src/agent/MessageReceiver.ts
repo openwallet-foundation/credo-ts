@@ -153,7 +153,9 @@ export class MessageReceiver {
     const { plaintextMessage, senderKey, recipientKey } = unpackedMessage
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
+      `Received message with type '${plaintextMessage['@type'] ?? plaintextMessage['type']}', recipient key ${
+        recipientKey?.fingerprint
+      } and sender key ${senderKey?.fingerprint}`,
       plaintextMessage
     )
 

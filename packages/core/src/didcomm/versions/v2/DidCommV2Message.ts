@@ -25,8 +25,8 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseM
     return undefined
   }
 
-  public get threadId(): string | undefined {
-    return this.thid
+  public get threadId(): string {
+    return this.thid ?? this.id
   }
 
   public setThread(options: Partial<ThreadDecorator>) {
