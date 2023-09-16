@@ -320,7 +320,8 @@ export class MessageSender {
     // an incoming message.
     const [firstOurAuthenticationKey] = ourAuthenticationKeys
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
-    const shouldAddReturnRoute = !message.hasAnyReturnRoute && !this.transportService.hasInboundEndpoint(ourDidDocument)
+    const shouldAddReturnRoute =
+      !message.hasAnyReturnRoute() && !this.transportService.hasInboundEndpoint(ourDidDocument)
 
     // Loop through all available services and try to send the message
     for await (const service of services) {
