@@ -1,5 +1,5 @@
+import type { AgentBaseMessage } from './AgentBaseMessage'
 import type { AgentContext } from './context'
-import type { DidCommV1Message } from '../didcomm/versions/v1'
 import type { ConnectionRecord, Routing } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { OutOfBandRecord } from '../modules/oob'
@@ -7,11 +7,14 @@ import type { BaseRecordAny } from '../storage/BaseRecord'
 
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
+import { DidCommMessageVersion, DidCommV1Message, DidCommV2Message } from '../didcomm'
 import { AriesFrameworkError } from '../error'
-import { OutOfBandService, OutOfBandRole, OutOfBandRepository } from '../modules/oob'
+import { OutOfBandRole } from '../modules/oob/domain'
+import { OutOfBandService } from '../modules/oob/protocols'
+import { OutOfBandRepository } from '../modules/oob/repository'
 import { OutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
-import { RoutingService } from '../modules/routing'
-import { DidCommMessageRepository, DidCommMessageRole } from '../storage'
+import { RoutingService } from '../modules/routing/services'
+import { DidCommMessageRepository, DidCommMessageRole } from '../storage/didcomm'
 import { uuid } from '../utils/uuid'
 
 import { OutboundMessageContext } from './models'
@@ -37,9 +40,9 @@ export async function getOutboundMessageContext(
   }: {
     connectionRecord?: ConnectionRecord
     associatedRecord?: BaseRecordAny
-    message: DidCommV1Message
-    lastReceivedMessage?: DidCommV1Message
-    lastSentMessage?: DidCommV1Message
+    message: AgentBaseMessage
+    lastReceivedMessage?: AgentBaseMessage
+    lastSentMessage?: AgentBaseMessage
   }
 ) {
   // TODO: even if using a connection record, we should check if there's an oob record associated and this
@@ -48,6 +51,27 @@ export async function getOutboundMessageContext(
     agentContext.config.logger.debug(
       `Creating outbound message context for message ${message.id} with connection ${connectionRecord.id}`
     )
+
+    // Check that message DIDComm version matches connection
+    if (
+      (connectionRecord.isDidCommV1Connection && message.didCommVersion !== DidCommMessageVersion.V1) ||
+      (connectionRecord.isDidCommV2Connection && message.didCommVersion !== DidCommMessageVersion.V2)
+    ) {
+      throw new AriesFrameworkError(
+        `Message DIDComm version ${message.didCommVersion} does not match connection ${connectionRecord.id}`
+      )
+    }
+
+    // Attach 'from' and 'to' fields according to connection record (unless they are previously defined)
+    if (message instanceof DidCommV2Message) {
+      message.from = message.from ?? connectionRecord.did
+      const recipients = message.to ?? (connectionRecord.theirDid ? [connectionRecord.theirDid] : undefined)
+      if (!recipients) {
+        throw new AriesFrameworkError('Cannot find recipient did for message')
+      }
+      message.to = recipients
+    }
+
     return new OutboundMessageContext(message, {
       agentContext,
       associatedRecord,
@@ -65,6 +89,14 @@ export async function getOutboundMessageContext(
     throw new AriesFrameworkError(
       'No associated record was supplied. This is required for connection-less exchanges to store the associated ~service decorator on the message.'
     )
+  }
+
+  if (
+    !(message instanceof DidCommV1Message) ||
+    (lastReceivedMessage !== undefined && !(lastReceivedMessage instanceof DidCommV1Message)) ||
+    (lastSentMessage !== undefined && !(lastSentMessage instanceof DidCommV1Message))
+  ) {
+    throw new AriesFrameworkError('No connection record associated with DIDComm V2 messages exchange')
   }
 
   // Connectionless

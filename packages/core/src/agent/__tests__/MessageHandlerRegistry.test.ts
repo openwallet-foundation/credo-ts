@@ -1,6 +1,6 @@
 import type { MessageHandler } from '../MessageHandler'
 
-import { DidCommV1Message } from '../../didcomm'
+import { DidCommMessageVersion, DidCommV1Message } from '../../didcomm'
 import { parseMessageType } from '../../utils/messageType'
 import { MessageHandlerRegistry } from '../MessageHandlerRegistry'
 
@@ -112,28 +112,32 @@ describe('MessageHandlerRegistry', () => {
   describe('getMessageClassForMessageType()', () => {
     it('should return the correct message class for a registered message type', () => {
       const messageClass = messageHandlerRegistry.getMessageClassForMessageType(
-        'https://didcomm.org/connections/1.0/invitation'
+        'https://didcomm.org/connections/1.0/invitation',
+        DidCommMessageVersion.V1
       )
       expect(messageClass).toBe(ConnectionInvitationTestMessage)
     })
 
     it('should return undefined if no message class is registered for the message type', () => {
       const messageClass = messageHandlerRegistry.getMessageClassForMessageType(
-        'https://didcomm.org/non-existing/1.0/invitation'
+        'https://didcomm.org/non-existing/1.0/invitation',
+        DidCommMessageVersion.V1
       )
       expect(messageClass).toBeUndefined()
     })
 
     it('should return the message class with a higher minor version for the message type', () => {
       const messageClass = messageHandlerRegistry.getMessageClassForMessageType(
-        'https://didcomm.org/fake-protocol/1.0/message'
+        'https://didcomm.org/fake-protocol/1.0/message',
+        DidCommMessageVersion.V1
       )
       expect(messageClass).toBe(CustomProtocolMessage)
     })
 
     it('should not return the message class with a different major version', () => {
       const messageClass = messageHandlerRegistry.getMessageClassForMessageType(
-        'https://didcomm.org/fake-protocol/2.0/message'
+        'https://didcomm.org/fake-protocol/2.0/message',
+        DidCommMessageVersion.V1
       )
       expect(messageClass).toBeUndefined()
     })

@@ -36,7 +36,7 @@ class Dispatcher {
 
   public async dispatch(messageContext: InboundMessageContext): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message } = messageContext
-    const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type)
+    const messageHandler = this.messageHandlerRegistry.getHandlerForMessageType(message.type, message.didCommVersion)
 
     if (!messageHandler) {
       throw new AriesFrameworkError(`No handler for message type "${message.type}" found`)

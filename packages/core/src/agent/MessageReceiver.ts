@@ -7,7 +7,7 @@ import type { ConnectionRecord } from '../modules/connections'
 import type { InboundTransport } from '../transport'
 
 import { InjectionSymbols } from '../constants'
-import { isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
+import { DidCommMessageVersion, isPlaintextMessageV1, isPlaintextMessageV2 } from '../didcomm'
 import { getPlaintextMessageType, isEncryptedMessage, isPlaintextMessage } from '../didcomm/helpers'
 import { AriesFrameworkError } from '../error'
 import { Logger } from '../logger'
@@ -153,7 +153,9 @@ export class MessageReceiver {
     const { plaintextMessage, senderKey, recipientKey } = unpackedMessage
 
     this.logger.info(
-      `Received message with type '${plaintextMessage['@type']}', recipient key ${recipientKey?.fingerprint} and sender key ${senderKey?.fingerprint}`,
+      `Received message with type '${plaintextMessage['@type'] ?? plaintextMessage['type']}', recipient key ${
+        recipientKey?.fingerprint
+      } and sender key ${senderKey?.fingerprint}`,
       plaintextMessage
     )
 
@@ -300,7 +302,9 @@ export class MessageReceiver {
       throw new AriesFrameworkError(`No type found in the message: ${message}`)
     }
 
-    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType)
+    const didcommVersion = isPlaintextMessageV1(message) ? DidCommMessageVersion.V1 : DidCommMessageVersion.V2
+
+    const MessageClass = this.messageHandlerRegistry.getMessageClassForMessageType(messageType, didcommVersion)
 
     if (!MessageClass) {
       throw new ProblemReportError(`No message class found for message type "${messageType}"`, {

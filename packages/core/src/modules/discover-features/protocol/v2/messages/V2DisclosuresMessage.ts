@@ -1,15 +1,11 @@
+import type { V2DisclosuresMessageOptions } from './V2DisclosuresMessageOptions'
+
 import { Type } from 'class-transformer'
 import { IsInstance } from 'class-validator'
 
 import { Feature } from '../../../../../agent/models'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
-
-export interface V2DisclosuresMessageOptions {
-  id?: string
-  threadId?: string
-  features?: Feature[]
-}
 
 export class V2DisclosuresMessage extends DidCommV1Message {
   public constructor(options: V2DisclosuresMessageOptions) {

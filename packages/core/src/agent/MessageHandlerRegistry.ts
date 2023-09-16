@@ -1,5 +1,5 @@
 import type { MessageHandler } from './MessageHandler'
-import type { ConstructableDidCommMessage } from '../didcomm'
+import type { ConstructableDidCommMessage, DidCommMessageVersion } from '../didcomm'
 
 import { injectable } from 'tsyringe'
 
@@ -13,22 +13,32 @@ export class MessageHandlerRegistry {
     this.messageHandlers.push(messageHandler)
   }
 
-  public getHandlerForMessageType(messageType: string): MessageHandler | undefined {
+  public getHandlerForMessageType(
+    messageType: string,
+    didcommVersion: DidCommMessageVersion
+  ): MessageHandler | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
     for (const handler of this.messageHandlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (canHandleMessageType(MessageClass, incomingMessageType)) return handler
+        if (didcommVersion === MessageClass.didCommVersion && canHandleMessageType(MessageClass, incomingMessageType)) {
+          return handler
+        }
       }
     }
   }
 
-  public getMessageClassForMessageType(messageType: string): ConstructableDidCommMessage | undefined {
+  public getMessageClassForMessageType(
+    messageType: string,
+    didcommVersion: DidCommMessageVersion
+  ): ConstructableDidCommMessage | undefined {
     const incomingMessageType = parseMessageType(messageType)
 
     for (const handler of this.messageHandlers) {
       for (const MessageClass of handler.supportedMessages) {
-        if (canHandleMessageType(MessageClass, incomingMessageType)) return MessageClass
+        if (didcommVersion === MessageClass.didCommVersion && canHandleMessageType(MessageClass, incomingMessageType)) {
+          return MessageClass
+        }
       }
     }
   }

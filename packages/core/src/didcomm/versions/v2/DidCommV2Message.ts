@@ -1,7 +1,10 @@
 import type { PlaintextDidCommV2Message } from './types'
 import type { AgentBaseMessage } from '../../../agent/AgentBaseMessage'
 import type { ServiceDecorator } from '../../../decorators/service/ServiceDecorator'
+import type { ThreadDecorator } from '../../../decorators/thread/ThreadDecorator'
 import type { PlaintextMessage } from '../../types'
+
+import { Exclude } from 'class-transformer'
 
 import { AriesFrameworkError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
@@ -10,9 +13,9 @@ import { DidCommMessageVersion } from '../../types'
 import { DidCommV2BaseMessage } from './DidCommV2BaseMessage'
 
 export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseMessage {
-  public get didCommVersion(): DidCommMessageVersion {
-    return DidCommMessageVersion.V2
-  }
+  @Exclude()
+  public readonly didCommVersion = DidCommMessageVersion.V2
+  public static readonly didCommVersion = DidCommMessageVersion.V2
 
   public toJSON(): PlaintextMessage {
     return JsonTransformer.toJSON(this) as PlaintextDidCommV2Message
@@ -22,8 +25,19 @@ export class DidCommV2Message extends DidCommV2BaseMessage implements AgentBaseM
     return undefined
   }
 
-  public get threadId(): string | undefined {
-    return this.thid
+  public get threadId(): string {
+    return this.thid ?? this.id
+  }
+
+  public setThread(options: Partial<ThreadDecorator>) {
+    this.thid = options.threadId
+    this.parentThreadId = options.parentThreadId
+    this.senderOrder = options.senderOrder
+    this.receivedOrders = Object.entries(options.receivedOrders ?? {}).map(([id, last]) => ({
+      id,
+      last,
+      gaps: [],
+    }))
   }
 
   public hasAnyReturnRoute() {

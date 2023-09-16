@@ -21,6 +21,8 @@ import { DiscoverFeaturesService } from '../../services'
 
 import { V2DisclosuresMessageHandler, V2QueriesMessageHandler } from './handlers'
 import { V2QueriesMessage, V2DisclosuresMessage } from './messages'
+import { V2DisclosuresDidCommV2Message } from './messages/V2DisclosuresDidCommV2Message'
+import { V2QueriesDidCommV2Message } from './messages/V2QueriesDidCommV2Message'
 
 @injectable()
 export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
@@ -47,15 +49,17 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async createQuery(
     options: CreateQueryOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2QueriesMessage>> {
-    const queryMessage = new V2QueriesMessage({ queries: options.queries })
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2QueriesMessage | V2QueriesDidCommV2Message>> {
+    const queryMessage = options.connectionRecord?.isDidCommV2Connection
+      ? new V2QueriesDidCommV2Message({ queries: options.queries })
+      : new V2QueriesMessage({ queries: options.queries })
 
     return { message: queryMessage }
   }
 
   public async processQuery(
-    messageContext: InboundMessageContext<V2QueriesMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | void> {
+    messageContext: InboundMessageContext<V2QueriesMessage | V2QueriesDidCommV2Message>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage | V2DisclosuresDidCommV2Message> | void> {
     const { queries, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
@@ -71,10 +75,11 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
       },
     })
 
-    // Process query and send responde automatically if configured to do so, otherwise
+    // Process query and send respose automatically if configured to do so, otherwise
     // just send the event and let controller decide
     if (this.discoverFeaturesModuleConfig.autoAcceptQueries) {
       return await this.createDisclosure({
+        connectionRecord: connection,
         threadId,
         disclosureQueries: queries,
       })
@@ -83,18 +88,25 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async createDisclosure(
     options: CreateDisclosureOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage>> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage | V2DisclosuresDidCommV2Message>> {
     const matches = this.featureRegistry.query(...options.disclosureQueries)
 
-    const discloseMessage = new V2DisclosuresMessage({
-      threadId: options.threadId,
-      features: matches,
-    })
+    const discloseMessage = options.connectionRecord?.isDidCommV2Connection
+      ? new V2DisclosuresDidCommV2Message({
+          threadId: options.threadId,
+          features: matches,
+        })
+      : new V2DisclosuresMessage({
+          threadId: options.threadId,
+          features: matches,
+        })
 
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: InboundMessageContext<V2DisclosuresMessage>): Promise<void> {
+  public async processDisclosure(
+    messageContext: InboundMessageContext<V2DisclosuresMessage | V2DisclosuresDidCommV2Message>
+  ): Promise<void> {
     const { disclosures, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
