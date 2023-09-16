@@ -13,7 +13,7 @@ import { catchError, filter, map, takeUntil, timeout } from 'rxjs/operators'
 import { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { MessageSender } from '../../agent/MessageSender'
-import { OutboundMessageContext } from '../../agent/models'
+import { getOutboundMessageContext } from '../../agent/getOutboundMessageContext'
 import { InjectionSymbols } from '../../constants'
 import { AriesFrameworkError } from '../../error'
 import { inject, injectable } from '../../plugins'
@@ -96,17 +96,15 @@ export class DiscoverFeaturesApi<
   public async queryFeatures(options: QueryFeaturesOptions<DFSs>) {
     const service = this.getService(options.protocolVersion)
 
-    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
 
-    const { message: queryMessage } = await service.createQuery({
+    const { message } = await service.createQuery({
+      connectionRecord,
       queries: options.queries,
       comment: options.comment,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(queryMessage, {
-      agentContext: this.agentContext,
-      connection,
-    })
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, { message, connectionRecord })
 
     const replaySubject = new ReplaySubject<Feature[]>(1)
     if (options.awaitDisclosures) {
@@ -117,7 +115,7 @@ export class DiscoverFeaturesApi<
           // Stop when the agent shuts down
           takeUntil(this.stop$),
           // filter by connection id
-          filter((e) => e.payload.connection?.id === connection.id),
+          filter((e) => e.payload.connection?.id === connectionRecord.id),
           // Return disclosures
           map((e) => e.payload.disclosures),
           // If we don't have an answer in timeoutMs miliseconds (no response, not supported, etc...) error
@@ -148,16 +146,14 @@ export class DiscoverFeaturesApi<
   public async discloseFeatures(options: DiscloseFeaturesOptions) {
     const service = this.getService(options.protocolVersion)
 
-    const connection = await this.connectionService.getById(this.agentContext, options.connectionId)
-    const { message: disclosuresMessage } = await service.createDisclosure({
+    const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
+    const { message } = await service.createDisclosure({
+      connectionRecord,
       disclosureQueries: options.disclosureQueries,
       threadId: options.threadId,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(disclosuresMessage, {
-      agentContext: this.agentContext,
-      connection,
-    })
+    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, { message, connectionRecord })
     await this.messageSender.sendMessage(outboundMessageContext)
   }
 }

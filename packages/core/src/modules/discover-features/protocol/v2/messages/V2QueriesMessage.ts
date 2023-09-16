@@ -1,4 +1,4 @@
-import type { FeatureQueryOptions } from '../../../../../agent/models'
+import type { V2QueriesMessageOptions } from './V2QueriesMessageOptions'
 
 import { Type } from 'class-transformer'
 import { ArrayNotEmpty, IsInstance } from 'class-validator'
@@ -7,14 +7,8 @@ import { FeatureQuery } from '../../../../../agent/models'
 import { DidCommV1Message } from '../../../../../didcomm'
 import { IsValidMessageType, parseMessageType } from '../../../../../utils/messageType'
 
-export interface V2DiscoverFeaturesQueriesMessageOptions {
-  id?: string
-  queries: FeatureQueryOptions[]
-  comment?: string
-}
-
 export class V2QueriesMessage extends DidCommV1Message {
-  public constructor(options: V2DiscoverFeaturesQueriesMessageOptions) {
+  public constructor(options: V2QueriesMessageOptions) {
     super()
 
     if (options) {
