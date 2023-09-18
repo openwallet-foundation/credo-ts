@@ -12,7 +12,7 @@ import type {
 } from '@aries-framework/anoncreds'
 import type { AgentContext } from '@aries-framework/core'
 
-import { AriesFrameworkError, JsonTransformer, utils } from '@aries-framework/core'
+import { AriesFrameworkError, Buffer, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@aries-framework/core'
 
 import { CheqdDidResolver, CheqdDidRegistrar } from '../../dids'
 import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../utils/identifiers'
@@ -135,9 +135,16 @@ export class CheqdAnonCredsRegistry implements AnonCredsRegistry {
       const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
       const { credentialDefinition } = options
       const schema = await this.getSchema(agentContext, credentialDefinition.schemaId)
+      if (!schema.schema) {
+        throw new Error(`Schema not found for schemaId: ${credentialDefinition.schemaId}`)
+      }
+
+      const credDefName = `${schema.schema.name}-${credentialDefinition.tag}`
+      const credDefNameHashBuffer = Hasher.hash(Buffer.from(credDefName), 'sha2-256')
+
       const credDefResource = {
         id: utils.uuid(),
-        name: `${schema.schema?.name}-${credentialDefinition.tag}-CredDef`,
+        name: TypedArrayEncoder.toHex(credDefNameHashBuffer),
         resourceType: 'anonCredsCredDef',
         data: {
           type: credentialDefinition.type,
