@@ -72,7 +72,7 @@ export class WsInboundTransport implements InboundTransport {
       try {
         await messageReceiver.receiveMessage(JSON.parse(event.data), { session })
       } catch (error) {
-        this.logger.error('Error processing message: ' + error)
+        this.logger.error(`Error processing message: ${error}`)
       }
     })
   }
