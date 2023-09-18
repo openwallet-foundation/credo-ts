@@ -82,7 +82,7 @@ export class WebSocketTransportSession implements TransportSession {
   public id: string
   public readonly type = 'WebSocket'
   public socket: WebSocket
-  private logger!: Logger
+  private logger: Logger
 
   public constructor(id: string, socket: WebSocket, logger: Logger) {
     this.id = id
