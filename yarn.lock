@@ -774,12 +774,12 @@
     uuid "^9.0.0"
 
 "@cheqd/ts-proto@^2.2.0", "@cheqd/ts-proto@cjs":
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/@cheqd/ts-proto/-/ts-proto-2.2.0.tgz#c296a9fff23f47fba84f9c3354439b8fc91129f4"
-  integrity sha512-COTDndE/haSUPndVYaJGAVT4OMIrVSibGfLrKol9CXZBasmUUJx5rVFOpL34wYq6VcOrfF2TN+63TRePRUBWpA==
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@cheqd/ts-proto/-/ts-proto-2.2.2.tgz#c0e808c6d438da7098a225ea24ee94db9822fa06"
+  integrity sha512-32XCz1tD/T8r9Pw6IWH+XDttnGEguN0/1dWoUnTZ6uIPAA65YYSz2Ba9ZJ69a7YipYzX9C1CRddVZ3u229dfYg==
   dependencies:
-    long "^5.2.1"
-    protobufjs "^7.2.3"
+    long "^5.2.3"
+    protobufjs "^7.2.4"
 
 "@confio/ics23@^0.6.8":
   version "0.6.8"
@@ -8023,7 +8023,7 @@ long@^4.0.0:
   resolved "https://registry.yarnpkg.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
   integrity sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==
 
-long@^5.0.0, long@^5.2.1:
+long@^5.0.0, long@^5.2.3:
   version "5.2.3"
   resolved "https://registry.yarnpkg.com/long/-/long-5.2.3.tgz#a3ba97f3877cf1d778eccbcb048525ebb77499e1"
   integrity sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==
@@ -10054,10 +10054,10 @@ protobufjs@^6.8.8, protobufjs@~6.11.2, protobufjs@~6.11.3:
     "@types/node" ">=13.7.0"
     long "^4.0.0"
 
-protobufjs@^7.2.3:
-  version "7.2.4"
-  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-7.2.4.tgz#3fc1ec0cdc89dd91aef9ba6037ba07408485c3ae"
-  integrity sha512-AT+RJgD2sH8phPmCf7OUZR8xGdcJRga4+1cOaXJ64hvcSkVhNcRHOwIxUatPH15+nj59WAGTDv3LSGZPEQbJaQ==
+protobufjs@^7.2.4:
+  version "7.2.5"
+  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-7.2.5.tgz#45d5c57387a6d29a17aab6846dcc283f9b8e7f2d"
+  integrity sha512-gGXRSXvxQ7UiPgfw8gevrfRWcTlSbOFg+p/N+JVJEK5VhueL2miT6qTymqAmjr1Q5WbOCyJbyrk6JfWKwlFn6A==
   dependencies:
     "@protobufjs/aspromise" "^1.1.2"
     "@protobufjs/base64" "^1.1.2"
