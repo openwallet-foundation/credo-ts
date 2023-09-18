@@ -33,7 +33,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
   private messageSender: MessageSender
   private agentContext: AgentContext
   private connectionService: ConnectionService
-  private logger!: Logger
+  private logger: Logger
 
   public constructor(
     messageSender: MessageSender,
