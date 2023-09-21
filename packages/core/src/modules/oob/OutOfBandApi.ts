@@ -36,7 +36,7 @@ import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { convertToNewInvitation, convertToOldInvitation } from './helpers'
-import { OutOfBandInvitation } from './messages'
+import { InvitationType, OutOfBandInvitation } from './messages'
 import { OutOfBandRepository } from './repository'
 import { OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
@@ -249,7 +249,7 @@ export class OutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: 'connections/1.x',
+      legacyInvitationType: InvitationType.Connection,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(OutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)
@@ -275,7 +275,7 @@ export class OutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: 'connectionless',
+      legacyInvitationType: InvitationType.Connectionless,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(OutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)

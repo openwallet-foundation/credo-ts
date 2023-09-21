@@ -4,7 +4,7 @@ import { ConnectionInvitationMessage, HandshakeProtocol } from '../connections'
 import { didKeyToVerkey, verkeyToDidKey } from '../dids/helpers'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { OutOfBandInvitation } from './messages'
+import { InvitationType, OutOfBandInvitation } from './messages'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
   let service
@@ -33,7 +33,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
   }
 
   const outOfBandInvitation = new OutOfBandInvitation(options)
-  outOfBandInvitation.invitationType = 'connections/1.x'
+  outOfBandInvitation.invitationType = InvitationType.Connection
   return outOfBandInvitation
 }
 

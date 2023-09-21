@@ -9,7 +9,7 @@ import { AriesFrameworkError } from '../error'
 import { ConnectionInvitationMessage } from '../modules/connections'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
 import { convertToNewInvitation } from '../modules/oob/helpers'
-import { OutOfBandInvitation } from '../modules/oob/messages'
+import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
 
 import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
@@ -104,12 +104,12 @@ export const parseInvitationShortUrl = async (
   const parsedUrl = parseUrl(invitationUrl).query
   if (parsedUrl['oob']) {
     const outOfBandInvitation = OutOfBandInvitation.fromUrl(invitationUrl)
-    outOfBandInvitation.invitationType = 'out-of-band/1.x'
+    outOfBandInvitation.invitationType = InvitationType.OutOfBand
     return outOfBandInvitation
   } else if (parsedUrl['c_i']) {
     const invitation = ConnectionInvitationMessage.fromUrl(invitationUrl)
     const outOfBandInvitation = convertToNewInvitation(invitation)
-    outOfBandInvitation.invitationType = 'connections/1.x'
+    outOfBandInvitation.invitationType = InvitationType.Connection
     return outOfBandInvitation
   }
   // Legacy connectionless invitation
@@ -135,14 +135,14 @@ export const parseInvitationShortUrl = async (
       services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
     })
 
-    invitation.invitationType = 'connectionless'
+    invitation.invitationType = InvitationType.Connectionless
     invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
 
     return invitation
   } else {
     try {
       const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-      outOfBandInvitation.invitationType = 'out-of-band/1.x'
+      outOfBandInvitation.invitationType = InvitationType.OutOfBand
       return outOfBandInvitation
     } catch (error) {
       throw new AriesFrameworkError(
