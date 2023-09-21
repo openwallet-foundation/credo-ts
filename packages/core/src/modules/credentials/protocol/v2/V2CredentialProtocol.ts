@@ -618,7 +618,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       // This makes sure that the sender of the incoming message is authorized to do so.
       if (!credentialRecord.connectionId) {
         await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-          knownConnectionId: credentialRecord.connectionId,
+          expectedConnectionId: credentialRecord.connectionId,
         })
 
         credentialRecord.connectionId = connection?.id

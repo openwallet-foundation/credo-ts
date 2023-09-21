@@ -190,4 +190,8 @@ function OutOfBandServiceTransformer() {
 /**
  * The original invitation an out of band invitation was derived from.
  */
-export type InvitationType = 'out-of-band/1.x' | 'connections/1.x' | 'connectionless'
+export enum InvitationType {
+  OutOfBand = 'out-of-band/1.x',
+  Connection = 'connections/1.x',
+  Connectionless = 'connectionless',
+}

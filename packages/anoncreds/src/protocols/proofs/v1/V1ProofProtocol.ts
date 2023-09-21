@@ -769,7 +769,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // This makes sure that the sender of the incoming message is authorized to do so.
     if (!proofRecord.connectionId) {
       await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-        knownConnectionId: proofRecord.connectionId,
+        expectedConnectionId: proofRecord.connectionId,
       })
 
       proofRecord.connectionId = connection?.id

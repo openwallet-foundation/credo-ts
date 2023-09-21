@@ -5,12 +5,10 @@ import type { ResolvedDidCommService } from '../modules/didcomm'
 import type { OutOfBandRecord } from '../modules/oob'
 import type { BaseRecordAny } from '../storage/BaseRecord'
 
-import { Agent } from 'http'
-
 import { Key } from '../crypto'
 import { ServiceDecorator } from '../decorators/service/ServiceDecorator'
 import { AriesFrameworkError } from '../error'
-import { OutOfBandService, OutOfBandRole, OutOfBandRepository } from '../modules/oob'
+import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from '../modules/oob'
 import { OutOfBandRecordMetadataKeys } from '../modules/oob/repository/outOfBandRecordMetadataTypes'
 import { RoutingService } from '../modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from '../storage'
@@ -301,7 +299,7 @@ async function addExchangeDataToMessage(
 
   // Set the parentThreadId on the message from the oob invitation
   // If connectionless is used, we should not add the parentThreadId
-  if (outOfBandRecord && legacyInvitationMetadata?.legacyInvitationType !== 'connectionless') {
+  if (outOfBandRecord && legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless) {
     if (!message.thread) {
       message.setThread({
         parentThreadId: outOfBandRecord.outOfBandInvitation.id,

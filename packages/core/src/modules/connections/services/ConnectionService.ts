@@ -548,11 +548,11 @@ export class ConnectionService {
    */
   public async matchIncomingMessageToRequestMessageInOutOfBandExchange(
     messageContext: InboundMessageContext,
-    { knownConnectionId }: { knownConnectionId?: string }
+    { expectedConnectionId }: { expectedConnectionId?: string }
   ) {
-    if (knownConnectionId && messageContext.connection?.id === knownConnectionId) {
+    if (expectedConnectionId && messageContext.connection?.id === expectedConnectionId) {
       throw new AriesFrameworkError(
-        `Expecting incoming message to have connection ${knownConnectionId}, but incoming connection is ${
+        `Expecting incoming message to have connection ${expectedConnectionId}, but incoming connection is ${
           messageContext.connection?.id ?? 'undefined'
         }`
       )

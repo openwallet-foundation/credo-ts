@@ -16,6 +16,6 @@ export type OutOfBandRecordMetadata = {
     /**
      * Indicates the type of the legacy invitation that was used for this out of band exchange.
      */
-    legacyInvitationType?: Exclude<InvitationType, 'out-of-band/1.x'>
+    legacyInvitationType?: Exclude<InvitationType, InvitationType.OutOfBand>
   }
 }

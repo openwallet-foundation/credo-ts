@@ -755,7 +755,7 @@ export class V1CredentialProtocol
     // This makes sure that the sender of the incoming message is authorized to do so.
     if (!credentialRecord.connectionId) {
       await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-        knownConnectionId: credentialRecord.connectionId,
+        expectedConnectionId: credentialRecord.connectionId,
       })
 
       credentialRecord.connectionId = connection?.id
