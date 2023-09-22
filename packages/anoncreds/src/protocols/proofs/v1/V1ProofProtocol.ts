@@ -326,6 +326,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -523,7 +524,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       presentationProposal,
     })
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -600,7 +601,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       presentationAttachments: [attachment],
     })
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: message,
@@ -745,11 +746,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      agentContext,
-      presentationMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByThreadAndConnectionId(agentContext, presentationMessage.threadId)
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
@@ -768,6 +765,15 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       lastReceivedMessage: proposalMessage,
       lastSentMessage: requestMessage,
     })
+
+    // This makes sure that the sender of the incoming message is authorized to do so.
+    if (!proofRecord.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        expectedConnectionId: proofRecord.connectionId,
+      })
+
+      proofRecord.connectionId = connection?.id
+    }
 
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
     if (!presentationAttachment) {
@@ -812,6 +818,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const ackMessage = new V1PresentationAckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.threadId,
+    })
+
+    ackMessage.setThread({
+      threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record

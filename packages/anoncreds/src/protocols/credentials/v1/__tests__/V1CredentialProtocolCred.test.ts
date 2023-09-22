@@ -343,7 +343,6 @@ describe('V1CredentialProtocol', () => {
       // then
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: connection.id,
       })
       expect(repositoryUpdateSpy).toHaveBeenCalledTimes(1)
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
@@ -360,7 +359,6 @@ describe('V1CredentialProtocol', () => {
       // then
       expect(credentialRepository.getSingleByQuery).toHaveBeenNthCalledWith(1, agentContext, {
         threadId: 'somethreadid',
-        connectionId: connection.id,
       })
       expect(returnedCredentialRecord.state).toEqual(CredentialState.RequestReceived)
     })

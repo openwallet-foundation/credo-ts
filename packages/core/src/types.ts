@@ -90,6 +90,7 @@ export interface PlaintextMessage {
   '@id': string
   '~thread'?: {
     thid?: string
+    pthid?: string
   }
   [key: string]: unknown
 }

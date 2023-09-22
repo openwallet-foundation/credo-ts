@@ -211,6 +211,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
+        parentThreadId: proposalMessage.thread?.parentThreadId,
         state: CredentialState.ProposalReceived,
         protocolVersion: 'v2',
       })
@@ -421,6 +422,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: offerMessage.threadId,
+        parentThreadId: offerMessage.thread?.parentThreadId,
         state: CredentialState.OfferReceived,
         protocolVersion: 'v2',
       })
@@ -586,11 +588,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     agentContext.config.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    let credentialRecord = await this.findByThreadAndConnectionId(
-      messageContext.agentContext,
-      requestMessage.threadId,
-      connection?.id
-    )
+    let credentialRecord = await this.findByThreadAndConnectionId(messageContext.agentContext, requestMessage.threadId)
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
     if (formatServices.length === 0) {
@@ -617,6 +615,15 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
         lastSentMessage: offerMessage ?? undefined,
       })
 
+      // This makes sure that the sender of the incoming message is authorized to do so.
+      if (!credentialRecord.connectionId) {
+        await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+          expectedConnectionId: credentialRecord.connectionId,
+        })
+
+        credentialRecord.connectionId = connection?.id
+      }
+
       await this.credentialFormatCoordinator.processRequest(messageContext.agentContext, {
         credentialRecord,
         formatServices,
@@ -634,6 +641,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       credentialRecord = new CredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: requestMessage.threadId,
+        parentThreadId: requestMessage.thread?.parentThreadId,
         state: CredentialState.RequestReceived,
         protocolVersion: 'v2',
       })
@@ -778,6 +786,8 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       threadId: credentialRecord.threadId,
     })
 
+    ackMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+
     await this.updateState(agentContext, credentialRecord, CredentialState.Done)
 
     return { message: ackMessage, credentialRecord }
@@ -849,7 +859,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       },
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     return { credentialRecord, message }
   }

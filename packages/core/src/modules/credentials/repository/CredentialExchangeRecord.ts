@@ -17,6 +17,7 @@ export interface CredentialExchangeRecordProps {
   state: CredentialState
   connectionId?: string
   threadId: string
+  parentThreadId?: string
   protocolVersion: string
 
   tags?: CustomCredentialTags
@@ -31,6 +32,7 @@ export interface CredentialExchangeRecordProps {
 export type CustomCredentialTags = TagsBase
 export type DefaultCredentialTags = {
   threadId: string
+  parentThreadId?: string
   connectionId?: string
   state: CredentialState
   credentialIds: string[]
@@ -44,6 +46,7 @@ export interface CredentialRecordBinding {
 export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, CustomCredentialTags> {
   public connectionId?: string
   public threadId!: string
+  public parentThreadId?: string
   public state!: CredentialState
   public autoAcceptCredential?: AutoAcceptCredential
   public revocationNotification?: RevocationNotification
@@ -69,6 +72,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
       this.state = props.state
       this.connectionId = props.connectionId
       this.threadId = props.threadId
+      this.parentThreadId = props.parentThreadId
       this.protocolVersion = props.protocolVersion
       this._tags = props.tags ?? {}
 
@@ -87,6 +91,7 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
     return {
       ...this._tags,
       threadId: this.threadId,
+      parentThreadId: this.parentThreadId,
       connectionId: this.connectionId,
       state: this.state,
       credentialIds: ids,

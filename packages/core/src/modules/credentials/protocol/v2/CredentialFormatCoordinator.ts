@@ -70,7 +70,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialPreview,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -182,7 +182,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       comment,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -254,7 +254,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialPreview,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -345,7 +345,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       comment,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -399,7 +399,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       requestAttachments: requestAttachments,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -498,7 +498,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       comment,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId })
+    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
     message.setPleaseAck()
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
