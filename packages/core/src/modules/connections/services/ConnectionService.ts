@@ -32,6 +32,7 @@ import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTy
 import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { InvitationType } from '../../oob/messages'
 import { OutOfBandRepository } from '../../oob/repository'
 import { OutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { ConnectionEventTypes } from '../ConnectionEvents'
@@ -579,7 +580,7 @@ export class ConnectionService {
 
     // If the original invitation was a legacy connectionless invitation, it's okay if the message does not have a pthid.
     if (
-      legacyInvitationMetadata?.legacyInvitationType !== 'connectionless' &&
+      legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless &&
       outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
     ) {
       throw new AriesFrameworkError(

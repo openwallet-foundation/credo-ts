@@ -461,7 +461,7 @@ export class OutOfBandApi {
     }
 
     // If the invitation was converted from another legacy format, we store this, as its needed for some flows
-    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== 'out-of-band/1.x') {
+    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== InvitationType.OutOfBand) {
       outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.LegacyInvitation, {
         legacyInvitationType: outOfBandInvitation.invitationType,
       })
@@ -838,7 +838,7 @@ export class OutOfBandApi {
 
     // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
     // as that's not expected, and it's generated on our side only
-    if (legacyInvitationMetadata?.legacyInvitationType === 'connectionless') {
+    if (legacyInvitationMetadata?.legacyInvitationType === InvitationType.Connectionless) {
       return
     }
 
