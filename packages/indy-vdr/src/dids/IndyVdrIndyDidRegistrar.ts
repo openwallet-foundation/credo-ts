@@ -306,9 +306,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         )
         didDocument = _didDocument
 
-        let didRegisterSigningKey: Key | undefined = undefined
-        if (options.options.endorserMode === 'internal')
-          didRegisterSigningKey = await verificationKeyForIndyDid(agentContext, options.options.endorserDid)
+        let didRegisterSigningKey: Key = await verificationKeyForIndyDid(agentContext, options.options.endorserDid)
 
         nymRequest = await this.createRegisterDidWriteRequest({
           agentContext,
