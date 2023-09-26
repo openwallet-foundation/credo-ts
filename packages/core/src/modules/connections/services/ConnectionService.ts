@@ -827,7 +827,7 @@ export class ConnectionService {
     const services = routing.endpoints.map(
       (endpoint, index) =>
         new IndyAgentService({
-          id: `${indyDid}#IndyAgentService`,
+          id: `${indyDid}#IndyAgentService-${index + 1}`,
           serviceEndpoint: endpoint,
           recipientKeys: [routing.recipientKey.publicKeyBase58],
           routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
@@ -862,7 +862,7 @@ export class ConnectionService {
     const service = services.map(
       (service, index) =>
         new IndyAgentService({
-          id: `${did}#IndyAgentService`,
+          id: `${did}#IndyAgentService-${index + 1}`,
           serviceEndpoint: service.serviceEndpoint,
           recipientKeys: [recipientKey.publicKeyBase58],
           routingKeys: service.routingKeys?.map(didKeyToVerkey),
