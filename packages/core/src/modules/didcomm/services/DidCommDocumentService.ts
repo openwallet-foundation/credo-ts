@@ -21,9 +21,9 @@ export class DidCommDocumentService {
 
     const resolvedServices: ResolvedDidCommService[] = []
 
-    // If did specifies a particular service, filter by its id (relative to did)
+    // If did specifies a particular service, filter by its id
     const didCommServices = parseDid(did).fragment
-      ? didDocument.didCommServices.filter((service) => service.id.split('#')[1] === parseDid(did).fragment)
+      ? didDocument.didCommServices.filter((service) => service.id === did)
       : didDocument.didCommServices
 
     // FIXME: we currently retrieve did documents for all didcomm services in the did document, and we don't have caching
