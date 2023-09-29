@@ -147,6 +147,71 @@ describeRunInNodeVersion([18], 'Askar SQLite agents', () => {
     })
   })
 
+  test('throws error when attempting to export and import to existing paths', async () => {
+    await bobAgent.initialize()
+
+    if (!bobAgent.config.walletConfig) {
+      throw new Error('No wallet config on bobAgent')
+    }
+
+    const backupKey = 'someBackupKey'
+    const backupWalletName = `backup-${utils.uuid()}`
+    const backupPath = path.join(tmpdir(), backupWalletName)
+
+    // Create backup and try to export it again to the same path
+    await bobAgent.wallet.export({ path: backupPath, key: backupKey })
+    await expect(async () => await bobAgent.wallet.export({ path: backupPath, key: backupKey })).rejects.toThrowError(
+      /Unable to create export/
+    )
+
+    await bobAgent.wallet.delete()
+
+    // Import backup with different wallet id and initialize
+    await bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
+    await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
+    await bobAgent.wallet.close()
+
+    // Try to import again an existing wallet
+    await expect(
+      async () =>
+        await bobAgent.wallet.import(
+          { id: backupWalletName, key: backupWalletName },
+          { path: backupPath, key: backupKey }
+        )
+    ).rejects.toThrowError(/Unable to import wallet/)
+  })
+
+  test('throws error when attempting to import using wrong key', async () => {
+    await bobAgent.initialize()
+
+    if (!bobAgent.config.walletConfig) {
+      throw new Error('No wallet config on bobAgent')
+    }
+
+    const backupKey = 'someBackupKey'
+    const wrongBackupKey = 'wrongBackupKey'
+    const backupWalletName = `backup-${utils.uuid()}`
+    const backupPath = path.join(tmpdir(), backupWalletName)
+
+    // Create backup and try to export it again to the same path
+    await bobAgent.wallet.export({ path: backupPath, key: backupKey })
+    await bobAgent.wallet.delete()
+
+    // Try to import backup with wrong key
+    await expect(
+      async () =>
+        await bobAgent.wallet.import(
+          { id: backupWalletName, key: backupWalletName },
+          { path: backupPath, key: wrongBackupKey }
+        )
+    ).rejects.toThrow()
+
+    // Try to import again using the correct key
+    await bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
+    await bobAgent.wallet.initialize({ id: backupWalletName, key: backupWalletName })
+    await bobAgent.wallet.close()
+  })
+
   test('changing wallet key', async () => {
     const walletConfig = {
       id: 'mywallet',
