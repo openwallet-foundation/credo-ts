@@ -1555,10 +1555,10 @@
     write-pkg "4.0.0"
     yargs "16.2.0"
 
-"@mapbox/node-pre-gyp@1.0.9":
-  version "1.0.9"
-  resolved "https://registry.yarnpkg.com/@mapbox/node-pre-gyp/-/node-pre-gyp-1.0.9.tgz#09a8781a3a036151cdebbe8719d6f8b25d4058bc"
-  integrity sha512-aDF3S3rK9Q2gey/WAttUlISduDItz5BU3306M9Eyv6/oS40aMprnopshtlKTykxRNIBEZuRMaZAnbrQ4QtKGyw==
+"@mapbox/node-pre-gyp@1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@mapbox/node-pre-gyp/-/node-pre-gyp-1.0.11.tgz#417db42b7f5323d79e93b34a6d7a2a12c0df43fa"
+  integrity sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==
   dependencies:
     detect-libc "^2.0.0"
     https-proxy-agent "^5.0.0"
@@ -1595,13 +1595,13 @@
     "@mattrglobal/node-bbs-signatures" "0.13.0"
 
 "@mattrglobal/bbs-signatures@^1.0.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@mattrglobal/bbs-signatures/-/bbs-signatures-1.1.0.tgz#031418c6a003d1782e3aff95995bda6a0605f9f1"
-  integrity sha512-uf74y3S7kAxL3FZrva6u+BF3VY3El5QI9IMkyBCoNoJvO+nWJewmTqLMLWEh6QJ1N5egZfDCI4PuS9ISrZJTZg==
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@mattrglobal/bbs-signatures/-/bbs-signatures-1.3.0.tgz#872badaf24e88c1c0ebc5faa373192ef6b704f4f"
+  integrity sha512-zkXfQIrISMI2zAg9mebwStVXdg45DheDVaENZwkrYPGw35OtsKxxqEmolIqQNyIgtz0i+LOtdGM6RY6d6DwLgw==
   dependencies:
     "@stablelib/random" "1.0.0"
   optionalDependencies:
-    "@mattrglobal/node-bbs-signatures" "0.15.0"
+    "@mattrglobal/node-bbs-signatures" "0.18.1"
 
 "@mattrglobal/bls12381-key-pair@^1.0.0":
   version "1.0.0"
@@ -1620,12 +1620,12 @@
     neon-cli "0.8.2"
     node-pre-gyp "0.17.0"
 
-"@mattrglobal/node-bbs-signatures@0.15.0":
-  version "0.15.0"
-  resolved "https://registry.yarnpkg.com/@mattrglobal/node-bbs-signatures/-/node-bbs-signatures-0.15.0.tgz#acbe578253fa95d96141bd44cb65e75cd0b79c67"
-  integrity sha512-ipIwL1neAW/gwC0jg0aOFWiIipdvn6kq0Ta2ccSgc1pZUg6xPYj7dRMEaR6QJ9zV6qOBe7awETd1CoLunwwsLA==
+"@mattrglobal/node-bbs-signatures@0.18.1":
+  version "0.18.1"
+  resolved "https://registry.yarnpkg.com/@mattrglobal/node-bbs-signatures/-/node-bbs-signatures-0.18.1.tgz#f313da682bdd9b592e7b65549cbbb8f67b0ce583"
+  integrity sha512-s9ccL/1TTvCP1N//4QR84j/d5D/stx/AI1kPcRgiE4O3KrxyF7ZdL9ca8fmFuN6yh9LAbn/OiGRnOXgvn38Dgg==
   dependencies:
-    "@mapbox/node-pre-gyp" "1.0.9"
+    "@mapbox/node-pre-gyp" "1.0.11"
     neon-cli "0.10.1"
 
 "@multiformats/base-x@^4.0.1":
