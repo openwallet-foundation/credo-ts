@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
+
+### Bug Fixes
+
+- **askar:** throw error if imported wallet exists ([#1593](https://github.com/hyperledger/aries-framework-javascript/issues/1593)) ([c2bb2a5](https://github.com/hyperledger/aries-framework-javascript/commit/c2bb2a52f10add35de883c9a27716db01b9028df))
+- **cheqd:** changed the name formatting to a encoded hex value ([#1574](https://github.com/hyperledger/aries-framework-javascript/issues/1574)) ([d299f55](https://github.com/hyperledger/aries-framework-javascript/commit/d299f55113cb4c59273ae9fbbb8773b6f0009192))
+- **core:** remove node-fetch dependency ([#1578](https://github.com/hyperledger/aries-framework-javascript/issues/1578)) ([9ee2ce7](https://github.com/hyperledger/aries-framework-javascript/commit/9ee2ce7f0913510fc5b36aef1b7eeffb259b4aed))
+- do not send package via outdated session ([#1559](https://github.com/hyperledger/aries-framework-javascript/issues/1559)) ([de6a735](https://github.com/hyperledger/aries-framework-javascript/commit/de6a735a900b6d7444b17d79e63acaca19cb812a))
+- duplicate service ids in connections protocol ([#1589](https://github.com/hyperledger/aries-framework-javascript/issues/1589)) ([dd75be8](https://github.com/hyperledger/aries-framework-javascript/commit/dd75be88c4e257b6ca76868ceaeb3a8b7d67c185))
+- implicit invitation to specific service ([#1592](https://github.com/hyperledger/aries-framework-javascript/issues/1592)) ([4071dc9](https://github.com/hyperledger/aries-framework-javascript/commit/4071dc97b8ca779e6def3711a538ae821e1e513c))
+- log and throw on WebSocket sending errors ([#1573](https://github.com/hyperledger/aries-framework-javascript/issues/1573)) ([11050af](https://github.com/hyperledger/aries-framework-javascript/commit/11050afc7965adfa9b00107ba34abfbe3afaf874))
+- **oob:** support oob with connection and messages ([#1558](https://github.com/hyperledger/aries-framework-javascript/issues/1558)) ([9732ce4](https://github.com/hyperledger/aries-framework-javascript/commit/9732ce436a0ddee8760b02ac5182e216a75176c2))
+- service validation in OOB invitation objects ([#1575](https://github.com/hyperledger/aries-framework-javascript/issues/1575)) ([91a9434](https://github.com/hyperledger/aries-framework-javascript/commit/91a9434efd53ccbaf80f5613cd908913ad3b806b))
+- update tsyringe for ts 5 support ([#1588](https://github.com/hyperledger/aries-framework-javascript/issues/1588)) ([296955b](https://github.com/hyperledger/aries-framework-javascript/commit/296955b3a648416ac6b502da05a10001920af222))
+
+### Features
+
+- allow connection invitation encoded in oob url param ([#1583](https://github.com/hyperledger/aries-framework-javascript/issues/1583)) ([9d789fa](https://github.com/hyperledger/aries-framework-javascript/commit/9d789fa4e9d159312872f45089d73609eb3d6835))
+
 ## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
 
 ### Bug Fixes
