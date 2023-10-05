@@ -2,7 +2,7 @@
   "name": "@aries-framework/node",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "files": [
     "build"
   ],
@@ -24,7 +24,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aries-framework/core": "0.4.1",
+    "@aries-framework/core": "0.4.2",
     "@types/express": "^4.17.15",
     "express": "^4.17.1",
     "ffi-napi": "^4.0.3",
