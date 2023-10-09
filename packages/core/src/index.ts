@@ -61,7 +61,15 @@ export * from './modules/oob'
 export * from './modules/dids'
 export * from './modules/vc'
 export * from './modules/cache'
-export { JsonEncoder, JsonTransformer, isJsonObject, isValidJweStructure, TypedArrayEncoder, Buffer } from './utils'
+export {
+  JsonEncoder,
+  JsonTransformer,
+  isJsonObject,
+  isValidJweStructure,
+  TypedArrayEncoder,
+  Buffer,
+  asArray,
+} from './utils'
 export * from './logger'
 export * from './error'
 export * from './wallet/error'

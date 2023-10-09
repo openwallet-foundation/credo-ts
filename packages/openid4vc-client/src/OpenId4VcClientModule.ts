@@ -4,6 +4,7 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcClientApi } from './OpenId4VcClientApi'
 import { OpenId4VcClientService } from './OpenId4VcClientService'
+import { OpenId4VpClientService, PresentationExchangeService } from './presentations'
 
 /**
  * @public
@@ -27,5 +28,7 @@ export class OpenId4VcClientModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(OpenId4VcClientService)
+    dependencyManager.registerSingleton(OpenId4VpClientService)
+    dependencyManager.registerSingleton(PresentationExchangeService)
   }
 }

@@ -5,7 +5,7 @@ import type {
 } from './OpenId4VcClientServiceOptions'
 import type { W3cCredentialRecord } from '@aries-framework/core'
 
-import { AgentContext, injectable } from '@aries-framework/core'
+import { injectable, AgentContext } from '@aries-framework/core'
 
 import { OpenId4VcClientService } from './OpenId4VcClientService'
 import { AuthFlowType } from './OpenId4VcClientServiceOptions'

@@ -1,12 +1,16 @@
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 
-import { ClaimFormat } from '@aries-framework/core'
+import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 
 /**
  * The credential formats that are supported by the openid4vc client
  */
-export type SupportedCredentialFormats = ClaimFormat.JwtVc | ClaimFormat.LdpVc
-export const supportedCredentialFormats = [ClaimFormat.JwtVc, ClaimFormat.LdpVc] satisfies SupportedCredentialFormats[]
+export type SupportedCredentialFormats = OpenIdCredentialFormatProfile.JwtVcJson | OpenIdCredentialFormatProfile.LdpVc
+
+export const supportedCredentialFormats = [
+  OpenIdCredentialFormatProfile.JwtVcJson,
+  OpenIdCredentialFormatProfile.LdpVc,
+] satisfies OpenIdCredentialFormatProfile[]
 
 /**
  * Options that are used for the pre-authorized code flow.
@@ -108,8 +112,12 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
   /**
    * The credential type that will be requested from the issuer. This is
    * based on the credential types that are included the credential offer.
+   *
+   * If the offered credential is an inline credential offer, the value
+   * will be `undefined`.
    */
-  credentialType: string
+  // TODO: do we need credentialType here?
+  supportedCredentialId?: string
 
   /**
    * Whether the issuer supports the `did` cryptographic binding method,
@@ -128,8 +136,16 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
    * MUST be based on one of these did methods.
    *
    * The did methods are returned in the format `did:<method>`, e.g. `did:web`.
+   *
+   * The value is undefined in the case the supported did methods could not be extracted.
+   * This is the case when an inline credential was used, or when the issuer didn't include
+   * the supported did methods in the issuer metadata.
+   *
+   * NOTE: an empty array (no did methods supported) has a different meaning from the value
+   * being undefined (the supported did methods could not be extracted). If `supportsAllDidMethods`
+   * is true, the value of this property MUST be ignored.
    */
-  supportedDidMethods: string[]
+  supportedDidMethods?: string[]
 }
 
 /**
@@ -145,9 +161,8 @@ export type ProofOfPossessionVerificationMethodResolver = (
  * @internal
  */
 export interface ProofOfPossessionRequirements {
-  credentialFormat: SupportedCredentialFormats
   signatureAlgorithm: JwaSignatureAlgorithm
-  supportedDidMethods: string[]
+  supportedDidMethods?: string[]
   supportsAllDidMethods: boolean
 }
 
