@@ -4,7 +4,6 @@ import type {
   CredentialsSupportedDisplay,
   CredentialSupported,
   EndpointMetadata,
-  EndpointMetadataResult,
   IssuerCredentialSubject,
   IssuerMetadataV1_0_08,
   MetadataDisplay,
