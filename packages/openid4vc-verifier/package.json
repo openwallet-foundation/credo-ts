@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/openid4vc-holder",
+  "name": "@aries-framework/openid4vc-verifier",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-holder",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-verifier",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/openid4vc-holder"
+    "directory": "packages/openid4vc-verifier"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
@@ -25,8 +25,7 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.4.2",
-    "@sphereon/oid4vci-client": "^0.7.3",
-    "@sphereon/oid4vci-common": "^0.7.3",
+    "@sphereon/did-auth-siop": "^0.4.2",
     "@sphereon/ssi-types": "^0.17.5",
     "@stablelib/random": "^1.0.2",
     "fast-text-encoding": "^1.0.6"

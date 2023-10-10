@@ -1,6 +1,6 @@
 export {
-  OpenId4VpClientService,
+  OpenId4VpHolderService,
   VerifiedAuthorizationRequestWithPresentationDefinition,
-} from './OpenId4VpClientService'
+} from './OpenId4VpHolderService'
 export { PresentationExchangeService } from './PresentationExchangeService'
 export { PresentationSubmission, SubmissionEntry } from './selection'

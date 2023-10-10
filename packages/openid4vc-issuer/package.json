@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/openid4vc-client",
+  "name": "@aries-framework/openid4vc-issuer",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-client",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/openid4vc-issuer",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/openid4vc-client"
+    "directory": "packages/openid4vc-issuer"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",
@@ -25,22 +25,16 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.4.2",
-    "@sphereon/did-auth-siop": "^0.4.2",
-    "@sphereon/oid4vci-client": "^0.7.3",
+    "@sphereon/oid4vci-issuer": "^0.7.3",
     "@sphereon/oid4vci-common": "^0.7.3",
-    "@sphereon/pex": "^2.1.3-unstable.6",
-    "@sphereon/pex-models": "^2.1.1",
     "@sphereon/ssi-types": "^0.17.5",
     "@stablelib/random": "^1.0.2",
-    "fast-text-encoding": "^1.0.6",
-    "jsonpath": "^1.1.1",
-    "sha.js": "^2.4.11"
+    "fast-text-encoding": "^1.0.6"
   },
   "devDependencies": {
     "@aries-framework/askar": "0.4.2",
     "@aries-framework/node": "0.4.2",
     "@hyperledger/aries-askar-nodejs": "^0.1.0",
-    "@types/jsonpath": "^0.2.0",
     "nock": "^13.3.0",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

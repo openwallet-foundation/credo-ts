@@ -43,7 +43,7 @@ function isVerifiedAuthorizationRequestWithPresentationDefinition(
 }
 
 @injectable()
-export class OpenId4VpClientService {
+export class OpenId4VpHolderService {
   public constructor(private presentationExchangeService: PresentationExchangeService) {}
 
   private getOp(agentContext: AgentContext) {

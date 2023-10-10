@@ -4,6 +4,8 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VcHolderApi'
 import { OpenId4VcHolderService } from './OpenId4VcHolderService'
+import { PresentationExchangeService } from './presentations'
+import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
 
 /**
  * @public
@@ -26,6 +28,9 @@ export class OpenId4VcHolderModule implements Module {
     dependencyManager.registerContextScoped(OpenId4VcHolderApi)
 
     // Services
+    // Services
     dependencyManager.registerSingleton(OpenId4VcHolderService)
+    dependencyManager.registerSingleton(OpenId4VpHolderService)
+    dependencyManager.registerSingleton(PresentationExchangeService)
   }
 }

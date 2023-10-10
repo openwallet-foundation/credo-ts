@@ -13,6 +13,7 @@ export {
   RequestCredentialOptions,
   SupportedCredentialFormats,
 } from './OpenId4VcHolderServiceOptions'
+export * from './presentations'
 export {
   getOpenId4VcCredentialMetadata,
   OpenId4VcCredentialMetadata,
