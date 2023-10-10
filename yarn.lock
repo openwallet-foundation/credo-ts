@@ -2457,6 +2457,15 @@
     cross-fetch "^3.1.8"
     jwt-decode "^3.1.2"
 
+"@sphereon/oid4vci-issuer@^0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.7.3.tgz#862c34b9e4c3c3c95485971cd58471729e4b20db"
+  integrity sha512-1bS/Z5M5HIU84j7DbUzJ7L+yDGYMG7i8Fm/QEL7QyWfhm9puZcInQwdzcW9VVx6qoNXmFRhBPwcJcNX9C89A/w==
+  dependencies:
+    "@sphereon/oid4vci-common" "0.7.3"
+    "@sphereon/ssi-types" "0.17.2"
+    uuid "^9.0.0"
+
 "@sphereon/pex-models@^2.0.3", "@sphereon/pex-models@^2.1.0", "@sphereon/pex-models@^2.1.1":
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.1.tgz#399e529db2a7e3b9abbd7314cdba619ceb6cb758"
@@ -2886,7 +2895,7 @@
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
 
-"@types/jsonpath@^0.2.0":
+"@types/jsonpath@^0.2.1":
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/@types/jsonpath/-/jsonpath-0.2.1.tgz#92a5f0328a58848449dd52249cbba270364e82e5"
   integrity sha512-CmRqkJfGIthwvW6vbNeY8wI3opKqnvX8+ec83PcK14Ee3RSla1ErAFeY/gVsh42Dm/uLCnD+pkQEDDkKuBK2bQ==
@@ -7963,7 +7972,7 @@ jsonparse@^1.2.0, jsonparse@^1.3.1:
   resolved "https://registry.yarnpkg.com/jsonparse/-/jsonparse-1.3.1.tgz#3f4dae4a91fac315f71062f8521cc239f1366280"
   integrity sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==
 
-jsonpath@^1.1.1:
+jsonpath@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/jsonpath/-/jsonpath-1.1.1.tgz#0ca1ed8fb65bb3309248cc9d5466d12d5b0b9901"
   integrity sha512-l6Cg7jRpixfbgoWgkrl77dgEj8RPvND0wMH6TwQmi9Qs4TFfS9u5cUFnbeKTwj5ga5Y3BTGGNI28k117LJ009w==
