@@ -21,6 +21,7 @@ import type {
   CredentialSupported,
   Jwt,
   OpenIDResponse,
+  ProofOfPossessionCallbacks,
 } from '@sphereon/oid4vci-common'
 
 import {
@@ -115,6 +116,7 @@ export class OpenId4VcClientService {
       uri: options.initiationUri,
       flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
     })
+
     const codeVerifier = this.generateCodeVerifier()
     const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
     const base64Url = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
@@ -162,7 +164,18 @@ export class OpenId4VcClientService {
     const client = await OpenID4VCIClient.fromURI({
       uri: options.issuerUri,
       flowType,
+      retrieveServerMetadata: false,
     })
+
+    const serverMetadata = await client.retrieveServerMetadata()
+
+    this.logger.info('Fetched server metadata', {
+      issuer: serverMetadata.issuer,
+      credentialEndpoint: serverMetadata.credential_endpoint,
+      tokenEndpoint: serverMetadata.token_endpoint,
+    })
+
+    this.logger.debug('Full server metadata', serverMetadata)
 
     // acquire the access token
     // NOTE: only scope based flow is supported for authorized flow. However there's not clear mapping between
@@ -177,17 +190,7 @@ export class OpenId4VcClientService {
             codeVerifier: options.codeVerifier,
             redirectUri: options.redirectUri,
           })
-        : await client.acquireAccessToken({})
-
-    const serverMetadata = await client.retrieveServerMetadata()
-
-    this.logger.info('Fetched server metadata', {
-      issuer: serverMetadata.issuer,
-      credentialEndpoint: serverMetadata.credential_endpoint,
-      tokenEndpoint: serverMetadata.token_endpoint,
-    })
-
-    this.logger.debug('Full server metadata', serverMetadata)
+        : await client.acquireAccessToken({}) // TODO: PIN
 
     // Loop through all the credentialTypes in the credential offer
     for (const offeredCredential of this.getOfferedCredentialsWithMetadata(client)) {
@@ -195,7 +198,7 @@ export class OpenId4VcClientService {
         isInlineCredentialOffer(offeredCredential)
           ? offeredCredential.inlineCredentialOffer.format
           : offeredCredential.credentialSupported.format
-      ) as SupportedCredentialFormats
+      ) as SupportedCredentialFormats // TODO: can we remove the cast?
 
       // TODO: support inline credential offers. Not clear to me how to determine the did method / alg, etc..
       if (offeredCredential.type === OfferedCredentialType.InlineCredentialOffer) {
@@ -205,6 +208,7 @@ export class OpenId4VcClientService {
         const supportedCredentialMetadata = offeredCredential.credentialSupported
 
         // FIXME
+        // TODO: that is not a must v11 could end in the same way
         // If the credential id ends with the format, it is a v8 credential supported that has been
         // split into multiple entries (each entry can now only have one format). For now we continue
         // as assume there will be another entry with the correct format.
@@ -222,12 +226,15 @@ export class OpenId4VcClientService {
         proofOfPossessionVerificationMethodResolver: options.proofOfPossessionVerificationMethodResolver,
       })
 
+      const callbacks: ProofOfPossessionCallbacks<unknown> = {
+        signCallback: this.signCallback(agentContext, verificationMethod),
+        // TODO: verify callback
+      }
+
       // Create the proof of possession
       const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
         accessTokenResponse: accessToken,
-        callbacks: {
-          signCallback: this.signCallback(agentContext, verificationMethod),
-        },
+        callbacks,
         version: client.version(),
       })
         .withEndpointMetadata(serverMetadata)
@@ -239,14 +246,15 @@ export class OpenId4VcClientService {
       this.logger.debug('Generated JWS', proofInput)
 
       // Acquire the credential
-      const credentialRequestClient = (
-        await CredentialRequestClientBuilder.fromURI({
-          uri: options.issuerUri,
-          metadata: serverMetadata,
-        })
-      )
-        .withTokenFromResponse(accessToken)
-        .build()
+      const credentialRequestClient = // TODO: don't use the uri not actual anymore https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-08.html
+        (
+          await CredentialRequestClientBuilder.fromURI({
+            uri: options.issuerUri,
+            metadata: serverMetadata,
+          })
+        )
+          .withTokenFromResponse(accessToken)
+          .build()
 
       let credentialResponse: OpenIDResponse<CredentialResponse>
 
@@ -371,6 +379,7 @@ export class OpenId4VcClientService {
     return { verificationMethod, signatureAlgorithm }
   }
 
+  // TODO: i cannot view this
   // todo https://sphereon.atlassian.net/browse/VDX-184
   /**
    * Returns all entries from the credential offer. This includes both 'id' entries that reference a supported credential in the issuer metadata,
