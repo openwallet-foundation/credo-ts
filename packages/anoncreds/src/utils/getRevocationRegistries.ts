@@ -77,30 +77,32 @@ export async function getRevocationRegistriesForRequest(
           .resolve(AnonCredsRegistryService)
           .getRegistryForIdentifier(agentContext, revocationRegistryId)
 
-        revocationRegistryPromises.push(
-          (async () => {
-            // Fetch revocation registry definition if not in revocation registries list yet
-            if (!revocationRegistries[revocationRegistryId]) {
-              const { revocationRegistryDefinition, resolutionMetadata } =
-                await registry.getRevocationRegistryDefinition(agentContext, revocationRegistryId)
-              if (!revocationRegistryDefinition) {
-                throw new AriesFrameworkError(
-                  `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
-                )
-              }
-
-              const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
-              const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
-
-              // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
-              revocationRegistries[revocationRegistryId] = {
-                definition: revocationRegistryDefinition,
-                tailsFilePath,
-                revocationStatusLists: {},
-              }
+        const getRevocationRegistry = async () => {
+          // Fetch revocation registry definition if not in revocation registries list yet
+          if (!revocationRegistries[revocationRegistryId]) {
+            const { revocationRegistryDefinition, resolutionMetadata } = await registry.getRevocationRegistryDefinition(
+              agentContext,
+              revocationRegistryId
+            )
+            if (!revocationRegistryDefinition) {
+              throw new AriesFrameworkError(
+                `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
+              )
             }
-          })()
-        )
+
+            const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
+            const { tailsFilePath } = await downloadTailsFile(agentContext, tailsLocation, tailsHash)
+
+            // const tails = await this.indyUtilitiesService.downloadTails(tailsHash, tailsLocation)
+            revocationRegistries[revocationRegistryId] = {
+              definition: revocationRegistryDefinition,
+              tailsFilePath,
+              revocationStatusLists: {},
+            }
+          }
+        }
+
+        revocationRegistryPromises.push(getRevocationRegistry())
 
         // In most cases we will have a timestamp, but if it's not defined, we use the nonRevoked.to value
         const timestampToFetch = timestamp ?? nonRevoked.to
@@ -169,41 +171,40 @@ export async function getRevocationRegistriesForProof(agentContext: AgentContext
       .resolve(AnonCredsRegistryService)
       .getRegistryForIdentifier(agentContext, revocationRegistryId)
 
-    revocationRegistryPromises.push(
-      (async () => {
-        // Fetch revocation registry definition if not already fetched
-        if (!revocationRegistries[revocationRegistryId]) {
-          const { revocationRegistryDefinition, resolutionMetadata } = await registry.getRevocationRegistryDefinition(
-            agentContext,
-            revocationRegistryId
+    const getRevocationRegistry = async () => {
+      // Fetch revocation registry definition if not already fetched
+      if (!revocationRegistries[revocationRegistryId]) {
+        const { revocationRegistryDefinition, resolutionMetadata } = await registry.getRevocationRegistryDefinition(
+          agentContext,
+          revocationRegistryId
+        )
+        if (!revocationRegistryDefinition) {
+          throw new AriesFrameworkError(
+            `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
           )
-          if (!revocationRegistryDefinition) {
-            throw new AriesFrameworkError(
-              `Could not retrieve revocation registry definition for revocation registry ${revocationRegistryId}: ${resolutionMetadata.message}`
-            )
-          }
-
-          revocationRegistries[revocationRegistryId] = {
-            definition: revocationRegistryDefinition,
-            revocationStatusLists: {},
-          }
         }
 
-        // Fetch revocation status list by timestamp if not already fetched
-        if (!revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp]) {
-          const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
-            await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
-
-          if (!revocationStatusList) {
-            throw new AriesFrameworkError(
-              `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
-            )
-          }
-
-          revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp] = revocationStatusList
+        revocationRegistries[revocationRegistryId] = {
+          definition: revocationRegistryDefinition,
+          revocationStatusLists: {},
         }
-      })()
-    )
+      }
+
+      // Fetch revocation status list by timestamp if not already fetched
+      if (!revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp]) {
+        const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
+          await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestamp)
+
+        if (!revocationStatusList) {
+          throw new AriesFrameworkError(
+            `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
+          )
+        }
+
+        revocationRegistries[revocationRegistryId].revocationStatusLists[timestamp] = revocationStatusList
+      }
+    }
+    revocationRegistryPromises.push(getRevocationRegistry())
   }
   await Promise.all(revocationRegistryPromises)
   return revocationRegistries
