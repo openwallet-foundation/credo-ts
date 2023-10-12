@@ -12,7 +12,7 @@ export class OpenId4VcClientModule implements Module {
   public readonly api = OpenId4VcClientApi
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the openid4vc-client module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
     // Warn about experimental module
