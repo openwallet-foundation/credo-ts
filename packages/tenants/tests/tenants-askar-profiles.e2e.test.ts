@@ -3,15 +3,13 @@ import type { InitConfig } from '@aries-framework/core'
 import { Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { AskarModule, AskarMultiWalletDatabaseScheme, AskarProfileWallet, AskarWallet } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
-// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Tenants Askar database schemes E2E', () => {
+describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for all wallets and tenants when database schema is DatabasePerWallet', async () => {
     const agentConfig: InitConfig = {
       label: 'Tenant Agent 1',

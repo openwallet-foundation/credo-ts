@@ -4,7 +4,6 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
-import { describeRunInNodeVersion } from '../../../../../../tests/runInVersion'
 import { AskarModule } from '../../../../../askar/src'
 import { askarModuleConfig } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
@@ -33,7 +32,7 @@ const backupDate = new Date('2022-03-22T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 const backupIdentifier = backupDate.getTime()
 
-describeRunInNodeVersion([18], 'UpdateAssistant | Backup | Aries Askar', () => {
+describe('UpdateAssistant | Backup | Aries Askar', () => {
   let updateAssistant: UpdateAssistant
   let agent: Agent
   let backupPath: string

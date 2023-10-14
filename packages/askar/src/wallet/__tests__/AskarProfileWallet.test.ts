@@ -7,7 +7,6 @@ import {
   KeyDerivationMethod,
 } from '@aries-framework/core'
 
-import { describeRunInNodeVersion } from '../../../../../tests/runInVersion'
 import { testLogger, agentDependencies } from '../../../../core/tests'
 import { AskarProfileWallet } from '../AskarProfileWallet'
 import { AskarWallet } from '../AskarWallet'
@@ -20,7 +19,7 @@ const rootWalletConfig: WalletConfig = {
   keyDerivationMethod: KeyDerivationMethod.Raw,
 }
 
-describeRunInNodeVersion([18], 'AskarWallet management', () => {
+describe('AskarWallet management', () => {
   let rootAskarWallet: AskarWallet
   let profileAskarWallet: AskarProfileWallet
 

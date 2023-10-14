@@ -15,15 +15,12 @@ import { Store } from '@hyperledger/aries-askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
-
 import { getSqliteAgentOptions } from './helpers'
 
 const aliceAgentOptions = getSqliteAgentOptions('AgentsAlice')
 const bobAgentOptions = getSqliteAgentOptions('AgentsBob')
 
-// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Askar SQLite agents', () => {
+describe('Askar SQLite agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
