@@ -14,7 +14,6 @@ import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { OpenId4VcHolderModule } from '../src'
-import { OpenIdCredentialFormatProfile } from '../src/utils/claimFormatMapping'
 
 import {
   mattrLaunchpadJsonLd_draft_08,
@@ -489,18 +488,6 @@ describe('OpenId4VcHolder', () => {
           verifyCredentialStatus: false,
         }
       )
-
-      expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
-      const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
-
-      expect(w3cCredentialRecord.credential.type).toEqual([
-        'VerifiableCredential',
-        'VerifiableAttestation',
-        'VerifiableId',
-      ])
-
-      expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
-    })
 
       expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
