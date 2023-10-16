@@ -12,14 +12,13 @@ import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 export function getSupportedCredentials(opts?: {
   issuerMetadata?: CredentialIssuerMetadata | IssuerMetadataV1_0_08
   version: OpenId4VCIVersion
-  credentialSupportedIds?: string[]
 }): CredentialSupported[] {
   const { issuerMetadata } = opts ?? {}
   let credentialsSupported: CredentialSupported[]
   if (!issuerMetadata) {
     return []
   }
-  const { version, credentialSupportedIds } = opts ?? { version: OpenId4VCIVersion.VER_1_0_11 }
+  const { version } = opts ?? { version: OpenId4VCIVersion.VER_1_0_11 }
 
   const usesTransformedCredentialsSupported =
     version === OpenId4VCIVersion.VER_1_0_08 || !Array.isArray(issuerMetadata.credentials_supported)
@@ -31,31 +30,9 @@ export function getSupportedCredentials(opts?: {
 
   if (credentialsSupported === undefined || credentialsSupported.length === 0) {
     return []
-  } else if (!credentialSupportedIds || credentialSupportedIds.length === 0) {
+  } else {
     return credentialsSupported
   }
-
-  const credentialSupportedOverlap: CredentialSupported[] = []
-  for (const credentialSupportedId of credentialSupportedIds) {
-    if (typeof credentialSupportedId === 'string') {
-      const supported = credentialsSupported.find((sup) => {
-        // Match id to offerType
-        if (sup.id === credentialSupportedId) return true
-
-        // If the credential was transformed and the v8 variant supported multiple formats for the id, we
-        // check if there is an id with the format
-        // see credentialsSupportedV8ToV11
-        if (usesTransformedCredentialsSupported && sup.id === `${credentialSupportedId}-${sup.format}`) return true
-
-        return false
-      })
-      if (supported) {
-        credentialSupportedOverlap.push(supported)
-      }
-    }
-  }
-
-  return credentialSupportedOverlap
 }
 
 export function credentialsSupportedV8ToV11(supportedV8: CredentialSupportedTypeV1_0_08): CredentialSupported[] {

@@ -1,4 +1,5 @@
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 
@@ -12,23 +13,31 @@ export const supportedCredentialFormats = [
   OpenIdCredentialFormatProfile.LdpVc,
 ] satisfies OpenIdCredentialFormatProfile[]
 
+export interface CredentialToRequest {
+  format: string
+  types: string[]
+}
+
+export interface ResolvedCredentialOffer {
+  metadata: EndpointMetadataResult
+  credentialOfferPayload: CredentialOfferPayloadV1_0_11
+  version: OpenId4VCIVersion
+  credentialsToRequest: CredentialToRequest[]
+}
+
 /**
  * Options that are used for the pre-authorized code flow.
  */
 export interface PreAuthCodeFlowOptions {
-  issuerUri: string
-  verifyCredentialStatus: boolean
-
   /**
-   * A list of allowed credential formats in order of preference.
-   *
-   * If the issuer supports one of the allowed formats, that first format that is supported
-   * from the list will be used.
-   *
-   * If the issuer doesn't support any of the allowed formats, an error is thrown
-   * and the request is aborted.
+   * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
+   * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
    */
-  allowedCredentialFormats?: SupportedCredentialFormats[]
+  userPin?: string
+
+  credentialsToRequest?: CredentialToRequest[]
+
+  verifyCredentialStatus: boolean
 
   /**
    * A list of allowed proof of possession signature algorithms in order of preference.
@@ -174,12 +183,33 @@ export enum AuthFlowType {
   PreAuthorizedCodeFlow,
 }
 
-type WithFlowType<FlowType extends AuthFlowType, Options> = Options & { flowType: FlowType }
+type WithInternalOptions<FlowType extends AuthFlowType, Options> = Options & {
+  flowType: FlowType
+
+  /**
+   * The endpoint metadata received from the credential issuer.
+   * This is obtained manually or by calling the `resolveCredentialOffer` method.
+   */
+  // TODO: reduce this to contain only the issuer metdata //
+  metadata: EndpointMetadataResult
+
+  /**
+   * The resolved credential offer payload that was received from the issuer.
+   * This is obtained manually or by calling the `resolveCredentialOffer` method.
+   */
+  credentialOfferPayload: CredentialOfferPayloadV1_0_11
+
+  /**
+   * The openid4vci specification version.
+   * This is obtained manually or by calling the `resolveCredentialOffer` method.
+   */
+  version: OpenId4VCIVersion
+}
 
 /**
  * The options that are used to request a credential from an issuer.
  * @internal
  */
 export type RequestCredentialOptions =
-  | WithFlowType<AuthFlowType.PreAuthorizedCodeFlow, PreAuthCodeFlowOptions>
-  | WithFlowType<AuthFlowType.AuthorizationCodeFlow, AuthCodeFlowOptions>
+  | WithInternalOptions<AuthFlowType.PreAuthorizedCodeFlow, PreAuthCodeFlowOptions>
+  | WithInternalOptions<AuthFlowType.AuthorizationCodeFlow, AuthCodeFlowOptions>

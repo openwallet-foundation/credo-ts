@@ -1,60 +1,74 @@
 import type {
   GenerateAuthorizationUrlOptions,
-  RequestCredentialOptions,
-  ProofOfPossessionVerificationMethodResolver,
-  SupportedCredentialFormats,
   ProofOfPossessionRequirements,
+  ProofOfPossessionVerificationMethodResolver,
+  RequestCredentialOptions,
+  SupportedCredentialFormats,
 } from './OpenId4VcHolderServiceOptions'
 import type { OpenIdCredentialFormatProfile } from './utils'
 import type {
   AgentContext,
-  W3cVerifiableCredential,
-  VerificationMethod,
   JwaSignatureAlgorithm,
+  VerificationMethod,
+  W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@aries-framework/core'
 import type {
   CredentialOfferFormat,
-  CredentialOfferPayloadV1_0_08,
-  CredentialOfferRequestWithBaseUrl,
+  CredentialOfferPayloadV1_0_11,
   CredentialResponse,
   CredentialSupported,
+  EndpointMetadataResult,
   Jwt,
   OpenIDResponse,
   ProofOfPossessionCallbacks,
+  UniformCredentialOffer,
+  UniformCredentialOfferPayload,
 } from '@sphereon/oid4vci-common'
 
 import {
-  W3cCredentialRecord,
-  ClaimFormat,
-  getJwkClassFromJwaSignatureAlgorithm,
-  W3cJwtVerifiableCredential,
   AriesFrameworkError,
-  getKeyFromVerificationMethod,
+  ClaimFormat,
   Hasher,
-  inject,
-  injectable,
   InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  TypedArrayEncoder,
-  W3cJsonLdVerifiableCredential,
-  getJwkFromKey,
-  getSupportedVerificationMethodTypesFromKeyType,
-  getJwkClassFromKeyType,
-  parseDid,
-  SignatureSuiteRegistry,
   JwsService,
   Logger,
-  W3cCredentialService,
+  SignatureSuiteRegistry,
+  TypedArrayEncoder,
+  W3cCredentialRecord,
   W3cCredentialRepository,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJwtVerifiableCredential,
+  getJwkClassFromJwaSignatureAlgorithm,
+  getJwkClassFromKeyType,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
+  getSupportedVerificationMethodTypesFromKeyType,
+  inject,
+  injectable,
+  parseDid,
 } from '@aries-framework/core'
-import { CredentialRequestClientBuilder, OpenID4VCIClient, ProofOfPossessionBuilder } from '@sphereon/oid4vci-client'
-import { AuthzFlowType, CodeChallengeMethod, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
+import {
+  AccessTokenClient,
+  CredentialOfferClient,
+  CredentialRequestClientBuilder,
+  MetadataClient,
+  OpenID4VCIClient,
+  ProofOfPossessionBuilder,
+} from '@sphereon/oid4vci-client'
+import {
+  OpenId4VCIVersion,
+  AuthzFlowType,
+  CodeChallengeMethod,
+  assertedUniformCredentialOffer,
+} from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { supportedCredentialFormats, AuthFlowType } from './OpenId4VcHolderServiceOptions'
-import { setOpenId4VcCredentialMetadata, fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
+import { AuthFlowType, supportedCredentialFormats } from './OpenId4VcHolderServiceOptions'
+import { fromOpenIdCredentialFormatProfileToDifClaimFormat, setOpenId4VcCredentialMetadata } from './utils'
 import { getUniformFormat } from './utils/Formats'
 import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
 
@@ -112,6 +126,7 @@ export class OpenId4VcHolderService {
       )
     }
 
+    // TODO: how should people get this URI
     const client = await OpenID4VCIClient.fromURI({
       uri: options.initiationUri,
       flowType: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
@@ -141,18 +156,74 @@ export class OpenId4VcHolderService {
     }
   }
 
-  public async requestCredential(agentContext: AgentContext, options: RequestCredentialOptions) {
-    const receivedCredentials: W3cCredentialRecord[] = []
-    const supportedJwaSignatureAlgorithms = this.getSupportedJwaSignatureAlgorithms(agentContext)
+  public async resolveLegacyCredentialOffer(uri: string) {
+    const credentialOfferWithBaseUrl = await CredentialOfferClient.fromURI(uri)
+    const credentialOffer = credentialOfferWithBaseUrl.credential_offer
 
-    const allowedProofOfPossessionSignatureAlgorithms = options.allowedProofOfPossessionSignatureAlgorithms
-      ? options.allowedProofOfPossessionSignatureAlgorithms.filter((algorithm) =>
-          supportedJwaSignatureAlgorithms.includes(algorithm)
-        )
-      : supportedJwaSignatureAlgorithms
+    return this.resolveCredentialOffer(credentialOffer, { version: credentialOfferWithBaseUrl.version })
+  }
 
-    // Take the allowed credential formats from the options or use the default
-    const allowedCredentialFormats = options.allowedCredentialFormats ?? supportedCredentialFormats
+  private getFormatAndTypesFromOfferedCredential(
+    offeredCredential: OfferedCredentialsWithMetadata,
+    version: OpenId4VCIVersion
+  ) {
+    if (offeredCredential.type === OfferedCredentialType.InlineCredentialOffer) {
+      const { format, types } = offeredCredential.inlineCredentialOffer
+      return { format: format as SupportedCredentialFormats, types }
+    } else {
+      const { format, types } = offeredCredential.credentialSupported
+      const uniFormat =
+        version < OpenId4VCIVersion.VER_1_0_11 ? (getUniformFormat(format) as SupportedCredentialFormats) : format
+      return { format: uniFormat, types }
+    }
+  }
+
+  public async resolveCredentialOffer(
+    credentialOffer: UniformCredentialOfferPayload | string,
+    opts?: { version?: OpenId4VCIVersion }
+  ) {
+    const version = opts?.version ?? OpenId4VCIVersion.VER_1_0_11
+    const uniformCredentialOffer: UniformCredentialOffer = {
+      credential_offer: typeof credentialOffer === 'string' ? undefined : credentialOffer,
+      credential_offer_uri: typeof credentialOffer === 'string' ? credentialOffer : undefined,
+    }
+    const assertedCredentialOffer = (await assertedUniformCredentialOffer(uniformCredentialOffer)).credential_offer
+    const issuer = assertedCredentialOffer.credential_issuer
+
+    const metadata = await MetadataClient.retrieveAllMetadata(issuer)
+
+    this.logger.info('Fetched server metadata', {
+      issuer: metadata.issuer,
+      credentialEndpoint: metadata.credential_endpoint,
+      tokenEndpoint: metadata.token_endpoint,
+    })
+
+    this.logger.debug('Full server metadata', metadata)
+
+    if (!metadata) {
+      throw new AriesFrameworkError(`Could not retrieve metadata for OpenID4VCI issuer: ${issuer}`)
+    }
+
+    const offeredCredentialsWithMetadata = this.getOfferedCredentialsWithMetadata(
+      assertedCredentialOffer,
+      metadata.credentialIssuerMetadata,
+      version
+    )
+
+    const credentialsToRequest = offeredCredentialsWithMetadata.map((offeredCredential) =>
+      this.getFormatAndTypesFromOfferedCredential(offeredCredential, version)
+    )
+
+    return {
+      metadata,
+      credentialOfferPayload: assertedCredentialOffer,
+      credentialsToRequest,
+      version,
+    }
+  }
+
+  public async acceptCredentialOffer(agentContext: AgentContext, options: RequestCredentialOptions) {
+    const { credentialsToRequest, credentialOfferPayload, metadata, version } = options
 
     const flowType = flowTypeMapping[options.flowType]
     if (!flowType) {
@@ -161,62 +232,79 @@ export class OpenId4VcHolderService {
       )
     }
 
-    const client = await OpenID4VCIClient.fromURI({
-      uri: options.issuerUri,
-      flowType,
-      retrieveServerMetadata: false,
-    })
+    const supportedJwaSignatureAlgorithms = this.getSupportedJwaSignatureAlgorithms(agentContext)
 
-    const serverMetadata = await client.retrieveServerMetadata()
+    const allowedProofOfPossessionSignatureAlgorithms = options.allowedProofOfPossessionSignatureAlgorithms
+      ? options.allowedProofOfPossessionSignatureAlgorithms.filter((algorithm) =>
+          supportedJwaSignatureAlgorithms.includes(algorithm)
+        )
+      : supportedJwaSignatureAlgorithms
 
-    this.logger.info('Fetched server metadata', {
-      issuer: serverMetadata.issuer,
-      credentialEndpoint: serverMetadata.credential_endpoint,
-      tokenEndpoint: serverMetadata.token_endpoint,
-    })
+    if (allowedProofOfPossessionSignatureAlgorithms.length === 0) {
+      throw new AriesFrameworkError(`No supported proof of possession signature algorithms found.`)
+    }
 
-    this.logger.debug('Full server metadata', serverMetadata)
+    const receivedCredentials: W3cCredentialRecord[] = []
 
+    const allowedCredentialFormats = supportedCredentialFormats
+
+    // TODO: how to request specific credentials with the pre-auth flow?
     // acquire the access token
     // NOTE: only scope based flow is supported for authorized flow. However there's not clear mapping between
     // the scope property and which credential to request (this is out of scope of the spec), so it will still
     // just request all credentials that have been offered in the credential offer. We may need to add some extra
     // input properties that allows to define the credential type(s) to request.
-    const accessToken =
+    const accessTokenClient = new AccessTokenClient()
+    const openIdAccessTokenResponse =
       options.flowType === AuthFlowType.AuthorizationCodeFlow
-        ? await client.acquireAccessToken({
-            clientId: options.clientId,
+        ? await accessTokenClient.acquireAccessToken({
+            metadata,
+            credentialOffer: {
+              credential_offer: credentialOfferPayload,
+            },
             code: options.authorizationCode,
             codeVerifier: options.codeVerifier,
             redirectUri: options.redirectUri,
           })
-        : await client.acquireAccessToken({}) // TODO: PIN
+        : await accessTokenClient.acquireAccessToken({
+            metadata,
+            credentialOffer: {
+              credential_offer: credentialOfferPayload,
+            },
+            pin: options.userPin,
+          })
+
+    if (!openIdAccessTokenResponse.successBody) {
+      throw new AriesFrameworkError(`could not acquire access token from '${metadata.issuer}'`)
+    }
+    const accessToken = openIdAccessTokenResponse.successBody
+
+    const issuerMetadata = metadata.credentialIssuerMetadata
+    if (!issuerMetadata) throw new AriesFrameworkError('Found no credential issuer metadata')
+
+    const offeredCredentialsWithMetadata = this.getOfferedCredentialsWithMetadata(
+      credentialOfferPayload,
+      issuerMetadata,
+      version
+    )
+
+    const credentialsToRequestWithMetadata = credentialsToRequest?.map((ctr) => {
+      const credentialToRequest = offeredCredentialsWithMetadata.find((offeredCredentialWithMetadata) => {
+        const { format, types } = this.getFormatAndTypesFromOfferedCredential(offeredCredentialWithMetadata, version)
+        return ctr.format === format && ctr.types.sort().join(',') === types.sort().join(',')
+      })
+
+      if (!credentialToRequest)
+        throw new AriesFrameworkError(
+          `Could not find the the requested credential with format '${ctr.format}' and types '${ctr.types}' in the offered credentials`
+        )
+
+      return credentialToRequest
+    })
 
     // Loop through all the credentialTypes in the credential offer
-    for (const offeredCredential of this.getOfferedCredentialsWithMetadata(client)) {
-      const format = (
-        isInlineCredentialOffer(offeredCredential)
-          ? offeredCredential.inlineCredentialOffer.format
-          : offeredCredential.credentialSupported.format
-      ) as SupportedCredentialFormats // TODO: can we remove the cast?
-
-      // TODO: support inline credential offers. Not clear to me how to determine the did method / alg, etc..
-      if (offeredCredential.type === OfferedCredentialType.InlineCredentialOffer) {
-        // Check if the format is supported/allowed
-        if (!allowedCredentialFormats.includes(format)) continue
-      } else {
-        const supportedCredentialMetadata = offeredCredential.credentialSupported
-
-        // FIXME
-        // TODO: that is not a must v11 could end in the same way
-        // If the credential id ends with the format, it is a v8 credential supported that has been
-        // split into multiple entries (each entry can now only have one format). For now we continue
-        // as assume there will be another entry with the correct format.
-        if (supportedCredentialMetadata.id?.endsWith(`-${supportedCredentialMetadata.format}`)) {
-          const uniformFormat = getUniformFormat(supportedCredentialMetadata.format) as SupportedCredentialFormats
-          if (!allowedCredentialFormats.includes(uniformFormat)) continue
-        }
-      }
+    for (const offeredCredential of credentialsToRequestWithMetadata ?? offeredCredentialsWithMetadata) {
+      const isInlineOffer = isInlineCredentialOffer(offeredCredential)
 
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { verificationMethod, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
@@ -228,16 +316,15 @@ export class OpenId4VcHolderService {
 
       const callbacks: ProofOfPossessionCallbacks<unknown> = {
         signCallback: this.signCallback(agentContext, verificationMethod),
-        // TODO: verify callback
       }
 
       // Create the proof of possession
       const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
         accessTokenResponse: accessToken,
         callbacks,
-        version: client.version(),
+        version,
       })
-        .withEndpointMetadata(serverMetadata)
+        .withEndpointMetadata(metadata)
         .withAlg(signatureAlgorithm)
         .withClientId(verificationMethod.controller)
         .withKid(verificationMethod.id)
@@ -246,28 +333,36 @@ export class OpenId4VcHolderService {
       this.logger.debug('Generated JWS', proofInput)
 
       // Acquire the credential
-      const credentialRequestClient = // TODO: don't use the uri not actual anymore https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-08.html
-        (
-          await CredentialRequestClientBuilder.fromURI({
-            uri: options.issuerUri,
-            metadata: serverMetadata,
-          })
-        )
-          .withTokenFromResponse(accessToken)
-          .build()
+      const credentialRequestBuilder = new CredentialRequestClientBuilder()
+      credentialRequestBuilder
+        .withVersion(version)
+        .withCredentialEndpoint(metadata.credential_endpoint)
+        .withTokenFromResponse(accessToken)
+
+      let credentialTypes: string | string[]
+      if (version < OpenId4VCIVersion.VER_1_0_11) {
+        if (isInlineOffer) throw new AriesFrameworkError(`Inline credential offers not supported for version < 11`)
+        // TODO: this is wrong, how can we determine the credential types for v8? If more then 1 type is provided?
+        credentialTypes = offeredCredential.credentialSupported.types
+      } else {
+        if (isInlineOffer) credentialTypes = offeredCredential.inlineCredentialOffer.types
+        else credentialTypes = offeredCredential.credentialSupported.types
+      }
+
+      const credentialRequestClient = credentialRequestBuilder.build()
 
       let credentialResponse: OpenIDResponse<CredentialResponse>
 
       if (isInlineCredentialOffer(offeredCredential)) {
         credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
           proofInput,
-          credentialTypes: offeredCredential.inlineCredentialOffer.types,
+          credentialTypes,
           format: offeredCredential.inlineCredentialOffer.format,
         })
       } else {
         credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
           proofInput,
-          credentialTypes: offeredCredential.type,
+          credentialTypes,
           format: offeredCredential.credentialSupported.format,
         })
       }
@@ -286,14 +381,9 @@ export class OpenId4VcHolderService {
       this.logger.debug('Full credential', credentialRecord)
 
       if (!isInlineCredentialOffer(offeredCredential)) {
-        const issuerMetadata = client.endpointMetadata.credentialIssuerMetadata
-        if (!issuerMetadata) {
-          // TODO: this should not happen
-          throw new AriesFrameworkError('Issuer metadata not found')
-        }
         const supportedCredentialMetadata = offeredCredential.credentialSupported
         // Set the OpenId4Vc credential metadata and update record
-        setOpenId4VcCredentialMetadata(credentialRecord, supportedCredentialMetadata, serverMetadata, issuerMetadata)
+        setOpenId4VcCredentialMetadata(credentialRecord, supportedCredentialMetadata, metadata, issuerMetadata)
       }
 
       receivedCredentials.push(credentialRecord)
@@ -336,13 +426,15 @@ export class OpenId4VcHolderService {
 
     const supportedVerificationMethods = getSupportedVerificationMethodTypesFromKeyType(JwkClass.keyType)
 
-    const format = isInlineCredentialOffer(options.offeredCredentialWithMetadata)
-      ? options.offeredCredentialWithMetadata.inlineCredentialOffer.format
-      : options.offeredCredentialWithMetadata.credentialSupported.format
+    const format = (
+      isInlineCredentialOffer(options.offeredCredentialWithMetadata)
+        ? options.offeredCredentialWithMetadata.inlineCredentialOffer.format
+        : options.offeredCredentialWithMetadata.credentialSupported.format
+    ) as SupportedCredentialFormats
 
     // Now we need to determine the did method and alg based on the cryptographic suite
     const verificationMethod = await options.proofOfPossessionVerificationMethodResolver({
-      credentialFormat: format as SupportedCredentialFormats,
+      credentialFormat: format,
       proofOfPossessionSignatureAlgorithm: signatureAlgorithm,
       supportedVerificationMethods,
       keyType: JwkClass.keyType,
@@ -379,68 +471,6 @@ export class OpenId4VcHolderService {
     return { verificationMethod, signatureAlgorithm }
   }
 
-  // TODO: i cannot view this
-  // todo https://sphereon.atlassian.net/browse/VDX-184
-  /**
-   * Returns all entries from the credential offer. This includes both 'id' entries that reference a supported credential in the issuer metadata,
-   * as well as inline credential offers that do not reference a supported credential in the issuer metadata.
-   */
-  private getOfferedCredentials(
-    credentialOfferRequestWithBaseUrl: CredentialOfferRequestWithBaseUrl
-  ): Array<string | CredentialOfferFormat> {
-    if (credentialOfferRequestWithBaseUrl.version < OpenId4VCIVersion.VER_1_0_11) {
-      const credentialOffer =
-        credentialOfferRequestWithBaseUrl.original_credential_offer as CredentialOfferPayloadV1_0_08
-
-      return typeof credentialOffer.credential_type === 'string'
-        ? [credentialOffer.credential_type]
-        : credentialOffer.credential_type
-    } else {
-      return credentialOfferRequestWithBaseUrl.credential_offer.credentials
-    }
-  }
-
-  /**
-   * Return a normalized version of the credentials supported by the issuer. Can optionally filter based on the credentials
-   * that were offered, or the type of credentials that are supported.
-   *
-   *
-   * NOTE: for v1_0-08, a single credential id in the issuer metadata could have multiple formats. When retrieving the
-   * supported credentials, for v1_0-08, the format is appended to the id if there are multiple formats supported for
-   * that credential id. E.g. if the issuer metadata for v1_0-08 contains an entry with key `OpenBadgeCredential` and
-   * the supported formats are `jwt_vc-jsonld` and `ldp_vc`, then the id in the credentials supported will be
-   * `OpenBadgeCredential-jwt_vc-jsonld` and `OpenBadgeCredential-ldp_vc`, even though the offered credential is simply
-   * `OpenBadgeCredential`.
-   *
-   * NOTE: this method only returns the credentials supported by the issuer metadata. It does not take into account the inline
-   * credentials offered. Use {@link getOfferedCredentialsWithMetadata} to get both the inline and referenced offered credentials.
-   */
-  private getCredentialsSupported(
-    client: OpenID4VCIClient,
-    restrictToOfferIds: boolean,
-    credentialSupportedId?: string
-  ): CredentialSupported[] {
-    const offeredIds = this.getOfferedCredentials(client.credentialOffer).filter(
-      (c): c is string => typeof c === 'string'
-    )
-
-    const credentialSupportedIds = restrictToOfferIds ? offeredIds : undefined
-
-    const credentialsSupported = getSupportedCredentials({
-      issuerMetadata: client.endpointMetadata.credentialIssuerMetadata,
-      version: client.version(),
-      credentialSupportedIds,
-    })
-
-    return credentialSupportedId
-      ? credentialsSupported.filter(
-          (credentialSupported) =>
-            credentialSupported.id === credentialSupportedId ||
-            credentialSupported.id === `${credentialSupportedId}-${credentialSupported.format}`
-        )
-      : credentialsSupported
-  }
-
   /**
    * Returns all entries from the credential offer with the associated metadata resolved. For inline entries, the offered credential object
    * is included directly. For 'id' entries, the associated `credentials_supported` object is resolved from the issuer metadata.
@@ -449,45 +479,40 @@ export class OpenId4VcHolderService {
    * from this method could contain multiple entries for a single credential id, but with different formats. This is detectable as the
    * id will be the `<credentialId>-<format>`.
    */
-  private getOfferedCredentialsWithMetadata = (client: OpenID4VCIClient) => {
+  private getOfferedCredentialsWithMetadata = (
+    credentialOfferPayload: CredentialOfferPayloadV1_0_11,
+    issuerMetadata: EndpointMetadataResult['credentialIssuerMetadata'],
+    version: OpenId4VCIVersion
+  ) => {
     const offeredCredentials: Array<OfferedCredentialsWithMetadata> = []
 
-    for (const offeredCredential of this.getOfferedCredentials(client.credentialOffer)) {
-      // If the offeredCredential is a string, it references a supported credential in the issuer metadata
+    const supportedCredentials = getSupportedCredentials({ issuerMetadata, version })
+
+    for (const offeredCredential of credentialOfferPayload.credentials) {
+      // If the offeredCredential is a string, it has to reference a supported credential in the issuer metadata
       if (typeof offeredCredential === 'string') {
-        const credentialsSupported = this.getCredentialsSupported(client, false, offeredCredential)
+        const foundSupportedCredentials = supportedCredentials.filter(
+          (supportedCredential) =>
+            supportedCredential.id === offeredCredential ||
+            supportedCredential.id === `${offeredCredential}-${supportedCredential.format}`
+        )
 
         // Make sure the issuer metadata includes the offered credential.
-        if (credentialsSupported.length === 0) {
+        if (foundSupportedCredentials.length === 0) {
           throw new Error(
-            `Offered credential '${offeredCredential}' is not present in the credentials_supported of the issuer metadata`
+            `Offered credential '${offeredCredential}' is not part of credentials_supported of the issuer metadata`
           )
         }
 
-        offeredCredentials.push(
-          ...credentialsSupported.map((credentialSupported) => {
-            return { credentialSupported, type: OfferedCredentialType.CredentialSupported } as const
-          })
-        )
+        for (const foundSupportedCredential of foundSupportedCredentials) {
+          offeredCredentials.push({
+            credentialSupported: foundSupportedCredential,
+            type: OfferedCredentialType.CredentialSupported,
+          } as const)
+        }
       }
       // Otherwise it's an inline credential offer that does not reference a supported credential in the issuer metadata
       else {
-        // TODO: we could transform the inline offer to the `CredentialSupported` format, but we'll only be able to populate
-        // the `format`, `types` and `@context` fields. It's not really clear how to determine the supported did methods,
-        // signature suites, etc.. for these inline credentials.
-        // We should also add a property to indicate to the user that this is an inline credential offer.
-        //  if (offeredCredential.format === 'jwt_vc_json') {
-        //    const supported = {
-        //      format: offeredCredential.format,
-        //      types: offeredCredential.types,
-        //    } satisfies CredentialSupportedJwtVcJson;
-        //  } else if (offeredCredential.format === 'jwt_vc_json-ld' || offeredCredential.format === 'ldp_vc') {
-        //    const supported = {
-        //      format: offeredCredential.format,
-        //      '@context': offeredCredential.credential_definition['@context'],
-        //      types: offeredCredential.credential_definition.types,
-        //    } satisfies CredentialSupported;
-        //  }
         offeredCredentials.push({
           inlineCredentialOffer: offeredCredential,
           type: OfferedCredentialType.InlineCredentialOffer,

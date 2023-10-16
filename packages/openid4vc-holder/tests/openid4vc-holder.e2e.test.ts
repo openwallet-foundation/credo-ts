@@ -109,14 +109,20 @@ describe('OpenId4VcHolder', () => {
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
 
-      const w3cCredentialRecords = await agent.modules.openId4VcHolder.requestCredentialUsingPreAuthorizedCode({
-        issuerUri: fixture.credentialOffer,
-        verifyCredentialStatus: false,
-        // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
-        // or determine the did dynamically we could use any signature algorithm
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-      })
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          verifyCredentialStatus: false,
+          // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
+          // or determine the did dynamically we could use any signature algorithm
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+        }
+      )
 
       expect(w3cCredentialRecords).toHaveLength(1)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
@@ -166,13 +172,19 @@ describe('OpenId4VcHolder', () => {
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
 
-      const w3cCredentialRecords = await agent.modules.openId4VcHolder.requestCredentialUsingPreAuthorizedCode({
-        issuerUri: fixture.credentialOffer,
-        allowedCredentialFormats: [OpenIdCredentialFormatProfile.JwtVcJson],
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
-        proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-        verifyCredentialStatus: false,
-      })
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedCredentialFormats: [OpenIdCredentialFormatProfile.JwtVcJson],
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+        }
+      )
 
       expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
@@ -341,16 +353,23 @@ describe('OpenId4VcHolder', () => {
         scope,
         initiationUri,
       })
-      const w3cCredentialRecords = await agent.modules.openId4VcHolder.requestCredentialUsingAuthorizationCode({
-        clientId: clientId,
-        authorizationCode: 'test-code',
-        codeVerifier: codeVerifier,
-        verifyCredentialStatus: false,
-        proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-        issuerUri: initiationUri, // TODO
-        redirectUri: redirectUri,
-      })
+
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+        resolvedCredentialOffer,
+        {
+          clientId: clientId,
+          authorizationCode: 'test-code',
+          codeVerifier: codeVerifier,
+          verifyCredentialStatus: false,
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          redirectUri: redirectUri,
+        }
+      )
 
       expect(w3cCredentialRecords).toHaveLength(1)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
@@ -459,14 +478,30 @@ describe('OpenId4VcHolder', () => {
       const kid = `${didKey.did}#${didKey.key.fingerprint}`
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
 
-      const w3cCredentialRecords = await agent.modules.openId4VcHolder.requestCredentialUsingPreAuthorizedCode({
-        issuerUri: fixture.credentialOffer,
-        allowedCredentialFormats: [OpenIdCredentialFormatProfile.JwtVcJson],
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
-        proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-        verifyCredentialStatus: false,
-      })
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+        }
+      )
+
+      expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
+      const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
+
+      expect(w3cCredentialRecord.credential.type).toEqual([
+        'VerifiableCredential',
+        'VerifiableAttestation',
+        'VerifiableId',
+      ])
+
+      expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
+    })
 
       expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord

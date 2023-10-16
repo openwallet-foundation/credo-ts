@@ -2,8 +2,10 @@ import type {
   GenerateAuthorizationUrlOptions,
   PreAuthCodeFlowOptions,
   AuthCodeFlowOptions,
+  ResolvedCredentialOffer,
 } from './OpenId4VcHolderServiceOptions'
 import type { W3cCredentialRecord } from '@aries-framework/core'
+import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -23,24 +25,40 @@ export class OpenId4VcHolderApi {
     this.openId4VcHolderService = openId4VcHolderService
   }
 
-  public async requestCredentialUsingPreAuthorizedCode(
+  public async resolveLegacyCredentialOffer(issuerUri: string) {
+    const resolved = await this.openId4VcHolderService.resolveLegacyCredentialOffer(issuerUri)
+    return resolved
+  }
+
+  public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
+    const resolved = await this.openId4VcHolderService.resolveCredentialOffer(credentialOffer)
+    return resolved
+  }
+
+  public async acceptCredentialOfferUsingPreAuthorizedCode(
+    resolvedCredentialOffer: ResolvedCredentialOffer,
     options: PreAuthCodeFlowOptions
   ): Promise<W3cCredentialRecord[]> {
     // set defaults
     const verifyRevocationState = options.verifyCredentialStatus ?? true
 
-    return this.openId4VcHolderService.requestCredential(this.agentContext, {
+    return this.openId4VcHolderService.acceptCredentialOffer(this.agentContext, {
+      ...resolvedCredentialOffer,
       ...options,
       verifyCredentialStatus: verifyRevocationState,
       flowType: AuthFlowType.PreAuthorizedCodeFlow,
     })
   }
 
-  public async requestCredentialUsingAuthorizationCode(options: AuthCodeFlowOptions): Promise<W3cCredentialRecord[]> {
+  public async acceptCredentialOfferUsingAuthorizationCode(
+    resolvedCredentialOffer: ResolvedCredentialOffer,
+    options: AuthCodeFlowOptions
+  ): Promise<W3cCredentialRecord[]> {
     // set defaults
     const checkRevocationState = options.verifyCredentialStatus ?? true
 
-    return this.openId4VcHolderService.requestCredential(this.agentContext, {
+    return this.openId4VcHolderService.acceptCredentialOffer(this.agentContext, {
+      ...resolvedCredentialOffer,
       ...options,
       verifyCredentialStatus: checkRevocationState,
       flowType: AuthFlowType.AuthorizationCodeFlow,
