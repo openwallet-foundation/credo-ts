@@ -179,7 +179,6 @@ describe('OpenId4VcHolder', () => {
       const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
         resolvedCredentialOffer,
         {
-          allowedCredentialFormats: [OpenIdCredentialFormatProfile.JwtVcJson],
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
           verifyCredentialStatus: false,

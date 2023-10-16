@@ -1,4 +1,5 @@
 import type {
+  CredentialToRequest,
   GenerateAuthorizationUrlOptions,
   ProofOfPossessionRequirements,
   ProofOfPossessionVerificationMethodResolver,
@@ -210,9 +211,26 @@ export class OpenId4VcHolderService {
       version
     )
 
-    const credentialsToRequest = offeredCredentialsWithMetadata.map((offeredCredential) =>
-      this.getFormatAndTypesFromOfferedCredential(offeredCredential, version)
-    )
+    const credentialsToRequest: CredentialToRequest[] = offeredCredentialsWithMetadata.map((offeredCredential) => {
+      const { format, types } = this.getFormatAndTypesFromOfferedCredential(offeredCredential, version)
+      const offerType = offeredCredential.type
+
+      if (offerType === OfferedCredentialType.InlineCredentialOffer) {
+        return { offerType, types, format }
+      } else {
+        const { id, cryptographic_binding_methods_supported, cryptographic_suites_supported } =
+          offeredCredential.credentialSupported
+
+        return {
+          id,
+          offerType,
+          cryptographic_binding_methods_supported,
+          cryptographic_suites_supported,
+          types,
+          format,
+        }
+      }
+    })
 
     return {
       metadata,
@@ -248,7 +266,6 @@ export class OpenId4VcHolderService {
 
     const allowedCredentialFormats = supportedCredentialFormats
 
-    // TODO: how to request specific credentials with the pre-auth flow?
     // acquire the access token
     // NOTE: only scope based flow is supported for authorized flow. However there's not clear mapping between
     // the scope property and which credential to request (this is out of scope of the spec), so it will still

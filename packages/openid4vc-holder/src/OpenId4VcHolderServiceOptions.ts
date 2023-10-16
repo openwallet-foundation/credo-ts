@@ -1,3 +1,4 @@
+import type { OfferedCredentialType } from './OpenId4VcHolderService'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
@@ -13,10 +14,17 @@ export const supportedCredentialFormats = [
   OpenIdCredentialFormatProfile.LdpVc,
 ] satisfies OpenIdCredentialFormatProfile[]
 
-export interface CredentialToRequest {
-  format: string
-  types: string[]
-}
+export type CredentialToRequest = { format: string; types: string[] } & (
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+    }
+  | {
+      offerType: OfferedCredentialType.CredentialSupported
+      id: string | undefined
+      cryptographic_binding_methods_supported: string[] | undefined
+      cryptographic_suites_supported: string[] | undefined
+    }
+)
 
 export interface ResolvedCredentialOffer {
   metadata: EndpointMetadataResult
