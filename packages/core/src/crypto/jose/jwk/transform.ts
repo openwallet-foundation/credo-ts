@@ -1,9 +1,9 @@
 import type { JwkJson, Jwk } from './Jwk'
 import type { Key } from '../../Key'
-import type { JwaSignatureAlgorithm } from '../jwa'
 
+import { AriesFrameworkError } from '../../../error'
 import { KeyType } from '../../KeyType'
-import { JwaCurve, JwaKeyType } from '../jwa'
+import { JwaSignatureAlgorithm, JwaCurve, JwaKeyType } from '../jwa'
 
 import { Ed25519Jwk } from './Ed25519Jwk'
 import { P256Jwk } from './P256Jwk'
@@ -37,7 +37,7 @@ export function getJwkFromKey(key: Key) {
   if (key.keyType === KeyType.P384) return P384Jwk.fromPublicKey(key.publicKey)
   if (key.keyType === KeyType.P521) return P521Jwk.fromPublicKey(key.publicKey)
 
-  throw new Error(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
+  throw new AriesFrameworkError(`Cannot create JWK from key. Unsupported key with type '${key.keyType}'.`)
 }
 
 export function getJwkClassFromJwaSignatureAlgorithm(alg: JwaSignatureAlgorithm | string) {
@@ -46,4 +46,18 @@ export function getJwkClassFromJwaSignatureAlgorithm(alg: JwaSignatureAlgorithm 
 
 export function getJwkClassFromKeyType(keyType: KeyType) {
   return JwkClasses.find((jwkClass) => jwkClass.keyType === keyType)
+}
+
+/**
+ * Get a JSON Web Algorithm (JWA) from a key type.
+ *
+ * if it cannot be detected, it will throw an error
+ */
+export function getJwaFromKeyType(keyType: KeyType): JwaSignatureAlgorithm {
+  if (keyType === KeyType.Ed25519) return JwaSignatureAlgorithm.EdDSA
+  if (keyType === KeyType.P256) return JwaSignatureAlgorithm.ES256
+  if (keyType === KeyType.P384) return JwaSignatureAlgorithm.ES384
+  if (keyType === KeyType.P521) return JwaSignatureAlgorithm.ES512
+
+  throw new AriesFrameworkError(`Cannot create JWA from key type. Unsupported key type '${keyType}'.`)
 }

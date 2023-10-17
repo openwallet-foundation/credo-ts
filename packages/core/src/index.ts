@@ -72,7 +72,7 @@ export * from './crypto/'
 
 // TODO: clean up util exports
 export { encodeAttachment, isLinkedAttachment } from './utils/attachment'
-export { Hasher } from './utils/Hasher'
+export { Hasher, HashName } from './utils/Hasher'
 export { MessageValidator } from './utils/MessageValidator'
 export { LinkedAttachment, LinkedAttachmentOptions } from './utils/LinkedAttachment'
 import { parseInvitationUrl } from './utils/parseInvitation'

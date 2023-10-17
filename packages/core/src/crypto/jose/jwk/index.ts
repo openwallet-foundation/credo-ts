@@ -1,9 +1,4 @@
-export {
-  getJwkFromJson,
-  getJwkFromKey,
-  getJwkClassFromJwaSignatureAlgorithm,
-  getJwkClassFromKeyType,
-} from './transform'
+export * from './transform'
 export { Ed25519Jwk } from './Ed25519Jwk'
 export { X25519Jwk } from './X25519Jwk'
 export { P256Jwk } from './P256Jwk'

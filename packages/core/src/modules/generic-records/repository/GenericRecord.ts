@@ -1,11 +1,9 @@
-import type { RecordTags, TagsBase } from '../../../storage/BaseRecord'
+import type { TagsBase } from '../../../storage/BaseRecord'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
 
 export type GenericRecordTags = TagsBase
-
-export type BasicMessageTags = RecordTags<GenericRecord>
 
 export interface GenericRecordStorageProps {
   id?: string

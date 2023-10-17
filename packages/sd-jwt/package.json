@@ -3,7 +3,9 @@
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.1",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
@@ -22,11 +24,14 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.1",
     "class-transformer": "0.5.1",
-    "class-validator": "0.14.0"
+    "class-validator": "0.14.0",
+    "jwt-sd": "^0.0.1-alpha.13"
   },
   "devDependencies": {
+    "@hyperledger/aries-askar-nodejs": "^0.1.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"
