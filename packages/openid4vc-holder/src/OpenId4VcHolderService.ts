@@ -68,7 +68,7 @@ import {
 import { randomStringForEntropy } from '@stablelib/random'
 
 import { AuthFlowType, supportedCredentialFormats } from './OpenId4VcHolderServiceOptions'
-import { fromOpenIdCredentialFormatProfileToDifClaimFormat, setOpenId4VcCredentialMetadata } from './utils'
+import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getUniformFormat } from './utils/Formats'
 import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
 
@@ -393,13 +393,6 @@ export class OpenId4VcHolderService {
         },
       })
       this.logger.debug('Full credential', credentialRecord)
-
-      // TODO: what to do with this?
-      if (!isInlineCredentialOffer(credentialWithMetadata)) {
-        const supportedCredentialMetadata = credentialWithMetadata.credentialSupported
-        // Set the OpenId4Vc credential metadata and update record
-        setOpenId4VcCredentialMetadata(credentialRecord, supportedCredentialMetadata, metadata, issuerMetadata)
-      }
 
       receivedCredentials.push(credentialRecord)
     }

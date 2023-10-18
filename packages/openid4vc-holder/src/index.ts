@@ -14,9 +14,4 @@ export {
   SupportedCredentialFormats,
 } from './OpenId4VcHolderServiceOptions'
 export * from './presentations'
-export {
-  getOpenId4VcCredentialMetadata,
-  OpenId4VcCredentialMetadata,
-  OpenIdCredentialFormatProfile,
-  setOpenId4VcCredentialMetadata,
-} from './utils'
+export { OpenIdCredentialFormatProfile } from './utils'
