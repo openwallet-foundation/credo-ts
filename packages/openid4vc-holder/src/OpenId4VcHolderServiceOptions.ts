@@ -133,7 +133,6 @@ export interface ProofOfPossessionVerificationMethodResolverOptions {
    * If the offered credential is an inline credential offer, the value
    * will be `undefined`.
    */
-  // TODO: do we need credentialType here?
   supportedCredentialId?: string
 
   /**

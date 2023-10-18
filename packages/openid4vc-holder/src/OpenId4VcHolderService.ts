@@ -252,7 +252,6 @@ export class OpenId4VcHolderService {
 
     const supportedJwaSignatureAlgorithms = this.getSupportedJwaSignatureAlgorithms(agentContext)
 
-    // TODO: do we want to change this?
     const allowedProofOfPossessionSignatureAlgorithms = options.allowedProofOfPossessionSignatureAlgorithms
       ? options.allowedProofOfPossessionSignatureAlgorithms.filter((algorithm) =>
           supportedJwaSignatureAlgorithms.includes(algorithm)
