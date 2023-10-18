@@ -177,11 +177,12 @@ export class OpenId4VcHolderService {
   ) {
     let version = opts?.version ?? OpenId4VCIVersion.VER_1_0_11
     const claimedCredentialOfferUrl = `openid-credential-offer://?`
-    const claimedIssuanceInitiaionUrl = `openid-initiate-issuance://?`
+    const claimedIssuanceInitiationUrl = `openid-initiate-issuance://?`
 
     if (
       typeof credentialOffer === 'string' &&
-      (credentialOffer.startsWith(claimedCredentialOfferUrl) || credentialOffer.startsWith(claimedIssuanceInitiaionUrl))
+      (credentialOffer.startsWith(claimedCredentialOfferUrl) ||
+        credentialOffer.startsWith(claimedIssuanceInitiationUrl))
     ) {
       const credentialOfferWithBaseUrl = await CredentialOfferClient.fromURI(credentialOffer)
       credentialOffer = credentialOfferWithBaseUrl.credential_offer
@@ -236,12 +237,16 @@ export class OpenId4VcHolderService {
   }
 
   public async acceptCredentialOffer(agentContext: AgentContext, options: RequestCredentialOptions) {
-    const { credentialsToRequest, credentialOfferPayload, metadata, version } = options
+    const { credentialsToRequest, credentialOfferPayload, metadata: _metadata, version } = options
     this.logger.info(`Accepting the following credential offers '${credentialsToRequest}'`)
     if (credentialsToRequest?.length === 0) {
       this.logger.warn(`Accepting 0 credential offers. Returning`)
       return []
     }
+
+    const issuer = credentialOfferPayload.credential_issuer
+    const metadata = _metadata ? _metadata : MetadataClient.retrieveAllMetadata(issuer)
+    if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenID4VCI issuer: ${issuer}`)
 
     const flowType = flowTypeMapping[options.flowType]
     if (!flowType) {
