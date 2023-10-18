@@ -25,11 +25,6 @@ export class OpenId4VcHolderApi {
     this.openId4VcHolderService = openId4VcHolderService
   }
 
-  public async resolveLegacyCredentialOffer(issuerUri: string) {
-    const resolved = await this.openId4VcHolderService.resolveLegacyCredentialOffer(issuerUri)
-    return resolved
-  }
-
   public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
     const resolved = await this.openId4VcHolderService.resolveCredentialOffer(credentialOffer)
     return resolved

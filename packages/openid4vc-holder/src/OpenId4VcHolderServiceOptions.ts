@@ -198,7 +198,6 @@ type WithInternalOptions<FlowType extends AuthFlowType, Options> = Options & {
    * The endpoint metadata received from the credential issuer.
    * This is obtained manually or by calling the `resolveCredentialOffer` method.
    */
-  // TODO: reduce this to contain only the issuer metdata //
   metadata: EndpointMetadataResult
 
   /**

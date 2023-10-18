@@ -8,12 +8,13 @@ import {
   TypedArrayEncoder,
   W3cCredentialRecord,
   DidKey,
+  ClaimFormat,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenId4VcHolderModule } from '../src'
+import { OpenId4VcHolderModule, OpenIdCredentialFormatProfile } from '../src'
 
 import {
   mattrLaunchpadJsonLd_draft_08,
@@ -36,10 +37,10 @@ describe('OpenId4VcHolder', () => {
   beforeEach(async () => {
     agent = new Agent({
       config: {
-        label: 'OpenId4VcHolder Test',
+        label: 'OpenId4VcHolder Test10',
         walletConfig: {
-          id: 'openid4vc-holder-test',
-          key: 'openid4vc-holder-test',
+          id: 'openid4vc-holder-test11',
+          key: 'openid4vc-holder-test12',
         },
       },
       dependencies: agentDependencies,
@@ -181,6 +182,9 @@ describe('OpenId4VcHolder', () => {
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
           verifyCredentialStatus: false,
+          credentialsToRequest: resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+            return credential.format === OpenIdCredentialFormatProfile.JwtVcJson
+          }),
         }
       )
 
@@ -389,59 +393,7 @@ describe('OpenId4VcHolder', () => {
       enableNetConnect()
     })
 
-    // it('[DRAFT 11]: Should successfully execute the pre-authorized flow using a did:key Ed25519 subject and JSON-LD credential', async () => {
-    //   const fixture = waltIdJffJwt_draft_11
-
-    //   nock('https://jff.walt.id/issuer-api/default/oidc')
-    //     .get('/.well-known/openid-credential-issuer')
-    //     .reply(200, fixture.getMetadataResponse)
-
-    //     // setup access token response
-    //     .post('/token')
-    //     .reply(200, fixture.credentialResponse)
-
-    //     // setup credential request response
-    //     .post('/credential')
-    //     .reply(200, fixture.credentialResponse)
-
-    //   const did = await agent.dids.create<KeyDidCreateOptions>({
-    //     method: 'key',
-    //     options: {
-    //       keyType: KeyType.Ed25519,
-    //     },
-    //     secret: {
-    //       privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
-    //     },
-    //   })
-
-    //   const didKey = DidKey.fromDid(did.didState.did as string)
-    //   const kid = `${did.didState.did as string}#${didKey.key.fingerprint}`
-    //   const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-    //   if (!verificationMethod) throw new Error('No verification method found')
-
-    //   const w3cCredentialRecords = await agent.modules.openId4VcClient.requestCredentialUsingPreAuthorizedCode({
-    //     uri: fixture.credentialOffer,
-    //     verifyCredentialStatus: false,
-    //     // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
-    //     // or determine the did dynamically we could use any signature algorithm
-    //     allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-    //     proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-    //   })
-
-    //   expect(w3cCredentialRecords).toHaveLength(1)
-    //   const w3cCredentialRecord = w3cCredentialRecords[0]
-    //   expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
-
-    //   expect(w3cCredentialRecord.credential.type).toEqual([
-    //     'VerifiableCredential',
-    //     'VerifiableAttestation',
-    //     'VerifiableId',
-    //   ])
-
-    //   expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
-    // })
-
-    it('[DRAFT 11]: Should successfully execute the pre-authorized flow using a did:key P256 subject and JWT credential', async () => {
+    it('[DRAFT 11]: Should successfully execute the pre-authorized if no credential is requested', async () => {
       const fixture = waltIdJffJwt_draft_11
 
       /**
@@ -449,6 +401,162 @@ describe('OpenId4VcHolder', () => {
        *  These responses are based on the openid-initiate-issuance URI above
        */
       // setup server metadata response
+      nock('https://jff.walt.id/issuer-api/default/oidc')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.P256 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      })
+
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${didKey.did}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+          credentialsToRequest: [],
+        }
+      )
+
+      expect(w3cCredentialRecords).toHaveLength(0)
+    })
+
+    it('[DRAFT 11]: Should successfully execute the pre-authorized flow using a single offered credential a did:key ES256 subject and JwtVc format', async () => {
+      const fixture = waltIdJffJwt_draft_11
+      const httpMock = nock('https://jff.walt.id/issuer-api/default/oidc')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+
+      // setup access token response
+      httpMock.post('/token').reply(200, fixture.acquireAccessTokenResponse)
+      // setup credential request response
+      httpMock.post('/credential').reply(200, fixture.credentialResponse)
+
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.P256 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      })
+
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${didKey.did}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
+      const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+        return (
+          credential.format === OpenIdCredentialFormatProfile.JwtVcJson && credential.types.includes('VerifiableId')
+        )
+      })
+
+      expect(selectedCredentialsForRequest).toHaveLength(1)
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+          credentialsToRequest: selectedCredentialsForRequest,
+        }
+      )
+
+      expect(w3cCredentialRecords).toHaveLength(1)
+      expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
+      const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
+
+      expect(w3cCredentialRecord.credential.type).toEqual([
+        'VerifiableCredential',
+        'VerifiableAttestation',
+        'VerifiableId',
+      ])
+
+      expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
+    })
+
+    it('[DRAFT 11]: Should successfully execute the pre-authorized flow using a single offered credential a did:key EdDSA subject and JsonLd format', async () => {
+      const fixture = waltIdJffJwt_draft_11
+      const httpMock = nock('https://jff.walt.id/issuer-api/default/oidc')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+
+      // setup access token response
+      httpMock.post('/token').reply(200, fixture.acquireAccessTokenResponse)
+      // setup credential request response
+      httpMock.post('/credential').reply(200, fixture.jsonLdCredentialResponse)
+
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      })
+
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${didKey.did}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOffer
+      )
+
+      expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
+      const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+        return (
+          credential.format === OpenIdCredentialFormatProfile.LdpVc && credential.types.includes('VerifiableDiploma')
+        )
+      })
+
+      expect(selectedCredentialsForRequest).toHaveLength(1)
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+          credentialsToRequest: selectedCredentialsForRequest,
+        }
+      )
+
+      expect(w3cCredentialRecords).toHaveLength(1)
+      expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
+      const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
+
+      expect(w3cCredentialRecord.credential.type).toEqual(['VerifiableCredential', 'PermanentResidentCard'])
+
+      expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
+    })
+
+    it('[DRAFT 11]: Should successfully execute the pre-authorized for multiple credentials of different formats using a did:key EdDsa subject', async () => {
+      const fixture = waltIdJffJwt_draft_11
       const httpMock = nock('https://jff.walt.id/issuer-api/default/oidc')
         .get('/.well-known/openid-credential-issuer')
         .reply(200, fixture.getMetadataResponse)
@@ -461,15 +569,12 @@ describe('OpenId4VcHolder', () => {
       httpMock.post('/token').reply(200, fixture.credentialResponse)
       // setup credential request response
       httpMock.post('/credential').reply(200, fixture.credentialResponse)
+      httpMock.post('/credential').reply(200, fixture.jsonLdCredentialResponse)
 
       const did = await agent.dids.create<KeyDidCreateOptions>({
         method: 'key',
-        options: {
-          keyType: KeyType.P256,
-        },
-        secret: {
-          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
-        },
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       })
 
       const didKey = DidKey.fromDid(did.didState.did as string)
@@ -480,25 +585,57 @@ describe('OpenId4VcHolder', () => {
         fixture.credentialOffer
       )
 
+      expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
+
       const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
         resolvedCredentialOffer,
         {
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
           verifyCredentialStatus: false,
         }
       )
 
+      expect(w3cCredentialRecords.length).toEqual(2)
       expect(w3cCredentialRecords[0]).toBeInstanceOf(W3cCredentialRecord)
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
-
+      expect(w3cCredentialRecord.credential.claimFormat).toEqual(ClaimFormat.JwtVc)
       expect(w3cCredentialRecord.credential.type).toEqual([
         'VerifiableCredential',
         'VerifiableAttestation',
         'VerifiableId',
       ])
 
-      expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
+      expect(w3cCredentialRecords[1]).toBeInstanceOf(W3cCredentialRecord)
+      const w3cCredentialRecord1 = w3cCredentialRecords[1] as W3cCredentialRecord
+      expect(w3cCredentialRecord1.credential.claimFormat).toEqual(ClaimFormat.LdpVc)
+      expect(w3cCredentialRecord1.credential.type).toEqual(['VerifiableCredential', 'PermanentResidentCard'])
+      expect(w3cCredentialRecord1.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
+
+    // it('use with jff / mattr demo', async () => {
+    //   const did = await agent.dids.create<KeyDidCreateOptions>({
+    //     method: 'key',
+    //     options: { keyType: KeyType.Ed25519 },
+    //     secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+    //   })
+
+    //   const didKey = DidKey.fromDid(did.didState.did as string)
+    //   const kid = `${didKey.did}#${didKey.key.fingerprint}`
+    //   const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+    //   if (!verificationMethod) throw new Error('No verification method found')
+    //   const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+    //     `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22t4y9cy-vBivTynmXuoPVT6cB8YIOo5mU-yKRUpx4vxB%22%7D%7D%7D`
+    //   )
+
+    //   const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+    //     resolvedCredentialOffer,
+    //     {
+    //       allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+    //       proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+    //       verifyCredentialStatus: false,
+    //     }
+    //   )
+    // })
   })
 })
