@@ -245,7 +245,7 @@ export class OpenId4VcHolderService {
     }
 
     const issuer = credentialOfferPayload.credential_issuer
-    const metadata = _metadata ? _metadata : MetadataClient.retrieveAllMetadata(issuer)
+    const metadata = _metadata ? _metadata : await MetadataClient.retrieveAllMetadata(issuer)
     if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenID4VCI issuer: ${issuer}`)
 
     const flowType = flowTypeMapping[options.flowType]

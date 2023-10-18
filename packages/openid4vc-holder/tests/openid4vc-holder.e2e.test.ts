@@ -61,20 +61,18 @@ describe('OpenId4VcHolder', () => {
       enableNetConnect()
     })
 
-    xit('[DRAFT 08]: Should successfully execute the pre-authorized flow using a did:key Ed25519 subject and JSON-LD credential', async () => {
+    it('[DRAFT 08]: Should successfully execute the pre-authorized flow using a did:key Ed25519 subject and JSON-LD credential', async () => {
       const fixture = mattrLaunchpadJsonLd_draft_08
       /**
        *  Below we're setting up some mock HTTP responses.
        *  These responses are based on the openid-initiate-issuance URI above
        * */
-
       // setup temporary redirect mock
       nock('https://launchpad.mattrlabs.com')
         .get('/.well-known/openid-credential-issuer')
         .reply(307, undefined, {
           Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
         })
-
         .get('/.well-known/openid-configuration')
         .reply(404)
 
@@ -83,6 +81,10 @@ describe('OpenId4VcHolder', () => {
 
       // setup server metadata response
       nock('https://launchpad.vii.electron.mattrlabs.io')
+        .get('/.well-known/did.json')
+        .reply(200, fixture.wellKnownDid)
+        .get('/.well-known/did.json')
+        .reply(200, fixture.wellKnownDid)
         .get('/.well-known/openid-credential-issuer')
         .reply(200, fixture.getMetadataResponse)
 
@@ -92,16 +94,12 @@ describe('OpenId4VcHolder', () => {
 
         // setup credential request response
         .post('/oidc/v1/auth/credential')
-        .reply(200, fixture.credentialResponse)
+        .reply(200, fixture.jsonLdCredentialResponse)
 
       const did = await agent.dids.create<KeyDidCreateOptions>({
         method: 'key',
-        options: {
-          keyType: KeyType.Ed25519,
-        },
-        secret: {
-          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
-        },
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       })
 
       const didKey = DidKey.fromDid(did.didState.did as string)
@@ -109,17 +107,20 @@ describe('OpenId4VcHolder', () => {
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
 
-      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOffer
+      const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.permanentResidentCardCredentialOffer
       )
 
       const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-        resolvedCredentialOffer,
+        resolved,
         {
           verifyCredentialStatus: false,
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          credentialsToRequest: resolved.credentialsToRequest.filter(
+            (c) => c.format === OpenIdCredentialFormatProfile.LdpVc
+          ),
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
         }
       )
@@ -128,11 +129,7 @@ describe('OpenId4VcHolder', () => {
       const w3cCredentialRecord = w3cCredentialRecords[0] as W3cCredentialRecord
       expect(w3cCredentialRecord).toBeInstanceOf(W3cCredentialRecord)
 
-      expect(w3cCredentialRecord.credential.type).toEqual([
-        'VerifiableCredential',
-        'VerifiableCredentialExtension',
-        'OpenBadgeCredential',
-      ])
+      expect(w3cCredentialRecord.credential.type).toEqual(['VerifiableCredential', 'PermanentResidentCard'])
 
       expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
@@ -306,9 +303,21 @@ describe('OpenId4VcHolder', () => {
       const fixture = mattrLaunchpadJsonLd_draft_08
 
       // setup temporary redirect mock
-      nock('https://launchpad.mattrlabs.com').get('/.well-known/openid-credential-issuer').reply(307, undefined, {
-        Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
-      })
+      nock('https://launchpad.mattrlabs.com')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(307, undefined, {
+          Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
+        })
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
 
       // setup server metadata response
       nock('https://launchpad.vii.electron.mattrlabs.io')
@@ -329,12 +338,8 @@ describe('OpenId4VcHolder', () => {
 
       const did = await agent.dids.create<KeyDidCreateOptions>({
         method: 'key',
-        options: {
-          keyType: KeyType.Ed25519,
-        },
-        secret: {
-          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
-        },
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       })
 
       const didKey = DidKey.fromDid(did.didState.did as string)
@@ -346,7 +351,7 @@ describe('OpenId4VcHolder', () => {
 
       const redirectUri = 'https://example.com/cb'
       const initiationUri =
-        'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
+        'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=PermanentResidentCard'
 
       const scope = ['TestCredential']
       const { codeVerifier } = await agent.modules.openId4VcHolder.generateAuthorizationUrl({
@@ -462,12 +467,11 @@ describe('OpenId4VcHolder', () => {
       const kid = `${didKey.did}#${didKey.key.fingerprint}`
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
-      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOffer
-      )
 
-      expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
-      const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+      const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
+      expect(resolved.credentialsToRequest).toHaveLength(2)
+
+      const selectedCredentialsForRequest = resolved.credentialsToRequest.filter((credential) => {
         return (
           credential.format === OpenIdCredentialFormatProfile.JwtVcJson && credential.types.includes('VerifiableId')
         )
@@ -476,7 +480,7 @@ describe('OpenId4VcHolder', () => {
       expect(selectedCredentialsForRequest).toHaveLength(1)
 
       const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-        resolvedCredentialOffer,
+        resolved,
         {
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
@@ -613,29 +617,29 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord1.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    // it('use with jff / mattr demo', async () => {
-    //   const did = await agent.dids.create<KeyDidCreateOptions>({
-    //     method: 'key',
-    //     options: { keyType: KeyType.Ed25519 },
-    //     secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
-    //   })
+    //it('use with jff / mattr demo', async () => {
+    //  const did = await agent.dids.create<KeyDidCreateOptions>({
+    //    method: 'key',
+    //    options: { keyType: KeyType.Ed25519 },
+    //    secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+    //  })
 
-    //   const didKey = DidKey.fromDid(did.didState.did as string)
-    //   const kid = `${didKey.did}#${didKey.key.fingerprint}`
-    //   const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-    //   if (!verificationMethod) throw new Error('No verification method found')
-    //   const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
-    //     `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22t4y9cy-vBivTynmXuoPVT6cB8YIOo5mU-yKRUpx4vxB%22%7D%7D%7D`
-    //   )
+    //  const didKey = DidKey.fromDid(did.didState.did as string)
+    //  const kid = `${didKey.did}#${didKey.key.fingerprint}`
+    //  const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+    //  if (!verificationMethod) throw new Error('No verification method found')
+    //  const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+    //    `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22q4ZLqvFxDVUA90IrjpemkjrkMWZV12efZ_YF6L0FE2T%22%7D%7D%7D`
+    //  )
 
-    //   const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-    //     resolvedCredentialOffer,
-    //     {
-    //       allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-    //       proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-    //       verifyCredentialStatus: false,
-    //     }
-    //   )
-    // })
+    //  const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+    //    resolvedCredentialOffer,
+    //    {
+    //      allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+    //      proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+    //      verifyCredentialStatus: false,
+    //    }
+    //  )
+    //})
   })
 })

@@ -15,9 +15,7 @@ export const supportedCredentialFormats = [
 ] satisfies OpenIdCredentialFormatProfile[]
 
 export type CredentialToRequest = { format: string; types: string[] } & (
-  | {
-      offerType: OfferedCredentialType.InlineCredentialOffer
-    }
+  | { offerType: OfferedCredentialType.InlineCredentialOffer }
   | {
       offerType: OfferedCredentialType.CredentialSupported
       id: string | undefined
