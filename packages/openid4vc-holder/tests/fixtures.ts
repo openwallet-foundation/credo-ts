@@ -83,8 +83,8 @@ export const mattrLaunchpadJsonLd_draft_08 = {
       },
     ],
   },
-  credentialOffer:
-    'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential&pre-authorized_code=krBcsBIlye2T-G4-rHHnRZUCah9uzDKwohJK6ABNvL-',
+  credentialOfferAuthorizationCodeFlow:
+    'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential',
   permanentResidentCardCredentialOffer:
     'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=PermanentResidentCard&pre-authorized_code=krBcsBIlye2T-G4-rHHnRZUCah9uzDKwohJK6ABNvL-',
   getMetadataResponse: {
