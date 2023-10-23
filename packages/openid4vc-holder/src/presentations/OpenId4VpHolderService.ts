@@ -1,4 +1,6 @@
-import type { AgentContext, W3cVerifiableCredential, W3cVerifiablePresentation } from '@aries-framework/core'
+import type { PresentationSubmission } from './selection'
+import type { CredentialsForInputDescriptor } from './selection/types'
+import type { AgentContext, W3cCredentialRecord, W3cVerifiablePresentation } from '@aries-framework/core'
 import type {
   DIDDocument,
   PresentationDefinitionWithLocation,
@@ -112,20 +114,40 @@ export class OpenId4VpHolderService {
     agentContext: AgentContext,
     options: {
       verifiedAuthorizationRequest: VerifiedAuthorizationRequestWithPresentationDefinition
-      selectedCredentials: W3cVerifiableCredential[]
+      submission: PresentationSubmission
+      submissionEntryIndexes: number[]
     }
   ) {
     const op = this.getOp(agentContext)
 
-    const vp = await this.presentationExchangeService.createPresentation(agentContext, {
-      selectedCredentials: options.selectedCredentials,
+    const credentialsForInputDescriptor: CredentialsForInputDescriptor = {}
+
+    options.submission.requirements
+      .flatMap((requirement) => requirement.submission)
+      .forEach((submission, index) => {
+        const verifiableCredential = submission.verifiableCredentials[
+          options.submissionEntryIndexes[index] as number
+        ] as W3cCredentialRecord
+
+        const inputDescriptor = credentialsForInputDescriptor[submission.inputDescriptorId]
+        if (!inputDescriptor) {
+          credentialsForInputDescriptor[submission.inputDescriptorId] = [verifiableCredential.credential]
+        } else {
+          inputDescriptor.push(verifiableCredential.credential)
+        }
+      })
+
+    const vps = await this.presentationExchangeService.createPresentation(agentContext, {
+      credentialsForInputDescriptor,
       presentationDefinition: options.verifiedAuthorizationRequest.presentationDefinitions[0].definition,
-      // TODO: challenge / nonce
+      includePresentationSubmissionInVp: false,
+      // TODO: are there other properties we need to include?
+      nonce: await options.verifiedAuthorizationRequest.authorizationRequest.getMergedProperty<string>('nonce'),
     })
 
     const verificationMethod = await this.getVerificationMethodFromVerifiablePresentation(
       agentContext,
-      vp.verifiablePresentation
+      vps.verifiablePresentations[0] as W3cVerifiablePresentation
     )
     const key = getKeyFromVerificationMethod(verificationMethod)
     const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
@@ -134,9 +156,10 @@ export class OpenId4VpHolderService {
     }
 
     const response = await op.createAuthorizationResponse(options.verifiedAuthorizationRequest, {
+      issuer: verificationMethod.controller,
       presentationExchange: {
-        verifiablePresentations: [vp.verifiablePresentation.encoded as W3CVerifiablePresentation],
-        presentationSubmission: vp.presentationSubmission,
+        verifiablePresentations: vps.verifiablePresentations.map((vp) => vp.encoded as W3CVerifiablePresentation),
+        presentationSubmission: vps.presentationSubmission,
       },
       signature: {
         signature: async (data) => {

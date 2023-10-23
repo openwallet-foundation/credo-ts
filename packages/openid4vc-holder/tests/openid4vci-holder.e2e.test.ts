@@ -37,10 +37,10 @@ describe('OpenId4VcHolder', () => {
   beforeEach(async () => {
     agent = new Agent({
       config: {
-        label: 'OpenId4VcHolder Test10',
+        label: 'OpenId4VcHolder Test13',
         walletConfig: {
-          id: 'openid4vc-holder-test11',
-          key: 'openid4vc-holder-test12',
+          id: 'openid4vc-holder-test14',
+          key: 'openid4vc-holder-test15',
         },
       },
       dependencies: agentDependencies,
@@ -617,29 +617,29 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord1.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    // it('use with jff / mattr demo', async () => {
-    //   const did = await agent.dids.create<KeyDidCreateOptions>({
-    //     method: 'key',
-    //     options: { keyType: KeyType.X25519 },
-    //     secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
-    //   })
+    it('use with jff / mattr demo', async () => {
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      })
 
-    //   const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22q4ZLqvFxDVUA90IrjpemkjrkMWZV12efZ_YF6L0FE2T%22%7D%7D%7D`
+      const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22a-Zxwinn9e3zuZQQHCDC502rdrwIGkA72J7FdPKhDQa%22%7D%7D%7D`
 
-    //   const didKey = DidKey.fromDid(did.didState.did as string)
-    //   const kid = `${didKey.did}#${didKey.key.fingerprint}`
-    //   const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-    //   if (!verificationMethod) throw new Error('No verification method found')
-    //   const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${didKey.did}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
 
-    //   const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-    //     resolvedCredentialOffer,
-    //     {
-    //       allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
-    //       proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-    //       verifyCredentialStatus: false,
-    //     }
-    //   )
-    // })
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+        }
+      )
+    })
   })
 })

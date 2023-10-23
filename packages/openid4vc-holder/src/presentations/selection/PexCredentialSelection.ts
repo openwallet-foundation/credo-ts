@@ -1,25 +1,45 @@
 import type { PresentationSubmission, PresentationSubmissionRequirement, SubmissionEntry } from './types'
 import type { W3cCredentialRecord } from '@aries-framework/core'
 import type { SelectResults, SubmissionRequirementMatch } from '@sphereon/pex'
-import type { PresentationDefinitionV1, SubmissionRequirement, InputDescriptorV1 } from '@sphereon/pex-models'
-import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
+import type {
+  PresentationDefinitionV1,
+  SubmissionRequirement,
+  InputDescriptorV1,
+  PresentationDefinitionV2,
+  InputDescriptorV2,
+} from '@sphereon/pex-models'
 
 import { AriesFrameworkError } from '@aries-framework/core'
-import { PEXv1 } from '@sphereon/pex'
+import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
 import { getSphereonW3cVerifiableCredential } from '../transform'
 
+/**
+ * Converts a camelCase string to a sentence format (first letter capitalized, rest in lower case).
+ * i.e. sanitizeString("helloWorld")  // returns: 'Hello world'
+ */
+export function sanitizeString(str: string) {
+  const result = str.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+  let words = result.split(' ')
+  words = words.map((word, index) => {
+    if (index === 0) {
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    } else {
+      return word.charAt(0).toLowerCase() + word.slice(1)
+    }
+  })
+  return words.join(' ')
+}
+
 export function selectCredentialsForRequest(
   presentationDefinition: PresentationDefinitionV1,
   credentialRecords: W3cCredentialRecord[]
 ): PresentationSubmission {
-  const pex = new PEXv1()
+  const pex = new PEX()
 
-  const encodedCredentials: OriginalVerifiableCredential[] = credentialRecords.map((c) =>
-    getSphereonW3cVerifiableCredential(c.credential)
-  )
+  const encodedCredentials = credentialRecords.map((c) => getSphereonW3cVerifiableCredential(c.credential))
 
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials)
 
@@ -130,7 +150,7 @@ function getSubmissionRequirements(
 }
 
 function getSubmissionRequirementsAllInputDescriptors(
-  presentationDefinition: PresentationDefinitionV1,
+  presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
   selectResults: W3cCredentialRecordSelectResults
 ): PresentationSubmissionRequirement[] {
   const submissionRequirements: PresentationSubmissionRequirement[] = []
@@ -139,7 +159,7 @@ function getSubmissionRequirementsAllInputDescriptors(
     const submission = getSubmissionForInputDescriptor(inputDescriptor, selectResults)
 
     submissionRequirements.push({
-      isRequirementSatisfied: submission.verifiableCredential !== undefined,
+      isRequirementSatisfied: submission.verifiableCredentials.length >= 1,
       submission: [submission],
       // Every input descriptor is a separate requirement, so the count is always 1
       needsCount: 1,
@@ -151,7 +171,7 @@ function getSubmissionRequirementsAllInputDescriptors(
 
 function getSubmissionRequirementRuleAll(
   submissionRequirement: SubmissionRequirement,
-  presentationDefinition: PresentationDefinitionV1,
+  presentationDefinition: PresentationDefinitionV1 | PresentationDefinitionV2,
   selectResults: W3cCredentialRecordSelectResults
 ) {
   // Check if there's a 'from'. If not the structure is not as we expect it
@@ -183,7 +203,7 @@ function getSubmissionRequirementRuleAll(
 
     // If all submissions have a credential, the requirement is satisfied
     isRequirementSatisfied: selectedSubmission.submission.every(
-      (submission) => submission.verifiableCredential !== undefined
+      (submission) => submission.verifiableCredentials.length >= 1
     ),
   }
 }
@@ -218,7 +238,7 @@ function getSubmissionRequirementRulePick(
 
     const submission = getSubmissionForInputDescriptor(inputDescriptor, selectResults)
 
-    if (submission.verifiableCredential) {
+    if (submission.verifiableCredentials.length >= 1) {
       satisfiedSubmissions.push(submission)
     } else {
       unsatisfiedSubmissions.push(submission)
@@ -246,37 +266,48 @@ function getSubmissionRequirementRulePick(
 }
 
 function getSubmissionForInputDescriptor(
-  inputDescriptor: InputDescriptorV1,
+  inputDescriptor: InputDescriptorV1 | InputDescriptorV2,
   selectResults: W3cCredentialRecordSelectResults
 ): SubmissionEntry {
   // https://github.com/Sphereon-Opensource/PEX/issues/116
   // FIXME: the match.name is only the id if the input_descriptor has no name
   // Find first match
-  const match = selectResults.matches?.find(
+  const matches = selectResults.matches?.filter(
     (m) =>
       m.name === inputDescriptor.id ||
       // FIXME: this is not collision proof as the name doesn't have to be unique
       m.name === inputDescriptor.name
   )
 
-  const submissionEntry: SubmissionEntry = {
-    inputDescriptorId: inputDescriptor.id,
-    name: inputDescriptor.name,
-    purpose: inputDescriptor.purpose,
+  let name = inputDescriptor.name
+  // If there's no name on the input descriptor, but the id does not contain
+  // any special characters or numbers (so only letters and spaces),
+  // we will use a sanitized version of the id as the name
+  if (!name && inputDescriptor.id.match(/^[a-zA-Z ]+$/)) {
+    name = sanitizeString(inputDescriptor.id)
   }
 
-  // return early if no match.
-  if (!match) return submissionEntry
+  const submissionEntry: SubmissionEntry = {
+    inputDescriptorId: inputDescriptor.id,
+    name,
+    purpose: inputDescriptor.purpose,
+    verifiableCredentials: [],
+  }
+
+  // return early if no matches.
+  if (!matches?.length) return submissionEntry
 
   // FIXME: This can return multiple credentials for multiple input_descriptors,
   // which I think is a bug in the PEX library
   // Extract all credentials from the match
-  const [verifiableCredential] = extractCredentialsFromMatch(match, selectResults.verifiableCredential)
-
-  return {
-    ...submissionEntry,
-    verifiableCredential,
+  for (const match of matches) {
+    submissionEntry.verifiableCredentials = [
+      ...submissionEntry.verifiableCredentials,
+      ...extractCredentialsFromMatch(match, selectResults.verifiableCredential),
+    ]
   }
+
+  return submissionEntry
 }
 
 function extractCredentialsFromMatch(match: SubmissionRequirementMatch, availableCredentials?: W3cCredentialRecord[]) {

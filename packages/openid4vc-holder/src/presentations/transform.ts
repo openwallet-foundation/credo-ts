@@ -1,6 +1,6 @@
 import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '@aries-framework/core'
 import type {
-  W3CVerifiableCredential as SphereonW3cVerifiableCredential,
+  OriginalVerifiableCredential as SphereonW3cVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
 } from '@sphereon/ssi-types'
 

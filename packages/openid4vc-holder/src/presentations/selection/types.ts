@@ -1,4 +1,4 @@
-import type { W3cCredentialRecord } from '@aries-framework/core'
+import type { W3cCredentialRecord, W3cVerifiableCredential } from '@aries-framework/core'
 
 /**
  * A submission entry that satisfies a specific input descriptor from the
@@ -21,12 +21,12 @@ export interface SubmissionEntry {
   purpose?: string
 
   /**
-   * The verifiable credential that satisfies the input descriptor.
+   * The verifiable credentials that satisfy the input descriptor.
    *
-   * If the value is undefined, it means the input descriptor could
+   * If the value is an empty list, it means the input descriptor could
    * not be satisfied.
    */
-  verifiableCredential?: W3cCredentialRecord
+  verifiableCredentials: W3cCredentialRecord[]
 }
 
 /**
@@ -59,7 +59,7 @@ export interface PresentationSubmissionRequirement {
    * of the submission.
    *
    * NOTE: if the `isRequirementSatisfied` is `false` the submission list will
-   * contain entries without a verifiable credential. In this case it could also
+   * contain entries where the verifiable credential list is empty. In this case it could also
    * contain more entries than are actually needed (as you sometimes can choose from
    * e.g. 4 types of credentials and need to submit at least two). If
    * `isRequirementSatisfied` is `false`, make sure to check the `needsCount` value
@@ -105,4 +105,11 @@ export interface PresentationSubmission {
    * Purpose of the presentation definition.
    */
   purpose?: string
+}
+
+/**
+ * Mapping of selected credentials for an input descriptor
+ */
+export interface CredentialsForInputDescriptor {
+  [inputDescriptorId: string]: W3cVerifiableCredential[]
 }
