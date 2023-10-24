@@ -6,7 +6,6 @@ export * from './OpenId4VcHolderService'
 // Contains internal types, so we don't export everything
 export {
   AuthCodeFlowOptions,
-  GenerateAuthorizationUrlOptions,
   PreAuthCodeFlowOptions,
   ProofOfPossessionVerificationMethodResolver,
   ProofOfPossessionVerificationMethodResolverOptions,

@@ -1,8 +1,18 @@
 import type { OfferedCredentialType } from './OpenId4VcHolderService'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
+import type { CredentialFormat } from '@sphereon/ssi-types'
 
 import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
+
+//  TODO: use simpler object
+export interface AuthDetails {
+  type: 'openid_credential' | string
+  locations?: string | string[]
+  format: CredentialFormat | CredentialFormat[]
+
+  [s: string]: unknown
+}
 
 /**
  * The credential formats that are supported by the openid4vc holder
@@ -77,23 +87,9 @@ export interface PreAuthCodeFlowOptions {
  */
 export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
   clientId: string
-  authorizationCode: string
-  codeVerifier: string
-  redirectUri: string
-}
-
-/**
- * The options that are used to generate the authorization url.
- *
- * NOTE: The `code_challenge` property is omitted here
- * because we assume it will always be SHA256
- * as clear text code challenges are unsafe.
- */
-export interface GenerateAuthorizationUrlOptions {
-  initiationUri: string
-  clientId: string
   redirectUri: string
   scope?: string[]
+  authDetails?: AuthDetails[]
 }
 
 export interface ProofOfPossessionVerificationMethodResolverOptions {

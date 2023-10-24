@@ -2438,12 +2438,12 @@
     cross-fetch "^3.1.5"
     did-resolver "^4.1.0"
 
-"@sphereon/oid4vci-client@^0.7.3":
-  version "0.7.3"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.7.3.tgz#48d7ef9ec4d3ab64944f2c2bb1de9b8b5e90cfbb"
-  integrity sha512-9xQvpLGYqDtqjcK2R1KfCKNBJUEqhLsA5lJrxV40DQ6fTddz7lVJWommX+pRqKDRR+N6tAo80qgqzELQEzJw2w==
+"@sphereon/oid4vci-client@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.8.1.tgz#e05ce5d0f9d5227492b7e5264864cea88a4e10a4"
+  integrity sha512-NhIxBDTvXRDl7du+z3Mnpm0VkxI1L/r1r4hJzz2Xdh1NKruzk5lkoLbRyq9uCc3rMg/RH8U+nkThrOE0TiwnRg==
   dependencies:
-    "@sphereon/oid4vci-common" "0.7.3"
+    "@sphereon/oid4vci-common" "0.8.1"
     "@sphereon/ssi-types" "0.17.2"
     cross-fetch "^3.1.8"
     debug "^4.3.4"
@@ -2452,6 +2452,15 @@
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.7.3.tgz#188250a0a51c5a5df5424f63781f517788c4b296"
   integrity sha512-rfXYXWYsa+wQ22A/IchOJSUzTr6ChuCiZYYvZB44kHEjCdQ15Ix3PKkVD6vmxaoSx7sZ9Q+LQTZbNGvx+7LpWw==
+  dependencies:
+    "@sphereon/ssi-types" "0.17.2"
+    cross-fetch "^3.1.8"
+    jwt-decode "^3.1.2"
+
+"@sphereon/oid4vci-common@0.8.1", "@sphereon/oid4vci-common@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.8.1.tgz#2623f467c3765a96f3330691d6a0946f04360106"
+  integrity sha512-lKdVjUIkd04Tpt9BLZ+N5mv2uhm4x1Qu5TFrYHBPzXCc0jNMnSWCN3yD0HjfdsW++unLaqAqifvM4iYY5NKSZg==
   dependencies:
     "@sphereon/ssi-types" "0.17.2"
     cross-fetch "^3.1.8"

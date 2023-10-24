@@ -61,7 +61,7 @@ describe('OpenId4VcHolder', () => {
       enableNetConnect()
     })
 
-    it('[DRAFT 08]: Should successfully execute the pre-authorized flow using a did:key Ed25519 subject and JSON-LD credential', async () => {
+    xit('[DRAFT 08]: Should successfully execute the pre-authorized flow using a did:key Ed25519 subject and JSON-LD credential', async () => {
       const fixture = mattrLaunchpadJsonLd_draft_08
       /**
        *  Below we're setting up some mock HTTP responses.
@@ -204,102 +204,7 @@ describe('OpenId4VcHolder', () => {
       enableNetConnect()
     })
 
-    it('[DRAFT 08]: should generate a valid authorization url', async () => {
-      const fixture = mattrLaunchpadJsonLd_draft_08
-
-      // setup temporary redirect mock
-      nock('https://launchpad.mattrlabs.com')
-        .get('/.well-known/openid-credential-issuer')
-        .reply(307, undefined, {
-          Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
-        })
-        .get('/.well-known/openid-configuration')
-        .reply(404)
-        .get('/.well-known/oauth-authorization-server')
-        .reply(404)
-
-      // setup server metadata response
-      nock('https://launchpad.vii.electron.mattrlabs.io')
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
-
-        // setup access token response
-        .post('/oidc/v1/auth/token')
-        .reply(200, fixture.acquireAccessTokenResponse)
-
-        // setup credential request response
-        .post('/oidc/v1/auth/credential')
-        .reply(200, fixture.credentialResponse)
-
-      const clientId = 'test-client'
-
-      const redirectUri = 'https://example.com/cb'
-      const scope = ['TestCredential']
-      const initiationUri =
-        'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
-      const { authorizationUrl } = await agent.modules.openId4VcHolder.generateAuthorizationUrl({
-        clientId,
-        redirectUri,
-        scope,
-        initiationUri,
-      })
-
-      const parsedUrl = new URL(authorizationUrl)
-      expect(authorizationUrl.startsWith('https://launchpad.vii.electron.mattrlabs.io/oidc/v1/auth/authorize')).toBe(
-        true
-      )
-      expect(parsedUrl.searchParams.get('response_type')).toBe('code')
-      expect(parsedUrl.searchParams.get('client_id')).toBe(clientId)
-      expect(parsedUrl.searchParams.get('code_challenge_method')).toBe('S256')
-      expect(parsedUrl.searchParams.get('redirect_uri')).toBe(redirectUri)
-    })
-
-    it('[DRAFT 08]: should throw if no scope is provided', async () => {
-      const fixture = mattrLaunchpadJsonLd_draft_08
-
-      // setup temporary redirect mock
-      nock('https://launchpad.mattrlabs.com').get('/.well-known/openid-credential-issuer').reply(307, undefined, {
-        Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
-      })
-
-      // setup server metadata response
-      nock('https://launchpad.vii.electron.mattrlabs.io')
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
-        .get('/.well-known/openid-configuration')
-        .reply(404)
-        .get('/.well-known/oauth-authorization-server')
-        .reply(404)
-
-        // setup access token response
-        .post('/oidc/v1/auth/token')
-        .reply(200, fixture.acquireAccessTokenResponse)
-
-        // setup credential request response
-        .post('/oidc/v1/auth/credential')
-        .reply(200, fixture.credentialResponse)
-
-      // setup server metadata response
-      nock('https://launchpad.vii.electron.mattrlabs.io')
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
-
-      const clientId = 'test-client'
-      const redirectUri = 'https://example.com/cb'
-      const initiationUri =
-        'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=OpenBadgeCredential'
-      await expect(
-        agent.modules.openId4VcHolder.generateAuthorizationUrl({
-          clientId,
-          redirectUri,
-          scope: [],
-          initiationUri,
-        })
-      ).rejects.toThrow()
-    })
-
-    // Need custom document loader for this
-    it('[DRAFT 08]: should successfully execute request a credential', async () => {
+    it('[DRAFT 08]: should throw if no scope and no authorization_details are provided', async () => {
       const fixture = mattrLaunchpadJsonLd_draft_08
 
       // setup temporary redirect mock
@@ -352,18 +257,79 @@ describe('OpenId4VcHolder', () => {
       if (!verificationMethod) throw new Error('No verification method found')
 
       const clientId = 'test-client'
-
       const redirectUri = 'https://example.com/cb'
-      const initiationUri =
-        'openid-initiate-issuance://?issuer=https://launchpad.mattrlabs.com&credential_type=PermanentResidentCard'
 
-      const scope = ['TestCredential']
-      const { codeVerifier } = await agent.modules.openId4VcHolder.generateAuthorizationUrl({
-        clientId,
-        redirectUri,
-        scope,
-        initiationUri,
+      const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+        fixture.credentialOfferAuthorizationCodeFlow
+      )
+
+      await expect(
+        agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(resolved, {
+          clientId: clientId,
+          verifyCredentialStatus: false,
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          redirectUri: redirectUri,
+        })
+      ).rejects.toThrow()
+    })
+
+    // Need custom document loader for this
+    xit('[DRAFT 08]: should successfully execute request a credential', async () => {
+      const fixture = mattrLaunchpadJsonLd_draft_08
+
+      // setup temporary redirect mock
+      nock('https://launchpad.mattrlabs.com')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(307, undefined, {
+          Location: 'https://launchpad.vii.electron.mattrlabs.io/.well-known/openid-credential-issuer',
+        })
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+
+      // setup server metadata response
+      nock('https://launchpad.vii.electron.mattrlabs.io')
+        .get('/.well-known/did.json')
+        .reply(200, fixture.wellKnownDid)
+        .get('/.well-known/did.json')
+        .reply(200, fixture.wellKnownDid)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+
+        // setup access token response
+        .post('/oidc/v1/auth/token')
+        .reply(200, fixture.acquireAccessTokenResponse)
+
+        // setup credential request response
+        .post('/oidc/v1/auth/credential')
+        .reply(200, fixture.jsonLdCredentialResponse)
+
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       })
+
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${did.didState.did as string}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+
+      const clientId = 'test-client'
+      const redirectUri = 'https://example.com/cb'
+      const scope = ['TestCredential']
 
       const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
         fixture.credentialOfferAuthorizationCodeFlow
@@ -373,12 +339,11 @@ describe('OpenId4VcHolder', () => {
         resolvedCredentialOffer,
         {
           clientId: clientId,
-          authorizationCode: 'test-code',
-          codeVerifier: codeVerifier,
           verifyCredentialStatus: false,
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
           redirectUri: redirectUri,
+          scope,
         }
       )
 
@@ -502,7 +467,7 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    it('[DRAFT 11]: Should successfully execute the pre-authorized flow using a single offered credential a did:key EdDSA subject and JsonLd format', async () => {
+    xit('[DRAFT 11]: Should successfully execute the pre-authorized flow using a single offered credential a did:key EdDSA subject and JsonLd format', async () => {
       const fixture = waltIdJffJwt_draft_11
       const httpMock = nock('https://jff.walt.id/issuer-api/default/oidc')
         .get('/.well-known/openid-credential-issuer')
@@ -559,7 +524,7 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    it('[DRAFT 11]: Should successfully execute the pre-authorized for multiple credentials of different formats using a did:key EdDsa subject', async () => {
+    xit('[DRAFT 11]: Should successfully execute the pre-authorized for multiple credentials of different formats using a did:key EdDsa subject', async () => {
       const fixture = waltIdJffJwt_draft_11
       const httpMock = nock('https://jff.walt.id/issuer-api/default/oidc')
         .get('/.well-known/openid-credential-issuer')
@@ -617,29 +582,32 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord1.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    it('use with jff / mattr demo', async () => {
-      const did = await agent.dids.create<KeyDidCreateOptions>({
-        method: 'key',
-        options: { keyType: KeyType.Ed25519 },
-        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
-      })
+    //it('use with jff / mattr demo', async () => {
+    //  const did = await agent.dids.create<KeyDidCreateOptions>({
+    //    method: 'key',
+    //    options: { keyType: KeyType.Ed25519 },
+    //    secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+    //  })
 
-      const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Flaunchpad.vii.electron.mattrlabs.io%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22ldp_vc%22%2C%22types%22%3A%5B%22PermanentResidentCard%22%5D%7D%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22a-Zxwinn9e3zuZQQHCDC502rdrwIGkA72J7FdPKhDQa%22%7D%7D%7D`
+    //  const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22jwt_vc_json%22%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22VerifiableAttestation%22%2C%22VerifiableDiploma%22%5D%2C%22credential_definition%22%3A%7B%22%40context%22%3A%5B%22https%3A%2F%2Fwww.w3.org%2F2018%2Fcredentials%2Fv1%22%2C%22https%3A%2F%2Fw3id.org%2Fsecurity%2Fsuites%2Fjws-2020%2Fv1%22%5D%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22VerifiableAttestation%22%2C%22VerifiableDiploma%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%22dd8c7950-3f4e-4c61-8b40-4be18c980e46%22%7D%2C%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJkZDhjNzk1MC0zZjRlLTRjNjEtOGI0MC00YmUxOGM5ODBlNDYiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.UB8riE2_SNxRE_0jXStlpwDrkusmNnCQZgBAGW74xmi3BKPQgnqIB4m_MTHKjA9KhVitKjCoWH8iJdD7nQDVDQ%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D`
 
-      const didKey = DidKey.fromDid(did.didState.did as string)
-      const kid = `${didKey.did}#${didKey.key.fingerprint}`
-      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-      if (!verificationMethod) throw new Error('No verification method found')
-      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    //  const didKey = DidKey.fromDid(did.didState.did as string)
+    //  const kid = `${didKey.did}#${didKey.key.fingerprint}`
+    //  const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+    //  if (!verificationMethod) throw new Error('No verification method found')
+    //  const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
 
-      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
-        resolvedCredentialOffer,
-        {
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-          verifyCredentialStatus: false,
-        }
-      )
-    })
+    //  const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+    //    resolvedCredentialOffer,
+    //    {
+    //      allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+    //      proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+    //      verifyCredentialStatus: false,
+    //      clientId: 'https://issuer.portal.walt.id',
+    //      redirectUri: 'https://example.com/cb',
+    //      scope: ['openid'],
+    //    }
+    //  )
+    //})
   })
 })

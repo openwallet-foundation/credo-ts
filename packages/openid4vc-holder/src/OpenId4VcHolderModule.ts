@@ -8,7 +8,8 @@ import { PresentationExchangeService } from './presentations'
 import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
 
 /**
- * @public
+ * @public @module OpenId4VcHolderModule
+ * This module provides the functionality to assume the role of owner in relation to the OpenId4VC specification suite.
  */
 export class OpenId4VcHolderModule implements Module {
   public readonly api = OpenId4VcHolderApi
@@ -27,7 +28,6 @@ export class OpenId4VcHolderModule implements Module {
     // Api
     dependencyManager.registerContextScoped(OpenId4VcHolderApi)
 
-    // Services
     // Services
     dependencyManager.registerSingleton(OpenId4VcHolderService)
     dependencyManager.registerSingleton(OpenId4VpHolderService)

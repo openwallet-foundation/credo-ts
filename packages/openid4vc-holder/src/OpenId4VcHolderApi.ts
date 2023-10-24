@@ -1,5 +1,4 @@
 import type {
-  GenerateAuthorizationUrlOptions,
   PreAuthCodeFlowOptions,
   AuthCodeFlowOptions,
   ResolvedCredentialOffer,
@@ -58,9 +57,5 @@ export class OpenId4VcHolderApi {
       verifyCredentialStatus: checkRevocationState,
       flowType: AuthFlowType.AuthorizationCodeFlow,
     })
-  }
-
-  public async generateAuthorizationUrl(options: GenerateAuthorizationUrlOptions) {
-    return this.openId4VcHolderService.generateAuthorizationUrl(options)
   }
 }
