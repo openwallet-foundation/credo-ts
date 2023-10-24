@@ -1,10 +1,10 @@
-import type { AgentContext, HashName, Key } from '@aries-framework/core'
+import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
+import type { AgentContext, Key } from '@aries-framework/core'
 import type { Signer } from 'jwt-sd'
-import type { DisclosureFrame, Verifier } from 'jwt-sd/build/sdJwt/types'
+import type { Verifier } from 'jwt-sd/build/sdJwt'
 
 import {
   getJwkFromKey,
-  Jwt,
   Hasher,
   inject,
   injectable,
@@ -14,37 +14,12 @@ import {
   Buffer,
   getJwaFromKeyType,
 } from '@aries-framework/core'
-import { HasherAlgorithm, SdJwt } from 'jwt-sd'
+import { SdJwtVc, HasherAlgorithm, SdJwt } from 'jwt-sd'
 
 export { SdJwt }
 
 import { SdJwtError } from './SdJwtError'
 import { SdJwtRecord } from './repository/SdJwtRecord'
-
-export type SdJwtCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {
-  disclosureFrame?: DisclosureFrame<Payload>
-  issuerKey: Key
-  holderKey?: Key
-  hashingAlgorithm?: HashName
-}
-
-export type SdJwtReceiveOptions = {
-  issuerKey: Key
-  holderKey?: Key
-}
-
-export type SdJwtPresentOptions = {
-  includedDisclosureIndices?: Array<number>
-  includeHolderKey?: boolean
-}
-
-/**
- * @todo combine requiredClaims and requiredDisclosedClaims
- */
-export type SdJwtVerifyOptions = {
-  requiredClaims?: Array<string>
-  holderKey?: Key
-}
 
 export type SdJwtVerificationResult = {
   isValid: boolean
@@ -99,38 +74,49 @@ export class SdJwtService {
 
   public async create<Payload extends Record<string, unknown> = Record<string, unknown>>(
     agentContext: AgentContext,
-    jwt: Jwt | Payload,
-    { issuerKey, disclosureFrame, hashingAlgorithm = 'sha2-256', holderKey }: SdJwtCreateOptions<Payload>
-  ): Promise<SdJwtRecord> {
+    payload: Payload,
+    { issuerKey, disclosureFrame, hashingAlgorithm = 'sha2-256', holderBinding, issuerDid }: SdJwtCreateOptions<Payload>
+  ): Promise<{ sdJwtRecord: SdJwtRecord; compact: string }> {
     if (hashingAlgorithm !== 'sha2-256') {
       throw new SdJwtError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
-    const { header, payload } =
-      jwt instanceof Jwt
-        ? { header: jwt.header, payload: jwt.payload.toJson() }
-        : {
-            header: { alg: getJwaFromKeyType(issuerKey.keyType).toString() },
-            payload: jwt,
-          }
+    // TODO: change getJwaFromKeyType to be according to the comments
+    const header = {
+      alg: getJwaFromKeyType(issuerKey.keyType).toString(),
+      typ: 'vc+sd-jwt',
+    }
 
-    const confirmationClaim = holderKey ? getJwkFromKey(holderKey).toJson() : undefined
-
-    let sdJwt = new SdJwt<typeof header, typeof payload>()
-      .withHeader(header)
-      .withPayload(payload)
+    const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
       .withHasher({ hasher: this.hasher, algorithm: HasherAlgorithm.Sha256 })
       .withSigner(this.signer(agentContext, issuerKey))
       .withSaltGenerator(agentContext.wallet.generateNonce)
+      .withHeader(header)
+      .withPayload({ ...payload })
 
-    sdJwt = confirmationClaim ? sdJwt.addPayloadClaim('cnf', confirmationClaim) : sdJwt
-    sdJwt = disclosureFrame ? sdJwt.withDisclosureFrame(disclosureFrame) : sdJwt
+    // Add the `cnf` claim for the holder key binding
+    // TODO: deal with holderBinding being a `did`
+    const confirmationClaim = getJwkFromKey(holderBinding as Key).toJson()
+    sdJwtVc.addPayloadClaim('cnf', { jwk: confirmationClaim })
 
-    const compact = await sdJwt.toCompact()
+    // Add the issuer DID as the `iss` claim
+    sdJwtVc.addPayloadClaim('iss', issuerDid)
 
-    return new SdJwtRecord({
-      sdJwt: compact,
-    })
+    // Add the issued at (iat) claim
+    sdJwtVc.addPayloadClaim('iat', Math.floor(new Date().getTime() / 1000))
+
+    const compact = await sdJwtVc.toCompact()
+
+    return {
+      sdJwtRecord: new SdJwtRecord<typeof header, Payload>({
+        sdJwt: {
+          header: sdJwtVc.header,
+          payload: sdJwtVc.payload,
+          disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+        },
+      }),
+      compact,
+    }
   }
 
   /**

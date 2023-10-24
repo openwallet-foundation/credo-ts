@@ -1,13 +1,6 @@
-import type {
-  SdJwt,
-  SdJwtCreateOptions,
-  SdJwtPresentOptions,
-  SdJwtReceiveOptions,
-  SdJwtVerificationResult,
-  SdJwtVerifyOptions,
-} from './SdJwtService'
+import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
+import type { SdJwt, SdJwtVerificationResult } from './SdJwtService'
 import type { SdJwtRecord } from './repository'
-import type { Jwt } from '@aries-framework/core'
 
 import { AgentContext, injectable } from '@aries-framework/core'
 
@@ -26,11 +19,11 @@ export class SdJwtApi {
     this.sdJwtService = sdJwtService
   }
 
-  /**
-   * Taking a JWT here is a really suboptimal. It would be nice to also be able to take something like a VC, or something like that.
-   */
-  public async create(jwt: Jwt, options: SdJwtCreateOptions): Promise<SdJwtRecord> {
-    return await this.sdJwtService.create(this.agentContext, jwt, options)
+  public async create<Payload extends Record<string, unknown> = Record<string, unknown>>(
+    payload: Payload,
+    options: SdJwtCreateOptions<Payload>
+  ): Promise<{ sdJwtRecord: SdJwtRecord; compact: string }> {
+    return await this.sdJwtService.create<Payload>(this.agentContext, payload, options)
   }
 
   /**

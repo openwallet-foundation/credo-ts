@@ -1,32 +1,41 @@
 import type { TagsBase } from '@aries-framework/core'
+import type { DisclosureItem } from 'jwt-sd'
 
 import { BaseRecord, utils } from '@aries-framework/core'
 
-export type SdJwtRecordTags = TagsBase
+export type SdJwtRecordTags = TagsBase & {
+  disclosureKeys?: Array<string>
+}
 
-export type SdJwtRecordStorageProps = {
+export type SdJwt<
+  Header extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>,
+> = {
+  disclosures?: Array<DisclosureItem>
+  header: Header
+  payload: Payload
+}
+
+export type SdJwtRecordStorageProps<
+  Header extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>,
+> = {
   id?: string
   createdAt?: Date
   tags?: SdJwtRecordTags
-  sdJwt: string
+  sdJwt: SdJwt<Header, Payload>
 }
 
-export type SaveSdJwtRecordOptions = {
-  id?: string
-  sdJwt: string
-  tags?: SdJwtRecordTags
-}
-
-export class SdJwtRecord extends BaseRecord<SdJwtRecordTags> {
-  /*
-   * @todo storing compact is not permanent
-   */
-  public sdJwt!: string
-
+export class SdJwtRecord<
+  Header extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>,
+> extends BaseRecord<SdJwtRecordTags> {
   public static readonly type = 'SdJwtRecord'
   public readonly type = SdJwtRecord.type
 
-  public constructor(props: SdJwtRecordStorageProps) {
+  public sdJwt!: SdJwt<Header, Payload>
+
+  public constructor(props: SdJwtRecordStorageProps<Header, Payload>) {
     super()
 
     if (props) {
@@ -38,8 +47,13 @@ export class SdJwtRecord extends BaseRecord<SdJwtRecordTags> {
   }
 
   public getTags() {
+    const disclosureKeys = this.sdJwt.disclosures
+      ?.filter((d): d is [string, string, unknown] => d.length === 3)
+      .map((d) => d[1])
+
     return {
       ...this._tags,
+      disclosureKeys,
     }
   }
 }
