@@ -1,9 +1,11 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
-import type { AgentContext, Key } from '@aries-framework/core'
+import type { AgentContext, JwkJson } from '@aries-framework/core'
 import type { Signer } from 'jwt-sd'
-import type { Verifier } from 'jwt-sd/build/sdJwt'
+import type { SdJwtVerificationResult, Verifier } from 'jwt-sd/build/sdJwt'
 
 import {
+  getJwkFromJson,
+  Key,
   getJwkFromKey,
   Hasher,
   inject,
@@ -15,19 +17,12 @@ import {
   getJwaFromKeyType,
   deepEquality,
 } from '@aries-framework/core'
-import { SdJwtVc, HasherAlgorithm, SdJwt } from 'jwt-sd'
+import { KeyBinding, SdJwtVc, HasherAlgorithm, SdJwt, Disclosure } from 'jwt-sd'
 
 export { SdJwt }
 
 import { SdJwtError } from './SdJwtError'
-import { SdJwtRecord } from './repository/SdJwtRecord'
-
-export type SdJwtVerificationResult = {
-  isValid: boolean
-  isSignatureValid: boolean
-  areRequiredClaimsIncluded?: boolean
-  areDisclosedClaimsIncluded?: boolean
-}
+import { SdJwtRepository, SdJwtRecord } from './repository'
 
 /**
  * @internal
@@ -35,8 +30,10 @@ export type SdJwtVerificationResult = {
 @injectable()
 export class SdJwtService {
   private logger: Logger
+  private sdJwtRepository: SdJwtRepository
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(sdJwtRepository: SdJwtRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
+    this.sdJwtRepository = sdJwtRepository
     this.logger = logger
   }
 
@@ -62,12 +59,19 @@ export class SdJwtService {
    */
   private verifier<Header extends Record<string, unknown> = Record<string, unknown>>(
     agentContext: AgentContext,
-    issuerKey: Key
+    signerKey: Key
   ): Verifier<Header> {
-    return async ({ message, signature }) => {
+    return async ({ message, signature, publicKeyJwk }) => {
+      let key = signerKey
+
+      if (publicKeyJwk) {
+        const jwk = getJwkFromJson(publicKeyJwk as JwkJson)
+        key = Key.fromPublicKey(jwk.publicKey, jwk.keyType)
+      }
+
       return await agentContext.wallet.verify({
         signature: Buffer.from(signature),
-        key: issuerKey,
+        key: key,
         data: TypedArrayEncoder.fromString(message),
       })
     }
@@ -108,15 +112,20 @@ export class SdJwtService {
 
     const compact = await sdJwtVc.toCompact()
 
+    if (!sdJwtVc.signature) {
+      throw new SdJwtError('Invalid sd-jwt state. Signature should have been set when calling `toCompact`.')
+    }
+
     const sdJwtRecord = new SdJwtRecord<typeof header, Payload>({
       sdJwt: {
         header: sdJwtVc.header,
         payload: sdJwtVc.payload,
+        signature: sdJwtVc.signature,
         disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
       },
     })
 
-    // TODO: save the sdJwtRecord
+    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
 
     return {
       sdJwtRecord,
@@ -127,20 +136,28 @@ export class SdJwtService {
   public async receive<
     Header extends Record<string, unknown> = Record<string, unknown>,
     Payload extends Record<string, unknown> = Record<string, unknown>
-  >(agentContext: AgentContext, sdJwt: string, { issuerKey, holderKey }: SdJwtReceiveOptions): Promise<SdJwtRecord> {
-    const sdJwtFromCompact = SdJwtVc.fromCompact<Header, Payload>(sdJwt)
+  >(
+    agentContext: AgentContext,
+    sdJwtCompact: string,
+    { issuerKey, holderKey }: SdJwtReceiveOptions
+  ): Promise<SdJwtRecord> {
+    const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
 
-    const isSignatureValid = await sdJwtFromCompact.verifySignature(this.verifier(agentContext, issuerKey))
+    if (!sdJwt.signature) {
+      throw new SdJwtError('A signature must be included for an sd-jwt')
+    }
+
+    const isSignatureValid = await sdJwt.verifySignature(this.verifier(agentContext, issuerKey))
 
     if (!isSignatureValid) {
       throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
     }
 
-    if (!('cnf' in sdJwtFromCompact.payload)) {
+    if (!('cnf' in sdJwt.payload)) {
       throw new SdJwtError('Confirmation claim (cnf) is required to be inside the sd-jwt-vc')
     }
 
-    const confirmationClaim = sdJwtFromCompact.payload.cnf as Record<string, unknown>
+    const confirmationClaim = sdJwt.payload.cnf as Record<string, unknown>
 
     if (typeof confirmationClaim !== 'object' || !('jwk' in confirmationClaim)) {
       throw new SdJwtError('Only JSON Web Keys (JWK) are supported as key material inside the confirmation claim (cnf)')
@@ -155,35 +172,94 @@ export class SdJwtService {
 
     const sdJwtRecord = new SdJwtRecord<Header, Payload>({
       sdJwt: {
-        header: sdJwtFromCompact.header,
-        payload: sdJwtFromCompact.payload,
-        disclosures: sdJwtFromCompact.disclosures?.map((d) => d.decoded),
+        header: sdJwt.header,
+        payload: sdJwt.payload,
+        signature: sdJwt.signature,
+        disclosures: sdJwt.disclosures?.map((d) => d.decoded),
       },
     })
 
-    // TODO: save the sdJwtRecord
+    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
 
     return sdJwtRecord
   }
 
   public async present(
     agentContext: AgentContext,
-    sdJwt: SdJwt,
-    { includedDisclosureIndices }: SdJwtPresentOptions
+    sdJwtRecord: SdJwtRecord,
+    { includedDisclosureIndices, holderKey, verifierMetadata }: SdJwtPresentOptions
   ): Promise<string> {
-    return 'header.payload.signature~disclosure_0~disclosure_1~key_binding'
+    // TODO: change getJwaFromKeyType to be according to the comments
+    const header = {
+      alg: getJwaFromKeyType(holderKey.keyType).toString(),
+      typ: 'kb+jwt',
+    } as const
+
+    const payload = {
+      iat: verifierMetadata.issuedAt,
+      nonce: verifierMetadata.nonce,
+      aud: verifierMetadata.audienceDid,
+    }
+
+    const keyBinding = new KeyBinding({ header, payload }).withSigner(this.signer(agentContext, holderKey))
+
+    const sdJwt = new SdJwtVc({
+      header: sdJwtRecord.sdJwt.header,
+      payload: sdJwtRecord.sdJwt.payload,
+      signature: sdJwtRecord.sdJwt.signature,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      disclosures: sdJwtRecord.sdJwt.disclosures?.map(Disclosure.fromArray),
+    }).withKeyBinding(keyBinding)
+
+    return await sdJwt.present(includedDisclosureIndices)
   }
 
-  public async verify(
+  public async verify<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(
     agentContext: AgentContext,
-    sdJwt: SdJwt | string,
-    { holderKey, requiredClaims }: SdJwtVerifyOptions
-  ): Promise<SdJwtVerificationResult> {
+    sdJwtCompact: string,
+    { holderKey, verifierDid, issuerKey, requiredClaimKeys }: SdJwtVerifyOptions
+  ): Promise<{ sdJwtRecord: SdJwtRecord; validation: SdJwtVerificationResult }> {
+    const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
+
+    if (!sdJwt.signature) {
+      throw new SdJwtError('A signature is required for verification of the sd-jwt')
+    }
+
+    if (!sdJwt.keyBinding || !sdJwt.keyBinding.payload) {
+      throw new SdJwtError('Keybinding is required for verification of the sd-jwt-vc')
+    }
+
+    if (!('aud' in sdJwt.keyBinding.payload)) {
+      throw new SdJwtError('Audience claim (aud) is required inside the keybinding for sd-jwt-vc')
+    }
+
+    const audienceClaim = sdJwt.keyBinding.payload.aud
+    if (audienceClaim !== verifierDid) {
+      throw new SdJwtError(`Audience claim (aud) is invalid. Expected: '${verifierDid}', actual: '${audienceClaim}'`)
+    }
+
+    const verificationResult = await sdJwt.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
+
+    const sdJwtRecord = new SdJwtRecord({
+      sdJwt: {
+        signature: sdJwt.signature,
+        payload: sdJwt.payload,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        disclosures: sdJwt.disclosures.map(Disclosure.fromArray),
+        header: sdJwt.header,
+      },
+    })
+
+    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
+
     return {
-      isValid: true,
-      isSignatureValid: true,
-      areRequiredClaimsIncluded: true,
-      areDisclosedClaimsIncluded: true,
+      sdJwtRecord,
+      validation: verificationResult,
     }
   }
 }

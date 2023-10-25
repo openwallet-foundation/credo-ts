@@ -32,8 +32,8 @@ export class SdJwtApi {
    *
    * Validates and stores an sd-jwt from the perspective of an holder
    */
-  public async receive(sdJwt: string, options: SdJwtReceiveOptions): Promise<SdJwtRecord> {
-    return await this.sdJwtService.receive(this.agentContext, sdJwt, options)
+  public async receive(sdJwtCompact: string, options: SdJwtReceiveOptions): Promise<SdJwtRecord> {
+    return await this.sdJwtService.receive(this.agentContext, sdJwtCompact, options)
   }
 
   /**
@@ -44,8 +44,8 @@ export class SdJwtApi {
    * Also, whether to include the holder key binding.
    *
    */
-  public async present(sdJwt: SdJwt, options: SdJwtPresentOptions): Promise<string> {
-    return await this.sdJwtService.present(this.agentContext, sdJwt, options)
+  public async present(sdJwtRecord: SdJwtRecord, options: SdJwtPresentOptions): Promise<string> {
+    return await this.sdJwtService.present(this.agentContext, sdJwtRecord, options)
   }
 
   /**
@@ -53,7 +53,7 @@ export class SdJwtApi {
    *
    * For example, you might still want to continue with a flow if not all the claims are included, but the signature is valid.
    */
-  public async verify(sdJwt: SdJwt | string, options: SdJwtVerifyOptions): Promise<SdJwtVerificationResult> {
-    return await this.sdJwtService.verify(this.agentContext, sdJwt, options)
+  public async verify(sdJwtCompact: string, options: SdJwtVerifyOptions): Promise<SdJwtVerificationResult> {
+    return await this.sdJwtService.verify(this.agentContext, sdJwtCompact, options)
   }
 }

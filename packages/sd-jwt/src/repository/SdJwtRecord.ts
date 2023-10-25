@@ -14,6 +14,7 @@ export type SdJwt<
   disclosures?: Array<DisclosureItem>
   header: Header
   payload: Payload
+  signature: Uint8Array
 
   // TODO: include the holder key for key binding in here, for ease of use
 }
