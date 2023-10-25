@@ -10,8 +10,8 @@ export type SdJwtCreateOptions<Payload extends Record<string, unknown> = Record<
 }
 
 export type SdJwtReceiveOptions = {
-  issuerDid: Key
-  holderKey?: Key
+  issuerKey: Key
+  holderKey: Key
 }
 
 export type SdJwtPresentOptions = {
@@ -19,9 +19,6 @@ export type SdJwtPresentOptions = {
   includeHolderKey?: boolean
 }
 
-/**
- * @todo combine requiredClaims and requiredDisclosedClaims
- */
 export type SdJwtVerifyOptions = {
   requiredClaims?: Array<string>
   holderKey?: Key

@@ -9,16 +9,18 @@ export type SdJwtRecordTags = TagsBase & {
 
 export type SdJwt<
   Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>
 > = {
   disclosures?: Array<DisclosureItem>
   header: Header
   payload: Payload
+
+  // TODO: include the holder key for key binding in here, for ease of use
 }
 
 export type SdJwtRecordStorageProps<
   Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>
 > = {
   id?: string
   createdAt?: Date
@@ -28,7 +30,7 @@ export type SdJwtRecordStorageProps<
 
 export class SdJwtRecord<
   Header extends Record<string, unknown> = Record<string, unknown>,
-  Payload extends Record<string, unknown> = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>
 > extends BaseRecord<SdJwtRecordTags> {
   public static readonly type = 'SdJwtRecord'
   public readonly type = SdJwtRecord.type

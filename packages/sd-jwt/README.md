@@ -52,14 +52,14 @@ In order for this module to work, we have to inject it into the agent to access 
 import { SdJwtModule } from '@aries-framework/sd-jwt'
 
 const agent = new Agent({
-    config: {
-        /* config */
-    },
-    dependencies: agentDependencies,
-    modules: {
-        sdJwt: new SdJwtModule(),
-        /* other custom modules */
-    },
+  config: {
+    /* config */
+  },
+  dependencies: agentDependencies,
+  modules: {
+    sdJwt: new SdJwtModule(),
+    /* other custom modules */
+  },
 })
 
 await agent.initialize()

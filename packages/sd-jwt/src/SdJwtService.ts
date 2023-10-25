@@ -13,6 +13,7 @@ import {
   TypedArrayEncoder,
   Buffer,
   getJwaFromKeyType,
+  deepEquality,
 } from '@aries-framework/core'
 import { SdJwtVc, HasherAlgorithm, SdJwt } from 'jwt-sd'
 
@@ -107,39 +108,62 @@ export class SdJwtService {
 
     const compact = await sdJwtVc.toCompact()
 
+    const sdJwtRecord = new SdJwtRecord<typeof header, Payload>({
+      sdJwt: {
+        header: sdJwtVc.header,
+        payload: sdJwtVc.payload,
+        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+      },
+    })
+
+    // TODO: save the sdJwtRecord
+
     return {
-      sdJwtRecord: new SdJwtRecord<typeof header, Payload>({
-        sdJwt: {
-          header: sdJwtVc.header,
-          payload: sdJwtVc.payload,
-          disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
-        },
-      }),
+      sdJwtRecord,
       compact,
     }
   }
 
-  /**
-   * @todo Name is not the best
-   * @todo fix with the newer API
-   */
-  public async receive(
-    agentContext: AgentContext,
-    sdJwt: SdJwt,
-    { holderKey, issuerKey }: SdJwtReceiveOptions
-  ): Promise<SdJwtRecord> {
-    const isValid = await sdJwt.verifySignature(this.verifier(agentContext, issuerKey))
+  public async receive<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(agentContext: AgentContext, sdJwt: string, { issuerKey, holderKey }: SdJwtReceiveOptions): Promise<SdJwtRecord> {
+    const sdJwtFromCompact = SdJwtVc.fromCompact<Header, Payload>(sdJwt)
 
-    if (!isValid) {
-      throw new SdJwtError(`sd-jwt is not valid.`)
+    const isSignatureValid = await sdJwtFromCompact.verifySignature(this.verifier(agentContext, issuerKey))
+
+    if (!isSignatureValid) {
+      throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
     }
 
-    // TODO: append holder key here
-    const compact = await sdJwt.toCompact()
+    if (!('cnf' in sdJwtFromCompact.payload)) {
+      throw new SdJwtError('Confirmation claim (cnf) is required to be inside the sd-jwt-vc')
+    }
 
-    return new SdJwtRecord({
-      sdJwt: compact,
+    const confirmationClaim = sdJwtFromCompact.payload.cnf as Record<string, unknown>
+
+    if (typeof confirmationClaim !== 'object' || !('jwk' in confirmationClaim)) {
+      throw new SdJwtError('Only JSON Web Keys (JWK) are supported as key material inside the confirmation claim (cnf)')
+    }
+
+    const jwk = confirmationClaim.jwk
+    const holderJwk = getJwkFromKey(holderKey).toJson()
+
+    if (!deepEquality(jwk, holderJwk)) {
+      throw new SdJwtError('supplied holder key is not equal to the JWK inside the confirmation claim (cnf)')
+    }
+
+    const sdJwtRecord = new SdJwtRecord<Header, Payload>({
+      sdJwt: {
+        header: sdJwtFromCompact.header,
+        payload: sdJwtFromCompact.payload,
+        disclosures: sdJwtFromCompact.disclosures?.map((d) => d.decoded),
+      },
     })
+
+    // TODO: save the sdJwtRecord
+
+    return sdJwtRecord
   }
 
   public async present(
