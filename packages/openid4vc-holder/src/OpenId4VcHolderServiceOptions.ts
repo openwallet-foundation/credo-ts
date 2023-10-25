@@ -41,10 +41,15 @@ export interface ResolvedCredentialOffer {
   credentialsToRequest: CredentialToRequest[]
 }
 
+export interface ResolvedAuthorizationRequest extends AuthCodeFlowOptions {
+  codeVerifier: string
+  authorizationRequestUri: string
+}
+
 /**
- * Options that are used for the pre-authorized code flow.
+ * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
  */
-export interface PreAuthCodeFlowOptions {
+export interface AcceptCredentialOfferOptions {
   /**
    * String value containing a user PIN. This value MUST be present if user_pin_required was set to true in the Credential Offer.
    * This parameter MUST only be used, if the grant_type is urn:ietf:params:oauth:grant-type:pre-authorized_code.
@@ -85,7 +90,7 @@ export interface PreAuthCodeFlowOptions {
  * Options that are used for the authorization code flow.
  * Extends the pre-authorized code flow options.
  */
-export interface AuthCodeFlowOptions extends PreAuthCodeFlowOptions {
+export interface AuthCodeFlowOptions {
   clientId: string
   redirectUri: string
   scope?: string[]
@@ -206,10 +211,14 @@ type WithInternalOptions<FlowType extends AuthFlowType, Options> = Options & {
   version: OpenId4VCIVersion
 }
 
+export type AuthorizationCodeFlowOptions = WithInternalOptions<AuthFlowType.AuthorizationCodeFlow, AuthCodeFlowOptions>
+export type PreAuthorizedCodeFlowOptions = WithInternalOptions<
+  AuthFlowType.PreAuthorizedCodeFlow,
+  AcceptCredentialOfferOptions
+>
+
 /**
  * The options that are used to request a credential from an issuer.
  * @internal
  */
-export type RequestCredentialOptions =
-  | WithInternalOptions<AuthFlowType.PreAuthorizedCodeFlow, PreAuthCodeFlowOptions>
-  | WithInternalOptions<AuthFlowType.AuthorizationCodeFlow, AuthCodeFlowOptions>
+export type RequestCredentialOptions = PreAuthorizedCodeFlowOptions & AuthorizationCodeFlowOptions

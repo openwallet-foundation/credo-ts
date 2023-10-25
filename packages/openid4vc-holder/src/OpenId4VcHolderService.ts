@@ -1,10 +1,13 @@
 import type {
+  AuthCodeFlowOptions,
   AuthDetails,
   CredentialToRequest,
+  AcceptCredentialOfferOptions,
   ProofOfPossessionRequirements,
   ProofOfPossessionVerificationMethodResolver,
-  RequestCredentialOptions,
   SupportedCredentialFormats,
+  ResolvedCredentialOffer,
+  ResolvedAuthorizationRequest,
 } from './OpenId4VcHolderServiceOptions'
 import type { OpenIdCredentialFormatProfile } from './utils'
 import type {
@@ -52,7 +55,6 @@ import {
   injectable,
   parseDid,
 } from '@aries-framework/core'
-import { Metadata } from '@aries-framework/core/src/storage/Metadata'
 import {
   AccessTokenClient,
   CredentialOfferClient,
@@ -60,11 +62,9 @@ import {
   MetadataClient,
   ProofOfPossessionBuilder,
   formPost,
-  getJson,
 } from '@sphereon/oid4vci-client'
 import {
   OpenId4VCIVersion,
-  AuthzFlowType,
   CodeChallengeMethod,
   assertedUniformCredentialOffer,
   ResponseType,
@@ -73,7 +73,7 @@ import {
 } from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { AuthFlowType, supportedCredentialFormats } from './OpenId4VcHolderServiceOptions'
+import { supportedCredentialFormats } from './OpenId4VcHolderServiceOptions'
 import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getUniformFormat } from './utils/Formats'
 import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
@@ -92,11 +92,6 @@ export type OfferedCredentialsWithMetadata =
   | { credentialSupported: CredentialSupported; type: OfferedCredentialType.CredentialSupported }
   | { inlineCredentialOffer: CredentialOfferFormat; type: OfferedCredentialType.InlineCredentialOffer }
 
-const flowTypeMapping = {
-  [AuthFlowType.AuthorizationCodeFlow]: AuthzFlowType.AUTHORIZATION_CODE_FLOW,
-  [AuthFlowType.PreAuthorizedCodeFlow]: AuthzFlowType.PRE_AUTHORIZED_CODE_FLOW,
-}
-
 interface AcquireAuthorizationCodeResult {
   code: string
 }
@@ -107,9 +102,9 @@ interface AuthRequestOpts {
   clientId: string
   codeChallenge: string
   codeChallengeMethod: CodeChallengeMethod
-  authorizationDetails?: AuthDetails | AuthDetails[]
+  authDetails?: AuthDetails | AuthDetails[]
   redirectUri: string
-  scope?: string
+  scope?: string[]
 }
 
 /**
@@ -172,13 +167,16 @@ export class OpenId4VcHolderService {
     clientId,
     codeChallengeMethod,
     codeChallenge,
-    authorizationDetails,
     redirectUri,
-    scope,
-  }: AuthRequestOpts): Promise<AcquireAuthorizationCodeResult> {
+    scope: _scope,
+    authDetails: _authDetails,
+  }: AuthRequestOpts) {
+    let scope = !_scope || _scope.length === 0 ? undefined : _scope?.join(' ')
+    const authDetails = !_authDetails || _authDetails.length === 0 ? undefined : _authDetails
+
     // Scope and authorization_details can be used in the same authorization request
     // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rar-23#name-relationship-to-scope-param
-    if (!scope && !authorizationDetails) {
+    if (!scope && !authDetails) {
       throw new AriesFrameworkError('Please provide a scope or authorization_details')
     }
 
@@ -189,11 +187,11 @@ export class OpenId4VcHolderService {
     if (typeof parEndpoint !== 'string') parEndpoint = undefined
 
     let authorizationEndpoint = metadata.credentialIssuerMetadata?.authorization_endpoint
-    if (typeof parEndpoint !== 'string') authorizationEndpoint = undefined
+    if (typeof authorizationEndpoint !== 'string') authorizationEndpoint = undefined
 
-    if (!parEndpoint && !authorizationEndpoint) {
+    if (!authorizationEndpoint) {
       throw new AriesFrameworkError(
-        "Server metadata does not contain 'pushed_authorization_request_endpoint' or 'authorization_endpoint'. Which are required for the Authorization Code Flow"
+        "Server metadata does not contain 'authorization_endpoint'. Which is required for the Authorization Code Flow"
       )
     }
 
@@ -203,45 +201,41 @@ export class OpenId4VcHolderService {
     }
 
     const queryObj: { [key: string]: string } = {
-      response_type: ResponseType.AUTH_CODE,
       client_id: clientId,
+      response_type: ResponseType.AUTH_CODE,
       code_challenge_method: codeChallengeMethod,
       code_challenge: codeChallenge,
-      authorization_details: JSON.stringify(this.handleAuthorizationDetails(metadata, authorizationDetails)),
       redirect_uri: redirectUri,
-      scope: scope,
     }
+
+    if (scope) queryObj['scope'] = scope
+
+    const authorizationDetails = JSON.stringify(this.handleAuthorizationDetails(metadata, authDetails))
+    if (authorizationDetails) queryObj['authorization_details'] = authorizationDetails
 
     const issuerState = credentialOffer.grants?.authorization_code?.issuer_state
     if (issuerState) queryObj['issuer_state'] = issuerState
 
-    let requestUri: string
-
     if (parEndpoint) {
-      const response = await formPost<PushedAuthorizationResponse>(parEndpoint, new URLSearchParams(queryObj))
+      const body = new URLSearchParams(queryObj)
+      const response = await formPost<PushedAuthorizationResponse>(parEndpoint, body)
       if (!response.successBody)
         throw new AriesFrameworkError(`Could not acquire the authorization request uri from '${parEndpoint}'`)
-      requestUri = convertJsonToURI(
-        { request_uri: response.successBody.request_uri },
+      return convertJsonToURI(
+        { request_uri: response.successBody.request_uri, client_id: clientId, response_type: ResponseType.AUTH_CODE },
         {
-          baseUrl: metadata.credentialIssuerMetadata?.authorization_endpoint,
-          uriTypeProperties: ['request_uri'],
+          baseUrl: authorizationEndpoint,
+          uriTypeProperties: ['request_uri', 'client_id', 'response_type'],
           mode: JsonURIMode.X_FORM_WWW_URLENCODED,
         }
       )
     } else {
-      requestUri = convertJsonToURI(queryObj, {
+      return convertJsonToURI(queryObj, {
         baseUrl: authorizationEndpoint,
         uriTypeProperties: ['redirect_uri', 'scope', 'authorization_details', 'issuer_state'],
         mode: JsonURIMode.X_FORM_WWW_URLENCODED,
       })
     }
-
-    const response = await getJson<AcquireAuthorizationCodeResult>(requestUri)
-    if (!response.successBody)
-      throw new AriesFrameworkError(`Could not acquire the authorization request code from '${parEndpoint}'`)
-
-    return { code: response.successBody.code }
   }
 
   private getFormatAndTypesFromOfferedCredential(
@@ -324,8 +318,65 @@ export class OpenId4VcHolderService {
     }
   }
 
-  public async acceptCredentialOffer(agentContext: AgentContext, options: RequestCredentialOptions) {
-    const { credentialsToRequest, credentialOfferPayload, metadata: _metadata, version } = options
+  public async resolveAuthorizationRequest(
+    resolvedCredentialOffer: ResolvedCredentialOffer,
+    authCodeFlowOptions: AuthCodeFlowOptions
+  ): Promise<ResolvedAuthorizationRequest> {
+    const { credentialOfferPayload, metadata: _metadata } = resolvedCredentialOffer
+
+    // TODO: authdetails
+
+    const issuer = credentialOfferPayload.credential_issuer
+    const metadata = _metadata ? _metadata : await MetadataClient.retrieveAllMetadata(issuer)
+    if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenID4VCI issuer: ${issuer}`)
+
+    const codeVerifier = randomStringForEntropy(256)
+    const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
+    const codeChallenge = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
+
+    this.logger.debug('Converted code_verifier to code_challenge', {
+      codeVerifier: codeVerifier,
+      sha256: codeVerifierSha256.toString(),
+      base64Url: codeChallenge,
+    })
+
+    const { clientId, redirectUri, scope, authDetails } = authCodeFlowOptions
+    const authorizationRequestUri = await this.acquireAuthorizationRequestCode({
+      credentialOffer: credentialOfferPayload,
+      clientId,
+      codeChallengeMethod: CodeChallengeMethod.SHA256,
+      codeChallenge,
+      redirectUri,
+      scope,
+      authDetails,
+      metadata,
+    })
+
+    return {
+      ...authCodeFlowOptions,
+      codeVerifier,
+      authorizationRequestUri,
+    }
+  }
+
+  public async acceptCredentialOffer(
+    agentContext: AgentContext,
+    options: {
+      resolvedCredentialOffer: ResolvedCredentialOffer
+      acceptCredentialOfferOptions: AcceptCredentialOfferOptions
+      resolvedAuthorizationRequest?: ResolvedAuthorizationRequest & { code: string }
+    }
+  ) {
+    const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequest } = options
+
+    const {
+      credentialsToRequest,
+      allowedProofOfPossessionSignatureAlgorithms: _allowedProofOfPossessionSignatureAlgorithms,
+      userPin,
+      proofOfPossessionVerificationMethodResolver,
+      verifyCredentialStatus,
+    } = acceptCredentialOfferOptions
+    const { credentialOfferPayload, metadata: _metadata, version } = resolvedCredentialOffer
 
     if (credentialsToRequest?.length === 0) {
       this.logger.warn(`Accepting 0 credential offers. Returning`)
@@ -338,17 +389,13 @@ export class OpenId4VcHolderService {
     const metadata = _metadata ? _metadata : await MetadataClient.retrieveAllMetadata(issuer)
     if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenID4VCI issuer: ${issuer}`)
 
-    const flowType = flowTypeMapping[options.flowType]
-    if (!flowType) {
-      throw new AriesFrameworkError(
-        `Unsupported flowType ${options.flowType}. Valid values are ${Object.values(AuthFlowType).join(', ')}`
-      )
-    }
+    const issuerMetadata = metadata.credentialIssuerMetadata
+    if (!issuerMetadata) throw new AriesFrameworkError('Found no credential issuer metadata')
 
     const supportedJwaSignatureAlgorithms = this.getSupportedJwaSignatureAlgorithms(agentContext)
 
-    const allowedProofOfPossessionSignatureAlgorithms = options.allowedProofOfPossessionSignatureAlgorithms
-      ? options.allowedProofOfPossessionSignatureAlgorithms.filter((algorithm) =>
+    const allowedProofOfPossessionSignatureAlgorithms = _allowedProofOfPossessionSignatureAlgorithms
+      ? _allowedProofOfPossessionSignatureAlgorithms.filter((algorithm) =>
           supportedJwaSignatureAlgorithms.includes(algorithm)
         )
       : supportedJwaSignatureAlgorithms
@@ -361,41 +408,21 @@ export class OpenId4VcHolderService {
     let openIdAccessTokenResponse: OpenIDResponse<AccessTokenResponse>
 
     const accessTokenClient = new AccessTokenClient()
-    if (options.flowType === AuthFlowType.AuthorizationCodeFlow) {
-      const codeVerifier = randomStringForEntropy(256)
-      const codeVerifierSha256 = Hasher.hash(TypedArrayEncoder.fromString(codeVerifier), 'sha2-256')
-      const base64Url = TypedArrayEncoder.toBase64URL(codeVerifierSha256)
-
-      this.logger.debug('Converted code_verifier to code_challenge', {
-        codeVerifier: codeVerifier,
-        sha256: codeVerifierSha256.toString(),
-        base64Url: base64Url,
-      })
-
-      const result = await this.acquireAuthorizationRequestCode({
-        credentialOffer: credentialOfferPayload,
-        clientId: options.clientId,
-        codeChallengeMethod: CodeChallengeMethod.SHA256,
-        codeChallenge: base64Url,
-        redirectUri: options.redirectUri,
-        scope: options.scope && options.scope.length === 0 ? undefined : options.scope?.join(' '),
-        authorizationDetails: options.authDetails && options.authDetails.length === 0 ? undefined : options.authDetails,
-        metadata,
-      })
-
+    if (resolvedAuthorizationRequest) {
+      const { code, codeVerifier, redirectUri } = resolvedAuthorizationRequest
       openIdAccessTokenResponse = await accessTokenClient.acquireAccessToken({
         metadata,
         credentialOffer: { credential_offer: credentialOfferPayload },
-        code: result.code,
-        codeVerifier: codeVerifier,
-        redirectUri: options.redirectUri,
-        pin: options.userPin,
+        code,
+        codeVerifier,
+        redirectUri,
+        pin: userPin,
       })
     } else {
       openIdAccessTokenResponse = await accessTokenClient.acquireAccessToken({
         metadata,
         credentialOffer: { credential_offer: credentialOfferPayload },
-        pin: options.userPin,
+        pin: userPin,
       })
     }
 
@@ -405,9 +432,6 @@ export class OpenId4VcHolderService {
     this.logger.debug('Requested OpenId4VCI Access Token')
 
     const accessToken = openIdAccessTokenResponse.successBody
-
-    const issuerMetadata = metadata.credentialIssuerMetadata
-    if (!issuerMetadata) throw new AriesFrameworkError('Found no credential issuer metadata')
 
     const offeredCredentialsWithMetadata = this.getOfferedCredentialsWithMetadata(
       credentialOfferPayload,
@@ -438,7 +462,7 @@ export class OpenId4VcHolderService {
         allowedCredentialFormats: supportedCredentialFormats,
         allowedProofOfPossessionSignatureAlgorithms,
         offeredCredentialWithMetadata: credentialWithMetadata,
-        proofOfPossessionVerificationMethodResolver: options.proofOfPossessionVerificationMethodResolver,
+        proofOfPossessionVerificationMethodResolver: proofOfPossessionVerificationMethodResolver,
       })
 
       const callbacks: ProofOfPossessionCallbacks<unknown> = {
@@ -494,7 +518,7 @@ export class OpenId4VcHolderService {
       })
 
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
-        verifyCredentialStatus: options.verifyCredentialStatus,
+        verifyCredentialStatus,
       })
 
       // Create credential record, but we don't store it yet (only after the user has accepted the credential)
