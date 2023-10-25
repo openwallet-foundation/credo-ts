@@ -207,8 +207,6 @@ export class SdJwtService {
       header: sdJwtRecord.sdJwt.header,
       payload: sdJwtRecord.sdJwt.payload,
       signature: sdJwtRecord.sdJwt.signature,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
       disclosures: sdJwtRecord.sdJwt.disclosures?.map(Disclosure.fromArray),
     }).withKeyBinding(keyBinding)
 
@@ -248,9 +246,7 @@ export class SdJwtService {
       sdJwt: {
         signature: sdJwt.signature,
         payload: sdJwt.payload,
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        disclosures: sdJwt.disclosures.map(Disclosure.fromArray),
+        disclosures: sdJwt.disclosures?.map((d) => d.decoded),
         header: sdJwt.header,
       },
     })

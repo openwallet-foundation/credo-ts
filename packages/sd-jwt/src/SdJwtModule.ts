@@ -4,6 +4,7 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { SdJwtApi } from './SdJwtApi'
 import { SdJwtService } from './SdJwtService'
+import { SdJwtRepository } from './repository'
 
 /**
  * @public
@@ -27,5 +28,8 @@ export class SdJwtModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(SdJwtService)
+
+    // Repositories
+    dependencyManager.registerSingleton(SdJwtRepository)
   }
 }

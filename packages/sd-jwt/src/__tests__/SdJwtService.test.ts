@@ -1,12 +1,12 @@
 import type { Key, Logger } from '@aries-framework/core'
 
 import { AskarModule } from '@aries-framework/askar'
-import { Hasher, getJwkFromKey, utils, KeyType, Agent, TypedArrayEncoder } from '@aries-framework/core'
+import { getJwkFromKey, utils, KeyType, Agent, TypedArrayEncoder } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { SdJwtVc } from 'jwt-sd'
 
 import { agentDependencies } from '../../../core/tests'
 import { SdJwtService } from '../SdJwtService'
+import { SdJwtRepository } from '../repository'
 
 const agent = new Agent({
   config: { label: 'sdjwtserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
@@ -17,6 +17,9 @@ const agent = new Agent({
 const logger = jest.fn() as unknown as Logger
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
+
+jest.mock('../repository/SdJwtRepository')
+const SdJwtRepositoryMock = SdJwtRepository as jest.Mock<SdJwtRepository>
 
 describe('SdJwtService', () => {
   let issuerKey: Key
@@ -36,7 +39,8 @@ describe('SdJwtService', () => {
       seed: TypedArrayEncoder.fromString('testseed000000000000000000000002'),
     })
 
-    sdJwtService = new SdJwtService(logger)
+    const sdJwtRepositoryMock = new SdJwtRepositoryMock()
+    sdJwtService = new SdJwtService(sdJwtRepositoryMock, logger)
   })
 
   describe('SdJwtService.create', () => {
@@ -421,7 +425,7 @@ describe('SdJwtService', () => {
       })
     })
 
-    test('Receive sd-jwt-vc with multiple (nested) disclosure', async () => {
+    test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const sdJwt =
         'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJVVzN2VkVqd1JmMElrdEpvY3ZLUm1HSHpIZldBTHRfWDJLMHd2bHVaSVNzIn19LCJpc3MiOiJkaWQ6a2V5OjEyMyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsiMUN1cjJrMkEyb0lCNUNzaFNJZl9BX0tnLWwyNnVfcUt1V1E3OVAwVmRhcyIsIlIxelRVdk9ZSGdjZXBqMGpIeXBHSHo5RUh0dFZLZnQweXN3YmM5RVRQYlUiLCJlRHFRcGRUWEpYYldoZi1Fc0k3enc1WDZPdlltRk4tVVpRUU1lc1h3S1B3IiwicGREazJfWEFLSG83Z09BZndGMWI3T2RDVVZUaXQya0pIYXhTRUNROXhmYyIsInBzYXVLVU5XRWkwOW51M0NsODl4S1hnbXBXRU5abDV1eTFOMW55bl9qTWsiLCJzTl9nZTBwSFhGNnFtc1luWDFBOVNkd0o4Y2g4YUVOa3hiT0RzVDc0WXdJIl19.oKI-t9M9ie5_1gV7GkvxwEh6DVIK0ysXdzFtNJT-FwLxkm7FT5D3RkJSug2NSmnxeiYLb1Qc933Toiw6KgPqAA~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
 
