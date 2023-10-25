@@ -4,8 +4,8 @@ import { AgentConfig } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from './OpenId4VciHolderApi'
 import { OpenId4VcHolderService } from './OpenId4VciHolderService'
-import { PresentationExchangeService } from './presentations'
-import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
+import { PresentationExchangeService } from '../presentations'
+import { OpenId4VpHolderService } from '../presentations/OpenId4VpHolderService'
 
 /**
  * @public @module OpenId4VcHolderModule

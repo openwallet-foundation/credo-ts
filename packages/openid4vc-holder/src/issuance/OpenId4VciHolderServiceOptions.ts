@@ -3,7 +3,7 @@ import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 import type { CredentialFormat } from '@sphereon/ssi-types'
 
-import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
+import { OpenIdCredentialFormatProfile } from '../utils/claimFormatMapping'
 
 //  TODO: use simpler object
 export interface AuthDetails {

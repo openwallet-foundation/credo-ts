@@ -9,7 +9,7 @@ import type {
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenIdCredentialFormatProfile } from './utils'
+import type { OpenIdCredentialFormatProfile } from '../utils'
 import type {
   AgentContext,
   JwaSignatureAlgorithm,
@@ -74,9 +74,9 @@ import {
 import { randomStringForEntropy } from '@stablelib/random'
 
 import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
-import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
-import { getUniformFormat } from './utils/Formats'
-import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
+import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from '../utils'
+import { getUniformFormat } from '../utils/Formats'
+import { getSupportedCredentials } from '../utils/IssuerMetadataUtils'
 
 /**
  * The type of a credential offer entry. For each item in `credentials` array, the type MUST be one of the following:

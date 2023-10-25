@@ -10,8 +10,9 @@ import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
+import { OpenId4VpHolderService } from '../presentations/OpenId4VpHolderService'
+
 import { OpenId4VcHolderService } from './OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
 
 /**
  * @public

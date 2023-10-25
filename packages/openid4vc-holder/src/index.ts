@@ -1,8 +1,8 @@
 import 'fast-text-encoding'
 
-export * from './OpenId4VcHolderApi'
-export * from './OpenId4VcHolderModule'
-export * from './OpenId4VcHolderService'
+export * from './issuance/OpenId4VciHolderApi'
+export * from './issuance/OpenId4VciHolderModule'
+export * from './issuance/OpenId4VciHolderService'
 // Contains internal types, so we don't export everything
 export {
   AuthCodeFlowOptions,
@@ -11,6 +11,6 @@ export {
   ProofOfPossessionVerificationMethodResolverOptions,
   RequestCredentialOptions,
   SupportedCredentialFormats,
-} from './OpenId4VcHolderServiceOptions'
+} from './issuance/OpenId4VciHolderServiceOptions'
 export * from './presentations'
 export { OpenIdCredentialFormatProfile } from './utils'
