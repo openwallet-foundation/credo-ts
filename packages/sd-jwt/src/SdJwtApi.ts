@@ -1,5 +1,5 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
-import type { SdJwt, SdJwtVerificationResult } from './SdJwtService'
+import type { SdJwt, SdJwtVcVerificationResult } from './SdJwtService'
 import type { SdJwtRecord } from './repository'
 
 import { AgentContext, injectable } from '@aries-framework/core'
@@ -53,7 +53,13 @@ export class SdJwtApi {
    *
    * For example, you might still want to continue with a flow if not all the claims are included, but the signature is valid.
    */
-  public async verify(sdJwtCompact: string, options: SdJwtVerifyOptions): Promise<SdJwtVerificationResult> {
-    return await this.sdJwtService.verify(this.agentContext, sdJwtCompact, options)
+  public async verify<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(
+    sdJwtCompact: string,
+    options: SdJwtVerifyOptions
+  ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
+    return await this.sdJwtService.verify<Header, Payload>(this.agentContext, sdJwtCompact, options)
   }
 }

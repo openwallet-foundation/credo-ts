@@ -1,7 +1,6 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
 import type { AgentContext, JwkJson } from '@aries-framework/core'
-import type { Signer } from 'jwt-sd'
-import type { SdJwtVerificationResult, Verifier } from 'jwt-sd/build/sdJwt'
+import type { Signer, SdJwtVcVerificationResult, Verifier } from 'jwt-sd'
 
 import {
   getJwkFromJson,
@@ -19,7 +18,7 @@ import {
 } from '@aries-framework/core'
 import { KeyBinding, SdJwtVc, HasherAlgorithm, SdJwt, Disclosure } from 'jwt-sd'
 
-export { SdJwt }
+export { SdJwt, SdJwtVcVerificationResult }
 
 import { SdJwtError } from './SdJwtError'
 import { SdJwtRepository, SdJwtRecord } from './repository'
@@ -220,7 +219,7 @@ export class SdJwtService {
     agentContext: AgentContext,
     sdJwtCompact: string,
     { holderKey, verifierDid, issuerKey, requiredClaimKeys }: SdJwtVerifyOptions
-  ): Promise<{ sdJwtRecord: SdJwtRecord; validation: SdJwtVerificationResult }> {
+  ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
     const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
 
     if (!sdJwt.signature) {
