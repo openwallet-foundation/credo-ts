@@ -73,10 +73,11 @@ import {
 } from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from '../utils'
 import { getUniformFormat } from '../utils/Formats'
 import { getSupportedCredentials } from '../utils/IssuerMetadataUtils'
+
+import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 /**
  * The type of a credential offer entry. For each item in `credentials` array, the type MUST be one of the following:
@@ -91,10 +92,6 @@ export enum OfferedCredentialType {
 export type OfferedCredentialsWithMetadata =
   | { credentialSupported: CredentialSupported; type: OfferedCredentialType.CredentialSupported }
   | { inlineCredentialOffer: CredentialOfferFormat; type: OfferedCredentialType.InlineCredentialOffer }
-
-interface AcquireAuthorizationCodeResult {
-  code: string
-}
 
 interface AuthRequestOpts {
   credentialOffer: CredentialOfferPayloadV1_0_11
