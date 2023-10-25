@@ -8,7 +8,7 @@ import type {
   SupportedCredentialFormats,
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
-} from './OpenId4VcHolderServiceOptions'
+} from './OpenId4VciHolderServiceOptions'
 import type { OpenIdCredentialFormatProfile } from './utils'
 import type {
   AgentContext,
@@ -73,7 +73,7 @@ import {
 } from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { supportedCredentialFormats } from './OpenId4VcHolderServiceOptions'
+import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getUniformFormat } from './utils/Formats'
 import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
