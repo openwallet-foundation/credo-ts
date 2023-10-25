@@ -13,4 +13,4 @@ export {
   SupportedCredentialFormats,
 } from './issuance/OpenId4VciHolderServiceOptions'
 export * from './presentations'
-export { OpenIdCredentialFormatProfile } from './utils'
+export { OpenIdCredentialFormatProfile } from './issuance/utils'

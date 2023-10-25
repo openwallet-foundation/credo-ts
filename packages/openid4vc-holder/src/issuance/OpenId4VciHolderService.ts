@@ -9,7 +9,7 @@ import type {
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
 } from './OpenId4VciHolderServiceOptions'
-import type { OpenIdCredentialFormatProfile } from '../utils'
+import type { OpenIdCredentialFormatProfile } from './utils'
 import type {
   AgentContext,
   JwaSignatureAlgorithm,
@@ -73,9 +73,9 @@ import {
 } from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from '../utils'
-import { getUniformFormat } from '../utils/Formats'
-import { getSupportedCredentials } from '../utils/IssuerMetadataUtils'
+import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
+import { getUniformFormat } from './utils/Formats'
+import { getSupportedCredentials } from './utils/IssuerMetadataUtils'
 
 import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
