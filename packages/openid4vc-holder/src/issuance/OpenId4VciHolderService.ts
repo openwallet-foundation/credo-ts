@@ -73,7 +73,7 @@ import { randomStringForEntropy } from '@stablelib/random'
 
 import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
-import { getUniformFormat } from './utils/Formats'
+import { getFormatForVersion, getUniformFormat } from './utils/Formats'
 import {
   getMetadataFromCredentialOffer,
   getOfferedCredentialsWithMetadata,
@@ -393,6 +393,7 @@ export class OpenId4VcHolderService {
 
       const isInlineOffer = credentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer
       const format = credentialWithMetadata.format
+      const originalFormat = getFormatForVersion(format, version)
 
       let credentialTypes: string | string[]
       if (version < OpenId4VCIVersion.VER_1_0_11) {
@@ -402,7 +403,7 @@ export class OpenId4VcHolderService {
             `No id provided for a credential supported entry in combination with the OpenId4VCI v8 draft`
           )
         }
-        credentialTypes = credentialWithMetadata.credentialSupported.id.split(`-${format}`)[0]
+        credentialTypes = credentialWithMetadata.credentialSupported.id.split(`-${originalFormat}`)[0]
       } else {
         if (isInlineOffer) credentialTypes = credentialWithMetadata.inlineCredentialOffer.types
         else credentialTypes = credentialWithMetadata.credentialSupported.types
@@ -412,7 +413,7 @@ export class OpenId4VcHolderService {
       const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
         proofInput,
         credentialTypes,
-        format,
+        format: originalFormat,
       })
 
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
@@ -555,29 +556,29 @@ export class OpenId4VcHolderService {
     // We just guess that the first one is supported
     if (issuerSupportedCryptographicSuites === undefined) {
       signatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms[0]
-    }
+    } else {
+      switch (format) {
+        case 'jwt_vc_json':
+        case 'jwt_vc_json-ld':
+          signatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
+            issuerSupportedCryptographicSuites.includes(signatureAlgorithm)
+          )
+          break
+        case 'ldp_vc':
+          // We need to find it based on the JSON-LD proof type
+          signatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
+            const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
+            if (!JwkClass) return false
 
-    switch (format) {
-      case 'jwt_vc_json':
-      case 'jwt_vc_json-ld':
-        signatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) =>
-          issuerSupportedCryptographicSuites?.includes(signatureAlgorithm)
-        )
-        break
-      case 'ldp_vc':
-        // We need to find it based on the JSON-LD proof type
-        signatureAlgorithm = options.allowedProofOfPossessionSignatureAlgorithms.find((signatureAlgorithm) => {
-          const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-          if (!JwkClass) return false
+            const matchingSuite = signatureSuiteRegistry.getByKeyType(JwkClass.keyType)
+            if (matchingSuite.length === 0) return false
 
-          const matchingSuite = signatureSuiteRegistry.getByKeyType(JwkClass.keyType)
-          if (matchingSuite.length === 0) return false
-
-          return issuerSupportedCryptographicSuites?.includes(matchingSuite[0].proofType)
-        })
-        break
-      default:
-        throw new AriesFrameworkError(`Unsupported credential format. Requested format '${format}'`)
+            return issuerSupportedCryptographicSuites.includes(matchingSuite[0].proofType)
+          })
+          break
+        default:
+          throw new AriesFrameworkError(`Unsupported credential format. Requested format '${format}'`)
+      }
     }
 
     if (!signatureAlgorithm) {

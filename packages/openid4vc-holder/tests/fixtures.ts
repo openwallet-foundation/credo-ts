@@ -547,3 +547,64 @@ export const waltIdJffJwt_draft_11 = {
 
   jsonLdCredentialResponse: jsonLdPermanentResidentCardCredentialResponse,
 }
+
+export const waltIssuerPortalV11 = {
+  issuerMetadata: {
+    issuer: 'https://issuer.portal.walt.id',
+    authorization_endpoint: 'https://issuer.portal.walt.id/authorize',
+    pushed_authorization_request_endpoint: 'https://issuer.portal.walt.id/par',
+    token_endpoint: 'https://issuer.portal.walt.id/token',
+    jwks_uri: 'https://issuer.portal.walt.id/jwks',
+    scopes_supported: ['openid'],
+    response_modes_supported: ['query', 'fragment'],
+    grant_types_supported: ['authorization_code', 'urn:ietf:params:oauth:grant-type:pre-authorized_code'],
+    subject_types_supported: ['public'],
+    credential_issuer: 'https://issuer.portal.walt.id/.well-known/openid-credential-issuer',
+    credential_endpoint: 'https://issuer.portal.walt.id/credential',
+    credentials_supported: [
+      {
+        format: 'jwt_vc_json',
+        id: 'VerifiableId',
+        cryptographic_binding_methods_supported: ['did'],
+        cryptographic_suites_supported: ['EdDSA', 'ES256', 'ES256K', 'RSA'],
+        types: ['VerifiableCredential', 'VerifiableId'],
+      },
+      {
+        format: 'jwt_vc_json',
+        id: 'VerifiableDiploma',
+        cryptographic_binding_methods_supported: ['did'],
+        cryptographic_suites_supported: ['EdDSA', 'ES256', 'ES256K', 'RSA'],
+        types: ['VerifiableCredential', 'VerifiableAttestation', 'VerifiableDiploma'],
+      },
+      {
+        format: 'jwt_vc_json',
+        id: 'OpenBadgeCredential',
+        cryptographic_binding_methods_supported: ['did'],
+        cryptographic_suites_supported: ['EdDSA', 'ES256', 'ES256K', 'RSA'],
+        types: ['VerifiableCredential', 'OpenBadgeCredential'],
+      },
+    ],
+    batch_credential_endpoint: 'https://issuer.portal.walt.id/batch_credential',
+    deferred_credential_endpoint: 'https://issuer.portal.walt.id/credential_deferred',
+  },
+  par: {
+    request_uri: 'urn:ietf:params:oauth:request_uri:b0e16785-d722-42a5-a04f-4beab28e03ea',
+    expires_in: 'PT4M0.516515278S',
+  },
+
+  acquireAccessTokenResponse: {
+    access_token: '8bb45fb4-3475-49c2-85c7-0b91f687da44',
+    refresh_token: 'WEjORX8NZccRGtRN4yvXFdYE8MeAOaLLmmGlcRbutq4',
+    c_nonce: 'cbad6376-f882-44c5-ae88-19bccc0de124',
+    id_token:
+      'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI4YmI0NWZiNC0zNDc1LTQ5YzItODVjNy0wYjkxZjY4N2RhNDQifQ.Mca0Ln1AvNlxBJftYc1PZKQBlGdBmrHsFRQSBDoCgD0',
+    token_type: 'Bearer',
+    expires_in: 300,
+  },
+
+  credentialResponse: {
+    credential:
+      'eyJraWQiOiJkaWQ6andrOmV5SnJkSGtpT2lKUFMxQWlMQ0oxYzJVaU9pSnphV2NpTENKamNuWWlPaUpGWkRJMU5URTVJaXdpYTJsa0lqb2lOMlEyWTJKbU1qUTRPV0l6TkRJM05tSXhOekl4T1RBMU5EbGtNak01TVRnaUxDSjRJam9pUm01RlZWVmhkV1J0T1RsT016QmlPREJxY3poV2REUkJiazk0ZGxKM1dIUm5VbU5MY1ROblFrbDFPQ0lzSW1Gc1p5STZJa1ZrUkZOQkluMCMwIiwidHlwIjoiSldUIiwiYWxnIjoiRWREU0EifQ.eyJpc3MiOiJkaWQ6andrOmV5SnJkSGtpT2lKUFMxQWlMQ0oxYzJVaU9pSnphV2NpTENKamNuWWlPaUpGWkRJMU5URTVJaXdpYTJsa0lqb2lOMlEyWTJKbU1qUTRPV0l6TkRJM05tSXhOekl4T1RBMU5EbGtNak01TVRnaUxDSjRJam9pUm01RlZWVmhkV1J0T1RsT016QmlPREJxY3poV2REUkJiazk0ZGxKM1dIUm5VbU5MY1ROblFrbDFPQ0lzSW1Gc1p5STZJa1ZrUkZOQkluMCIsInN1YiI6ImRpZDprZXk6ekRuYWVpcFdnOURNWFB0OWpjbUFCcWFZUlZLYzE5dFgxeGZCUldGc0pTUG9VZE1udiIsIm5iZiI6MTY4NTM1MDc4OSwiaWF0IjoxNjg1MzUwNzg5LCJ2YyI6eyJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiVmVyaWZpYWJsZUF0dGVzdGF0aW9uIiwiVmVyaWZpYWJsZUlkIl0sIkBjb250ZXh0IjpbImh0dHBzOi8vd3d3LnczLm9yZy8yMDE4L2NyZWRlbnRpYWxzL3YxIl0sImlkIjoidXJuOnV1aWQ6NTljZTRhYzItZWM2NS00YjhmLThmOTYtZWE3ODUxMmRmOWQzIiwiaXNzdWVyIjoiZGlkOmp3azpleUpyZEhraU9pSlBTMUFpTENKMWMyVWlPaUp6YVdjaUxDSmpjbllpT2lKRlpESTFOVEU1SWl3aWEybGtJam9pTjJRMlkySm1NalE0T1dJek5ESTNObUl4TnpJeE9UQTFORGxrTWpNNU1UZ2lMQ0o0SWpvaVJtNUZWVlZoZFdSdE9UbE9NekJpT0RCcWN6aFdkRFJCYms5NGRsSjNXSFJuVW1OTGNUTm5Ra2wxT0NJc0ltRnNaeUk2SWtWa1JGTkJJbjAiLCJpc3N1YW5jZURhdGUiOiIyMDIzLTA1LTI5VDA4OjU5OjQ5WiIsImlzc3VlZCI6IjIwMjMtMDUtMjlUMDg6NTk6NDlaIiwidmFsaWRGcm9tIjoiMjAyMy0wNS0yOVQwODo1OTo0OVoiLCJjcmVkZW50aWFsU2NoZW1hIjp7ImlkIjoiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3dhbHQtaWQvd2FsdGlkLXNzaWtpdC12Y2xpYi9tYXN0ZXIvc3JjL3Rlc3QvcmVzb3VyY2VzL3NjaGVtYXMvVmVyaWZpYWJsZUlkLmpzb24iLCJ0eXBlIjoiRnVsbEpzb25TY2hlbWFWYWxpZGF0b3IyMDIxIn0sImNyZWRlbnRpYWxTdWJqZWN0Ijp7ImlkIjoiZGlkOmtleTp6RG5hZWlwV2c5RE1YUHQ5amNtQUJxYVlSVktjMTl0WDF4ZkJSV0ZzSlNQb1VkTW52IiwiY3VycmVudEFkZHJlc3MiOlsiMSBCb3VsZXZhcmQgZGUgbGEgTGliZXJ0w6ksIDU5ODAwIExpbGxlIl0sImRhdGVPZkJpcnRoIjoiMTk5My0wNC0wOCIsImZhbWlseU5hbWUiOiJET0UiLCJmaXJzdE5hbWUiOiJKYW5lIiwiZ2VuZGVyIjoiRkVNQUxFIiwibmFtZUFuZEZhbWlseU5hbWVBdEJpcnRoIjoiSmFuZSBET0UiLCJwZXJzb25hbElkZW50aWZpZXIiOiIwOTA0MDA4MDg0SCIsInBsYWNlT2ZCaXJ0aCI6IkxJTExFLCBGUkFOQ0UifSwiZXZpZGVuY2UiOlt7ImRvY3VtZW50UHJlc2VuY2UiOlsiUGh5c2ljYWwiXSwiZXZpZGVuY2VEb2N1bWVudCI6WyJQYXNzcG9ydCJdLCJzdWJqZWN0UHJlc2VuY2UiOiJQaHlzaWNhbCIsInR5cGUiOlsiRG9jdW1lbnRWZXJpZmljYXRpb24iXSwidmVyaWZpZXIiOiJkaWQ6ZWJzaToyQTlCWjlTVWU2QmF0YWNTcHZzMVY1Q2RqSHZMcFE3YkVzaTJKYjZMZEhLblF4YU4ifV19LCJqdGkiOiJ1cm46dXVpZDo1OWNlNGFjMi1lYzY1LTRiOGYtOGY5Ni1lYTc4NTEyZGY5ZDMifQ.6Wn8X2tEQJ9CmX3-meCxDuGmevRdtivnjVkGPXzfnJ-1M6AU4SFxxon0JmMjdmO_h4P9sCEe9RTtyTJou2yeCA',
+    format: 'jwt_vc',
+  },
+}

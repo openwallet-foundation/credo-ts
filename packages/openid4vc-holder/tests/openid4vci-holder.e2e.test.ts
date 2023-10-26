@@ -22,6 +22,7 @@ import {
   // mattrLaunchpadJsonLd_draft_08,
   waltIdJffJwt_draft_08,
   waltIdJffJwt_draft_11,
+  waltIssuerPortalV11,
 } from './fixtures'
 
 const modules = {
@@ -37,10 +38,10 @@ describe('OpenId4VcHolder', () => {
   beforeEach(async () => {
     agent = new Agent({
       config: {
-        label: 'OpenId4VcHolder Test13',
+        label: 'OpenId4VcHolder Test20',
         walletConfig: {
-          id: 'openid4vc-holder-test14',
-          key: 'openid4vc-holder-test15',
+          id: 'openid4vc-holder-test21',
+          key: 'openid4vc-holder-test22',
         },
       },
       dependencies: agentDependencies,
@@ -259,18 +260,27 @@ describe('OpenId4VcHolder', () => {
       const clientId = 'test-client'
       const redirectUri = 'https://example.com/cb'
 
-      const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+      const resolvedOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
         fixture.credentialOfferAuthorizationCodeFlow
       )
 
+      const resolvedAuthRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(resolvedOffer, {
+        clientId,
+        redirectUri,
+        scope: ['openid'],
+      })
+
       await expect(
-        agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(resolved, {
-          clientId: clientId,
-          verifyCredentialStatus: false,
-          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          redirectUri: redirectUri,
-        })
+        agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+          resolvedOffer,
+          resolvedAuthRequest,
+          'code',
+          {
+            verifyCredentialStatus: false,
+            proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+            allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          }
+        )
       ).rejects.toThrow()
     })
 
@@ -327,23 +337,26 @@ describe('OpenId4VcHolder', () => {
       const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
       if (!verificationMethod) throw new Error('No verification method found')
 
-      const clientId = 'test-client'
-      const redirectUri = 'https://example.com/cb'
-      const scope = ['TestCredential']
+      const opts = {
+        clientId: 'test-client',
+        redirectUri: 'https://example.com/cb',
+        scope: ['TestCredential'],
+      }
 
-      const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
+      const resolvedOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(
         fixture.credentialOfferAuthorizationCodeFlow
       )
 
+      const resolvedAuthRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(resolvedOffer, opts)
+
       const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
-        resolvedCredentialOffer,
+        resolvedOffer,
+        resolvedAuthRequest,
+        'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA',
         {
-          clientId: clientId,
           verifyCredentialStatus: false,
           proofOfPossessionVerificationMethodResolver: () => verificationMethod,
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          redirectUri: redirectUri,
-          scope,
         }
       )
 
@@ -582,32 +595,69 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecord1.credential.credentialSubjectIds[0]).toEqual(did.didState.did)
     })
 
-    //it('use with jff / mattr demo', async () => {
-    //  const did = await agent.dids.create<KeyDidCreateOptions>({
-    //    method: 'key',
-    //    options: { keyType: KeyType.Ed25519 },
-    //    secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
-    //  })
+    it('authorization code flow https://portal.walt.id/', async () => {
+      const fixture = waltIssuerPortalV11
+      // setup temporary redirect mock
+      nock('https://issuer.portal.walt.id')
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.issuerMetadata)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
+        .post('/par')
+        .reply(200, fixture.par)
+        // setup access token response
+        .post('/token')
+        .reply(200, fixture.acquireAccessTokenResponse)
+        // setup credential request response
+        .post('/credential')
+        .reply(200, fixture.credentialResponse)
 
-    //  const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22jwt_vc_json%22%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22VerifiableAttestation%22%2C%22VerifiableDiploma%22%5D%2C%22credential_definition%22%3A%7B%22%40context%22%3A%5B%22https%3A%2F%2Fwww.w3.org%2F2018%2Fcredentials%2Fv1%22%2C%22https%3A%2F%2Fw3id.org%2Fsecurity%2Fsuites%2Fjws-2020%2Fv1%22%5D%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22VerifiableAttestation%22%2C%22VerifiableDiploma%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%22dd8c7950-3f4e-4c61-8b40-4be18c980e46%22%7D%2C%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJkZDhjNzk1MC0zZjRlLTRjNjEtOGI0MC00YmUxOGM5ODBlNDYiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.UB8riE2_SNxRE_0jXStlpwDrkusmNnCQZgBAGW74xmi3BKPQgnqIB4m_MTHKjA9KhVitKjCoWH8iJdD7nQDVDQ%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D`
+        .get('/.well-known/oauth-authorization-server')
+        .reply(404)
 
-    //  const didKey = DidKey.fromDid(did.didState.did as string)
-    //  const kid = `${didKey.did}#${didKey.key.fingerprint}`
-    //  const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
-    //  if (!verificationMethod) throw new Error('No verification method found')
-    //  const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+      const did = await agent.dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: { keyType: KeyType.Ed25519 },
+        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      })
 
-    //  const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
-    //    resolvedCredentialOffer,
-    //    {
-    //      allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-    //      proofOfPossessionVerificationMethodResolver: () => verificationMethod,
-    //      verifyCredentialStatus: false,
-    //      clientId: 'https://issuer.portal.walt.id',
-    //      redirectUri: 'https://example.com/cb',
-    //      scope: ['openid'],
-    //    }
-    //  )
-    //})
+      const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22jwt_vc_json%22%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22OpenBadgeCredential%22%5D%2C%22credential_definition%22%3A%7B%22%40context%22%3A%5B%22https%3A%2F%2Fwww.w3.org%2F2018%2Fcredentials%2Fv1%22%2C%22https%3A%2F%2Fpurl.imsglobal.org%2Fspec%2Fob%2Fv3p0%2Fcontext.json%22%5D%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22OpenBadgeCredential%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%22b0e16785-d722-42a5-a04f-4beab28e03ea%22%7D%2C%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D`
+
+      const didKey = DidKey.fromDid(did.didState.did as string)
+      const kid = `${didKey.did}#${didKey.key.fingerprint}`
+      const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+      if (!verificationMethod) throw new Error('No verification method found')
+
+      const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+
+      const authCodeFlowOptions = {
+        clientId: 'test-client',
+        redirectUri: 'http://blank',
+        scope: ['openid', 'OpenBadgeCredential'],
+      }
+
+      const resolvedAuthorizationRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(
+        resolved,
+        authCodeFlowOptions
+      )
+
+      const code =
+        'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA'
+
+      const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+        resolved,
+        resolvedAuthorizationRequest,
+        code,
+        {
+          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+          verifyCredentialStatus: false,
+        }
+      )
+
+      expect(w3cCredentialRecords).toHaveLength(1)
+    })
   })
 })
