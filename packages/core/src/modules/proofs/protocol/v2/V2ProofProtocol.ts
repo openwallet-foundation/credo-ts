@@ -46,6 +46,7 @@ import { composeAutoAccept } from '../../utils/composeAutoAccept'
 import { BaseProofProtocol } from '../BaseProofProtocol'
 
 import { ProofFormatCoordinator } from './ProofFormatCoordinator'
+import { V2PresentationProblemReportError } from './errors'
 import { V2PresentationAckHandler } from './handlers/V2PresentationAckHandler'
 import { V2PresentationHandler } from './handlers/V2PresentationHandler'
 import { V2PresentationProblemReportHandler } from './handlers/V2PresentationProblemReportHandler'
@@ -672,19 +673,33 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     }
 
     const formatServices = this.getFormatServicesFromMessage(presentationMessage.formats)
+    // Abandon if no supported formats
     if (formatServices.length === 0) {
-      throw new AriesFrameworkError(`Unable to process presentation. No supported formats`)
+      proofRecord.errorMessage = `Unable to process presentation. No supported formats`
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
     }
 
-    const isValid = await this.proofFormatCoordinator.processPresentation(messageContext.agentContext, {
+    const result = await this.proofFormatCoordinator.processPresentation(messageContext.agentContext, {
       proofRecord,
       formatServices,
       requestMessage: lastSentMessage,
       message: presentationMessage,
     })
 
-    proofRecord.isVerified = isValid
-    await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
+    proofRecord.isVerified = result.isValid
+    if (result.isValid) {
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
+    } else {
+      proofRecord.errorMessage = result.message
+      proofRecord.isVerified = false
+      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
 
     return proofRecord
   }
