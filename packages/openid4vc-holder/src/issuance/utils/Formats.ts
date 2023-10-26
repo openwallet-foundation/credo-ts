@@ -11,9 +11,7 @@ const isUniformFormat = (format: string): format is OID4VCICredentialFormat => {
 
 export function getUniformFormat(format: string | OID4VCICredentialFormat | CredentialFormat): OID4VCICredentialFormat {
   // Already valid format
-  if (isUniformFormat(format)) {
-    return format
-  }
+  if (isUniformFormat(format)) return format
 
   // Older formats
   if (format === 'jwt_vc' || format === 'jwt') {
@@ -27,7 +25,7 @@ export function getUniformFormat(format: string | OID4VCICredentialFormat | Cred
 }
 
 export function getFormatForVersion(format: string, version: OpenId4VCIVersion) {
-  const uniformFormat = isUniformFormat(format) ? format : getUniformFormat(format)
+  const uniformFormat = getUniformFormat(format)
 
   if (version < OpenId4VCIVersion.VER_1_0_11) {
     if (uniformFormat === 'jwt_vc_json') {

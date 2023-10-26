@@ -1,16 +1,124 @@
+import type { AuthDetails } from '../OpenId4VciHolderServiceOptions'
 import type {
   CredentialIssuerMetadata,
+  CredentialOfferFormat,
+  CredentialOfferPayloadV1_0_11,
   CredentialSupported,
   CredentialSupportedTypeV1_0_08,
   CredentialSupportedV1_0_08,
+  EndpointMetadataResult,
   IssuerMetadataV1_0_08,
   MetadataDisplay,
+  OID4VCICredentialFormat,
 } from '@sphereon/oid4vci-common'
 
+import { AriesFrameworkError } from '@aries-framework/core'
+import { MetadataClient } from '@sphereon/oid4vci-client'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
+import { getUniformFormat } from './Formats'
+
+/**
+ * The type of a credential offer entry. For each item in `credentials` array, the type MUST be one of the following:
+ *  - CredentialSupported, when the value is a string and points to a credential from the `credentials_supported` array.
+ *  - InlineCredentialOffer, when the value is a JSON object that represents an inline credential offer.
+ */
+export enum OfferedCredentialType {
+  CredentialSupported = 'CredentialSupported',
+  InlineCredentialOffer = 'InlineCredentialOffer',
+}
+
+export type OfferedCredentialWithMetadata =
+  | {
+      credentialSupported: CredentialSupported
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OID4VCICredentialFormat
+      types: string[]
+    }
+  | {
+      inlineCredentialOffer: CredentialOfferFormat
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OID4VCICredentialFormat
+      types: string[]
+    }
+
+/**
+ * Returns all entries from the credential offer with the associated metadata resolved. For inline entries, the offered credential object
+ * is included directly. For 'id' entries, the associated `credentials_supported` object is resolved from the issuer metadata.
+ *
+ * NOTE: for v1_0-08, a single credential id in the issuer metadata could have multiple formats. This means that the returned value
+ * from this method could contain multiple entries for a single credential id, but with different formats. This is detectable as the
+ * id will be the `<credentialId>-<format>`.
+ */
+export function getOfferedCredentialsWithMetadata(
+  credentialOfferPayload: CredentialOfferPayloadV1_0_11,
+  issuerMetadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08,
+  version: OpenId4VCIVersion
+) {
+  const offeredCredentials: OfferedCredentialWithMetadata[] = []
+
+  const supportedCredentials = getSupportedCredentials({ issuerMetadata, version })
+
+  for (const offeredCredential of credentialOfferPayload.credentials) {
+    // If the offeredCredential is a string, it has to reference a supported credential in the issuer metadata
+    if (typeof offeredCredential === 'string') {
+      const foundSupportedCredentials = supportedCredentials.filter(
+        (supportedCredential) =>
+          supportedCredential.id === offeredCredential ||
+          supportedCredential.id === `${offeredCredential}-${supportedCredential.format}`
+      )
+
+      // Make sure the issuer metadata includes the offered credential.
+      if (foundSupportedCredentials.length === 0) {
+        throw new Error(
+          `Offered credential '${offeredCredential}' is not part of credentials_supported of the issuer metadata.`
+        )
+      }
+
+      // TODO: use getUniFormat??
+
+      for (const foundSupportedCredential of foundSupportedCredentials) {
+        offeredCredentials.push({
+          credentialSupported: foundSupportedCredential,
+          offerType: OfferedCredentialType.CredentialSupported,
+          format: getUniformFormat(foundSupportedCredential.format),
+          types: foundSupportedCredential.types,
+        })
+      }
+    }
+    // Otherwise it's an inline credential offer that does not reference a supported credential in the issuer metadata
+    else {
+      offeredCredentials.push({
+        inlineCredentialOffer: offeredCredential,
+        offerType: OfferedCredentialType.InlineCredentialOffer,
+        format: getUniformFormat(offeredCredential.format),
+        types: offeredCredential.types,
+      })
+    }
+  }
+
+  return offeredCredentials
+}
+
+export async function getMetadataFromCredentialOffer(
+  credentialOfferPayload: CredentialOfferPayloadV1_0_11,
+  _metadata?: EndpointMetadataResult
+) {
+  const issuer = credentialOfferPayload.credential_issuer
+
+  const metadata =
+    _metadata && _metadata.credentialIssuerMetadata ? _metadata : await MetadataClient.retrieveAllMetadata(issuer)
+  if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenId4Vci issuer: ${issuer}`)
+
+  const issuerMetadata = metadata.credentialIssuerMetadata
+  if (!issuerMetadata)
+    throw new AriesFrameworkError(`Could not retrieve issuer metadata for OpenId4Vci issuer: ${issuer}`)
+
+  return { issuer, metadata, issuerMetadata }
+}
+
 export function getSupportedCredentials(opts?: {
-  issuerMetadata?: CredentialIssuerMetadata | IssuerMetadataV1_0_08
+  issuerMetadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08
   version: OpenId4VCIVersion
 }): CredentialSupported[] {
   const { issuerMetadata } = opts ?? {}
@@ -74,6 +182,41 @@ export function credentialSupportedV8ToV11(
   })
 }
 
+// copied from sphereon
+export function handleAuthorizationDetails(
+  authorizationDetails: AuthDetails | AuthDetails[],
+  metadata: EndpointMetadataResult
+): AuthDetails | AuthDetails[] | undefined {
+  if (authorizationDetails) {
+    if (Array.isArray(authorizationDetails)) {
+      return authorizationDetails.map((value) => handleLocations({ ...value }, metadata))
+    } else {
+      return handleLocations({ ...authorizationDetails }, metadata)
+    }
+  }
+  return authorizationDetails
+}
+
+// copied from sphereon
+export function handleLocations(authorizationDetails: AuthDetails, metadata: EndpointMetadataResult) {
+  if (
+    authorizationDetails &&
+    (metadata.credentialIssuerMetadata?.authorization_server || metadata.authorization_endpoint)
+  ) {
+    if (authorizationDetails.locations) {
+      if (Array.isArray(authorizationDetails.locations)) {
+        ;(authorizationDetails.locations as string[]).push(metadata.issuer)
+      } else {
+        authorizationDetails.locations = [authorizationDetails.locations as string, metadata.issuer]
+      }
+    } else {
+      authorizationDetails.locations = metadata.issuer
+    }
+  }
+  return authorizationDetails
+}
+
+// TODO
 export function getIssuerDisplays(
   metadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08,
   opts?: { prefLocales: string[] }

@@ -1,4 +1,4 @@
-import type { OfferedCredentialType } from './OpenId4VciHolderService'
+import type { OfferedCredentialType } from './utils/IssuerMetadataUtils'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 import type { CredentialFormat } from '@sphereon/ssi-types'
