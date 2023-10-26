@@ -1138,10 +1138,27 @@
     ref-array-di "1.2.2"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.2.0-dev.1", "@hyperledger/anoncreds-shared@^0.2.0-dev.1":
+"@hyperledger/anoncreds-nodejs@^0.2.0-dev.2":
+  version "0.2.0-dev.2"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.2.0-dev.2.tgz#f7711193df2263b405bd5bb2d8a4ac283499eed0"
+  integrity sha512-Gyg+x/PSc0Dn9d2rEh7km3LYuWzqnb25UeRbzFDDdKQ0h6kOxD0IM92Vm7qq3FKmOAlyqgKf6UIiv9lZpDcplA==
+  dependencies:
+    "@2060.io/ffi-napi" "4.0.8"
+    "@2060.io/ref-napi" "3.0.6"
+    "@hyperledger/anoncreds-shared" "0.2.0-dev.2"
+    "@mapbox/node-pre-gyp" "^1.0.11"
+    ref-array-di "1.2.2"
+    ref-struct-di "1.1.1"
+
+"@hyperledger/anoncreds-shared@0.2.0-dev.1":
   version "0.2.0-dev.1"
   resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.1.tgz#9b34bd4cd8f1d6b65d9cdb847532a6abdaf804ac"
   integrity sha512-Liqb/hzLKMTtHxW0ajxRpGSs8TiybZSkOsgI7dO925TRS6uOzwcaaVWTFAn2gC6MlVEfCfWH+ZtxTFKkcGXQug==
+
+"@hyperledger/anoncreds-shared@0.2.0-dev.2", "@hyperledger/anoncreds-shared@^0.2.0-dev.2":
+  version "0.2.0-dev.2"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.2.tgz#7b34a50f6543071b833736095237bf37269e004f"
+  integrity sha512-wHP3E2C9hj+GI8KXg3dj6GTfmNwKWLgiSaeorga71udY7Clgyh6z1o83SawHaaUORGi8B5bNhbqD8ZaH+btkFA==
 
 "@hyperledger/aries-askar-nodejs@^0.2.0-dev.1":
   version "0.2.0-dev.1"
@@ -1651,6 +1668,21 @@
   version "1.0.10"
   resolved "https://registry.yarnpkg.com/@mapbox/node-pre-gyp/-/node-pre-gyp-1.0.10.tgz#8e6735ccebbb1581e5a7e652244cadc8a844d03c"
   integrity sha512-4ySo4CjzStuprMwk35H5pPbkymjv1SF3jGLj6rAHp/xT/RF7TL7bd9CTm1xDY49K2qF7jmR/g7k+SkLETP6opA==
+  dependencies:
+    detect-libc "^2.0.0"
+    https-proxy-agent "^5.0.0"
+    make-dir "^3.1.0"
+    node-fetch "^2.6.7"
+    nopt "^5.0.0"
+    npmlog "^5.0.1"
+    rimraf "^3.0.2"
+    semver "^7.3.5"
+    tar "^6.1.11"
+
+"@mapbox/node-pre-gyp@^1.0.11":
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/@mapbox/node-pre-gyp/-/node-pre-gyp-1.0.11.tgz#417db42b7f5323d79e93b34a6d7a2a12c0df43fa"
+  integrity sha512-Yhlar6v9WQgUp/He7BdgzOz8lqMQ8sU+jkCq7Wx8Myc5YFJLbEe7lgui/V7G1qB1DJykHSGwreceSaD60Y0PUQ==
   dependencies:
     detect-libc "^2.0.0"
     https-proxy-agent "^5.0.0"

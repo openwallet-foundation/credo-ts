@@ -75,7 +75,6 @@ const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
 const indyDid = 'did:indy:bcovrin:test:LjgpST2rjsoxYegQDRm7EL'
 
-// FIXME: Re-include in tests when NodeJS wrapper performance is improved
 describe('Legacy indy format services using anoncreds-rs', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     const schema = await anonCredsIssuerService.createSchema(agentContext, {

@@ -61,7 +61,6 @@ const senderAgentOptions = getAgentOptions(
   }
 )
 
-// Performance issues outside of Node 18
 describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
   let recipientAgent: AnonCredsTestsAgent
   let mediatorAgent: AnonCredsTestsAgent

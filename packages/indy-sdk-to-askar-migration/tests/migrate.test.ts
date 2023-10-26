@@ -12,7 +12,6 @@ import { homedir } from 'os'
 import { IndySdkToAskarMigrationUpdater } from '../src'
 import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'
 
-// FIXME: Re-include in tests when NodeJS wrapper performance is improved
 describe('Indy SDK To Askar Migration', () => {
   beforeAll(() => {
     registerAriesAskar({ askar: ariesAskar })
