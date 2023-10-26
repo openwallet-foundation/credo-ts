@@ -41,7 +41,6 @@ export class SdJwtService {
       hasher: (input: string) => {
         const serializedInput = TypedArrayEncoder.fromString(input)
         const hash = Hasher.hash(serializedInput, 'sha2-256')
-
         return TypedArrayEncoder.toBase64URL(hash)
       },
     }

@@ -56,12 +56,16 @@ export class SdJwtRecord<
       hasher: (input: string) => {
         const serializedInput = TypedArrayEncoder.fromString(input)
         const hash = Hasher.hash(serializedInput, 'sha2-256')
-
         return TypedArrayEncoder.toBase64URL(hash)
       },
     }
   }
 
+  /**
+   * This function gets the claims from the payload and combines them with the claims in the disclosures.
+   *
+   * This can be used to display all claims included in the `sd-jwt-vc` to the holder or verifier.
+   */
   public async getPrettyClaims<Claims extends Record<string, unknown> | Payload = Payload>(): Promise<Claims> {
     const sdJwt = new SdJwtVc<Header, Payload>({
       header: this.sdJwt.header,
@@ -71,7 +75,7 @@ export class SdJwtRecord<
 
     // Assert that we only support `sha-256` as a hashing algorithm
     if ('_sd_alg' in this.sdJwt.payload) {
-      sdJwt.assertClaimInPayload('sd_alg', HasherAlgorithm.Sha256.toString())
+      sdJwt.assertClaimInPayload('_sd_alg', HasherAlgorithm.Sha256.toString())
     }
 
     return await sdJwt.getPrettyClaims<Claims>()
