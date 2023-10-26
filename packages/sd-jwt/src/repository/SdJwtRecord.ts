@@ -1,7 +1,8 @@
 import type { TagsBase } from '@aries-framework/core'
-import type { DisclosureItem } from 'jwt-sd'
+import type { DisclosureItem, HasherAndAlgorithm } from 'jwt-sd'
 
-import { BaseRecord, utils } from '@aries-framework/core'
+import { Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
+import { Disclosure, HasherAlgorithm, SdJwtVc } from 'jwt-sd'
 
 export type SdJwtRecordTags = TagsBase & {
   disclosureKeys?: Array<string>
@@ -47,6 +48,33 @@ export class SdJwtRecord<
       this.sdJwt = props.sdJwt
       this._tags = props.tags ?? {}
     }
+  }
+
+  private get hasher(): HasherAndAlgorithm {
+    return {
+      algorithm: HasherAlgorithm.Sha256,
+      hasher: (input: string) => {
+        const serializedInput = TypedArrayEncoder.fromString(input)
+        const hash = Hasher.hash(serializedInput, 'sha2-256')
+
+        return TypedArrayEncoder.toBase64URL(hash)
+      },
+    }
+  }
+
+  public async getPrettyClaims<Claims extends Record<string, unknown> | Payload = Payload>(): Promise<Claims> {
+    const sdJwt = new SdJwtVc<Header, Payload>({
+      header: this.sdJwt.header,
+      payload: this.sdJwt.payload,
+      disclosures: this.sdJwt.disclosures?.map(Disclosure.fromArray),
+    }).withHasher(this.hasher)
+
+    // Assert that we only support `sha-256` as a hashing algorithm
+    if ('_sd_alg' in this.sdJwt.payload) {
+      sdJwt.assertClaimInPayload('sd_alg', HasherAlgorithm.Sha256.toString())
+    }
+
+    return await sdJwt.getPrettyClaims<Claims>()
   }
 
   public getTags() {

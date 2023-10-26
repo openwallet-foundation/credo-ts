@@ -1,6 +1,6 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
 import type { AgentContext, JwkJson } from '@aries-framework/core'
-import type { Signer, SdJwtVcVerificationResult, Verifier } from 'jwt-sd'
+import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
 import {
   getJwkFromJson,
@@ -14,7 +14,6 @@ import {
   TypedArrayEncoder,
   Buffer,
   getJwaFromKeyType,
-  deepEquality,
 } from '@aries-framework/core'
 import { KeyBinding, SdJwtVc, HasherAlgorithm, SdJwt, Disclosure } from 'jwt-sd'
 
@@ -36,11 +35,16 @@ export class SdJwtService {
     this.logger = logger
   }
 
-  private hasher(input: string) {
-    const serializedInput = TypedArrayEncoder.fromString(input)
-    const hash = Hasher.hash(serializedInput, 'sha2-256')
+  private get hasher(): HasherAndAlgorithm {
+    return {
+      algorithm: HasherAlgorithm.Sha256,
+      hasher: (input: string) => {
+        const serializedInput = TypedArrayEncoder.fromString(input)
+        const hash = Hasher.hash(serializedInput, 'sha2-256')
 
-    return TypedArrayEncoder.toBase64URL(hash)
+        return TypedArrayEncoder.toBase64URL(hash)
+      },
+    }
   }
 
   /**
@@ -92,7 +96,7 @@ export class SdJwtService {
     }
 
     const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
-      .withHasher({ hasher: this.hasher, algorithm: HasherAlgorithm.Sha256 })
+      .withHasher(this.hasher)
       .withSigner(this.signer(agentContext, issuerKey))
       .withSaltGenerator(agentContext.wallet.generateNonce)
       .withHeader(header)
@@ -152,22 +156,9 @@ export class SdJwtService {
       throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
     }
 
-    if (!('cnf' in sdJwt.payload)) {
-      throw new SdJwtError('Confirmation claim (cnf) is required to be inside the sd-jwt-vc')
-    }
-
-    const confirmationClaim = sdJwt.payload.cnf as Record<string, unknown>
-
-    if (typeof confirmationClaim !== 'object' || !('jwk' in confirmationClaim)) {
-      throw new SdJwtError('Only JSON Web Keys (JWK) are supported as key material inside the confirmation claim (cnf)')
-    }
-
-    const jwk = confirmationClaim.jwk
     const holderJwk = getJwkFromKey(holderKey).toJson()
 
-    if (!deepEquality(jwk, holderJwk)) {
-      throw new SdJwtError('supplied holder key is not equal to the JWK inside the confirmation claim (cnf)')
-    }
+    sdJwt.assertClaimInPayload('cnf', { jwk: holderJwk })
 
     const sdJwtRecord = new SdJwtRecord<Header, Payload>({
       sdJwt: {
@@ -230,14 +221,7 @@ export class SdJwtService {
       throw new SdJwtError('Keybinding is required for verification of the sd-jwt-vc')
     }
 
-    if (!('aud' in sdJwt.keyBinding.payload)) {
-      throw new SdJwtError('Audience claim (aud) is required inside the keybinding for sd-jwt-vc')
-    }
-
-    const audienceClaim = sdJwt.keyBinding.payload.aud
-    if (audienceClaim !== verifierDid) {
-      throw new SdJwtError(`Audience claim (aud) is invalid. Expected: '${verifierDid}', actual: '${audienceClaim}'`)
-    }
+    sdJwt.keyBinding.assertClaimInPayload('aud', verifierDid)
 
     const verificationResult = await sdJwt.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
 
