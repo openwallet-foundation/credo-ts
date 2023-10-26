@@ -14,7 +14,8 @@ import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenId4VcHolderModule, OpenIdCredentialFormatProfile } from '../src'
+import { OpenIdCredentialFormatProfile } from '../src'
+import { OpenId4VcHolderModule } from '../src/issuance/OpenId4VciHolderModule'
 
 import {
   mattrLaunchpadJsonLd_draft_08,
@@ -632,16 +633,11 @@ describe('OpenId4VcHolder', () => {
 
       const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
 
-      const authCodeFlowOptions = {
+      const resolvedAuthorizationRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(resolved, {
         clientId: 'test-client',
         redirectUri: 'http://blank',
         scope: ['openid', 'OpenBadgeCredential'],
-      }
-
-      const resolvedAuthorizationRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(
-        resolved,
-        authCodeFlowOptions
-      )
+      })
 
       const code =
         'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA'

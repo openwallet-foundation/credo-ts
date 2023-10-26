@@ -75,8 +75,6 @@ export function getOfferedCredentialsWithMetadata(
         )
       }
 
-      // TODO: use getUniFormat??
-
       for (const foundSupportedCredential of foundSupportedCredentials) {
         offeredCredentials.push({
           credentialSupported: foundSupportedCredential,
@@ -187,31 +185,19 @@ export function handleAuthorizationDetails(
   authorizationDetails: AuthDetails | AuthDetails[],
   metadata: EndpointMetadataResult
 ): AuthDetails | AuthDetails[] | undefined {
-  if (authorizationDetails) {
-    if (Array.isArray(authorizationDetails)) {
-      return authorizationDetails.map((value) => handleLocations({ ...value }, metadata))
-    } else {
-      return handleLocations({ ...authorizationDetails }, metadata)
-    }
+  if (Array.isArray(authorizationDetails)) {
+    return authorizationDetails.map((value) => handleLocations({ ...value }, metadata))
+  } else {
+    return handleLocations({ ...authorizationDetails }, metadata)
   }
-  return authorizationDetails
 }
 
 // copied from sphereon
 export function handleLocations(authorizationDetails: AuthDetails, metadata: EndpointMetadataResult) {
-  if (
-    authorizationDetails &&
-    (metadata.credentialIssuerMetadata?.authorization_server || metadata.authorization_endpoint)
-  ) {
-    if (authorizationDetails.locations) {
-      if (Array.isArray(authorizationDetails.locations)) {
-        ;(authorizationDetails.locations as string[]).push(metadata.issuer)
-      } else {
-        authorizationDetails.locations = [authorizationDetails.locations as string, metadata.issuer]
-      }
-    } else {
-      authorizationDetails.locations = metadata.issuer
-    }
+  if (metadata.credentialIssuerMetadata?.authorization_server || metadata.authorization_endpoint) {
+    if (!authorizationDetails.locations) authorizationDetails.locations = metadata.issuer
+    else if (Array.isArray(authorizationDetails.locations)) authorizationDetails.locations.push(metadata.issuer)
+    else authorizationDetails.locations = [authorizationDetails.locations as string, metadata.issuer]
   }
   return authorizationDetails
 }
