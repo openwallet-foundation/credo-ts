@@ -2,10 +2,10 @@ import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { AgentConfig } from '@aries-framework/core'
 
+import { OpenId4VcHolderApi } from '../OpenId4VcHolderApi'
 import { PresentationExchangeService } from '../presentations'
 import { OpenId4VpHolderService } from '../presentations/OpenId4VpHolderService'
 
-import { OpenId4VcHolderApi } from './OpenId4VciHolderApi'
 import { OpenId4VcHolderService } from './OpenId4VciHolderService'
 
 /**

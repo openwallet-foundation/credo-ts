@@ -1,4 +1,4 @@
-import type { AuthDetails } from '../OpenId4VciHolderServiceOptions'
+import type { AuthDetails } from '../../OpenId4VcHolderServiceOptions'
 import type {
   CredentialIssuerMetadata,
   CredentialOfferFormat,

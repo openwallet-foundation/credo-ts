@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import type { DependencyManager } from '@aries-framework/core'
 
-import { OpenId4VcHolderApi } from '../src/issuance/OpenId4VciHolderApi'
+import { OpenId4VcHolderApi } from '../src/OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../src/issuance/OpenId4VciHolderModule'
 import { OpenId4VcHolderService } from '../src/issuance/OpenId4VciHolderService'
 import { OpenId4VpHolderService, PresentationExchangeService } from '../src/presentations'

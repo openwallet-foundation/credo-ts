@@ -1,3 +1,5 @@
+import type { OpenIdCredentialFormatProfile } from './utils'
+import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type {
   AuthCodeFlowOptions,
   AuthDetails,
@@ -8,9 +10,7 @@ import type {
   SupportedCredentialFormats,
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
-} from './OpenId4VciHolderServiceOptions'
-import type { OpenIdCredentialFormatProfile } from './utils'
-import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
+} from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
   JwaSignatureAlgorithm,
@@ -71,7 +71,8 @@ import {
 } from '@sphereon/oid4vci-common'
 import { randomStringForEntropy } from '@stablelib/random'
 
-import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
+import { supportedCredentialFormats } from '../OpenId4VcHolderServiceOptions'
+
 import { fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getFormatForVersion, getUniformFormat } from './utils/Formats'
 import {

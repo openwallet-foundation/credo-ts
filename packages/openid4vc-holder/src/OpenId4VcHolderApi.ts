@@ -3,16 +3,16 @@ import type {
   AuthCodeFlowOptions,
   AcceptCredentialOfferOptions,
   ResolvedAuthorizationRequest,
-} from './OpenId4VciHolderServiceOptions'
+} from './OpenId4VcHolderServiceOptions'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
 import type { VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
-import { OpenId4VpHolderService } from '../presentations/OpenId4VpHolderService'
+import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
 
-import { OpenId4VcHolderService } from './OpenId4VciHolderService'
+import { OpenId4VcHolderService } from './issuance/OpenId4VciHolderService'
 
 /**
  * @public
