@@ -22,10 +22,10 @@ describe('SdJwtRecord', () => {
     expect(sdJwtRecord.type).toBe('SdJwtRecord')
     expect(sdJwtRecord.id).toBe('sdjwt-id')
     expect(sdJwtRecord.createdAt).toBe(createdAt)
-    expect(sdJwtRecord.getTags()).toMatchObject({
+    expect(sdJwtRecord.getTags()).toEqual({
       some: 'tag',
     })
-    expect(sdJwtRecord.sdJwt).toMatchObject({
+    expect(sdJwtRecord.sdJwt).toEqual({
       header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
       payload: { iss: 'did:key:123' },
       signature: new Uint8Array(32).fill(42),
@@ -67,7 +67,7 @@ describe('SdJwtRecord', () => {
     expect(instance.type).toBe('SdJwtRecord')
     expect(instance.id).toBe('sdjwt-id')
     expect(instance.createdAt.getTime()).toBe(createdAt.getTime())
-    expect(instance.getTags()).toMatchObject({
+    expect(instance.getTags()).toEqual({
       some: 'tag',
     })
     expect(instance.sdJwt).toMatchObject({
@@ -98,7 +98,7 @@ describe('SdJwtRecord', () => {
 
     const prettyClaims = await sdJwtRecord.getPrettyClaims()
 
-    expect(prettyClaims).toMatchObject({
+    expect(prettyClaims).toEqual({
       type: 'IdentityCredential',
       cnf: {
         jwk: {
