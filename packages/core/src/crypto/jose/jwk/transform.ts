@@ -53,11 +53,12 @@ export function getJwkClassFromKeyType(keyType: KeyType) {
  *
  * if it cannot be detected, it will throw an error
  */
-export function getJwaFromKeyType(keyType: KeyType): JwaSignatureAlgorithm {
-  if (keyType === KeyType.Ed25519) return JwaSignatureAlgorithm.EdDSA
-  if (keyType === KeyType.P256) return JwaSignatureAlgorithm.ES256
-  if (keyType === KeyType.P384) return JwaSignatureAlgorithm.ES384
-  if (keyType === KeyType.P521) return JwaSignatureAlgorithm.ES512
+export function getJwaFromKey(key: Key, override?: JwaSignatureAlgorithm): JwaSignatureAlgorithm {
+  if (override) return override
+  if (key.keyType === KeyType.Ed25519) return JwaSignatureAlgorithm.EdDSA
+  if (key.keyType === KeyType.P256) return JwaSignatureAlgorithm.ES256
+  if (key.keyType === KeyType.P384) return JwaSignatureAlgorithm.ES384
+  if (key.keyType === KeyType.P521) return JwaSignatureAlgorithm.ES512
 
-  throw new AriesFrameworkError(`Cannot create JWA from key type. Unsupported key type '${keyType}'.`)
+  throw new AriesFrameworkError(`Cannot create JWA from key type. Unsupported key type '${key.keyType}'.`)
 }
