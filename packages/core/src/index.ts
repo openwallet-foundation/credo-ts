@@ -74,7 +74,7 @@ export * from './logger'
 export * from './error'
 export * from './wallet/error'
 export { parseMessageType, IsValidMessageType, replaceLegacyDidSovPrefix } from './utils/messageType'
-export type { Constructor } from './utils/mixins'
+export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto/'
 

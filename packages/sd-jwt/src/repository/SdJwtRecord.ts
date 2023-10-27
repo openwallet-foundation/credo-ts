@@ -1,7 +1,7 @@
-import type { TagsBase } from '@aries-framework/core'
+import type { TagsBase, Constructable } from '@aries-framework/core'
 import type { DisclosureItem, HasherAndAlgorithm } from 'jwt-sd'
 
-import { Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
+import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
 import { Disclosure, HasherAlgorithm, SdJwtVc } from 'jwt-sd'
 
 export type SdJwtRecordTags = TagsBase & {
@@ -90,5 +90,9 @@ export class SdJwtRecord<
       ...this._tags,
       disclosureKeys,
     }
+  }
+
+  public clone(): this {
+    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 }
