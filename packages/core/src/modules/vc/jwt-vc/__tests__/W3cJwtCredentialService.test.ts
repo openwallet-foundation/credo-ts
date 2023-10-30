@@ -1,4 +1,3 @@
-import { describeRunInNodeVersion } from '../../../../../../../tests/runInVersion'
 import { RegisteredAskarTestWallet } from '../../../../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
 import { InjectionSymbols } from '../../../../constants'
@@ -42,7 +41,7 @@ const jwsService = new JwsService()
 const w3cJwtCredentialService = new W3cJwtCredentialService(jwsService)
 
 // Runs in Node 18 because of usage of Askar
-describeRunInNodeVersion([18], 'W3cJwtCredentialService', () => {
+describe('W3cJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
   let holderDidKey: DidKey
 

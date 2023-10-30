@@ -32,13 +32,15 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
-    "@hyperledger/anoncreds-nodejs": "^0.1.0",
-    "@hyperledger/anoncreds-shared": "^0.1.0",
+    "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.4",
+    "@hyperledger/anoncreds-shared": "^0.2.0-dev.4",
+    "@types/ref-array-di": "^1.2.6",
+    "@types/ref-struct-di": "^1.1.10",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"
   },
   "peerDependencies": {
-    "@hyperledger/anoncreds-shared": "^0.1.0"
+    "@hyperledger/anoncreds-shared": "^0.2.0-dev.4"
   }
 }
