@@ -56,7 +56,7 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
-  public connect() {
+  public async connect() {
     if (this._pool) {
       throw new IndyVdrError('Cannot connect to pool, already connected.')
     }
@@ -66,10 +66,12 @@ export class IndyVdrPool {
         transactions: this.config.genesisTransactions,
       },
     })
+
+    await this._pool.refresh()
   }
 
-  private get pool(): indyVdrPool {
-    if (!this._pool) this.connect()
+  private async pool(): Promise<indyVdrPool> {
+    if (!this._pool) await this.connect()
     if (!this._pool) throw new IndyVdrError('Pool is not connected.')
 
     return this._pool
@@ -118,7 +120,7 @@ export class IndyVdrPool {
   public async submitRequest<Request extends IndyVdrRequest>(
     writeRequest: Request
   ): Promise<RequestResponseType<Request>> {
-    return await this.pool.submitRequest(writeRequest)
+    return await (await this.pool()).submitRequest(writeRequest)
   }
 
   private async appendTaa(request: IndyVdrRequest) {
