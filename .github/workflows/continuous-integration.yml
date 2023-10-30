@@ -60,7 +60,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'yarn'
 
       - name: Install dependencies
@@ -84,7 +84,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x]
+        node-version: [18.x, 20.x]
 
     steps:
       - name: Checkout aries-framework-javascript
@@ -116,10 +116,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
 
-      - name: Add ref-napi resolution in Node18
-        if: matrix.node-version == '18.x'
-        run: node ./scripts/add-ref-napi-resolution.js
-
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
@@ -149,7 +145,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'yarn'
 
       - name: Install dependencies

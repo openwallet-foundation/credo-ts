@@ -5,7 +5,6 @@ import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
@@ -29,8 +28,7 @@ const bobPostgresAgentOptions = getPostgresAgentOptions('AgentsBob', storageConf
   endpoints: ['rxjs:bob'],
 })
 
-// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Askar Postgres agents', () => {
+describe('Askar Postgres agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
