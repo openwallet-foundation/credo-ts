@@ -84,6 +84,6 @@ export class DidDoc {
     >
 
     // Sort services based on indicated priority
-    return services.sort((a, b) => b.priority - a.priority)
+    return services.sort((a, b) => a.priority - b.priority)
   }
 }

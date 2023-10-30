@@ -32,7 +32,9 @@ import { DidRecordMetadataKeys } from '../../dids/repository/didRecordMetadataTy
 import { OutOfBandService } from '../../oob/OutOfBandService'
 import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { InvitationType } from '../../oob/messages'
 import { OutOfBandRepository } from '../../oob/repository'
+import { OutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
@@ -538,6 +540,86 @@ export class ConnectionService {
     }
   }
 
+  /**
+   * If knownConnectionId is passed, it will compare the incoming connection id with the knownConnectionId, and skip the other validation.
+   *
+   * If no known connection id is passed, it asserts that the incoming message is in response to an attached request message to an out of band invitation.
+   * If is the case, and the state of the out of band record is still await response, the state will be updated to done
+   *
+   */
+  public async matchIncomingMessageToRequestMessageInOutOfBandExchange(
+    messageContext: InboundMessageContext,
+    { expectedConnectionId }: { expectedConnectionId?: string }
+  ) {
+    if (expectedConnectionId && messageContext.connection?.id === expectedConnectionId) {
+      throw new AriesFrameworkError(
+        `Expecting incoming message to have connection ${expectedConnectionId}, but incoming connection is ${
+          messageContext.connection?.id ?? 'undefined'
+        }`
+      )
+    }
+
+    const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(OutOfBandRepository)
+    const outOfBandInvitationId = messageContext.message.thread?.parentThreadId
+
+    // Find the out of band record that is associated with this request
+    const outOfBandRecord = await outOfBandRepository.findSingleByQuery(messageContext.agentContext, {
+      invitationId: outOfBandInvitationId,
+      role: OutOfBandRole.Sender,
+      invitationRequestsThreadIds: [messageContext.message.threadId],
+    })
+
+    // There is no out of band record
+    if (!outOfBandRecord) {
+      throw new AriesFrameworkError(
+        `No out of band record found for credential request message with thread ${messageContext.message.threadId}, out of band invitation id ${outOfBandInvitationId} and role ${OutOfBandRole.Sender}`
+      )
+    }
+
+    const legacyInvitationMetadata = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
+
+    // If the original invitation was a legacy connectionless invitation, it's okay if the message does not have a pthid.
+    if (
+      legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless &&
+      outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
+    ) {
+      throw new AriesFrameworkError(
+        'Response messages to out of band invitation requests MUST have a parent thread id that matches the out of band invitation id.'
+      )
+    }
+
+    // This should not happen, as it is not allowed to create reusable out of band invitations with attached messages
+    // But should that implementation change, we at least cover it here.
+    if (outOfBandRecord.reusable) {
+      throw new AriesFrameworkError(
+        'Receiving messages in response to reusable out of band invitations is not supported.'
+      )
+    }
+
+    if (outOfBandRecord.state === OutOfBandState.Done) {
+      if (!messageContext.connection) {
+        throw new AriesFrameworkError(
+          "Can't find connection associated with incoming message, while out of band state is done. State must be await response if no connection has been created"
+        )
+      }
+      if (messageContext.connection.outOfBandId !== outOfBandRecord.id) {
+        throw new AriesFrameworkError(
+          'Connection associated with incoming message is not associated with the out of band invitation containing the attached message.'
+        )
+      }
+
+      // We're good to go. Connection was created and points to the correct out of band record. And the message is in response to an attached request message from the oob invitation.
+    } else if (outOfBandRecord.state === OutOfBandState.AwaitResponse) {
+      // We're good to go. Waiting for a response. And the message is in response to an attached request message from the oob invitation.
+
+      // Now that we have received the first response message to our out of band invitation, we mark the out of band record as done
+      outOfBandRecord.state = OutOfBandState.Done
+      await outOfBandRepository.update(messageContext.agentContext, outOfBandRecord)
+    } else {
+      throw new AriesFrameworkError(`Out of band record is in incorrect state ${outOfBandRecord.state}`)
+    }
+  }
+
   public async updateState(agentContext: AgentContext, connectionRecord: ConnectionRecord, newState: DidExchangeState) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
@@ -746,7 +828,7 @@ export class ConnectionService {
     const services = routing.endpoints.map(
       (endpoint, index) =>
         new IndyAgentService({
-          id: `${indyDid}#IndyAgentService`,
+          id: `${indyDid}#IndyAgentService-${index + 1}`,
           serviceEndpoint: endpoint,
           recipientKeys: [routing.recipientKey.publicKeyBase58],
           routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
@@ -781,7 +863,7 @@ export class ConnectionService {
     const service = services.map(
       (service, index) =>
         new IndyAgentService({
-          id: `${did}#IndyAgentService`,
+          id: `${did}#IndyAgentService-${index + 1}`,
           serviceEndpoint: service.serviceEndpoint,
           recipientKeys: [recipientKey.publicKeyBase58],
           routingKeys: service.routingKeys?.map(didKeyToVerkey),

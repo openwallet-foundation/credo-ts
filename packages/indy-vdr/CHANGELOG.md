@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.2](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.1...v0.4.2) (2023-10-05)
+
+**Note:** Version bump only for package @aries-framework/indy-vdr
+
+## [0.4.1](https://github.com/hyperledger/aries-framework-javascript/compare/v0.4.0...v0.4.1) (2023-08-28)
+
+### Bug Fixes
+
+- **indy-vdr:** role property not included in nym request ([#1488](https://github.com/hyperledger/aries-framework-javascript/issues/1488)) ([002be4f](https://github.com/hyperledger/aries-framework-javascript/commit/002be4f578729aed1c8ae337f3d2eeecce9e3725))
+
 # [0.4.0](https://github.com/hyperledger/aries-framework-javascript/compare/v0.3.3...v0.4.0) (2023-06-03)
 
 ### Bug Fixes

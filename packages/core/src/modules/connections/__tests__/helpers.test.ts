@@ -140,7 +140,7 @@ describe('convertToNewDidDocument', () => {
           serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
           recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
           routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
-          priority: 5,
+          priority: 6,
         }),
         new IndyAgentService({
           id: 'did:sov:SKJVx2kn373FNgvff1SbJo#service-2#something-extra',
@@ -159,7 +159,7 @@ describe('convertToNewDidDocument', () => {
         serviceEndpoint: 'did:sov:SKJVx2kn373FNgvff1SbJo',
         recipientKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
         routingKeys: ['EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'],
-        priority: 5,
+        priority: 6,
       }),
       new IndyAgentService({
         id: '#service-2#something-extra',

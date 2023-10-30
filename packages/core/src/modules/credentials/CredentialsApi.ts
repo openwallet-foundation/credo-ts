@@ -551,6 +551,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
     message.setThread({
       threadId: credentialRecord.threadId,
+      parentThreadId: credentialRecord.parentThreadId,
     })
     const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
       message,

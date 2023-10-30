@@ -12,6 +12,7 @@ import {
   FileSystem,
   WalletNotFoundError,
   KeyDerivationMethod,
+  WalletImportPathExistsError,
 } from '@aries-framework/core'
 // eslint-disable-next-line import/order
 import { Store } from '@hyperledger/aries-askar-shared'
@@ -111,6 +112,11 @@ export class AskarWallet extends AskarBaseWallet {
       })
     }
     try {
+      // Make sure path exists before creating the wallet
+      if (filePath) {
+        await this.fileSystem.createDirectory(filePath)
+      }
+
       this._store = await Store.provision({
         recreate: false,
         uri: askarWalletConfig.uri,
@@ -280,44 +286,35 @@ export class AskarWallet extends AskarBaseWallet {
     }
 
     try {
-      // This method ensures that destination directory is created
-      const exportedWalletConfig = await this.getAskarWalletConfig({
-        ...this.walletConfig,
-        storage: { type: 'sqlite', path: destinationPath },
-      })
-
-      // Close this wallet before copying
-      await this.close()
-
       // Export path already exists
       if (await this.fileSystem.exists(destinationPath)) {
         throw new WalletExportPathExistsError(
           `Unable to create export, wallet export at path '${exportConfig.path}' already exists`
         )
       }
+      const exportedWalletConfig = await this.getAskarWalletConfig({
+        ...this.walletConfig,
+        key: exportKey,
+        storage: { type: 'sqlite', path: destinationPath },
+      })
 
-      // Copy wallet to the destination path
-      await this.fileSystem.copyFile(sourcePath, destinationPath)
+      // Make sure destination path exists
+      await this.fileSystem.createDirectory(destinationPath)
 
-      // Open exported wallet and rotate its key to the one requested
-      const exportedWalletStore = await Store.open({
+      await this.store.copyTo({
+        recreate: false,
         uri: exportedWalletConfig.uri,
         keyMethod: exportedWalletConfig.keyMethod,
         passKey: exportedWalletConfig.passKey,
       })
-      await exportedWalletStore.rekey({ keyMethod: exportedWalletConfig.keyMethod, passKey: exportKey })
-
-      await exportedWalletStore.close()
-
-      await this._open(this.walletConfig)
     } catch (error) {
-      if (error instanceof WalletExportPathExistsError) throw error
-
       const errorMessage = `Error exporting wallet '${this.walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
         error,
         errorMessage: error.message,
       })
+
+      if (error instanceof WalletExportPathExistsError) throw error
 
       throw new WalletError(errorMessage, { cause: error })
     }
@@ -332,28 +329,43 @@ export class AskarWallet extends AskarBaseWallet {
     }
 
     try {
-      // This method ensures that destination directory is created
       const importWalletConfig = await this.getAskarWalletConfig(walletConfig)
 
-      // Copy wallet to the destination path
-      await this.fileSystem.copyFile(sourcePath, destinationPath)
+      // Import path already exists
+      if (await this.fileSystem.exists(destinationPath)) {
+        throw new WalletExportPathExistsError(`Unable to import wallet. Path '${destinationPath}' already exists`)
+      }
 
-      // Open imported wallet and rotate its key to the one requested
-      const importedWalletStore = await Store.open({
-        uri: importWalletConfig.uri,
+      // Make sure destination path exists
+      await this.fileSystem.createDirectory(destinationPath)
+      // Open imported wallet and copy to destination
+      const sourceWalletStore = await Store.open({
+        uri: `sqlite://${sourcePath}`,
         keyMethod: importWalletConfig.keyMethod,
         passKey: importKey,
       })
 
-      await importedWalletStore.rekey({ keyMethod: importWalletConfig.keyMethod, passKey: importWalletConfig.passKey })
+      await sourceWalletStore.copyTo({
+        recreate: false,
+        uri: importWalletConfig.uri,
+        keyMethod: importWalletConfig.keyMethod,
+        passKey: importWalletConfig.passKey,
+      })
 
-      await importedWalletStore.close()
+      await sourceWalletStore.close()
     } catch (error) {
       const errorMessage = `Error importing wallet '${walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
         error,
         errorMessage: error.message,
       })
+
+      if (error instanceof WalletImportPathExistsError) throw error
+
+      // Cleanup any wallet file we could have created
+      if (await this.fileSystem.exists(destinationPath)) {
+        await this.fileSystem.delete(destinationPath)
+      }
 
       throw new WalletError(errorMessage, { cause: error })
     }
@@ -387,13 +399,9 @@ export class AskarWallet extends AskarBaseWallet {
   private async getAskarWalletConfig(walletConfig: WalletConfig) {
     const { uri, path } = uriFromWalletConfig(walletConfig, this.fileSystem.dataPath)
 
-    // Make sure path exists before creating the wallet
-    if (path) {
-      await this.fileSystem.createDirectory(path)
-    }
-
     return {
       uri,
+      path,
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
       keyMethod: keyDerivationMethodToStoreKeyMethod(

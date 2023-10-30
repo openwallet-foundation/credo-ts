@@ -155,7 +155,7 @@ describe('ConnectionService', () => {
 
           service: [
             new IndyAgentService({
-              id: `XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService`,
+              id: `XpwgBjsC2wh3eHcMW6ZRJT#IndyAgentService-1`,
               serviceEndpoint: agentConfig.endpoints[0],
               recipientKeys: ['HoVPnpfUjrDECoMZy8vu4U6dwEcLhbzjNwyS3gwLDCG8'],
               routingKeys: [],
@@ -426,7 +426,7 @@ describe('ConnectionService', () => {
         authentication: [new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)],
         service: [
           new IndyAgentService({
-            id: `${did}#IndyAgentService`,
+            id: `${did}#IndyAgentService-1`,
             serviceEndpoint: 'http://example.com',
             recipientKeys: recipientKeys.map((did) => did.key.publicKeyBase58),
             routingKeys: [],

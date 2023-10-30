@@ -70,6 +70,9 @@ export enum DidCommMimeType {
 }
 
 export interface InitConfig {
+  /**
+   * Agent public endpoints, sorted by priority (higher priority first)
+   */
   endpoints?: string[]
   label: string
   walletConfig?: WalletConfig
@@ -87,6 +90,7 @@ export interface PlaintextMessage {
   '@id': string
   '~thread'?: {
     thid?: string
+    pthid?: string
   }
   [key: string]: unknown
 }

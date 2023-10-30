@@ -192,7 +192,7 @@ describe('Did | DidDoc', () => {
     })
 
     it('returns all IndyAgentService and DidCommService instances sorted by priority', async () => {
-      expect(didDoc.didCommServices).toEqual([didDoc.service[2], didDoc.service[1]])
+      expect(didDoc.didCommServices).toEqual([didDoc.service[1], didDoc.service[2]])
     })
   })
 })

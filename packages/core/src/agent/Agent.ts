@@ -148,6 +148,27 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   }
 
   public async initialize() {
+    const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
+
+    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
+    // We create this before doing any other initialization, so the initialization could already receive messages
+    this.messageSubscription = this.eventEmitter
+      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .pipe(
+        takeUntil(stop$),
+        concatMap((e) =>
+          this.messageReceiver
+            .receiveMessage(e.payload.message, {
+              connection: e.payload.connection,
+              contextCorrelationId: e.payload.contextCorrelationId,
+            })
+            .catch((error) => {
+              this.logger.error('Failed to process message', { error })
+            })
+        )
+      )
+      .subscribe()
+
     await super.initialize()
 
     for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
@@ -178,26 +199,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
     await this.mediator.initialize()
     await this.mediationRecipient.initialize()
-
-    const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
-
-    // Listen for new messages (either from transports or somewhere else in the framework / extensions)
-    this.messageSubscription = this.eventEmitter
-      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
-      .pipe(
-        takeUntil(stop$),
-        concatMap((e) =>
-          this.messageReceiver
-            .receiveMessage(e.payload.message, {
-              connection: e.payload.connection,
-              contextCorrelationId: e.payload.contextCorrelationId,
-            })
-            .catch((error) => {
-              this.logger.error('Failed to process message', { error })
-            })
-        )
-      )
-      .subscribe()
 
     this._isInitialized = true
   }

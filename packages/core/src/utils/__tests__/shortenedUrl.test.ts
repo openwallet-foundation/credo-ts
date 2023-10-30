@@ -3,7 +3,7 @@ import type { Response } from 'node-fetch'
 import { Headers } from 'node-fetch'
 
 import { ConnectionInvitationMessage } from '../../modules/connections'
-import { OutOfBandInvitation } from '../../modules/oob'
+import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/helpers'
 import { JsonTransformer } from '../JsonTransformer'
 import { MessageValidator } from '../MessageValidator'
@@ -80,9 +80,10 @@ let connectionInvitationMock: ConnectionInvitationMessage
 let connectionInvitationToNew: OutOfBandInvitation
 
 beforeAll(async () => {
-  outOfBandInvitationMock = await JsonTransformer.fromJSON(mockOobInvite, OutOfBandInvitation)
+  outOfBandInvitationMock = JsonTransformer.fromJSON(mockOobInvite, OutOfBandInvitation)
+  outOfBandInvitationMock.invitationType = InvitationType.OutOfBand
   MessageValidator.validateSync(outOfBandInvitationMock)
-  connectionInvitationMock = await JsonTransformer.fromJSON(mockConnectionInvite, ConnectionInvitationMessage)
+  connectionInvitationMock = JsonTransformer.fromJSON(mockConnectionInvite, ConnectionInvitationMessage)
   MessageValidator.validateSync(connectionInvitationMock)
   connectionInvitationToNew = convertToNewInvitation(connectionInvitationMock)
 })
@@ -113,8 +114,34 @@ describe('shortened urls resolving to connection invitations', () => {
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionJson)
     expect(short).toEqual(connectionInvitationToNew)
   })
-  test('Resolve a mocked Response in the form of a connection invitation encoded in an url', async () => {
+  test('Resolve a mocked Response in the form of a connection invitation encoded in an url c_i query parameter', async () => {
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionUrl)
     expect(short).toEqual(connectionInvitationToNew)
+  })
+  test('Resolve a mocked Response in the form of a connection invitation encoded in an url oob query parameter', async () => {
+    const mockedResponseConnectionInOobUrl = {
+      status: 200,
+      ok: true,
+      headers: dummyHeader,
+      url: 'https://oob.lissi.io/ssi?oob=eyJAdHlwZSI6ImRpZDpzb3Y6QnpDYnNOWWhNcmpIaXFaRFRVQVNIZztzcGVjL2Nvbm5lY3Rpb25zLzEuMC9pbnZpdGF0aW9uIiwiQGlkIjoiMGU0NmEzYWEtMzUyOC00OTIxLWJmYjItN2JjYjk0NjVjNjZjIiwibGFiZWwiOiJTdGFkdCB8IExpc3NpLURlbW8iLCJzZXJ2aWNlRW5kcG9pbnQiOiJodHRwczovL2RlbW8tYWdlbnQuaW5zdGl0dXRpb25hbC1hZ2VudC5saXNzaS5pZC9kaWRjb21tLyIsImltYWdlVXJsIjoiaHR0cHM6Ly9yb3V0aW5nLmxpc3NpLmlvL2FwaS9JbWFnZS9kZW1vTXVzdGVyaGF1c2VuIiwicmVjaXBpZW50S2V5cyI6WyJEZlcxbzM2ekxuczlVdGlDUGQyalIyS2pvcnRvZkNhcFNTWTdWR2N2WEF6aCJdfQ',
+    } as Response
+
+    mockedResponseConnectionInOobUrl.headers = dummyHeader
+
+    const expectedOobMessage = convertToNewInvitation(
+      JsonTransformer.fromJSON(
+        {
+          '@type': 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation',
+          '@id': '0e46a3aa-3528-4921-bfb2-7bcb9465c66c',
+          label: 'Stadt | Lissi-Demo',
+          serviceEndpoint: 'https://demo-agent.institutional-agent.lissi.id/didcomm/',
+          imageUrl: 'https://routing.lissi.io/api/Image/demoMusterhausen',
+          recipientKeys: ['DfW1o36zLns9UtiCPd2jR2KjortofCapSSY7VGcvXAzh'],
+        },
+        ConnectionInvitationMessage
+      )
+    )
+    const short = await oobInvitationFromShortUrl(mockedResponseConnectionInOobUrl)
+    expect(short).toEqual(expectedOobMessage)
   })
 })

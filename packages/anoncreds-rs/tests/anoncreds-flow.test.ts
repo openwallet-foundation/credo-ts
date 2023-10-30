@@ -35,7 +35,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -82,8 +81,7 @@ const anoncredsProofFormatService = new AnonCredsProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
-// FIXME: Re-include in tests when NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'AnonCreds format services using anoncreds-rs', () => {
+describe('AnonCreds format services using anoncreds-rs', () => {
   afterEach(() => {
     inMemoryStorageService.records = {}
   })

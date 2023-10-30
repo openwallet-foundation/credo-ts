@@ -1,8 +1,11 @@
 import type { ClassValidationError } from '../../../error/ClassValidationError'
 
 import { Attachment } from '../../../decorators/attachment/Attachment'
+import { MessageValidator } from '../../../utils'
 import { JsonEncoder } from '../../../utils/JsonEncoder'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
+import { HandshakeProtocol } from '../../connections'
+import { OutOfBandDidCommService } from '../domain'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 
 describe('toUrl', () => {
@@ -23,6 +26,54 @@ describe('toUrl', () => {
     })
 
     expect(invitationUrl).toBe(`${domain}?oob=${JsonEncoder.toBase64URL(json)}`)
+  })
+})
+
+describe('validation', () => {
+  test('Out-of-Band Invitation instance with did as service', async () => {
+    const invitation = new OutOfBandInvitation({
+      id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+      label: 'Faber College',
+      services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
+      handshakeProtocols: [HandshakeProtocol.DidExchange],
+    })
+
+    expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
+  })
+
+  test('Out-of-Band Invitation instance with object as service', async () => {
+    const invitation = new OutOfBandInvitation({
+      id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+      label: 'Faber College',
+      services: [
+        new OutOfBandDidCommService({
+          id: 'didcomm',
+          serviceEndpoint: 'http://endpoint',
+          recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
+        }),
+      ],
+      handshakeProtocols: [HandshakeProtocol.DidExchange],
+    })
+
+    expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
+  })
+
+  test('Out-of-Band Invitation instance with string and object as services', async () => {
+    const invitation = new OutOfBandInvitation({
+      id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
+      label: 'Faber College',
+      services: [
+        'did:sov:LjgpST2rjsoxYegQDRm7EL',
+        new OutOfBandDidCommService({
+          id: 'didcomm',
+          serviceEndpoint: 'http://endpoint',
+          recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
+        }),
+      ],
+      handshakeProtocols: [HandshakeProtocol.DidExchange],
+    })
+
+    expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
   })
 })
 

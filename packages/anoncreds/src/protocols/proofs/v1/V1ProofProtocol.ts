@@ -326,6 +326,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
     requestPresentationMessage.setThread({
       threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -523,7 +524,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       presentationProposal,
     })
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -600,7 +601,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       presentationAttachments: [attachment],
     })
-    message.setThread({ threadId: proofRecord.threadId })
+    message.setThread({ threadId: proofRecord.threadId, parentThreadId: proofRecord.parentThreadId })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: message,
@@ -745,11 +746,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
 
-    const proofRecord = await this.getByThreadAndConnectionId(
-      agentContext,
-      presentationMessage.threadId,
-      connection?.id
-    )
+    const proofRecord = await this.getByThreadAndConnectionId(agentContext, presentationMessage.threadId)
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
@@ -769,27 +766,63 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       lastSentMessage: requestMessage,
     })
 
+    // This makes sure that the sender of the incoming message is authorized to do so.
+    if (!proofRecord.connectionId) {
+      await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
+        expectedConnectionId: proofRecord.connectionId,
+      })
+
+      proofRecord.connectionId = connection?.id
+    }
+
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
     if (!presentationAttachment) {
-      throw new AriesFrameworkError('Missing indy proof attachment in processPresentation')
+      proofRecord.errorMessage = 'Missing indy proof attachment'
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
     }
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
-      throw new AriesFrameworkError('Missing indy proof request attachment in processPresentation')
+      proofRecord.errorMessage = 'Missing indy proof request attachment'
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
     }
-
-    const isValid = await this.indyProofFormat.processPresentation(agentContext, {
-      proofRecord,
-      attachment: presentationAttachment,
-      requestAttachment,
-    })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: presentationMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Receiver,
     })
+
+    let isValid: boolean
+    try {
+      isValid = await this.indyProofFormat.processPresentation(agentContext, {
+        proofRecord,
+        attachment: presentationAttachment,
+        requestAttachment,
+      })
+    } catch (error) {
+      proofRecord.errorMessage = error.message ?? 'Error verifying proof on presentation'
+      proofRecord.isVerified = false
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError('Error verifying proof on presentation', {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
+
+    if (!isValid) {
+      proofRecord.errorMessage = 'Invalid proof'
+      proofRecord.isVerified = false
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError('Invalid proof', {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
 
     // Update record
     proofRecord.isVerified = isValid
@@ -812,6 +845,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const ackMessage = new V1PresentationAckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.threadId,
+    })
+
+    ackMessage.setThread({
+      threadId: proofRecord.threadId,
+      parentThreadId: proofRecord.parentThreadId,
     })
 
     // Update record

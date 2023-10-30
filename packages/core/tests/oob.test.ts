@@ -721,6 +721,94 @@ describe('out of band', () => {
     })
   })
 
+  describe('messages and connection exchange', () => {
+    test('oob exchange with handshake where response is received to invitation', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.oob.createInvitation({
+        handshake: true,
+        messages: [message],
+      })
+      const { outOfBandInvitation } = outOfBandRecord
+
+      await aliceAgent.oob.receiveInvitation(outOfBandInvitation)
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      await faberCredentialRecordPromise
+    })
+
+    test('oob exchange with reuse where response is received to invitation', async () => {
+      const { message } = await faberAgent.credentials.createOffer(credentialTemplate)
+
+      const routing = await faberAgent.mediationRecipient.getRouting({})
+      const connectionOutOfBandRecord = await faberAgent.oob.createInvitation({
+        routing,
+      })
+
+      // Create connection
+      const { connectionRecord } = await aliceAgent.oob.receiveInvitation(connectionOutOfBandRecord.outOfBandInvitation)
+      if (!connectionRecord) throw new Error('Connection record is undefined')
+      await aliceAgent.connections.returnWhenIsConnected(connectionRecord.id)
+
+      // Create offer and reuse
+      const outOfBandRecord = await faberAgent.oob.createInvitation({
+        routing,
+        messages: [message],
+      })
+      // Create connection
+      const { connectionRecord: offerConnectionRecord } = await aliceAgent.oob.receiveInvitation(
+        outOfBandRecord.outOfBandInvitation,
+        {
+          reuseConnection: true,
+        }
+      )
+      if (!offerConnectionRecord) throw new Error('Connection record is undefined')
+
+      // Should be the same, as connection is reused.
+      expect(offerConnectionRecord.id).toEqual(connectionRecord.id)
+
+      const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
+        state: CredentialState.OfferReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      const aliceCredentialRecord = await aliceCredentialRecordPromise
+      expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
+
+      // If we receive the event, we know the processing went well
+      const faberCredentialRecordPromise = waitForCredentialRecord(faberAgent, {
+        state: CredentialState.RequestReceived,
+        threadId: message.threadId,
+        timeoutMs: 10000,
+      })
+
+      await aliceAgent.credentials.acceptOffer({
+        credentialRecordId: aliceCredentialRecord.id,
+      })
+
+      await faberCredentialRecordPromise
+    })
+  })
+
   describe('connection-less exchange', () => {
     test('oob exchange without handshake where response is received to invitation', async () => {
       const { message } = await faberAgent.credentials.createOffer(credentialTemplate)

@@ -7,6 +7,9 @@ export interface ConnectionsModuleConfigOptions {
    * Whether to automatically accept connection messages. Applies to both the connection protocol (RFC 0160)
    * and the DID exchange protocol (RFC 0023).
    *
+   * Note: this setting does not apply to implicit invitation flows, which always need to be manually accepted
+   * using ConnectionStateChangedEvent
+   *
    * @default false
    */
   autoAcceptConnections?: boolean

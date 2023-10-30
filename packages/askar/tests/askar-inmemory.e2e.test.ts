@@ -4,7 +4,6 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import { Agent } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 
@@ -25,8 +24,7 @@ const bobInMemoryAgentOptions = getSqliteAgentOptions(
   true
 )
 
-// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Askar In Memory agents', () => {
+describe('Askar In Memory agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
