@@ -1,5 +1,5 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
-import type { AgentContext, JwkJson } from '@aries-framework/core'
+import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
 import {
@@ -305,5 +305,31 @@ export class SdJwtService {
       sdJwtRecord,
       validation: verificationResult,
     }
+  }
+
+  public async getCredentialRecordById<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(agentContext: AgentContext, id: string): Promise<SdJwtRecord<Header, Payload>> {
+    return (await this.sdJwtRepository.getById(agentContext, id)) as SdJwtRecord<Header, Payload>
+  }
+
+  public async getAllCredentialRecords(agentContext: AgentContext): Promise<Array<SdJwtRecord>> {
+    return await this.sdJwtRepository.getAll(agentContext)
+  }
+
+  public async findCredentialRecordsByQuery(
+    agentContext: AgentContext,
+    query: Query<SdJwtRecord>
+  ): Promise<Array<SdJwtRecord>> {
+    return await this.sdJwtRepository.findByQuery(agentContext, query)
+  }
+
+  public async removeCredentialRecord(agentContext: AgentContext, id: string) {
+    await this.sdJwtRepository.deleteById(agentContext, id)
+  }
+
+  public async updateCredentialRecord(agentContext: AgentContext, sdJwtRecord: SdJwtRecord) {
+    await this.sdJwtRepository.update(agentContext, sdJwtRecord)
   }
 }

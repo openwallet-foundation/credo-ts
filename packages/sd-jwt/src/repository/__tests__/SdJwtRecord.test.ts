@@ -4,6 +4,8 @@ import { SdJwtVc, SignatureAndEncryptionAlgorithm } from 'jwt-sd'
 import { SdJwtRecord } from '../SdJwtRecord'
 
 describe('SdJwtRecord', () => {
+  const holderDidUrl = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
+
   test('sets the values passed in the constructor on the record', () => {
     const createdAt = new Date()
     const sdJwtRecord = new SdJwtRecord({
@@ -16,6 +18,7 @@ describe('SdJwtRecord', () => {
         header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
         payload: { iss: 'did:key:123' },
         signature: new Uint8Array(32).fill(42),
+        holderDidUrl,
       },
     })
 
@@ -29,6 +32,7 @@ describe('SdJwtRecord', () => {
       header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
       payload: { iss: 'did:key:123' },
       signature: new Uint8Array(32).fill(42),
+      holderDidUrl,
     })
   })
 
@@ -44,6 +48,7 @@ describe('SdJwtRecord', () => {
         header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
         payload: { iss: 'did:key:123' },
         signature: new Uint8Array(32).fill(42),
+        holderDidUrl,
       },
     })
 
@@ -93,6 +98,7 @@ describe('SdJwtRecord', () => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         signature: sdJwt.signature!,
         disclosures: sdJwt.disclosures?.map((d) => d.decoded),
+        holderDidUrl,
       },
     })
 

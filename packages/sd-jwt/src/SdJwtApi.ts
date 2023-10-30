@@ -1,6 +1,7 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
 import type { SdJwtVcVerificationResult } from './SdJwtService'
 import type { SdJwtRecord } from './repository'
+import type { Query } from '@aries-framework/core'
 
 import { AgentContext, injectable } from '@aries-framework/core'
 
@@ -63,5 +64,28 @@ export class SdJwtApi {
     options: SdJwtVerifyOptions
   ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
     return await this.sdJwtService.verify<Header, Payload>(this.agentContext, sdJwtCompact, options)
+  }
+
+  public async getCredentialRecordByIdM<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(id: string): Promise<SdJwtRecord<Header, Payload>> {
+    return await this.sdJwtService.getCredentialRecordById<Header, Payload>(this.agentContext, id)
+  }
+
+  public async getAllCredentialRecords(): Promise<Array<SdJwtRecord>> {
+    return await this.sdJwtService.getAllCredentialRecords(this.agentContext)
+  }
+
+  public async findCredentialRecordsByQuery(query: Query<SdJwtRecord>): Promise<Array<SdJwtRecord>> {
+    return await this.sdJwtService.findCredentialRecordsByQuery(this.agentContext, query)
+  }
+
+  public async removeCredentialRecord(id: string) {
+    return await this.sdJwtService.removeCredentialRecord(this.agentContext, id)
+  }
+
+  public async updateCredentialRecord(sdJwtRecord: SdJwtRecord) {
+    return await this.sdJwtService.updateCredentialRecord(this.agentContext, sdJwtRecord)
   }
 }
