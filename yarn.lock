@@ -1125,22 +1125,22 @@
   resolved "https://registry.yarnpkg.com/@hutson/parse-repository-url/-/parse-repository-url-3.0.2.tgz#98c23c950a3d9b6c8f0daed06da6c3af06981340"
   integrity sha512-H9XAx3hc0BQHY6l+IFSWHDySypcXsvsuLhgYLUGywmJ5pswRVQJUHpOsobnLYp2ZUaUlKiKDrgWWhosOwAEM8Q==
 
-"@hyperledger/anoncreds-nodejs@^0.2.0-dev.3":
-  version "0.2.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.2.0-dev.3.tgz#de79e978e569646b0efc4cca3509bffa36cccc8d"
-  integrity sha512-WDJ2okgg3pOIyOttDGfmSjFNu2xmZsRsNba23z3O0WyKZZ0JdrmPdDpOnbbtuiPKq88NtE0GRH+vo9aTRsQ4hw==
+"@hyperledger/anoncreds-nodejs@^0.2.0-dev.4":
+  version "0.2.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-nodejs/-/anoncreds-nodejs-0.2.0-dev.4.tgz#ac125817beb631dedbe27cb8d4c21d2123104d5e"
+  integrity sha512-EH/jAH+aATH9KByWF1lk1p76BN6VIsRZhG7jyRT1LAaaUNnmpQnjX6d/Mfkofvk4xFIRbp0cDl/UjaKaKfLsww==
   dependencies:
     "@2060.io/ffi-napi" "4.0.8"
     "@2060.io/ref-napi" "3.0.6"
-    "@hyperledger/anoncreds-shared" "0.2.0-dev.3"
+    "@hyperledger/anoncreds-shared" "0.2.0-dev.4"
     "@mapbox/node-pre-gyp" "^1.0.11"
     ref-array-di "1.2.2"
     ref-struct-di "1.1.1"
 
-"@hyperledger/anoncreds-shared@0.2.0-dev.3", "@hyperledger/anoncreds-shared@^0.2.0-dev.3":
-  version "0.2.0-dev.3"
-  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.3.tgz#13909ad67370f6bee137f24c4a1dae7397c94a77"
-  integrity sha512-fuj+4N/ZMEp6d6Kkdk1J81MOz6goSUm9+Io60G5iC3nAVTu18ntM0qPUgAW67FXAcCxYrjdwQ1i6kW6dv1iBYw==
+"@hyperledger/anoncreds-shared@0.2.0-dev.4", "@hyperledger/anoncreds-shared@^0.2.0-dev.4":
+  version "0.2.0-dev.4"
+  resolved "https://registry.yarnpkg.com/@hyperledger/anoncreds-shared/-/anoncreds-shared-0.2.0-dev.4.tgz#8050647fcb153b594671270d4c51b3b423e575be"
+  integrity sha512-8hwXc9zab8MgXgwo0OL5bShxMAfDEiBAB1/r+8mbwgANefDZwHwNOkq0yQLwT2KfSsvH9la7N2ehrtUf5E2FKg==
 
 "@hyperledger/aries-askar-nodejs@^0.2.0-dev.1":
   version "0.2.0-dev.1"
@@ -1162,22 +1162,22 @@
   dependencies:
     buffer "^6.0.3"
 
-"@hyperledger/indy-vdr-nodejs@^0.2.0-dev.2":
-  version "0.2.0-dev.2"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.2.0-dev.2.tgz#9349df0c3ff3d09e779483a31fb9ceffba829264"
-  integrity sha512-m8cBonthinPAiGvyKIfVk/AIRMUhkzcjslQKRbdOiexSaWuk5TprKQByLgt/9KRZZOzx9hvoChQ1a1tS/4alXQ==
+"@hyperledger/indy-vdr-nodejs@^0.2.0-dev.3":
+  version "0.2.0-dev.3"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-nodejs/-/indy-vdr-nodejs-0.2.0-dev.3.tgz#c7262df6545606c893994e236c635c287cd64fd0"
+  integrity sha512-W4z8AtrNGb4hbbdisz6HAFqyAoX9c4oT3qo/8mizKyuYCSiSwlmAllkIFjCt93xyYmecTivkY2V2BcWpaUW47A==
   dependencies:
     "@2060.io/ffi-napi" "4.0.8"
     "@2060.io/ref-napi" "3.0.6"
-    "@hyperledger/indy-vdr-shared" "0.2.0-dev.2"
+    "@hyperledger/indy-vdr-shared" "0.2.0-dev.3"
     "@mapbox/node-pre-gyp" "^1.0.10"
     ref-array-di "^1.2.2"
     ref-struct-di "^1.1.1"
 
-"@hyperledger/indy-vdr-shared@0.2.0-dev.2", "@hyperledger/indy-vdr-shared@^0.2.0-dev.2":
-  version "0.2.0-dev.2"
-  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.2.0-dev.2.tgz#359804ba033e796391270b3da9a5a3ab816f73da"
-  integrity sha512-z5H08W4/lQXrZxgeY4mAKsFRZ43d7HQlcqR8XmAUvZmjYOYwvNv215y1esujazmYsJfmdl+6SVSWhZK46qzyTw==
+"@hyperledger/indy-vdr-shared@0.2.0-dev.3", "@hyperledger/indy-vdr-shared@^0.2.0-dev.3":
+  version "0.2.0-dev.3"
+  resolved "https://registry.yarnpkg.com/@hyperledger/indy-vdr-shared/-/indy-vdr-shared-0.2.0-dev.3.tgz#14994a034691ffe08e14e5f7d60fd63237616d04"
+  integrity sha512-5/zgSxp4zZUuFLabWdpB6ttfD0aLIquR9qab+HAJFUYDiWGHKP7bztiu07p4Dvhtgah+ZFOFgQo7WC492DXBoQ==
 
 "@isaacs/string-locale-compare@^1.1.0":
   version "1.1.0"

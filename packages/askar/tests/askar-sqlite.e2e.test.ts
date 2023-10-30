@@ -125,7 +125,7 @@ describe('Askar SQLite agents', () => {
     // Initialize the wallet again and assert record does not exist
     // This should create a new wallet
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await bobAgent.wallet.initialize(bobAgentOptions.config.walletConfig!)
+    await bobAgent.wallet.initialize(bobAgent.config.walletConfig!)
     expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 
