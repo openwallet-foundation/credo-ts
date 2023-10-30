@@ -116,9 +116,6 @@ export class SdJwtService {
       )
     }
 
-    // TODO: here we retrieve the key instance from the DID, but this will only contain a reference to the public key.
-    // Does askar automatically check if there is an associated private key locally?
-    // This would fail in any other case.
     const { verificationMethod: issuerVerificationMethod, didDocument: issuerDidDocument } = await this.resolveDidUrl(
       agentContext,
       issuerDidUrl
@@ -164,6 +161,7 @@ export class SdJwtService {
         payload: sdJwtVc.payload,
         signature: sdJwtVc.signature,
         disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+        holderDidUrl,
       },
     })
 
@@ -210,6 +208,7 @@ export class SdJwtService {
         payload: sdJwt.payload,
         signature: sdJwt.signature,
         disclosures: sdJwt.disclosures?.map((d) => d.decoded),
+        holderDidUrl,
       },
     })
 
@@ -221,9 +220,12 @@ export class SdJwtService {
   public async present(
     agentContext: AgentContext,
     sdJwtRecord: SdJwtRecord,
-    { includedDisclosureIndices, holderDidUrl, verifierMetadata, holderOverrideJsonWebAlgorithm }: SdJwtPresentOptions
+    { includedDisclosureIndices, verifierMetadata, holderOverrideJsonWebAlgorithm }: SdJwtPresentOptions
   ): Promise<string> {
-    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(
+      agentContext,
+      sdJwtRecord.sdJwt.holderDidUrl
+    )
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const alg = getJwaFromKey(holderKey, holderOverrideJsonWebAlgorithm)
 
@@ -293,6 +295,7 @@ export class SdJwtService {
         payload: sdJwt.payload,
         disclosures: sdJwt.disclosures?.map((d) => d.decoded),
         header: sdJwt.header,
+        holderDidUrl,
       },
     })
 

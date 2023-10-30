@@ -17,7 +17,7 @@ export type SdJwt<
   payload: Payload
   signature: Uint8Array
 
-  // TODO: include the holder key for key binding in here, for ease of use
+  holderDidUrl: string
 }
 
 export type SdJwtRecordStorageProps<

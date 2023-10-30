@@ -1,5 +1,5 @@
 import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
-import type { SdJwt, SdJwtVcVerificationResult } from './SdJwtService'
+import type { SdJwtVcVerificationResult } from './SdJwtService'
 import type { SdJwtRecord } from './repository'
 
 import { AgentContext, injectable } from '@aries-framework/core'
@@ -27,16 +27,16 @@ export class SdJwtApi {
   }
 
   /**
-   * @todo Name is not the best
-   * @todo This stores for now as it is in-line with the rest of the framework, but this will be removed.
    *
    * Validates and stores an sd-jwt from the perspective of an holder
+   *
    */
   public async receive(sdJwtCompact: string, options: SdJwtReceiveOptions): Promise<SdJwtRecord> {
     return await this.sdJwtService.receive(this.agentContext, sdJwtCompact, options)
   }
 
   /**
+   *
    * Create a compact presentation of the sd-jwt.
    * This presentation can be send in- or out-of-band to the verifier.
    *
@@ -49,9 +49,11 @@ export class SdJwtApi {
   }
 
   /**
+   *
    * Verify an incoming sd-jwt. It will check whether everything is valid, but also returns parts of the validation.
    *
    * For example, you might still want to continue with a flow if not all the claims are included, but the signature is valid.
+   *
    */
   public async verify<
     Header extends Record<string, unknown> = Record<string, unknown>,

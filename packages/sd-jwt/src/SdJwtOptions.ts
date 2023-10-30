@@ -18,7 +18,6 @@ export type SdJwtReceiveOptions = {
  * `includedDisclosureIndices` is not the best API, but it is the best alternative until something like `PEX` is supported
  */
 export type SdJwtPresentOptions = {
-  holderDidUrl: string
   holderOverrideJsonWebAlgorithm?: JwaSignatureAlgorithm
   includedDisclosureIndices?: Array<number>
 

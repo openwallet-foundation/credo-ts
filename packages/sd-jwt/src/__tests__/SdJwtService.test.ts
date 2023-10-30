@@ -376,7 +376,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { issuerDidUrl, holderDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -393,7 +392,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -411,7 +409,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -431,7 +428,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -461,7 +457,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -492,7 +487,6 @@ describe('SdJwtService', () => {
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
-        holderDidUrl,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
