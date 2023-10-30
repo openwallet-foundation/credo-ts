@@ -76,6 +76,12 @@ export class SdJwtService {
       let key = signerKey
 
       if (publicKeyJwk) {
+        if (!('kty' in publicKeyJwk)) {
+          throw new SdJwtError(
+            'Key type (kty) claim could not be found in the JWK of the confirmation (cnf) claim. Only JWK is supported right now'
+          )
+        }
+
         const jwk = getJwkFromJson(publicKeyJwk as JwkJson)
         key = Key.fromPublicKey(jwk.publicKey, jwk.keyType)
       }

@@ -1,10 +1,10 @@
+import type { Key } from '@aries-framework/core'
+
 import { AskarModule } from '@aries-framework/askar'
 import {
   Agent,
   DidKey,
   DidsModule,
-  Key,
-  KeyDidCreateOptions,
   KeyDidRegistrar,
   KeyDidResolver,
   KeyType,
