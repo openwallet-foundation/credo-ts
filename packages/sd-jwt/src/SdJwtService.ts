@@ -41,7 +41,7 @@ export class SdJwtService {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
     const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
 
-    return didDocument.dereferenceKey(didUrl)
+    return { verificationMethod: didDocument.dereferenceKey(didUrl), didDocument }
   }
 
   private get hasher(): HasherAndAlgorithm {
@@ -103,21 +103,31 @@ export class SdJwtService {
       throw new SdJwtError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
+    const issuerKeyId = issuerDidUrl.split('#')[1]
+    if (!issuerKeyId) {
+      throw new SdJwtError(
+        `issuer did url '${issuerDidUrl}' does not contain a '#'. Unable to derive key from did document`
+      )
+    }
+
     // TODO: here we retrieve the key instance from the DID, but this will only contain a reference to the public key.
     // Does askar automatically check if there is an associated private key locally?
     // This would fail in any other case.
-    const issuerVerificationMethod = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const { verificationMethod: issuerVerificationMethod, didDocument: issuerDidDocument } = await this.resolveDidUrl(
+      agentContext,
+      issuerDidUrl
+    )
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
     const alg = getJwaFromKey(issuerKey, issuerOverrideJsonWebAlgorithm)
 
-    const holderVerificationMethod = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
-    // TODO: change getJwaFromKeyType to be according to the comments
     const header = {
       alg: alg.toString(),
       typ: 'vc+sd-jwt',
+      kid: issuerKeyId,
     }
 
     const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
@@ -128,11 +138,10 @@ export class SdJwtService {
       .withPayload({ ...payload })
 
     // Add the `cnf` claim for the holder key binding
-    // TODO: deal with holderBinding being a `did`
     sdJwtVc.addPayloadClaim('cnf', { jwk: holderKeyJwk })
 
     // Add the issuer DID as the `iss` claim
-    sdJwtVc.addPayloadClaim('iss', issuerDidUrl)
+    sdJwtVc.addPayloadClaim('iss', issuerDidDocument.id)
 
     // Add the issued at (iat) claim
     sdJwtVc.addPayloadClaim('iat', Math.floor(new Date().getTime() / 1000))
@@ -174,7 +183,7 @@ export class SdJwtService {
       throw new SdJwtError('A signature must be included for an sd-jwt')
     }
 
-    const issuerVerificationMethod = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
     const isSignatureValid = await sdJwt.verifySignature(this.verifier(agentContext, issuerKey))
@@ -183,7 +192,7 @@ export class SdJwtService {
       throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
     }
 
-    const holderVerificiationMethod = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const { verificationMethod: holderVerificiationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificiationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
@@ -208,7 +217,7 @@ export class SdJwtService {
     sdJwtRecord: SdJwtRecord,
     { includedDisclosureIndices, holderDidUrl, verifierMetadata, holderOverrideJsonWebAlgorithm }: SdJwtPresentOptions
   ): Promise<string> {
-    const holderVerificationMethod = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const alg = getJwaFromKey(holderKey, holderOverrideJsonWebAlgorithm)
 
@@ -255,15 +264,20 @@ export class SdJwtService {
       throw new SdJwtError('Keybinding is required for verification of the sd-jwt-vc')
     }
 
-    const holderVerificationMethod = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
-    const issuerVerificationMethod = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
     sdJwt.keyBinding.assertClaimInPayload('aud', verifierDid)
     sdJwt.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
+
+    // TODO: is there a more AFJ way of doing this?
+    const [did, keyId] = issuerDidUrl.split('#')
+    sdJwt.assertClaimInHeader('kid', keyId)
+    sdJwt.assertClaimInPayload('iss', did)
 
     const verificationResult = await sdJwt.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
 

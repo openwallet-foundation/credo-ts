@@ -18,6 +18,15 @@ import { agentDependencies } from '../../../core/tests'
 import { SdJwtService } from '../SdJwtService'
 import { SdJwtRepository } from '../repository'
 
+import {
+  complexSdJwt,
+  complexSdJwtPresentation,
+  sdJwtWithSingleDisclosure,
+  sdJwtWithSingleDisclosurePresentation,
+  simpleJwt,
+  simpleJwtPresentation,
+} from './sdjwt.fixtures'
+
 const agent = new Agent({
   config: { label: 'sdjwtserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
   modules: {
@@ -86,20 +95,19 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJjbGFpbSI6InNvbWUtY2xhaW0iLCJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMn0.E7HBTBPIDVaD8R4-_4srSfRze2qrHTZUthd6Q0_QE2JoQzuw9ACe4TYmJaKxzrO25KtYLrltcDvfNdi1ylCcDQ'
-      )
+      expect(compact).toStrictEqual(simpleJwt)
 
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
         claim: 'some-claim',
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         cnf: {
           jwk: getJwkFromKey(holderKey).toJson(),
         },
@@ -117,19 +125,18 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsidmN2RlU0RHNGS1RxUTF2bDRuZWxKV1hUYl8tMGROb0JrczZpcU5GcHR5ZyJdfQ.5Km5xlqypqm2gpHOgv1yF83ruQCPn-473uECHrGjSPBz6fmFwA9YV-qjy0lclVB3ydga8HPiWknB938th18DDg~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
-      )
+      expect(compact).toStrictEqual(sdJwtWithSingleDisclosure)
 
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
@@ -179,13 +186,12 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJvRU5Wc3hPVWlINTRYOHdKTGFWa2ljQ1JrMDB3QklRNHNSZ2JrNTROOE1vIn19LCJpc3MiOiJkaWQ6a2V5Ono2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbIjFDdXIyazJBMm9JQjVDc2hTSWZfQV9LZy1sMjZ1X3FLdVdRNzlQMFZkYXMiLCJSMXpUVXZPWUhnY2VwajBqSHlwR0h6OUVIdHRWS2Z0MHlzd2JjOUVUUGJVIiwiZURxUXBkVFhKWGJXaGYtRXNJN3p3NVg2T3ZZbUZOLVVaUVFNZXNYd0tQdyIsInBkRGsyX1hBS0hvN2dPQWZ3RjFiN09kQ1VWVGl0MmtKSGF4U0VDUTl4ZmMiLCJwc2F1S1VOV0VpMDludTNDbDg5eEtYZ21wV0VOWmw1dXkxTjFueW5fak1rIiwic05fZ2UwcEhYRjZxbXNZblgxQTlTZHdKOGNoOGFFTmt4Yk9Ec1Q3NFl3SSJdfQ.NC9g6Qrx64x_BNFRkKoMokDECUNvOfawKNiwWA9Gn9wDEZ6kz5A3kQtnRkfrpNZvx0yE6XN76R7A7r2AM-uWDQ~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
-      )
+      expect(compact).toStrictEqual(complexSdJwt)
 
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
@@ -198,7 +204,7 @@ describe('SdJwtService', () => {
         },
         phone_number: '+1-202-555-0101',
         family_name: 'Doe',
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         _sd: [
           '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
           'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
@@ -243,8 +249,7 @@ describe('SdJwtService', () => {
 
   describe('SdJwtService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJjbGFpbSI6InNvbWUtY2xhaW0iLCJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMn0.E7HBTBPIDVaD8R4-_4srSfRze2qrHTZUthd6Q0_QE2JoQzuw9ACe4TYmJaKxzrO25KtYLrltcDvfNdi1ylCcDQ'
+      const sdJwt = simpleJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, {
         issuerDidUrl,
@@ -254,13 +259,14 @@ describe('SdJwtService', () => {
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
         claim: 'some-claim',
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         cnf: {
           jwk: getJwkFromKey(holderKey).toJson(),
         },
@@ -268,8 +274,7 @@ describe('SdJwtService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsidmN2RlU0RHNGS1RxUTF2bDRuZWxKV1hUYl8tMGROb0JrczZpcU5GcHR5ZyJdfQ.5Km5xlqypqm2gpHOgv1yF83ruQCPn-473uECHrGjSPBz6fmFwA9YV-qjy0lclVB3ydga8HPiWknB938th18DDg~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
+      const sdJwt = sdJwtWithSingleDisclosure
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, {
         issuerDidUrl,
@@ -279,12 +284,13 @@ describe('SdJwtService', () => {
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
@@ -300,21 +306,21 @@ describe('SdJwtService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJvRU5Wc3hPVWlINTRYOHdKTGFWa2ljQ1JrMDB3QklRNHNSZ2JrNTROOE1vIn19LCJpc3MiOiJkaWQ6a2V5Ono2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbIjFDdXIyazJBMm9JQjVDc2hTSWZfQV9LZy1sMjZ1X3FLdVdRNzlQMFZkYXMiLCJSMXpUVXZPWUhnY2VwajBqSHlwR0h6OUVIdHRWS2Z0MHlzd2JjOUVUUGJVIiwiZURxUXBkVFhKWGJXaGYtRXNJN3p3NVg2T3ZZbUZOLVVaUVFNZXNYd0tQdyIsInBkRGsyX1hBS0hvN2dPQWZ3RjFiN09kQ1VWVGl0MmtKSGF4U0VDUTl4ZmMiLCJwc2F1S1VOV0VpMDludTNDbDg5eEtYZ21wV0VOWmw1dXkxTjFueW5fak1rIiwic05fZ2UwcEhYRjZxbXNZblgxQTlTZHdKOGNoOGFFTmt4Yk9Ec1Q3NFl3SSJdfQ.NC9g6Qrx64x_BNFRkKoMokDECUNvOfawKNiwWA9Gn9wDEZ6kz5A3kQtnRkfrpNZvx0yE6XN76R7A7r2AM-uWDQ~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
+      const sdJwt = complexSdJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
+        kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
       expect(sdJwtRecord.sdJwt.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         family_name: 'Doe',
-        iss: issuerDidUrl,
+        iss: issuerDidUrl.split('#')[0],
         address: {
           _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
           locality: 'Anytown',
@@ -365,8 +371,7 @@ describe('SdJwtService', () => {
 
   describe('SdJwtService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJjbGFpbSI6InNvbWUtY2xhaW0iLCJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMn0.E7HBTBPIDVaD8R4-_4srSfRze2qrHTZUthd6Q0_QE2JoQzuw9ACe4TYmJaKxzrO25KtYLrltcDvfNdi1ylCcDQ'
+      const sdJwt = simpleJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { issuerDidUrl, holderDidUrl })
 
@@ -379,14 +384,11 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(presentation).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJjbGFpbSI6InNvbWUtY2xhaW0iLCJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMn0.E7HBTBPIDVaD8R4-_4srSfRze2qrHTZUthd6Q0_QE2JoQzuw9ACe4TYmJaKxzrO25KtYLrltcDvfNdi1ylCcDQ~eyJhbGciOiJFZERTQSIsInR5cCI6ImtiK2p3dCJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkifQ.VdZSnQJ5sklqMPnIzaOaGxP2qPiEPniTaUFHy4VMcW9h9pV1c17fcuTySJtmV2tcpKhei4ss04q_rFyN1EVRDg'
-      )
+      expect(presentation).toStrictEqual(simpleJwtPresentation)
     })
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsidmN2RlU0RHNGS1RxUTF2bDRuZWxKV1hUYl8tMGROb0JrczZpcU5GcHR5ZyJdfQ.5Km5xlqypqm2gpHOgv1yF83ruQCPn-473uECHrGjSPBz6fmFwA9YV-qjy0lclVB3ydga8HPiWknB938th18DDg~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
+      const sdJwt = sdJwtWithSingleDisclosure
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
@@ -400,14 +402,11 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0],
       })
 
-      expect(presentation).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsidmN2RlU0RHNGS1RxUTF2bDRuZWxKV1hUYl8tMGROb0JrczZpcU5GcHR5ZyJdfQ.5Km5xlqypqm2gpHOgv1yF83ruQCPn-473uECHrGjSPBz6fmFwA9YV-qjy0lclVB3ydga8HPiWknB938th18DDg~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~eyJhbGciOiJFZERTQSIsInR5cCI6ImtiK2p3dCJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkifQ.VdZSnQJ5sklqMPnIzaOaGxP2qPiEPniTaUFHy4VMcW9h9pV1c17fcuTySJtmV2tcpKhei4ss04q_rFyN1EVRDg'
-      )
+      expect(presentation).toStrictEqual(sdJwtWithSingleDisclosurePresentation)
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJvRU5Wc3hPVWlINTRYOHdKTGFWa2ljQ1JrMDB3QklRNHNSZ2JrNTROOE1vIn19LCJpc3MiOiJkaWQ6a2V5Ono2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbIjFDdXIyazJBMm9JQjVDc2hTSWZfQV9LZy1sMjZ1X3FLdVdRNzlQMFZkYXMiLCJSMXpUVXZPWUhnY2VwajBqSHlwR0h6OUVIdHRWS2Z0MHlzd2JjOUVUUGJVIiwiZURxUXBkVFhKWGJXaGYtRXNJN3p3NVg2T3ZZbUZOLVVaUVFNZXNYd0tQdyIsInBkRGsyX1hBS0hvN2dPQWZ3RjFiN09kQ1VWVGl0MmtKSGF4U0VDUTl4ZmMiLCJwc2F1S1VOV0VpMDludTNDbDg5eEtYZ21wV0VOWmw1dXkxTjFueW5fak1rIiwic05fZ2UwcEhYRjZxbXNZblgxQTlTZHdKOGNoOGFFTmt4Yk9Ec1Q3NFl3SSJdfQ.NC9g6Qrx64x_BNFRkKoMokDECUNvOfawKNiwWA9Gn9wDEZ6kz5A3kQtnRkfrpNZvx0yE6XN76R7A7r2AM-uWDQ~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
+      const sdJwt = complexSdJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
@@ -421,16 +420,13 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0, 1, 4, 6, 7],
       })
 
-      expect(presentation).toStrictEqual(
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJvRU5Wc3hPVWlINTRYOHdKTGFWa2ljQ1JrMDB3QklRNHNSZ2JrNTROOE1vIn19LCJpc3MiOiJkaWQ6a2V5Ono2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbIjFDdXIyazJBMm9JQjVDc2hTSWZfQV9LZy1sMjZ1X3FLdVdRNzlQMFZkYXMiLCJSMXpUVXZPWUhnY2VwajBqSHlwR0h6OUVIdHRWS2Z0MHlzd2JjOUVUUGJVIiwiZURxUXBkVFhKWGJXaGYtRXNJN3p3NVg2T3ZZbUZOLVVaUVFNZXNYd0tQdyIsInBkRGsyX1hBS0hvN2dPQWZ3RjFiN09kQ1VWVGl0MmtKSGF4U0VDUTl4ZmMiLCJwc2F1S1VOV0VpMDludTNDbDg5eEtYZ21wV0VOWmw1dXkxTjFueW5fak1rIiwic05fZ2UwcEhYRjZxbXNZblgxQTlTZHdKOGNoOGFFTmt4Yk9Ec1Q3NFl3SSJdfQ.NC9g6Qrx64x_BNFRkKoMokDECUNvOfawKNiwWA9Gn9wDEZ6kz5A3kQtnRkfrpNZvx0yE6XN76R7A7r2AM-uWDQ~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~eyJhbGciOiJFZERTQSIsInR5cCI6ImtiK2p3dCJ9.eyJpYXQiOjE2OTgxNTE1MzIsIm5vbmNlIjoic2FsdCIsImF1ZCI6ImRpZDprZXk6elVDNzRWRXFxaEVIUWNndjR6YWdTUGtxRkp4dU5XdW9CUEtqSnVIRVRFVWVITG9TcVd0OTJ2aVNzbWFXank4MnkifQ.VdZSnQJ5sklqMPnIzaOaGxP2qPiEPniTaUFHy4VMcW9h9pV1c17fcuTySJtmV2tcpKhei4ss04q_rFyN1EVRDg'
-      )
+      expect(presentation).toStrictEqual(complexSdJwtPresentation)
     })
   })
 
   describe('SdJwtService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJjbGFpbSI6InNvbWUtY2xhaW0iLCJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMn0.E7HBTBPIDVaD8R4-_4srSfRze2qrHTZUthd6Q0_QE2JoQzuw9ACe4TYmJaKxzrO25KtYLrltcDvfNdi1ylCcDQ'
+      const sdJwt = simpleJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
@@ -460,8 +456,7 @@ describe('SdJwtService', () => {
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiY25mIjp7Imp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6Im9FTlZzeE9VaUg1NFg4d0pMYVZraWNDUmswMHdCSVE0c1JnYms1NE44TW8ifX0sImlzcyI6ImRpZDprZXk6ejZNa3RxdFhORzhDRFVZOVBycnRvU3RGemVDbmhwTW1neFlMMWdpa2NXM0J6dk5XI3o2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyIsImlhdCI6MTY5ODE1MTUzMiwiX3NkX2FsZyI6InNoYS0yNTYiLCJfc2QiOlsidmN2RlU0RHNGS1RxUTF2bDRuZWxKV1hUYl8tMGROb0JrczZpcU5GcHR5ZyJdfQ.5Km5xlqypqm2gpHOgv1yF83ruQCPn-473uECHrGjSPBz6fmFwA9YV-qjy0lclVB3ydga8HPiWknB938th18DDg~WyJzYWx0IiwiY2xhaW0iLCJzb21lLWNsYWltIl0~'
+      const sdJwt = sdJwtWithSingleDisclosure
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
@@ -492,8 +487,7 @@ describe('SdJwtService', () => {
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const sdJwt =
-        'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCJ9.eyJ0eXBlIjoiSWRlbnRpdHlDcmVkZW50aWFsIiwiZmFtaWx5X25hbWUiOiJEb2UiLCJwaG9uZV9udW1iZXIiOiIrMS0yMDItNTU1LTAxMDEiLCJhZGRyZXNzIjp7InN0cmVldF9hZGRyZXNzIjoiMTIzIE1haW4gU3QiLCJsb2NhbGl0eSI6IkFueXRvd24iLCJfc2QiOlsiTkpubWN0MEJxQk1FMUpmQmxDNmpSUVZSdWV2cEVPTmlZdzdBN01IdUp5USIsIm9tNVp6dFpIQi1HZDAwTEcyMUNWX3hNNEZhRU5Tb2lhT1huVEFKTmN6QjQiXX0sImNuZiI6eyJqd2siOnsia3R5IjoiT0tQIiwiY3J2IjoiRWQyNTUxOSIsIngiOiJvRU5Wc3hPVWlINTRYOHdKTGFWa2ljQ1JrMDB3QklRNHNSZ2JrNTROOE1vIn19LCJpc3MiOiJkaWQ6a2V5Ono2TWt0cXRYTkc4Q0RVWTlQcnJ0b1N0RnplQ25ocE1tZ3hZTDFnaWtjVzNCenZOVyN6Nk1rdHF0WE5HOENEVVk5UHJydG9TdEZ6ZUNuaHBNbWd4WUwxZ2lrY1czQnp2TlciLCJpYXQiOjE2OTgxNTE1MzIsIl9zZF9hbGciOiJzaGEtMjU2IiwiX3NkIjpbIjFDdXIyazJBMm9JQjVDc2hTSWZfQV9LZy1sMjZ1X3FLdVdRNzlQMFZkYXMiLCJSMXpUVXZPWUhnY2VwajBqSHlwR0h6OUVIdHRWS2Z0MHlzd2JjOUVUUGJVIiwiZURxUXBkVFhKWGJXaGYtRXNJN3p3NVg2T3ZZbUZOLVVaUVFNZXNYd0tQdyIsInBkRGsyX1hBS0hvN2dPQWZ3RjFiN09kQ1VWVGl0MmtKSGF4U0VDUTl4ZmMiLCJwc2F1S1VOV0VpMDludTNDbDg5eEtYZ21wV0VOWmw1dXkxTjFueW5fak1rIiwic05fZ2UwcEhYRjZxbXNZblgxQTlTZHdKOGNoOGFFTmt4Yk9Ec1Q3NFl3SSJdfQ.NC9g6Qrx64x_BNFRkKoMokDECUNvOfawKNiwWA9Gn9wDEZ6kz5A3kQtnRkfrpNZvx0yE6XN76R7A7r2AM-uWDQ~WyJzYWx0IiwiaXNfb3Zlcl82NSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8yMSIsdHJ1ZV0~WyJzYWx0IiwiaXNfb3Zlcl8xOCIsdHJ1ZV0~WyJzYWx0IiwiYmlydGhkYXRlIiwiMTk0MC0wMS0wMSJd~WyJzYWx0IiwiZW1haWwiLCJqb2huZG9lQGV4YW1wbGUuY29tIl0~WyJzYWx0IiwicmVnaW9uIiwiQW55c3RhdGUiXQ~WyJzYWx0IiwiY291bnRyeSIsIlVTIl0~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkpvaG4iXQ~'
+      const sdJwt = complexSdJwt
 
       const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
