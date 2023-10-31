@@ -153,7 +153,7 @@ export class IndyVdrPoolService {
    * Refresh the pool connections asynchronously
    */
   public refreshPoolConnections() {
-    return Promise.allSettled(this.pools.map(async (pool) => await pool.refreshConnection()))
+    return Promise.allSettled(this.pools.map((pool) => pool.refreshConnection()))
   }
 
   /**
