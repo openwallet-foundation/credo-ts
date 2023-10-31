@@ -8,7 +8,7 @@ ARG DEBIAN_FRONTEND noninteractive
 # Define packages to install
 ENV PACKAGES software-properties-common ca-certificates \
     curl build-essential git \
-    libzmq3-dev libsodium-dev pkg-config
+    libzmq3-dev libsodium-dev pkg-config gnupg
 
 # Combined update and install to ensure Docker caching works correctly
 RUN apt-get update -y \
@@ -24,7 +24,9 @@ RUN curl http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1-1
 # Add APT sources
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CE7709D068DB5E88 \
     && add-apt-repository "deb https://repo.sovrin.org/sdk/deb bionic stable" \
-    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list  \
     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
 

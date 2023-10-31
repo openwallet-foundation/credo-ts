@@ -118,9 +118,7 @@ describe('W3cPresentation', () => {
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: ['ey.incorrect.jwt'] }, W3cPresentation)
-    ).toThrowError(
-      /value 'ey.incorrect.jwt' is not a valid W3cJwtVerifiableCredential. Invalid JWT. Unexpected end of JSON input/
-    )
+    ).toThrowError(/value 'ey.incorrect.jwt' is not a valid W3cJwtVerifiableCredential. Invalid JWT./)
 
     // Deeply nested property missing
     expect(() =>
