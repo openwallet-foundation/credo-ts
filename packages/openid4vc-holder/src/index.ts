@@ -1,5 +1,3 @@
-import 'fast-text-encoding'
-
 export * from './OpenId4VcHolderApi'
 export * from './issuance/OpenId4VciHolderModule'
 export * from './issuance/OpenId4VciHolderService'

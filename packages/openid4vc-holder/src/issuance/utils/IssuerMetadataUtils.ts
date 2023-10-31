@@ -8,7 +8,6 @@ import type {
   CredentialSupportedV1_0_08,
   EndpointMetadataResult,
   IssuerMetadataV1_0_08,
-  MetadataDisplay,
   OID4VCICredentialFormat,
 } from '@sphereon/oid4vci-common'
 
@@ -100,30 +99,31 @@ export function getOfferedCredentialsWithMetadata(
 
 export async function getMetadataFromCredentialOffer(
   credentialOfferPayload: CredentialOfferPayloadV1_0_11,
-  _metadata?: EndpointMetadataResult
+  metadata?: EndpointMetadataResult
 ) {
   const issuer = credentialOfferPayload.credential_issuer
 
-  const metadata =
-    _metadata && _metadata.credentialIssuerMetadata ? _metadata : await MetadataClient.retrieveAllMetadata(issuer)
-  if (!metadata) throw new AriesFrameworkError(`Could not retrieve metadata for OpenId4Vci issuer: ${issuer}`)
+  const resolvedMetadata =
+    metadata && metadata.credentialIssuerMetadata ? metadata : await MetadataClient.retrieveAllMetadata(issuer)
 
-  const issuerMetadata = metadata.credentialIssuerMetadata
-  if (!issuerMetadata)
+  if (!resolvedMetadata) {
+    throw new AriesFrameworkError(`Could not retrieve metadata for OpenId4Vci issuer: ${issuer}`)
+  }
+
+  const issuerMetadata = resolvedMetadata.credentialIssuerMetadata
+  if (!issuerMetadata) {
     throw new AriesFrameworkError(`Could not retrieve issuer metadata for OpenId4Vci issuer: ${issuer}`)
+  }
 
-  return { issuer, metadata, issuerMetadata }
+  return { issuer, metadata: resolvedMetadata, issuerMetadata }
 }
 
-export function getSupportedCredentials(opts?: {
+export function getSupportedCredentials(opts: {
   issuerMetadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08
   version: OpenId4VCIVersion
 }): CredentialSupported[] {
-  const { issuerMetadata } = opts ?? {}
+  const { issuerMetadata } = opts
   let credentialsSupported: CredentialSupported[]
-  if (!issuerMetadata) {
-    return []
-  }
   const { version } = opts ?? { version: OpenId4VCIVersion.VER_1_0_11 }
 
   const usesTransformedCredentialsSupported =
@@ -161,7 +161,6 @@ export function credentialSupportedV8ToV11(
     if (typeof format !== 'string') {
       throw Error(`Unknown format received ${JSON.stringify(format)}`)
     }
-    let credentialSupport: Partial<CredentialSupported> = {}
 
     // v8 format included the credential type / id as the key of the object and it could contain multiple supported formats
     // v11 format has an array where each entry only supports one format, and can only have an `id` property. We include the
@@ -169,14 +168,26 @@ export function credentialSupportedV8ToV11(
     // one key), we append the format to the key IF there's more than one format supported under the key.
     const id = v8FormatEntries.length > 1 ? `${key}-${format}` : key
 
-    credentialSupport = {
-      format,
-      display: supportedV8.display,
-      ...credentialSupportBrief,
-      credentialSubject: supportedV8.claims,
-      id,
+    let credentialSupported: CredentialSupported
+    if (format === 'jwt_vc_json') {
+      credentialSupported = {
+        format,
+        display: supportedV8.display,
+        ...credentialSupportBrief,
+        credentialSubject: supportedV8.claims,
+        id,
+      }
+    } else {
+      credentialSupported = {
+        format,
+        display: supportedV8.display,
+        ...credentialSupportBrief,
+        id,
+        '@context': ['VerifiableCredential'], // NOTE: V8 credentials don't come with @context
+      }
     }
-    return credentialSupport as CredentialSupported
+
+    return credentialSupported
   })
 }
 
@@ -200,20 +211,4 @@ export function handleLocations(authorizationDetails: AuthDetails, metadata: End
     else authorizationDetails.locations = [authorizationDetails.locations as string, metadata.issuer]
   }
   return authorizationDetails
-}
-
-// TODO
-export function getIssuerDisplays(
-  metadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08,
-  opts?: { prefLocales: string[] }
-): MetadataDisplay[] {
-  const matchedDisplays =
-    metadata.display?.filter(
-      (item) =>
-        !opts?.prefLocales ||
-        opts.prefLocales.length === 0 ||
-        (item.locale && opts.prefLocales.includes(item.locale)) ||
-        !item.locale
-    ) ?? []
-  return matchedDisplays.sort((item) => (item.locale ? opts?.prefLocales.indexOf(item.locale) ?? 1 : Number.MAX_VALUE))
 }

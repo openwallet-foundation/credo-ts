@@ -3,7 +3,7 @@ import type { CredentialFormat } from '@sphereon/ssi-types'
 
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-// Base on https://github.com/Sphereon-Opensource/OID4VCI/pull/54/files
+// Based on https://github.com/Sphereon-Opensource/OID4VCI/pull/54/files
 
 const isUniformFormat = (format: string): format is OID4VCICredentialFormat => {
   return ['jwt_vc_json', 'jwt_vc_json-ld', 'ldp_vc'].includes(format)

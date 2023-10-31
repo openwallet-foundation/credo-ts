@@ -94,7 +94,6 @@ export interface AuthCodeFlowOptions {
   clientId: string
   redirectUri: string
   scope?: string[]
-  authDetails?: AuthDetails[]
 }
 
 export interface ProofOfPossessionVerificationMethodResolverOptions {

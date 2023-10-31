@@ -5,14 +5,13 @@ import type {
   ResolvedAuthorizationRequest,
 } from './OpenId4VcHolderServiceOptions'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
-import type { VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
+import type { ClientMetadataOpts, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
-import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
-
 import { OpenId4VcHolderService } from './issuance/OpenId4VciHolderService'
+import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
 
 /**
  * @public
@@ -33,9 +32,45 @@ export class OpenId4VcHolderApi {
     this.openId4VpHolderService = openId4VpHolderService
   }
 
-  public async resolveRequest(uri: string) {
-    const resolved = await this.openId4VpHolderService.resolveAuthenticationRequest(this.agentContext, uri)
-    return resolved
+  public async createRequest(options: {
+    verificationMethod: VerificationMethod
+    redirect_url: string
+    clientMetadata?: ClientMetadataOpts
+    issuer?: string
+  }) {
+    const relyingParty = await this.openId4VpHolderService.getRelyingParty(this.agentContext, options)
+
+    // TODO: generate nonce, state, correlationId
+    const nonce = 'qBrR7mqnY3Qr49dAZycPF8FzgE83m6H0c2l0bzP4xSg'
+    const state = 'b32f0087fc9816eb813fd11f'
+    const correlationId = '1'
+
+    const authorizationRequest = await relyingParty.createAuthorizationRequest({
+      correlationId,
+      nonce,
+      state,
+    })
+
+    const authorizationRequestUri = await authorizationRequest.uri()
+    const encodedAuthorizationRequestUri = authorizationRequestUri.encodedUri
+
+    return {
+      relyingParty,
+      authorizationRequestUri: encodedAuthorizationRequestUri,
+      correlationId,
+      nonce,
+      state,
+    }
+  }
+
+  /**
+   * Resolves the authentication request given as URI or JWT to a unified @class VerificationRequest,
+   * then verifies the validity of the request and return the @class VerifiedAuthorizationRequest.
+   * @param requestJwtOrUri JWT or an openid:// URI
+   * @returns the Verified Authorization Request
+   */
+  public async resolveRequest(requestOrJwt: string) {
+    return await this.openId4VpHolderService.resolveAuthorizationRequest(this.agentContext, requestOrJwt)
   }
 
   public async acceptRequest(verifiedRequest: VerifiedAuthorizationRequest, verificationMethod: VerificationMethod) {
@@ -54,14 +89,18 @@ export class OpenId4VcHolderApi {
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and credentials that can be requested.
    */
   public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
-    const resolvedCredentialOffer = await this.openId4VcHolderService.resolveCredentialOffer(credentialOffer)
-    return resolvedCredentialOffer
+    return await this.openId4VcHolderService.resolveCredentialOffer(credentialOffer)
   }
 
   /**
    * This function is to be used with the Authorization Code Flow.
    * It will generate the authorization request URI based on the provided options.
    * The authorization request URI is used to obtain the authorization code. Currently this needs to be done manually.
+   *
+   * Authorization to request credentials can be requested via authorization_details or scopes.
+   * This function automatically generates the authorization_details for all offered credentials.
+   * If scopes are provided, the provided scopes are send alongside the authorization_details.
+   *
    * @param resolvedCredentialOffer Obtained through @function resolveCredentialOffer
    * @param authCodeFlowOptions
    * @returns The authorization request URI alongside the code verifier and original @param authCodeFlowOptions
@@ -70,11 +109,11 @@ export class OpenId4VcHolderApi {
     resolvedCredentialOffer: ResolvedCredentialOffer,
     authCodeFlowOptions: AuthCodeFlowOptions
   ) {
-    const resolvedAuthorizationRequest = await this.openId4VcHolderService.resolveAuthorizationRequest(
+    return await this.openId4VcHolderService.resolveAuthorizationRequest(
+      this.agentContext,
       resolvedCredentialOffer,
       authCodeFlowOptions
     )
-    return resolvedAuthorizationRequest
   }
 
   /**

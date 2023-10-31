@@ -26,9 +26,7 @@
   "dependencies": {
     "@aries-framework/core": "0.4.2",
     "@sphereon/did-auth-siop": "^0.4.2",
-    "@sphereon/ssi-types": "^0.17.5",
-    "@stablelib/random": "^1.0.2",
-    "fast-text-encoding": "^1.0.6"
+    "@sphereon/ssi-types": "^0.17.5"
   },
   "devDependencies": {
     "@aries-framework/askar": "0.4.2",

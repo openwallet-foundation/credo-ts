@@ -14,8 +14,6 @@ import {
   W3cJsonLdVerifiableCredential,
 } from '@aries-framework/core'
 
-export type { SphereonW3cVerifiableCredential, SphereonW3cVerifiablePresentation }
-
 export function getSphereonW3cVerifiableCredential(
   w3cVerifiableCredential: W3cVerifiableCredential
 ): SphereonW3cVerifiableCredential {

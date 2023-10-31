@@ -23,7 +23,6 @@ import {
   getKeyFromVerificationMethod,
   injectable,
   JsonTransformer,
-  utils,
   W3cCredentialService,
   W3cPresentation,
   W3cCredentialRepository,
@@ -97,10 +96,6 @@ export class PresentationExchangeService {
       includePresentationSubmissionInVp?: boolean
     }
   ) {
-    // if (selectedCredentials.length === 0) {
-    //   throw new AriesFrameworkError('No credentials selected for creating presentation.')
-    // }
-
     const vps: {
       [subjectId: string]: {
         [inputDescriptorId: string]: W3cVerifiableCredential[]
@@ -196,6 +191,7 @@ export class PresentationExchangeService {
         ...vp.presentationSubmission.descriptor_map.map((descriptor): Descriptor => {
           const index = verifiablePresentationResults.indexOf(vp)
           const prefix = verifiablePresentationResults.length > 1 ? `$[${index}]` : '$'
+          // TODO: use enum instead opf jwt_vp | jwt_vc_json
           return {
             format: 'jwt_vp',
             path: prefix,
@@ -269,7 +265,7 @@ export class PresentationExchangeService {
         verificationMethod: verificationMethod.id,
         presentation: w3cPresentation,
         alg,
-        challenge: challenge ?? nonce ?? utils.uuid(),
+        challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
         domain,
       })
 

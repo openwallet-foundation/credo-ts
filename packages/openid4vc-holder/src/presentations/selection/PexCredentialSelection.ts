@@ -280,6 +280,7 @@ function getSubmissionForInputDescriptor(
   )
 
   let name = inputDescriptor.name
+  //TODO: I think this is something that should be done by the user and not the framework. Might miss some details as to why we do this though.
   // If there's no name on the input descriptor, but the id does not contain
   // any special characters or numbers (so only letters and spaces),
   // we will use a sanitized version of the id as the name

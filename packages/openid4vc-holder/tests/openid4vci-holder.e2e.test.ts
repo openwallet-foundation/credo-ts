@@ -656,4 +656,42 @@ describe('OpenId4VcHolder', () => {
       expect(w3cCredentialRecords).toHaveLength(1)
     })
   })
+
+  //it('authorization code flow https://portal.walt.id/', async () => {
+  //  const did = await agent.dids.create<KeyDidCreateOptions>({
+  //    method: 'key',
+  //    options: { keyType: KeyType.Ed25519 },
+  //    secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+  //  })
+
+  //  const credentialOffer = ``
+
+  //  const didKey = DidKey.fromDid(did.didState.did as string)
+  //  const kid = `${didKey.did}#${didKey.key.fingerprint}`
+  //  const verificationMethod = did.didState.didDocument?.dereferenceKey(kid, ['authentication'])
+  //  if (!verificationMethod) throw new Error('No verification method found')
+
+  //  const resolved = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+
+  //  const resolvedAuthorizationRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(resolved, {
+  //    clientId: 'test-client',
+  //    redirectUri: 'http://blank',
+  //  })
+
+  //  const code =
+  //    'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA'
+
+  //  const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+  //    resolved,
+  //    resolvedAuthorizationRequest,
+  //    code,
+  //    {
+  //      allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+  //      proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+  //      verifyCredentialStatus: false,
+  //    }
+  //  )
+
+  //  expect(w3cCredentialRecords).toHaveLength(1)
+  //})
 })
