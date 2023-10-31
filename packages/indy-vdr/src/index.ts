@@ -5,7 +5,7 @@ export {
   IndyVdrDidCreateResult,
   IndyVdrDidCreateOptions,
 } from './dids'
-export { IndyVdrPoolConfig } from './pool'
+export { IndyVdrPoolConfig, IndyVdrPoolService } from './pool'
 export * from './IndyVdrModule'
 export * from './IndyVdrModuleConfig'
 export * from './anoncreds'
