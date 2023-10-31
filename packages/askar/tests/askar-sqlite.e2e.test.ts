@@ -15,15 +15,12 @@ import { Store } from '@hyperledger/aries-askar-shared'
 import { tmpdir } from 'os'
 import path from 'path'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
-
 import { getSqliteAgentOptions } from './helpers'
 
 const aliceAgentOptions = getSqliteAgentOptions('AgentsAlice')
 const bobAgentOptions = getSqliteAgentOptions('AgentsBob')
 
-// FIXME: Re-include in tests when Askar NodeJS wrapper performance is improved
-describeRunInNodeVersion([18], 'Askar SQLite agents', () => {
+describe('Askar SQLite agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
 
@@ -128,7 +125,7 @@ describeRunInNodeVersion([18], 'Askar SQLite agents', () => {
     // Initialize the wallet again and assert record does not exist
     // This should create a new wallet
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await bobAgent.wallet.initialize(bobAgentOptions.config.walletConfig!)
+    await bobAgent.wallet.initialize(bobAgent.config.walletConfig!)
     expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 

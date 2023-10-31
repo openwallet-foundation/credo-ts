@@ -1,8 +1,8 @@
-import { Library } from 'ffi-napi'
+import { Library } from '@2060.io/ffi-napi'
+import { types } from '@2060.io/ref-napi'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { types } from 'ref-napi'
 
 const LIBNAME = 'indystrgpostgres'
 const ENV_VAR = 'LIB_INDY_STRG_POSTGRES'

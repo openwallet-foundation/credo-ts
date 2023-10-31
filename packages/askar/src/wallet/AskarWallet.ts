@@ -294,29 +294,19 @@ export class AskarWallet extends AskarBaseWallet {
       }
       const exportedWalletConfig = await this.getAskarWalletConfig({
         ...this.walletConfig,
+        key: exportKey,
         storage: { type: 'sqlite', path: destinationPath },
       })
-
-      // Close this wallet before copying
-      await this.close()
 
       // Make sure destination path exists
       await this.fileSystem.createDirectory(destinationPath)
 
-      // Copy wallet to the destination path
-      await this.fileSystem.copyFile(sourcePath, destinationPath)
-
-      // Open exported wallet and rotate its key to the one requested
-      const exportedWalletStore = await Store.open({
+      await this.store.copyTo({
+        recreate: false,
         uri: exportedWalletConfig.uri,
         keyMethod: exportedWalletConfig.keyMethod,
         passKey: exportedWalletConfig.passKey,
       })
-      await exportedWalletStore.rekey({ keyMethod: exportedWalletConfig.keyMethod, passKey: exportKey })
-
-      await exportedWalletStore.close()
-
-      await this._open(this.walletConfig)
     } catch (error) {
       const errorMessage = `Error exporting wallet '${this.walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
@@ -343,25 +333,26 @@ export class AskarWallet extends AskarBaseWallet {
 
       // Import path already exists
       if (await this.fileSystem.exists(destinationPath)) {
-        throw new WalletExportPathExistsError(`Unable to import wallet. Path '${importConfig.path}' already exists`)
+        throw new WalletExportPathExistsError(`Unable to import wallet. Path '${destinationPath}' already exists`)
       }
 
       // Make sure destination path exists
       await this.fileSystem.createDirectory(destinationPath)
-
-      // Copy wallet to the destination path
-      await this.fileSystem.copyFile(sourcePath, destinationPath)
-
-      // Open imported wallet and rotate its key to the one requested
-      const importedWalletStore = await Store.open({
-        uri: importWalletConfig.uri,
+      // Open imported wallet and copy to destination
+      const sourceWalletStore = await Store.open({
+        uri: `sqlite://${sourcePath}`,
         keyMethod: importWalletConfig.keyMethod,
         passKey: importKey,
       })
 
-      await importedWalletStore.rekey({ keyMethod: importWalletConfig.keyMethod, passKey: importWalletConfig.passKey })
+      await sourceWalletStore.copyTo({
+        recreate: false,
+        uri: importWalletConfig.uri,
+        keyMethod: importWalletConfig.keyMethod,
+        passKey: importWalletConfig.passKey,
+      })
 
-      await importedWalletStore.close()
+      await sourceWalletStore.close()
     } catch (error) {
       const errorMessage = `Error importing wallet '${walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {

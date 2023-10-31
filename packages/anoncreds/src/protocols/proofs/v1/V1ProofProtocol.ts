@@ -777,25 +777,52 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
     if (!presentationAttachment) {
-      throw new AriesFrameworkError('Missing indy proof attachment in processPresentation')
+      proofRecord.errorMessage = 'Missing indy proof attachment'
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
     }
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
-      throw new AriesFrameworkError('Missing indy proof request attachment in processPresentation')
+      proofRecord.errorMessage = 'Missing indy proof request attachment'
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
     }
-
-    const isValid = await this.indyProofFormat.processPresentation(agentContext, {
-      proofRecord,
-      attachment: presentationAttachment,
-      requestAttachment,
-    })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: presentationMessage,
       associatedRecordId: proofRecord.id,
       role: DidCommMessageRole.Receiver,
     })
+
+    let isValid: boolean
+    try {
+      isValid = await this.indyProofFormat.processPresentation(agentContext, {
+        proofRecord,
+        attachment: presentationAttachment,
+        requestAttachment,
+      })
+    } catch (error) {
+      proofRecord.errorMessage = error.message ?? 'Error verifying proof on presentation'
+      proofRecord.isVerified = false
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError('Error verifying proof on presentation', {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
+
+    if (!isValid) {
+      proofRecord.errorMessage = 'Invalid proof'
+      proofRecord.isVerified = false
+      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      throw new V1PresentationProblemReportError('Invalid proof', {
+        problemCode: PresentationProblemReportReason.Abandoned,
+      })
+    }
 
     // Update record
     proofRecord.isVerified = isValid
