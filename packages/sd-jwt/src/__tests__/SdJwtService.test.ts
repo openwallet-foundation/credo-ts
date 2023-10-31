@@ -437,7 +437,6 @@ describe('SdJwtService', () => {
 
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
         verifierDid,
-        issuerDidUrl,
         holderDidUrl,
         requiredClaimKeys: ['claim'],
       })
@@ -468,7 +467,6 @@ describe('SdJwtService', () => {
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
         verifierDid,
         holderDidUrl,
-        issuerDidUrl,
         requiredClaimKeys: ['type', 'cnf', 'claim', 'iat'],
       })
 
@@ -497,7 +495,6 @@ describe('SdJwtService', () => {
 
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
         verifierDid,
-        issuerDidUrl,
         holderDidUrl,
         requiredClaimKeys: [
           'type',

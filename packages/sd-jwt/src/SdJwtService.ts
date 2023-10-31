@@ -260,7 +260,7 @@ export class SdJwtService {
   >(
     agentContext: AgentContext,
     sdJwtCompact: string,
-    { verifierDid, requiredClaimKeys, holderDidUrl, issuerDidUrl }: SdJwtVerifyOptions
+    { verifierDid, requiredClaimKeys, holderDidUrl }: SdJwtVerifyOptions
   ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
     const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
 
@@ -272,20 +272,25 @@ export class SdJwtService {
       throw new SdJwtError('Keybinding is required for verification of the sd-jwt-vc')
     }
 
+    sdJwt.keyBinding.assertClaimInPayload('aud', verifierDid)
+
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
-    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
-    const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
-
-    sdJwt.keyBinding.assertClaimInPayload('aud', verifierDid)
     sdJwt.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
 
+    sdJwt.assertClaimInHeader('kid')
+    sdJwt.assertClaimInPayload('iss')
+
+    const issuerKid = sdJwt.getClaimInHeader<string>('kid')
+    const issuerDid = sdJwt.getClaimInPayload<string>('iss')
+
     // TODO: is there a more AFJ way of doing this?
-    const [did, keyId] = issuerDidUrl.split('#')
-    sdJwt.assertClaimInHeader('kid', keyId)
-    sdJwt.assertClaimInPayload('iss', did)
+    const issuerDidUrl = `${issuerDid}#${issuerKid}`
+
+    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
     const verificationResult = await sdJwt.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
 
