@@ -13,7 +13,7 @@ import { multiSignRequest, signRequest } from './utils/sign'
 @injectable()
 export class IndyVdrApi {
   private agentContext: AgentContext
-  private indyVdrPoolService: IndyVdrPoolService
+  public indyVdrPoolService: IndyVdrPoolService
 
   public constructor(agentContext: AgentContext, indyVdrPoolService: IndyVdrPoolService) {
     this.agentContext = agentContext

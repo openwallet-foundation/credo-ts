@@ -77,6 +77,13 @@ export class IndyVdrPool {
     }
   }
 
+  /**
+   * Get the transactions for a pool
+   */
+  public get transactions() {
+    return this.pool.transactions
+  }
+
   private get pool(): indyVdrPool {
     if (!this._pool) this.connect()
     if (!this._pool) throw new IndyVdrError('Pool is not connected.')

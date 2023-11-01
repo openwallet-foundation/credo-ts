@@ -157,6 +157,13 @@ export class IndyVdrPoolService {
   }
 
   /**
+   * Get all pool transactions
+   */
+  public getAllPoolTransactions() {
+    return Promise.allSettled(this.pools.map((pool) => pool.transactions))
+  }
+
+  /**
    * Get the most appropriate pool for the given indyNamespace
    */
   public getPoolForNamespace(indyNamespace: string) {
