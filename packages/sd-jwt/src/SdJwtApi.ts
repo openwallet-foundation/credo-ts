@@ -66,11 +66,8 @@ export class SdJwtApi {
     return await this.sdJwtService.verify<Header, Payload>(this.agentContext, sdJwtCompact, options)
   }
 
-  public async getCredentialRecordByIdM<
-    Header extends Record<string, unknown> = Record<string, unknown>,
-    Payload extends Record<string, unknown> = Record<string, unknown>
-  >(id: string): Promise<SdJwtRecord<Header, Payload>> {
-    return await this.sdJwtService.getCredentialRecordById<Header, Payload>(this.agentContext, id)
+  public async getCredentialRecordById(id: string): Promise<SdJwtRecord> {
+    return await this.sdJwtService.getCredentialRecordById(this.agentContext, id)
   }
 
   public async getAllCredentialRecords(): Promise<Array<SdJwtRecord>> {

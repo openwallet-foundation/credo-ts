@@ -4,7 +4,7 @@ import type { DisclosureFrame } from 'jwt-sd'
 export type SdJwtCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {
   holderDidUrl: string
   issuerDidUrl: string
-  issuerOverrideJsonWebAlgorithm?: JwaSignatureAlgorithm
+  jsonWebAlgorithm?: JwaSignatureAlgorithm
   disclosureFrame?: DisclosureFrame<Payload>
   hashingAlgorithm?: HashName
 }
@@ -18,7 +18,7 @@ export type SdJwtReceiveOptions = {
  * `includedDisclosureIndices` is not the best API, but it is the best alternative until something like `PEX` is supported
  */
 export type SdJwtPresentOptions = {
-  holderOverrideJsonWebAlgorithm?: JwaSignatureAlgorithm
+  jsonWebAlgorithm?: JwaSignatureAlgorithm
   includedDisclosureIndices?: Array<number>
 
   /**

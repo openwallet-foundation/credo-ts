@@ -30,13 +30,7 @@
 
 ### Installation
 
-Make sure you have set up the correct version of Aries Framework JavaScript according to the AFJ repository. To find out which version of AFJ you need to have installed you can run the following command. This will list the required peer dependency for `@aries-framework/core`.
-
-```sh
-npm info "@aries-framework/sd-jwt" peerDependencies
-```
-
-Then add the sd-jwt module to your project.
+Add the `sd-jwt` module to your project.
 
 ```sh
 yarn add @aries-framework/sd-jwt
@@ -44,9 +38,7 @@ yarn add @aries-framework/sd-jwt
 
 ### Quick start
 
-In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
-
-### Example of usage
+After the installation you can follow the [guide to setup your agent](https://aries.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
 
 ```ts
 import { SdJwtModule } from '@aries-framework/sd-jwt'

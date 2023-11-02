@@ -3,8 +3,8 @@ import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
 import {
+  parseDid,
   DidResolverService,
-  getJwaFromKey,
   getKeyFromVerificationMethod,
   getJwkFromJson,
   Key,
@@ -49,8 +49,7 @@ export class SdJwtService {
       algorithm: HasherAlgorithm.Sha256,
       hasher: (input: string) => {
         const serializedInput = TypedArrayEncoder.fromString(input)
-        const hash = Hasher.hash(serializedInput, 'sha2-256')
-        return TypedArrayEncoder.toBase64URL(hash)
+        return Hasher.hash(serializedInput, 'sha2-256')
       },
     }
   }
@@ -102,15 +101,15 @@ export class SdJwtService {
       holderDidUrl,
       disclosureFrame,
       hashingAlgorithm = 'sha2-256',
-      issuerOverrideJsonWebAlgorithm,
+      jsonWebAlgorithm,
     }: SdJwtCreateOptions<Payload>
   ): Promise<{ sdJwtRecord: SdJwtRecord; compact: string }> {
     if (hashingAlgorithm !== 'sha2-256') {
       throw new SdJwtError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
-    const issuerKeyId = issuerDidUrl.split('#')[1]
-    if (!issuerKeyId) {
+    const parsedDid = parseDid(issuerDidUrl)
+    if (!parsedDid.fragment) {
       throw new SdJwtError(
         `issuer did url '${issuerDidUrl}' does not contain a '#'. Unable to derive key from did document`
       )
@@ -121,7 +120,7 @@ export class SdJwtService {
       issuerDidUrl
     )
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
-    const alg = getJwaFromKey(issuerKey, issuerOverrideJsonWebAlgorithm)
+    const alg = jsonWebAlgorithm ?? getJwkFromKey(issuerKey).supportedSignatureAlgorithms[0]
 
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
@@ -130,7 +129,7 @@ export class SdJwtService {
     const header = {
       alg: alg.toString(),
       typ: 'vc+sd-jwt',
-      kid: issuerKeyId,
+      kid: parsedDid.fragment,
     }
 
     const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
@@ -181,16 +180,16 @@ export class SdJwtService {
     sdJwtCompact: string,
     { issuerDidUrl, holderDidUrl }: SdJwtReceiveOptions
   ): Promise<SdJwtRecord> {
-    const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
+    const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
 
-    if (!sdJwt.signature) {
+    if (!sdJwtVc.signature) {
       throw new SdJwtError('A signature must be included for an sd-jwt')
     }
 
     const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
-    const isSignatureValid = await sdJwt.verifySignature(this.verifier(agentContext, issuerKey))
+    const { isSignatureValid } = await sdJwtVc.verify(this.verifier(agentContext, issuerKey))
 
     if (!isSignatureValid) {
       throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
@@ -200,14 +199,14 @@ export class SdJwtService {
     const holderKey = getKeyFromVerificationMethod(holderVerificiationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
-    sdJwt.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
+    sdJwtVc.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
 
     const sdJwtRecord = new SdJwtRecord<Header, Payload>({
       sdJwt: {
-        header: sdJwt.header,
-        payload: sdJwt.payload,
-        signature: sdJwt.signature,
-        disclosures: sdJwt.disclosures?.map((d) => d.decoded),
+        header: sdJwtVc.header,
+        payload: sdJwtVc.payload,
+        signature: sdJwtVc.signature,
+        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
         holderDidUrl,
       },
     })
@@ -220,14 +219,14 @@ export class SdJwtService {
   public async present(
     agentContext: AgentContext,
     sdJwtRecord: SdJwtRecord,
-    { includedDisclosureIndices, verifierMetadata, holderOverrideJsonWebAlgorithm }: SdJwtPresentOptions
+    { includedDisclosureIndices, verifierMetadata, jsonWebAlgorithm }: SdJwtPresentOptions
   ): Promise<string> {
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(
       agentContext,
       sdJwtRecord.sdJwt.holderDidUrl
     )
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
-    const alg = getJwaFromKey(holderKey, holderOverrideJsonWebAlgorithm)
+    const alg = jsonWebAlgorithm ?? getJwkFromKey(holderKey).supportedSignatureAlgorithms[0]
 
     const header = {
       alg: alg.toString(),
@@ -312,11 +311,8 @@ export class SdJwtService {
     }
   }
 
-  public async getCredentialRecordById<
-    Header extends Record<string, unknown> = Record<string, unknown>,
-    Payload extends Record<string, unknown> = Record<string, unknown>
-  >(agentContext: AgentContext, id: string): Promise<SdJwtRecord<Header, Payload>> {
-    return (await this.sdJwtRepository.getById(agentContext, id)) as SdJwtRecord<Header, Payload>
+  public async getCredentialRecordById(agentContext: AgentContext, id: string): Promise<SdJwtRecord> {
+    return (await this.sdJwtRepository.getById(agentContext, id)) as SdJwtRecord
   }
 
   public async getAllCredentialRecords(agentContext: AgentContext): Promise<Array<SdJwtRecord>> {

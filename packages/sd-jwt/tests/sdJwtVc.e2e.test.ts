@@ -21,6 +21,7 @@ const getAgent = (label: string) =>
     config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
     modules: {
       sdJwt: new SdJwtModule(),
+      // @ts-ignore
       askar: new AskarModule({ ariesAskar }),
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],
@@ -122,7 +123,6 @@ describe('sd-jwt-vc end to end test', () => {
       validation: { isValid },
     } = await verifier.modules.sdJwt.verify(presentation, {
       holderDidUrl,
-      issuerDidUrl,
       verifierDid,
       requiredClaimKeys: [
         'is_over_65',

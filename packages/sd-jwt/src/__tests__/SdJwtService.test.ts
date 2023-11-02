@@ -30,6 +30,7 @@ import {
 const agent = new Agent({
   config: { label: 'sdjwtserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
   modules: {
+    // @ts-ignore
     askar: new AskarModule({ ariesAskar }),
     dids: new DidsModule({
       resolvers: [new KeyDidResolver()],

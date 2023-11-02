@@ -28,7 +28,7 @@ export abstract class Jwk {
   public use?: string
 
   public toJson(): JwkJson {
-    return this.use ? { use: this.use, kty: this.kty } : { kty: this.kty }
+    return { use: this.use, kty: this.kty }
   }
 
   public get key() {

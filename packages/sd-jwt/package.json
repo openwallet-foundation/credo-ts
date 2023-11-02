@@ -2,7 +2,7 @@
   "name": "@aries-framework/sd-jwt",
   "main": "build/index",
   "types": "build/index",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "files": [
     "build"
   ],
@@ -28,10 +28,10 @@
     "@aries-framework/core": "^0.4.2",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.0",
-    "jwt-sd": "^0.0.1-alpha.20"
+    "jwt-sd": "^0.1.0"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.1.0",
+    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"

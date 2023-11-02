@@ -55,8 +55,7 @@ export class SdJwtRecord<
       algorithm: HasherAlgorithm.Sha256,
       hasher: (input: string) => {
         const serializedInput = TypedArrayEncoder.fromString(input)
-        const hash = Hasher.hash(serializedInput, 'sha2-256')
-        return TypedArrayEncoder.toBase64URL(hash)
+        return Hasher.hash(serializedInput, 'sha2-256')
       },
     }
   }
