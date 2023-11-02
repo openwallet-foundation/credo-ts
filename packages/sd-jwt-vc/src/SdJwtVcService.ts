@@ -317,7 +317,7 @@ export class SdJwtVcService {
   }
 
   public async getCredentialRecordById(agentContext: AgentContext, id: string): Promise<SdJwtVcRecord> {
-    return (await this.sdJwtVcRepository.getById(agentContext, id)) as SdJwtVcRecord
+    return await this.sdJwtVcRepository.getById(agentContext, id)
   }
 
   public async getAllCredentialRecords(agentContext: AgentContext): Promise<Array<SdJwtVcRecord>> {
