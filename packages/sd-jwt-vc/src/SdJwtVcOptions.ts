@@ -1,7 +1,7 @@
 import type { HashName, JwaSignatureAlgorithm } from '@aries-framework/core'
 import type { DisclosureFrame } from 'jwt-sd'
 
-export type SdJwtCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {
+export type SdJwtVcCreateOptions<Payload extends Record<string, unknown> = Record<string, unknown>> = {
   holderDidUrl: string
   issuerDidUrl: string
   jsonWebAlgorithm?: JwaSignatureAlgorithm
@@ -9,7 +9,7 @@ export type SdJwtCreateOptions<Payload extends Record<string, unknown> = Record<
   hashingAlgorithm?: HashName
 }
 
-export type SdJwtReceiveOptions = {
+export type SdJwtVcReceiveOptions = {
   issuerDidUrl: string
   holderDidUrl: string
 }
@@ -17,7 +17,7 @@ export type SdJwtReceiveOptions = {
 /**
  * `includedDisclosureIndices` is not the best API, but it is the best alternative until something like `PEX` is supported
  */
-export type SdJwtPresentOptions = {
+export type SdJwtVcPresentOptions = {
   jsonWebAlgorithm?: JwaSignatureAlgorithm
   includedDisclosureIndices?: Array<number>
 
@@ -35,7 +35,7 @@ export type SdJwtPresentOptions = {
 /**
  * `requiredClaimKeys` is not the best API, but it is the best alternative until something like `PEX` is supported
  */
-export type SdJwtVerifyOptions = {
+export type SdJwtVcVerifyOptions = {
   holderDidUrl: string
   challenge: {
     verifierDid: string

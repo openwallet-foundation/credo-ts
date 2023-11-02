@@ -4,7 +4,7 @@ import type { DisclosureItem, HasherAndAlgorithm } from 'jwt-sd'
 import { JsonTransformer, Hasher, TypedArrayEncoder, BaseRecord, utils } from '@aries-framework/core'
 import { Disclosure, HasherAlgorithm, SdJwtVc } from 'jwt-sd'
 
-export type SdJwtRecordTags = TagsBase & {
+export type SdJwtVcRecordTags = TagsBase & {
   disclosureKeys?: Array<string>
 }
 
@@ -20,32 +20,32 @@ export type SdJwt<
   holderDidUrl: string
 }
 
-export type SdJwtRecordStorageProps<
+export type SdJwtVcRecordStorageProps<
   Header extends Record<string, unknown> = Record<string, unknown>,
   Payload extends Record<string, unknown> = Record<string, unknown>
 > = {
   id?: string
   createdAt?: Date
-  tags?: SdJwtRecordTags
-  sdJwt: SdJwt<Header, Payload>
+  tags?: SdJwtVcRecordTags
+  sdJwtVc: SdJwt<Header, Payload>
 }
 
-export class SdJwtRecord<
+export class SdJwtVcRecord<
   Header extends Record<string, unknown> = Record<string, unknown>,
   Payload extends Record<string, unknown> = Record<string, unknown>
-> extends BaseRecord<SdJwtRecordTags> {
-  public static readonly type = 'SdJwtRecord'
-  public readonly type = SdJwtRecord.type
+> extends BaseRecord<SdJwtVcRecordTags> {
+  public static readonly type = 'SdJwtVcRecord'
+  public readonly type = SdJwtVcRecord.type
 
-  public sdJwt!: SdJwt<Header, Payload>
+  public sdJwtVc!: SdJwt<Header, Payload>
 
-  public constructor(props: SdJwtRecordStorageProps<Header, Payload>) {
+  public constructor(props: SdJwtVcRecordStorageProps<Header, Payload>) {
     super()
 
     if (props) {
       this.id = props.id ?? utils.uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.sdJwt = props.sdJwt
+      this.sdJwtVc = props.sdJwtVc
       this._tags = props.tags ?? {}
     }
   }
@@ -66,22 +66,22 @@ export class SdJwtRecord<
    * This can be used to display all claims included in the `sd-jwt-vc` to the holder or verifier.
    */
   public async getPrettyClaims<Claims extends Record<string, unknown> | Payload = Payload>(): Promise<Claims> {
-    const sdJwt = new SdJwtVc<Header, Payload>({
-      header: this.sdJwt.header,
-      payload: this.sdJwt.payload,
-      disclosures: this.sdJwt.disclosures?.map(Disclosure.fromArray),
+    const sdJwtVc = new SdJwtVc<Header, Payload>({
+      header: this.sdJwtVc.header,
+      payload: this.sdJwtVc.payload,
+      disclosures: this.sdJwtVc.disclosures?.map(Disclosure.fromArray),
     }).withHasher(this.hasher)
 
     // Assert that we only support `sha-256` as a hashing algorithm
-    if ('_sd_alg' in this.sdJwt.payload) {
-      sdJwt.assertClaimInPayload('_sd_alg', HasherAlgorithm.Sha256.toString())
+    if ('_sd_alg' in this.sdJwtVc.payload) {
+      sdJwtVc.assertClaimInPayload('_sd_alg', HasherAlgorithm.Sha256.toString())
     }
 
-    return await sdJwt.getPrettyClaims<Claims>()
+    return await sdJwtVc.getPrettyClaims<Claims>()
   }
 
   public getTags() {
-    const disclosureKeys = this.sdJwt.disclosures
+    const disclosureKeys = this.sdJwtVc.disclosures
       ?.filter((d): d is [string, string, unknown] => d.length === 3)
       .map((d) => d[1])
 

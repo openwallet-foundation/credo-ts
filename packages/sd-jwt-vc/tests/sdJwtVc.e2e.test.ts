@@ -14,13 +14,13 @@ import {
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { agentDependencies } from '../../core/tests'
-import { SdJwtModule } from '../src/SdJwtModule'
+import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
   new Agent({
     config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
     modules: {
-      sdJwt: new SdJwtModule(),
+      sdJwt: new SdJwtVcModule(),
       askar: new AskarModule({ ariesAskar }),
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],
@@ -31,15 +31,15 @@ const getAgent = (label: string) =>
   })
 
 describe('sd-jwt-vc end to end test', () => {
-  const issuer = getAgent('sdjwtissueragent')
+  const issuer = getAgent('sdjwtvcissueragent')
   let issuerKey: Key
   let issuerDidUrl: string
 
-  const holder = getAgent('sdjwtholderagent')
+  const holder = getAgent('sdjwtvcholderagent')
   let holderKey: Key
   let holderDidUrl: string
 
-  const verifier = getAgent('sdjwtverifieragent')
+  const verifier = getAgent('sdjwtvcverifieragent')
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
 
   beforeAll(async () => {
@@ -104,7 +104,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const sdJwtRecord = await holder.modules.sdJwt.storeCredential(compact, { issuerDidUrl, holderDidUrl })
+    const sdJwtVcRecord = await holder.modules.sdJwt.storeCredential(compact, { issuerDidUrl, holderDidUrl })
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
@@ -113,7 +113,7 @@ describe('sd-jwt-vc end to end test', () => {
       nonce: await verifier.wallet.generateNonce(),
     }
 
-    const presentation = await holder.modules.sdJwt.present(sdJwtRecord, {
+    const presentation = await holder.modules.sdJwt.present(sdJwtVcRecord, {
       verifierMetadata,
       includedDisclosureIndices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     })

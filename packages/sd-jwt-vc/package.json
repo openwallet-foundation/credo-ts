@@ -1,5 +1,5 @@
 {
-  "name": "@aries-framework/sd-jwt",
+  "name": "@aries-framework/sd-jwt-vc",
   "main": "build/index",
   "types": "build/index",
   "version": "0.4.2",
@@ -10,11 +10,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/sd-jwt",
+  "homepage": "https://github.com/hyperledger/aries-framework-javascript/tree/main/packages/sd-jwt-vc",
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperledger/aries-framework-javascript",
-    "directory": "packages/sd-jwt"
+    "directory": "packages/sd-jwt-vc"
   },
   "scripts": {
     "build": "yarn run clean && yarn run compile",

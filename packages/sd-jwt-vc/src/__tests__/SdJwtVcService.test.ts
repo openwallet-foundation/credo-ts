@@ -15,20 +15,20 @@ import {
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { agentDependencies } from '../../../core/tests'
-import { SdJwtService } from '../SdJwtService'
-import { SdJwtRepository } from '../repository'
+import { SdJwtVcService } from '../SdJwtVcService'
+import { SdJwtVcRepository } from '../repository'
 
 import {
-  complexSdJwt,
-  complexSdJwtPresentation,
-  sdJwtWithSingleDisclosure,
-  sdJwtWithSingleDisclosurePresentation,
-  simpleJwt,
-  simpleJwtPresentation,
-} from './sdjwt.fixtures'
+  complexSdJwtVc,
+  complexSdJwtVcPresentation,
+  sdJwtVcWithSingleDisclosure,
+  sdJwtVcWithSingleDisclosurePresentation,
+  simpleJwtVc,
+  simpleJwtVcPresentation,
+} from './sdjwtvc.fixtures'
 
 const agent = new Agent({
-  config: { label: 'sdjwtserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
+  config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
   modules: {
     askar: new AskarModule({ ariesAskar }),
     dids: new DidsModule({
@@ -43,16 +43,16 @@ const logger = jest.fn() as unknown as Logger
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
 
-jest.mock('../repository/SdJwtRepository')
-const SdJwtRepositoryMock = SdJwtRepository as jest.Mock<SdJwtRepository>
+jest.mock('../repository/SdJwtVcRepository')
+const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
 
-describe('SdJwtService', () => {
+describe('SdJwtVcService', () => {
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
   let issuerDidUrl: string
   let holderDidUrl: string
   let issuerKey: Key
   let holderKey: Key
-  let sdJwtService: SdJwtService
+  let sdJwtVcService: SdJwtVcService
 
   beforeAll(async () => {
     await agent.initialize()
@@ -77,13 +77,13 @@ describe('SdJwtService', () => {
     holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
     await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
 
-    const sdJwtRepositoryMock = new SdJwtRepositoryMock()
-    sdJwtService = new SdJwtService(sdJwtRepositoryMock, logger)
+    const sdJwtVcRepositoryMock = new SdJwtVcRepositoryMock()
+    sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock, logger)
   })
 
-  describe('SdJwtService.create', () => {
+  describe('SdJwtVcService.create', () => {
     test('Create sd-jwt-vc from a basic payload without disclosures', async () => {
-      const { compact, sdJwtRecord } = await sdJwtService.create(
+      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
         agent.context,
         {
           claim: 'some-claim',
@@ -95,15 +95,15 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(simpleJwt)
+      expect(compact).toStrictEqual(simpleJwtVc)
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
@@ -115,7 +115,7 @@ describe('SdJwtService', () => {
     })
 
     test('Create sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const { compact, sdJwtRecord } = await sdJwtService.create(
+      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
         agent.context,
         { claim: 'some-claim', type: 'IdentityCredential' },
         {
@@ -125,15 +125,15 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(sdJwtWithSingleDisclosure)
+      expect(compact).toStrictEqual(sdJwtVcWithSingleDisclosure)
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
@@ -144,15 +144,15 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(sdJwtRecord.sdJwt.payload).not.toContain({
+      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
         claim: 'some-claim',
       })
 
-      expect(sdJwtRecord.sdJwt.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
+      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
     })
 
     test('Create sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const { compact, sdJwtRecord } = await sdJwtService.create(
+      const { compact, sdJwtVcRecord } = await sdJwtVcService.create(
         agent.context,
         {
           type: 'IdentityCredential',
@@ -186,15 +186,15 @@ describe('SdJwtService', () => {
         }
       )
 
-      expect(compact).toStrictEqual(complexSdJwt)
+      expect(compact).toStrictEqual(complexSdJwtVc)
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         address: {
@@ -219,7 +219,7 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(sdJwtRecord.sdJwt.payload).not.toContain({
+      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
         family_name: 'Doe',
         phone_number: '+1-202-555-0101',
         address: {
@@ -232,7 +232,7 @@ describe('SdJwtService', () => {
         is_over_65: true,
       })
 
-      expect(sdJwtRecord.sdJwt.disclosures).toEqual(
+      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(
         expect.arrayContaining([
           ['salt', 'is_over_65', true],
           ['salt', 'is_over_21', true],
@@ -247,22 +247,22 @@ describe('SdJwtService', () => {
     })
   })
 
-  describe('SdJwtService.receive', () => {
+  describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwt = simpleJwt
+      const sdJwtVc = simpleJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, {
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
@@ -274,20 +274,20 @@ describe('SdJwtService', () => {
     })
 
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwt = sdJwtWithSingleDisclosure
+      const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, {
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
@@ -298,25 +298,25 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(sdJwtRecord.sdJwt.payload).not.toContain({
+      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
         claim: 'some-claim',
       })
 
-      expect(sdJwtRecord.sdJwt.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
+      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(expect.arrayContaining([['salt', 'claim', 'some-claim']]))
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwt = complexSdJwt
+      const sdJwtVc = complexSdJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      expect(sdJwtRecord.sdJwt.header).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
         typ: 'vc+sd-jwt',
         kid: 'z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
-      expect(sdJwtRecord.sdJwt.payload).toEqual({
+      expect(sdJwtVcRecord.sdJwtVc.payload).toEqual({
         type: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         family_name: 'Doe',
@@ -341,7 +341,7 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(sdJwtRecord.sdJwt.payload).not.toContain({
+      expect(sdJwtVcRecord.sdJwtVc.payload).not.toContain({
         family_name: 'Doe',
         phone_number: '+1-202-555-0101',
         address: {
@@ -354,7 +354,7 @@ describe('SdJwtService', () => {
         is_over_65: true,
       })
 
-      expect(sdJwtRecord.sdJwt.disclosures).toEqual(
+      expect(sdJwtVcRecord.sdJwtVc.disclosures).toEqual(
         expect.arrayContaining([
           ['salt', 'is_over_65', true],
           ['salt', 'is_over_21', true],
@@ -369,13 +369,13 @@ describe('SdJwtService', () => {
     })
   })
 
-  describe('SdJwtService.present', () => {
+  describe('SdJwtVcService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
-      const sdJwt = simpleJwt
+      const sdJwtVc = simpleJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { issuerDidUrl, holderDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { issuerDidUrl, holderDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -383,15 +383,15 @@ describe('SdJwtService', () => {
         },
       })
 
-      expect(presentation).toStrictEqual(simpleJwtPresentation)
+      expect(presentation).toStrictEqual(simpleJwtVcPresentation)
     })
 
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
-      const sdJwt = sdJwtWithSingleDisclosure
+      const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -400,15 +400,15 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0],
       })
 
-      expect(presentation).toStrictEqual(sdJwtWithSingleDisclosurePresentation)
+      expect(presentation).toStrictEqual(sdJwtVcWithSingleDisclosurePresentation)
     })
 
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
-      const sdJwt = complexSdJwt
+      const sdJwtVc = complexSdJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -417,17 +417,17 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0, 1, 4, 6, 7],
       })
 
-      expect(presentation).toStrictEqual(complexSdJwtPresentation)
+      expect(presentation).toStrictEqual(complexSdJwtVcPresentation)
     })
   })
 
-  describe('SdJwtService.verify', () => {
+  describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
-      const sdJwt = simpleJwt
+      const sdJwtVc = simpleJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -435,7 +435,7 @@ describe('SdJwtService', () => {
         },
       })
 
-      const { validation } = await sdJwtService.verify(agent.context, presentation, {
+      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
         challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: ['claim'],
@@ -451,11 +451,11 @@ describe('SdJwtService', () => {
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
-      const sdJwt = sdJwtWithSingleDisclosure
+      const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -464,7 +464,7 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0],
       })
 
-      const { validation } = await sdJwtService.verify(agent.context, presentation, {
+      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
         challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: ['type', 'cnf', 'claim', 'iat'],
@@ -480,11 +480,11 @@ describe('SdJwtService', () => {
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const sdJwt = complexSdJwt
+      const sdJwtVc = complexSdJwtVc
 
-      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
 
-      const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
+      const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           verifierDid,
@@ -493,7 +493,7 @@ describe('SdJwtService', () => {
         includedDisclosureIndices: [0, 1, 4, 6, 7],
       })
 
-      const { validation } = await sdJwtService.verify(agent.context, presentation, {
+      const { validation } = await sdJwtVcService.verify(agent.context, presentation, {
         challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: [

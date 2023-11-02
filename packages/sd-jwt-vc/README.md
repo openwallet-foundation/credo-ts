@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Aries Framework JavaScript Selective Disclosure JWT Module</b></h1>
+<h1 align="center"><b>Aries Framework JavaScript Selective Disclosure JWT VC Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/hyperledger/aries-framework-javascript/main/LICENSE"
@@ -19,21 +19,20 @@
       alt="typescript"
       src="https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg"
   /></a>
-    <a href="https://www.npmjs.com/package/@aries-framework/sd-jwt"
+    <a href="https://www.npmjs.com/package/@aries-framework/sd-jwt-vc"
     ><img
-      alt="@aries-framework/sd-jwt version"
-      src="https://img.shields.io/npm/v/@aries-framework/sd-jwt"
+      alt="@aries-framework/sd-jwt-vc version"
+      src="https://img.shields.io/npm/v/@aries-framework/sd-jwt-vc"
   /></a>
-
 </p>
 <br />
 
 ### Installation
 
-Add the `sd-jwt` module to your project.
+Add the `sd-jwt-vc` module to your project.
 
 ```sh
-yarn add @aries-framework/sd-jwt
+yarn add @aries-framework/sd-jwt-vc
 ```
 
 ### Quick start
@@ -41,7 +40,7 @@ yarn add @aries-framework/sd-jwt
 After the installation you can follow the [guide to setup your agent](https://aries.js.org/guides/0.4/getting-started/set-up) and add the following to your agent modules.
 
 ```ts
-import { SdJwtModule } from '@aries-framework/sd-jwt'
+import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 
 const agent = new Agent({
   config: {
@@ -49,7 +48,7 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    sdJwt: new SdJwtModule(),
+    sdJwtVc: new SdJwtVcModule(),
     /* other custom modules */
   },
 })

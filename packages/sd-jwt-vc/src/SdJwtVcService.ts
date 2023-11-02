@@ -1,4 +1,9 @@
-import type { SdJwtCreateOptions, SdJwtPresentOptions, SdJwtReceiveOptions, SdJwtVerifyOptions } from './SdJwtOptions'
+import type {
+  SdJwtVcCreateOptions,
+  SdJwtVcPresentOptions,
+  SdJwtVcReceiveOptions,
+  SdJwtVcVerifyOptions,
+} from './SdJwtVcOptions'
 import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
 import type { Signer, SdJwtVcVerificationResult, Verifier, HasherAndAlgorithm } from 'jwt-sd'
 
@@ -17,23 +22,23 @@ import {
   TypedArrayEncoder,
   Buffer,
 } from '@aries-framework/core'
-import { KeyBinding, SdJwtVc, HasherAlgorithm, SdJwt, Disclosure } from 'jwt-sd'
+import { KeyBinding, SdJwtVc, HasherAlgorithm, Disclosure } from 'jwt-sd'
 
-import { SdJwtError } from './SdJwtError'
-import { SdJwtRepository, SdJwtRecord } from './repository'
+import { SdJwtVcError } from './SdJwtVcError'
+import { SdJwtVcRepository, SdJwtVcRecord } from './repository'
 
-export { SdJwt, SdJwtVcVerificationResult }
+export { SdJwtVcVerificationResult }
 
 /**
  * @internal
  */
 @injectable()
-export class SdJwtService {
+export class SdJwtVcService {
   private logger: Logger
-  private sdJwtRepository: SdJwtRepository
+  private sdJwtVcRepository: SdJwtVcRepository
 
-  public constructor(sdJwtRepository: SdJwtRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
-    this.sdJwtRepository = sdJwtRepository
+  public constructor(sdJwtVcRepository: SdJwtVcRepository, @inject(InjectionSymbols.Logger) logger: Logger) {
+    this.sdJwtVcRepository = sdJwtVcRepository
     this.logger = logger
   }
 
@@ -76,7 +81,7 @@ export class SdJwtService {
 
       if (publicKeyJwk) {
         if (!('kty' in publicKeyJwk)) {
-          throw new SdJwtError(
+          throw new SdJwtVcError(
             'Key type (kty) claim could not be found in the JWK of the confirmation (cnf) claim. Only JWK is supported right now'
           )
         }
@@ -102,15 +107,15 @@ export class SdJwtService {
       disclosureFrame,
       hashingAlgorithm = 'sha2-256',
       jsonWebAlgorithm,
-    }: SdJwtCreateOptions<Payload>
-  ): Promise<{ sdJwtRecord: SdJwtRecord; compact: string }> {
+    }: SdJwtVcCreateOptions<Payload>
+  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
     if (hashingAlgorithm !== 'sha2-256') {
-      throw new SdJwtError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
+      throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
     const parsedDid = parseDid(issuerDidUrl)
     if (!parsedDid.fragment) {
-      throw new SdJwtError(
+      throw new SdJwtVcError(
         `issuer did url '${issuerDidUrl}' does not contain a '#'. Unable to derive key from did document`
       )
     }
@@ -151,11 +156,11 @@ export class SdJwtService {
     const compact = await sdJwtVc.toCompact()
 
     if (!sdJwtVc.signature) {
-      throw new SdJwtError('Invalid sd-jwt state. Signature should have been set when calling `toCompact`.')
+      throw new SdJwtVcError('Invalid sd-jwt-vc state. Signature should have been set when calling `toCompact`.')
     }
 
-    const sdJwtRecord = new SdJwtRecord<typeof header, Payload>({
-      sdJwt: {
+    const sdJwtVcRecord = new SdJwtVcRecord<typeof header, Payload>({
+      sdJwtVc: {
         header: sdJwtVc.header,
         payload: sdJwtVc.payload,
         signature: sdJwtVc.signature,
@@ -164,10 +169,10 @@ export class SdJwtService {
       },
     })
 
-    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
+    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
 
     return {
-      sdJwtRecord,
+      sdJwtVcRecord,
       compact,
     }
   }
@@ -177,13 +182,13 @@ export class SdJwtService {
     Payload extends Record<string, unknown> = Record<string, unknown>
   >(
     agentContext: AgentContext,
-    sdJwtCompact: string,
-    { issuerDidUrl, holderDidUrl }: SdJwtReceiveOptions
-  ): Promise<SdJwtRecord> {
-    const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
+    sdJwtVcCompact: string,
+    { issuerDidUrl, holderDidUrl }: SdJwtVcReceiveOptions
+  ): Promise<SdJwtVcRecord> {
+    const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
 
     if (!sdJwtVc.signature) {
-      throw new SdJwtError('A signature must be included for an sd-jwt')
+      throw new SdJwtVcError('A signature must be included for an sd-jwt-vc')
     }
 
     const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
@@ -192,7 +197,7 @@ export class SdJwtService {
     const { isSignatureValid } = await sdJwtVc.verify(this.verifier(agentContext, issuerKey))
 
     if (!isSignatureValid) {
-      throw new SdJwtError('sd-jwt has an invalid signature from the issuer')
+      throw new SdJwtVcError('sd-jwt-vc has an invalid signature from the issuer')
     }
 
     const { verificationMethod: holderVerificiationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
@@ -201,8 +206,8 @@ export class SdJwtService {
 
     sdJwtVc.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
 
-    const sdJwtRecord = new SdJwtRecord<Header, Payload>({
-      sdJwt: {
+    const sdJwtVcRecord = new SdJwtVcRecord<Header, Payload>({
+      sdJwtVc: {
         header: sdJwtVc.header,
         payload: sdJwtVc.payload,
         signature: sdJwtVc.signature,
@@ -211,19 +216,19 @@ export class SdJwtService {
       },
     })
 
-    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
+    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
 
-    return sdJwtRecord
+    return sdJwtVcRecord
   }
 
   public async present(
     agentContext: AgentContext,
-    sdJwtRecord: SdJwtRecord,
-    { includedDisclosureIndices, verifierMetadata, jsonWebAlgorithm }: SdJwtPresentOptions
+    sdJwtVcRecord: SdJwtVcRecord,
+    { includedDisclosureIndices, verifierMetadata, jsonWebAlgorithm }: SdJwtVcPresentOptions
   ): Promise<string> {
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(
       agentContext,
-      sdJwtRecord.sdJwt.holderDidUrl
+      sdJwtVcRecord.sdJwtVc.holderDidUrl
     )
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const alg = jsonWebAlgorithm ?? getJwkFromKey(holderKey).supportedSignatureAlgorithms[0]
@@ -243,14 +248,14 @@ export class SdJwtService {
       this.signer(agentContext, holderKey)
     )
 
-    const sdJwt = new SdJwtVc({
-      header: sdJwtRecord.sdJwt.header,
-      payload: sdJwtRecord.sdJwt.payload,
-      signature: sdJwtRecord.sdJwt.signature,
-      disclosures: sdJwtRecord.sdJwt.disclosures?.map(Disclosure.fromArray),
+    const sdJwtVc = new SdJwtVc({
+      header: sdJwtVcRecord.sdJwtVc.header,
+      payload: sdJwtVcRecord.sdJwtVc.payload,
+      signature: sdJwtVcRecord.sdJwtVc.signature,
+      disclosures: sdJwtVcRecord.sdJwtVc.disclosures?.map(Disclosure.fromArray),
     }).withKeyBinding(keyBinding)
 
-    return await sdJwt.present(includedDisclosureIndices)
+    return await sdJwtVc.present(includedDisclosureIndices)
   }
 
   public async verify<
@@ -258,32 +263,32 @@ export class SdJwtService {
     Payload extends Record<string, unknown> = Record<string, unknown>
   >(
     agentContext: AgentContext,
-    sdJwtCompact: string,
-    { challenge: { verifierDid }, requiredClaimKeys, holderDidUrl }: SdJwtVerifyOptions
-  ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
-    const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
+    sdJwtVcCompact: string,
+    { challenge: { verifierDid }, requiredClaimKeys, holderDidUrl }: SdJwtVcVerifyOptions
+  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
+    const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
 
-    if (!sdJwt.signature) {
-      throw new SdJwtError('A signature is required for verification of the sd-jwt-vc')
+    if (!sdJwtVc.signature) {
+      throw new SdJwtVcError('A signature is required for verification of the sd-jwt-vc')
     }
 
-    if (!sdJwt.keyBinding || !sdJwt.keyBinding.payload) {
-      throw new SdJwtError('Keybinding is required for verification of the sd-jwt-vc')
+    if (!sdJwtVc.keyBinding || !sdJwtVc.keyBinding.payload) {
+      throw new SdJwtVcError('Keybinding is required for verification of the sd-jwt-vc')
     }
 
-    sdJwt.keyBinding.assertClaimInPayload('aud', verifierDid)
+    sdJwtVc.keyBinding.assertClaimInPayload('aud', verifierDid)
 
     const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
     const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
     const holderKeyJwk = getJwkFromKey(holderKey).toJson()
 
-    sdJwt.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
+    sdJwtVc.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
 
-    sdJwt.assertClaimInHeader('kid')
-    sdJwt.assertClaimInPayload('iss')
+    sdJwtVc.assertClaimInHeader('kid')
+    sdJwtVc.assertClaimInPayload('iss')
 
-    const issuerKid = sdJwt.getClaimInHeader<string>('kid')
-    const issuerDid = sdJwt.getClaimInPayload<string>('iss')
+    const issuerKid = sdJwtVc.getClaimInHeader<string>('kid')
+    const issuerDid = sdJwtVc.getClaimInPayload<string>('iss')
 
     // TODO: is there a more AFJ way of doing this?
     const issuerDidUrl = `${issuerDid}#${issuerKid}`
@@ -291,46 +296,46 @@ export class SdJwtService {
     const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
-    const verificationResult = await sdJwt.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
+    const verificationResult = await sdJwtVc.verify(this.verifier(agentContext, issuerKey), requiredClaimKeys)
 
-    const sdJwtRecord = new SdJwtRecord({
-      sdJwt: {
-        signature: sdJwt.signature,
-        payload: sdJwt.payload,
-        disclosures: sdJwt.disclosures?.map((d) => d.decoded),
-        header: sdJwt.header,
+    const sdJwtVcRecord = new SdJwtVcRecord({
+      sdJwtVc: {
+        signature: sdJwtVc.signature,
+        payload: sdJwtVc.payload,
+        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+        header: sdJwtVc.header,
         holderDidUrl,
       },
     })
 
-    await this.sdJwtRepository.save(agentContext, sdJwtRecord)
+    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
 
     return {
-      sdJwtRecord,
+      sdJwtVcRecord,
       validation: verificationResult,
     }
   }
 
-  public async getCredentialRecordById(agentContext: AgentContext, id: string): Promise<SdJwtRecord> {
-    return (await this.sdJwtRepository.getById(agentContext, id)) as SdJwtRecord
+  public async getCredentialRecordById(agentContext: AgentContext, id: string): Promise<SdJwtVcRecord> {
+    return (await this.sdJwtVcRepository.getById(agentContext, id)) as SdJwtVcRecord
   }
 
-  public async getAllCredentialRecords(agentContext: AgentContext): Promise<Array<SdJwtRecord>> {
-    return await this.sdJwtRepository.getAll(agentContext)
+  public async getAllCredentialRecords(agentContext: AgentContext): Promise<Array<SdJwtVcRecord>> {
+    return await this.sdJwtVcRepository.getAll(agentContext)
   }
 
   public async findCredentialRecordsByQuery(
     agentContext: AgentContext,
-    query: Query<SdJwtRecord>
-  ): Promise<Array<SdJwtRecord>> {
-    return await this.sdJwtRepository.findByQuery(agentContext, query)
+    query: Query<SdJwtVcRecord>
+  ): Promise<Array<SdJwtVcRecord>> {
+    return await this.sdJwtVcRepository.findByQuery(agentContext, query)
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {
-    await this.sdJwtRepository.deleteById(agentContext, id)
+    await this.sdJwtVcRepository.deleteById(agentContext, id)
   }
 
-  public async updateCredentialRecord(agentContext: AgentContext, sdJwtRecord: SdJwtRecord) {
-    await this.sdJwtRepository.update(agentContext, sdJwtRecord)
+  public async updateCredentialRecord(agentContext: AgentContext, sdJwtVcRecord: SdJwtVcRecord) {
+    await this.sdJwtVcRepository.update(agentContext, sdJwtVcRecord)
   }
 }
