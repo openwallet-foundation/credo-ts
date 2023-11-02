@@ -13,7 +13,7 @@ import { multiSignRequest, signRequest } from './utils/sign'
 @injectable()
 export class IndyVdrApi {
   private agentContext: AgentContext
-  public indyVdrPoolService: IndyVdrPoolService
+  private indyVdrPoolService: IndyVdrPoolService
 
   public constructor(agentContext: AgentContext, indyVdrPoolService: IndyVdrPoolService) {
     this.agentContext = agentContext
@@ -31,6 +31,14 @@ export class IndyVdrApi {
   private async signRequest<Request extends IndyVdrRequest>(request: Request, submitterDid: string) {
     const { pool } = await this.indyVdrPoolService.getPoolForDid(this.agentContext, submitterDid)
     return signRequest(this.agentContext, pool, request, submitterDid)
+  }
+
+  public refreshPoolConnections() {
+    return this.indyVdrPoolService.refreshPoolConnections()
+  }
+
+  public getAllPoolTransactions() {
+    return this.indyVdrPoolService.getAllPoolTransactions()
   }
 
   /**
