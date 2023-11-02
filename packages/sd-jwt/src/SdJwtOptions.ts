@@ -37,6 +37,8 @@ export type SdJwtPresentOptions = {
  */
 export type SdJwtVerifyOptions = {
   holderDidUrl: string
-  verifierDid: string
+  challenge: {
+    verifierDid: string
+  }
   requiredClaimKeys?: Array<string>
 }

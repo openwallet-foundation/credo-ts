@@ -32,8 +32,8 @@ export class SdJwtApi {
    * Validates and stores an sd-jwt from the perspective of an holder
    *
    */
-  public async receive(sdJwtCompact: string, options: SdJwtReceiveOptions): Promise<SdJwtRecord> {
-    return await this.sdJwtService.receive(this.agentContext, sdJwtCompact, options)
+  public async storeCredential(sdJwtCompact: string, options: SdJwtReceiveOptions): Promise<SdJwtRecord> {
+    return await this.sdJwtService.storeCredential(this.agentContext, sdJwtCompact, options)
   }
 
   /**

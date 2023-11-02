@@ -172,7 +172,7 @@ export class SdJwtService {
     }
   }
 
-  public async receive<
+  public async storeCredential<
     Header extends Record<string, unknown> = Record<string, unknown>,
     Payload extends Record<string, unknown> = Record<string, unknown>
   >(
@@ -259,7 +259,7 @@ export class SdJwtService {
   >(
     agentContext: AgentContext,
     sdJwtCompact: string,
-    { verifierDid, requiredClaimKeys, holderDidUrl }: SdJwtVerifyOptions
+    { challenge: { verifierDid }, requiredClaimKeys, holderDidUrl }: SdJwtVerifyOptions
   ): Promise<{ sdJwtRecord: SdJwtRecord<Header, Payload>; validation: SdJwtVcVerificationResult }> {
     const sdJwt = SdJwtVc.fromCompact<Header, Payload>(sdJwtCompact)
 

@@ -251,7 +251,7 @@ describe('SdJwtService', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwt = simpleJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, {
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -276,7 +276,7 @@ describe('SdJwtService', () => {
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwt = sdJwtWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, {
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -308,7 +308,7 @@ describe('SdJwtService', () => {
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwt = complexSdJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       expect(sdJwtRecord.sdJwt.header).toEqual({
         alg: 'EdDSA',
@@ -373,7 +373,7 @@ describe('SdJwtService', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwt = simpleJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { issuerDidUrl, holderDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { issuerDidUrl, holderDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -389,7 +389,7 @@ describe('SdJwtService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwt = sdJwtWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -406,7 +406,7 @@ describe('SdJwtService', () => {
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwt = complexSdJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -425,7 +425,7 @@ describe('SdJwtService', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
       const sdJwt = simpleJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -436,7 +436,7 @@ describe('SdJwtService', () => {
       })
 
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
-        verifierDid,
+        challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: ['claim'],
       })
@@ -453,7 +453,7 @@ describe('SdJwtService', () => {
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const sdJwt = sdJwtWithSingleDisclosure
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -465,7 +465,7 @@ describe('SdJwtService', () => {
       })
 
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
-        verifierDid,
+        challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: ['type', 'cnf', 'claim', 'iat'],
       })
@@ -482,7 +482,7 @@ describe('SdJwtService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const sdJwt = complexSdJwt
 
-      const sdJwtRecord = await sdJwtService.receive(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
+      const sdJwtRecord = await sdJwtService.storeCredential(agent.context, sdJwt, { holderDidUrl, issuerDidUrl })
 
       const presentation = await sdJwtService.present(agent.context, sdJwtRecord, {
         verifierMetadata: {
@@ -494,7 +494,7 @@ describe('SdJwtService', () => {
       })
 
       const { validation } = await sdJwtService.verify(agent.context, presentation, {
-        verifierDid,
+        challenge: { verifierDid },
         holderDidUrl,
         requiredClaimKeys: [
           'type',

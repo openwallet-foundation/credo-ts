@@ -104,7 +104,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const sdJwtRecord = await holder.modules.sdJwt.receive(compact, { issuerDidUrl, holderDidUrl })
+    const sdJwtRecord = await holder.modules.sdJwt.storeCredential(compact, { issuerDidUrl, holderDidUrl })
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
@@ -122,7 +122,7 @@ describe('sd-jwt-vc end to end test', () => {
       validation: { isValid },
     } = await verifier.modules.sdJwt.verify(presentation, {
       holderDidUrl,
-      verifierDid,
+      challenge: { verifierDid },
       requiredClaimKeys: [
         'is_over_65',
         'is_over_21',
