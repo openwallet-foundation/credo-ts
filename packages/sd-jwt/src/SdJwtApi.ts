@@ -66,23 +66,23 @@ export class SdJwtApi {
     return await this.sdJwtService.verify<Header, Payload>(this.agentContext, sdJwtCompact, options)
   }
 
-  public async getCredentialRecordById(id: string): Promise<SdJwtRecord> {
+  public async getById(id: string): Promise<SdJwtRecord> {
     return await this.sdJwtService.getCredentialRecordById(this.agentContext, id)
   }
 
-  public async getAllCredentialRecords(): Promise<Array<SdJwtRecord>> {
+  public async getAll(): Promise<Array<SdJwtRecord>> {
     return await this.sdJwtService.getAllCredentialRecords(this.agentContext)
   }
 
-  public async findCredentialRecordsByQuery(query: Query<SdJwtRecord>): Promise<Array<SdJwtRecord>> {
+  public async findAllByQuery(query: Query<SdJwtRecord>): Promise<Array<SdJwtRecord>> {
     return await this.sdJwtService.findCredentialRecordsByQuery(this.agentContext, query)
   }
 
-  public async removeCredentialRecord(id: string) {
+  public async remove(id: string) {
     return await this.sdJwtService.removeCredentialRecord(this.agentContext, id)
   }
 
-  public async updateCredentialRecord(sdJwtRecord: SdJwtRecord) {
+  public async update(sdJwtRecord: SdJwtRecord) {
     return await this.sdJwtService.updateCredentialRecord(this.agentContext, sdJwtRecord)
   }
 }

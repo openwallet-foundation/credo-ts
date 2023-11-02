@@ -21,7 +21,6 @@ const getAgent = (label: string) =>
     config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
     modules: {
       sdJwt: new SdJwtModule(),
-      // @ts-ignore
       askar: new AskarModule({ ariesAskar }),
       dids: new DidsModule({
         resolvers: [new KeyDidResolver()],
