@@ -7911,10 +7911,10 @@ jwt-decode@^3.1.2:
   resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-3.1.2.tgz#3fb319f3675a2df0c2895c8f5e9fa4b67b04ed59"
   integrity sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==
 
-jwt-sd@^0.0.1-alpha.20:
-  version "0.0.1-alpha.20"
-  resolved "https://registry.yarnpkg.com/jwt-sd/-/jwt-sd-0.0.1-alpha.20.tgz#2f04a0523c71c12d1a5b2a118219ec9d26baaee9"
-  integrity sha512-hyX0sibzRhvKRYdCeCz4INbC9+//l+ZC8EpZOIzDrrDkHF4a4vTXXHV3N/BNHUBJvXCIpBVus+poPa08I6bP5A==
+jwt-sd@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/jwt-sd/-/jwt-sd-0.1.2.tgz#e03d1a2fed7aadd94ee3c6af6594e40023230ff0"
+  integrity sha512-bFoAlIBkO6FtfaLZ7YxCHMMWDHoy/eNfw8Kkww9iExHA1si3SxKLTi1TpMmUWfwD37NQgJu2j9PkKHXwI6hGPw==
   dependencies:
     buffer "^6.0.3"
 

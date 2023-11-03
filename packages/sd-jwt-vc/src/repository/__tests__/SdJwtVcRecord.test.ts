@@ -60,7 +60,7 @@ describe('SdJwtVcRecord', () => {
       _tags: {
         some: 'tag',
       },
-      sdJwt: {
+      sdJwtVc: {
         header: { alg: SignatureAndEncryptionAlgorithm.EdDSA },
         payload: { iss: 'did:key:123' },
         signature: new Uint8Array(32).fill(42),
