@@ -335,7 +335,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
     }
 
     this.revocationStatusLists[revocationStatusList.revRegDefId][timestamp.toString()] = revocationStatusList
-
     return {
       registrationMetadata: {},
       revocationStatusListMetadata: {},

@@ -41,17 +41,16 @@ import {
   JsonTransformer,
 } from '@aries-framework/core'
 
-import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsError } from '../error'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
   AnonCredsCredentialDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
-  AnonCredsRevocationRegistryDefinitionRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
 import { AnonCredsIssuerServiceSymbol, AnonCredsHolderServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
+import { dateToTimestamp } from '../utils'
 import {
   convertAttributesToCredentialValues,
   assertCredentialValuesMatch,
@@ -324,7 +323,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     let revocationRegistryDefinitionId
     let revocationRegistryIndex
-    let tailsFilePath
+    let revocationStatusList
 
     if (credentialDefinition.revocation) {
       const credentialMetadata =
@@ -349,14 +348,19 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
         )
       }
 
-      const { revocationRegistryDefinition } = await agentContext.dependencyManager
-        .resolve(AnonCredsRevocationRegistryDefinitionRepository)
-        .getByRevocationRegistryDefinitionId(agentContext, revocationRegistryDefinitionId)
+      const registryService = agentContext.dependencyManager.resolve(AnonCredsRegistryService)
+      const revocationStatusListResult = await registryService
+        .getRegistryForIdentifier(agentContext, revocationRegistryDefinitionId)
+        .getRevocationStatusList(agentContext, revocationRegistryDefinitionId, dateToTimestamp(new Date()))
 
-      const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-      tailsFilePath = await tailsFileService.getTailsFile(agentContext, {
-        revocationRegistryDefinition,
-      })
+      if (!revocationStatusListResult.revocationStatusList) {
+        throw new AriesFrameworkError(
+          `Unable to resolve revocation status list for ${revocationRegistryDefinitionId}: 
+          ${revocationStatusListResult.resolutionMetadata.error} ${revocationStatusListResult.resolutionMetadata.message}`
+        )
+      }
+
+      revocationStatusList = revocationStatusListResult.revocationStatusList
     }
 
     const { credential } = await anonCredsIssuerService.createCredential(agentContext, {
@@ -365,7 +369,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
       revocationRegistryDefinitionId,
       revocationRegistryIndex,
-      tailsFilePath,
+      revocationStatusList,
     })
 
     const format = new CredentialFormatSpec({

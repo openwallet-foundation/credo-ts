@@ -60,7 +60,7 @@ export interface CreateCredentialOptions {
   credentialRequest: AnonCredsCredentialRequest
   credentialValues: AnonCredsCredentialValues
   revocationRegistryDefinitionId?: string
-  tailsFilePath?: string
+  revocationStatusList?: AnonCredsRevocationStatusList
   revocationRegistryIndex?: number
 }
 

@@ -102,42 +102,41 @@ export async function getRevocationRegistriesForRequest(
               revocationStatusLists: {},
             }
           }
-        }
 
-        revocationRegistryPromises.push(getRevocationRegistry())
+          // In most cases we will have a timestamp, but if it's not defined, we use the nonRevoked.to value
+          const timestampToFetch = timestamp ?? nonRevoked.to
 
-        // In most cases we will have a timestamp, but if it's not defined, we use the nonRevoked.to value
-        const timestampToFetch = timestamp ?? nonRevoked.to
+          // Fetch revocation status list if we don't already have a revocation status list for the given timestamp
+          if (!revocationRegistries[revocationRegistryId].revocationStatusLists[timestampToFetch]) {
+            const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
+              await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestampToFetch)
 
-        // Fetch revocation status list if we don't already have a revocation status list for the given timestamp
-        if (!revocationRegistries[revocationRegistryId].revocationStatusLists[timestampToFetch]) {
-          const { revocationStatusList, resolutionMetadata: statusListResolutionMetadata } =
-            await registry.getRevocationStatusList(agentContext, revocationRegistryId, timestampToFetch)
+            if (!revocationStatusList) {
+              throw new AriesFrameworkError(
+                `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
+              )
+            }
 
-          if (!revocationStatusList) {
-            throw new AriesFrameworkError(
-              `Could not retrieve revocation status list for revocation registry ${revocationRegistryId}: ${statusListResolutionMetadata.message}`
-            )
-          }
+            revocationRegistries[revocationRegistryId].revocationStatusLists[revocationStatusList.timestamp] =
+              revocationStatusList
 
-          revocationRegistries[revocationRegistryId].revocationStatusLists[revocationStatusList.timestamp] =
-            revocationStatusList
-
-          // If we don't have a timestamp on the selected credential, we set it to the timestamp of the revocation status list
-          // this way we know which revocation status list to use when creating the proof.
-          if (!timestamp) {
-            updatedSelectedCredentials = {
-              ...updatedSelectedCredentials,
-              [type]: {
-                ...updatedSelectedCredentials[type],
-                [referent]: {
-                  ...updatedSelectedCredentials[type][referent],
-                  timestamp: revocationStatusList.timestamp,
+            // If we don't have a timestamp on the selected credential, we set it to the timestamp of the revocation status list
+            // this way we know which revocation status list to use when creating the proof.
+            if (!timestamp) {
+              updatedSelectedCredentials = {
+                ...updatedSelectedCredentials,
+                [type]: {
+                  ...updatedSelectedCredentials[type],
+                  [referent]: {
+                    ...updatedSelectedCredentials[type][referent],
+                    timestamp: revocationStatusList.timestamp,
+                  },
                 },
-              },
+              }
             }
           }
         }
+        revocationRegistryPromises.push(getRevocationRegistry())
       }
     }
     // await all revocation registry statuses asynchronously
