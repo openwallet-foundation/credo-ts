@@ -33,10 +33,17 @@ export class IndyVdrApi {
     return signRequest(this.agentContext, pool, request, submitterDid)
   }
 
+  /**
+   * This method refreshes the pool connection and ensures the pool is up to date with the ledger. 
+   */
   public refreshPoolConnections() {
     return this.indyVdrPoolService.refreshPoolConnections()
   }
 
+  /**
+   * This method gets the updated transactions of the pool.
+   * @returns The transactions of the pool ledger
+   */
   public getAllPoolTransactions() {
     return this.indyVdrPoolService.getAllPoolTransactions()
   }
