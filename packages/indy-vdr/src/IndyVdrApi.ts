@@ -34,7 +34,7 @@ export class IndyVdrApi {
   }
 
   /**
-   * This method refreshes the pool connection and ensures the pool is up to date with the ledger. 
+   * This method refreshes the pool connection and ensures the pool is up to date with the ledger.
    */
   public refreshPoolConnections() {
     return this.indyVdrPoolService.refreshPoolConnections()
