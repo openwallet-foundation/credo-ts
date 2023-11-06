@@ -15,7 +15,6 @@ import {
   V2RequestCredentialMessage,
 } from '@aries-framework/core'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
@@ -29,7 +28,7 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   profile_picture: 'profile picture',
 })
 
-describeRunInNodeVersion([18], 'IC V2 AnonCreds credentials', () => {
+describe('IC V2 AnonCreds credentials', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string

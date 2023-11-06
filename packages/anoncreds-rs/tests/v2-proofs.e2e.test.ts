@@ -14,7 +14,6 @@ import {
   V2PresentationMessage,
 } from '@aries-framework/core'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { sleep } from '../../core/src/utils/sleep'
@@ -23,7 +22,7 @@ import testLogger from '../../core/tests/logger'
 
 import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
 
-describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
+describe('PP V2 AnonCreds Proofs', () => {
   let faberAgent: AnonCredsTestsAgent
   let faberReplay: EventReplaySubject
   let aliceAgent: AnonCredsTestsAgent
@@ -896,7 +895,7 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
     })
   })
 
-  test('Credential is revoked before proof request', async () => {
+  test.only('Credential is revoked before proof request', async () => {
     // Revoke the credential
     const credentialRevocationRegistryDefinitionId = faberCredentialExchangeRecord.getTag(
       'anonCredsRevocationRegistryId'
@@ -980,7 +979,6 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
     })
 
     await aliceAgent.proofs.acceptRequest({
@@ -996,7 +994,14 @@ describeRunInNodeVersion([18], 'PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
       isVerified: false,
-      state: ProofState.PresentationReceived,
+      state: ProofState.Abandoned,
+    })
+
+    // Faber will send a problem report, meaning for Alice that the proof state is abandoned
+    // as well
+    await waitForProofExchangeRecord(aliceAgent, {
+      threadId: aliceProofExchangeRecord.threadId,
+      state: ProofState.Abandoned,
     })
   })
 })

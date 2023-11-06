@@ -202,7 +202,7 @@ export class AnonCredsRsIssuerService implements AnonCredsIssuerService {
           revocationRegistryDefinitionPrivate: revocationRegistryDefinitionPrivateRecord.value,
           issued: options.issued,
           revoked: options.revoked,
-          timestamp,
+          timestamp: timestamp ?? -1, // FIXME: this should be fixed in anoncreds-rs wrapper
         })
       }
 

@@ -10,7 +10,6 @@ import {
   V2OfferCredentialMessage,
 } from '@aries-framework/core'
 
-import { describeRunInNodeVersion } from '../../../tests/runInVersion'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { waitForCredentialRecordSubject } from '../../core/tests'
 import { waitForRevocationNotification } from '../../core/tests/helpers'
@@ -25,7 +24,7 @@ const credentialPreview = V2CredentialPreview.fromRecord({
   profile_picture: 'profile picture',
 })
 
-describeRunInNodeVersion([18], 'IC v2 credential revocation', () => {
+describe('IC v2 credential revocation', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let credentialDefinitionId: string
