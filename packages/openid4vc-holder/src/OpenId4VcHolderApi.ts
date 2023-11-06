@@ -11,7 +11,7 @@ import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 import { injectable, AgentContext } from '@aries-framework/core'
 
 import { OpenId4VcHolderService } from './issuance/OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './presentations/OpenId4VpHolderService'
+import { OpenId4VpHolderService } from './presentations'
 
 /**
  * @public
@@ -40,10 +40,11 @@ export class OpenId4VcHolderApi {
   }) {
     const relyingParty = await this.openId4VpHolderService.getRelyingParty(this.agentContext, options)
 
-    // TODO: generate nonce, state, correlationId
-    const nonce = 'qBrR7mqnY3Qr49dAZycPF8FzgE83m6H0c2l0bzP4xSg'
-    const state = 'b32f0087fc9816eb813fd11f'
-    const correlationId = '1'
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const randomValues = await Promise.all([...Array(4).keys()].map((_) => this.agentContext.wallet.generateNonce()))
+    const nonce = randomValues[0] + randomValues[1]
+    const state = randomValues[2]
+    const correlationId = randomValues[3]
 
     const authorizationRequest = await relyingParty.createAuthorizationRequest({
       correlationId,
@@ -101,7 +102,7 @@ export class OpenId4VcHolderApi {
    * This function automatically generates the authorization_details for all offered credentials.
    * If scopes are provided, the provided scopes are send alongside the authorization_details.
    *
-   * @param resolvedCredentialOffer Obtained through @function resolveCredentialOffer
+   * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param authCodeFlowOptions
    * @returns The authorization request URI alongside the code verifier and original @param authCodeFlowOptions
    */
@@ -118,7 +119,7 @@ export class OpenId4VcHolderApi {
 
   /**
    * Accepts a credential offer using the pre-authorized code flow.
-   * @param resolvedCredentialOffer Obtained through @function resolveCredentialOffer
+   * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param acceptCredentialOfferOptions
    * @returns W3cCredentialRecord[]
    */
@@ -134,8 +135,8 @@ export class OpenId4VcHolderApi {
 
   /**
    * Accepts a credential offer using the authorization code flow.
-   * @param resolvedCredentialOffer Obtained through @function resolveCredentialOffer
-   * @param resolvedAuthorizationRequest Obtained through @function resolveAuthorizationRequest
+   * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
+   * @param resolvedAuthorizationRequest Obtained through @see resolveAuthorizationRequest
    * @param code The authorization code obtained via the authorization request URI
    * @param acceptCredentialOfferOptions
    * @returns W3cCredentialRecord[]

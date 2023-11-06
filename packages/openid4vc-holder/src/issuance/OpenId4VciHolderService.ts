@@ -257,7 +257,7 @@ export class OpenId4VcHolderService {
     credentialWithMetadata: OfferedCredentialWithMetadata,
     authDetailsLocation: string | undefined,
     version: OpenId4VCIVersion
-  ): AuthDetails {
+  ): AuthDetails | undefined {
     const { format, types } = credentialWithMetadata
     const type = 'openid_credential'
 
@@ -278,7 +278,9 @@ export class OpenId4VcHolderService {
       let context: string | undefined = undefined
 
       if (credentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer) {
-        // Inline Credential Offers come with no context
+        // Inline Credential Offers come with no context so we cannot create the authorization_details
+        // This type of credentials can only be requested via scopes
+        return undefined
       } else {
         if ('@context' in credentialWithMetadata.credentialSupported) {
           context = credentialWithMetadata.credentialSupported['@context'] as unknown as string
@@ -324,9 +326,9 @@ export class OpenId4VcHolderService {
       authDetailsLocation = metadata.issuer
     }
 
-    const authDetails = offeredCredentialsWithMetadata.map((credential) =>
-      this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation, version)
-    )
+    const authDetails = offeredCredentialsWithMetadata
+      .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation, version))
+      .filter((authDetail): authDetail is AuthDetails => authDetail !== undefined)
 
     this.logger.debug('Converted code_verifier to code_challenge', {
       codeVerifier: codeVerifier,
