@@ -1,18 +1,8 @@
 import type { OfferedCredentialType } from './issuance/utils/IssuerMetadataUtils'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
-import type { CredentialFormat } from '@sphereon/ssi-types'
 
 import { OpenIdCredentialFormatProfile } from './issuance/utils/claimFormatMapping'
-
-//  TODO: use simpler object
-export interface AuthDetails {
-  type: 'openid_credential' | string
-  locations?: string | string[]
-  format: CredentialFormat | CredentialFormat[]
-
-  [s: string]: unknown
-}
 
 /**
  * The credential formats that are supported by the openid4vc holder
@@ -56,6 +46,10 @@ export interface AcceptCredentialOfferOptions {
    */
   userPin?: string
 
+  /**
+   * This is the list of credentials that will be requested from the issuer.
+   * If not provided all offered credentials will be requested.
+   */
   credentialsToRequest?: CredentialToRequest[]
 
   verifyCredentialStatus: boolean

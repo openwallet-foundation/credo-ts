@@ -81,7 +81,6 @@ const did = await agent.dids.create<KeyDidCreateOptions>({
 })
 
 // next we do some assertions and extract the key identifier (kid)
-
 if (
   !did.didState.didDocument ||
   !did.didState.didDocument.authentication ||
@@ -96,72 +95,82 @@ const kid = typeof verificationMethod === 'string' ? verificationMethod : verifi
 
 #### Requesting the credential (Pre-Authorized)
 
-Now a credential issuance can be requested as follows.
-
 ```ts
-const w3cCredentialRecord = await agent.modules.openId4VcHolder.requestCredentialPreAuthorized({
-  issuerUri,
-  kid,
-  checkRevocationState: false,
+// To request credentials(s), you need a credential offer.
+// The credential offer be provided as actual payload,
+// the credential offer URL or issuance initiation URL
+const credentialOffer =
+  'openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fjff.walt.id%2Fissuer-api%2Fdefault%2Foidc%22%2C%22credentials%22%3A%5B%22VerifiableId%22%2C%20%22VerifiableDiploma%22%5D%2C%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22ABC%22%7D%7D%7D'
+
+// The first step is to resolve the credential offer and
+// get all metadata required for the issuance of the credentials.
+const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+
+// The second (optional) step is to filter out the credentials which you want to request.
+const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+  return credential.format === OpenIdCredentialFormatProfile.JwtVcJson && credential.types.includes('VerifiableId')
 })
 
-console.log(w3cCredentialRecord)
+// The third step is to accept the credential offer.
+// If no credentialsToRequest are specified all offered credentials are requested.
+const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+  resolvedCredentialOffer,
+  {
+    allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+    proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+    verifyCredentialStatus: false,
+    credentialsToRequest: selectedCredentialsForRequest,
+  }
+)
+
+console.log(w3cCredentialRecords)
 ```
 
-#### Full example
+#### Requesting the credential (Authorization Code Flow)
 
+Requesting credentials via the Authorization Code Flow function conceptually similar,
+except that there is an intermediary step involved to resolve the authorization request, and then manually get the authorization code.
 ```ts
-import { OpenId4VcHolderModule } from '@aries-framework/openid4vc-holder'
-import { agentDependencies } from '@aries-framework/node' // use @aries-framework/react-native for React Native
-import { Agent, KeyDidCreateOptions } from '@aries-framework/core'
+// To request credentials(s), you need a credential offer.
+// The credential offer be provided as actual payload,
+// the credential offer URL or issuance initiation URL
+const credentialOffer = `openid-credential-offer://?credential_offer=%7B%22credential_issuer%22%3A%22https%3A%2F%2Fissuer.portal.walt.id%22%2C%22credentials%22%3A%5B%7B%22format%22%3A%22jwt_vc_json%22%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22OpenBadgeCredential%22%5D%2C%22credential_definition%22%3A%7B%22%40context%22%3A%5B%22https%3A%2F%2Fwww.w3.org%2F2018%2Fcredentials%2Fv1%22%2C%22https%3A%2F%2Fpurl.imsglobal.org%2Fspec%2Fob%2Fv3p0%2Fcontext.json%22%5D%2C%22types%22%3A%5B%22VerifiableCredential%22%2C%22OpenBadgeCredential%22%5D%7D%7D%5D%2C%22grants%22%3A%7B%22authorization_code%22%3A%7B%22issuer_state%22%3A%22b0e16785-d722-42a5-a04f-4beab28e03ea%22%7D%2C%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%22eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA%22%2C%22user_pin_required%22%3Afalse%7D%7D%7D`
 
-const run = async () => {
-  const issuerUri = '' // The obtained issuer URI
+// The first step is to resolve the credential offer and
+// get all metadata required for the issuance of the credentials.
+const resolvedCredentialOffer = await agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
 
-  // Create the Agent
-  const agent = new Agent({
-    config: {
-      /* config */
-    },
-    dependencies: agentDependencies,
-    modules: {
-      openId4VcHolder: new OpenId4VcHolderModule(),
-      /* other custom modules */
-    },
-  })
+// The second step is the resolve the authorization request.
+const resolvedAuthorizationRequest = await agent.modules.openId4VcHolder.resolveAuthorizationRequest(resolved, {
+  clientId: 'test-client',
+  redirectUri: 'http://blank',
+  scope: ['openid', 'OpenBadgeCredential'],
+})
 
-  // Initialize the Agent
-  await agent.initialize()
+// The resolved authorization request contains the authorizationRequestUri,
+// which can be used to obtain the actual authorization code.
+// Currently, this needs to be done manually
+const code =
+  'eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJiMGUxNjc4NS1kNzIyLTQyYTUtYTA0Zi00YmVhYjI4ZTAzZWEiLCJpc3MiOiJodHRwczovL2lzc3Vlci5wb3J0YWwud2FsdC5pZCIsImF1ZCI6IlRPS0VOIn0.ibEpHFaHFBLWyhEf4SotDQZBeh_FMrfncWapNox1Iv1kdQWQ2cLQeS1VrCyVmPsbx0tN2MAyDFG7DnAaq8MiAA'
 
-  // Create a DID
-  const did = await agent.dids.create<KeyDidCreateOptions>({
-    method: 'key',
-    options: {
-      keyType: KeyType.Ed25519,
-    },
-  })
+// The third (optional) step is to filter out the credentials which you want to request.
+const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+  return credential.format === OpenIdCredentialFormatProfile.JwtVcJson && credential.types.includes('VerifiableId')
+})
 
-  // Assert DIDDocument is valid
-  if (
-    !did.didState.didDocument ||
-    !did.didState.didDocument.authentication ||
-    did.didState.didDocument.authentication.length === 0
-  ) {
-    throw new Error("Error creating did document, or did document has no 'authentication' verificationMethods")
+// The fourth step is to accept the credential offer.
+// If no credentialsToRequest are specified all offered credentials are requested.
+const w3cCredentialRecords = await agent.modules.openId4VcHolder.acceptCredentialOfferUsingAuthorizationCode(
+  resolvedCredentialOffer,
+  resolvedAuthorizationRequest,
+  code,
+  {
+    allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
+    proofOfPossessionVerificationMethodResolver: () => verificationMethod,
+    verifyCredentialStatus: false,
+    credentialsToRequest: selectedCredentialsForRequest,
   }
+)
 
-  // Extract key identified (kid) for authentication verification method
-  const [verificationMethod] = did.didState.didDocument.authentication
-  const kid = typeof verificationMethod === 'string' ? verificationMethod : verificationMethod.id
-
-  // Request the credential
-  const w3cCredentialRecord = await agent.modules.openId4VcHolder.requestCredentialPreAuthorized({
-    issuerUri,
-    kid,
-    checkRevocationState: false,
-  })
-
-  // Log the received credential
-  console.log(w3cCredentialRecord)
-}
+console.log(w3cCredentialRecords)
 ```

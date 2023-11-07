@@ -1,7 +1,6 @@
 import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type {
   AuthCodeFlowOptions,
-  AuthDetails,
   CredentialToRequest,
   AcceptCredentialOfferOptions,
   ProofOfPossessionRequirements,
@@ -12,6 +11,7 @@ import type {
 } from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
+  CredentialFormat,
   JwaSignatureAlgorithm,
   VerificationMethod,
   W3cVerifiableCredential,
@@ -80,6 +80,14 @@ import {
   handleAuthorizationDetails,
   OfferedCredentialType,
 } from './utils/IssuerMetadataUtils'
+
+export interface AuthDetails {
+  type: 'openid_credential' | string
+  locations?: string | string[]
+  format: CredentialFormat | CredentialFormat[]
+
+  [s: string]: unknown
+}
 
 function getV8CredentialType(
   offeredCredentialWithMetadata: OfferedCredentialWithMetadata,
