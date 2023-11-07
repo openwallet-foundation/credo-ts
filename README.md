@@ -83,14 +83,6 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
     </td>
   </tr>
   <tr>
-    <td>@aries-framework/indy-sdk</td>
-    <td>
-      <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
-        <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
-      </a>
-    </td>
-  </tr>
-  <tr>
     <td>@aries-framework/indy-vdr</td>
     <td>
       <a href="https://npmjs.com/package/@aries-framework/indy-vdr">
@@ -160,6 +152,14 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
         <img alt="@aries-framework/tenants version" src="https://img.shields.io/npm/v/@aries-framework/tenants"/>
       </a>
     </td>
+  </tr>
+  <tr>
+      <td>~~@aries-framework/indy-sdk~~ (deprecated, unmaintained after 0.4.x)</td>
+      <td>
+        <a href="https://npmjs.com/package/@aries-framework/indy-sdk">
+          <img alt="@aries-framework/indy-sdk version" src="https://img.shields.io/npm/v/@aries-framework/indy-sdk"/>
+        </a>
+      </td>
   </tr>
 </table>
 

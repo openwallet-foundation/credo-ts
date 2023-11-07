@@ -1,5 +1,4 @@
 import type { InitConfig } from '@aries-framework/core'
-import type { IndySdkPoolConfig } from '@aries-framework/indy-sdk'
 import type { IndyVdrPoolConfig } from '@aries-framework/indy-vdr'
 
 import {
@@ -32,14 +31,11 @@ import {
   Agent,
   HttpOutboundTransport,
 } from '@aries-framework/core'
-import { IndySdkAnonCredsRegistry, IndySdkModule, IndySdkSovDidResolver } from '@aries-framework/indy-sdk'
 import { IndyVdrIndyDidResolver, IndyVdrAnonCredsRegistry, IndyVdrModule } from '@aries-framework/indy-vdr'
 import { agentDependencies, HttpInboundTransport } from '@aries-framework/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { randomUUID } from 'crypto'
-import indySdk from 'indy-sdk'
 
 import { greenText } from './OutputClass'
 
@@ -49,13 +45,11 @@ const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blsk
 {"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","blskey_pop":"RPLagxaR5xdimFzwmzYnz4ZhWtYQEj8iR5ZU53T2gitPCyCHQneUn2Huc4oeLd2B2HzkGnjAff4hWTJT6C7qHYB1Mv2wU5iHHGFWkhnTX9WsEAbunJCV2qcaXScKj4tTfvdDKfLiVuU2av6hbsMztirRze7LvYBkRHV3tGwyCptsrP","client_ip":"138.197.138.255","client_port":9708,"node_ip":"138.197.138.255","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}`
 
 export const indyNetworkConfig = {
-  // Need unique network id as we will have multiple agent processes in the agent
-  id: randomUUID(),
   genesisTransactions: bcovrin,
   indyNamespace: 'bcovrin:test',
   isProduction: false,
   connectOnStartup: true,
-} satisfies IndySdkPoolConfig | IndyVdrPoolConfig
+} satisfies IndyVdrPoolConfig
 
 type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 
@@ -164,49 +158,6 @@ function getAskarAnonCredsIndyModules() {
     }),
     askar: new AskarModule({
       ariesAskar,
-    }),
-  } as const
-}
-
-function getLegacyIndySdkModules() {
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
-
-  return {
-    connections: new ConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    credentials: new CredentialsModule({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      credentialProtocols: [
-        new V1CredentialProtocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      proofProtocols: [
-        new V1ProofProtocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService],
-        }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    indySdk: new IndySdkModule({
-      indySdk,
-      networks: [indyNetworkConfig],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver()],
     }),
   } as const
 }

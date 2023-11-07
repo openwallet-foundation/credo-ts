@@ -5,9 +5,9 @@ import { EventEmitter, SigningProviderRegistry, InboundMessageContext, DidExchan
 import { agentDependencies } from '@aries-framework/node'
 import { Subject } from 'rxjs'
 
+import { RegisteredAskarTestWallet } from '../../../askar/tests/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
-import { IndySdkWallet } from '../../../indy-sdk/src'
-import { indySdk } from '../../../indy-sdk/tests/setupIndySdkModule'
+import { NodeFileSystem } from '../../../node/src/NodeFileSystem'
 
 import {
   QuestionAnswerRecord,
@@ -61,7 +61,7 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(agentConfig.logger, new NodeFileSystem(), new SigningProviderRegistry([]))
     agentContext = getAgentContext()
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(agentConfig.walletConfig!)

@@ -1,22 +1,16 @@
 import type { InitConfig } from '@aries-framework/core'
 
-import { AskarModule } from '@aries-framework/askar'
 import { utils, KeyDerivationMethod, Agent } from '@aries-framework/core'
 import { IndySdkModule } from '@aries-framework/indy-sdk'
 import { agentDependencies } from '@aries-framework/node'
-import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
 import indy from 'indy-sdk'
 import { homedir } from 'os'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { IndySdkToAskarMigrationUpdater } from '../src'
 import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'
 
 describe('Indy SDK To Askar Migration', () => {
-  beforeAll(() => {
-    registerAriesAskar({ askar: ariesAskar })
-  })
-
   test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
     const indySdkAndAskarConfig: InitConfig = {
       label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration | ${utils.uuid()}`,
@@ -45,7 +39,7 @@ describe('Indy SDK To Askar Migration', () => {
 
     const askarAgent = new Agent({
       config: indySdkAndAskarConfig,
-      modules: { askar: new AskarModule({ ariesAskar }) },
+      modules: { askar: askarModule },
       dependencies: agentDependencies,
     })
 
@@ -98,9 +92,7 @@ describe('Indy SDK To Askar Migration', () => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       config: { ...indySdkAndAskarConfig, walletConfig: { ...indySdkAndAskarConfig.walletConfig!, key: 'wrong-key' } },
       modules: {
-        askar: new AskarModule({
-          ariesAskar,
-        }),
+        askar: askarModule,
       },
       dependencies: agentDependencies,
     })

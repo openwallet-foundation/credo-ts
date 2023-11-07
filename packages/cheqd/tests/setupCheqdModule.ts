@@ -1,15 +1,9 @@
 import type { CheqdModuleConfigOptions } from '../src'
 
 import { DidsModule } from '@aries-framework/core'
-import { IndySdkModule, IndySdkModuleConfig } from '@aries-framework/indy-sdk'
-import indySdk from 'indy-sdk'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { CheqdModule, CheqdDidRegistrar, CheqdDidResolver } from '../src'
-
-export const getIndySdkModuleConfig = () =>
-  new IndySdkModuleConfig({
-    indySdk,
-  })
 
 export const getCheqdModuleConfig = (seed?: string, rpcUrl?: string) =>
   ({
@@ -30,5 +24,5 @@ export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
     registrars: [new CheqdDidRegistrar()],
     resolvers: [new CheqdDidResolver()],
   }),
-  indySdk: new IndySdkModule(getIndySdkModuleConfig()),
+  askarModule,
 })

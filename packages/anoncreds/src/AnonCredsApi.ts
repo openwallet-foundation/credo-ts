@@ -261,6 +261,8 @@ export class AnonCredsApi {
             supportRevocation: false,
             schema: schemaResult.schema,
           },
+          // NOTE: indy-sdk support has been removed from main repo, but keeping
+          // this in place to allow the indy-sdk to still be used as a custom package
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
           {
             indyLedgerSchemaSeqNo: schemaResult.schemaMetadata.indyLedgerSeqNo,

@@ -32,6 +32,20 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
+"@aries-framework/indy-sdk@*", "@aries-framework/indy-sdk@0.4.2":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@aries-framework/indy-sdk/-/indy-sdk-0.4.2.tgz#ec6a6a97e200390d5759575612922ae44bac62f8"
+  integrity sha512-ne+SnDTpNQ4bQYYpyYhF0W7c5dlG/UVIdUysFgz/ZTD78tsc+Z7EiXnbz5gKVbqqgxpjiHfNsb4SQJcNUBy8bQ==
+  dependencies:
+    "@aries-framework/anoncreds" "0.4.2"
+    "@aries-framework/core" "0.4.2"
+    "@stablelib/ed25519" "^1.0.3"
+    "@types/indy-sdk" "1.16.27"
+    class-transformer "0.5.1"
+    class-validator "0.14.0"
+    rxjs "^7.2.0"
+    tsyringe "^4.8.0"
+
 "@azure/core-asynciterator-polyfill@^1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@azure/core-asynciterator-polyfill/-/core-asynciterator-polyfill-1.0.2.tgz#0dd3849fb8d97f062a39db0e5cadc9ffaf861fec"

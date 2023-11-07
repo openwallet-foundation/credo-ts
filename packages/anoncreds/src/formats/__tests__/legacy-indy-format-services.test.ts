@@ -122,6 +122,8 @@ describe('Legacy indy format services', () => {
         supportRevocation: false,
       },
       {
+        // NOTE: indy-sdk support has been removed from main repo, but keeping
+        // this in place to allow the indy-sdk to still be used as a custom package
         // Need to pass this as the indy-sdk MUST have the seqNo
         indyLedgerSchemaSeqNo: schemaMetadata.indyLedgerSeqNo as number,
       }
