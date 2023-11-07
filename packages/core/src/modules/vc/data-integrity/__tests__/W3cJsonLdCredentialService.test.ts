@@ -1,9 +1,8 @@
 import type { AgentContext } from '../../../../agent'
 import type { Wallet } from '../../../../wallet'
 
-import { IndySdkWallet } from '../../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
+import { RegisteredAskarTestWallet } from '../../../../../../askar/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import { KeyType } from '../../../../crypto'
 import { SigningProviderRegistry } from '../../../../crypto/signing-provider'
 import { asArray, TypedArrayEncoder } from '../../../../utils'
@@ -51,7 +50,11 @@ describe('W3cJsonLdCredentialsService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    wallet = new RegisteredAskarTestWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      signingProviderRegistry
+    )
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

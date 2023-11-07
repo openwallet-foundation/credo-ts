@@ -26,7 +26,7 @@ import path from 'path'
 import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
-import { agentDependencies, IndySdkPostgresWalletScheme } from '../../node/src'
+import { agentDependencies } from '../../node/src'
 import {
   OutOfBandDidCommService,
   ConnectionsModule,
@@ -98,49 +98,6 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   }
 
   return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
-}
-
-export function getPostgresAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
-  name: string,
-  extraConfig: Partial<InitConfig> = {},
-  inputModules?: AgentModules
-) {
-  const random = uuid().slice(0, 4)
-  const config: InitConfig = {
-    label: `Agent: ${name} - ${random}`,
-    walletConfig: {
-      // NOTE: IndySDK Postgres database per wallet doesn't support special characters/spaces in the wallet name
-      id: `PostgresWallet${name}${random}`,
-      key: `Key${name}`,
-      storage: {
-        type: 'postgres_storage',
-        config: {
-          url: 'localhost:5432',
-          wallet_scheme: IndySdkPostgresWalletScheme.DatabasePerWallet,
-        },
-        credentials: {
-          account: 'postgres',
-          password: 'postgres',
-          admin_account: 'postgres',
-          admin_password: 'postgres',
-        },
-      },
-    },
-    autoUpdateStorageOnStartup: false,
-    logger: TestLogger.fromLogger(testLogger, name),
-    ...extraConfig,
-  }
-
-  const m = (inputModules ?? {}) as AgentModulesInput
-  const modules = {
-    ...m,
-    // Make sure connections module is always defined so we can set autoAcceptConnections
-    connections: m.connections ?? new ConnectionsModule({}),
-  }
-
-  modules.connections.config.autoAcceptConnections = true
-
-  return { config, dependencies: agentDependencies, modules: modules as AgentModules } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {

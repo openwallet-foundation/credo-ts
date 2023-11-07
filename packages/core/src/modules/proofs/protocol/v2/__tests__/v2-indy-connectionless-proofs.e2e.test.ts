@@ -7,7 +7,7 @@ import { SubjectInboundTransport } from '../../../../../../../../tests/transport
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import { V1CredentialPreview } from '../../../../../../../anoncreds/src'
 import {
-  getLegacyAnonCredsModules,
+  getAskarAnonCredsIndyModules,
   issueLegacyAnonCredsCredential,
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
@@ -271,7 +271,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         endpoints: ['rxjs:mediator'],
       },
       {
-        ...getLegacyAnonCredsModules({
+        ...getAskarAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediator: new MediatorModule({
@@ -303,7 +303,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAskarAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
@@ -319,7 +319,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAskarAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({

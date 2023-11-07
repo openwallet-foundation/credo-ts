@@ -1,8 +1,7 @@
 import type { Wallet } from '../../wallet'
 
-import { IndySdkWallet } from '../../../../indy-sdk/src'
-import { indySdk } from '../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentConfig } from '../../../tests/helpers'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { agentDependencies, getAgentConfig } from '../../../tests/helpers'
 import { KeyType } from '../../crypto'
 import { SigningProviderRegistry } from '../../crypto/signing-provider'
 import { TypedArrayEncoder } from '../../utils'
@@ -47,7 +46,11 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   beforeAll(async () => {
     const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(
+      config.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([])
+    )
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     await wallet.createAndOpen(config.walletConfig!)
   })

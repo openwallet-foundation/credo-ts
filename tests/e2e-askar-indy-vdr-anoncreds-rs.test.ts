@@ -3,10 +3,7 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnon
 
 import { Subject } from 'rxjs'
 
-import {
-  getAskarAnonCredsIndyModules,
-  getLegacyAnonCredsModules,
-} from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAskarAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -46,12 +43,12 @@ const mediatorAgentOptions = getAgentOptions(
   }
 )
 const senderAgentOptions = getAgentOptions(
-  'E2E Indy SDK Subject Sender',
+  'E2E Askar Subject Sender',
   {
     endpoints: ['rxjs:sender'],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAskarAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({

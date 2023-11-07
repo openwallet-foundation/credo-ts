@@ -119,7 +119,7 @@ export class IndySdkToAskarMigrationUpdater {
   /**
    * Location of the new wallet
    */
-  private get newWalletPath() {
+  public get newWalletPath() {
     return `${this.fs.dataPath}/wallet/${this.walletConfig.id}/sqlite.db`
   }
 

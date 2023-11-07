@@ -10,9 +10,8 @@ import {
   RevocationRegistryEntryRequest,
 } from '@hyperledger/indy-vdr-shared'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -35,9 +34,7 @@ const endorser = new Agent({
       indyVdr,
       networks: indyVdrModuleConfig.networks,
     }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
+    askar: askarModule,
     dids: new DidsModule({
       registrars: [new IndyVdrIndyDidRegistrar()],
       resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
@@ -53,9 +50,7 @@ const agent = new Agent({
       indyVdr,
       networks: indyVdrModuleConfig.networks,
     }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
+    asakar: askarModule,
     dids: new DidsModule({
       registrars: [new IndyVdrIndyDidRegistrar()],
       resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],

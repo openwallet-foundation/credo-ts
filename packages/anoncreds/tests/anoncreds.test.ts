@@ -1,8 +1,9 @@
 import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import * as indySdk from 'indy-sdk'
 
-import { IndySdkModule } from '../../indy-sdk/src/IndySdkModule'
+import { AnonCredsRsModule } from '../../anoncreds-rs/src'
+import { anoncreds } from '../../anoncreds-rs/tests/helpers'
+import { askarModule } from '../../askar/tests/helpers'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
@@ -81,10 +82,8 @@ const agent = new Agent({
     },
   },
   modules: {
-    indySdk: new IndySdkModule({
-      indySdk,
-      autoCreateLinkSecret: false,
-    }),
+    anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),
+    askar: askarModule,
     anoncreds: new AnonCredsModule({
       registries: [
         new InMemoryAnonCredsRegistry({

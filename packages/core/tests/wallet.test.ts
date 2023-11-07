@@ -1,7 +1,7 @@
 import { tmpdir } from 'os'
 import path from 'path'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { BasicMessageRepository, BasicMessageRecord, BasicMessageRole } from '../src/modules/basic-messages'
 import { KeyDerivationMethod } from '../src/types'
@@ -12,8 +12,8 @@ import { WalletNotFoundError } from '../src/wallet/error/WalletNotFoundError'
 
 import { getAgentOptions } from './helpers'
 
-const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, getIndySdkModules())
-const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, getIndySdkModules())
+const aliceAgentOptions = getAgentOptions('wallet-tests-Alice', {}, { askar: askarModule })
+const bobAgentOptions = getAgentOptions('wallet-tests-Bob', {}, { askar: askarModule })
 
 describe('wallet', () => {
   let aliceAgent: Agent

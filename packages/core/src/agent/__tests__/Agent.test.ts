@@ -2,7 +2,7 @@ import type { DependencyManager, Module } from '../../plugins'
 
 import { injectable } from 'tsyringe'
 
-import { getIndySdkModules } from '../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { BasicMessageRepository, BasicMessageService } from '../../modules/basic-messages'
@@ -33,7 +33,7 @@ import { FeatureRegistry } from '../FeatureRegistry'
 import { MessageReceiver } from '../MessageReceiver'
 import { MessageSender } from '../MessageSender'
 
-const agentOptions = getAgentOptions('Agent Class Test', {}, getIndySdkModules())
+const agentOptions = getAgentOptions('Agent Class Test', {}, { askar: askarModule })
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -61,7 +61,7 @@ describe('Agent', () => {
         ...agentOptions,
         modules: {
           myModule: new MyModule(),
-          ...getIndySdkModules(),
+          askar: askarModule,
         },
       })
 
@@ -79,7 +79,7 @@ describe('Agent', () => {
           mediationRecipient: new MediationRecipientModule({
             maximumMessagePickup: 42,
           }),
-          ...getIndySdkModules(),
+          askar: askarModule,
         },
       })
 

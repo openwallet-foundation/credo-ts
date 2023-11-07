@@ -15,10 +15,9 @@ import {
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
@@ -35,9 +34,7 @@ const endorser = new Agent(
         networks: indyVdrModuleConfig.networks,
         indyVdr,
       }),
-      indySdk: new IndySdkModule({
-        indySdk,
-      }),
+      askar: askarModule,
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
         resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],
@@ -54,9 +51,7 @@ const agent = new Agent(
         indyVdr,
         networks: indyVdrModuleConfig.networks,
       }),
-      indySdk: new IndySdkModule({
-        indySdk,
-      }),
+      askar: askarModule,
       dids: new DidsModule({
         registrars: [new IndyVdrIndyDidRegistrar()],
         resolvers: [new IndyVdrIndyDidResolver(), new IndyVdrSovDidResolver()],

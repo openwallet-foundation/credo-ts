@@ -8,7 +8,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { getLegacyAnonCredsModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAskarAnonCredsIndyModules, prepareForAnonCredsIssuance } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { Agent } from '../src/agent/Agent'
 import { Key } from '../src/crypto'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
@@ -29,7 +29,7 @@ const faberAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules({
+  getAskarAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
@@ -38,7 +38,7 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules({
+  getAskarAnonCredsIndyModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
   })
 )
@@ -63,8 +63,8 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let faberAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
-  let aliceAgent: Agent<ReturnType<typeof getLegacyAnonCredsModules>>
+  let faberAgent: Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
+  let aliceAgent: Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
   let credentialTemplate: CreateCredentialOfferOptions<[V1CredentialProtocol]>
 
   beforeAll(async () => {

@@ -45,14 +45,6 @@ import {
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import {
-  IndySdkAnonCredsRegistry,
-  IndySdkIndyDidRegistrar,
-  IndySdkIndyDidResolver,
-  IndySdkModule,
-  IndySdkSovDidResolver,
-} from '../../indy-sdk/src'
-import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
-import {
   IndyVdrAnonCredsRegistry,
   IndyVdrSovDidResolver,
   IndyVdrModule,
@@ -73,52 +65,9 @@ import {
 } from '../src'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent =
-  | Agent<ReturnType<typeof getLegacyAnonCredsModules> & { mediationRecipient?: any; mediator?: any }>
-  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }>
-
-export const getLegacyAnonCredsModules = ({
-  autoAcceptCredentials,
-  autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
-  const indyCredentialFormat = new LegacyIndyCredentialFormatService()
-  const indyProofFormat = new LegacyIndyProofFormatService()
-
-  // Register the credential and proof protocols
-  const modules = {
-    credentials: new CredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new V1CredentialProtocol({ indyCredentialFormat }),
-        new V2CredentialProtocol({
-          credentialFormats: [indyCredentialFormat],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new V1ProofProtocol({ indyProofFormat }),
-        new V2ProofProtocol({
-          proofFormats: [indyProofFormat],
-        }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
-      registrars: [new IndySdkIndyDidRegistrar()],
-    }),
-    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
-    cache: new CacheModule({
-      cache: new InMemoryLruCache({ limit: 100 }),
-    }),
-  } as const
-
-  return modules
-}
+export type AnonCredsTestsAgent = Agent<
+  ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }
+>
 
 export const getAskarAnonCredsIndyModules = ({
   autoAcceptCredentials,
@@ -357,7 +306,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:issuer'],
       },
-      getLegacyAnonCredsModules({
+      getAskarAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -370,7 +319,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
-      getLegacyAnonCredsModules({
+      getAskarAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       })
@@ -384,7 +333,7 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
-          getLegacyAnonCredsModules({
+          getAskarAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
           })

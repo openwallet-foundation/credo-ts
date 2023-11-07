@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { OutOfBandInvitation } from '../src/modules/oob/messages'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { DidExchangeState, HandshakeProtocol } from '../src/modules/connections'
 import {
@@ -19,7 +19,7 @@ const faberAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 const aliceAgentOptions = getAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
@@ -27,7 +27,7 @@ const aliceAgentOptions = getAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {
-    ...getIndySdkModules(),
+    askar: askarModule,
     mediationRecipient: new MediationRecipientModule({
       // FIXME: discover features returns that we support this protocol, but we don't support all roles
       // we should return that we only support the mediator role so we don't have to explicitly declare this
@@ -40,7 +40,7 @@ const mediatorAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:mediator'],
   },
-  { ...getIndySdkModules(), mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
+  { askar: askarModule, mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
 )
 
 describe('out of band with mediation set up with provision method', () => {

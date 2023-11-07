@@ -1,29 +1,18 @@
 import type { EventReplaySubject } from '../../../../../../tests'
 
-import { randomUUID } from 'crypto'
-
 import {
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
   V1CredentialProtocol,
   V1ProofProtocol,
-  AnonCredsModule,
 } from '../../../../../../../anoncreds/src'
-import { prepareForAnonCredsIssuance } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
-  IndySdkAnonCredsRegistry,
-  IndySdkIndyDidRegistrar,
-  IndySdkIndyDidResolver,
-  IndySdkModule,
-  IndySdkSovDidResolver,
-} from '../../../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../../../indy-sdk/tests/setupIndySdkModule'
+  getAskarAnonCredsIndyModules,
+  prepareForAnonCredsIssuance,
+} from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   setupEventReplaySubjects,
   setupSubjectTransports,
-  genesisPath,
-  taaAcceptanceMechanism,
-  taaVersion,
   getAgentOptions,
   waitForCredentialRecordSubject,
   testLogger,
@@ -34,7 +23,6 @@ import { KeyType } from '../../../../../crypto'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { CacheModule, InMemoryLruCache } from '../../../../cache'
-import { DidsModule } from '../../../../dids'
 import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
 import { W3cCredentialsModule } from '../../../../vc'
 import { customDocumentLoader } from '../../../../vc/data-integrity/__tests__/documentLoader'
@@ -88,6 +76,7 @@ const indyProofFormat = new LegacyIndyProofFormatService()
 
 const getIndyJsonLdModules = () =>
   ({
+    ...getAskarAnonCredsIndyModules(),
     credentials: new CredentialsModule({
       credentialProtocols: [
         new V1CredentialProtocol({ indyCredentialFormat }),
@@ -102,25 +91,6 @@ const getIndyJsonLdModules = () =>
         new V2ProofProtocol({
           proofFormats: [indyProofFormat],
         }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
-      registrars: [new IndySdkIndyDidRegistrar()],
-    }),
-    indySdk: new IndySdkModule({
-      indySdk,
-      networks: [
-        {
-          isProduction: false,
-          genesisPath,
-          id: randomUUID(),
-          indyNamespace: `pool:localtest`,
-          transactionAuthorAgreement: { version: taaVersion, acceptanceMechanism: taaAcceptanceMechanism },
-        },
       ],
     }),
     cache: new CacheModule({

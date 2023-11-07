@@ -20,14 +20,13 @@ import {
   W3cJsonLdVerifiableCredential,
 } from '@aries-framework/core'
 
+import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/data-integrity/SignatureSuiteRegistry'
 import { W3cJsonLdCredentialService } from '../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { customDocumentLoader } from '../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { LinkedDataProof } from '../../core/src/modules/vc/data-integrity/models/LinkedDataProof'
-import { getAgentConfig, getAgentContext } from '../../core/tests/helpers'
-import { IndySdkWallet } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import { BbsBlsSignature2020, BbsBlsSignatureProof2020, Bls12381g2SigningProvider } from '../src'
 
 import { BbsBlsSignature2020Fixtures } from './fixtures'
@@ -70,7 +69,11 @@ describeSkipNode17And18('BBS W3cCredentialService', () => {
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    wallet = new RegisteredAskarTestWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      signingProviderRegistry
+    )
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

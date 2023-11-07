@@ -58,17 +58,8 @@ export class BaseAgent {
   public name: string
   public config: InitConfig
   public agent: DemoAgent
-  public useLegacyIndySdk: boolean
 
-  public constructor({
-    port,
-    name,
-    useLegacyIndySdk = false,
-  }: {
-    port: number
-    name: string
-    useLegacyIndySdk?: boolean
-  }) {
+  public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
 
@@ -82,8 +73,6 @@ export class BaseAgent {
     } satisfies InitConfig
 
     this.config = config
-
-    this.useLegacyIndySdk = useLegacyIndySdk
 
     this.agent = new Agent({
       config,

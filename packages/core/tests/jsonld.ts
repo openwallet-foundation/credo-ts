@@ -1,9 +1,8 @@
 import type { EventReplaySubject } from './events'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../src'
 
+import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
-import { IndySdkModule } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import {
   CacheModule,
   CredentialEventTypes,
@@ -42,9 +41,7 @@ export const getJsonLdModules = ({
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
+    askar: askarModule,
     bbs: new BbsModule(),
   } as const)
 

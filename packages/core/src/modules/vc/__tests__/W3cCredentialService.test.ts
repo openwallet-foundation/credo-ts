@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../agent'
 import type { Wallet } from '../../../wallet'
 
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { getAgentConfig, indySdk, getAgentContext, mockFunction } from '../../../../tests'
+import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
 import { SigningProviderRegistry, JwsService } from '../../../crypto'
 import { JsonTransformer, asArray } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
@@ -48,7 +48,11 @@ describe('W3cCredentialsService', () => {
   let w3cCredentialsRepository: W3cCredentialRepository
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, signingProviderRegistry)
+    wallet = new RegisteredAskarTestWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      signingProviderRegistry
+    )
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,

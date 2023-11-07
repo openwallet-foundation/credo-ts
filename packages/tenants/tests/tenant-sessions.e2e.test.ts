@@ -3,8 +3,8 @@ import type { InitConfig } from '@aries-framework/core'
 import { ConnectionsModule, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-import { testLogger, indySdk } from '../../core/tests'
-import { IndySdkModule } from '../../indy-sdk/src'
+import { askarModule } from '../../askar/tests/helpers'
+import { testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
@@ -24,7 +24,7 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
-    indySdk: new IndySdkModule({ indySdk }),
+    askar: askarModule,
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),

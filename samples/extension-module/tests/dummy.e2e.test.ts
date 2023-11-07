@@ -1,13 +1,13 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { ConnectionRecord } from '@aries-framework/core'
 
+import { AskarModule } from '@aries-framework/askar'
 import { Agent } from '@aries-framework/core'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Subject } from 'rxjs'
 
-import { indySdk } from '../../../packages/core/tests'
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
 import testLogger from '../../../packages/core/tests/logger'
-import { IndySdkModule } from '../../../packages/indy-sdk/src'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DummyModule } from '../dummy/DummyModule'
@@ -17,7 +17,9 @@ import { waitForDummyRecord } from './helpers'
 
 const modules = {
   dummy: new DummyModule(),
-  indySdk: new IndySdkModule({ indySdk }),
+  askar: new AskarModule({
+    ariesAskar,
+  }),
 }
 
 const bobAgentOptions = getAgentOptions(

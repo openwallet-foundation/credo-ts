@@ -21,8 +21,8 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { agentDependencies, getAgentConfig, getAgentContext, indySdk, mockProperty } from '../../../../core/tests'
-import { IndySdkWallet } from '../../../../indy-sdk/src'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrIndyDidRegistrar } from '../IndyVdrIndyDidRegistrar'
 
@@ -33,7 +33,11 @@ mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
 
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+const wallet = new RegisteredAskarTestWallet(
+  agentConfig.logger,
+  new agentDependencies.FileSystem(),
+  new SigningProviderRegistry([])
+)
 
 jest
   .spyOn(wallet, 'createKey')

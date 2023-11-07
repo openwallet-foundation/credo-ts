@@ -2,8 +2,8 @@ import type { ConnectionRecord } from '@aries-framework/core'
 
 import { Agent } from '@aries-framework/core'
 
-import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports, indySdk } from '../../core/tests'
-import { IndySdkModule } from '../../indy-sdk/src'
+import { askarModule } from '../../askar/tests/helpers'
+import { getAgentOptions, makeConnection, testLogger, setupSubjectTransports } from '../../core/tests'
 
 import { waitForActionMenuRecord } from './helpers'
 
@@ -17,9 +17,7 @@ import {
 
 const modules = {
   actionMenu: new ActionMenuModule(),
-  indySdk: new IndySdkModule({
-    indySdk,
-  }),
+  askar: askarModule,
 }
 
 const faberAgentOptions = getAgentOptions(

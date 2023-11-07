@@ -1,5 +1,5 @@
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { getAgentOptions, indySdk } from '../../../../tests'
+import { askarModule } from '../../../../../askar/tests/helpers'
+import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 import { W3cCredentialService } from '../W3cCredentialService'
@@ -10,9 +10,7 @@ import { W3cJsonLdVerifiableCredential } from '../data-integrity/models'
 import { W3cCredentialRepository } from '../repository'
 
 const modules = {
-  indySdk: new IndySdkModule({
-    indySdk,
-  }),
+  askar: askarModule,
   w3cCredentials: new W3cCredentialsModule({
     documentLoader: customDocumentLoader,
   }),

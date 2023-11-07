@@ -8,7 +8,7 @@ import { ReplaySubject, Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
 import {
-  getLegacyAnonCredsModules,
+  getAskarAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { waitForCredentialRecordSubject, getAgentOptions } from '../../../../../../tests/helpers'
@@ -25,7 +25,7 @@ const faberAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules()
+  getAskarAnonCredsIndyModules()
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -33,7 +33,7 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules()
+  getAskarAnonCredsIndyModules()
 )
 
 const credentialPreview = V2CredentialPreview.fromRecord({

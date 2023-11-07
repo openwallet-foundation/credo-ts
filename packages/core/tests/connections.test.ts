@@ -3,7 +3,7 @@ import type { AgentMessageProcessedEvent, KeylistUpdate } from '../src'
 
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../askar/tests/helpers'
 import {
   MediatorModule,
   Key,
@@ -32,21 +32,21 @@ describe('connections', () => {
       {
         endpoints: ['rxjs:faber'],
       },
-      getIndySdkModules()
+      { askar: askarModule }
     )
     const aliceAgentOptions = getAgentOptions(
       'Alice Agent Connections',
       {
         endpoints: ['rxjs:alice'],
       },
-      getIndySdkModules()
+      { askar: askarModule }
     )
     const acmeAgentOptions = getAgentOptions(
       'Acme Agent Connections',
       {
         endpoints: ['rxjs:acme'],
       },
-      getIndySdkModules()
+      { askar: askarModule }
     )
     const mediatorAgentOptions = getAgentOptions(
       'Mediator Agent Connections',
@@ -54,7 +54,7 @@ describe('connections', () => {
         endpoints: ['rxjs:mediator'],
       },
       {
-        ...getIndySdkModules(),
+        askar: askarModule,
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
         }),

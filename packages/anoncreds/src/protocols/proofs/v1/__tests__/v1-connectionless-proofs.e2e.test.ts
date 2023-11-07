@@ -5,6 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../tests/transport/SubjectOutboundTransport'
+import { askarModule } from '../../../../../../askar/tests/helpers'
 import {
   CredentialEventTypes,
   Agent,
@@ -27,9 +28,8 @@ import {
   makeConnection,
   setupEventReplaySubjects,
 } from '../../../../../../core/tests'
-import { getIndySdkModules } from '../../../../../../indy-sdk/tests/setupIndySdkModule'
 import {
-  getLegacyAnonCredsModules,
+  getAskarAnonCredsIndyModules,
   issueLegacyAnonCredsCredential,
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
@@ -365,7 +365,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         endpoints: ['rxjs:mediator'],
       },
       {
-        ...getIndySdkModules(),
+        askar: askarModule,
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
         }),
@@ -395,7 +395,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAskarAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({
@@ -411,7 +411,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {
-        ...getLegacyAnonCredsModules({
+        ...getAskarAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
         mediationRecipient: new MediationRecipientModule({

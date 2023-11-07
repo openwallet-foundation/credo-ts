@@ -5,9 +5,9 @@ import type { Routing } from '../services/ConnectionService'
 
 import { Subject } from 'rxjs'
 
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
 import {
+  agentDependencies,
   getAgentConfig,
   getAgentContext,
   getMockConnection,
@@ -92,7 +92,11 @@ describe('ConnectionService', () => {
   let agentContext: AgentContext
 
   beforeAll(async () => {
-    wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([])
+    )
     agentContext = getAgentContext({
       wallet,
       agentConfig,

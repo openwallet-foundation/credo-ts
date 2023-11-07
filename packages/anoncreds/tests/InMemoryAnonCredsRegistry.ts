@@ -19,7 +19,7 @@ import type { AgentContext } from '@aries-framework/core'
 import { Hasher, TypedArrayEncoder } from '@aries-framework/core'
 import BigNumber from 'bn.js'
 
-import { getDidIndyCredentialDefinitionId, getDidIndySchemaId } from '../../indy-sdk/src/anoncreds/utils/identifiers'
+import { getDidIndyCredentialDefinitionId, getDidIndySchemaId } from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import { getUnqualifiedCredentialDefinitionId, getUnqualifiedSchemaId, parseIndyDid, parseIndySchemaId } from '../src'
 
 /**
@@ -28,9 +28,6 @@ import { getUnqualifiedCredentialDefinitionId, getUnqualifiedSchemaId, parseIndy
 export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'inMemory'
 
-  // Roughly match that the identifier starts with an unqualified indy did. Once the
-  // anoncreds tests are not based on the indy-sdk anymore, we can use any identifier
-  // we want, but the indy-sdk is picky about the identifier format.
   public readonly supportedIdentifier = /.+/
 
   private schemas: Record<string, AnonCredsSchema>

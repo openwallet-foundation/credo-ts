@@ -66,6 +66,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.1.0"
+    "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.1"
   }
 }

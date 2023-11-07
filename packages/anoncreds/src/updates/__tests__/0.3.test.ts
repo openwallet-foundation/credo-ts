@@ -3,9 +3,8 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { indySdk, agentDependencies } from '../../../../core/tests'
-import { IndySdkWallet } from '../../../../indy-sdk/src'
-import { IndySdkSymbol } from '../../../../indy-sdk/src/types'
+import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { agentDependencies } from '../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
@@ -32,9 +31,8 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})
@@ -108,9 +106,8 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the IndySdkModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, IndySdkWallet)
-    dependencyManager.registerInstance(IndySdkSymbol, indySdk)
+    // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})

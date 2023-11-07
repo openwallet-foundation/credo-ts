@@ -7,11 +7,11 @@ import {
   TypedArrayEncoder,
   SigningProviderRegistry,
 } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/core/tests'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
+import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { IndySdkWallet } from '../../indy-sdk/src'
-import { indySdk } from '../../indy-sdk/tests/setupIndySdkModule'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'
@@ -30,7 +30,11 @@ describeSkipNode17And18('BBS Signing Provider', () => {
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, testLogger, new SigningProviderRegistry([new Bls12381g2SigningProvider()]))
+    wallet = new RegisteredAskarTestWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+    )
     await wallet.createAndOpen(walletConfig)
   })
 

@@ -4,7 +4,7 @@ import type { StorageUpdateError } from '../error/StorageUpdateError'
 import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -14,7 +14,7 @@ import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const agentOptions = getAgentOptions('UpdateAssistant | Backup', {}, getIndySdkModules())
+const agentOptions = getAgentOptions('UpdateAssistant | Backup', {}, { askar: askarModule })
 
 const aliceCredentialRecordsString = readFileSync(
   path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),

@@ -8,7 +8,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
@@ -18,14 +18,14 @@ import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, getIndySdkModules())
+const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, { askar: askarModule })
 const mediatorAgentOptions = getAgentOptions(
   'Mediation: Mediator',
   {
     endpoints: ['rxjs:mediator'],
   },
   {
-    ...getIndySdkModules(),
+    askar: askarModule,
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
@@ -37,7 +37,7 @@ const senderAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:sender'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 
 describe('mediator establishment', () => {

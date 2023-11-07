@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { ConnectionRecord } from '../src/modules/connections'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { HandshakeProtocol } from '../src/modules/connections'
 
@@ -13,14 +13,14 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 const bobAgentOptions = getAgentOptions(
   'Agents Bob',
   {
     endpoints: ['rxjs:bob'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 
 describe('agents', () => {

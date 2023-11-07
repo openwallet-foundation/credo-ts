@@ -1,8 +1,7 @@
 import { Agent, AgentContext } from '@aries-framework/core'
 
-import { indySdk } from '../../../core/tests'
+import { askarModule } from '../../../askar/tests/helpers'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
-import { IndySdkModule } from '../../../indy-sdk/src'
 import { TenantAgent } from '../TenantAgent'
 
 describe('TenantAgent', () => {
@@ -17,7 +16,7 @@ describe('TenantAgent', () => {
       },
       dependencies: agentDependencies,
       modules: {
-        indySdk: new IndySdkModule({ indySdk }),
+        askar: askarModule,
       },
     })
 

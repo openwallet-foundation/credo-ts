@@ -2,7 +2,7 @@ import type { AgentMessageProcessedEvent } from '../src/agent/Events'
 
 import { filter, firstValueFrom, timeout } from 'rxjs'
 
-import { getIndySdkModules } from '../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../askar/tests/helpers'
 import { parseMessageType, MessageSender, AgentMessage, IsValidMessageType } from '../src'
 import { Agent } from '../src/agent/Agent'
 import { AgentEventTypes } from '../src/agent/Events'
@@ -16,14 +16,14 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 const bobAgentOptions = getAgentOptions(
   'Multi Protocol Versions - Bob',
   {
     endpoints: ['rxjs:bob'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 
 describe('multi version protocols', () => {

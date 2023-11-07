@@ -6,7 +6,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../tests/helpers'
 import testLogger from '../../../../tests/logger'
 import { Agent } from '../../../agent/Agent'
@@ -19,7 +19,7 @@ const faberConfig = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 
 const aliceConfig = getAgentOptions(
@@ -27,7 +27,7 @@ const aliceConfig = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getIndySdkModules()
+  { askar: askarModule }
 )
 
 describe('Basic Messages E2E', () => {

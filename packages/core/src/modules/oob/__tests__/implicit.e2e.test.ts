@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { IndySdkIndyDidCreateOptions } from '@aries-framework/indy-sdk'
+import type { IndyVdrDidCreateOptions } from '@aries-framework/indy-vdr'
 
-import { getLegacyAnonCredsModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { getAskarAnonCredsIndyModules } from '../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { setupSubjectTransports } from '../../../../tests'
 import {
   getAgentOptions,
@@ -13,20 +13,21 @@ import { Agent } from '../../../agent/Agent'
 import { TypedArrayEncoder } from '../../../utils'
 import { sleep } from '../../../utils/sleep'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
+import { DidCommV1Service, DidCommV2Service, DidDocumentService } from '../../dids'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
   },
-  getLegacyAnonCredsModules()
+  getAskarAnonCredsIndyModules()
 )
 const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
   },
-  getLegacyAnonCredsModules()
+  getAskarAnonCredsIndyModules()
 )
 
 describe('out of band implicit', () => {
@@ -230,15 +231,34 @@ describe('out of band implicit', () => {
 })
 
 async function createPublicDid(agent: Agent, unqualifiedSubmitterDid: string, endpoint: string) {
-  const createResult = await agent.dids.create<IndySdkIndyDidCreateOptions>({
+  const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
     options: {
-      submitterDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
+      endorserMode: 'internal',
+      endorserDid: `did:indy:pool:localtest:${unqualifiedSubmitterDid}`,
+      useEndpointAttrib: true,
+      services: [
+        new DidDocumentService({
+          id: `#endpoint`,
+          serviceEndpoint: endpoint,
+          type: 'endpoint',
+        }),
+        new DidCommV1Service({
+          id: `#did-communication`,
+          priority: 0,
+          recipientKeys: [`#key-agreement-1`],
+          routingKeys: ['a-routing-key'],
+          serviceEndpoint: endpoint,
+          accept: ['didcomm/aip2;env=rfc19'],
+        }),
+        new DidCommV2Service({
+          accept: ['didcomm/v2'],
+          id: `#didcomm-1`,
+          routingKeys: ['a-routing-key'],
+          serviceEndpoint: endpoint,
+        }),
+      ],
       alias: 'Alias',
-      endpoints: {
-        endpoint,
-        types: ['DIDComm', 'did-communication', 'endpoint'],
-      },
     },
   })
 

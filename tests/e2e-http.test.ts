@@ -1,6 +1,6 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 
-import { getLegacyAnonCredsModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
+import { getAskarAnonCredsIndyModules } from '../packages/anoncreds/tests/legacyAnonCredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -19,7 +19,7 @@ const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
   {},
   {
-    ...getLegacyAnonCredsModules({
+    ...getAskarAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({
@@ -35,7 +35,7 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: [`http://localhost:${mediatorPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAskarAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({
@@ -51,7 +51,7 @@ const senderAgentOptions = getAgentOptions(
     endpoints: [`http://localhost:${senderPort}`],
   },
   {
-    ...getLegacyAnonCredsModules({
+    ...getAskarAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediationRecipient: new MediationRecipientModule({

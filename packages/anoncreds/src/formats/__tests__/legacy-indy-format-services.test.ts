@@ -10,20 +10,20 @@ import {
   ProofState,
   EventEmitter,
 } from '@aries-framework/core'
-import * as indySdk from 'indy-sdk'
 import { Subject } from 'rxjs'
 
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import {
-  IndySdkHolderService,
-  IndySdkIssuerService,
-  IndySdkModuleConfig,
-  IndySdkStorageService,
-  IndySdkVerifierService,
-  IndySdkWallet,
-} from '../../../../indy-sdk/src'
-import { IndySdkRevocationService } from '../../../../indy-sdk/src/anoncreds/services/IndySdkRevocationService'
-import { legacyIndyDidFromPublicKeyBase58 } from '../../../../indy-sdk/src/utils/did'
+  AnonCredsRsHolderService,
+  AnonCredsRsIssuerService,
+  AnonCredsRsModuleConfig,
+  AnonCredsRsVerifierService,
+} from '../../../../anoncreds-rs/src'
+import { anoncreds } from '../../../../anoncreds-rs/tests/helpers'
+import { AskarStorageService } from '../../../../askar/src'
+import { AskarModuleConfig } from '../../../../askar/src/AskarModuleConfig'
+import { askarModuleConfig, RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
 import { AnonCredsLinkSecretRecord, AnonCredsLinkSecretRepository } from '../../repository'
@@ -48,12 +48,15 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
 })
 
 const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
-const anonCredsRevocationService = new IndySdkRevocationService(indySdk)
-const anonCredsVerifierService = new IndySdkVerifierService(indySdk)
-const anonCredsHolderService = new IndySdkHolderService(anonCredsRevocationService, indySdk)
-const anonCredsIssuerService = new IndySdkIssuerService(indySdk)
-const wallet = new IndySdkWallet(indySdk, agentConfig.logger, new SigningProviderRegistry([]))
-const storageService = new IndySdkStorageService<AnonCredsLinkSecretRecord>(indySdk)
+const anonCredsVerifierService = new AnonCredsRsVerifierService()
+const anonCredsHolderService = new AnonCredsRsHolderService()
+const anonCredsIssuerService = new AnonCredsRsIssuerService()
+const wallet = new RegisteredAskarTestWallet(
+  agentConfig.logger,
+  new agentDependencies.FileSystem(),
+  new SigningProviderRegistry([])
+)
+const storageService = new AskarStorageService<AnonCredsLinkSecretRecord>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
@@ -64,7 +67,14 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
-    [IndySdkModuleConfig, new IndySdkModuleConfig({ indySdk, autoCreateLinkSecret: false })],
+    [AskarModuleConfig, askarModuleConfig],
+    [
+      AnonCredsRsModuleConfig,
+      new AnonCredsRsModuleConfig({
+        anoncreds,
+        autoCreateLinkSecret: false,
+      }),
+    ],
   ],
   agentConfig,
   wallet,
@@ -87,7 +97,7 @@ describe('Legacy indy format services', () => {
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
     const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-    const unqualifiedIndyDid = legacyIndyDidFromPublicKeyBase58(key.publicKeyBase58)
+    const unqualifiedIndyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
     const indyDid = `did:indy:pool1:${unqualifiedIndyDid}`
 
     // Create link secret
@@ -107,27 +117,18 @@ describe('Legacy indy format services', () => {
       version: '1.0.0',
     })
 
-    const { schemaState, schemaMetadata } = await registry.registerSchema(agentContext, {
+    const { schemaState } = await registry.registerSchema(agentContext, {
       schema,
       options: {},
     })
 
-    const { credentialDefinition } = await anonCredsIssuerService.createCredentialDefinition(
-      agentContext,
-      {
-        issuerId: indyDid,
-        schemaId: schemaState.schemaId as string,
-        schema,
-        tag: 'Employee Credential',
-        supportRevocation: false,
-      },
-      {
-        // NOTE: indy-sdk support has been removed from main repo, but keeping
-        // this in place to allow the indy-sdk to still be used as a custom package
-        // Need to pass this as the indy-sdk MUST have the seqNo
-        indyLedgerSchemaSeqNo: schemaMetadata.indyLedgerSeqNo as number,
-      }
-    )
+    const { credentialDefinition } = await anonCredsIssuerService.createCredentialDefinition(agentContext, {
+      issuerId: indyDid,
+      schemaId: schemaState.schemaId as string,
+      schema,
+      tag: 'Employee Credential',
+      supportRevocation: false,
+    })
 
     const { credentialDefinitionState } = await registry.registerCredentialDefinition(agentContext, {
       credentialDefinition,
