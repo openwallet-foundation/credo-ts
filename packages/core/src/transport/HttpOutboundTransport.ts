@@ -3,7 +3,6 @@ import type { Agent } from '../agent/Agent'
 import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
-import type fetch from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
 
@@ -53,7 +52,7 @@ export class HttpOutboundTransport implements OutboundTransport {
           method: 'POST',
           body: JSON.stringify(payload),
           headers: { 'Content-Type': this.agent.config.didCommMimeType },
-          signal: abortController.signal,
+          signal: abortController.signal as NonNullable<RequestInit['signal']>,
         })
         clearTimeout(id)
         responseMessage = await response.text()
