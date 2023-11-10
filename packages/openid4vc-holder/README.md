@@ -130,6 +130,7 @@ console.log(w3cCredentialRecords)
 
 Requesting credentials via the Authorization Code Flow function conceptually similar,
 except that there is an intermediary step involved to resolve the authorization request, and then manually get the authorization code.
+
 ```ts
 // To request credentials(s), you need a credential offer.
 // The credential offer be provided as actual payload,

@@ -41,6 +41,7 @@ export interface PresentationSubmissionRequirement {
    * Whether the requirement is satisfied.
    *
    * If the requirement is not satisfied, the submission will still contain
+   * entries, but the `verifiableCredentials` list will be empty.
    */
   isRequirementSatisfied: boolean
 
@@ -65,7 +66,7 @@ export interface PresentationSubmissionRequirement {
    * `isRequirementSatisfied` is `false`, make sure to check the `needsCount` value
    * to see how many of those submissions needed.
    */
-  submission: SubmissionEntry[]
+  submissionEntry: SubmissionEntry[]
 
   /**
    * The number of submission entries that are needed to fulfill the requirement.
@@ -75,7 +76,12 @@ export interface PresentationSubmissionRequirement {
    */
   needsCount: number
 
-  // TODO: add requirement/restriction for input
+  /**
+   * The rule that is used to select the credentials for the submission.
+   * If the rule is `pick`, the user can select which credentials to use for the submission.
+   * If the rule is `all`, all credentials that satisfy the input descriptor will be used.
+   */
+  rule: 'pick' | 'all'
 }
 
 export interface PresentationSubmission {
@@ -110,6 +116,6 @@ export interface PresentationSubmission {
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export interface CredentialsForInputDescriptor {
+export interface InputDescriptorToCredentials {
   [inputDescriptorId: string]: W3cVerifiableCredential[]
 }

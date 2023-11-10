@@ -1,8 +1,27 @@
 import type { OfferedCredentialType } from './issuance/utils/IssuerMetadataUtils'
+import type { PresentationSubmission, VerifiedAuthorizationRequestWithPresentationDefinition } from './presentations'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
+import type { AuthorizationResponsePayload, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 import { OpenIdCredentialFormatProfile } from './issuance/utils/claimFormatMapping'
+
+export type AuthenticationRequest = VerifiedAuthorizationRequest
+export type PresentationRequest = VerifiedAuthorizationRequestWithPresentationDefinition
+
+export type ResolvedProofRequest =
+  | { proofType: 'authentication'; authenticationRequest: AuthenticationRequest }
+  | {
+      proofType: 'presentation'
+      presentationRequest: PresentationRequest
+      selectResults: PresentationSubmission
+    }
+
+export type ProofSubmissionResponse = {
+  ok: boolean
+  status: number
+  submittedResponse: AuthorizationResponsePayload
+}
 
 /**
  * The credential formats that are supported by the openid4vc holder

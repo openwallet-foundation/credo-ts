@@ -11,7 +11,6 @@ import type {
 } from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
-  CredentialFormat,
   JwaSignatureAlgorithm,
   VerificationMethod,
   W3cVerifiableCredential,
@@ -28,6 +27,7 @@ import type {
   PushedAuthorizationResponse,
   UniformCredentialOfferPayload,
 } from '@sphereon/oid4vci-common'
+import type { CredentialFormat } from '@sphereon/ssi-types'
 
 import {
   AriesFrameworkError,
@@ -45,7 +45,6 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   getJwkClassFromJwaSignatureAlgorithm,
-  getJwkClassFromKeyType,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   getSupportedVerificationMethodTypesFromKeyType,
@@ -71,6 +70,7 @@ import {
 } from '@sphereon/oid4vci-common'
 
 import { supportedCredentialFormats } from '../OpenId4VcHolderServiceOptions'
+import { getSupportedJwaSignatureAlgorithms } from '../shared'
 
 import { OpenIdCredentialFormatProfile, fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getFormatForVersion, getUniformFormat } from './utils/Formats'
@@ -384,7 +384,7 @@ export class OpenId4VcHolderService {
     this.logger.info(`Accepting the following credential offers '${credentialsToRequest}'`)
 
     const { metadata, issuerMetadata } = await getMetadataFromCredentialOffer(credentialOfferPayload, _metadata)
-    const supportedJwaSignatureAlgorithms = this.getSupportedJwaSignatureAlgorithms(agentContext)
+    const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
 
     const possibleProofOfPossessionSigAlgs = acceptCredentialOfferOptions.allowedProofOfPossessionSignatureAlgorithms
     const allowedProofOfPossessionSignatureAlgorithms = possibleProofOfPossessionSigAlgs
@@ -690,29 +690,6 @@ export class OpenId4VcHolderService {
     }
   }
 
-  /**
-   * Returns the JWA Signature Algorithms that are supported by the wallet.
-   *
-   * This is an approximation based on the supported key types of the wallet.
-   * This is not 100% correct as a supporting a key type does not mean you support
-   * all the algorithms for that key type. However, this needs refactoring of the wallet
-   * that is planned for the 0.5.0 release.
-   */
-  private getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): JwaSignatureAlgorithm[] {
-    const supportedKeyTypes = agentContext.wallet.supportedKeyTypes
-
-    // Extract the supported JWS algs based on the key types the wallet support.
-    const supportedJwaSignatureAlgorithms = supportedKeyTypes
-      // Map the supported key types to the supported JWK class
-      .map(getJwkClassFromKeyType)
-      // Filter out the undefined values
-      .filter((jwkClass): jwkClass is Exclude<typeof jwkClass, undefined> => jwkClass !== undefined)
-      // Extract the supported JWA signature algorithms from the JWK class
-      .flatMap((jwkClass) => jwkClass.supportedSignatureAlgorithms)
-
-    return supportedJwaSignatureAlgorithms
-  }
-
   private async handleCredentialResponse(
     agentContext: AgentContext,
     credentialResponse: OpenIDResponse<CredentialResponse>,
@@ -773,7 +750,6 @@ export class OpenId4VcHolderService {
 
       const payload = JsonEncoder.toBuffer(jwt.payload)
 
-      // TODO: should we support JWK?
       // We don't support these properties, remove them, so we can pass all other header properties to the JWS service
       if (jwt.header.x5c || jwt.header.jwk) throw new AriesFrameworkError('x5c and jwk are not supported')
 

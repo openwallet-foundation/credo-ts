@@ -3,9 +3,11 @@ import type {
   AuthCodeFlowOptions,
   AcceptCredentialOfferOptions,
   ResolvedAuthorizationRequest,
+  AuthenticationRequest,
+  PresentationRequest,
 } from './OpenId4VcHolderServiceOptions'
+import type { PresentationSubmission } from './presentations'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
-import type { ClientMetadataOpts, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
@@ -32,55 +34,53 @@ export class OpenId4VcHolderApi {
     this.openId4VpHolderService = openId4VpHolderService
   }
 
-  public async createRequest(options: {
-    verificationMethod: VerificationMethod
-    redirect_url: string
-    clientMetadata?: ClientMetadataOpts
-    issuer?: string
-  }) {
-    const relyingParty = await this.openId4VpHolderService.getRelyingParty(this.agentContext, options)
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const randomValues = await Promise.all([...Array(4).keys()].map((_) => this.agentContext.wallet.generateNonce()))
-    const nonce = randomValues[0] + randomValues[1]
-    const state = randomValues[2]
-    const correlationId = randomValues[3]
-
-    const authorizationRequest = await relyingParty.createAuthorizationRequest({
-      correlationId,
-      nonce,
-      state,
-    })
-
-    const authorizationRequestUri = await authorizationRequest.uri()
-    const encodedAuthorizationRequestUri = authorizationRequestUri.encodedUri
-
-    return {
-      relyingParty,
-      authorizationRequestUri: encodedAuthorizationRequestUri,
-      correlationId,
-      nonce,
-      state,
-    }
-  }
-
   /**
    * Resolves the authentication request given as URI or JWT to a unified @class VerificationRequest,
    * then verifies the validity of the request and return the @class VerifiedAuthorizationRequest.
+   * The resolved request can be accepted with either @see acceptAuthenticationRequest if it is a
+   * authentication request or with @see acceptPresentationRequest if it is a proofRequest.
    * @param requestJwtOrUri JWT or an openid:// URI
-   * @returns the Verified Authorization Request
+   * @returns the resolved and verified Authorization Request
    */
-  public async resolveRequest(requestOrJwt: string) {
-    return await this.openId4VpHolderService.resolveAuthorizationRequest(this.agentContext, requestOrJwt)
+  public async resolveProofRequest(requestOrJwt: string) {
+    return await this.openId4VpHolderService.resolveProofRequest(this.agentContext, requestOrJwt)
   }
 
-  public async acceptRequest(verifiedRequest: VerifiedAuthorizationRequest, verificationMethod: VerificationMethod) {
-    const resolved = await this.openId4VpHolderService.acceptRequest(
+  /**
+   * Accepts the authentication request after it has been resolved and verified with @see resolveProofRequest.
+   * @param authenticationRequest - The verified authorization request object.
+   * @param verificationMethod - The method used for creating the authentication proof.
+   * @returns @see ProofSubmissionResponse containing the status of the submission.
+   */
+  public async acceptAuthenticationRequest(
+    authenticationRequest: AuthenticationRequest,
+    verificationMethod: VerificationMethod
+  ) {
+    return await this.openId4VpHolderService.acceptAuthenticationRequest(
       this.agentContext,
-      verifiedRequest,
-      verificationMethod
+      verificationMethod,
+      authenticationRequest
     )
-    return resolved
+  }
+
+  /**
+   * Accepts the proof request with a presentation after it has been resolved and verified @see resolveProofRequest.
+   * @param presentationRequest - The verified authorization request object containing the presentation definition.
+   * @param presentation - An object containing a presentation submission that fulfills the presentation definition.
+   * @returns @see ProofSubmissionResponse containing the status of the submission.
+   */
+  public async acceptPresentationRequest(
+    presentationRequest: PresentationRequest,
+    presentation: {
+      submission: PresentationSubmission
+      submissionEntryIndexes: number[]
+    }
+  ) {
+    const { submission, submissionEntryIndexes } = presentation
+    return await this.openId4VpHolderService.acceptProofRequest(this.agentContext, presentationRequest, {
+      submission,
+      submissionEntryIndexes: submissionEntryIndexes,
+    })
   }
 
   /**

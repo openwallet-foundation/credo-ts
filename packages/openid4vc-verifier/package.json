@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@aries-framework/core": "0.4.2",
-    "@sphereon/did-auth-siop": "^0.4.2",
+    "@sphereon/did-auth-siop": "^0.5.0-unstable.7",
     "@sphereon/ssi-types": "^0.17.5"
   },
   "devDependencies": {
