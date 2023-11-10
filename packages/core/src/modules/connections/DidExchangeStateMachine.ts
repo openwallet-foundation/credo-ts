@@ -69,7 +69,7 @@ export class DidExchangeStateMachine {
     }
     if (rule.state !== record.state || rule.role !== record.role) {
       throw new AriesFrameworkError(
-        `Record with role ${record.role} is in invalid state ${record.state} to process ${messageType}. Expected state for role ${rule.role} is ${rule.state}.`
+        `Record with role ${record.role} is in invalid state ${record.state} to process ${messageType.messageTypeUri}. Expected state for role ${rule.role} is ${rule.state}.`
       )
     }
   }
@@ -80,7 +80,7 @@ export class DidExchangeStateMachine {
       .find((r) => canHandleMessageType(r.message, messageType) && r.role === record.role)
     if (!rule) {
       throw new AriesFrameworkError(
-        `Could not find create message rule for messageType ${messageType}, state ${record.state} and role ${record.role}`
+        `Could not find create message rule for messageType ${messageType.messageTypeUri}, state ${record.state} and role ${record.role}`
       )
     }
     return rule.nextState

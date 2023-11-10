@@ -1,7 +1,6 @@
 import type { AgentDependencies } from '@aries-framework/core'
 
 import { EventEmitter } from 'events'
-import fetch from 'node-fetch'
 import WebSocket from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
