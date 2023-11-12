@@ -234,7 +234,7 @@ export class OpenId4VcVerifierService {
 
     return {
       idTokenPayload: idTokenPayload, // TODO: return something else
-      submission: response.oid4vpSubmission,
+      submission: presentationDefinition ? response.oid4vpSubmission : undefined,
     }
   }
 
