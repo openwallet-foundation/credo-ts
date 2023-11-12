@@ -113,7 +113,7 @@ export class PresentationExchangeService {
     return credentialRecords
   }
 
-  private addCredentialForSubjectWithInputDescriptorId(
+  private addCredentialToSubjectInputDescriptor(
     subjectsToInputDescriptors: ProofStructure,
     subjectId: string,
     inputDescriptorId: string,
@@ -148,14 +148,14 @@ export class PresentationExchangeService {
           throw new AriesFrameworkError('Missing required credential subject for creating the presentation.')
         }
 
-        this.addCredentialForSubjectWithInputDescriptorId(proofStructure, subjectId, inputDescriptorId, credential)
+        this.addCredentialToSubjectInputDescriptor(proofStructure, subjectId, inputDescriptorId, credential)
       })
     })
 
     const verifiablePresentationResults: VerifiablePresentationResult[] = []
 
     const subjectToInputDescriptors = Object.entries(proofStructure)
-    for (const [subjectId, inputDescriptorsToCredentials] of subjectToInputDescriptors) {
+    for (const [subjectId, subjectInputDescriptorsToCredentials] of subjectToInputDescriptors) {
       // Determine a suitable verification method for the presentation
       const verificationMethod = await this.getVerificationMethodForSubjectId(agentContext, subjectId)
 
@@ -166,29 +166,29 @@ export class PresentationExchangeService {
       // We create a presentation for each subject
       // Thus for each subject we need to filter all the related input descriptors and credentials
       // FIXME: cast to V1, as tsc errors for strange reasons if not
-      const inputDescriptorsForVp = (presentationDefinition as PresentationDefinitionV1).input_descriptors.filter(
-        (inputDescriptor) => inputDescriptor.id in inputDescriptorsToCredentials
+      const inputDescriptorsForSubject = (presentationDefinition as PresentationDefinitionV1).input_descriptors.filter(
+        (inputDescriptor) => inputDescriptor.id in subjectInputDescriptorsToCredentials
       )
 
       // Get all the credentials associated with the input descriptors
-      const credentialsForVp = Object.values(inputDescriptorsToCredentials)
-        .flatMap((inputDescriptors) => inputDescriptors)
+      const credentialsForSubject = Object.values(subjectInputDescriptorsToCredentials)
+        .flatMap((credentials) => credentials)
         .map(getSphereonW3cVerifiableCredential)
 
-      const presentationDefinitionForVp: IPresentationDefinition = {
+      const presentationDefinitionForSubject: IPresentationDefinition = {
         ...presentationDefinition,
-        input_descriptors: inputDescriptorsForVp,
+        input_descriptors: inputDescriptorsForSubject,
 
         // We remove the submission requirements, as it will otherwise fail to create the VP
-        // FIXME: Will this cause issue for creating the credential? Need to run tests
+        // TODO: Will this cause issue for creating the credential? Need to run tests
         submission_requirements: undefined,
       }
 
-      // FIXME: Q1: is holder always subject id, what if there are multiple subjects???
-      // FIXME: Q2: What about proofType, proofPurpose verification method for multiple subjects?
+      // TODO: Q1: is holder always subject id, what if there are multiple subjects???
+      // TODO: Q2: What about proofType, proofPurpose verification method for multiple subjects?
       const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
-        presentationDefinitionForVp,
-        credentialsForVp,
+        presentationDefinitionForSubject,
+        credentialsForSubject,
         this.getPresentationSignCallback(agentContext, verificationMethod),
         {
           holderDID: subjectId,
@@ -334,7 +334,7 @@ export class PresentationExchangeService {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
           proofType: this.getSigningAlgorithmForLdpVc(presentationDefinition, verificationMethod),
-          proofPurpose: 'assertionMethod', // TODO:
+          proofPurpose: 'assertionMethod', // TODO: authentication
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
