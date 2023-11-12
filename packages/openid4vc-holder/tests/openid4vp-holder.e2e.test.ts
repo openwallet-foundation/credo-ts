@@ -168,6 +168,9 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       holderVerificationMethod
     )
 
+    expect(result.authenticationRequest.authorizationRequestPayload.redirect_uri).toBe('https://acme.com/hello')
+    expect(result.authenticationRequest.issuer).toBe(verifierVerificationMethod.controller)
+
     //////////////////////////// RP (verify the response) ////////////////////////////
 
     const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
@@ -185,21 +188,17 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(idTokenPayload.nonce).toMatch(challenge)
   })
 
-  const getConfig = () => {
-    return staticOpOpenIdConfigEdDSA
-  }
-
   // TODO: not working yet
   xit('siop request with issuer', async () => {
     nock('https://helloworld.com')
       .get('/.well-known/openid-configuration')
-      .reply(200, getConfig())
+      .reply(200, staticOpOpenIdConfigEdDSA)
       .get('/.well-known/openid-configuration')
-      .reply(200, getConfig())
+      .reply(200, staticOpOpenIdConfigEdDSA)
       .get('/.well-known/openid-configuration')
-      .reply(200, getConfig())
+      .reply(200, staticOpOpenIdConfigEdDSA)
       .get('/.well-known/openid-configuration')
-      .reply(200, getConfig())
+      .reply(200, staticOpOpenIdConfigEdDSA)
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
@@ -370,7 +369,9 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       ]),
     }
 
-    const { proofRequest } = await verifier.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
+    const { proofRequest, proofRequestMetadata } = await verifier.modules.openId4VcVerifier.createProofRequest(
+      createProofRequestOptions
+    )
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
@@ -384,10 +385,67 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(selectResults.requirements[0].submissionEntry.length).toBe(1)
     expect(selectResults.requirements[1].needsCount).toBe(1)
     expect(selectResults.requirements[1].submissionEntry.length).toBe(1)
-
     expect(selectResults.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
-
     expect(selectResults.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
+
+    const { submittedResponse } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
+      result.presentationRequest,
+      {
+        submission: result.selectResults,
+        submissionEntryIndexes: [0, 0],
+      }
+    )
+
+    const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
+      submittedResponse,
+      {
+        createProofRequestOptions,
+        proofRequestMetadata,
+      }
+    )
+
+    expect(idTokenPayload).toBeDefined()
+    expect(submission).toBeDefined()
+    expect(submission?.presentationDefinitions).toHaveLength(1)
+    expect(submission?.submissionData.definition_id).toBe('Combined')
+    expect(submission?.presentations).toHaveLength(1)
+    expect(submission?.presentations[0].vcs).toHaveLength(2)
+    expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
+    expect(submission?.presentations[0].vcs[1].credential.type).toContain('UniversityDegree')
+  })
+
+  it('expect accepting a proof request with only a partial set of requirements to error', async () => {
+    await holder.w3cCredentials.storeCredential({
+      credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
+    })
+
+    await holder.w3cCredentials.storeCredential({
+      credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
+    })
+
+    const createProofRequestOptions: CreateProofRequestOptions = {
+      verificationMethod: verifierVerificationMethod,
+      redirectUri: 'https://acme.com/hello',
+      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      presentationDefinition: combinePresentationDefinitions([
+        openBadgePresentationDefinition,
+        universityDegreePresentationDefinition,
+      ]),
+    }
+
+    const { proofRequest } = await verifier.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
+
+    //////////////////////////// OP (validate and parse the request) ////////////////////////////
+
+    const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
+
+    await expect(
+      holder.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
+        submission: result.selectResults,
+        submissionEntryIndexes: [0],
+      })
+    ).rejects.toThrow()
   })
 
   it('expect vp request with single requested credential to succeed', async () => {
@@ -447,6 +505,10 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(idTokenPayload.nonce).toMatch(challenge)
 
     expect(submission).toBeDefined()
+    expect(submission?.presentationDefinitions).toHaveLength(1)
+    expect(submission?.submissionData.definition_id).toBe('OpenBadgeCredential')
+    expect(submission?.presentations).toHaveLength(1)
+    expect(submission?.presentations[0].vcs[0].type).toContain('OpenBadgeCredential')
   })
 
   // it('edited walt vp request', async () => {
