@@ -279,6 +279,45 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(result.selectResults.requirements.length).toBe(1)
   })
 
+  it('expect submitting a wrong submission to fail', async () => {
+    await holder.w3cCredentials.storeCredential({
+      credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
+    })
+
+    await holder.w3cCredentials.storeCredential({
+      credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltPortalOpenBadgeJwt),
+    })
+
+    const createProofRequestOptions: CreateProofRequestOptions = {
+      verificationMethod: verifierVerificationMethod,
+      redirectUri: 'https://acme.com/hello',
+      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      presentationDefinition: openBadgePresentationDefinition,
+    }
+
+    const { proofRequest: openBadge } = await verifier.modules.openId4VcVerifier.createProofRequest(
+      createProofRequestOptions
+    )
+    const { proofRequest: university } = await verifier.modules.openId4VcVerifier.createProofRequest({
+      ...createProofRequestOptions,
+      presentationDefinition: universityDegreePresentationDefinition,
+    })
+
+    //////////////////////////// OP (validate and parse the request) ////////////////////////////
+
+    const resolvedOpenBadge = await holder.modules.openId4VcHolder.resolveProofRequest(openBadge)
+    const resolvedUniversityDegree = await holder.modules.openId4VcHolder.resolveProofRequest(university)
+    if (resolvedOpenBadge.proofType !== 'presentation') throw new Error('expected prooftype presentation')
+    if (resolvedUniversityDegree.proofType !== 'presentation') throw new Error('expected prooftype presentation')
+
+    await expect(
+      holder.modules.openId4VcHolder.acceptPresentationRequest(resolvedOpenBadge.presentationRequest, {
+        submission: resolvedUniversityDegree.selectResults,
+        submissionEntryIndexes: [0],
+      })
+    ).rejects.toThrow()
+  })
+
   it('resolving vp request with multiple credentials in wallet only allows selecting the correct ones', async () => {
     await holder.w3cCredentials.storeCredential({
       credential: W3cJwtVerifiableCredential.fromSerializedJwt(waltUniversityDegreeJwt),
