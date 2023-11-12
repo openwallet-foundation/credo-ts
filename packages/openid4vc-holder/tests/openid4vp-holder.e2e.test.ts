@@ -508,7 +508,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(submission?.presentationDefinitions).toHaveLength(1)
     expect(submission?.submissionData.definition_id).toBe('OpenBadgeCredential')
     expect(submission?.presentations).toHaveLength(1)
-    expect(submission?.presentations[0].vcs[0].type).toContain('OpenBadgeCredential')
+    expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
   })
 
   // it('edited walt vp request', async () => {

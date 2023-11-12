@@ -23,6 +23,8 @@ export type ProofSubmissionResponse = {
   submittedResponse: AuthorizationResponsePayload
 }
 
+export type VpFormat = 'jwt_vp' | 'ldp_vp'
+
 /**
  * The credential formats that are supported by the openid4vc holder
  */

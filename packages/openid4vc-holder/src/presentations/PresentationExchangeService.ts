@@ -1,4 +1,5 @@
 import type { InputDescriptorToCredentials, PresentationSubmission } from './selection/types'
+import type { VpFormat, VpFormat } from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
   Query,
@@ -16,7 +17,9 @@ import type {
   PresentationDefinitionV1,
   PresentationSubmission as PexPresentationSubmission,
   Descriptor,
+  InputDescriptorV2,
 } from '@sphereon/pex-models'
+import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
 
 import {
   AriesFrameworkError,
@@ -127,6 +130,40 @@ export class PresentationExchangeService {
     subjectsToInputDescriptors[subjectId] = inputDescriptorsToCredentials
   }
 
+  private getPresentationFormat(
+    presentationDefinition: IPresentationDefinition,
+    credentials: OriginalVerifiableCredential[]
+  ): VpFormat {
+    const allCredentialsAreJwtVc = credentials?.every((c) => typeof c === 'string')
+    const allCredentialsAreLdpVc = credentials?.every((c) => typeof c !== 'string')
+
+    const inputDescriptorsNotSupportingJwtVc = (presentationDefinition.input_descriptors as InputDescriptorV2[]).filter(
+      (d) => d.format && d.format.jwt_vc === undefined
+    )
+
+    const inputDescriptorsNotSupportingLdpVc = (presentationDefinition.input_descriptors as InputDescriptorV2[]).filter(
+      (d) => d.format && d.format.ldp_vc === undefined
+    )
+
+    if (
+      allCredentialsAreJwtVc &&
+      (presentationDefinition.format === undefined || presentationDefinition.format.jwt_vc) &&
+      inputDescriptorsNotSupportingJwtVc.length === 0
+    ) {
+      return 'jwt_vp'
+    } else if (
+      allCredentialsAreLdpVc &&
+      (presentationDefinition.format === undefined || presentationDefinition.format.ldp_vc) &&
+      inputDescriptorsNotSupportingLdpVc.length === 0
+    ) {
+      return 'ldp_vp'
+    } else {
+      throw new AriesFrameworkError(
+        'No suitable presentation format found for the given presentation definition, and credentials'
+      )
+    }
+  }
+
   public async createPresentation(
     agentContext: AgentContext,
     options: {
@@ -152,7 +189,10 @@ export class PresentationExchangeService {
       })
     })
 
-    const verifiablePresentationResults: VerifiablePresentationResult[] = []
+    const verifiablePresentationResultsWithFormat: {
+      verifiablePresentationResult: VerifiablePresentationResult
+      format: VpFormat
+    }[] = []
 
     const subjectToInputDescriptors = Object.entries(proofStructure)
     for (const [subjectId, subjectInputDescriptorsToCredentials] of subjectToInputDescriptors) {
@@ -184,12 +224,14 @@ export class PresentationExchangeService {
         submission_requirements: undefined,
       }
 
-      // TODO: Q1: is holder always subject id, what if there are multiple subjects???
-      // TODO: Q2: What about proofType, proofPurpose verification method for multiple subjects?
+      const format = this.getPresentationFormat(presentationDefinitionForSubject, credentialsForSubject)
+
+      // FIXME: Q1: is holder always subject id, what if there are multiple subjects???
+      // FIXME: Q2: What about proofType, proofPurpose verification method for multiple subjects?
       const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
         presentationDefinitionForSubject,
         credentialsForSubject,
-        this.getPresentationSignCallback(agentContext, verificationMethod),
+        this.getPresentationSignCallback(agentContext, verificationMethod, format),
         {
           holderDID: subjectId,
           proofOptions: { challenge, domain, nonce },
@@ -197,34 +239,36 @@ export class PresentationExchangeService {
         }
       )
 
-      verifiablePresentationResults.push(verifiablePresentationResult)
+      verifiablePresentationResultsWithFormat.push({ verifiablePresentationResult, format })
     }
 
-    if (subjectToInputDescriptors.length !== verifiablePresentationResults.length) {
-      if (!verifiablePresentationResults[0]) throw new AriesFrameworkError('No verifiable presentations created.')
+    if (!verifiablePresentationResultsWithFormat[0]) {
+      throw new AriesFrameworkError('No verifiable presentations created.')
+    }
+
+    if (subjectToInputDescriptors.length !== verifiablePresentationResultsWithFormat.length) {
       throw new AriesFrameworkError('Invalid amount of verifiable presentations created.')
     }
 
     const presentationSubmission: PexPresentationSubmission = {
-      id: verifiablePresentationResults[0].presentationSubmission.id,
-      definition_id: verifiablePresentationResults[0].presentationSubmission.definition_id,
+      id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
+      definition_id:
+        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.definition_id,
       descriptor_map: [],
     }
 
-    for (const vp of verifiablePresentationResults) {
+    for (const [index, vp] of verifiablePresentationResultsWithFormat.entries()) {
       presentationSubmission.descriptor_map.push(
-        ...vp.presentationSubmission.descriptor_map.map((descriptor): Descriptor => {
-          const index = verifiablePresentationResults.indexOf(vp)
-          const prefix = verifiablePresentationResults.length > 1 ? `$[${index}]` : '$'
-          // TODO: use enum instead opf jwt_vp | jwt_vc_json
+        ...vp.verifiablePresentationResult.presentationSubmission.descriptor_map.map((descriptor): Descriptor => {
+          const prefix = verifiablePresentationResultsWithFormat.length > 1 ? `$[${index}]` : '$'
           return {
-            format: 'jwt_vp',
+            format: vp.format,
             path: prefix,
             id: descriptor.id,
             path_nested: {
               ...descriptor,
               path: descriptor.path.replace('$.', `${prefix}.vp.`),
-              format: 'jwt_vc_json',
+              format: 'jwt_vc_json', // TODO: why jwt_vc_json
             },
           }
         })
@@ -232,11 +276,12 @@ export class PresentationExchangeService {
     }
 
     return {
-      verifiablePresentations: verifiablePresentationResults.map((r) =>
-        getW3cVerifiablePresentationInstance(r.verifiablePresentation)
+      verifiablePresentations: verifiablePresentationResultsWithFormat.map((r) =>
+        getW3cVerifiablePresentationInstance(r.verifiablePresentationResult.verifiablePresentation)
       ),
       presentationSubmission,
-      presentationSubmissionLocation: verifiablePresentationResults[0].presentationSubmissionLocation,
+      presentationSubmissionLocation:
+        verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
     }
   }
 
@@ -265,22 +310,61 @@ export class PresentationExchangeService {
     return alg
   }
 
+  private getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+    algorithmsSatisfyingDefinition: string[],
+    inputDescriptorAlgorithms: string[][]
+  ) {
+    const allDescriptorAlgorithms = inputDescriptorAlgorithms.flat()
+    const algorithmsSatisfyingDescriptors = allDescriptorAlgorithms.filter((alg) =>
+      inputDescriptorAlgorithms.every((descriptorAlgorithmSet) => descriptorAlgorithmSet.includes(alg))
+    )
+
+    const algorithmsSatisfyingPdAndDescriptorRestrictions = algorithmsSatisfyingDefinition.filter((alg) =>
+      algorithmsSatisfyingDescriptors.includes(alg)
+    )
+
+    if (
+      algorithmsSatisfyingDefinition.length > 0 &&
+      algorithmsSatisfyingDescriptors.length > 0 &&
+      algorithmsSatisfyingPdAndDescriptorRestrictions.length === 0
+    ) {
+      throw new AriesFrameworkError(
+        `No signature algorithm found for satisfying restrictions of the presentation definition and input descriptors.`
+      )
+    }
+
+    if (allDescriptorAlgorithms.length > 0 && algorithmsSatisfyingDescriptors.length === 0) {
+      throw new AriesFrameworkError(
+        `No signature algorithm found for satisfying restrictions of the input descriptors.`
+      )
+    }
+
+    let suitableAlgorithms: string[] | undefined = undefined
+    if (algorithmsSatisfyingPdAndDescriptorRestrictions.length > 0) {
+      suitableAlgorithms = algorithmsSatisfyingPdAndDescriptorRestrictions
+    } else if (algorithmsSatisfyingDescriptors.length > 0) {
+      suitableAlgorithms = algorithmsSatisfyingDescriptors
+    } else if (algorithmsSatisfyingDefinition.length > 0) {
+      suitableAlgorithms = algorithmsSatisfyingDefinition
+    }
+
+    return suitableAlgorithms
+  }
+
   private getSigningAlgorithmForJwtVc(
     presentationDefinition: IPresentationDefinition,
     verificationMethod: VerificationMethod
   ) {
-    const suitableAlgorithms = presentationDefinition.format?.jwt_vc?.alg
-    // const inputDescriptors: InputDescriptorV2[] = presentationDefinition.input_descriptors as InputDescriptorV2[]
+    const algorithmsSatisfyingDefinition = presentationDefinition.format?.jwt_vc?.alg || []
 
-    // TODO: continue
+    const inputDescriptorAlgorithms: string[][] = presentationDefinition.input_descriptors
+      .map((descriptor) => (descriptor as InputDescriptorV2).format?.jwt_vc?.alg || [])
+      .filter((alg) => alg.length > 0)
 
-    // const inputDescriptorAlgorithms: string[][] = inputDescriptors
-    //   .map((inputDescriptor) => inputDescriptor.format?.jwt_vc?.alg)
-    //   .filter((alg): alg is string[] => alg !== undefined && alg.length === 0)
-
-    // const allInputDescriptorAlgorithms = inputDescriptorAlgorithms.flat()
-
-    // const isAlgInEveryInputDescriptor = inputDescriptorAlgorithms.every((alg, _, arr) => arr.includes(alg))
+    const suitableAlgorithms = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      algorithmsSatisfyingDefinition,
+      inputDescriptorAlgorithms
+    )
 
     return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
   }
@@ -289,17 +373,27 @@ export class PresentationExchangeService {
     presentationDefinition: IPresentationDefinition,
     verificationMethod: VerificationMethod
   ) {
-    const suitableSignaturesSuites = presentationDefinition.format?.ldp_vc?.proof_type
+    const algorithmsSatisfyingDefinition = presentationDefinition.format?.ldp_vc?.proof_type || []
+
+    const inputDescriptorAlgorithms: string[][] = presentationDefinition.input_descriptors
+      .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vc?.proof_type || [])
+      .filter((alg) => alg.length > 0)
+
+    const suitableAlgorithms = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+      algorithmsSatisfyingDefinition,
+      inputDescriptorAlgorithms
+    )
+
     // TODO: find out which signature suites are supported by the verification method
     // TODO: check if a supported signature suite is in the list of suitable signature suites
-    // TODO: remake this after
-    if (!suitableSignaturesSuites || suitableSignaturesSuites.length === 0)
-      throw new AriesFrameworkError(`No suitable signature suite found for presentation definition.`)
-
-    return suitableSignaturesSuites[0]
+    return suitableAlgorithms ? suitableAlgorithms[0] : 'todo'
   }
 
-  public getPresentationSignCallback(agentContext: AgentContext, verificationMethod: VerificationMethod) {
+  public getPresentationSignCallback(
+    agentContext: AgentContext,
+    verificationMethod: VerificationMethod,
+    vpFormat: VpFormat
+  ) {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
     return async (callBackParams: PresentationSignCallBackParams) => {
@@ -314,14 +408,11 @@ export class PresentationExchangeService {
         )
       }
 
-      const allJwt = presentationJson.verifiableCredential?.every((c) => typeof c === 'string')
-      const allJsonLd = presentationJson.verifiableCredential?.every((c) => typeof c !== 'string')
-
       // Clients MUST ignore any presentation_submission element included inside a Verifiable Presentation.
       const presentationToSign = { ...presentationJson, presentation_submission: undefined }
 
       let signedPresentation: W3cVerifiablePresentation<ClaimFormat.JwtVp | ClaimFormat.LdpVp>
-      if (allJwt) {
+      if (vpFormat === 'jwt_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
           verificationMethod: verificationMethod.id,
@@ -330,11 +421,11 @@ export class PresentationExchangeService {
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
-      } else if (allJsonLd) {
+      } else if (vpFormat === 'ldp_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
           proofType: this.getSigningAlgorithmForLdpVc(presentationDefinition, verificationMethod),
-          proofPurpose: 'assertionMethod', // TODO: authentication
+          proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
