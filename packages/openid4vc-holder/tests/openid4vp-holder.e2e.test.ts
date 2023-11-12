@@ -276,7 +276,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(verifiedProofPresponse.idTokenPayload.nonce).toMatch(challenge)
   })
 
-  it('resolving vp request with no credentials errors', async () => {
+  it('resolving vp request with no credentials', async () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
@@ -287,7 +287,11 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const { proofRequest } = await verifier.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    await expect(holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)).rejects.toThrow()
+    const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
+
+    expect(result.selectResults.areRequirementsSatisfied).toBeFalsy()
+    expect(result.selectResults.requirements.length).toBe(1)
   })
 
   it('resolving vp request with wrong credentials errors', async () => {
@@ -304,8 +308,12 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const { proofRequest } = await verifier.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
 
+    const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
+    if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
+
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    await expect(holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)).rejects.toThrow()
+    expect(result.selectResults.areRequirementsSatisfied).toBeFalsy()
+    expect(result.selectResults.requirements.length).toBe(1)
   })
 
   it('resolving vp request with multiple credentials in wallet only allows selecting the correct ones', async () => {

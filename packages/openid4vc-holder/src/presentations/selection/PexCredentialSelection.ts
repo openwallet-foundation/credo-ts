@@ -21,33 +21,15 @@ export async function selectCredentialsForRequest(
     throw new AriesFrameworkError('Presentation Definition is required to select credentials for submission.')
   }
 
-  if (!encodedCredentials || encodedCredentials.length === 0) {
-    throw new AriesFrameworkError('No credentials to select from, for the presentation submission.')
-  }
-
   const pex = new PEX()
 
-  // FIXME: there is a function for this in the PEX library,
-  // but it is not strictly compatible atm
+  // FIXME: there is a function for this in the VP library, but it is not usable atm
   const selectResultsRaw = pex.selectFrom(presentationDefinition, encodedCredentials, {
     holderDIDs,
     // limitDisclosureSignatureSuites: [],
     // restrictToDIDMethods,
     // restrictToFormats
   })
-
-  if (selectResultsRaw.areRequiredCredentialsPresent === 'error') {
-    if (selectResultsRaw.errors && selectResultsRaw.errors.length > 0) {
-      const errorList = selectResultsRaw.errors
-        .map((e) => `tag '${e.tag}', status '${e.status}', message, '${e.message}'`)
-        .join('\n')
-      throw new AriesFrameworkError('Error while selecting credentials for presentation submission.\n' + errorList)
-    }
-
-    throw new AriesFrameworkError(
-      'Error while selecting credentials for presentation submission. Not all required credentials are present.'
-    )
-  }
 
   const selectResults = {
     ...selectResultsRaw,
@@ -85,6 +67,9 @@ export async function selectCredentialsForRequest(
     throw new AriesFrameworkError(
       'Presentation Definition does not require any credentials. Optional credentials are not included in the presentation submission.'
     )
+  }
+  if (selectResultsRaw.areRequiredCredentialsPresent === 'error') {
+    return presentationSubmission
   }
 
   return {
