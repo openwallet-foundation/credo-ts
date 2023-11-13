@@ -1,5 +1,4 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
-import type { Response } from 'node-fetch'
 
 import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
@@ -90,7 +89,7 @@ export const parseInvitationUrl = (invitationUrl: string): OutOfBandInvitation =
 export const oobInvitationFromShortUrl = async (response: Response): Promise<OutOfBandInvitation> => {
   if (response) {
     if (response.headers.get('Content-Type')?.startsWith('application/json') && response.ok) {
-      const invitationJson = await response.json()
+      const invitationJson = (await response.json()) as Record<string, unknown>
       return parseInvitationJson(invitationJson)
     } else if (response['url']) {
       // The following if else is for here for trinsic shorten urls
