@@ -32,8 +32,9 @@ import {
   W3cCredentialService,
   W3cPresentation,
   W3cCredentialRepository,
+  SignatureSuiteRegistry,
 } from '@aries-framework/core'
-import { PEVersion, PEX } from '@sphereon/pex'
+import { PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 
 import { selectCredentialsForRequest } from './selection/PexCredentialSelection'
 import {
@@ -220,7 +221,6 @@ export class PresentationExchangeService {
         input_descriptors: inputDescriptorsForSubject,
 
         // We remove the submission requirements, as it will otherwise fail to create the VP
-        // TODO: Will this cause issue for creating the credential? Need to run tests
         submission_requirements: undefined,
       }
 
@@ -236,6 +236,7 @@ export class PresentationExchangeService {
           holderDID: subjectId,
           proofOptions: { challenge, domain, nonce },
           signatureOptions: { verificationMethod: verificationMethod?.id },
+          presentationSubmissionLocation: PresentationSubmissionLocation.EXTERNAL,
         }
       )
 
@@ -246,10 +247,15 @@ export class PresentationExchangeService {
       throw new AriesFrameworkError('No verifiable presentations created.')
     }
 
+    if (!verifiablePresentationResultsWithFormat[0]) {
+      throw new AriesFrameworkError('No verifiable presentations created.')
+    }
+
     if (subjectToInputDescriptors.length !== verifiablePresentationResultsWithFormat.length) {
       throw new AriesFrameworkError('Invalid amount of verifiable presentations created.')
     }
 
+    verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission
     const presentationSubmission: PexPresentationSubmission = {
       id: verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmission.id,
       definition_id:
@@ -257,22 +263,9 @@ export class PresentationExchangeService {
       descriptor_map: [],
     }
 
-    for (const [index, vp] of verifiablePresentationResultsWithFormat.entries()) {
-      presentationSubmission.descriptor_map.push(
-        ...vp.verifiablePresentationResult.presentationSubmission.descriptor_map.map((descriptor): Descriptor => {
-          const prefix = verifiablePresentationResultsWithFormat.length > 1 ? `$[${index}]` : '$'
-          return {
-            format: vp.format,
-            path: prefix,
-            id: descriptor.id,
-            path_nested: {
-              ...descriptor,
-              path: descriptor.path.replace('$.', `${prefix}.vp.`),
-              format: 'jwt_vc_json', // TODO: why jwt_vc_json
-            },
-          }
-        })
-      )
+    for (const vpf of verifiablePresentationResultsWithFormat) {
+      const { verifiablePresentationResult } = vpf
+      presentationSubmission.descriptor_map.push(...verifiablePresentationResult.presentationSubmission.descriptor_map)
     }
 
     return {
@@ -369,7 +362,9 @@ export class PresentationExchangeService {
     return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
   }
 
-  private getSigningAlgorithmForLdpVc(
+  // TODO: is this a proper implementation?
+  private getProofTypeForLdpVc(
+    agentContext: AgentContext,
     presentationDefinition: IPresentationDefinition,
     verificationMethod: VerificationMethod
   ) {
@@ -379,14 +374,37 @@ export class PresentationExchangeService {
       .map((descriptor) => (descriptor as InputDescriptorV2).format?.ldp_vc?.proof_type || [])
       .filter((alg) => alg.length > 0)
 
-    const suitableAlgorithms = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
+    const suitableSignatureSuites = this.getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
       algorithmsSatisfyingDefinition,
       inputDescriptorAlgorithms
     )
 
-    // TODO: find out which signature suites are supported by the verification method
-    // TODO: check if a supported signature suite is in the list of suitable signature suites
-    return suitableAlgorithms ? suitableAlgorithms[0] : 'todo'
+    // For each of the supported algs, find the key types, then find the proof types
+    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+
+    const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
+    if (!supportedSignatureSuite) {
+      throw new AriesFrameworkError(
+        `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'.`
+      )
+    }
+
+    if (suitableSignatureSuites) {
+      if (suitableSignatureSuites.includes(supportedSignatureSuite.proofType) === false) {
+        throw new AriesFrameworkError(
+          [
+            'No possible signature suite found for the given verification method.',
+            `Verification method type: ${verificationMethod.type}`,
+            `SupportedSignatureSuite '${supportedSignatureSuite.proofType}'`,
+            `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
+          ].join('\n')
+        )
+      }
+
+      return supportedSignatureSuite.proofType
+    }
+
+    return supportedSignatureSuite.proofType
   }
 
   public getPresentationSignCallback(
@@ -415,16 +433,16 @@ export class PresentationExchangeService {
       if (vpFormat === 'jwt_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.JwtVp,
+          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
-          alg: this.getSigningAlgorithmForJwtVc(presentationDefinition, verificationMethod),
           challenge: challenge ?? nonce ?? (await agentContext.wallet.generateNonce()),
           domain,
         })
       } else if (vpFormat === 'ldp_vp') {
         signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
           format: ClaimFormat.LdpVp,
-          proofType: this.getSigningAlgorithmForLdpVc(presentationDefinition, verificationMethod),
+          proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
           proofPurpose: 'authentication',
           verificationMethod: verificationMethod.id,
           presentation: JsonTransformer.fromJSON(presentationToSign, W3cPresentation),
