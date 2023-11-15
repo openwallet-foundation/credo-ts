@@ -39,8 +39,12 @@ import {
 } from '@sphereon/did-auth-siop'
 
 import { staticOpOpenIdConfig, staticOpSiopConfig } from './OpenId4VcVerifierServiceOptions'
-import { getSupportedDidMethods, getSuppliedSignatureFromVerificationMethod, getResolver } from './shared'
-import { getSupportedJwaSignatureAlgorithms } from './utils/signatureAlgorithms'
+import {
+  getSupportedDidMethods,
+  getSuppliedSignatureFromVerificationMethod,
+  getResolver,
+  getSupportedJwaSignatureAlgorithms,
+} from './shared'
 
 /**
  * @internal
