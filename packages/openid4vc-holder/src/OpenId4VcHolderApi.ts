@@ -35,19 +35,21 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Resolves the authentication request given as URI or JWT to a unified @class VerificationRequest,
-   * then verifies the validity of the request and return the @class VerifiedAuthorizationRequest.
+   * Resolves the authentication request given as URI or JWT to a unified format, and
+   * verifies the validity of the request.
    * The resolved request can be accepted with either @see acceptAuthenticationRequest if it is a
    * authentication request or with @see acceptPresentationRequest if it is a proofRequest.
+   *
    * @param requestJwtOrUri JWT or an openid:// URI
-   * @returns the resolved and verified Authorization Request
+   * @returns the resolved and verified authentication request or presentation request alongside the data required to fulfill the presentation request.
    */
-  public async resolveProofRequest(requestOrJwt: string) {
-    return await this.openId4VpHolderService.resolveProofRequest(this.agentContext, requestOrJwt)
+  public async resolveProofRequest(requestJwtOrUri: string) {
+    return await this.openId4VpHolderService.resolveProofRequest(this.agentContext, requestJwtOrUri)
   }
 
   /**
    * Accepts the authentication request after it has been resolved and verified with @see resolveProofRequest.
+   *
    * @param authenticationRequest - The verified authorization request object.
    * @param verificationMethod - The method used for creating the authentication proof.
    * @returns @see ProofSubmissionResponse containing the status of the submission.
@@ -65,8 +67,10 @@ export class OpenId4VcHolderApi {
 
   /**
    * Accepts the proof request with a presentation after it has been resolved and verified @see resolveProofRequest.
+   *
    * @param presentationRequest - The verified authorization request object containing the presentation definition.
-   * @param presentation - An object containing a presentation submission that fulfills the presentation definition.
+   * @param presentation.submission - The presentation submission object obtained from @see resolveProofRequest
+   * @param presentation.submissionEntryIndexes - The indexes of the credentials in the presentation submission that should be send to the verifier.
    * @returns @see ProofSubmissionResponse containing the status of the submission.
    */
   public async acceptPresentationRequest(
@@ -85,7 +89,8 @@ export class OpenId4VcHolderApi {
 
   /**
    * Resolves a credential offer given as payload, credential offer URL, or issuance initiation URL,
-   * into a unified format.`
+   * into a unified format.
+   *
    * @param credentialOffer the credential offer to resolve
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and credentials that can be requested.
    */

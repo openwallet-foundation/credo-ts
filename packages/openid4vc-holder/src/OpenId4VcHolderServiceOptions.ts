@@ -14,7 +14,7 @@ export type ResolvedProofRequest =
   | {
       proofType: 'presentation'
       presentationRequest: PresentationRequest
-      selectResults: PresentationSubmission
+      presentationSubmission: PresentationSubmission
     }
 
 export type ProofSubmissionResponse = {

@@ -252,8 +252,8 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    expect(result.selectResults.areRequirementsSatisfied).toBeFalsy()
-    expect(result.selectResults.requirements.length).toBe(1)
+    expect(result.presentationSubmission.areRequirementsSatisfied).toBeFalsy()
+    expect(result.presentationSubmission.requirements.length).toBe(1)
   })
 
   it('resolving vp request with wrong credentials errors', async () => {
@@ -274,8 +274,8 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
-    expect(result.selectResults.areRequirementsSatisfied).toBeFalsy()
-    expect(result.selectResults.requirements.length).toBe(1)
+    expect(result.presentationSubmission.areRequirementsSatisfied).toBeFalsy()
+    expect(result.presentationSubmission.requirements.length).toBe(1)
   })
 
   it('expect submitting a wrong submission to fail', async () => {
@@ -311,7 +311,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     await expect(
       holder.modules.openId4VcHolder.acceptPresentationRequest(resolvedOpenBadge.presentationRequest, {
-        submission: resolvedUniversityDegree.selectResults,
+        submission: resolvedUniversityDegree.presentationSubmission,
         submissionEntryIndexes: [0],
       })
     ).rejects.toThrow()
@@ -340,12 +340,12 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    const { presentationRequest, selectResults } = result
-    expect(selectResults.areRequirementsSatisfied).toBeTruthy()
-    expect(selectResults.requirements.length).toBe(1)
-    expect(selectResults.requirements[0].needsCount).toBe(1)
-    expect(selectResults.requirements[0].submissionEntry.length).toBe(1)
-    expect(selectResults.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
+    const { presentationRequest, presentationSubmission } = result
+    expect(presentationSubmission.areRequirementsSatisfied).toBeTruthy()
+    expect(presentationSubmission.requirements.length).toBe(1)
+    expect(presentationSubmission.requirements[0].needsCount).toBe(1)
+    expect(presentationSubmission.requirements[0].submissionEntry.length).toBe(1)
+    expect(presentationSubmission.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
 
     expect(presentationRequest.presentationDefinitions[0].definition).toMatchObject(openBadgePresentationDefinition)
   })
@@ -378,20 +378,20 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    const { selectResults } = result
-    expect(selectResults.areRequirementsSatisfied).toBeTruthy()
-    expect(selectResults.requirements.length).toBe(2)
-    expect(selectResults.requirements[0].needsCount).toBe(1)
-    expect(selectResults.requirements[0].submissionEntry.length).toBe(1)
-    expect(selectResults.requirements[1].needsCount).toBe(1)
-    expect(selectResults.requirements[1].submissionEntry.length).toBe(1)
-    expect(selectResults.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
-    expect(selectResults.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
+    const { presentationSubmission } = result
+    expect(presentationSubmission.areRequirementsSatisfied).toBeTruthy()
+    expect(presentationSubmission.requirements.length).toBe(2)
+    expect(presentationSubmission.requirements[0].needsCount).toBe(1)
+    expect(presentationSubmission.requirements[0].submissionEntry.length).toBe(1)
+    expect(presentationSubmission.requirements[1].needsCount).toBe(1)
+    expect(presentationSubmission.requirements[1].submissionEntry.length).toBe(1)
+    expect(presentationSubmission.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
+    expect(presentationSubmission.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
 
     const { submittedResponse } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
       result.presentationRequest,
       {
-        submission: result.selectResults,
+        submission: result.presentationSubmission,
         submissionEntryIndexes: [0, 0],
       }
     )
@@ -442,7 +442,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     await expect(
       holder.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
-        submission: result.selectResults,
+        submission: result.presentationSubmission,
         submissionEntryIndexes: [0],
       })
     ).rejects.toThrow()
@@ -471,9 +471,9 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     //////////////////////////// User (decide wheather or not to accept the request) ////////////////////////////
     // Select the appropriate credentials
 
-    result.selectResults.requirements[0]
+    result.presentationSubmission.requirements[0]
 
-    if (!result.selectResults.areRequirementsSatisfied) {
+    if (!result.presentationSubmission.areRequirementsSatisfied) {
       throw new Error('Requirements are not satisfied.')
     }
 
@@ -481,7 +481,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
       result.presentationRequest,
       {
-        submission: result.selectResults,
+        submission: result.presentationSubmission,
         submissionEntryIndexes: [0],
       }
     )

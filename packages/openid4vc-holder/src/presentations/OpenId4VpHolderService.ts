@@ -134,12 +134,12 @@ export class OpenId4VpHolderService {
 
     const presentationDefinition = verifiedAuthorizationRequest.presentationDefinitions[0].definition
 
-    const selectResults = await this.presentationExchangeService.selectCredentialsForRequest(
+    const presentationSubmission = await this.presentationExchangeService.selectCredentialsForRequest(
       agentContext,
       presentationDefinition
     )
 
-    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, selectResults }
+    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, presentationSubmission }
   }
 
   /**
