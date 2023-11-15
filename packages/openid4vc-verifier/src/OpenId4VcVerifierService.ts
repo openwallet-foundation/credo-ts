@@ -65,11 +65,11 @@ export class OpenId4VcVerifierService {
     proofRequestMetadata?: ProofRequestMetadata
   ) {
     const {
-      issuer,
+      holderIdentifier,
       redirectUri,
       presentationDefinition,
       verificationMethod,
-      holderClientMetadata: _holderClientMetadata,
+      holderMetadata: _holderClientMetadata,
     } = createProofRequestOptions
 
     const isVpRequest = presentationDefinition !== undefined
@@ -78,11 +78,11 @@ export class OpenId4VcVerifierService {
     if (_holderClientMetadata) {
       // use the provided client metadata
       holderClientMetadata = _holderClientMetadata
-    } else if (issuer) {
+    } else if (holderIdentifier) {
       // Use OpenId Discovery to get the client metadata
-      let reference_uri = issuer
-      if (!issuer.endsWith('/.well-known/openid-configuration')) {
-        reference_uri = issuer + '/.well-known/openid-configuration'
+      let reference_uri = holderIdentifier
+      if (!holderIdentifier.endsWith('/.well-known/openid-configuration')) {
+        reference_uri = holderIdentifier + '/.well-known/openid-configuration'
       }
       holderClientMetadata = { reference_uri, passBy: PassBy.REFERENCE, targets: PropertyTarget.REQUEST_OBJECT }
     } else if (isVpRequest) {
@@ -179,7 +179,7 @@ export class OpenId4VcVerifierService {
     const [noncePart1, noncePart2, state, correlationId] = await generateRandomValues(agentContext, 4)
     const challenge = noncePart1 + noncePart2
 
-    const relyingParty = await this.getRelyingParty(agentContext, { ...options })
+    const relyingParty = await this.getRelyingParty(agentContext, options)
 
     const authorizationRequest = await relyingParty.createAuthorizationRequest({
       correlationId,
@@ -248,8 +248,8 @@ export class OpenId4VcVerifierService {
   ): PresentationVerificationCallback {
     const { challenge } = options
     return async (encodedPresentation, presentationSubmission) => {
-      this.logger.debug(`Presentation response '${encodedPresentation}'`)
-      this.logger.debug(`Presentation submission `, presentationSubmission)
+      this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
+      this.logger.debug(`Presentation submission`, presentationSubmission)
 
       if (!encodedPresentation) {
         throw new AriesFrameworkError('Did not receive a presentation for verification')
@@ -257,7 +257,6 @@ export class OpenId4VcVerifierService {
 
       let verificationResult: W3cVerifyPresentationResult
       if (typeof encodedPresentation === 'string') {
-        // the presentation is in jwt format (automatically converted to W3cJwtVerifiablePresentation)
         const presentation = encodedPresentation
         verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation: presentation,

@@ -9,13 +9,13 @@ import type { IPresentationDefinition } from '@sphereon/pex'
 
 import { ResponseType, PassBy, Scope, SigningAlgo, SubjectType } from '@sphereon/did-auth-siop'
 
-export type HolderClientMetadata = ClientMetadataOpts & { authorization_endpoint?: string }
+export type HolderMetadata = ClientMetadataOpts & { authorization_endpoint?: string }
 
 export interface CreateProofRequestOptions {
   verificationMethod: VerificationMethod
   redirectUri: string
-  holderClientMetadata?: HolderClientMetadata
-  issuer?: string
+  holderMetadata?: HolderMetadata
+  holderIdentifier?: string
   presentationDefinition?: IPresentationDefinition
 }
 
@@ -44,7 +44,7 @@ export interface VerifiedProofResponse {
 
 export type ProofPayload = AuthorizationResponsePayload
 
-export const staticOpSiopConfig: HolderClientMetadata = {
+export const staticOpSiopConfig: HolderMetadata = {
   authorization_endpoint: 'siopv2:',
   subject_syntax_types_supported: ['urn:ietf:params:oauth:jwk-thumbprint'],
   responseTypesSupported: [ResponseType.ID_TOKEN],
@@ -55,7 +55,7 @@ export const staticOpSiopConfig: HolderClientMetadata = {
   passBy: PassBy.VALUE,
 }
 
-export const staticOpOpenIdConfig: HolderClientMetadata = {
+export const staticOpOpenIdConfig: HolderMetadata = {
   authorization_endpoint: 'openid:',
   subject_syntax_types_supported: ['urn:ietf:params:oauth:jwk-thumbprint'],
   responseTypesSupported: [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN],

@@ -4,7 +4,7 @@ export * from './OpenId4VcVerifierService'
 
 // Contains internal types, so we don't export everything
 export {
-  HolderClientMetadata,
+  HolderMetadata as HolderClientMetadata,
   staticOpOpenIdConfig,
   staticOpSiopConfig,
   CreateProofRequestOptions,

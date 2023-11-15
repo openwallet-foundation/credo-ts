@@ -147,7 +147,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
     }
 
     //////////////////////////// RP (create request) ////////////////////////////
@@ -204,7 +204,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
       // TODO: if provided this way client metadata is not resolved for the verification method
-      issuer: 'https://helloworld.com',
+      holderIdentifier: 'https://helloworld.com',
     }
 
     //////////////////////////// RP (create request) ////////////////////////////
@@ -242,7 +242,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
@@ -264,7 +264,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
@@ -290,7 +290,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
@@ -329,7 +329,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
@@ -362,7 +362,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
         universityDegreePresentationDefinition,
@@ -426,7 +426,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
         universityDegreePresentationDefinition,
@@ -456,7 +456,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
       redirectUri: 'https://acme.com/hello',
-      holderClientMetadata: staticOpOpenIdConfigEdDSA,
+      holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
 
