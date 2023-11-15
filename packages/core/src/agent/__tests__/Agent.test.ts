@@ -13,7 +13,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { MessagePickupApi } from '../../modules/message-pìckup'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pìckup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
@@ -24,7 +24,6 @@ import {
   MediationRecipientApi,
   MediationRecipientModule,
 } from '../../modules/routing'
-import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 import { Dispatcher } from '../Dispatcher'
@@ -179,7 +178,9 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
-      expect(container.resolve(InjectionSymbols.MessageRepository)).toBeInstanceOf(InMemoryMessageRepository)
+      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBeInstanceOf(
+        InMemoryMessagePickupRepository
+      )
 
       // Agent
       expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
@@ -217,8 +218,8 @@ describe('Agent', () => {
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))
-      expect(container.resolve(InjectionSymbols.MessageRepository)).toBe(
-        container.resolve(InjectionSymbols.MessageRepository)
+      expect(container.resolve(InjectionSymbols.MessagePickupRepository)).toBe(
+        container.resolve(InjectionSymbols.MessagePickupRepository)
       )
       expect(container.resolve(InjectionSymbols.StorageService)).toBe(
         container.resolve(InjectionSymbols.StorageService)

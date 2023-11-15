@@ -3,11 +3,19 @@ import type { AgentMessage } from '../../../../agent/AgentMessage'
 import type { FeatureRegistry } from '../../../../agent/FeatureRegistry'
 import type { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import type { DependencyManager } from '../../../../plugins'
-import type { MessageRepository } from '../../../../storage/MessageRepository'
-import type { PickupMessagesProtocolOptions, PickupMessagesProtocolReturnType } from '../MessagePickupProtocolOptions'
+import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
+import type {
+  DeliverMessagesProtocolOptions,
+  DeliverMessagesProtocolReturnType,
+  PickupMessagesProtocolOptions,
+  PickupMessagesProtocolReturnType,
+  SetLiveDeliveryModeProtocolOptions,
+  SetLiveDeliveryModeProtocolReturnType,
+} from '../MessagePickupProtocolOptions'
 
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
+import { AriesFrameworkError } from '../../../../error'
 import { injectable } from '../../../../plugins'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
@@ -17,10 +25,6 @@ import { V1BatchMessage, BatchMessageMessage, V1BatchPickupMessage } from './mes
 
 @injectable()
 export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
-  public constructor() {
-    super()
-  }
-
   /**
    * The version of the message pickup protocol this class supports
    */
@@ -55,24 +59,63 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     return { message }
   }
 
+  public async deliverMessages(
+    agentContext: AgentContext,
+    options: DeliverMessagesProtocolOptions
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
+    const { connectionRecord, batchSize } = options
+    connectionRecord.assertReady()
+
+    const pickupMessageQueue = agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
+    )
+
+    const messages = await pickupMessageQueue.takeFromQueue({
+      connectionId: connectionRecord.id,
+      limit: batchSize, // TODO: Define as config parameter for message holder side
+    })
+
+    const batchMessages = messages.map(
+      (msg) =>
+        new BatchMessageMessage({
+          id: msg.id,
+          message: msg.encryptedMessage,
+        })
+    )
+
+    if (messages.length > 0) {
+      const message = new V1BatchMessage({
+        messages: batchMessages,
+      })
+
+      return { message }
+    }
+  }
+
+  public async setLiveDeliveryMode(
+    agentContext: AgentContext,
+    options: SetLiveDeliveryModeProtocolOptions
+  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
+    throw new AriesFrameworkError('Live Delivery mode not supported in Message Pickup V1 protocol')
+  }
+
   public async processBatchPickup(messageContext: InboundMessageContext<V1BatchPickupMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessageRepository>(
-      InjectionSymbols.MessageRepository
+    const pickupMessageQueue = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
+      InjectionSymbols.MessagePickupRepository
     )
 
-    const messages = await messageRepository.takeFromQueue(connection.id, message.batchSize)
+    const messages = await pickupMessageQueue.takeFromQueue({ connectionId: connection.id, limit: message.batchSize })
 
-    // TODO: each message should be stored with an id. to be able to conform to the id property
-    // of batch message
     const batchMessages = messages.map(
       (msg) =>
         new BatchMessageMessage({
-          message: msg,
+          id: msg.id,
+          message: msg.encryptedMessage,
         })
     )
 

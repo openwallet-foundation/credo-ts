@@ -2,7 +2,7 @@
 import type { ConnectionRecord } from '../../modules/connections'
 import type { ResolvedDidCommService } from '../../modules/didcomm'
 import type { DidDocumentService } from '../../modules/dids'
-import type { MessageRepository } from '../../storage/MessageRepository'
+import type { MessagePickupRepository } from '../../modules/message-pìckup/storage'
 import type { OutboundTransport } from '../../transport'
 import type { EncryptedMessage } from '../../types'
 import type { AgentMessageSentEvent } from '../Events'
@@ -24,7 +24,7 @@ import { DidCommDocumentService } from '../../modules/didcomm'
 import { DidResolverService, DidDocument, VerificationMethod } from '../../modules/dids'
 import { DidCommV1Service } from '../../modules/dids/domain/service/DidCommV1Service'
 import { verkeyToInstanceOfKey } from '../../modules/dids/helpers'
-import { InMemoryMessageRepository } from '../../storage/InMemoryMessageRepository'
+import { InMemoryMessagePickupRepository } from '../../modules/message-pìckup/storage'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { EventEmitter } from '../EventEmitter'
 import { AgentEventTypes } from '../Events'
@@ -114,7 +114,7 @@ describe('MessageSender', () => {
   sessionWithoutKeys.inboundMessage = inboundMessage
   sessionWithoutKeys.send = jest.fn()
 
-  const transportService = new TransportService()
+  const transportService = new TransportService(getAgentContext(), eventEmitter)
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
   const transportServiceFindSessionByIdMock = mockFunction(transportService.findSessionById)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
@@ -132,7 +132,7 @@ describe('MessageSender', () => {
 
   let messageSender: MessageSender
   let outboundTransport: OutboundTransport
-  let messageRepository: MessageRepository
+  let messagePickupRepository: MessagePickupRepository
   let connection: ConnectionRecord
   let outboundMessageContext: OutboundMessageContext
   const agentConfig = getAgentConfig('MessageSender')
@@ -147,11 +147,11 @@ describe('MessageSender', () => {
       eventEmitter.on<AgentMessageSentEvent>(AgentEventTypes.AgentMessageSent, eventListenerMock)
 
       outboundTransport = new DummyHttpOutboundTransport()
-      messageRepository = new InMemoryMessageRepository(agentConfig.logger)
+      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messageRepository,
+        messagePickupRepository,
         logger,
         didResolverService,
         didCommDocumentService,
@@ -496,7 +496,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new InMemoryMessageRepository(agentConfig.logger),
+        new InMemoryMessagePickupRepository(agentConfig.logger),
         logger,
         didResolverService,
         didCommDocumentService,
@@ -635,11 +635,11 @@ describe('MessageSender', () => {
   describe('packMessage', () => {
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
-      messageRepository = new InMemoryMessageRepository(agentConfig.logger)
+      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messageRepository,
+        messagePickupRepository,
         logger,
         didResolverService,
         didCommDocumentService,

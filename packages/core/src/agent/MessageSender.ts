@@ -5,21 +5,21 @@ import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
-import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
-import type { OutboundPackage, EncryptedMessage } from '../types'
+import type { EncryptedMessage, OutboundPackage } from '../types'
 
 import { DID_COMM_TRANSPORT_QUEUE, InjectionSymbols } from '../constants'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
+import { DidKey, type DidDocument } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
 import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
+import { MessagePickupRepository } from '../modules/message-pìckup/storage'
 import { inject, injectable } from '../plugins'
-import { MessageRepository } from '../storage/MessageRepository'
 import { MessageValidator } from '../utils/MessageValidator'
 import { getProtocolScheme } from '../utils/uri'
 
@@ -38,7 +38,7 @@ export interface TransportPriorityOptions {
 export class MessageSender {
   private envelopeService: EnvelopeService
   private transportService: TransportService
-  private messageRepository: MessageRepository
+  private messagePickupRepository: MessagePickupRepository
   private logger: Logger
   private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
@@ -48,7 +48,7 @@ export class MessageSender {
   public constructor(
     envelopeService: EnvelopeService,
     transportService: TransportService,
-    @inject(InjectionSymbols.MessageRepository) messageRepository: MessageRepository,
+    @inject(InjectionSymbols.MessagePickupRepository) messagePickupRepository: MessagePickupRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
     didResolverService: DidResolverService,
     didCommDocumentService: DidCommDocumentService,
@@ -56,7 +56,7 @@ export class MessageSender {
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
-    this.messageRepository = messageRepository
+    this.messagePickupRepository = messagePickupRepository
     this.logger = logger
     this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
@@ -176,7 +176,7 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      await this.messageRepository.add(connection.id, encryptedMessage)
+      await this.messagePickupRepository.addMessage({ connectionId: connection.id, payload: encryptedMessage })
       return
     }
 
@@ -327,7 +327,13 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      await this.messageRepository.add(connection.id, encryptedMessage)
+      for (const recipientKey of keys.recipientKeys) {
+        await this.messagePickupRepository.addMessage({
+          connectionId: connection.id,
+          recipientKey: new DidKey(recipientKey).did,
+          payload: encryptedMessage,
+        })
+      }
 
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.QueuedForPickup)
 

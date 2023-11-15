@@ -10,7 +10,7 @@ import { IsValidMessageType, parseMessageType } from '../../../../../utils/messa
 export interface V2MessageDeliveryMessageOptions {
   id?: string
   recipientKey?: string
-  threadId: string
+  threadId?: string
   attachments: Attachment[]
 }
 
@@ -22,9 +22,11 @@ export class V2MessageDeliveryMessage extends AgentMessage {
       this.id = options.id || this.generateId()
       this.recipientKey = options.recipientKey
       this.appendedAttachments = options.attachments
-      this.setThread({
-        threadId: options.threadId,
-      })
+      if (this.threadId) {
+        this.setThread({
+          threadId: options.threadId,
+        })
+      }
     }
     this.setReturnRouting(ReturnRouteTypes.all)
   }

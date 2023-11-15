@@ -5,6 +5,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InboundMessageContext } from '../../../../agent/models/InboundMessageContext'
 import { ConnectionService, DidExchangeState } from '../../../connections'
 import { isDidKey } from '../../../dids/helpers'
+import { MessagePickupApi } from '../../../message-pìckup'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
 import { MediationRole, MediationState } from '../../models'
 import { MediationRecord, MediatorRoutingRecord } from '../../repository'
@@ -21,9 +22,13 @@ const MediatorRoutingRepositoryMock = MediatorRoutingRepository as jest.Mock<Med
 jest.mock('../../../connections/services/ConnectionService')
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
+jest.mock('../../../connections/services/ConnectionService')
+const MessagePickupApiMock = MessagePickupApi as jest.Mock<MessagePickupApi>
+
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
 const connectionService = new ConnectionServiceMock()
+const mediationPickupApi = new MessagePickupApiMock()
 
 const mockConnection = getMockConnection({
   state: DidExchangeState.Completed,
@@ -39,6 +44,7 @@ describe('MediatorService - default config', () => {
   const mediatorService = new MediatorService(
     mediationRepository,
     mediatorRoutingRepository,
+    mediationPickupApi,
     new EventEmitter(agentConfig.agentDependencies, new Subject()),
     agentConfig.logger,
     connectionService
@@ -165,6 +171,7 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
   const mediatorService = new MediatorService(
     mediationRepository,
     mediatorRoutingRepository,
+    mediationPickupApi,
     new EventEmitter(agentConfig.agentDependencies, new Subject()),
     agentConfig.logger,
     connectionService

@@ -1,3 +1,5 @@
+import { MessageForwardingStrategy } from './MessageForwardingStrategy'
+
 /**
  * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
@@ -9,6 +11,18 @@ export interface MediatorModuleConfigOptions {
    * @default false
    */
   autoAcceptMediationRequests?: boolean
+
+  /**
+   * Strategy to use when a Forward message is received.
+   *
+   *
+   * - `MessageForwardingStrategy.QueueOnly` - simply queue encrypted message into MessagePickupRepository. It will be in charge of manually trigering MessagePickupApi.deliver() afterwards.
+   * - `MessageForwardingStrategy.QueueAndDeliver` - Queue message into MessagePickupRepository and deliver it (along any other queued message).
+   * - `MessageForwardingStrategy.DeliverOnly` - Deliver message directly. Do not add into queue (it might be manually added after, e.g. in case of failure)
+   *
+   * @default MessageForwardingStrategy.QueueAndDeliver
+   */
+  messageForwardingStrategy?: MessageForwardingStrategy
 }
 
 export class MediatorModuleConfig {
@@ -21,5 +35,10 @@ export class MediatorModuleConfig {
   /** See {@link MediatorModuleConfigOptions.autoAcceptMediationRequests} */
   public get autoAcceptMediationRequests() {
     return this.options.autoAcceptMediationRequests ?? false
+  }
+
+  /** See {@link MediatorModuleConfigOptions.messageForwardingStrategy} */
+  public get messageForwardingStrategy() {
+    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.QueueAndDeliver
   }
 }

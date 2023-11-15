@@ -16,7 +16,6 @@ import { JwsService } from '../crypto/JwsService'
 import { AriesFrameworkError } from '../error'
 import { DependencyManager } from '../plugins'
 import { DidCommMessageRepository, StorageUpdateService, StorageVersionRepository } from '../storage'
-import { InMemoryMessageRepository } from '../storage/InMemoryMessageRepository'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
@@ -89,9 +88,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       throw new AriesFrameworkError(
         "Missing required dependency: 'StorageService'. You can register it using one of the provided modules such as the AskarModule or the IndySdkModule, or implement your own."
       )
-    }
-    if (!dependencyManager.isRegistered(InjectionSymbols.MessageRepository)) {
-      dependencyManager.registerSingleton(InjectionSymbols.MessageRepository, InMemoryMessageRepository)
     }
 
     // TODO: contextCorrelationId for base wallet
@@ -197,6 +193,8 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       )
       await this.mediationRecipient.provision(mediationConnection)
     }
+
+    await this.messagePickup.initialize()
     await this.mediator.initialize()
     await this.mediationRecipient.initialize()
 

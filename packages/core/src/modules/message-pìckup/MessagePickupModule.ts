@@ -10,6 +10,7 @@ import { InjectionSymbols } from '../../constants'
 import { MessagePickupApi } from './MessagePickupApi'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
 import { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
+import { InMemoryMessagePickupRepository } from './storage'
 
 /**
  * Default protocols that will be registered if the `protocols` property is not configured.
@@ -38,7 +39,7 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
   }
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the message pickup answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager, featureRegistry: FeatureRegistry) {
     // Api
@@ -47,9 +48,13 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
     // Config
     dependencyManager.registerInstance(MessagePickupModuleConfig, this.config)
 
-    // Message repository
-    if (this.config.messageRepository) {
-      dependencyManager.registerInstance(InjectionSymbols.MessageRepository, this.config.messageRepository)
+    // Message Pickup queue: use provided one or in-memory one if no injection symbol is yet defined
+    if (this.config.messagePickupRepository) {
+      dependencyManager.registerInstance(InjectionSymbols.MessagePickupRepository, this.config.messagePickupRepository)
+    } else {
+      if (!dependencyManager.isRegistered(InjectionSymbols.MessagePickupRepository)) {
+        dependencyManager.registerSingleton(InjectionSymbols.MessagePickupRepository, InMemoryMessagePickupRepository)
+      }
     }
 
     // Protocol needs to register feature registry items and handlers
