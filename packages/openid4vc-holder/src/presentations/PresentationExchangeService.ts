@@ -16,7 +16,6 @@ import type {
 import type {
   PresentationDefinitionV1,
   PresentationSubmission as PexPresentationSubmission,
-  Descriptor,
   InputDescriptorV2,
 } from '@sphereon/pex-models'
 import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'

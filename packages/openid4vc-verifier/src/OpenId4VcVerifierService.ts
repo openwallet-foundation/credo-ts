@@ -233,7 +233,7 @@ export class OpenId4VcVerifierService {
     const idTokenPayload = await response.authorizationResponse.idToken.payload()
 
     return {
-      idTokenPayload: idTokenPayload, // TODO: return something else
+      idTokenPayload: idTokenPayload,
       submission: presentationDefinition ? response.oid4vpSubmission : undefined,
     }
   }
