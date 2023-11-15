@@ -57,6 +57,10 @@ export interface ResolvedAuthorizationRequest extends AuthCodeFlowOptions {
   authorizationRequestUri: string
 }
 
+export interface ResolvedAuthorizationRequestWithCode extends ResolvedAuthorizationRequest {
+  code: string
+}
+
 /**
  * Options that are used to accept a credential offer for both the pre-authorized code flow and authorization code flow.
  */

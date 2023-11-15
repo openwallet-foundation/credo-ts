@@ -154,7 +154,7 @@ export class OpenId4VcHolderApi {
   ): Promise<W3cCredentialRecord[]> {
     return this.openId4VcHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
-      resolvedAuthorizationRequest: { ...resolvedAuthorizationRequest, code },
+      resolvedAuthorizationRequestWithCode: { ...resolvedAuthorizationRequest, code },
       acceptCredentialOfferOptions,
     })
   }

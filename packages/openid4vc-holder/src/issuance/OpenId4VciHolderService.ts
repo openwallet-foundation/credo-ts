@@ -8,6 +8,7 @@ import type {
   SupportedCredentialFormats,
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
+  ResolvedAuthorizationRequestWithCode,
 } from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
@@ -368,10 +369,11 @@ export class OpenId4VcHolderService {
     options: {
       resolvedCredentialOffer: ResolvedCredentialOffer
       acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-      resolvedAuthorizationRequest?: ResolvedAuthorizationRequest & { code: string }
+      resolvedAuthorizationRequestWithCode?: ResolvedAuthorizationRequestWithCode
     }
   ) {
-    const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequest } = options
+    const { resolvedCredentialOffer, acceptCredentialOfferOptions, resolvedAuthorizationRequestWithCode } = options
+
     const { credentialOfferPayload, metadata: _metadata, version } = resolvedCredentialOffer
     const { credentialsToRequest, userPin, proofOfPossessionVerificationMethodResolver, verifyCredentialStatus } =
       acceptCredentialOfferOptions
@@ -405,8 +407,8 @@ export class OpenId4VcHolderService {
     let accessTokenResponse: OpenIDResponse<AccessTokenResponse>
 
     const accessTokenClient = new AccessTokenClient()
-    if (resolvedAuthorizationRequest) {
-      const { code, codeVerifier, redirectUri } = resolvedAuthorizationRequest
+    if (resolvedAuthorizationRequestWithCode) {
+      const { code, codeVerifier, redirectUri } = resolvedAuthorizationRequestWithCode
       accessTokenResponse = await accessTokenClient.acquireAccessToken({
         metadata,
         credentialOffer: { credential_offer: credentialOfferPayload },
