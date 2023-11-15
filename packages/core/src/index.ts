@@ -69,6 +69,8 @@ export {
   TypedArrayEncoder,
   Buffer,
   deepEquality,
+  asArray,
+  equalsIgnoreOrder,
 } from './utils'
 export * from './logger'
 export * from './error'

@@ -32,7 +32,7 @@ export class SignatureSuiteRegistry {
   }
 
   public getByKeyType(keyType: KeyType) {
-    return this.suiteMapping.find((x) => x.keyTypes.includes(keyType))
+    return this.suiteMapping.filter((x) => x.keyTypes.includes(keyType))
   }
 
   public getByProofType(proofType: string) {

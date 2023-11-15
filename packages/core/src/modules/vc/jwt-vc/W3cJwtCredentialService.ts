@@ -509,7 +509,7 @@ export class W3cJwtCredentialService {
       verificationMethod = didDocument.dereferenceKey(kid, purpose)
 
       if (signerId && didDocument.id !== signerId) {
-        throw new AriesFrameworkError(`kid '${kid}' does not match id of signer (holder/issuer) '${signerId}'`)
+        throw new AriesFrameworkError(`kid '${kid}' does not match id of signer (holder/issuer) '${didDocument.id}'`)
       }
     } else {
       if (!signerId) {
