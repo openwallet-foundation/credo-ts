@@ -1,5 +1,5 @@
 import type {
-  IssueCredentialOptions,
+  CreateIssueCredentialResponseOptions,
   CreateCredentialOfferOptions,
   CredentialOfferAndRequest,
   OfferedCredential,
@@ -67,7 +67,7 @@ export class OpenId4VcIssuerApi {
    * @param {string} options.credential - The credential to be issued.
    * @param {IssuerMetadata} options.issuerMetadata - Metadata about the issuer.
    */
-  public async createIssueCredentialResponse(options: IssueCredentialOptions) {
+  public async createIssueCredentialResponse(options: CreateIssueCredentialResponseOptions) {
     return await this.openId4VcIssuerService.createIssueCredentialResponse(this.agentContext, options)
   }
 }

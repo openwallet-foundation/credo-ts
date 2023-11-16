@@ -77,7 +77,7 @@ export interface AcceptCredentialOfferOptions {
    */
   credentialsToRequest?: CredentialToRequest[]
 
-  verifyCredentialStatus: boolean
+  verifyCredentialStatus?: boolean
 
   /**
    * A list of allowed proof of possession signature algorithms in order of preference.

@@ -515,7 +515,7 @@ export class OpenId4VcHolderService {
       })
 
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
-        verifyCredentialStatus,
+        verifyCredentialStatus: verifyCredentialStatus ?? false,
       })
 
       // Create credential record, but we don't store it yet (only after the user has accepted the credential)

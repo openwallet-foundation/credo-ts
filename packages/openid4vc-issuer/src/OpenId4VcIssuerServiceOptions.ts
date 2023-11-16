@@ -3,10 +3,13 @@ import type {
   CredentialOfferFormat,
   CredentialOfferPayloadV1_0_11,
   CredentialRequestV1_0_11,
+  CredentialResponse,
   CredentialSupported,
   MetadataDisplay,
   ProofOfPossession,
 } from '@sphereon/oid4vci-common'
+
+export { CredentialResponse }
 
 // If the entry is an object, the object contains the data related to a certain credential type
 // the Wallet MAY request. Each object MUST contain a format Claim determining the format
@@ -15,7 +18,7 @@ export type OfferedCredential = CredentialOfferFormat | string
 
 export type PreAuthorizedCodeFlowConfig = {
   preAuthorizedCode: string
-  userPinRequired: boolean
+  userPinRequired?: boolean
 }
 
 export type AuthorizationCodeFlowConfig = {
@@ -36,7 +39,9 @@ export type IssuerMetadata = {
 export interface CreateCredentialOfferOptions {
   // The scheme used for the credentialIssuer. Default is https
   scheme?: 'http' | 'https' | 'openid-credential-offer' | string
+
   // The base URI of the credential offer uri
+  // TODO: rename to credentialOfferRequestBaseUri
   baseUri: string
 
   preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig
@@ -56,7 +61,7 @@ export type CredentialOfferAndRequest = {
 
 export type CredentialRequest = CredentialRequestV1_0_11 & { proof: ProofOfPossession }
 
-export interface IssueCredentialOptions {
+export interface CreateIssueCredentialResponseOptions {
   credentialRequest: CredentialRequest
   credential: W3cCredential
   verificationMethod: VerificationMethod

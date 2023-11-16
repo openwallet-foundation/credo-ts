@@ -1,10 +1,10 @@
 import type {
-  IssueCredentialOptions,
   CreateCredentialOfferOptions,
   AuthorizationCodeFlowConfig,
   PreAuthorizedCodeFlowConfig,
   OfferedCredential,
   IssuerMetadata,
+  CreateIssueCredentialResponseOptions,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   AgentContext,
@@ -272,7 +272,7 @@ export class OpenId4VcIssuerService {
            * OPTIONAL. Boolean value specifying whether the Credential Issuer expects presentation of a user PIN along with the Token Request
            * in a Pre-Authorized Code Flow. Default is false.
            */
-          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired,
+          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
         },
       }
     }
@@ -450,7 +450,10 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  public async createIssueCredentialResponse(agentContext: AgentContext, options: IssueCredentialOptions) {
+  public async createIssueCredentialResponse(
+    agentContext: AgentContext,
+    options: CreateIssueCredentialResponseOptions
+  ) {
     const { credentialRequest, credential, verificationMethod } = options
 
     const issuerMetadata = options.issuerMetadata ?? this.issuerMetadata
