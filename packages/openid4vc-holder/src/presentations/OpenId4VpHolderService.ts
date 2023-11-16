@@ -19,6 +19,7 @@ import {
   inject,
   InjectionSymbols,
   Logger,
+  parseDid,
 } from '@aries-framework/core'
 import {
   CheckLinkedDomain,
@@ -152,6 +153,20 @@ export class OpenId4VpHolderService {
     authenticationRequest: AuthenticationRequest
   ): Promise<ProofSubmissionResponse> {
     const openidProvider = await this.getOpenIdProvider(agentContext, { verificationMethod })
+
+    // TODO: jwk support
+    const subjectSyntaxTypesSupported = authenticationRequest.registrationMetadataPayload.subject_syntax_types_supported
+    if (subjectSyntaxTypesSupported) {
+      const { method } = parseDid(verificationMethod.id)
+      if (subjectSyntaxTypesSupported.includes(`did:${method}`) === false) {
+        throw new AriesFrameworkError(
+          [
+            'The provided verification method is not supported by the issuer.',
+            `Supported subject syntax types: '${subjectSyntaxTypesSupported.join(', ')}'`,
+          ].join('\n')
+        )
+      }
+    }
 
     const suppliedSignature = await getSuppliedSignatureFromVerificationMethod(agentContext, verificationMethod)
 

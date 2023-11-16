@@ -142,6 +142,7 @@ export class OpenId4VcVerifierService {
       .withCustomResolver(getResolver(agentContext))
       .withResponseMode(ResponseMode.POST)
       .withResponseType(isVpRequest ? [ResponseType.ID_TOKEN, ResponseType.VP_TOKEN] : ResponseType.ID_TOKEN)
+      .withScope('openid')
       .withRequestBy(PassBy.VALUE)
       .withAuthorizationEndpoint(authorizationEndpoint)
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER) // check

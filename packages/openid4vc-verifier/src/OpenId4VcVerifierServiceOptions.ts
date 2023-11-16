@@ -1,13 +1,19 @@
 import type { VerificationMethod } from '@aries-framework/core'
-import type {
-  IDTokenPayload,
-  VerifiedOpenID4VPSubmission,
-  ClientMetadataOpts,
-  AuthorizationResponsePayload,
-} from '@sphereon/did-auth-siop'
 import type { IPresentationDefinition } from '@sphereon/pex'
 
-import { ResponseType, PassBy, Scope, SigningAlgo, SubjectType } from '@sphereon/did-auth-siop'
+import {
+  type IDTokenPayload,
+  type VerifiedOpenID4VPSubmission,
+  type ClientMetadataOpts,
+  type AuthorizationResponsePayload,
+  ResponseType,
+  Scope,
+  PassBy,
+  SigningAlgo,
+  SubjectType,
+} from '@sphereon/did-auth-siop'
+
+export { PassBy, SigningAlgo, SubjectType, ResponseType, Scope } from '@sphereon/did-auth-siop'
 
 export type HolderMetadata = ClientMetadataOpts & { authorization_endpoint?: string }
 
