@@ -135,7 +135,6 @@ export class OpenId4VcVerifierService {
     const builder = RP.builder()
       .withClientId(verificationMethod.id)
       .withRedirectUri(redirectUri)
-      .withRequestByValue()
       .withIssuer(ResponseIss.SELF_ISSUED_V2)
       .withSuppliedSignature(signature, did, kid, alg)
       .withSupportedVersions([SupportedVersion.SIOPv2_D11, SupportedVersion.SIOPv2_D12_OID4VP_D18])

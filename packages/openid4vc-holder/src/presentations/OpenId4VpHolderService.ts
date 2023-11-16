@@ -107,7 +107,7 @@ export class OpenId4VpHolderService {
     const verifiedAuthorizationRequest = await openidProvider.verifyAuthorizationRequest(requestJwtOrUri, {
       verification: {
         mode: VerificationMode.INTERNAL,
-        resolveOpts: { resolver: getResolver(agentContext), noUniversalResolverFallback: false },
+        resolveOpts: { resolver: getResolver(agentContext), noUniversalResolverFallback: true },
       },
     })
 
@@ -160,6 +160,10 @@ export class OpenId4VpHolderService {
       {
         signature: suppliedSignature,
         issuer: verificationMethod.controller,
+        verification: {
+          resolveOpts: { resolver: getResolver(agentContext), noUniversalResolverFallback: true },
+          mode: VerificationMode.INTERNAL,
+        },
         // https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-aud-of-a-request-object
         audience: authenticationRequest.authorizationRequestPayload.client_id,
       }

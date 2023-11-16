@@ -29,9 +29,9 @@ export class OpenId4VcVerifierApi {
    * If neither the holder metadata nor the issuer URL is provided, a static configuration defined in @link https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-static-configuration-values
    * If a presentation definition is provided, a VP request will be created, querying the holder verifiable credentials according to the specifics of the presentation definition.
    *
-   * @param options.redirect_url - The URL to redirect to after verification.
+   * @param options.redirectUri - The URL to redirect to after verification.
    * @param options.holderMetadata - Optional metadata about the holder.
-   * @param options.holderIdentifier - Optional the identifier of the holder (OpenId-Provider) provider for performing dynamic discovery.
+   * @param options.holderIdentifier - Optional the identifier of the holder (OpenId-Provider) provider for performing dynamic discovery. How to identifier is obtained is out of scope.
    * @param options.presentationDefinition - Optional presentation definition for requesting the presentation of verifiable credentials.
    * @param options.verificationMethod - The VerificationMethod to use for signing the proof request.
    * @returns @see ProofRequestWithMetadata object containing the proof request and metadata for verifying the proof response.
