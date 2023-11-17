@@ -1,11 +1,11 @@
-import type { PresentationSubmission } from './selection'
-import type { InputDescriptorToCredentials } from './selection/types'
 import type {
   AuthenticationRequest,
   PresentationRequest,
   ProofSubmissionResponse,
   ResolvedProofRequest,
-} from '../OpenId4VcHolderServiceOptions'
+} from './OpenId4VpHolderServiceOptions'
+import type { PresentationSubmission } from './selection'
+import type { InputDescriptorToCredentials } from './selection/types'
 import type { AgentContext, VerificationMethod, W3cVerifiablePresentation } from '@aries-framework/core'
 import type { PresentationDefinitionWithLocation, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { W3CVerifiablePresentation } from '@sphereon/ssi-types'

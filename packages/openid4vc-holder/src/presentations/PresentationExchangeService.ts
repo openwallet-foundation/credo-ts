@@ -1,5 +1,5 @@
+import type { VpFormat } from './OpenId4VpHolderServiceOptions'
 import type { InputDescriptorToCredentials, PresentationSubmission } from './selection/types'
-import type { VpFormat } from '../OpenId4VcHolderServiceOptions'
 import type {
   AgentContext,
   Query,

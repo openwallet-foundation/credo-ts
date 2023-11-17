@@ -1,4 +1,3 @@
-import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type {
   AuthCodeFlowOptions,
   CredentialToRequest,
@@ -9,7 +8,8 @@ import type {
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
   ResolvedAuthorizationRequestWithCode,
-} from '../OpenId4VcHolderServiceOptions'
+} from './OpenId4VciHolderServiceOptions'
+import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type {
   AgentContext,
   JwaSignatureAlgorithm,
@@ -70,9 +70,9 @@ import {
   JsonURIMode,
 } from '@sphereon/oid4vci-common'
 
-import { supportedCredentialFormats } from '../OpenId4VcHolderServiceOptions'
 import { getSupportedJwaSignatureAlgorithms } from '../shared'
 
+import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 import { OpenIdCredentialFormatProfile, fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getFormatForVersion, getUniformFormat } from './utils/Formats'
 import {
