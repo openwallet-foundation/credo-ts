@@ -7,11 +7,10 @@ import {
   TypedArrayEncoder,
   SigningProviderRegistry,
 } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/core/tests'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
 import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
-import testLogger from '../../core/tests/logger'
+import { testLogger, agentDependencies } from '../../core/tests'
 import { Bls12381g2SigningProvider } from '../src'
 
 import { describeSkipNode17And18 } from './util'

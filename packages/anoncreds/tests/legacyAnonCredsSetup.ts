@@ -11,6 +11,7 @@ import type {
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
+  AgentEventTypes,
   TypedArrayEncoder,
   CacheModule,
   InMemoryLruCache,
@@ -344,7 +345,11 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [
+      CredentialEventTypes.CredentialStateChanged,
+      ProofEventTypes.ProofStateChanged,
+      AgentEventTypes.AgentMessageProcessed,
+    ]
   )
 
   await issuerAgent.initialize()

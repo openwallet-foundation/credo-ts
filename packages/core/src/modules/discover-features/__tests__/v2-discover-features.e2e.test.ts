@@ -6,7 +6,7 @@ import type {
 
 import { ReplaySubject } from 'rxjs'
 
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { setupSubjectTransports } from '../../../../tests'
 import { getAgentOptions, makeConnection } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
@@ -20,7 +20,9 @@ const faberAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getIndySdkModules()
+  {
+    askar: askarModule,
+  }
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -28,7 +30,9 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
-  getIndySdkModules()
+  {
+    askar: askarModule,
+  }
 )
 
 describe('v2 discover features', () => {

@@ -4,9 +4,8 @@ import type { Wallet } from '../../../wallet'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { IndySdkWallet } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../../indy-sdk/tests/setupIndySdkModule'
-import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
+import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { Key, KeyType } from '../../../crypto'
@@ -41,7 +40,11 @@ describe('peer dids', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(async () => {
-    wallet = new IndySdkWallet(indySdk, config.logger, new SigningProviderRegistry([]))
+    wallet = new RegisteredAskarTestWallet(
+      config.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([])
+    )
     const storageService = new InMemoryStorageService<DidRecord>()
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)

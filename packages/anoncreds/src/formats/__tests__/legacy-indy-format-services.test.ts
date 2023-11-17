@@ -9,6 +9,7 @@ import {
   ProofExchangeRecord,
   ProofState,
   EventEmitter,
+  InjectionSymbols,
 } from '@aries-framework/core'
 import { Subject } from 'rxjs'
 
@@ -26,7 +27,17 @@ import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
-import { AnonCredsLinkSecretRecord, AnonCredsLinkSecretRepository } from '../../repository'
+import {
+  AnonCredsCredentialDefinitionPrivateRecord,
+  AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRecord,
+  AnonCredsCredentialDefinitionRepository,
+  AnonCredsCredentialRepository,
+  AnonCredsKeyCorrectnessProofRecord,
+  AnonCredsKeyCorrectnessProofRepository,
+  AnonCredsLinkSecretRecord,
+  AnonCredsLinkSecretRepository,
+} from '../../repository'
 import {
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -56,9 +67,19 @@ const wallet = new RegisteredAskarTestWallet(
   new agentDependencies.FileSystem(),
   new SigningProviderRegistry([])
 )
-const storageService = new AskarStorageService<AnonCredsLinkSecretRecord>()
+const storageService = new AskarStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
+const anonCredsCredentialDefinitionRepository = new AnonCredsCredentialDefinitionRepository(
+  storageService,
+  eventEmitter
+)
+const anonCredsCredentialDefinitionPrivateRepository = new AnonCredsCredentialDefinitionPrivateRepository(
+  storageService,
+  eventEmitter
+)
+const anonCredsCredentialRepository = new AnonCredsCredentialRepository(storageService, eventEmitter)
+const anonCredsKeyCorrectnessProofRepository = new AnonCredsKeyCorrectnessProofRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
     [AnonCredsIssuerServiceSymbol, anonCredsIssuerService],
@@ -67,7 +88,12 @@ const agentContext = getAgentContext({
     [AnonCredsRegistryService, new AnonCredsRegistryService()],
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [AnonCredsLinkSecretRepository, anonCredsLinkSecretRepository],
+    [AnonCredsCredentialDefinitionRepository, anonCredsCredentialDefinitionRepository],
+    [AnonCredsCredentialDefinitionPrivateRepository, anonCredsCredentialDefinitionPrivateRepository],
+    [AnonCredsCredentialRepository, anonCredsCredentialRepository],
+    [AnonCredsKeyCorrectnessProofRepository, anonCredsKeyCorrectnessProofRepository],
     [AskarModuleConfig, askarModuleConfig],
+    [InjectionSymbols.StorageService, storageService],
     [
       AnonCredsRsModuleConfig,
       new AnonCredsRsModuleConfig({
@@ -101,11 +127,12 @@ describe('Legacy indy format services', () => {
     const indyDid = `did:indy:pool1:${unqualifiedIndyDid}`
 
     // Create link secret
-    await anonCredsHolderService.createLinkSecret(agentContext, {
+    const { linkSecretValue } = await anonCredsHolderService.createLinkSecret(agentContext, {
       linkSecretId: 'link-secret-id',
     })
     const anonCredsLinkSecret = new AnonCredsLinkSecretRecord({
       linkSecretId: 'link-secret-id',
+      value: linkSecretValue,
     })
     anonCredsLinkSecret.setTag('isDefault', true)
     await anonCredsLinkSecretRepository.save(agentContext, anonCredsLinkSecret)
@@ -122,13 +149,14 @@ describe('Legacy indy format services', () => {
       options: {},
     })
 
-    const { credentialDefinition } = await anonCredsIssuerService.createCredentialDefinition(agentContext, {
-      issuerId: indyDid,
-      schemaId: schemaState.schemaId as string,
-      schema,
-      tag: 'Employee Credential',
-      supportRevocation: false,
-    })
+    const { credentialDefinition, credentialDefinitionPrivate, keyCorrectnessProof } =
+      await anonCredsIssuerService.createCredentialDefinition(agentContext, {
+        issuerId: indyDid,
+        schemaId: schemaState.schemaId as string,
+        schema,
+        tag: 'Employee Credential',
+        supportRevocation: false,
+      })
 
     const { credentialDefinitionState } = await registry.registerCredentialDefinition(agentContext, {
       credentialDefinition,
@@ -143,6 +171,35 @@ describe('Legacy indy format services', () => {
     ) {
       throw new Error('Failed to create schema or credential definition')
     }
+
+    await anonCredsCredentialDefinitionRepository.save(
+      agentContext,
+      new AnonCredsCredentialDefinitionRecord({
+        credentialDefinition,
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        methodName: 'indy',
+      })
+    )
+
+    if (!keyCorrectnessProof || !credentialDefinitionPrivate) {
+      throw new Error('Failed to create credential definition private or key correctness proof')
+    }
+
+    await anonCredsKeyCorrectnessProofRepository.save(
+      agentContext,
+      new AnonCredsKeyCorrectnessProofRecord({
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        value: keyCorrectnessProof,
+      })
+    )
+
+    await anonCredsCredentialDefinitionPrivateRepository.save(
+      agentContext,
+      new AnonCredsCredentialDefinitionPrivateRecord({
+        credentialDefinitionId: credentialDefinitionState.credentialDefinitionId,
+        value: credentialDefinitionPrivate,
+      })
+    )
 
     const holderCredentialRecord = new CredentialExchangeRecord({
       protocolVersion: 'v1',
@@ -249,9 +306,10 @@ describe('Legacy indy format services', () => {
       },
       schemaId: legacySchemaId,
       credentialDefinitionId: legacyCredentialDefinitionId,
+      // FIXME: We should be consistent in using null vs undefined
       revocationRegistryId: null,
-      credentialRevocationId: null,
-      methodName: 'indy',
+      credentialRevocationId: undefined,
+      methodName: 'inMemory',
     })
 
     expect(holderCredentialRecord.metadata.data).toEqual({

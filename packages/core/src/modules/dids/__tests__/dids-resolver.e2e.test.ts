@@ -1,5 +1,4 @@
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../tests'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
@@ -9,9 +8,7 @@ const agent = new Agent(
     'Faber Dids',
     {},
     {
-      indySdk: new IndySdkModule({
-        indySdk,
-      }),
+      askar: askarModule,
     }
   )
 )

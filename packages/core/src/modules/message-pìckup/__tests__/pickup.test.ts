@@ -5,18 +5,26 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 
-const recipientOptions = getAgentOptions('Mediation: Recipient Pickup', {}, getIndySdkModules())
+const recipientOptions = getAgentOptions(
+  'Mediation: Recipient Pickup',
+  {},
+  {
+    askar: askarModule,
+  }
+)
 const mediatorOptions = getAgentOptions(
   'Mediation: Mediator Pickup',
   {
     endpoints: ['wss://mediator'],
   },
-  getIndySdkModules()
+  {
+    askar: askarModule,
+  }
 )
 
 describe('E2E Pick Up protocol', () => {

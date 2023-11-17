@@ -13,9 +13,9 @@ import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrat
 describe('Indy SDK To Askar Migration', () => {
   test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration | e9484a22-6f8c-4e35-88c5-83cc1a7f77b4`,
+      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration`,
       walletConfig: {
-        id: `indy-sdk sqlite to aries-askar sqlite successful migration | e9484a22-6f8c-4e35-88c5-83cc1a7f77b4`,
+        id: `indy-sdk sqlite to aries-askar sqlite successful migration`,
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
         keyDerivationMethod: KeyDerivationMethod.Raw,
       },
@@ -31,7 +31,7 @@ describe('Indy SDK To Askar Migration', () => {
     const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: indySdkAgentDbPath, agent: askarAgent })
 
     // Remove new wallet path (if exists)
-    unlinkSync(updater.newWalletPath)
+    if (existsSync(updater.newWalletPath)) unlinkSync(updater.newWalletPath)
 
     // Create old wallet path and copy test wallet
     mkdirSync(path.dirname(indySdkAgentDbPath), { recursive: true })
@@ -60,9 +60,9 @@ describe('Indy SDK To Askar Migration', () => {
    */
   test('indy-sdk sqlite to aries-askar sqlite fails and restores', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration | e9484a22-6f8c-4e35-88c5-83cc1a7f77b4`,
+      label: `indy | indy-sdk sqlite to aries-askar sqlite fails and restores`,
       walletConfig: {
-        id: `indy-sdk sqlite to aries-askar sqlite successful migration | e9484a22-6f8c-4e35-88c5-83cc1a7f77b4`,
+        id: `indy-sdk sqlite to aries-askar sqlite fails and restores`,
         // NOTE: wrong key passed
         key: 'wrong-key',
         keyDerivationMethod: KeyDerivationMethod.Raw,
@@ -84,7 +84,7 @@ describe('Indy SDK To Askar Migration', () => {
     })
 
     // Remove new wallet path (if exists)
-    unlinkSync(updater.newWalletPath)
+    if (existsSync(updater.newWalletPath)) unlinkSync(updater.newWalletPath)
 
     // Create old wallet path and copy test wallet
     mkdirSync(path.dirname(indySdkAgentDbPath), { recursive: true })

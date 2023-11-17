@@ -1,8 +1,7 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
-import { IndySdkModule } from '../../../../../indy-sdk/src'
-import { indySdk } from '../../../../tests'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
@@ -14,9 +13,7 @@ const agentOptions = getAgentOptions(
   'Faber Dids Registrar',
   {},
   {
-    indySdk: new IndySdkModule({
-      indySdk,
-    }),
+    askar: askarModule,
   }
 )
 

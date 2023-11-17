@@ -3,7 +3,8 @@ import type { InitConfig } from '@aries-framework/core'
 import { ConnectionsModule, Agent } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 
-import { askarModule } from '../../askar/tests/helpers'
+import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
+import { ariesAskar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@aries-framework/tenants'
@@ -24,7 +25,10 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
-    askar: askarModule,
+    askar: new AskarModule({
+      ariesAskar,
+      multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+    }),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
@@ -61,6 +65,8 @@ describe('Tenants Sessions E2E', () => {
     await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.endSession()))
   })
 
+  // FIXME: this test is somehow failing? It first creates the TenantRecord,
+  // and then it can't fine the profile (of the root wallet) when it fetches it?
   test('create 5 sessions each for 20 tenants in parallel and close them', async () => {
     const numberOfTenants = 20
     const numberOfSessions = 5

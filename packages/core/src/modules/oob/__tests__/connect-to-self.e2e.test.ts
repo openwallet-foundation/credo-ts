@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getIndySdkModules } from '../../../../../indy-sdk/tests/setupIndySdkModule'
+import { askarModule } from '../../../../../askar/tests/helpers'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { HandshakeProtocol, DidExchangeState } from '../../connections'
 import { OutOfBandState } from '../domain/OutOfBandState'
@@ -17,7 +17,9 @@ const faberAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
-  getIndySdkModules()
+  {
+    askar: askarModule,
+  }
 )
 
 describe('out of band', () => {

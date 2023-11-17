@@ -16,6 +16,7 @@ import { AskarWallet } from '../src/wallet'
 export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
 registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
 export const askarModule = new AskarModule(askarModuleConfig)
+export { ariesAskar }
 
 // When using the AskarWallet directly, the native dependency won't be loaded by default.
 // So in tests depending on Askar, we import this wallet so we're sure the native dependency is loaded.

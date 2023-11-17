@@ -14,7 +14,9 @@ import type {
   CredentialState,
   ConnectionStateChangedEvent,
   Buffer,
+  AgentMessageProcessedEvent,
 } from '../src'
+import type { ConstructableAgentMessage } from '../src/agent/AgentMessage'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
 import type { ProofState } from '../src/modules/proofs/models/ProofState'
@@ -28,6 +30,8 @@ import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { agentDependencies } from '../../node/src'
 import {
+  AgentEventTypes,
+  parseMessageType,
   OutOfBandDidCommService,
   ConnectionsModule,
   ConnectionEventTypes,
@@ -52,6 +56,7 @@ import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../src/modules/oob/messages'
 import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
+import { supportsIncomingMessageType } from '../src/utils/messageType'
 import { uuid } from '../src/utils/uuid'
 
 import testLogger, { TestLogger } from './logger'
@@ -296,6 +301,36 @@ export function waitForTrustPingResponseReceivedEventSubject(
         )
       }),
       map((e) => e.payload.message)
+    )
+  )
+}
+
+export function waitForMessageProcessedSubject(
+  subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
+  {
+    threadId,
+    messageClass,
+    timeoutMs = 10000,
+  }: {
+    threadId?: string
+    messageClass: ConstructableAgentMessage
+    timeoutMs?: number
+  }
+) {
+  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+
+  return firstValueFrom(
+    observable.pipe(
+      filter((e): e is AgentMessageProcessedEvent => e.type === AgentEventTypes.AgentMessageProcessed),
+      filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
+      filter((e) => supportsIncomingMessageType(parseMessageType(e.payload.message.type), messageClass.type)),
+      timeout(timeoutMs),
+      catchError(() => {
+        throw new Error(`AgentMessageProcessed event not emitted within specified timeout: {
+  previousState: ${messageClass.type.messageTypeUri},
+  threadId: ${threadId}
+}`)
+      })
     )
   )
 }

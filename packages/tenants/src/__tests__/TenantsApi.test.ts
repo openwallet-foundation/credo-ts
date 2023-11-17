@@ -47,6 +47,9 @@ describe('TenantsApi', () => {
       expect(tenantAgent.wallet.walletConfig).toEqual({
         id: 'Wallet: TenantsApi: tenant-id',
         key: 'Wallet: TenantsApi: tenant-id',
+        storage: {
+          type: 'sqlite',
+        },
       })
 
       expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
@@ -85,6 +88,9 @@ describe('TenantsApi', () => {
         expect(tenantAgent.wallet.walletConfig).toEqual({
           id: 'Wallet: TenantsApi: tenant-id',
           key: 'Wallet: TenantsApi: tenant-id',
+          storage: {
+            type: 'sqlite',
+          },
         })
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
@@ -124,6 +130,9 @@ describe('TenantsApi', () => {
           expect(tenantAgent.wallet.walletConfig).toEqual({
             id: 'Wallet: TenantsApi: tenant-id',
             key: 'Wallet: TenantsApi: tenant-id',
+            storage: {
+              type: 'sqlite',
+            },
           })
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toBeCalledWith('tenant-id')
