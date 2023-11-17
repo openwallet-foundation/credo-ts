@@ -1,5 +1,5 @@
 import type { VerificationMethod } from '@aries-framework/core'
-import type { IPresentationDefinition } from '@sphereon/pex'
+import type { PresentationDefinitionV1, PresentationDefinitionV2 } from '@sphereon/pex-models'
 
 import {
   type IDTokenPayload,
@@ -17,12 +17,14 @@ export { PassBy, SigningAlgo, SubjectType, ResponseType, Scope } from '@sphereon
 
 export type HolderMetadata = ClientMetadataOpts & { authorization_endpoint?: string }
 
+export { PresentationDefinitionV1, PresentationDefinitionV2 } from '@sphereon/pex-models'
+
 export interface CreateProofRequestOptions {
   verificationMethod: VerificationMethod
   redirectUri: string
   holderMetadata?: HolderMetadata
   holderIdentifier?: string
-  presentationDefinition?: IPresentationDefinition
+  presentationDefinition?: PresentationDefinitionV1 | PresentationDefinitionV2
 }
 
 export type ProofRequest = string
