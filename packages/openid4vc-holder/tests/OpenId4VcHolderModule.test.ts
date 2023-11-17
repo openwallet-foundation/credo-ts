@@ -2,8 +2,8 @@
 import type { DependencyManager } from '@aries-framework/core'
 
 import { OpenId4VcHolderApi } from '../src/OpenId4VcHolderApi'
-import { OpenId4VcHolderModule } from '../src/issuance/OpenId4VciHolderModule'
-import { OpenId4VcHolderService } from '../src/issuance/OpenId4VciHolderService'
+import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
+import { OpenId4VciHolderService } from '../src/issuance/OpenId4VciHolderService'
 import { OpenId4VpHolderService, PresentationExchangeService } from '../src/presentations'
 
 const dependencyManager = {
@@ -22,7 +22,7 @@ describe('OpenId4VcHolderModule', () => {
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcHolderApi)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VcHolderService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VciHolderService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpHolderService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(PresentationExchangeService)
   })

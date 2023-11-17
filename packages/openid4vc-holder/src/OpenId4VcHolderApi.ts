@@ -12,7 +12,7 @@ import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
-import { OpenId4VcHolderService } from './issuance/OpenId4VciHolderService'
+import { OpenId4VciHolderService } from './issuance/OpenId4VciHolderService'
 import { OpenId4VpHolderService } from './presentations'
 
 /**
@@ -21,16 +21,16 @@ import { OpenId4VpHolderService } from './presentations'
 @injectable()
 export class OpenId4VcHolderApi {
   private agentContext: AgentContext
-  private openId4VcHolderService: OpenId4VcHolderService
+  private openId4VciHolderService: OpenId4VciHolderService
   private openId4VpHolderService: OpenId4VpHolderService
 
   public constructor(
     agentContext: AgentContext,
-    openId4VcHolderService: OpenId4VcHolderService,
+    openId4VcHolderService: OpenId4VciHolderService,
     openId4VpHolderService: OpenId4VpHolderService
   ) {
     this.agentContext = agentContext
-    this.openId4VcHolderService = openId4VcHolderService
+    this.openId4VciHolderService = openId4VcHolderService
     this.openId4VpHolderService = openId4VpHolderService
   }
 
@@ -95,7 +95,7 @@ export class OpenId4VcHolderApi {
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and credentials that can be requested.
    */
   public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
-    return await this.openId4VcHolderService.resolveCredentialOffer(credentialOffer)
+    return await this.openId4VciHolderService.resolveCredentialOffer(credentialOffer)
   }
 
   /**
@@ -115,7 +115,7 @@ export class OpenId4VcHolderApi {
     resolvedCredentialOffer: ResolvedCredentialOffer,
     authCodeFlowOptions: AuthCodeFlowOptions
   ) {
-    return await this.openId4VcHolderService.resolveAuthorizationRequest(
+    return await this.openId4VciHolderService.resolveAuthorizationRequest(
       this.agentContext,
       resolvedCredentialOffer,
       authCodeFlowOptions
@@ -132,7 +132,7 @@ export class OpenId4VcHolderApi {
     resolvedCredentialOffer: ResolvedCredentialOffer,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
   ): Promise<W3cCredentialRecord[]> {
-    return this.openId4VcHolderService.acceptCredentialOffer(this.agentContext, {
+    return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       acceptCredentialOfferOptions,
     })
@@ -152,7 +152,7 @@ export class OpenId4VcHolderApi {
     code: string,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
   ): Promise<W3cCredentialRecord[]> {
-    return this.openId4VcHolderService.acceptCredentialOffer(this.agentContext, {
+    return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       resolvedAuthorizationRequestWithCode: { ...resolvedAuthorizationRequest, code },
       acceptCredentialOfferOptions,

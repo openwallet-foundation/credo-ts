@@ -187,7 +187,7 @@ async function createAuthorizationRequestUri(options: {
 }
 
 @injectable()
-export class OpenId4VcHolderService {
+export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService

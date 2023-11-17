@@ -15,7 +15,7 @@ import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
 import { OpenIdCredentialFormatProfile } from '../src'
-import { OpenId4VcHolderModule } from '../src/issuance/OpenId4VciHolderModule'
+import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
 
 import {
   mattrLaunchpadJsonLd_draft_08,
