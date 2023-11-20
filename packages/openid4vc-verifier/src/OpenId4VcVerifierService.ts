@@ -129,7 +129,7 @@ export class OpenId4VcVerifierService {
       }
     }
 
-    const authorizationEndpoint = holderClientMetadata.authorization_endpoint ?? isVpRequest ? 'openid:' : 'siopv2:'
+    const authorizationEndpoint = holderClientMetadata.authorization_endpoint ?? (isVpRequest ? 'openid:' : 'siopv2:')
 
     // Check: audience must be set to the issuer with dynamic disc otherwise self-issed.me/v2.
     const builder = RP.builder()
