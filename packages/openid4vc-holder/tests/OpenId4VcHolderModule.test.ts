@@ -4,7 +4,7 @@ import type { DependencyManager } from '@aries-framework/core'
 import { OpenId4VcHolderApi } from '../src/OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
 import { OpenId4VciHolderService } from '../src/issuance/OpenId4VciHolderService'
-import { OpenId4VpHolderService, PresentationExchangeService } from '../src/presentations'
+import { OpenId4VpHolderService, PresentationExchangeService } from '../src/presentation'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
