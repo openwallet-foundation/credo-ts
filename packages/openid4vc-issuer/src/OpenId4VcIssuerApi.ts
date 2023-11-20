@@ -1,10 +1,10 @@
 import type {
   CreateIssueCredentialResponseOptions,
-  CreateCredentialOfferOptions,
+  CreateCredentialOfferAndRequestOptions,
   CredentialOfferAndRequest,
   OfferedCredential,
+  CredentialOffer,
 } from './OpenId4VcIssuerServiceOptions'
-import type { CredentialOfferPayload } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -30,19 +30,19 @@ export class OpenId4VcIssuerApi {
    * Creates a credential offer, and credential offer request.
    * Either the preAuthorizedCodeFlowConfig or the authorizationCodeFlowConfig must be provided.
    *
-   * @param {OfferedCredential[]} offeredCredentials - The credentials to be offered.
-   * @param {IssuerMetadata} options.issuerMetadata - Metadata about the issuer.
-   * @param {string} options.credentialOfferUri - The URI to retrieve the credential offer if the offer is passed by reference.
-   * @param {string} options.scheme - The credential offer request scheme. Default is https.
-   * @param {string} options.baseUri - The base URI of the credential offer request.
-   * @param {PreAuthorizedCodeFlowConfig} options.preAuthorizedCodeFlowConfig - The configuration for the pre-authorized code flow. This or the authorizationCodeFlowConfig must be provided.
-   * @param {AuthorizationCodeFlowConfig} options.authorizationCodeFlowConfig - The configuration for the authorization code flow. This or the preAuthorizedCodeFlowConfig must be provided.
+   * @param  offeredCredentials - The credentials to be offered.
+   * @param  options.issuerMetadata - Metadata about the issuer.
+   * @param  options.credentialOfferUri - The URI to retrieve the credential offer if the offer is passed by reference.
+   * @param  options.scheme - The credential offer request scheme. Default is https.
+   * @param  options.baseUri - The base URI of the credential offer request.
+   * @param  options.preAuthorizedCodeFlowConfig - The configuration for the pre-authorized code flow. This or the authorizationCodeFlowConfig must be provided.
+   * @param  options.authorizationCodeFlowConfig - The configuration for the authorization code flow. This or the preAuthorizedCodeFlowConfig must be provided.
    *
-   * @returns {CredentialOfferAndRequest} Object containing the payload of the credential offer and the credential offer request, which is to be sent to the wallet.
+   * @returns Object containing the payload of the credential offer and the credential offer request, which is to be sent to the wallet.
    */
-  public async createCredentialOffer(
+  public async createCredentialOfferAndRequest(
     offeredCredentials: OfferedCredential[],
-    options: CreateCredentialOfferOptions
+    options: CreateCredentialOfferAndRequestOptions
   ): Promise<CredentialOfferAndRequest> {
     return await this.openId4VcIssuerService.createCredentialOffer(this.agentContext, offeredCredentials, options)
   }
@@ -50,13 +50,13 @@ export class OpenId4VcIssuerApi {
   /**
    * This function retrieves a credential offer from a given URI.
    * Retrieving a credential offer from a URI is possible after a credential offer was created with
-   * @see createCredentialOffer and the credentialOfferUri option.
+   * @see createCredentialOfferAndRequest and the credentialOfferUri option.
    *
    * @throws if no credential offer can found for the given URI.
-   * @param {string} uri - The URI for which to retrieve the credential offer.
-   * @returns {CredentialOfferPayload} - The credential offer payload associated with the given URI.
+   * @param uri - The URI for which to retrieve the credential offer.
+   * @returns The credential offer payload associated with the given URI.
    */
-  public async getCredentialOfferFromUri(uri: string): Promise<CredentialOfferPayload> {
+  public async getCredentialOfferFromUri(uri: string): Promise<CredentialOffer> {
     return await this.openId4VcIssuerService.getCredentialOfferFromUri(uri)
   }
 

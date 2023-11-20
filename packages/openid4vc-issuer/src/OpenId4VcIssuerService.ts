@@ -1,10 +1,11 @@
 import type {
-  CreateCredentialOfferOptions,
+  CreateCredentialOfferAndRequestOptions,
   AuthorizationCodeFlowConfig,
   PreAuthorizedCodeFlowConfig,
   OfferedCredential,
   IssuerMetadata,
   CreateIssueCredentialResponseOptions,
+  CredentialSupported,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   AgentContext,
@@ -17,7 +18,6 @@ import type {
   CredentialRequestJwtVc,
   CredentialRequestLdpVc,
   Grant,
-  CredentialSupported,
   MetadataDisplay,
   JWTVerifyCallback,
   CredentialOfferFormat,
@@ -27,6 +27,7 @@ import type {
   CNonceState,
   CredentialOfferSession,
   URIState,
+  CredentialSupported as SphereonCredentialSupported,
 } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
@@ -187,7 +188,6 @@ export class OpenId4VcIssuerService {
 
       // If the Credential shall be bound to a DID, the kid refers to a DID URL which identifies a
       // particular key in the DID Document that the Credential shall be bound to.
-      // TODO: proofpurpose
       const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod', 'assertionMethod'])
 
       let signed: W3cVerifiableCredential<ClaimFormat.JwtVc | ClaimFormat.LdpVc>
@@ -228,7 +228,8 @@ export class OpenId4VcIssuerService {
       .withCredentialIssuer(credentialIssuer)
       .withCredentialEndpoint(credentialEndpoint)
       .withTokenEndpoint(tokenEndpoint)
-      .withCredentialsSupported(credentialsSupported)
+      // FIXME: currently credentialsSupported is not typed correctly
+      .withCredentialsSupported(credentialsSupported as SphereonCredentialSupported[])
       .withCNonceExpiresIn(this.cNonceExpiresIn) // 5 minutes
       .withCNonceStateManager(this._cNonceStateManager)
       .withCredentialOfferStateManager(this._credentialOfferSessionManager)
@@ -327,7 +328,7 @@ export class OpenId4VcIssuerService {
   public async createCredentialOffer(
     agentContext: AgentContext,
     offeredCredentials: OfferedCredential[],
-    options: CreateCredentialOfferOptions
+    options: CreateCredentialOfferAndRequestOptions
   ) {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = options
 
@@ -403,8 +404,6 @@ export class OpenId4VcIssuerService {
           offeredCredential.credential_definition.types,
           credentialRequest.credential_definition.types
         )
-      } else {
-        throw new AriesFrameworkError(`Unsupported credential format ${credentialRequest.format}.`)
       }
     })
   }

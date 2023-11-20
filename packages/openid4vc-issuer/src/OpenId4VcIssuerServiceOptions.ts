@@ -1,15 +1,25 @@
 import type { VerificationMethod, W3cCredential } from '@aries-framework/core'
 import type {
-  CredentialOfferFormat,
+  CommonCredentialSupported,
   CredentialOfferPayloadV1_0_11,
   CredentialRequestV1_0_11,
-  CredentialResponse,
-  CredentialSupported,
   MetadataDisplay,
   ProofOfPossession,
 } from '@sphereon/oid4vci-common'
 
-export { CredentialResponse }
+export type { MetadataDisplay, ProofOfPossession }
+
+export type CredentialFormatSupported = 'jwt_vc_json' | 'jwt_vc_json-ld'
+
+export interface CredentialOfferFormat {
+  format: CredentialFormatSupported
+  types: string[]
+}
+
+export interface CredentialSupported extends CommonCredentialSupported {
+  format: CredentialFormatSupported
+  types: string[]
+}
 
 // If the entry is an object, the object contains the data related to a certain credential type
 // the Wallet MAY request. Each object MUST contain a format Claim determining the format
@@ -36,12 +46,11 @@ export type IssuerMetadata = {
   credentialsSupported: CredentialSupported[]
 }
 
-export interface CreateCredentialOfferOptions {
+export interface CreateCredentialOfferAndRequestOptions {
   // The scheme used for the credentialIssuer. Default is https
   scheme?: 'http' | 'https' | 'openid-credential-offer' | string
 
   // The base URI of the credential offer uri
-  // TODO: rename to credentialOfferRequestBaseUri
   baseUri: string
 
   preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig
@@ -52,10 +61,10 @@ export interface CreateCredentialOfferOptions {
   issuerMetadata?: IssuerMetadata
 }
 
-export type CredentialOfferPayload = CredentialOfferPayloadV1_0_11
+export type CredentialOffer = CredentialOfferPayloadV1_0_11
 
 export type CredentialOfferAndRequest = {
-  credentialOffer: CredentialOfferPayload
+  credentialOffer: CredentialOffer
   credentialOfferRequest: string
 }
 
