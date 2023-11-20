@@ -118,7 +118,6 @@ export class OpenId4VcIssuerService {
     this._uriStateManager = openId4VcIssuerModuleConfig.uriStateManager ?? new MemoryStates()
   }
 
-  // TODO: check if this is correct
   private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
@@ -189,7 +188,7 @@ export class OpenId4VcIssuerService {
 
       // If the Credential shall be bound to a DID, the kid refers to a DID URL which identifies a
       // particular key in the DID Document that the Credential shall be bound to.
-      const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod', 'assertionMethod'])
+      const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod'])
 
       let signed: W3cVerifiableCredential<ClaimFormat.JwtVc | ClaimFormat.LdpVc>
       if (format === 'jwt_vc_json' || format === 'jwt_vc_json-ld') {
@@ -204,7 +203,7 @@ export class OpenId4VcIssuerService {
           format: ClaimFormat.LdpVc,
           credential: W3cCredential.fromJson(credential),
           verificationMethod: issuerVerificationMethod.id,
-          proofPurpose: 'authentication', // TODO: is it authentication?
+          proofPurpose: 'assertionMethod',
           proofType: this.getProofTypeForLdpVc(agentContext, holderVerificationMethod),
         })
       }

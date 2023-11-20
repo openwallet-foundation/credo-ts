@@ -361,7 +361,6 @@ export class PresentationExchangeService {
     return this.getSigningAlgorithmFromVerificationMethod(verificationMethod, suitableAlgorithms)
   }
 
-  // TODO: is this a proper implementation?
   private getProofTypeForLdpVc(
     agentContext: AgentContext,
     presentationDefinition: IPresentationDefinition,

@@ -16,6 +16,8 @@ import { waltPortalOpenBadgeJwt, waltUniversityDegreeJwt } from './fixtures_vp'
 
 // id id%22%3A%22test%22%2C%22
 // * = %2A
+// TODO: use proper credential
+
 // TODO: error on sphereon lib PR opened
 // TODO: walt issued credentials verification fails due to some time issue || //throw new Error(`Inconsistent issuance dates between JWT claim (${nbfDateAsStr}) and VC value (${issuanceDate})`);
 // TODO: error walt no id in presentation definition
