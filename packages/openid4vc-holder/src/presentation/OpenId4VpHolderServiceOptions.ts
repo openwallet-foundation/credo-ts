@@ -1,14 +1,24 @@
-import type { PresentationSubmission, VerifiedAuthorizationRequestWithPresentationDefinition } from '..'
-import type { AuthorizationResponsePayload, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
+import type { PresentationSubmission } from './selection'
+import type {
+  AuthorizationResponsePayload,
+  PresentationDefinitionWithLocation,
+  VerifiedAuthorizationRequest,
+} from '@sphereon/did-auth-siop'
 
 export type AuthenticationRequest = VerifiedAuthorizationRequest
-export type PresentationRequest = VerifiedAuthorizationRequestWithPresentationDefinition
+
+/**
+ * SIOPv2 Authorization Request with a single v1 / v2 presentation definition
+ */
+export type PresentationRequest = VerifiedAuthorizationRequest & {
+  presentationDefinitions: [PresentationDefinitionWithLocation]
+}
 
 export type ResolvedProofRequest =
-  | { proofType: 'authentication'; authenticationRequest: AuthenticationRequest }
+  | { proofType: 'authentication'; request: AuthenticationRequest }
   | {
       proofType: 'presentation'
-      presentationRequest: PresentationRequest
+      request: PresentationRequest
       presentationSubmission: PresentationSubmission
     }
 

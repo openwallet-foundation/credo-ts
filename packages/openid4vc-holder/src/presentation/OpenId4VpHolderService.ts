@@ -7,7 +7,7 @@ import type {
 import type { PresentationSubmission } from './selection'
 import type { InputDescriptorToCredentials } from './selection/types'
 import type { AgentContext, VerificationMethod, W3cVerifiablePresentation } from '@aries-framework/core'
-import type { PresentationDefinitionWithLocation, VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
+import type { VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { W3CVerifiablePresentation } from '@sphereon/ssi-types'
 
 import {
@@ -35,16 +35,9 @@ import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDi
 
 import { PresentationExchangeService } from './PresentationExchangeService'
 
-/**
- * SIOPv2 Authorization Request with a single v1 / v2 presentation definition
- */
-export type VerifiedAuthorizationRequestWithPresentationDefinition = VerifiedAuthorizationRequest & {
-  presentationDefinitions: [PresentationDefinitionWithLocation]
-}
-
 function isVerifiedAuthorizationRequestWithPresentationDefinition(
   request: VerifiedAuthorizationRequest
-): request is VerifiedAuthorizationRequestWithPresentationDefinition {
+): request is PresentationRequest {
   return (
     request.presentationDefinitions !== undefined &&
     request.presentationDefinitions.length === 1 &&
@@ -122,7 +115,7 @@ export class OpenId4VpHolderService {
     // which means you should never continue the authentication flow!
     const presentationDefs = verifiedAuthorizationRequest.presentationDefinitions
     if (!presentationDefs || presentationDefs.length === 0) {
-      return { proofType: 'authentication', authenticationRequest: verifiedAuthorizationRequest }
+      return { proofType: 'authentication', request: verifiedAuthorizationRequest }
     }
 
     // FIXME: I don't see any reason why we would support multiple presentation definitions
@@ -140,7 +133,7 @@ export class OpenId4VpHolderService {
       presentationDefinition
     )
 
-    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, presentationSubmission }
+    return { proofType: 'presentation', request: verifiedAuthorizationRequest, presentationSubmission }
   }
 
   /**

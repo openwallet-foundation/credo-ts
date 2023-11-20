@@ -82,7 +82,7 @@ export class OpenId4VcHolderApi {
     const { submission, submissionEntryIndexes } = presentation
     return await this.openId4VpHolderService.acceptProofRequest(this.agentContext, presentationRequest, {
       submission,
-      submissionEntryIndexes: submissionEntryIndexes,
+      submissionEntryIndexes,
     })
   }
 
