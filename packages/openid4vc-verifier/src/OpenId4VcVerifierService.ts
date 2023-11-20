@@ -145,7 +145,7 @@ export class OpenId4VcVerifierService {
       .withScope('openid')
       .withRequestBy(PassBy.VALUE)
       .withAuthorizationEndpoint(authorizationEndpoint)
-      .withCheckLinkedDomain(CheckLinkedDomain.NEVER) // check
+      .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
       .withRevocationVerification(RevocationVerification.NEVER)
     // .withWellknownDIDVerifyCallback
     // .withEventEmitter
@@ -153,11 +153,11 @@ export class OpenId4VcVerifierService {
 
     if (proofRequestMetadata) {
       builder.withPresentationVerification(
-        this.handlePresentationResponse(agentContext, { challenge: proofRequestMetadata.challenge })
+        this.getPresentationVerificationCallback(agentContext, { challenge: proofRequestMetadata.challenge })
       )
     }
 
-    if (presentationDefinition) {
+    if (isVpRequest) {
       builder.withPresentationDefinition({ definition: presentationDefinition }, [
         PropertyTarget.REQUEST_OBJECT,
         PropertyTarget.AUTHORIZATION_REQUEST,
@@ -242,7 +242,7 @@ export class OpenId4VcVerifierService {
     }
   }
 
-  private handlePresentationResponse(
+  private getPresentationVerificationCallback(
     agentContext: AgentContext,
     options: { challenge: string }
   ): PresentationVerificationCallback {
