@@ -6,6 +6,7 @@ import type {
   IssuerMetadata,
   CreateIssueCredentialResponseOptions,
   CredentialSupported,
+  CredentialOfferAndRequest,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   AgentContext,
@@ -325,11 +326,11 @@ export class OpenId4VcIssuerService {
     return [...credentialsReferencingCredentialsSupported, ...inlineCredentialOffers]
   }
 
-  public async createCredentialOffer(
+  public async createCredentialOfferAndReqeust(
     agentContext: AgentContext,
     offeredCredentials: OfferedCredential[],
     options: CreateCredentialOfferAndRequestOptions
-  ) {
+  ): Promise<CredentialOfferAndRequest> {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = options
 
     const issuerMetadata = options.issuerMetadata ?? this.issuerMetadata
@@ -351,7 +352,7 @@ export class OpenId4VcIssuerService {
     })
 
     return {
-      credentialOffer: session.credentialOffer.credential_offer,
+      credentialOfferPayload: session.credentialOffer.credential_offer,
       credentialOfferRequest: uri,
     }
   }

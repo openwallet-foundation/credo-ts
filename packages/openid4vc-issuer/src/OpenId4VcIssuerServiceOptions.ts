@@ -7,8 +7,9 @@ import type {
   ProofOfPossession,
 } from '@sphereon/oid4vci-common'
 
-export type { MetadataDisplay, ProofOfPossession }
+export type { MetadataDisplay, ProofOfPossession, CredentialOfferPayloadV1_0_11 }
 
+// TODO: duplicate
 export type CredentialFormatSupported = 'jwt_vc_json' | 'jwt_vc_json-ld'
 
 export interface CredentialOfferFormat {
@@ -61,10 +62,8 @@ export interface CreateCredentialOfferAndRequestOptions {
   issuerMetadata?: IssuerMetadata
 }
 
-export type CredentialOffer = CredentialOfferPayloadV1_0_11
-
 export type CredentialOfferAndRequest = {
-  credentialOffer: CredentialOffer
+  credentialOfferPayload: CredentialOfferPayloadV1_0_11
   credentialOfferRequest: string
 }
 

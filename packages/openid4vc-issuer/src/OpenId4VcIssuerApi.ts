@@ -3,7 +3,7 @@ import type {
   CreateCredentialOfferAndRequestOptions,
   CredentialOfferAndRequest,
   OfferedCredential,
-  CredentialOffer,
+  CredentialOfferPayloadV1_0_11,
 } from './OpenId4VcIssuerServiceOptions'
 
 import { injectable, AgentContext } from '@aries-framework/core'
@@ -44,7 +44,11 @@ export class OpenId4VcIssuerApi {
     offeredCredentials: OfferedCredential[],
     options: CreateCredentialOfferAndRequestOptions
   ): Promise<CredentialOfferAndRequest> {
-    return await this.openId4VcIssuerService.createCredentialOffer(this.agentContext, offeredCredentials, options)
+    return await this.openId4VcIssuerService.createCredentialOfferAndReqeust(
+      this.agentContext,
+      offeredCredentials,
+      options
+    )
   }
 
   /**
@@ -56,7 +60,7 @@ export class OpenId4VcIssuerApi {
    * @param uri - The URI for which to retrieve the credential offer.
    * @returns The credential offer payload associated with the given URI.
    */
-  public async getCredentialOfferFromUri(uri: string): Promise<CredentialOffer> {
+  public async getCredentialOfferFromUri(uri: string): Promise<CredentialOfferPayloadV1_0_11> {
     return await this.openId4VcIssuerService.getCredentialOfferFromUri(uri)
   }
 

@@ -494,7 +494,7 @@ describe('OpenId4VcIssuer', () => {
 
     const credentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
 
-    const { credentialOfferRequest, credentialOffer } =
+    const { credentialOfferRequest, credentialOfferPayload } =
       await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
         ...baseCredentialRequestOptions,
         credentialOfferUri,
@@ -509,14 +509,14 @@ describe('OpenId4VcIssuer', () => {
       credentialOfferUri
     )
 
-    expect(credentialOffer).toEqual(credentialOfferReceivedByUri)
+    expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
   })
 
   it('create credential offer and retrieve it from the uri (authorizationCodeFlow)', async () => {
     const authorizationCodeFlowConfig: AuthorizationCodeFlowConfig = { issuerState: '1234567890' }
     const credentialOfferUri = 'https://openid4vc-issuer.com/credential-offer-uri'
 
-    const { credentialOfferRequest, credentialOffer } =
+    const { credentialOfferRequest, credentialOfferPayload } =
       await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest([openBadgeCredential.id], {
         ...baseCredentialRequestOptions,
         credentialOfferUri,
@@ -531,11 +531,10 @@ describe('OpenId4VcIssuer', () => {
       credentialOfferUri
     )
 
-    expect(credentialOffer).toEqual(credentialOfferReceivedByUri)
+    expect(credentialOfferPayload).toEqual(credentialOfferReceivedByUri)
   })
 
-  // https://github.com/orgs/hyperledger/projects/32/views/1?pane=issue&itemId=44709598
-  xit('offer and request multiple credentials', async () => {
+  it('offer and request multiple credentials', async () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
@@ -605,7 +604,7 @@ describe('OpenId4VcIssuer', () => {
         types: universityDegreeCredential.types,
         issuerMetadata,
         kid: holderKid,
-        nonce: cNonce,
+        nonce: issueCredentialResponse.c_nonce ?? cNonce,
       }),
     })
 
@@ -614,7 +613,7 @@ describe('OpenId4VcIssuer', () => {
 
     await handleCredentialResponse(
       holder.context,
-      sphereonW3cCredential,
+      sphereonW3cCredential2,
       universityDegreeCredential.format,
       universityDegreeCredential.types
     )
