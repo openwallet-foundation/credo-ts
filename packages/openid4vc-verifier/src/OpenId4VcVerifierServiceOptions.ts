@@ -17,7 +17,7 @@ export { PassBy, SigningAlgo, SubjectType, ResponseType, Scope } from '@sphereon
 
 export type HolderMetadata = ClientMetadataOpts & { authorization_endpoint?: string }
 
-export { PresentationDefinitionV1, PresentationDefinitionV2 } from '@sphereon/pex-models'
+export type { PresentationDefinitionV1, PresentationDefinitionV2, VerifiedOpenID4VPSubmission, IDTokenPayload }
 
 export interface CreateProofRequestOptions {
   verificationMethod: VerificationMethod
@@ -27,8 +27,6 @@ export interface CreateProofRequestOptions {
   presentationDefinition?: PresentationDefinitionV1 | PresentationDefinitionV2
 }
 
-export type ProofRequest = string
-
 export interface ProofRequestMetadata {
   correlationId: string
   challenge: string
@@ -36,7 +34,7 @@ export interface ProofRequestMetadata {
 }
 
 export type ProofRequestWithMetadata = {
-  proofRequest: ProofRequest
+  proofRequest: string
   proofRequestMetadata: ProofRequestMetadata
 }
 
