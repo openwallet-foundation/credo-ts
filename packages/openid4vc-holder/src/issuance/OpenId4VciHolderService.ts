@@ -82,7 +82,7 @@ import {
   OfferedCredentialType,
 } from './utils/IssuerMetadataUtils'
 
-interface AuthDetails {
+export interface AuthDetails {
   type: 'openid_credential' | string
   locations?: string | string[]
   format: CredentialFormat | CredentialFormat[]
