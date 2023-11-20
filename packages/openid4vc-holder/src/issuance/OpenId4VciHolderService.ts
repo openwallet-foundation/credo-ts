@@ -4,10 +4,10 @@ import type {
   AcceptCredentialOfferOptions,
   ProofOfPossessionRequirements,
   ProofOfPossessionVerificationMethodResolver,
-  SupportedCredentialFormats,
   ResolvedCredentialOffer,
   ResolvedAuthorizationRequest,
   ResolvedAuthorizationRequestWithCode,
+  SupportedCredentialFormats,
 } from './OpenId4VciHolderServiceOptions'
 import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type {
@@ -72,7 +72,6 @@ import {
 
 import { getSupportedJwaSignatureAlgorithms } from '../shared'
 
-import { supportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 import { OpenIdCredentialFormatProfile, fromOpenIdCredentialFormatProfileToDifClaimFormat } from './utils'
 import { getFormatForVersion, getUniformFormat } from './utils/Formats'
 import {
@@ -205,7 +204,7 @@ export class OpenId4VciHolderService {
   public async resolveCredentialOffer(
     credentialOffer: UniformCredentialOfferPayload | string,
     opts?: { version?: OpenId4VCIVersion }
-  ) {
+  ): Promise<ResolvedCredentialOffer> {
     let version = opts?.version ?? OpenId4VCIVersion.VER_1_0_11
     const claimedCredentialOfferUrl = `openid-credential-offer://?`
     const claimedIssuanceInitiationUrl = `openid-initiate-issuance://?`
@@ -463,7 +462,7 @@ export class OpenId4VciHolderService {
     for (const credentialWithMetadata of credentialsToRequestWithMetadata ?? offeredCredentialsWithMetadata) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
       const { verificationMethod, signatureAlgorithm } = await this.getCredentialRequestOptions(agentContext, {
-        allowedCredentialFormats: supportedCredentialFormats,
+        allowedCredentialFormats: [OpenIdCredentialFormatProfile.JwtVcJson, OpenIdCredentialFormatProfile.JwtVcJsonLd],
         allowedProofOfPossessionSignatureAlgorithms,
         offeredCredentialWithMetadata: credentialWithMetadata,
         proofOfPossessionVerificationMethodResolver,

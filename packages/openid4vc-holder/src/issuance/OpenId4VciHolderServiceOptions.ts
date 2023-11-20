@@ -1,15 +1,13 @@
 import type { OfferedCredentialType } from './utils/IssuerMetadataUtils'
+import type { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
+export type SupportedCredentialFormats =
+  | OpenIdCredentialFormatProfile.JwtVcJson
+  | OpenIdCredentialFormatProfile.JwtVcJsonLd
 
-export type SupportedCredentialFormats = OpenIdCredentialFormatProfile.JwtVcJson | OpenIdCredentialFormatProfile.LdpVc
-
-export const supportedCredentialFormats = [
-  OpenIdCredentialFormatProfile.JwtVcJson,
-  OpenIdCredentialFormatProfile.LdpVc,
-] satisfies OpenIdCredentialFormatProfile[]
+export type { OfferedCredentialType, OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11 }
 
 export type CredentialToRequest = { format: string; types: string[] } & (
   | { offerType: OfferedCredentialType.InlineCredentialOffer }
@@ -174,45 +172,3 @@ export interface ProofOfPossessionRequirements {
   supportedDidMethods?: string[]
   supportsAllDidMethods: boolean
 }
-
-/**
- * @internal
- */
-export enum AuthFlowType {
-  AuthorizationCodeFlow,
-  PreAuthorizedCodeFlow,
-}
-
-type WithInternalOptions<FlowType extends AuthFlowType, Options> = Options & {
-  flowType: FlowType
-
-  /**
-   * The endpoint metadata received from the credential issuer.
-   * This is obtained manually or by calling the `resolveCredentialOffer` method.
-   */
-  metadata?: EndpointMetadataResult
-
-  /**
-   * The resolved credential offer payload that was received from the issuer.
-   * This is obtained manually or by calling the `resolveCredentialOffer` method.
-   */
-  credentialOfferPayload: CredentialOfferPayloadV1_0_11
-
-  /**
-   * The openid4vci specification version.
-   * This is obtained manually or by calling the `resolveCredentialOffer` method.
-   */
-  version: OpenId4VCIVersion
-}
-
-export type AuthorizationCodeFlowOptions = WithInternalOptions<AuthFlowType.AuthorizationCodeFlow, AuthCodeFlowOptions>
-export type PreAuthorizedCodeFlowOptions = WithInternalOptions<
-  AuthFlowType.PreAuthorizedCodeFlow,
-  AcceptCredentialOfferOptions
->
-
-/**
- * The options that are used to request a credential from an issuer.
- * @internal
- */
-export type RequestCredentialOptions = PreAuthorizedCodeFlowOptions & AuthorizationCodeFlowOptions

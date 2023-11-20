@@ -3,11 +3,11 @@ import type {
   ResolvedAuthorizationRequest,
   AuthCodeFlowOptions,
   AcceptCredentialOfferOptions,
+  CredentialOfferPayloadV1_0_11,
 } from './issuance/OpenId4VciHolderServiceOptions'
 import type { PresentationSubmission } from './presentation'
 import type { AuthenticationRequest, PresentationRequest } from './presentation/OpenId4VpHolderServiceOptions'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
-import type { CredentialOfferPayloadV1_0_11 } from '@sphereon/oid4vci-common'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
