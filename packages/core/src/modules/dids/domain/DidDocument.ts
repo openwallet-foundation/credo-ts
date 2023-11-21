@@ -26,7 +26,7 @@ interface DidDocumentOptions {
   context?: string | string[]
   id: string
   alsoKnownAs?: string[]
-  controller?: string[]
+  controller?: string | string[]
   verificationMethod?: VerificationMethod[]
   service?: DidDocumentService[]
   authentication?: Array<string | VerificationMethod>
