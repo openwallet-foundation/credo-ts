@@ -1,0 +1,19 @@
+import type { Issuance } from '@aries-framework/openid4vc-issuer'
+
+export type AcceptCredentialOfferOptions = Issuance.AcceptCredentialOfferOptions
+export type AuthCodeFlowOptions = Issuance.AuthCodeFlowOptions
+export type AuthDetails = Issuance.AuthDetails
+export type CredentialOfferPayloadV1_0_11 = Issuance.CredentialOfferPayloadV1_0_11
+export type CredentialToRequest = Issuance.CredentialToRequest
+export type EndpointMetadataResult = Issuance.EndpointMetadataResult
+export type OfferedCredentialType = Issuance.OfferedCredentialType
+export type OpenId4VCIVersion = Issuance.OpenId4VCIVersion
+export type OpenIdCredentialFormatProfile = Issuance.OpenIdCredentialFormatProfile
+export type ProofOfPossessionRequirements = Issuance.ProofOfPossessionRequirements
+export type ProofOfPossessionVerificationMethodResolver = Issuance.ProofOfPossessionVerificationMethodResolver
+export type ProofOfPossessionVerificationMethodResolverOptions =
+  Issuance.ProofOfPossessionVerificationMethodResolverOptions
+export type ResolvedAuthorizationRequest = Issuance.ResolvedAuthorizationRequest
+export type ResolvedAuthorizationRequestWithCode = Issuance.ResolvedAuthorizationRequestWithCode
+export type ResolvedCredentialOffer = Issuance.ResolvedCredentialOffer
+export type SupportedCredentialFormats = Issuance.SupportedCredentialFormats

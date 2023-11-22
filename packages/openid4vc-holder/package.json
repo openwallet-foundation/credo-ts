@@ -27,8 +27,7 @@
     "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.2",
     "@aries-framework/openid4vc-verifier": "0.4.2",
-    "@sphereon/oid4vci-client": "^0.8.1",
-    "@sphereon/oid4vci-common": "^0.8.1"
+    "@aries-framework/openid4vc-issuer": "0.4.2"
   },
   "devDependencies": {
     "@aries-framework/node": "^0.4.2",

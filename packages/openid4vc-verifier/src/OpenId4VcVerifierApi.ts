@@ -1,8 +1,4 @@
-import type {
-  CreateProofRequestOptions,
-  ProofPayload,
-  VerifyProofResponseOptions,
-} from './OpenId4VcVerifierServiceOptions'
+import type { CreateProofRequestOptions, ProofPayload } from './OpenId4VcVerifierServiceOptions'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 

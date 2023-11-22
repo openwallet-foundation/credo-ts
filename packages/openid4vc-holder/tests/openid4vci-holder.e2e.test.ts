@@ -14,7 +14,7 @@ import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenIdCredentialFormatProfile } from '../src'
+import { OpenIdCredentialFormatProfile } from '../'
 import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
 
 import {
