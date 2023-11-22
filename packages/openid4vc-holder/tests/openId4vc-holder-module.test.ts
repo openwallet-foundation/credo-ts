@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import type { DependencyManager } from '@aries-framework/core'
 
+import { Presentation } from '@aries-framework/openid4vc-verifier'
+
 import { OpenId4VcHolderApi } from '../src/OpenId4VcHolderApi'
 import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
 import { OpenId4VciHolderService } from '../src/issuance/OpenId4VciHolderService'
-import { OpenId4VpHolderService, PresentationExchangeService } from '../src/presentation'
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -23,7 +24,7 @@ describe('OpenId4VcHolderModule', () => {
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VciHolderService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(OpenId4VpHolderService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(PresentationExchangeService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(Presentation.OpenId4VpHolderService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(Presentation.PresentationExchangeService)
   })
 })

@@ -14,8 +14,10 @@ const dependencyManager = {
 
 describe('OpenId4VcIssuerModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const openId4VcClientModule = new OpenId4VcVerifierModule()
+    const openId4VcClientModule = new OpenId4VcVerifierModule({})
     openId4VcClientModule.register(dependencyManager)
+
+    expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
 
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerContextScoped).toHaveBeenCalledWith(OpenId4VcVerifierApi)

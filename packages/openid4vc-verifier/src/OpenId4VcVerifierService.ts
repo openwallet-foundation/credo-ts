@@ -1,5 +1,5 @@
+import type { IInMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
 import type {
-  VerifyProofResponseOptions,
   ProofRequestWithMetadata,
   CreateProofRequestOptions,
   ProofRequestMetadata,
@@ -9,7 +9,6 @@ import type { AgentContext, W3cVerifyPresentationResult } from '@aries-framework
 import type {
   AuthorizationResponsePayload,
   ClientMetadataOpts,
-  PresentationDefinitionWithLocation,
   PresentationVerificationCallback,
   SigningAlgo,
 } from '@sphereon/did-auth-siop'
@@ -36,8 +35,12 @@ import {
   PresentationDefinitionLocation,
   PassBy,
   VerificationMode,
+  AuthorizationResponse,
 } from '@sphereon/did-auth-siop'
+import { EventEmitter } from 'events'
 
+import { InMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
+import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { staticOpOpenIdConfig, staticOpSiopConfig } from './OpenId4VcVerifierServiceOptions'
 import {
   getSupportedDidMethods,
@@ -53,10 +56,21 @@ import {
 export class OpenId4VcVerifierService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
+  private openId4VcVerifierModuleConfig: OpenId4VcVerifierModuleConfig
+  private sessionManager: IInMemoryVerifierSessionManager
+  private eventEmitter: EventEmitter
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
+  public constructor(
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    w3cCredentialService: W3cCredentialService,
+    openId4VcVerifierModuleConfig: OpenId4VcVerifierModuleConfig
+  ) {
     this.w3cCredentialService = w3cCredentialService
     this.logger = logger
+    this.openId4VcVerifierModuleConfig = openId4VcVerifierModuleConfig
+    this.eventEmitter = new EventEmitter()
+    this.sessionManager =
+      openId4VcVerifierModuleConfig.sessionManager ?? new InMemoryVerifierSessionManager(this.eventEmitter, logger)
   }
 
   public async getRelyingParty(
@@ -147,9 +161,9 @@ export class OpenId4VcVerifierService {
       .withAuthorizationEndpoint(authorizationEndpoint)
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
       .withRevocationVerification(RevocationVerification.NEVER)
+      .withSessionManager(this.sessionManager)
+      .withEventEmitter(this.eventEmitter)
     // .withWellknownDIDVerifyCallback
-    // .withEventEmitter
-    // .withSessionManager // For now we use no session manager
 
     if (proofRequestMetadata) {
       builder.withPresentationVerification(
@@ -190,43 +204,68 @@ export class OpenId4VcVerifierService {
     const authorizationRequestUri = await authorizationRequest.uri()
     const encodedAuthorizationRequestUri = authorizationRequestUri.encodedUri
 
+    const proofRequestMetadata = { correlationId, challenge, state }
+
+    await this.sessionManager.saveVerifyProofResponseOptions(correlationId, {
+      createProofRequestOptions: options,
+      proofRequestMetadata,
+    })
+
     return {
       proofRequest: encodedAuthorizationRequestUri,
-      proofRequestMetadata: {
-        correlationId,
-        challenge,
-        state,
-      },
+      proofRequestMetadata,
     }
   }
 
   public async verifyProofResponse(
     agentContext: AgentContext,
-    authorizationResponsePayload: AuthorizationResponsePayload,
-    options: VerifyProofResponseOptions
+    authorizationResponsePayload: AuthorizationResponsePayload
   ): Promise<VerifiedProofResponse> {
-    const { createProofRequestOptions, proofRequestMetadata } = options
-    const { state, challenge, correlationId } = proofRequestMetadata
+    let authorizationResponse: AuthorizationResponse
+    try {
+      authorizationResponse = await AuthorizationResponse.fromPayload(authorizationResponsePayload)
+    } catch (error: unknown) {
+      throw new AriesFrameworkError(
+        `Unable to parse authorization response payload. ${JSON.stringify(authorizationResponsePayload)}`
+      )
+    }
 
-    const relyingParty = await this.getRelyingParty(agentContext, createProofRequestOptions, proofRequestMetadata)
+    let correlationId: string | undefined
+    const resNonce = (await authorizationResponse.getMergedProperty('nonce', false)) as string
+    const resState = (await authorizationResponse.getMergedProperty('state', false)) as string
+    correlationId = await this.sessionManager.getCorrelationIdByNonce(resNonce, false)
+    if (!correlationId) {
+      correlationId = await this.sessionManager.getCorrelationIdByState(resState, false)
+    }
 
+    if (!correlationId) {
+      throw new AriesFrameworkError(`Unable to find correlationId for nonce '${resNonce}' or state '${resState}'`)
+    }
+    const result = await this.sessionManager.getVerifiyProofResponseOptions(correlationId)
+
+    if (!result) {
+      throw new AriesFrameworkError(`Unable to associate a request to the response correlationId '${correlationId}'`)
+    }
+
+    const { createProofRequestOptions, proofRequestMetadata } = result
     const presentationDefinition = createProofRequestOptions.presentationDefinition
 
-    let presentationDefinitionsWithLocation: [PresentationDefinitionWithLocation] | undefined
-    if (presentationDefinition) {
-      presentationDefinitionsWithLocation = [
-        {
-          definition: presentationDefinition,
-          location: PresentationDefinitionLocation.CLAIMS_VP_TOKEN, // For now we always use the VP_TOKEN
-        },
-      ]
-    }
+    const presentationDefinitionsWithLocation = presentationDefinition
+      ? [
+          {
+            definition: presentationDefinition,
+            location: PresentationDefinitionLocation.CLAIMS_VP_TOKEN, // For now we always use the VP_TOKEN
+          },
+        ]
+      : undefined
+
+    const relyingParty = await this.getRelyingParty(agentContext, createProofRequestOptions, proofRequestMetadata)
 
     const response = await relyingParty.verifyAuthorizationResponse(authorizationResponsePayload, {
       audience: createProofRequestOptions.verificationMethod.id,
       correlationId,
-      nonce: challenge,
-      state,
+      nonce: proofRequestMetadata.challenge,
+      state: proofRequestMetadata.state,
       presentationDefinitions: presentationDefinitionsWithLocation,
       verification: {
         mode: VerificationMode.INTERNAL,

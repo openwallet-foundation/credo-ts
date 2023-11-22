@@ -1,13 +1,15 @@
 import type { KeyDidCreateOptions, VerificationMethod } from '@aries-framework/core'
 import type { CreateProofRequestOptions } from '@aries-framework/openid4vc-verifier'
 import type { PresentationDefinitionV2 } from '@sphereon/pex-models'
+import type { Express } from 'express'
+import type { Server } from 'http'
 
 import { AskarModule } from '@aries-framework/askar'
-import { KeyType, Agent, TypedArrayEncoder, DidKey, W3cJwtVerifiableCredential } from '@aries-framework/core'
+import { Agent, DidKey, KeyType, TypedArrayEncoder, W3cJwtVerifiableCredential } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { OpenId4VcVerifierModule, staticOpOpenIdConfig } from '@aries-framework/openid4vc-verifier'
+import { OpenId4VcVerifierModule, SigningAlgo, staticOpOpenIdConfig } from '@aries-framework/openid4vc-verifier'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { SigningAlgo } from '@sphereon/did-auth-siop'
+import express from 'express'
 import nock from 'nock'
 
 import { OpenId4VcHolderModule } from '../src'
@@ -70,46 +72,98 @@ const staticOpOpenIdConfigEdDSA = {
   vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.EDDSA] }, jwt_vp: { alg: [SigningAlgo.EDDSA] } },
 }
 
-const modules = {
-  openId4VcHolder: new OpenId4VcHolderModule(),
-  openId4VcVerifier: new OpenId4VcVerifierModule(),
-  askar: new AskarModule({ ariesAskar }),
+const port = 3121
+const verificationEndpointPath = '/proofResponse'
+const verificationEndpoint = `http://localhost:${port}${verificationEndpointPath}`
+
+const createHolderModules = () => {
+  const modules = {
+    openId4VcHolder: new OpenId4VcHolderModule(),
+    askar: new AskarModule({ ariesAskar }),
+  }
+
+  return modules
 }
 
 describe('OpenId4VcHolder | OpenID4VP', () => {
-  let verifier: Agent<typeof modules>
+  let verifier: Agent<VerifierModules>
   let verifierVerificationMethod: VerificationMethod
+  let verifierApp: Express
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let verifierServer: Server<any, any>
 
-  let holder: Agent<typeof modules>
+  let holder: Agent<HolderModules>
   let holderVerificationMethod: VerificationMethod
 
+  const mockFunction = jest.fn()
+  mockFunction.mockReturnValue({ status: 200 })
+
+  function waitForMockFunction() {
+    return new Promise((resolve, reject) => {
+      const intervalId = setInterval(() => {
+        if (mockFunction.mock.calls.length > 0) {
+          clearInterval(intervalId)
+          resolve(0)
+        }
+      }, 100)
+
+      setTimeout(() => {
+        clearInterval(intervalId)
+        reject(new Error('Timeout Callback'))
+      }, 10000)
+    })
+  }
+
+  const createVerifierModules = (verifierApp: Express) => {
+    const modules = {
+      openId4VcHolder: new OpenId4VcHolderModule(),
+      openId4VcVerifier: new OpenId4VcVerifierModule({
+        endPointConfig: {
+          app: verifierApp,
+          verificationEndpointPath,
+          proofResponseHandler: mockFunction,
+        },
+      }),
+
+      askar: new AskarModule({ ariesAskar }),
+    }
+
+    return modules
+  }
+
+  type VerifierModules = ReturnType<typeof createVerifierModules>
+  type HolderModules = ReturnType<typeof createHolderModules>
+
   beforeEach(async () => {
+    verifierApp = express()
     verifier = new Agent({
       config: {
-        label: 'OpenId4VcRp OpenID4VP Test36',
+        label: 'OpenId4VcRp OpenID4VP Test39',
         walletConfig: {
-          id: 'openid4vc-rp-openid4vp-test37',
-          key: 'openid4vc-rp-openid4vp-test38',
+          id: 'openid4vc-rp-openid4vp-test40',
+          key: 'openid4vc-rp-openid4vp-test41',
         },
       },
       dependencies: agentDependencies,
-      modules,
+      modules: createVerifierModules(verifierApp),
     })
 
     holder = new Agent({
       config: {
-        label: 'OpenId4VcOp OpenID4VP Test37',
+        label: 'OpenId4VcOp OpenID4VP Test39',
         walletConfig: {
-          id: 'openid4vc-op-openid4vp-test38',
-          key: 'openid4vc-op-openid4vp-test39',
+          id: 'openid4vc-op-openid4vp-test40',
+          key: 'openid4vc-op-openid4vp-test41',
         },
       },
       dependencies: agentDependencies,
-      modules,
+      modules: createHolderModules(),
     })
 
     await verifier.initialize()
     await holder.initialize()
+
+    verifierServer = verifierApp.listen(port)
 
     const verifierDid = await verifier.dids.create<KeyDidCreateOptions>({
       method: 'key',
@@ -139,6 +193,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   })
 
   afterEach(async () => {
+    verifierServer.close()
     await holder.shutdown()
     await holder.wallet.delete()
     await verifier.shutdown()
@@ -148,7 +203,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
   it('siop request with static metadata', async () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
     }
 
@@ -165,22 +220,20 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType == 'presentation') throw new Error('Expected an authenticationRequest')
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
-    const { submittedResponse } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
+    const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
       result.request,
       holderVerificationMethod
     )
 
-    expect(result.request.authorizationRequestPayload.redirect_uri).toBe('https://acme.com/hello')
+    expect(status).toBe(200)
+
+    expect(result.request.authorizationRequestPayload.redirect_uri).toBe(verificationEndpoint)
     expect(result.request.issuer).toBe(verifierVerificationMethod.controller)
 
     //////////////////////////// RP (verify the response) ////////////////////////////
 
     const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
-      submittedResponse,
-      {
-        createProofRequestOptions,
-        proofRequestMetadata,
-      }
+      submittedResponse
     )
 
     const { state, challenge } = proofRequestMetadata
@@ -188,6 +241,12 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(idTokenPayload).toBeDefined()
     expect(idTokenPayload.state).toMatch(state)
     expect(idTokenPayload.nonce).toMatch(challenge)
+
+    await waitForMockFunction()
+    expect(mockFunction).toBeCalledWith({
+      idTokenPayload: expect.objectContaining(idTokenPayload),
+      submission: undefined,
+    })
   })
 
   // TODO: not working yet
@@ -204,7 +263,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       // TODO: if provided this way client metadata is not resolved for the verification method
       holderIdentifier: 'https://helloworld.com',
     }
@@ -222,28 +281,35 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType == 'presentation') throw new Error('Expected a proofType')
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
-    const { submittedResponse } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
+    const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
       result.request,
       holderVerificationMethod
     )
 
+    expect(status).toBe(200)
+
     //////////////////////////// RP (verify the response) ////////////////////////////
 
-    const verifiedProofPresponse = await verifier.modules.openId4VcVerifier.verifyProofResponse(submittedResponse, {
-      createProofRequestOptions,
-      proofRequestMetadata,
-    })
+    const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
+      submittedResponse
+    )
 
     const { state, challenge } = proofRequestMetadata
-    expect(verifiedProofPresponse.idTokenPayload).toBeDefined()
-    expect(verifiedProofPresponse.idTokenPayload.state).toMatch(state)
-    expect(verifiedProofPresponse.idTokenPayload.nonce).toMatch(challenge)
+    expect(idTokenPayload).toBeDefined()
+    expect(idTokenPayload.state).toMatch(state)
+    expect(idTokenPayload.nonce).toMatch(challenge)
+
+    await waitForMockFunction()
+    expect(mockFunction).toBeCalledWith({
+      idTokenPayload: expect.objectContaining(idTokenPayload),
+      submission: expect.objectContaining(submission),
+    })
   })
 
   it('resolving vp request with no credentials', async () => {
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
@@ -265,7 +331,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
@@ -291,7 +357,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
@@ -330,7 +396,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
@@ -363,7 +429,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
@@ -371,9 +437,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       ]),
     }
 
-    const { proofRequest, proofRequestMetadata } = await verifier.modules.openId4VcVerifier.createProofRequest(
-      createProofRequestOptions
-    )
+    const { proofRequest } = await verifier.modules.openId4VcVerifier.createProofRequest(createProofRequestOptions)
 
     //////////////////////////// OP (validate and parse the request) ////////////////////////////
 
@@ -390,17 +454,18 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(presentationSubmission.requirements[0].submissionEntry[0].inputDescriptorId).toBe('OpenBadgeCredential')
     expect(presentationSubmission.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
 
-    const { submittedResponse } = await holder.modules.openId4VcHolder.acceptPresentationRequest(result.request, {
-      submission: result.presentationSubmission,
-      submissionEntryIndexes: [0, 0],
-    })
+    const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
+      result.request,
+      {
+        submission: result.presentationSubmission,
+        submissionEntryIndexes: [0, 0],
+      }
+    )
+
+    expect(status).toBe(200)
 
     const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
-      submittedResponse,
-      {
-        createProofRequestOptions,
-        proofRequestMetadata,
-      }
+      submittedResponse
     )
 
     expect(idTokenPayload).toBeDefined()
@@ -411,6 +476,12 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(submission?.presentations[0].vcs).toHaveLength(2)
     expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
     expect(submission?.presentations[0].vcs[1].credential.type).toContain('UniversityDegree')
+
+    await waitForMockFunction()
+    expect(mockFunction).toBeCalledWith({
+      idTokenPayload: expect.objectContaining(idTokenPayload),
+      submission: expect.objectContaining(submission),
+    })
   })
 
   it('expect accepting a proof request with only a partial set of requirements to error', async () => {
@@ -424,7 +495,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: combinePresentationDefinitions([
         openBadgePresentationDefinition,
@@ -454,7 +525,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     const createProofRequestOptions: CreateProofRequestOptions = {
       verificationMethod: verifierVerificationMethod,
-      redirectUri: 'https://acme.com/hello',
+      redirectUri: verificationEndpoint,
       holderMetadata: staticOpOpenIdConfigEdDSA,
       presentationDefinition: openBadgePresentationDefinition,
     }
@@ -485,17 +556,13 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
       }
     )
 
-    expect(status).toBe(404)
+    expect(status).toBe(200)
 
     // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
     // that the RP sent in the Authorization Request as an audience.
     // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
     const { idTokenPayload, submission } = await verifier.modules.openId4VcVerifier.verifyProofResponse(
-      submittedResponse,
-      {
-        createProofRequestOptions,
-        proofRequestMetadata,
-      }
+      submittedResponse
     )
 
     const { state, challenge } = proofRequestMetadata
@@ -508,6 +575,12 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(submission?.submissionData.definition_id).toBe('OpenBadgeCredential')
     expect(submission?.presentations).toHaveLength(1)
     expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
+
+    await waitForMockFunction()
+    expect(mockFunction).toBeCalledWith({
+      idTokenPayload: expect.objectContaining(idTokenPayload),
+      submission: expect.objectContaining(submission),
+    })
   })
 
   // it('edited walt vp request', async () => {

@@ -50,7 +50,7 @@ export class OpenId4VcVerifierApi {
    * @param options.proofRequestMetadata - Metadata about the proof request.
    * @returns @see VerifiedProofResponse object containing the idTokenPayload and the verified submission.
    */
-  public async verifyProofResponse(proofPayload: ProofPayload, options: VerifyProofResponseOptions) {
-    return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, proofPayload, options)
+  public async verifyProofResponse(proofPayload: ProofPayload) {
+    return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, proofPayload)
   }
 }

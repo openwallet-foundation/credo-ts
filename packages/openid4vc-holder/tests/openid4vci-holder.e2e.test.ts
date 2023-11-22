@@ -39,10 +39,10 @@ describe('OpenId4VcHolder', () => {
   beforeEach(async () => {
     agent = new Agent({
       config: {
-        label: 'OpenId4VcHolder Test20',
+        label: 'OpenId4VcHolder Test23',
         walletConfig: {
-          id: 'openid4vc-holder-test21',
-          key: 'openid4vc-holder-test22',
+          id: 'openid4vc-holder-test24',
+          key: 'openid4vc-holder-test25',
         },
       },
       dependencies: agentDependencies,

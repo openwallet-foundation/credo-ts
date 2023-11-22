@@ -5,14 +5,13 @@ import type {
   AcceptCredentialOfferOptions,
   CredentialOfferPayloadV1_0_11,
 } from './issuance/OpenId4VciHolderServiceOptions'
-import type { PresentationSubmission } from './presentation'
-import type { AuthenticationRequest, PresentationRequest } from './presentation/OpenId4VpHolderServiceOptions'
+import type { AuthenticationRequest, PresentationRequest, PresentationSubmission } from './presentation'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
 
 import { injectable, AgentContext } from '@aries-framework/core'
+import { OpenId4VpHolderService } from '@aries-framework/openid4vc-verifier'
 
 import { OpenId4VciHolderService } from './issuance/OpenId4VciHolderService'
-import { OpenId4VpHolderService } from './presentation'
 
 /**
  * @public

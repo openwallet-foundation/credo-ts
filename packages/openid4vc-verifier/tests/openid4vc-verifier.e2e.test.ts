@@ -11,7 +11,7 @@ import { cleanAll, enableNetConnect } from 'nock'
 import { OpenId4VcVerifierModule, staticOpOpenIdConfig, staticOpSiopConfig } from '../src'
 
 const modules = {
-  openId4VcVerifier: new OpenId4VcVerifierModule(),
+  openId4VcVerifier: new OpenId4VcVerifierModule({}),
   askar: new AskarModule({
     ariesAskar,
   }),
