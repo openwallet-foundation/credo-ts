@@ -122,6 +122,17 @@ export interface AcceptCredentialOptions {
 }
 
 /**
+ * Interface for CredentialsApi.sendRevocationNotification. Will send a revoke message
+ */
+export interface SendRevocationNotificationOptions {
+  credentialRecordId: string
+  revocationId: string // TODO: Get from record?
+  revocationFormat: string // TODO: Get from record?
+  comment?: string
+  requestAck?: boolean
+}
+
+/**
  * Interface for CredentialsApi.sendProblemReport. Will send a problem-report message
  */
 export interface SendCredentialProblemReportOptions {

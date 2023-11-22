@@ -5,9 +5,13 @@ import type {
   CreateCredentialReturn,
   CreateCredentialOptions,
   CreateCredentialDefinitionReturn,
+  CreateRevocationRegistryDefinitionOptions,
+  CreateRevocationRegistryDefinitionReturn,
+  CreateRevocationStatusListOptions,
+  UpdateRevocationStatusListOptions,
 } from './AnonCredsIssuerServiceOptions'
 import type { AnonCredsCredentialOffer } from '../models/exchange'
-import type { AnonCredsSchema } from '../models/registry'
+import type { AnonCredsRevocationStatusList, AnonCredsSchema } from '../models/registry'
 import type { AgentContext } from '@aries-framework/core'
 
 export const AnonCredsIssuerServiceSymbol = Symbol('AnonCredsIssuerService')
@@ -22,6 +26,21 @@ export interface AnonCredsIssuerService {
     options: CreateCredentialDefinitionOptions,
     metadata?: Record<string, unknown>
   ): Promise<CreateCredentialDefinitionReturn>
+
+  createRevocationRegistryDefinition(
+    agentContext: AgentContext,
+    options: CreateRevocationRegistryDefinitionOptions
+  ): Promise<CreateRevocationRegistryDefinitionReturn>
+
+  createRevocationStatusList(
+    agentContext: AgentContext,
+    options: CreateRevocationStatusListOptions
+  ): Promise<AnonCredsRevocationStatusList>
+
+  updateRevocationStatusList(
+    agentContext: AgentContext,
+    options: UpdateRevocationStatusListOptions
+  ): Promise<AnonCredsRevocationStatusList>
 
   createCredentialOffer(
     agentContext: AgentContext,

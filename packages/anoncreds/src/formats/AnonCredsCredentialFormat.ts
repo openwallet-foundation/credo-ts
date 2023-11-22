@@ -42,6 +42,8 @@ export interface AnonCredsProposeCredentialFormat {
  */
 export interface AnonCredsAcceptProposalFormat {
   credentialDefinitionId?: string
+  revocationRegistryDefinitionId?: string
+  revocationRegistryIndex?: number
   attributes?: CredentialPreviewAttributeOptions[]
   linkedAttachments?: LinkedAttachment[]
 }
@@ -60,6 +62,8 @@ export interface AnonCredsAcceptOfferFormat {
  */
 export interface AnonCredsOfferCredentialFormat {
   credentialDefinitionId: string
+  revocationRegistryDefinitionId?: string
+  revocationRegistryIndex?: number
   attributes: CredentialPreviewAttributeOptions[]
   linkedAttachments?: LinkedAttachment[]
 }
