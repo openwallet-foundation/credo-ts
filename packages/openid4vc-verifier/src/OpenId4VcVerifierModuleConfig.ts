@@ -5,14 +5,14 @@ import type { Express } from 'express'
 export type ProofResponseHandlerReturn = { status: number }
 export type ProofResponseHandler = (verifiedProofResponse: VerifiedProofResponse) => Promise<ProofResponseHandlerReturn>
 
-export interface EndPointConfig {
+export interface EndpointConfig {
   app: Express
   verificationEndpointPath: string
   proofResponseHandler?: ProofResponseHandler
 }
 export interface OpenId4VcVerifierModuleConfigOptions {
-  SessionManager?: IInMemoryVerifierSessionManager
-  endPointConfig?: EndPointConfig
+  sessionManager?: IInMemoryVerifierSessionManager
+  endpointConfig?: EndpointConfig
 }
 
 export class OpenId4VcVerifierModuleConfig {
@@ -22,11 +22,11 @@ export class OpenId4VcVerifierModuleConfig {
     this.options = options
   }
 
-  public get endPointConfig() {
-    return this.options.endPointConfig
+  public get endpointConfig() {
+    return this.options.endpointConfig
   }
 
   public get sessionManager() {
-    return this.options.SessionManager
+    return this.options.sessionManager
   }
 }

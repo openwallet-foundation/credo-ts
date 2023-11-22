@@ -43,12 +43,11 @@ export class OpenId4VcVerifierModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    if (!this.config.endPointConfig) return
+    const endPointConfig = this.config.endpointConfig
+    if (!endPointConfig) return
 
     // create application/x-www-form-urlencoded parser
     const urlencodedParser = bodyParser.urlencoded({ extended: false })
-
-    const endPointConfig = this.config.endPointConfig
 
     endPointConfig.app.post(endPointConfig.verificationEndpointPath, urlencodedParser, async (req, res, next) => {
       try {
