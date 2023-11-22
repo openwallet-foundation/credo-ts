@@ -1,3 +1,4 @@
+import type { SupportedCredentialFormats } from './issuance'
 import type { VerificationMethod, W3cCredential } from '@aries-framework/core'
 import type {
   CommonCredentialSupported,
@@ -9,16 +10,13 @@ import type {
 
 export type { MetadataDisplay, ProofOfPossession, CredentialOfferPayloadV1_0_11 }
 
-// TODO: duplicate
-export type CredentialFormatSupported = 'jwt_vc_json' | 'jwt_vc_json-ld'
-
 export interface CredentialOfferFormat {
-  format: CredentialFormatSupported
+  format: SupportedCredentialFormats
   types: string[]
 }
 
 export interface CredentialSupported extends CommonCredentialSupported {
-  format: CredentialFormatSupported
+  format: SupportedCredentialFormats
   types: string[]
 }
 

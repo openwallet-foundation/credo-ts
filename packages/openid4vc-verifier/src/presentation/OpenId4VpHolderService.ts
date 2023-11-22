@@ -31,7 +31,7 @@ import {
   VerificationMode,
 } from '@sphereon/did-auth-siop'
 
-import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDidMethods } from '../shared'
+import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDidMethods } from '../utils'
 
 import { PresentationExchangeService } from './PresentationExchangeService'
 

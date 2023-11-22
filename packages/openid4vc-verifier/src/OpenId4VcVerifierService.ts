@@ -47,7 +47,7 @@ import {
   getSuppliedSignatureFromVerificationMethod,
   getResolver,
   getSupportedJwaSignatureAlgorithms,
-} from './shared'
+} from './utils'
 
 /**
  * @internal

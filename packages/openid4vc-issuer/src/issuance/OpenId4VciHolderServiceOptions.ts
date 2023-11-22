@@ -1,11 +1,8 @@
 import type { OfferedCredentialType } from './utils/IssuerMetadataUtils'
-import type { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
 import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-export type SupportedCredentialFormats =
-  | OpenIdCredentialFormatProfile.JwtVcJson
-  | OpenIdCredentialFormatProfile.JwtVcJsonLd
+export type SupportedCredentialFormats = 'jwt_vc_json' | 'jwt_vc_json-ld'
 
 export type { OfferedCredentialType, OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11 }
 
