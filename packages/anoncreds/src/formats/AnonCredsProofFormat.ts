@@ -34,6 +34,7 @@ export interface AnonCredsProposeProofFormat {
   version?: string
   attributes?: AnonCredsPresentationPreviewAttribute[]
   predicates?: AnonCredsPresentationPreviewPredicate[]
+  nonRevokedInterval?: AnonCredsNonRevokedInterval
 }
 
 /**

@@ -1,4 +1,3 @@
-import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRequestedAttribute,
@@ -7,11 +6,17 @@ import type {
   AnonCredsSchema,
   RegisterCredentialDefinitionReturnStateFinished,
   RegisterSchemaReturnStateFinished,
-} from '../src'
+  AnonCredsRegistry,
+  AnonCredsRegisterRevocationRegistryDefinitionOptions,
+  RegisterRevocationRegistryDefinitionReturnStateFinished,
+  AnonCredsRegisterRevocationStatusListOptions,
+  RegisterRevocationStatusListReturnStateFinished,
+} from '../../anoncreds/src'
+import type { EventReplaySubject } from '../../core/tests'
 import type { AutoAcceptProof, ConnectionRecord } from '@aries-framework/core'
 
 import {
-  TypedArrayEncoder,
+  DidDocumentBuilder,
   CacheModule,
   InMemoryLruCache,
   Agent,
@@ -27,139 +32,70 @@ import {
   V2ProofProtocol,
   DidsModule,
 } from '@aries-framework/core'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { randomUUID } from 'crypto'
 
-import { AnonCredsRsModule } from '../../anoncreds-rs/src'
-import { anoncreds } from '../../anoncreds-rs/tests/helpers'
+import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../../anoncreds/src'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { AskarModule } from '../../askar/src'
 import { askarModuleConfig } from '../../askar/tests/helpers'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
 import {
   getAgentOptions,
-  importExistingIndyDidFromPrivateKey,
   makeConnection,
-  publicDidSeed,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import {
-  IndySdkAnonCredsRegistry,
-  IndySdkIndyDidRegistrar,
-  IndySdkIndyDidResolver,
-  IndySdkModule,
-  IndySdkSovDidResolver,
-} from '../../indy-sdk/src'
-import { getIndySdkModuleConfig } from '../../indy-sdk/tests/setupIndySdkModule'
-import {
-  IndyVdrAnonCredsRegistry,
-  IndyVdrSovDidResolver,
-  IndyVdrModule,
-  IndyVdrIndyDidResolver,
-  IndyVdrIndyDidRegistrar,
-} from '../../indy-vdr/src'
-import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
-import {
-  getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedSchemaId,
-  parseIndyCredentialDefinitionId,
-  parseIndySchemaId,
-  V1CredentialProtocol,
-  V1ProofProtocol,
-  AnonCredsModule,
-  LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
-} from '../src'
+import { AnonCredsRsModule } from '../src'
+
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
+import { LocalDidResolver } from './LocalDidResolver'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent =
-  | Agent<ReturnType<typeof getLegacyAnonCredsModules> & { mediationRecipient?: any; mediator?: any }>
-  | Agent<ReturnType<typeof getAskarAnonCredsIndyModules> & { mediationRecipient?: any; mediator?: any }>
+export type AnonCredsTestsAgent = Agent<
+  ReturnType<typeof getAnonCredsModules> & { mediationRecipient?: any; mediator?: any }
+>
 
-export const getLegacyAnonCredsModules = ({
+export const getAnonCredsModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
-  const indyCredentialFormat = new LegacyIndyCredentialFormatService()
-  const indyProofFormat = new LegacyIndyProofFormatService()
+  registries,
+}: {
+  autoAcceptCredentials?: AutoAcceptCredential
+  autoAcceptProofs?: AutoAcceptProof
+  registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
+} = {}) => {
+  const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
+  const anonCredsProofFormatService = new AnonCredsProofFormatService()
 
-  // Register the credential and proof protocols
   const modules = {
     credentials: new CredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
-        new V1CredentialProtocol({ indyCredentialFormat }),
         new V2CredentialProtocol({
-          credentialFormats: [indyCredentialFormat],
+          credentialFormats: [anonCredsCredentialFormatService],
         }),
       ],
     }),
     proofs: new ProofsModule({
       autoAcceptProofs,
       proofProtocols: [
-        new V1ProofProtocol({ indyProofFormat }),
         new V2ProofProtocol({
-          proofFormats: [indyProofFormat],
+          proofFormats: [anonCredsProofFormatService],
         }),
       ],
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new IndySdkAnonCredsRegistry()],
-    }),
-    dids: new DidsModule({
-      resolvers: [new IndySdkSovDidResolver(), new IndySdkIndyDidResolver()],
-      registrars: [new IndySdkIndyDidRegistrar()],
-    }),
-    indySdk: new IndySdkModule(getIndySdkModuleConfig()),
-    cache: new CacheModule({
-      cache: new InMemoryLruCache({ limit: 100 }),
-    }),
-  } as const
-
-  return modules
-}
-
-export const getAskarAnonCredsIndyModules = ({
-  autoAcceptCredentials,
-  autoAcceptProofs,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}) => {
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
-
-  const modules = {
-    credentials: new CredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new V1CredentialProtocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new V1ProofProtocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService],
-        }),
-      ],
-    }),
-    anoncreds: new AnonCredsModule({
-      registries: [new IndyVdrAnonCredsRegistry()],
+      registries: registries ?? [new InMemoryAnonCredsRegistry()],
+      tailsFileService: new InMemoryTailsFileService(),
     }),
     anoncredsRs: new AnonCredsRsModule({
       anoncreds,
     }),
-    indyVdr: new IndyVdrModule(indyVdrModuleConfig),
     dids: new DidsModule({
-      resolvers: [new IndyVdrSovDidResolver(), new IndyVdrIndyDidResolver()],
-      registrars: [new IndyVdrIndyDidRegistrar()],
+      resolvers: [new LocalDidResolver()],
     }),
     askar: new AskarModule(askarModuleConfig),
     cache: new CacheModule({
@@ -170,7 +106,7 @@ export const getAskarAnonCredsIndyModules = ({
   return modules
 }
 
-export async function presentLegacyAnonCredsProof({
+export async function presentAnonCredsProof({
   verifierAgent,
   verifierReplay,
 
@@ -200,7 +136,7 @@ export async function presentLegacyAnonCredsProof({
   let verifierProofExchangeRecord = await verifierAgent.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
-      indy: {
+      anoncreds: {
         name: 'Test Proof Request',
         requested_attributes: attributes,
         requested_predicates: predicates,
@@ -223,7 +159,7 @@ export async function presentLegacyAnonCredsProof({
 
   await holderAgent.proofs.acceptRequest({
     proofRecordId: holderProofExchangeRecord.id,
-    proofFormats: { indy: selectedCredentials.proofFormats.indy },
+    proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
 
   verifierProofExchangeRecord = await verifierProofExchangeRecordPromise
@@ -247,7 +183,7 @@ export async function presentLegacyAnonCredsProof({
   }
 }
 
-export async function issueLegacyAnonCredsCredential({
+export async function issueAnonCredsCredential({
   issuerAgent,
   issuerReplay,
 
@@ -255,6 +191,7 @@ export async function issueLegacyAnonCredsCredential({
   holderReplay,
 
   issuerHolderConnectionId,
+  revocationRegistryDefinitionId,
   offer,
 }: {
   issuerAgent: AnonCredsTestsAgent
@@ -264,14 +201,15 @@ export async function issueLegacyAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
+  revocationRegistryDefinitionId?: string
   offer: AnonCredsOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
-    protocolVersion: 'v1',
+    protocolVersion: 'v2',
     credentialFormats: {
-      indy: offer,
+      anoncreds: { ...offer, revocationRegistryDefinitionId, revocationRegistryIndex: 1 },
     },
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -329,12 +267,15 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
+  revocationRegistryDefinitionId?: string
+  revocationStatusListTimestamp?: number
 }
 
 export async function setupAnonCredsTests<
   VerifierName extends string | undefined = undefined,
   CreateConnections extends boolean = true
 >({
+  issuerId,
   issuerName,
   holderName,
   verifierName,
@@ -342,7 +283,10 @@ export async function setupAnonCredsTests<
   autoAcceptProofs,
   attributeNames,
   createConnections,
+  supportRevocation,
+  registries,
 }: {
+  issuerId: string
   issuerName: string
   holderName: string
   verifierName?: VerifierName
@@ -350,6 +294,8 @@ export async function setupAnonCredsTests<
   autoAcceptProofs?: AutoAcceptProof
   attributeNames: string[]
   createConnections?: CreateConnections
+  supportRevocation?: boolean
+  registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
     getAgentOptions(
@@ -357,9 +303,10 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:issuer'],
       },
-      getLegacyAnonCredsModules({
+      getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        registries,
       })
     )
   )
@@ -370,9 +317,10 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
-      getLegacyAnonCredsModules({
+      getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        registries,
       })
     )
   )
@@ -384,9 +332,10 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
-          getLegacyAnonCredsModules({
+          getAnonCredsModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            registries,
           })
         )
       )
@@ -402,9 +351,18 @@ export async function setupAnonCredsTests<
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  const { credentialDefinition, schema } = await prepareForAnonCredsIssuance(issuerAgent, {
-    attributeNames,
+  // Create default link secret for holder
+  await holderAgent.modules.anoncreds.createLinkSecret({
+    linkSecretId: 'default',
+    setAsDefault: true,
   })
+
+  const { credentialDefinition, revocationRegistryDefinition, revocationStatusList, schema } =
+    await prepareForAnonCredsIssuance(issuerAgent, {
+      issuerId,
+      attributeNames,
+      supportRevocation,
+    })
 
   let issuerHolderConnection: ConnectionRecord | undefined
   let holderIssuerConnection: ConnectionRecord | undefined
@@ -429,6 +387,8 @@ export async function setupAnonCredsTests<
     verifierAgent: verifierName ? verifierAgent : undefined,
     verifierReplay: verifierName ? verifierReplay : undefined,
 
+    revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+    revocationStatusListTimestamp: revocationStatusList.revocationStatusList?.timestamp,
     credentialDefinitionId: credentialDefinition.credentialDefinitionId,
     schemaId: schema.schemaId,
 
@@ -439,52 +399,81 @@ export async function setupAnonCredsTests<
   } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 
-export async function prepareForAnonCredsIssuance(agent: Agent, { attributeNames }: { attributeNames: string[] }) {
-  // Add existing endorser did to the wallet
-  const unqualifiedDid = await importExistingIndyDidFromPrivateKey(agent, TypedArrayEncoder.fromString(publicDidSeed))
-  const didIndyDid = `did:indy:pool:localtest:${unqualifiedDid}`
+export async function prepareForAnonCredsIssuance(
+  agent: Agent,
+  {
+    attributeNames,
+    supportRevocation,
+    issuerId,
+  }: { attributeNames: string[]; supportRevocation?: boolean; issuerId: string }
+) {
+  //const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
+
+  const didDocument = new DidDocumentBuilder(issuerId).build()
+
+  await agent.dids.import({ did: issuerId, didDocument })
 
   const schema = await registerSchema(agent, {
     // TODO: update attrNames to attributeNames
     attrNames: attributeNames,
     name: `Schema ${randomUUID()}`,
     version: '1.0',
-    issuerId: didIndyDid,
+    issuerId,
   })
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  const credentialDefinition = await registerCredentialDefinition(agent, {
-    schemaId: schema.schemaId,
-    issuerId: didIndyDid,
-    tag: 'default',
-  })
-
-  const s = parseIndySchemaId(schema.schemaId)
-  const cd = parseIndyCredentialDefinitionId(credentialDefinition.credentialDefinitionId)
-
-  const legacySchemaId = getUnqualifiedSchemaId(s.namespaceIdentifier, s.schemaName, s.schemaVersion)
-  const legacyCredentialDefinitionId = getUnqualifiedCredentialDefinitionId(
-    cd.namespaceIdentifier,
-    cd.schemaSeqNo,
-    cd.tag
+  const credentialDefinition = await registerCredentialDefinition(
+    agent,
+    {
+      schemaId: schema.schemaId,
+      issuerId,
+      tag: 'default',
+    },
+    supportRevocation
   )
 
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  // NOTE: we return the legacy schema and credential definition ids here because that's what currently expected
-  // in all tests. If we also support did:indy in tests we probably want to return the qualified identifiers here
-  // and transform them to the legacy variant in the specific tests that need it.
+  let revocationRegistryDefinition
+  let revocationStatusList
+  if (supportRevocation) {
+    revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
+      issuerId,
+      tag: 'default',
+      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+      maximumCredentialNumber: 10,
+    })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
+
+    revocationStatusList = await registerRevocationStatusList(agent, {
+      revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+      issuerId,
+    })
+
+    // Wait some time pass to let ledger settle the object
+    await sleep(1000)
+  }
+
   return {
     schema: {
       ...schema,
-      schemaId: legacySchemaId,
+      schemaId: schema.schemaId,
     },
     credentialDefinition: {
       ...credentialDefinition,
-      credentialDefinitionId: legacyCredentialDefinitionId,
+      credentialDefinitionId: credentialDefinition.credentialDefinitionId,
+    },
+    revocationRegistryDefinition: {
+      ...revocationRegistryDefinition,
+      revocationRegistryDefinitionId: revocationRegistryDefinition?.revocationRegistryDefinitionId,
+    },
+    revocationStatusList: {
+      ...revocationStatusList,
     },
   }
 }
@@ -529,4 +518,44 @@ async function registerCredentialDefinition(
   }
 
   return credentialDefinitionState
+}
+
+async function registerRevocationRegistryDefinition(
+  agent: AnonCredsTestsAgent,
+  revocationRegistryDefinition: AnonCredsRegisterRevocationRegistryDefinitionOptions
+): Promise<RegisterRevocationRegistryDefinitionReturnStateFinished> {
+  const { revocationRegistryDefinitionState } = await agent.modules.anoncreds.registerRevocationRegistryDefinition({
+    revocationRegistryDefinition,
+    options: {},
+  })
+
+  if (revocationRegistryDefinitionState.state !== 'finished') {
+    throw new AriesFrameworkError(
+      `Revocation registry definition not created: ${
+        revocationRegistryDefinitionState.state === 'failed' ? revocationRegistryDefinitionState.reason : 'Not finished'
+      }`
+    )
+  }
+
+  return revocationRegistryDefinitionState
+}
+
+async function registerRevocationStatusList(
+  agent: AnonCredsTestsAgent,
+  revocationStatusList: AnonCredsRegisterRevocationStatusListOptions
+): Promise<RegisterRevocationStatusListReturnStateFinished> {
+  const { revocationStatusListState } = await agent.modules.anoncreds.registerRevocationStatusList({
+    revocationStatusList,
+    options: {},
+  })
+
+  if (revocationStatusListState.state !== 'finished') {
+    throw new AriesFrameworkError(
+      `Revocation status list not created: ${
+        revocationStatusListState.state === 'failed' ? revocationStatusListState.reason : 'Not finished'
+      }`
+    )
+  }
+
+  return revocationStatusListState
 }
