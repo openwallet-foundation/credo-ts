@@ -46,6 +46,16 @@ export const supportedUpdates = [
     toVersion: '0.4',
     doUpdate: updateV0_3_1ToV0_4,
   },
+  // FIXME: this entry needs to be here to allow extension modules to add their own updates
+  // We should allow extension modules to add their own updates without having to add an entry here
+  // There will be other migrations in 0.5, so it's okay for this version upgrade
+  {
+    fromVersion: '0.4',
+    toVersion: '0.5',
+    doUpdate: async () => {
+      // no-op
+    },
+  },
 ] as const
 
 // Current version is last toVersion from the supported updates

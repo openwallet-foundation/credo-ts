@@ -1,3 +1,5 @@
+import type { AgentContext } from '@aries-framework/core'
+
 import { Repository, StorageService, InjectionSymbols, EventEmitter, inject, injectable } from '@aries-framework/core'
 
 import { TenantRecord } from './TenantRecord'
@@ -9,5 +11,9 @@ export class TenantRepository extends Repository<TenantRecord> {
     eventEmitter: EventEmitter
   ) {
     super(TenantRecord, storageService, eventEmitter)
+  }
+
+  public async findByLabel(agentContext: AgentContext, label: string): Promise<TenantRecord[]> {
+    return this.findByQuery(agentContext, { label })
   }
 }

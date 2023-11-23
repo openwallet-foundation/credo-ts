@@ -1,0 +1,67 @@
+{
+  "STORAGE_VERSION_RECORD_ID": {
+    "value": {
+      "metadata": {},
+      "id": "STORAGE_VERSION_RECORD_ID",
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "storageVersion": "0.4",
+      "updatedAt": "2023-11-23T22:50:20.522Z"
+    },
+    "id": "STORAGE_VERSION_RECORD_ID",
+    "type": "StorageVersionRecord",
+    "tags": {}
+  },
+  "MEDIATOR_ROUTING_RECORD": {
+    "value": {
+      "_tags": {},
+      "metadata": {},
+      "id": "MEDIATOR_ROUTING_RECORD",
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "routingKeys": ["F722LWtW7sZsuzv93PuqfN1xStei1bi5XBRjx4qkAbmJ"],
+      "updatedAt": "2023-11-23T22:50:20.522Z"
+    },
+    "id": "MEDIATOR_ROUTING_RECORD",
+    "type": "MediatorRoutingRecord",
+    "tags": {}
+  },
+  "1-4e4f-41d9-94c4-f49351b811f1": {
+    "value": {
+      "_tags": {},
+      "metadata": {},
+      "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "config": {
+        "label": "Tenant 1",
+        "walletConfig": {
+          "id": "tenant-1-4e4f-41d9-94c4-f49351b811f1",
+          "key": "Bs2YXMZ4mRRYSEzHPGVMuGfAD3qt9xwjgbMFNW4wuVKr",
+          "keyDerivationMethod": "RAW"
+        }
+      },
+      "updatedAt": "2023-11-23T22:50:20.522Z"
+    },
+    "id": "1-4e4f-41d9-94c4-f49351b811f1",
+    "type": "TenantRecord",
+    "tags": {}
+  },
+  "2-4e4f-41d9-94c4-f49351b811f1": {
+    "value": {
+      "_tags": {},
+      "metadata": {},
+      "id": "2-4e4f-41d9-94c4-f49351b811f1",
+      "createdAt": "2023-11-23T22:50:20.522Z",
+      "config": {
+        "label": "Tenant 2",
+        "walletConfig": {
+          "id": "tenant-2-4e4f-41d9-94c4-f49351b811f1",
+          "key": "5eB1uJwE7c9hkyJ8cba5ziPCZ5GkXNjnhVKh95jBMfou",
+          "keyDerivationMethod": "RAW"
+        }
+      },
+      "updatedAt": "2023-11-23T22:50:20.522Z"
+    },
+    "id": "2-4e4f-41d9-94c4-f49351b811f1",
+    "type": "TenantRecord",
+    "tags": {}
+  }
+}

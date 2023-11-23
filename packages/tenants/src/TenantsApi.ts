@@ -74,6 +74,11 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     return this.tenantRecordService.getTenantById(this.agentContext, tenantId)
   }
 
+  public async findTenantsByLabel(label: string) {
+    this.logger.debug(`Finding tenants by label '${label}'`)
+    return this.tenantRecordService.findTenantsByLabel(this.agentContext, label)
+  }
+
   public async deleteTenantById(tenantId: string) {
     this.logger.debug(`Deleting tenant by id '${tenantId}'`)
     // TODO: force remove context from the context provider (or session manager)
