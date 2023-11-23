@@ -4,7 +4,9 @@ import type {
   CredentialOfferAndRequest,
   OfferedCredential,
   CredentialOfferPayloadV1_0_11,
+  EndpointConfig,
 } from './OpenId4VcIssuerServiceOptions'
+import type { Router } from 'express'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -44,7 +46,7 @@ export class OpenId4VcIssuerApi {
     offeredCredentials: OfferedCredential[],
     options: CreateCredentialOfferAndRequestOptions
   ): Promise<CredentialOfferAndRequest> {
-    return await this.openId4VcIssuerService.createCredentialOfferAndReqeust(
+    return await this.openId4VcIssuerService.createCredentialOfferAndRequest(
       this.agentContext,
       offeredCredentials,
       options
@@ -67,11 +69,22 @@ export class OpenId4VcIssuerApi {
   /**
    * This function creates a response which can be send to the holder after receiving a credential issuance request.
    *
-   * @param {string} options.credentialRequest - The credential request, for which to create a response.
-   * @param {string} options.credential - The credential to be issued.
-   * @param {IssuerMetadata} options.issuerMetadata - Metadata about the issuer.
+   * @param options.credentialRequest - The credential request, for which to create a response.
+   * @param options.credential - The credential to be issued.
+   * @param options.issuerMetadata - Metadata about the issuer.
    */
   public async createIssueCredentialResponse(options: CreateIssueCredentialResponseOptions) {
     return await this.openId4VcIssuerService.createIssueCredentialResponse(this.agentContext, options)
+  }
+
+  /**
+   * Configures the enabled endpoints for the given router, as specified in @link https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html
+   *
+   * @param router - The router to configure.
+   * @param endpointConfig - The endpoint configuration.
+   * @returns The configured router.
+   */
+  public async configureRouter(router: Router, endpointConfig: EndpointConfig) {
+    return this.openId4VcIssuerService.configureRouter(this.agentContext, router, endpointConfig)
   }
 }

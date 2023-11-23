@@ -3,10 +3,10 @@ import type {
   AuthorizationCodeFlowConfig,
   PreAuthorizedCodeFlowConfig,
   OfferedCredential,
-  IssuerMetadata,
   CreateIssueCredentialResponseOptions,
   CredentialSupported,
   CredentialOfferAndRequest,
+  EndpointConfig,
 } from './OpenId4VcIssuerServiceOptions'
 import type {
   AgentContext,
@@ -24,10 +24,6 @@ import type {
   CredentialOfferFormat,
   CredentialRequestV1_0_11,
   CredentialOfferPayloadV1_0_11,
-  IStateManager,
-  CNonceState,
-  CredentialOfferSession,
-  URIState,
   CredentialSupported as SphereonCredentialSupported,
 } from '@sphereon/oid4vci-common'
 import type {
@@ -36,6 +32,7 @@ import type {
   CredentialSignerCallback,
 } from '@sphereon/oid4vci-issuer'
 import type { ICredential, W3CVerifiableCredential as SphereonW3cVerifiableCredential } from '@sphereon/ssi-types'
+import type { Router } from 'express'
 
 import {
   AriesFrameworkError,
@@ -56,9 +53,15 @@ import {
   equalsIgnoreOrder,
 } from '@aries-framework/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
-import { MemoryStates, VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
+import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
+import bodyParser from 'body-parser'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import {
+  configureAccessTokenEndpoint,
+  configureCredentialEndpoint,
+  configureIssuerMetadataEndpoint,
+} from './router/OpenId4VcIEndpointConfiguration'
 
 // TODO: duplicate
 function getSphereonW3cVerifiableCredential(
@@ -83,23 +86,22 @@ export class OpenId4VcIssuerService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService
-  private cNonceExpiresIn: number = 5 * 60 * 1000 // 5 minutes
-  private tokenExpiresIn: number = 3 * 60 * 1000 // 3 minutes
-  private issuerMetadata: IssuerMetadata
-  private _cNonceStateManager: IStateManager<CNonceState>
-  private _credentialOfferSessionManager: IStateManager<CredentialOfferSession>
-  private _uriStateManager: IStateManager<URIState>
+  private openId4VcIssuerModuleConfig: OpenId4VcIssuerModuleConfig
+
+  public get issuerMetadata() {
+    return this.openId4VcIssuerModuleConfig.issuerMetadata
+  }
 
   public get cNonceStateManager() {
-    return this._cNonceStateManager
+    return this.openId4VcIssuerModuleConfig.cNonceStateManager
   }
 
   public get credentialOfferSessionManager() {
-    return this._credentialOfferSessionManager
+    return this.openId4VcIssuerModuleConfig.credentialOfferSessionManager
   }
 
   public get uriStateManager() {
-    return this._uriStateManager
+    return this.openId4VcIssuerModuleConfig.uriStateManager
   }
 
   public constructor(
@@ -110,12 +112,8 @@ export class OpenId4VcIssuerService {
   ) {
     this.w3cCredentialService = w3cCredentialService
     this.logger = logger
-    this.issuerMetadata = openId4VcIssuerModuleConfig.issuerMetadata
+    this.openId4VcIssuerModuleConfig = openId4VcIssuerModuleConfig
     this.jwsService = jwsService
-    this._cNonceStateManager = openId4VcIssuerModuleConfig.cNonceStateManager ?? new MemoryStates()
-    this._credentialOfferSessionManager =
-      openId4VcIssuerModuleConfig.credentialOfferSessionManager ?? new MemoryStates()
-    this._uriStateManager = openId4VcIssuerModuleConfig.uriStateManager ?? new MemoryStates()
   }
 
   private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
@@ -230,10 +228,10 @@ export class OpenId4VcIssuerService {
       .withTokenEndpoint(tokenEndpoint)
       // FIXME: currently credentialsSupported is not typed correctly
       .withCredentialsSupported(credentialsSupported as SphereonCredentialSupported[])
-      .withCNonceExpiresIn(this.cNonceExpiresIn) // 5 minutes
-      .withCNonceStateManager(this._cNonceStateManager)
-      .withCredentialOfferStateManager(this._credentialOfferSessionManager)
-      .withCredentialOfferURIStateManager(this._uriStateManager)
+      .withCNonceExpiresIn(this.openId4VcIssuerModuleConfig.cNonceExpiresIn)
+      .withCNonceStateManager(this.cNonceStateManager)
+      .withCredentialOfferStateManager(this.credentialOfferSessionManager)
+      .withCredentialOfferURIStateManager(this.uriStateManager)
       .withJWTVerifyCallback(this.getJwtVerifyCallback(agentContext))
       .withCredentialSignerCallback(() => {
         throw new AriesFrameworkError('this should never ba called')
@@ -325,7 +323,7 @@ export class OpenId4VcIssuerService {
     return [...credentialsReferencingCredentialsSupported, ...inlineCredentialOffers]
   }
 
-  public async createCredentialOfferAndReqeust(
+  public async createCredentialOfferAndRequest(
     agentContext: AgentContext,
     offeredCredentials: OfferedCredential[],
     options: CreateCredentialOfferAndRequestOptions
@@ -357,7 +355,7 @@ export class OpenId4VcIssuerService {
   }
 
   private async getCredentialOfferSessionFromUri(uri: string) {
-    const uriState = await this._uriStateManager.get(uri)
+    const uriState = await this.uriStateManager.get(uri)
     if (!uriState) throw new AriesFrameworkError(`Credential offer uri '${uri}' not found.`)
 
     const credentialOfferSessionId = uriState.preAuthorizedCode ?? uriState.issuerState
@@ -368,7 +366,7 @@ export class OpenId4VcIssuerService {
       )
     }
 
-    const credentialOfferSession = await this._credentialOfferSessionManager.get(credentialOfferSessionId)
+    const credentialOfferSession = await this.credentialOfferSessionManager.get(credentialOfferSessionId)
     if (!credentialOfferSession)
       throw new AriesFrameworkError(
         `Credential offer session for '${uri}' with id '${credentialOfferSessionId}' not found.`
@@ -382,7 +380,7 @@ export class OpenId4VcIssuerService {
 
     credentialOfferSession.lastUpdatedAt = +new Date()
     credentialOfferSession.status = IssueStatus.OFFER_URI_RETRIEVED
-    await this._credentialOfferSessionManager.set(credentialOfferSessionId, credentialOfferSession)
+    await this.credentialOfferSessionManager.set(credentialOfferSessionId, credentialOfferSession)
 
     return credentialOfferSession.credentialOffer.credential_offer
   }
@@ -455,13 +453,17 @@ export class OpenId4VcIssuerService {
   ) {
     const { credentialRequest, credential, verificationMethod } = options
 
+    if (!credentialRequest.proof) {
+      throw new AriesFrameworkError('No proof defined in the credentialRequest.')
+    }
+
     const issuerMetadata = options.issuerMetadata ?? this.issuerMetadata
     const vcIssuer = this.getVcIssuer(agentContext, issuerMetadata)
 
     const issueCredentialResponse = await vcIssuer.issueCredential({
       credentialRequest,
-      tokenExpiresIn: this.tokenExpiresIn,
-      cNonceExpiresIn: this.cNonceExpiresIn,
+      tokenExpiresIn: this.openId4VcIssuerModuleConfig.tokenExpiresIn,
+      cNonceExpiresIn: this.openId4VcIssuerModuleConfig.cNonceExpiresIn,
       credentialDataSupplier: this.getCredentialDataSupplier(
         agentContext,
         credential,
@@ -483,5 +485,44 @@ export class OpenId4VcIssuerService {
     }
 
     return issueCredentialResponse
+  }
+
+  public configureRouter = (agentContext: AgentContext, router: Router, endpointConfig: EndpointConfig) => {
+    // parse application/x-www-form-urlencoded
+    router.use(bodyParser.urlencoded({ extended: false }))
+
+    // parse application/json
+    router.use(bodyParser.json())
+
+    if (endpointConfig.metadataEndpointConfig?.enabled) {
+      configureIssuerMetadataEndpoint(router, this.logger, {
+        ...endpointConfig.metadataEndpointConfig,
+        issuerMetadata: this.issuerMetadata,
+      })
+    }
+
+    if (endpointConfig.accessTokenEndpointConfig?.enabled) {
+      configureAccessTokenEndpoint(agentContext, router, this.logger, {
+        ...endpointConfig.accessTokenEndpointConfig,
+        issuerMetadata: this.issuerMetadata,
+        cNonceStateManager: this.cNonceStateManager,
+        cNonceExpiresIn: this.openId4VcIssuerModuleConfig.cNonceExpiresIn,
+        tokenExpiresIn: this.openId4VcIssuerModuleConfig.tokenExpiresIn,
+        credentialOfferSessionManager: this.credentialOfferSessionManager,
+      })
+    }
+
+    if (endpointConfig.credentialEndpointConfig?.enabled) {
+      configureCredentialEndpoint(agentContext, router, this.logger, {
+        ...endpointConfig.credentialEndpointConfig,
+        issuerMetadata: this.issuerMetadata,
+        createIssueCredentialResponse: (agentContext, options) => {
+          const issuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+          return issuerService.createIssueCredentialResponse(agentContext, options)
+        },
+      })
+    }
+
+    return router
   }
 }

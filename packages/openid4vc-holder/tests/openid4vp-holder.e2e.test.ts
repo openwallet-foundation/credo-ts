@@ -18,8 +18,6 @@ import { waltPortalOpenBadgeJwt, waltUniversityDegreeJwt } from './fixtures_vp'
 
 // id id%22%3A%22test%22%2C%22
 // * = %2A
-// TODO: use proper credential
-
 // TODO: error on sphereon lib PR opened
 // TODO: walt issued credentials verification fails due to some time issue || //throw new Error(`Inconsistent issuance dates between JWT claim (${nbfDateAsStr}) and VC value (${issuanceDate})`);
 // TODO: error walt no id in presentation definition
@@ -116,9 +114,8 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
   const createVerifierModules = (verifierApp: Express) => {
     const modules = {
-      openId4VcHolder: new OpenId4VcHolderModule(),
       openId4VcVerifier: new OpenId4VcVerifierModule({
-        endPointConfig: {
+        endpointConfig: {
           app: verifierApp,
           verificationEndpointPath,
           proofResponseHandler: mockFunction,
@@ -474,8 +471,26 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(submission?.submissionData.definition_id).toBe('Combined')
     expect(submission?.presentations).toHaveLength(1)
     expect(submission?.presentations[0].vcs).toHaveLength(2)
-    expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
-    expect(submission?.presentations[0].vcs[1].credential.type).toContain('UniversityDegree')
+
+    if (submission?.presentations[0].vcs[0].credential.type.includes('OpenBadgeCredential')) {
+      expect(submission?.presentations[0].vcs[0].credential.type).toEqual([
+        'VerifiableCredential',
+        'OpenBadgeCredential',
+      ])
+      expect(submission?.presentations[0].vcs[1].credential.type).toEqual([
+        'VerifiableCredential',
+        'UniversityDegreeCredential',
+      ])
+    } else {
+      expect(submission?.presentations[0].vcs[1].credential.type).toEqual([
+        'VerifiableCredential',
+        'OpenBadgeCredential',
+      ])
+      expect(submission?.presentations[0].vcs[0].credential.type).toEqual([
+        'VerifiableCredential',
+        'UniversityDegreeCredential',
+      ])
+    }
 
     await waitForMockFunction()
     expect(mockFunction).toBeCalledWith({
@@ -574,7 +589,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(submission?.presentationDefinitions).toHaveLength(1)
     expect(submission?.submissionData.definition_id).toBe('OpenBadgeCredential')
     expect(submission?.presentations).toHaveLength(1)
-    expect(submission?.presentations[0].vcs[0].credential.type).toContain('OpenBadgeCredential')
+    expect(submission?.presentations[0].vcs[0].credential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
 
     await waitForMockFunction()
     expect(mockFunction).toBeCalledWith({

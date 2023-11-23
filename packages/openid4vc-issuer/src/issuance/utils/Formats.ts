@@ -1,6 +1,7 @@
 import type { OID4VCICredentialFormat } from '@sphereon/oid4vci-common'
 import type { CredentialFormat } from '@sphereon/ssi-types'
 
+import { AriesFrameworkError } from '@aries-framework/core'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 // Based on https://github.com/Sphereon-Opensource/OID4VCI/pull/54/files
@@ -21,7 +22,7 @@ export function getUniformFormat(format: string | OID4VCICredentialFormat | Cred
     return 'ldp_vc'
   }
 
-  throw new Error(`Invalid format: ${format}`)
+  throw new AriesFrameworkError(`Invalid format: ${format}`)
 }
 
 export function getFormatForVersion(format: string, version: OpenId4VCIVersion) {

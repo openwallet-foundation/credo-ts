@@ -2,7 +2,6 @@ import type {
   PreAuthorizedCodeFlowConfig,
   AuthorizationCodeFlowConfig,
   IssuerMetadata,
-  CredentialRequest,
   CredentialSupported,
 } from '../src/OpenId4VcIssuerServiceOptions'
 import type {
@@ -12,6 +11,7 @@ import type {
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@aries-framework/core'
+import type { CredentialRequestV1_0_11 } from '@sphereon/oid4vci-common'
 import type { OriginalVerifiableCredential as SphereonW3cVerifiableCredential } from '@sphereon/ssi-types'
 
 import { AskarModule } from '@aries-framework/askar'
@@ -88,7 +88,7 @@ const createCredentialRequestFromKid = async (
     kid: string
     clientId?: string // use with the authorization code flow,
   }
-): Promise<CredentialRequest> => {
+): Promise<CredentialRequestV1_0_11> => {
   const { format, types, kid, nonce, issuerMetadata, clientId } = options
 
   const aud = issuerMetadata.credentialIssuer
@@ -208,8 +208,8 @@ describe('OpenId4VcIssuer', () => {
     })
 
     holderDid = holderDidCreateResult.didState.did as string
-    const holderDidKey = DidKey.fromDid(holderDidCreateResult.didState.did as string)
-    holderKid = `${holderDidCreateResult.didState.did as string}#${holderDidKey.key.fingerprint}`
+    const holderDidKey = DidKey.fromDid(holderDid)
+    holderKid = `${holderDid}#${holderDidKey.key.fingerprint}`
 
     const issuerDidCreateResult = await issuer.dids.create<KeyDidCreateOptions>({
       method: 'key',
@@ -219,9 +219,9 @@ describe('OpenId4VcIssuer', () => {
 
     issuerDid = issuerDidCreateResult.didState.did as string
 
-    const verifierDidKey = DidKey.fromDid(issuerDid)
-    const verifierKid = `${issuerDidCreateResult.didState.did as string}#${verifierDidKey.key.fingerprint}`
-    const _issuerVerificationMethod = issuerDidCreateResult.didState.didDocument?.dereferenceKey(verifierKid, [
+    const issuerDidKey = DidKey.fromDid(issuerDid)
+    const issuerKid = `${issuerDid}#${issuerDidKey.key.fingerprint}`
+    const _issuerVerificationMethod = issuerDidCreateResult.didState.didDocument?.dereferenceKey(issuerKid, [
       'authentication',
     ])
     if (!_issuerVerificationMethod) throw new Error('No verification method found')

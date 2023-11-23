@@ -481,6 +481,8 @@ export class OpenId4VciHolderService {
 
     const receivedCredentials: W3cCredentialRecord[] = []
 
+    let newCNonce: string | undefined
+
     // Loop through all the credentialTypes in the credential offer
     for (const credentialWithMetadata of credentialsToRequestWithMetadata ?? offeredCredentialsWithMetadata) {
       // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
@@ -496,7 +498,7 @@ export class OpenId4VciHolderService {
       }
 
       // Create the proof of possession
-      const proofInput = await ProofOfPossessionBuilder.fromAccessTokenResponse({
+      const proofOfPossessionBuilder = ProofOfPossessionBuilder.fromAccessTokenResponse({
         accessTokenResponse: accessToken,
         callbacks,
         version,
@@ -505,9 +507,11 @@ export class OpenId4VciHolderService {
         .withAlg(signatureAlgorithm)
         .withClientId(verificationMethod.controller)
         .withKid(verificationMethod.id)
-        .build()
 
-      this.logger.debug('Generated JWS', proofInput)
+      if (newCNonce) proofOfPossessionBuilder.withAccessTokenNonce(newCNonce)
+
+      const proofOfPossession = await proofOfPossessionBuilder.build()
+      this.logger.debug('Generated JWS', proofOfPossession)
 
       // Acquire the credential
       const credentialRequestBuilder = new CredentialRequestClientBuilder()
@@ -531,10 +535,12 @@ export class OpenId4VciHolderService {
 
       const credentialRequestClient = credentialRequestBuilder.build()
       const credentialResponse = await credentialRequestClient.acquireCredentialsUsingProof({
-        proofInput,
+        proofInput: proofOfPossession,
         credentialTypes,
         format: originalFormat,
       })
+
+      newCNonce = credentialResponse.successBody?.c_nonce
 
       const credential = await this.handleCredentialResponse(agentContext, credentialResponse, {
         verifyCredentialStatus: verifyCredentialStatus ?? false,
@@ -713,7 +719,6 @@ export class OpenId4VciHolderService {
       supportsAllDidMethods,
     }
   }
-
   private async handleCredentialResponse(
     agentContext: AgentContext,
     credentialResponse: OpenIDResponse<CredentialResponse>,

@@ -65,11 +65,68 @@ export type CredentialOfferAndRequest = {
   credentialOfferRequest: string
 }
 
-export type CredentialRequest = CredentialRequestV1_0_11 & { proof: ProofOfPossession }
-
 export interface CreateIssueCredentialResponseOptions {
-  credentialRequest: CredentialRequest
+  credentialRequest: CredentialRequestV1_0_11
   credential: W3cCredential
   verificationMethod: VerificationMethod
   issuerMetadata?: IssuerMetadata
+}
+
+export { CredentialResponse } from '@sphereon/oid4vci-common'
+
+export interface MetadataEndpointConfig {
+  /**
+   * Configures the router to expose the m3tadata endpoint.
+   */
+  enabled: boolean
+}
+
+export interface AccessTokenEndpointConfig {
+  /**
+   * Configures the router to expose the access token endpoint.
+   */
+  enabled: boolean
+
+  /**
+   * The minimum amount of time in seconds that the client SHOULD wait between polling requests to the Token Endpoint in the Pre-Authorized Code Flow.
+   * If no value is provided, clients MUST use 5 as the default.
+   */
+  interval?: number
+
+  /**
+   * The verification method to be used to sign access token.
+   */
+  verificationMethod: VerificationMethod
+
+  /**
+   * The maximum amount of time in seconds that the pre-authorized code is valid.
+   */
+  preAuthorizedCodeExpirationDuration: number
+}
+
+export type CredentialRequestToCredentialMapper = (
+  credentialRequest: CredentialRequestV1_0_11
+) => Promise<W3cCredential>
+
+export interface CredentialEndpointConfig {
+  /**
+   * Configures the router to expose the credential endpoint.
+   */
+  enabled: boolean
+
+  /**
+   * The verification method to be used to sign the credential.
+   */
+  verificationMethod: VerificationMethod
+
+  /**
+   * A function mapping a credential request to the credential to be issued.
+   */
+  credentialRequestToCredentialMapper: CredentialRequestToCredentialMapper
+}
+
+export interface EndpointConfig {
+  metadataEndpointConfig?: MetadataEndpointConfig
+  accessTokenEndpointConfig?: AccessTokenEndpointConfig
+  credentialEndpointConfig?: CredentialEndpointConfig
 }
