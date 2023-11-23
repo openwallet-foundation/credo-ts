@@ -4,6 +4,7 @@ import type {
   CreateProofRequestOptions,
   ProofRequestMetadata,
   VerifiedProofResponse,
+  EndpointConfig,
 } from './OpenId4VcVerifierServiceOptions'
 import type { AgentContext, W3cVerifyPresentationResult } from '@aries-framework/core'
 import type {
@@ -12,6 +13,7 @@ import type {
   PresentationVerificationCallback,
   SigningAlgo,
 } from '@sphereon/did-auth-siop'
+import type { Router } from 'express'
 
 import {
   InjectionSymbols,
@@ -37,6 +39,7 @@ import {
   VerificationMode,
   AuthorizationResponse,
 } from '@sphereon/did-auth-siop'
+import bodyParser from 'body-parser'
 import { EventEmitter } from 'events'
 
 import { InMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
@@ -311,6 +314,44 @@ export class OpenId4VcVerifierService {
 
       return { verified: verificationResult.isValid }
     }
+  }
+
+  public configureRouter = (agentContext: AgentContext, router: Router, endpointConfig: EndpointConfig) => {
+    // parse application/x-www-form-urlencoded
+    router.use(bodyParser.urlencoded({ extended: false }))
+
+    // parse application/json
+    router.use(bodyParser.json())
+
+    if (endpointConfig.verificationEndpointConfig?.enabled) {
+      router.post(
+        endpointConfig.verificationEndpointConfig.verificationEndpointPath,
+        async (request, response, next) => {
+          try {
+            const isVpRequest = request.body.presentation_submission !== undefined
+            const verifierService = await agentContext.dependencyManager.resolve(OpenId4VcVerifierService)
+
+            const authorizationResponse: AuthorizationResponsePayload = request.body
+            if (isVpRequest)
+              authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
+
+            const verifiedProofResponse = await verifierService.verifyProofResponse(agentContext, request.body)
+            if (!endpointConfig.verificationEndpointConfig.proofResponseHandler) return response.status(200).send()
+
+            const { status } = await endpointConfig.verificationEndpointConfig.proofResponseHandler(
+              verifiedProofResponse
+            )
+            return response.status(status).send()
+          } catch (error: unknown) {
+            next(error)
+          }
+
+          return response.status(200).send()
+        }
+      )
+    }
+
+    return router
   }
 }
 

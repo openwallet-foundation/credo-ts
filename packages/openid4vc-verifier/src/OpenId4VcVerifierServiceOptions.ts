@@ -72,3 +72,20 @@ export const staticOpOpenIdConfig: HolderMetadata = {
   passBy: PassBy.VALUE,
   vpFormatsSupported: { jwt_vc: { alg: [SigningAlgo.ES256] }, jwt_vp: { alg: [SigningAlgo.ES256] } },
 }
+
+export type ProofResponseHandlerReturn = { status: number }
+export type ProofResponseHandler = (verifiedProofResponse: VerifiedProofResponse) => Promise<ProofResponseHandlerReturn>
+
+export interface VerificationEndpointConfig {
+  /**
+   * Configures the router to expose the verification endpoint.
+   */
+  enabled: boolean
+
+  verificationEndpointPath: string
+  proofResponseHandler?: ProofResponseHandler
+}
+
+export interface EndpointConfig {
+  verificationEndpointConfig: VerificationEndpointConfig
+}

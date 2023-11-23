@@ -9,7 +9,7 @@ import { Agent, DidKey, KeyType, TypedArrayEncoder, W3cJwtVerifiableCredential }
 import { agentDependencies } from '@aries-framework/node'
 import { OpenId4VcVerifierModule, SigningAlgo, staticOpOpenIdConfig } from '@aries-framework/openid4vc-verifier'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import express from 'express'
+import express, { Router } from 'express'
 import nock from 'nock'
 
 import { OpenId4VcHolderModule } from '../src'
@@ -83,6 +83,19 @@ const createHolderModules = () => {
   return modules
 }
 
+const createVerifierModules = () => {
+  const modules = {
+    openId4VcVerifier: new OpenId4VcVerifierModule({}),
+
+    askar: new AskarModule({ ariesAskar }),
+  }
+
+  return modules
+}
+
+type VerifierModules = ReturnType<typeof createVerifierModules>
+type HolderModules = ReturnType<typeof createHolderModules>
+
 describe('OpenId4VcHolder | OpenID4VP', () => {
   let verifier: Agent<VerifierModules>
   let verifierVerificationMethod: VerificationMethod
@@ -112,45 +125,26 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     })
   }
 
-  const createVerifierModules = (verifierApp: Express) => {
-    const modules = {
-      openId4VcVerifier: new OpenId4VcVerifierModule({
-        endpointConfig: {
-          app: verifierApp,
-          verificationEndpointPath,
-          proofResponseHandler: mockFunction,
-        },
-      }),
-
-      askar: new AskarModule({ ariesAskar }),
-    }
-
-    return modules
-  }
-
-  type VerifierModules = ReturnType<typeof createVerifierModules>
-  type HolderModules = ReturnType<typeof createHolderModules>
-
   beforeEach(async () => {
     verifierApp = express()
     verifier = new Agent({
       config: {
-        label: 'OpenId4VcRp OpenID4VP Test39',
+        label: 'OpenId4VcRp OpenID4VP Test42',
         walletConfig: {
-          id: 'openid4vc-rp-openid4vp-test40',
-          key: 'openid4vc-rp-openid4vp-test41',
+          id: 'openid4vc-rp-openid4vp-test42',
+          key: 'openid4vc-rp-openid4vp-test42',
         },
       },
       dependencies: agentDependencies,
-      modules: createVerifierModules(verifierApp),
+      modules: createVerifierModules(),
     })
 
     holder = new Agent({
       config: {
-        label: 'OpenId4VcOp OpenID4VP Test39',
+        label: 'OpenId4VcOp OpenID4VP Test42',
         walletConfig: {
-          id: 'openid4vc-op-openid4vp-test40',
-          key: 'openid4vc-op-openid4vp-test41',
+          id: 'openid4vc-op-openid4vp-test42',
+          key: 'openid4vc-op-openid4vp-test42',
         },
       },
       dependencies: agentDependencies,
@@ -159,8 +153,6 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     await verifier.initialize()
     await holder.initialize()
-
-    verifierServer = verifierApp.listen(port)
 
     const verifierDid = await verifier.dids.create<KeyDidCreateOptions>({
       method: 'key',
@@ -187,10 +179,22 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const _holderVerificationMethod = holderDid.didState.didDocument?.dereferenceKey(holderKid, ['authentication'])
     if (!_holderVerificationMethod) throw new Error('No verification method found')
     holderVerificationMethod = _holderVerificationMethod
+
+    const router = await verifier.modules.openId4VcVerifier.configureRouter(Router(), {
+      verificationEndpointConfig: {
+        enabled: true,
+        verificationEndpointPath,
+        proofResponseHandler: mockFunction,
+      },
+    })
+
+    verifierApp.use('/', router)
+
+    verifierServer = verifierApp.listen(port)
   })
 
   afterEach(async () => {
-    verifierServer.close()
+    verifierServer?.close()
     await holder.shutdown()
     await holder.wallet.delete()
     await verifier.shutdown()

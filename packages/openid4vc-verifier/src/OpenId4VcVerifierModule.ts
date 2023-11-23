@@ -1,9 +1,7 @@
 import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
-import type { AgentContext, DependencyManager, Module } from '@aries-framework/core'
-import type { AuthorizationResponsePayload } from '@sphereon/did-auth-siop'
+import type { DependencyManager, Module } from '@aries-framework/core'
 
 import { AgentConfig } from '@aries-framework/core'
-import bodyParser from 'body-parser'
 
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -40,33 +38,5 @@ export class OpenId4VcVerifierModule implements Module {
 
     // Services
     dependencyManager.registerSingleton(OpenId4VcVerifierService)
-  }
-
-  public async initialize(agentContext: AgentContext): Promise<void> {
-    const endPointConfig = this.config.endpointConfig
-    if (!endPointConfig) return
-
-    // create application/x-www-form-urlencoded parser
-    const urlencodedParser = bodyParser.urlencoded({ extended: false })
-
-    endPointConfig.app.post(endPointConfig.verificationEndpointPath, urlencodedParser, async (req, res, next) => {
-      try {
-        const isVpRequest = req.body.presentation_submission !== undefined
-        const verifierService = await agentContext.dependencyManager.resolve(OpenId4VcVerifierService)
-
-        const authorizationResponse: AuthorizationResponsePayload = req.body
-        if (isVpRequest) authorizationResponse.presentation_submission = JSON.parse(req.body.presentation_submission)
-
-        const verifiedProofResponse = await verifierService.verifyProofResponse(agentContext, req.body)
-        if (!endPointConfig.proofResponseHandler) return res.status(200).send()
-
-        const { status } = await endPointConfig.proofResponseHandler(verifiedProofResponse)
-        return res.status(status).send()
-      } catch (error: unknown) {
-        next(error)
-      }
-
-      return res.status(200).send()
-    })
   }
 }

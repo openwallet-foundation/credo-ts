@@ -1,4 +1,5 @@
-import type { CreateProofRequestOptions, ProofPayload } from './OpenId4VcVerifierServiceOptions'
+import type { CreateProofRequestOptions, EndpointConfig, ProofPayload } from './OpenId4VcVerifierServiceOptions'
+import type { Router } from 'express'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 
@@ -48,5 +49,16 @@ export class OpenId4VcVerifierApi {
    */
   public async verifyProofResponse(proofPayload: ProofPayload) {
     return await this.openId4VcVerifierService.verifyProofResponse(this.agentContext, proofPayload)
+  }
+
+  /**
+   * Configures the enabled endpoints for the given router, as specified in @link https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
+   *
+   * @param router - The router to configure.
+   * @param endpointConfig - The endpoint configuration.
+   * @returns The configured router.
+   */
+  public async configureRouter(router: Router, endpointConfig: EndpointConfig) {
+    return await this.openId4VcVerifierService.configureRouter(this.agentContext, router, endpointConfig)
   }
 }
