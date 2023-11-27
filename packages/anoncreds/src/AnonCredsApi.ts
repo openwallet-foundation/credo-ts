@@ -227,7 +227,7 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerCredentialDefinition<T extends Extensible = Extensible>(
+  public async registerCredentialDefinition<T extends Extensible>(
     options: AnonCredsRegisterCredentialDefinition<T>
   ): Promise<RegisterCredentialDefinitionReturn> {
     const failedReturnBase = {
@@ -275,7 +275,7 @@ export class AnonCredsApi {
             issuerId: options.credentialDefinition.issuerId,
             schemaId: options.credentialDefinition.schemaId,
             tag: options.credentialDefinition.tag,
-            supportRevocation: options.supportRevocation,
+            supportRevocation: options.options.supportRevocation,
             schema: schemaResult.schema,
           },
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
@@ -400,9 +400,10 @@ export class AnonCredsApi {
       // At this moment, tails file should be published and a valid public URL will be received
       const localTailsLocation = revocationRegistryDefinition.value.tailsLocation
 
-      revocationRegistryDefinition.value.tailsLocation = await tailsFileService.uploadTailsFile(this.agentContext, {
+      const { tailsFileUrl } = await tailsFileService.uploadTailsFile(this.agentContext, {
         revocationRegistryDefinition,
       })
+      revocationRegistryDefinition.value.tailsLocation = tailsFileUrl
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
@@ -493,7 +494,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
+    const { tailsFilePath } = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
@@ -564,7 +565,7 @@ export class AnonCredsApi {
     }
 
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
+    const { tailsFilePath } = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
@@ -754,10 +755,13 @@ export class AnonCredsApi {
   }
 }
 
+export interface AnonCredsRegisterCredentialDefinitionApiOptions {
+  supportRevocation: boolean
+}
+
 interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensible> {
   credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
-  supportRevocation: boolean
-  options: T
+  options: T & AnonCredsRegisterCredentialDefinitionApiOptions
 }
 
 interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {

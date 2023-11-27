@@ -176,8 +176,8 @@ export class Faber extends BaseAgent {
           issuerId: this.anonCredsIssuerId,
           tag: 'latest',
         },
-        supportRevocation: false,
         options: {
+          supportRevocation: false,
           endorserMode: 'internal',
           endorserDid: this.anonCredsIssuerId,
         },

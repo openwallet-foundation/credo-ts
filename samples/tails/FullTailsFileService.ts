@@ -18,7 +18,7 @@ export class FullTailsFileService extends BasicTailsFileService {
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<string> {
+  ) {
     const revocationRegistryDefinition = options.revocationRegistryDefinition
     const localTailsFilePath = revocationRegistryDefinition.value.tailsLocation
 
@@ -36,6 +36,6 @@ export class FullTailsFileService extends BasicTailsFileService {
     if (response.status !== 200) {
       throw new Error('Cannot upload tails file')
     }
-    return `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}`
+    return { tailsFileUrl: `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}` }
   }
 }

@@ -27,7 +27,7 @@ export class BasicTailsFileService implements TailsFileService {
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<string> {
+  ): Promise<{ tailsFileUrl: string }> {
     throw new AriesFrameworkError('BasicTailsFileService only supports tails file downloading')
   }
 
@@ -36,7 +36,7 @@ export class BasicTailsFileService implements TailsFileService {
     options: {
       revocationRegistryDefinition: AnonCredsRevocationRegistryDefinition
     }
-  ): Promise<string> {
+  ) {
     const { revocationRegistryDefinition } = options
     const { tailsLocation, tailsHash } = revocationRegistryDefinition.value
 
@@ -67,7 +67,7 @@ export class BasicTailsFileService implements TailsFileService {
         agentContext.config.logger.debug(`Saved tails file to FileSystem at path ${tailsFilePath}`)
       }
 
-      return tailsFilePath
+      return { tailsFilePath }
     } catch (error) {
       agentContext.config.logger.error(`Error while retrieving tails file from URL ${tailsLocation}`, {
         error,
