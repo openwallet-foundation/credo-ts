@@ -13,7 +13,7 @@ import { ConnectionService } from '../../modules/connections/services/Connection
 import { TrustPingService } from '../../modules/connections/services/TrustPingService'
 import { CredentialRepository } from '../../modules/credentials'
 import { CredentialsApi } from '../../modules/credentials/CredentialsApi'
-import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pìckup'
+import { MessagePickupApi, InMemoryMessagePickupRepository } from '../../modules/message-pickup'
 import { ProofRepository } from '../../modules/proofs'
 import { ProofsApi } from '../../modules/proofs/ProofsApi'
 import {
