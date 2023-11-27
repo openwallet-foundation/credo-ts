@@ -505,8 +505,9 @@ async function registerCredentialDefinition(
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
   const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
     credentialDefinition,
-    supportRevocation: supportRevocation ?? false,
-    options: {},
+    options: {
+      supportRevocation: supportRevocation ?? false,
+    },
   })
 
   if (credentialDefinitionState.state !== 'finished') {

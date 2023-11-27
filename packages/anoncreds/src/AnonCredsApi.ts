@@ -227,7 +227,7 @@ export class AnonCredsApi {
     }
   }
 
-  public async registerCredentialDefinition<T extends Extensible = Extensible>(
+  public async registerCredentialDefinition<T extends Extensible>(
     options: AnonCredsRegisterCredentialDefinition<T>
   ): Promise<RegisterCredentialDefinitionReturn> {
     const failedReturnBase = {
@@ -275,7 +275,7 @@ export class AnonCredsApi {
             issuerId: options.credentialDefinition.issuerId,
             schemaId: options.credentialDefinition.schemaId,
             tag: options.credentialDefinition.tag,
-            supportRevocation: options.supportRevocation,
+            supportRevocation: options.options.supportRevocation,
             schema: schemaResult.schema,
           },
           // FIXME: Indy SDK requires the schema seq no to be passed in here. This is not ideal.
@@ -754,10 +754,13 @@ export class AnonCredsApi {
   }
 }
 
+export interface AnonCredsRegisterCredentialDefinitionApiOptions {
+  supportRevocation: boolean
+}
+
 interface AnonCredsRegisterCredentialDefinition<T extends Extensible = Extensible> {
   credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
-  supportRevocation: boolean
-  options: T
+  options: T & AnonCredsRegisterCredentialDefinitionApiOptions
 }
 
 interface AnonCredsRegisterSchema<T extends Extensible = Extensible> {
