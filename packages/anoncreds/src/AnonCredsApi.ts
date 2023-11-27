@@ -400,9 +400,10 @@ export class AnonCredsApi {
       // At this moment, tails file should be published and a valid public URL will be received
       const localTailsLocation = revocationRegistryDefinition.value.tailsLocation
 
-      revocationRegistryDefinition.value.tailsLocation = await tailsFileService.uploadTailsFile(this.agentContext, {
+      const { tailsFileUrl } = await tailsFileService.uploadTailsFile(this.agentContext, {
         revocationRegistryDefinition,
       })
+      revocationRegistryDefinition.value.tailsLocation = tailsFileUrl
 
       const result = await registry.registerRevocationRegistryDefinition(this.agentContext, {
         revocationRegistryDefinition,
@@ -493,7 +494,7 @@ export class AnonCredsApi {
       return failedReturnBase
     }
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
+    const { tailsFilePath } = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
@@ -564,7 +565,7 @@ export class AnonCredsApi {
     }
 
     const tailsFileService = this.agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-    const tailsFilePath = await tailsFileService.getTailsFile(this.agentContext, {
+    const { tailsFilePath } = await tailsFileService.getTailsFile(this.agentContext, {
       revocationRegistryDefinition,
     })
 
