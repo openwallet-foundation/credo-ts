@@ -91,7 +91,7 @@ export async function getRevocationRegistriesForRequest(
             }
 
             const tailsFileService = agentContext.dependencyManager.resolve(AnonCredsModuleConfig).tailsFileService
-            const tailsFilePath = await tailsFileService.getTailsFile(agentContext, {
+            const { tailsFilePath } = await tailsFileService.getTailsFile(agentContext, {
               revocationRegistryDefinition,
             })
 

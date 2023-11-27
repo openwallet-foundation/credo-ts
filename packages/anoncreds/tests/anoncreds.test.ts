@@ -201,8 +201,9 @@ describe('AnonCreds API', () => {
         schemaId: '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0',
         tag: 'TAG',
       },
-      supportRevocation: false,
-      options: {},
+      options: {
+        supportRevocation: false,
+      },
     })
 
     expect(credentialDefinitionResult).toEqual({
