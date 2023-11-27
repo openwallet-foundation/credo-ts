@@ -14,13 +14,18 @@ export type PresentationRequest = VerifiedAuthorizationRequest & {
   presentationDefinitions: [PresentationDefinitionWithLocation]
 }
 
-export type ResolvedProofRequest =
-  | { proofType: 'authentication'; request: AuthenticationRequest }
-  | {
-      proofType: 'presentation'
-      request: PresentationRequest
-      presentationSubmission: PresentationSubmission
-    }
+export type ResolvedPresentationRequest = {
+  proofType: 'presentation'
+  presentationRequest: PresentationRequest
+  presentationSubmission: PresentationSubmission
+}
+
+export type ResolvedAuthenticationRequest = {
+  proofType: 'authentication'
+  authenticationRequest: AuthenticationRequest
+}
+
+export type ResolvedProofRequest = ResolvedAuthenticationRequest | ResolvedPresentationRequest
 
 export type ProofSubmissionResponse = {
   ok: boolean

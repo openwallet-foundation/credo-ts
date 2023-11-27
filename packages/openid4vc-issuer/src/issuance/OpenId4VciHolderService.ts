@@ -229,8 +229,8 @@ export class OpenId4VciHolderService {
     opts?: { version?: OpenId4VCIVersion }
   ): Promise<ResolvedCredentialOffer> {
     let version = opts?.version ?? OpenId4VCIVersion.VER_1_0_11
-    const claimedCredentialOfferUrl = `openid-credential-offer://?`
-    const claimedIssuanceInitiationUrl = `openid-initiate-issuance://?`
+    const claimedCredentialOfferUrl = `openid-credential-offer://`
+    const claimedIssuanceInitiationUrl = `openid-initiate-issuance://`
 
     if (
       typeof credentialOffer === 'string' &&
@@ -728,7 +728,7 @@ export class OpenId4VciHolderService {
     this.logger.debug('Credential request response', credentialResponse)
 
     if (!credentialResponse.successBody) {
-      throw new AriesFrameworkError('Did not receive a successful credential response')
+      throw new AriesFrameworkError('Did not receive a successful credential response.')
     }
 
     const format = getUniformFormat(credentialResponse.successBody.format) as OpenIdCredentialFormatProfile

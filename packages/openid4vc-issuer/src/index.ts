@@ -2,7 +2,7 @@ import * as Issuance from './issuance'
 
 export { Issuance }
 
-export { OpenId4VciHolderService } from './issuance'
+export { OpenId4VciHolderService, OpenIdCredentialFormatProfile } from './issuance'
 
 export * from './OpenId4VcIssuerApi'
 export * from './OpenId4VcIssuerModule'

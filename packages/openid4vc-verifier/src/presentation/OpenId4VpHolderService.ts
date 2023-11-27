@@ -115,7 +115,7 @@ export class OpenId4VpHolderService {
     // which means you should never continue the authentication flow!
     const presentationDefs = verifiedAuthorizationRequest.presentationDefinitions
     if (!presentationDefs || presentationDefs.length === 0) {
-      return { proofType: 'authentication', request: verifiedAuthorizationRequest }
+      return { proofType: 'authentication', authenticationRequest: verifiedAuthorizationRequest }
     }
 
     // FIXME: I don't see any reason why we would support multiple presentation definitions
@@ -133,7 +133,7 @@ export class OpenId4VpHolderService {
       presentationDefinition
     )
 
-    return { proofType: 'presentation', request: verifiedAuthorizationRequest, presentationSubmission }
+    return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, presentationSubmission }
   }
 
   /**

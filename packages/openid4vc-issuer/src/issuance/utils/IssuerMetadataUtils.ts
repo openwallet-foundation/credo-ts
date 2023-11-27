@@ -1,3 +1,4 @@
+import type { OpenIdCredentialFormatProfile } from './claimFormatMapping'
 import type { AuthDetails } from '../OpenId4VciHolderService'
 import type {
   CredentialIssuerMetadata,
@@ -8,7 +9,6 @@ import type {
   CredentialSupportedV1_0_08,
   EndpointMetadataResult,
   IssuerMetadataV1_0_08,
-  OID4VCICredentialFormat,
 } from '@sphereon/oid4vci-common'
 
 import { AriesFrameworkError } from '@aries-framework/core'
@@ -31,13 +31,13 @@ export type OfferedCredentialWithMetadata =
   | {
       credentialSupported: CredentialSupported
       offerType: OfferedCredentialType.CredentialSupported
-      format: OID4VCICredentialFormat
+      format: OpenIdCredentialFormatProfile
       types: string[]
     }
   | {
       inlineCredentialOffer: CredentialOfferFormat
       offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OID4VCICredentialFormat
+      format: OpenIdCredentialFormatProfile
       types: string[]
     }
 

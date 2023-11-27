@@ -222,14 +222,14 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
     const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
-      result.request,
+      result.authenticationRequest,
       holderVerificationMethod
     )
 
     expect(status).toBe(200)
 
-    expect(result.request.authorizationRequestPayload.redirect_uri).toBe(verificationEndpoint)
-    expect(result.request.issuer).toBe(verifierVerificationMethod.controller)
+    expect(result.authenticationRequest.authorizationRequestPayload.redirect_uri).toBe(verificationEndpoint)
+    expect(result.authenticationRequest.issuer).toBe(verifierVerificationMethod.controller)
 
     //////////////////////////// RP (verify the response) ////////////////////////////
 
@@ -283,7 +283,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
     const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptAuthenticationRequest(
-      result.request,
+      result.authenticationRequest,
       holderVerificationMethod
     )
 
@@ -379,7 +379,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (resolvedUniversityDegree.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
     await expect(
-      holder.modules.openId4VcHolder.acceptPresentationRequest(resolvedOpenBadge.request, {
+      holder.modules.openId4VcHolder.acceptPresentationRequest(resolvedOpenBadge.presentationRequest, {
         submission: resolvedUniversityDegree.presentationSubmission,
         submissionEntryIndexes: [0],
       })
@@ -409,7 +409,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     const result = await holder.modules.openId4VcHolder.resolveProofRequest(proofRequest)
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
-    const { request: presentationRequest, presentationSubmission } = result
+    const { presentationRequest, presentationSubmission } = result
     expect(presentationSubmission.areRequirementsSatisfied).toBeTruthy()
     expect(presentationSubmission.requirements.length).toBe(1)
     expect(presentationSubmission.requirements[0].needsCount).toBe(1)
@@ -456,7 +456,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     expect(presentationSubmission.requirements[1].submissionEntry[0].inputDescriptorId).toBe('UniversityDegree')
 
     const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
-      result.request,
+      result.presentationRequest,
       {
         submission: result.presentationSubmission,
         submissionEntryIndexes: [0, 0],
@@ -530,7 +530,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     if (result.proofType !== 'presentation') throw new Error('expected prooftype presentation')
 
     await expect(
-      holder.modules.openId4VcHolder.acceptPresentationRequest(result.request, {
+      holder.modules.openId4VcHolder.acceptPresentationRequest(result.presentationRequest, {
         submission: result.presentationSubmission,
         submissionEntryIndexes: [0],
       })
@@ -568,7 +568,7 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     //////////////////////////// OP (accept the verified request) ////////////////////////////
     const { submittedResponse, status } = await holder.modules.openId4VcHolder.acceptPresentationRequest(
-      result.request,
+      result.presentationRequest,
       {
         submission: result.presentationSubmission,
         submissionEntryIndexes: [0],

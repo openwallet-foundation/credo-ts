@@ -26,12 +26,12 @@ export interface CredentialSupported extends CommonCredentialSupported {
 export type OfferedCredential = CredentialOfferFormat | string
 
 export type PreAuthorizedCodeFlowConfig = {
-  preAuthorizedCode: string
+  preAuthorizedCode?: string
   userPinRequired?: boolean
 }
 
 export type AuthorizationCodeFlowConfig = {
-  issuerState: string
+  issuerState?: string
 }
 
 export type IssuerMetadata = {
@@ -50,7 +50,7 @@ export interface CreateCredentialOfferAndRequestOptions {
   scheme?: 'http' | 'https' | 'openid-credential-offer' | string
 
   // The base URI of the credential offer uri
-  baseUri: string
+  baseUri?: string
 
   preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig
   authorizationCodeFlowConfig?: AuthorizationCodeFlowConfig
@@ -71,6 +71,8 @@ export interface CreateIssueCredentialResponseOptions {
   verificationMethod: VerificationMethod
   issuerMetadata?: IssuerMetadata
 }
+
+export { CredentialRequestV1_0_11 }
 
 export { CredentialResponse } from '@sphereon/oid4vci-common'
 
@@ -105,7 +107,8 @@ export interface AccessTokenEndpointConfig {
 }
 
 export type CredentialRequestToCredentialMapper = (
-  credentialRequest: CredentialRequestV1_0_11
+  credentialRequest: CredentialRequestV1_0_11,
+  holderDid: string
 ) => Promise<W3cCredential>
 
 export interface CredentialEndpointConfig {

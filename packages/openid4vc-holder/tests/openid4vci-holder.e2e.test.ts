@@ -21,12 +21,11 @@ import {
   w3cDate,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { OpenId4VcIssuerModule } from '@aries-framework/openid4vc-issuer'
+import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express, { Router, type Express } from 'express'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenIdCredentialFormatProfile } from '../'
 import { OpenId4VcHolderModule } from '../src/OpenId4VcHolderModule'
 
 import {
@@ -234,9 +233,7 @@ describe('OpenId4VcHolder', () => {
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialsToRequest: resolved.credentialsToRequest.filter(
-            (c) => c.format === OpenIdCredentialFormatProfile.LdpVc
-          ),
+          credentialsToRequest: resolved.credentialsToRequest.filter((c) => c.format === 'ldp_vc'),
           proofOfPossessionVerificationMethodResolver: () => holderVerificationMethod,
         }
       )
@@ -281,7 +278,7 @@ describe('OpenId4VcHolder', () => {
           proofOfPossessionVerificationMethodResolver: () => holderP256VerificationMethod,
           verifyCredentialStatus: false,
           credentialsToRequest: resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
-            return credential.format === OpenIdCredentialFormatProfile.JwtVcJson
+            return credential.format === 'jwt_vc_json'
           }),
         }
       )
@@ -431,9 +428,7 @@ describe('OpenId4VcHolder', () => {
         expect(resolved.credentialsToRequest).toHaveLength(2)
 
         const selectedCredentialsForRequest = resolved.credentialsToRequest.filter((credential) => {
-          return (
-            credential.format === OpenIdCredentialFormatProfile.JwtVcJson && credential.types.includes('VerifiableId')
-          )
+          return credential.format === 'jwt_vc_json' && credential.types.includes('VerifiableId')
         })
 
         expect(selectedCredentialsForRequest).toHaveLength(1)
@@ -619,15 +614,17 @@ describe('OpenId4VcHolder', () => {
           credentialEndpointConfig: {
             enabled: true,
             verificationMethod: issuerVerificationMethod,
-            credentialRequestToCredentialMapper: async (credentialRequest) => {
+            credentialRequestToCredentialMapper: async (credentialRequest, _holderDid) => {
               if (
                 credentialRequest.format === 'jwt_vc_json' &&
                 credentialRequest.types.includes('OpenBadgeCredential')
               ) {
+                if (_holderDid !== holderDid) throw new Error('Invalid holder did')
+
                 return new W3cCredential({
                   type: openBadgeCredential.types,
                   issuer: new W3cIssuer({ id: issuerDid }),
-                  credentialSubject: new W3cCredentialSubject({ id: holderDid }),
+                  credentialSubject: new W3cCredentialSubject({ id: _holderDid }),
                   issuanceDate: w3cDate(Date.now()),
                 })
               }

@@ -35,8 +35,8 @@ export class OpenId4VcIssuerApi {
    * @param  offeredCredentials - The credentials to be offered.
    * @param  options.issuerMetadata - Metadata about the issuer.
    * @param  options.credentialOfferUri - The URI to retrieve the credential offer if the offer is passed by reference.
-   * @param  options.scheme - The credential offer request scheme. Default is https.
-   * @param  options.baseUri - The base URI of the credential offer request.
+   * @param  options.scheme - The credential offer request scheme. Default is 'https'.
+   * @param  options.baseUri - The base URI of the credential offer request. Default is ''.
    * @param  options.preAuthorizedCodeFlowConfig - The configuration for the pre-authorized code flow. This or the authorizationCodeFlowConfig must be provided.
    * @param  options.authorizationCodeFlowConfig - The configuration for the authorization code flow. This or the preAuthorizedCodeFlowConfig must be provided.
    *

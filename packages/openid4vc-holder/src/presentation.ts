@@ -7,3 +7,5 @@ export type ProofSubmissionResponse = Presentation.ProofSubmissionResponse
 export type ResolvedProofRequest = Presentation.ResolvedProofRequest
 export type SubmissionEntry = Presentation.SubmissionEntry
 export type VpFormat = Presentation.VpFormat
+export type ResolvedAuthenticationRequest = Presentation.ResolvedAuthenticationRequest
+export type ResolvedPresentationRequest = Presentation.ResolvedPresentationRequest

@@ -8,8 +8,8 @@ export type CredentialToRequest = Issuance.CredentialToRequest
 export type EndpointMetadataResult = Issuance.EndpointMetadataResult
 export type OfferedCredentialType = Issuance.OfferedCredentialType
 export type OpenId4VCIVersion = Issuance.OpenId4VCIVersion
-export type OpenIdCredentialFormatProfile = Issuance.OpenIdCredentialFormatProfile
 export type ProofOfPossessionRequirements = Issuance.ProofOfPossessionRequirements
+export type OpenIdCredentialFormatProfile = Issuance.OpenIdCredentialFormatProfile
 export type ProofOfPossessionVerificationMethodResolver = Issuance.ProofOfPossessionVerificationMethodResolver
 export type ProofOfPossessionVerificationMethodResolverOptions =
   Issuance.ProofOfPossessionVerificationMethodResolverOptions

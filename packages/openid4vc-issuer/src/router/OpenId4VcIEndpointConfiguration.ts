@@ -5,7 +5,6 @@ import type {
   CredentialEndpointConfig,
   AccessTokenEndpointConfig,
 } from '../OpenId4VcIssuerServiceOptions'
-import type { AgentContext, Logger } from '@aries-framework/core'
 import type {
   CNonceState,
   CredentialIssuerMetadata,
@@ -16,6 +15,8 @@ import type {
   IStateManager,
 } from '@sphereon/oid4vci-common'
 import type { Router, Request, Response } from 'express'
+
+import { Jwt, type AgentContext, type Logger, DidsApi, AriesFrameworkError } from '@aries-framework/core'
 
 import { handleTokenRequest, verifyTokenRequest } from './accessTokenEndpoint'
 import { getEndpointMetadata, sendErrorResponse } from './utils'
@@ -103,7 +104,20 @@ export function configureCredentialEndpoint(
   router.post(path, async (request: Request, response: Response) => {
     try {
       const credentialRequest = request.body as CredentialRequestV1_0_11
-      const credential = await credentialRequestToCredentialMapper(credentialRequest)
+
+      if (!credentialRequest.proof?.jwt) throw new AriesFrameworkError('Received a credential request without a proof')
+      const jwt = Jwt.fromSerializedJwt(credentialRequest.proof?.jwt)
+
+      const kid = jwt.header.kid
+      if (!kid) {
+        throw new AriesFrameworkError('Received a credential request without a kid')
+      }
+
+      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+      const didDocument = await didsApi.resolveDidDocument(kid)
+      const holderDid = didDocument.id
+
+      const credential = await credentialRequestToCredentialMapper(credentialRequest, holderDid)
 
       const issueCredentialResponse = await config.createIssueCredentialResponse(agentContext, {
         credentialRequest,

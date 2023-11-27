@@ -248,7 +248,8 @@ export class OpenId4VcIssuerService {
     return builder.build()
   }
 
-  private getGrantsFromConfig(
+  private async getGrantsFromConfig(
+    agentContext: AgentContext,
     preAuthorizedCodeFlowConfig?: PreAuthorizedCodeFlowConfig,
     authorizationCodeFlowConfig?: AuthorizationCodeFlowConfig
   ) {
@@ -266,7 +267,8 @@ export class OpenId4VcIssuerService {
           /**
            * REQUIRED. The code representing the Credential Issuer's authorization for the Wallet to obtain Credentials of a certain type.
            */
-          'pre-authorized_code': preAuthorizedCodeFlowConfig.preAuthorizedCode,
+          'pre-authorized_code':
+            preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
           /**
            * OPTIONAL. Boolean value specifying whether the Credential Issuer expects presentation of a user PIN along with the Token Request
            * in a Pre-Authorized Code Flow. Default is false.
@@ -279,7 +281,9 @@ export class OpenId4VcIssuerService {
     if (authorizationCodeFlowConfig) {
       grants = {
         ...grants,
-        authorization_code: { issuer_state: authorizationCodeFlowConfig.issuerState },
+        authorization_code: {
+          issuer_state: authorizationCodeFlowConfig.issuerState ?? (await agentContext.wallet.generateNonce()),
+        },
       }
     }
 
@@ -339,11 +343,11 @@ export class OpenId4VcIssuerService {
     const vcIssuer = this.getVcIssuer(agentContext, issuerMetadata)
 
     const { uri, session } = await vcIssuer.createCredentialOfferURI({
-      grants: this.getGrantsFromConfig(preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
+      grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
       credentials: offeredCredentials,
       credentialOfferUri: options.credentialOfferUri,
       scheme: options.scheme ?? 'https',
-      baseUri: options.baseUri,
+      baseUri: options.baseUri ?? '',
       // TODO: THIS IS WRONG HOW TO SPECIFY ldp_ creds?
       // credentialDefinition,
     })
