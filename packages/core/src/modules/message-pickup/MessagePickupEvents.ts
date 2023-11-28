@@ -1,5 +1,4 @@
 import type { MessagePickupSession } from './MessagePickupSession'
-import type { QueuedMessage } from './storage'
 import type { BaseEvent } from '../../agent/Events'
 
 export enum MessagePickupEventTypes {

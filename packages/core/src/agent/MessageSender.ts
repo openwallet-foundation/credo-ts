@@ -5,6 +5,7 @@ import type { TransportSession } from './TransportService'
 import type { AgentContext } from './context'
 import type { ConnectionRecord } from '../modules/connections'
 import type { ResolvedDidCommService } from '../modules/didcomm'
+import type { DidDocument } from '../modules/dids'
 import type { OutOfBandRecord } from '../modules/oob/repository'
 import type { OutboundTransport } from '../transport/OutboundTransport'
 import type { EncryptedMessage, OutboundPackage } from '../types'
@@ -14,9 +15,8 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { AriesFrameworkError, MessageSendingError } from '../error'
 import { Logger } from '../logger'
 import { DidCommDocumentService } from '../modules/didcomm'
-import { DidKey, type DidDocument } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type'
-import { didKeyToInstanceOfKey } from '../modules/dids/helpers'
+import { didKeyToInstanceOfKey, verkeyToDidKey } from '../modules/dids/helpers'
 import { DidResolverService } from '../modules/dids/services/DidResolverService'
 import { MessagePickupRepository } from '../modules/message-pìckup/storage'
 import { inject, injectable } from '../plugins'
@@ -113,9 +113,11 @@ export class MessageSender {
     {
       connection,
       encryptedMessage,
+      recipientKey,
       options,
     }: {
       connection: ConnectionRecord
+      recipientKey: string
       encryptedMessage: EncryptedMessage
       options?: { transportPriority?: TransportPriorityOptions }
     }
@@ -176,7 +178,11 @@ export class MessageSender {
     // If the other party shared a queue service endpoint in their did doc we queue the message
     if (queueService) {
       this.logger.debug(`Queue packed message for connection ${connection.id} (${connection.theirLabel})`)
-      await this.messagePickupRepository.addMessage({ connectionId: connection.id, payload: encryptedMessage })
+      await this.messagePickupRepository.addMessage({
+        connectionId: connection.id,
+        recipientKeys: [recipientKey],
+        payload: encryptedMessage,
+      })
       return
     }
 
@@ -327,13 +333,11 @@ export class MessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      for (const recipientKey of keys.recipientKeys) {
-        await this.messagePickupRepository.addMessage({
-          connectionId: connection.id,
-          recipientKey: new DidKey(recipientKey).did,
-          payload: encryptedMessage,
-        })
-      }
+      await this.messagePickupRepository.addMessage({
+        connectionId: connection.id,
+        recipientKeys: keys.recipientKeys.map((item) => verkeyToDidKey(item.publicKeyBase58)),
+        payload: encryptedMessage,
+      })
 
       this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.QueuedForPickup)
 

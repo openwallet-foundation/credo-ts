@@ -4,8 +4,8 @@ import type { TransportSession } from '../agent/TransportService'
 export enum TransportEventTypes {
   OutboundWebSocketClosedEvent = 'OutboundWebSocketClosedEvent',
   OutboundWebSocketOpenedEvent = 'OutboundWebSocketOpenedEvent',
-  TransportSessionSaved = 'TransportSessionSaved ',
-  TransportSessionRemoved = 'TransportSessionSaved ',
+  TransportSessionSaved = 'TransportSessionSaved',
+  TransportSessionRemoved = 'TransportSessionRemoved',
 }
 
 export interface OutboundWebSocketClosedEvent extends BaseEvent {

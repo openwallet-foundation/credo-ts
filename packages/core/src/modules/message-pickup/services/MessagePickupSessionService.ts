@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../agent'
 import type { TransportSessionRemovedEvent } from '../../../transport'
-import type { MessagePickupLiveSessionRemovedEvent } from '../MessagePickupEvents'
+import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSavedEvent } from '../MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
 
 import { takeUntil, type Subject } from 'rxjs'
@@ -71,8 +71,8 @@ export class MessagePickupSessionService {
     this.sessions.push(session)
 
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-    eventEmitter.emit<MessagePickupLiveSessionRemovedEvent>(agentContext, {
-      type: MessagePickupEventTypes.LiveSessionRemoved,
+    eventEmitter.emit<MessagePickupLiveSessionSavedEvent>(agentContext, {
+      type: MessagePickupEventTypes.LiveSessionSaved,
       payload: {
         session,
       },

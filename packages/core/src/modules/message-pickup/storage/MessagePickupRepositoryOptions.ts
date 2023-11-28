@@ -16,12 +16,10 @@ export interface TakeFromQueueOptions {
 
 export interface AddMessageOptions {
   connectionId: string
-  recipientKey?: string
+  recipientKeys: string[]
   payload: EncryptedMessage
 }
 
 export interface RemoveMessagesOptions {
-  connectionId: string
-  recipientKey?: string
   messageIds: string[]
 }

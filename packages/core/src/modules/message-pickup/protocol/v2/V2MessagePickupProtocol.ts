@@ -104,10 +104,14 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Get available messages from queue, but don't delete them
     const messages = await messagePickupRepository.takeFromQueue({
       connectionId: connectionRecord.id,
-      recipientKey: recipientKey,
+      recipientKey,
       limit: 10, // TODO: Define as config parameter
       keepMessages: true,
     })
+
+    if (messages.length === 0) {
+      return
+    }
 
     const attachments = messages.map(
       (msg) =>
@@ -119,12 +123,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
         })
     )
 
-    if (messages.length > 0) {
-      return {
-        message: new V2MessageDeliveryMessage({
-          attachments,
-        }),
-      }
+    return {
+      message: new V2MessageDeliveryMessage({
+        attachments,
+      }),
     }
   }
 
@@ -218,7 +220,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
 
     if (message.messageIdList.length) {
-      await messageRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
+      await messageRepository.removeMessages({ messageIds: message.messageIdList })
     }
 
     const statusMessage = new V2StatusMessage({

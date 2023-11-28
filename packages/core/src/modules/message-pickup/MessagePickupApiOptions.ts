@@ -8,7 +8,7 @@ export type MessagePickupProtocolVersionType<MPPs extends MessagePickupProtocol[
 
 export interface QueueMessageOptions {
   connectionId: string
-  recipientKey?: string
+  recipientKeys: string[]
   message: EncryptedMessage
 }
 

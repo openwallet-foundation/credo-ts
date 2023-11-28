@@ -77,14 +77,14 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    */
   public async queueMessage(options: QueueMessageOptions): Promise<QueueMessageReturnType> {
     this.logger.debug('Queuing message...')
-    const { connectionId, message, recipientKey } = options
+    const { connectionId, message, recipientKeys } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
     const messagePickupRepository = this.agentContext.dependencyManager.resolve<MessagePickupRepository>(
       InjectionSymbols.MessagePickupRepository
     )
 
-    await messagePickupRepository.addMessage({ connectionId: connectionRecord.id, recipientKey, payload: message })
+    await messagePickupRepository.addMessage({ connectionId: connectionRecord.id, recipientKeys, payload: message })
   }
 
   /**
@@ -95,7 +95,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
    *
    */
   public async deliverQueuedMessages(options: DeliverQueuedMessagesOptions) {
-    this.logger.debug('Deliverying queried message...')
+    this.logger.debug('Deliverying queued messages')
 
     const { connectionId, recipientKey } = options
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
@@ -104,24 +104,25 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
       connectionId: connectionRecord.id,
     })
 
-    if (activePickupSession) {
-      const protocol = this.getProtocol(activePickupSession.protocolVersion)
+    if (!activePickupSession) {
+      this.logger.debug('No active live mode session')
+      return
+    }
 
-      const deliverMessagesReturn = await protocol.deliverMessages(this.agentContext, {
-        connectionRecord,
-        recipientKey,
-      })
+    const protocol = this.getProtocol(activePickupSession.protocolVersion)
 
-      if (deliverMessagesReturn) {
-        await this.messageSender.sendMessage(
-          new OutboundMessageContext(deliverMessagesReturn.message, {
-            agentContext: this.agentContext,
-            connection: connectionRecord,
-          })
-        )
-      }
-    } else {
-      this.logger.debug('No live mode session')
+    const deliverMessagesReturn = await protocol.deliverMessages(this.agentContext, {
+      connectionRecord,
+      recipientKey,
+    })
+
+    if (deliverMessagesReturn) {
+      await this.messageSender.sendMessage(
+        new OutboundMessageContext(deliverMessagesReturn.message, {
+          agentContext: this.agentContext,
+          connection: connectionRecord,
+        })
+      )
     }
   }
 

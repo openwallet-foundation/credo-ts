@@ -72,21 +72,20 @@ export class MediatorService {
 
   public async processForwardMessage(messageContext: InboundMessageContext<ForwardMessage>): Promise<void> {
     const { message, agentContext } = messageContext
-    const connection = messageContext.assertReadyConnection()
 
     // TODO: update to class-validator validation
     if (!message.to) {
       throw new AriesFrameworkError('Invalid Message: Missing required attribute "to"')
     }
 
-    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(
-      messageContext.agentContext,
-      message.to
-    )
+    const mediationRecord = await this.mediationRepository.getSingleByRecipientKey(agentContext, message.to)
 
     // Assert mediation record is ready to be used
     mediationRecord.assertReady()
     mediationRecord.assertRole(MediationRole.Mediator)
+
+    const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
+    connection.assertReady()
 
     const messageForwardingStrategy =
       agentContext.dependencyManager.resolve(MediatorModuleConfig).messageForwardingStrategy
@@ -96,14 +95,14 @@ export class MediatorService {
       case MessageForwardingStrategy.QueueOnly:
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientKey: verkeyToDidKey(message.to),
+          recipientKeys: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         break
       case MessageForwardingStrategy.QueueAndDeliver:
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
-          recipientKey: verkeyToDidKey(message.to),
+          recipientKeys: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         await this.messagePickupApi.deliverQueuedMessages({
@@ -115,7 +114,8 @@ export class MediatorService {
         // The message inside the forward message is packed so we just send the packed
         // message to the connection associated with it
         await messageSender.sendPackage(agentContext, {
-          connection: connection,
+          connection,
+          recipientKey: verkeyToDidKey(message.to),
           encryptedMessage: message.message,
         })
     }
