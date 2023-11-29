@@ -21,5 +21,6 @@ export interface AddMessageOptions {
 }
 
 export interface RemoveMessagesOptions {
+  connectionId: string
   messageIds: string[]
 }

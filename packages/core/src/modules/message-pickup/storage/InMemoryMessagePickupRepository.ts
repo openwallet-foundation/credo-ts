@@ -49,7 +49,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
     if (!keepMessages) {
-      this.removeMessages({ messageIds: messages.map((msg) => msg.id) })
+      this.removeMessages({ connectionId, messageIds: messages.map((msg) => msg.id) })
     }
 
     return messages

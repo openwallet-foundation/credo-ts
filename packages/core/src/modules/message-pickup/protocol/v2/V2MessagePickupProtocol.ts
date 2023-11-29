@@ -17,12 +17,10 @@ import type {
 
 import { EventEmitter } from '../../../../agent/EventEmitter'
 import { AgentEventTypes } from '../../../../agent/Events'
-import { MessageSender } from '../../../../agent/MessageSender'
 import { OutboundMessageContext, Protocol } from '../../../../agent/models'
 import { InjectionSymbols } from '../../../../constants'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { injectable } from '../../../../plugins'
-import { ConnectionService } from '../../../connections'
 import { verkeyToDidKey } from '../../../dids/helpers'
 import { ProblemReportError } from '../../../problem-reports'
 import { RoutingProblemReportReason } from '../../../routing/error'
@@ -220,7 +218,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     )
 
     if (message.messageIdList.length) {
-      await messageRepository.removeMessages({ messageIds: message.messageIdList })
+      await messageRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
     }
 
     const statusMessage = new V2StatusMessage({
@@ -232,45 +230,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   }
 
   public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
-    const connection = messageContext.assertReadyConnection()
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
-    const connectionService = messageContext.agentContext.dependencyManager.resolve(ConnectionService)
-    const messageSender = messageContext.agentContext.dependencyManager.resolve(MessageSender)
     const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(MessagePickupModuleConfig)
 
-    //No messages to be sent
+    //No messages to be retrieved
     if (messageCount === 0) {
-      const { message, connectionRecord } = await connectionService.createTrustPing(
-        messageContext.agentContext,
-        connection,
-        {
-          responseRequested: false,
-        }
-      )
-
-      // FIXME: check where this flow fits, as it seems very particular for the AFJ-ACA-Py combination
-      const websocketSchemes = ['ws', 'wss']
-
-      await messageSender.sendMessage(
-        new OutboundMessageContext(message, {
-          agentContext: messageContext.agentContext,
-          connection: connectionRecord,
-        }),
-        {
-          transportPriority: {
-            schemes: websocketSchemes,
-            restrictive: true,
-            // TODO: add keepAlive: true to enforce through the public api
-            // we need to keep the socket alive. It already works this way, but would
-            // be good to make more explicit from the public facing API.
-            // This would also make it easier to change the internal API later on.
-            // keepAlive: true,
-          },
-        }
-      )
-
       return null
     }
     const { maximumBatchSize: maximumMessagePickup } = messagePickupModuleConfig
