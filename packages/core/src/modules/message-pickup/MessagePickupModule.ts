@@ -10,6 +10,7 @@ import { InjectionSymbols } from '../../constants'
 import { MessagePickupApi } from './MessagePickupApi'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
 import { V1MessagePickupProtocol, V2MessagePickupProtocol } from './protocol'
+import { MessagePickupSessionService } from './services'
 import { InMemoryMessagePickupRepository } from './storage'
 
 /**
@@ -47,6 +48,9 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
 
     // Config
     dependencyManager.registerInstance(MessagePickupModuleConfig, this.config)
+
+    // Services
+    dependencyManager.registerSingleton(MessagePickupSessionService)
 
     // Message Pickup queue: use provided one or in-memory one if no injection symbol is yet defined
     if (this.config.messagePickupRepository) {
