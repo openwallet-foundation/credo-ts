@@ -1,0 +1,18 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+repository:
+  name: agent-framework-javascript
+  description: Extension libraries for Aries Framework JavaScript
+  homepage: https://github.com/openwallet-foundation/agent-framework-javascript
+  default_branch: main
+  has_downloads: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  archived: false
+  private: false
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
