@@ -10,7 +10,7 @@ env:
 
 jobs:
   release-canary:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Release Canary
     if: "!startsWith(github.event.head_commit.message, 'chore(release): v')"
     steps:
@@ -61,7 +61,7 @@ jobs:
           git push origin v${{ steps.get-version.outputs.version }} --no-verify
 
   release-stable:
-    runs-on: aries-ubuntu-2004
+    runs-on: ubuntu-20.04
     name: Create Stable Release
     # Only run if the last pushed commit is a release commit
     if: "startsWith(github.event.head_commit.message, 'chore(release): v')"
