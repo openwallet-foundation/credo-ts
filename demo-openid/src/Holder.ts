@@ -1,14 +1,13 @@
 import type { W3cCredentialRecord } from '@aries-framework/core'
 import type {
-  CredentialToRequest,
-  PresentationRequest,
-  PresentationSubmission,
+  OfferedCredentialWithMetadata,
+  ResolvedPresentationRequest,
+  ResolvedCredentialOffer,
 } from '@aries-framework/openid4vc-holder'
-import type { ResolvedCredentialOffer } from '@aries-framework/openid4vc-holder/build/issuance'
-import type { ResolvedPresentationRequest } from '@aries-framework/openid4vc-holder/src/presentation'
 
 import { AskarModule } from '@aries-framework/askar'
 import { OpenId4VcHolderModule } from '@aries-framework/openid4vc-holder'
+import { SdJwtVcModule, type SdJwtVcRecord } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
@@ -18,13 +17,11 @@ function getOpenIdHolderModules() {
   return {
     askar: new AskarModule({ ariesAskar }),
     openId4VcHolder: new OpenId4VcHolderModule(),
+    sdJwtVc: new SdJwtVcModule(),
   } as const
 }
 
 export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>> {
-  private presentationRequest?: PresentationRequest
-  private presentationSubmission?: PresentationSubmission
-
   public constructor(port: number, name: string) {
     super({ port, name, modules: getOpenIdHolderModules() })
   }
@@ -40,9 +37,9 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     return await this.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
   }
 
-  public async requestAndStoreCredential(
+  public async requestAndStoreCredentials(
     resolvedCredentialOffer: ResolvedCredentialOffer,
-    credentialsToRequest: CredentialToRequest[]
+    credentialsToRequest: OfferedCredentialWithMetadata[]
   ) {
     const credentialRecords = await this.agent.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
       resolvedCredentialOffer,
@@ -52,8 +49,13 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       }
     )
 
-    const storedCredentials: W3cCredentialRecord[] = await Promise.all(
-      credentialRecords.map(({ credential }) => this.agent.w3cCredentials.storeCredential({ credential }))
+    const storedCredentials: (W3cCredentialRecord | SdJwtVcRecord)[] = await Promise.all(
+      credentialRecords.map((record) => {
+        if (record.type === 'W3cCredentialRecord') {
+          return this.agent.w3cCredentials.storeCredential({ credential: record.credential })
+        }
+        return this.agent.modules.sdJwtVc.storeCredential2(record)
+      })
     )
 
     return storedCredentials
@@ -66,15 +68,6 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       throw new Error('We only support presentation requests for now.')
 
     return resolvedProofRequest
-  }
-
-  public getProofRequestData() {
-    if (!this.presentationRequest || !this.presentationSubmission)
-      throw new Error('No proof request data set yet. You need to call resolveProofRequest first!')
-    return {
-      presentationRequest: this.presentationRequest,
-      presentationSubmission: this.presentationSubmission,
-    }
   }
 
   public async acceptPresentationRequest(

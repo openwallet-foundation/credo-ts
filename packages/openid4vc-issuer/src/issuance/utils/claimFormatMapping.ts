@@ -4,7 +4,7 @@ export enum OpenIdCredentialFormatProfile {
   JwtVcJson = 'jwt_vc_json',
   JwtVcJsonLd = 'jwt_vc_json-ld',
   LdpVc = 'ldp_vc',
-  MsoMdoc = 'mso_mdoc',
+  SdJwtVc = 'vc+sd-jwt',
 }
 
 export const fromDifClaimFormatToOpenIdCredentialFormatProfile = (

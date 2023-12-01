@@ -177,6 +177,53 @@ export class SdJwtVcService {
     }
   }
 
+  public async fromString<
+    Header extends Record<string, unknown> = Record<string, unknown>,
+    Payload extends Record<string, unknown> = Record<string, unknown>
+  >(
+    agentContext: AgentContext,
+    sdJwtVcCompact: string,
+    { issuerDidUrl, holderDidUrl }: SdJwtVcReceiveOptions
+  ): Promise<SdJwtVcRecord> {
+    const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
+
+    if (!sdJwtVc.signature) {
+      throw new SdJwtVcError('A signature must be included for an sd-jwt-vc')
+    }
+
+    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
+
+    const { isSignatureValid } = await sdJwtVc.verify(this.verifier(agentContext, issuerKey))
+
+    if (!isSignatureValid) {
+      throw new SdJwtVcError('sd-jwt-vc has an invalid signature from the issuer')
+    }
+
+    const { verificationMethod: holderVerificiationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const holderKey = getKeyFromVerificationMethod(holderVerificiationMethod)
+    const holderKeyJwk = getJwkFromKey(holderKey).toJson()
+
+    sdJwtVc.assertClaimInPayload('cnf', { jwk: holderKeyJwk })
+
+    const sdJwtVcRecord = new SdJwtVcRecord<Header, Payload>({
+      sdJwtVc: {
+        header: sdJwtVc.header,
+        payload: sdJwtVc.payload,
+        signature: sdJwtVc.signature,
+        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+        holderDidUrl,
+      },
+    })
+
+    return sdJwtVcRecord
+  }
+
+  public async storeCredential2(agentContext: AgentContext, sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
+    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
+    return sdJwtVcRecord
+  }
+
   public async storeCredential<
     Header extends Record<string, unknown> = Record<string, unknown>,
     Payload extends Record<string, unknown> = Record<string, unknown>

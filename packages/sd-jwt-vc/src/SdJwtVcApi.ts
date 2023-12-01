@@ -41,6 +41,10 @@ export class SdJwtVcApi {
     return await this.sdJwtVcService.storeCredential(this.agentContext, sdJwtVcCompact, options)
   }
 
+  public async storeCredential2(sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
+    return await this.sdJwtVcService.storeCredential2(this.agentContext, sdJwtVcRecord)
+  }
+
   /**
    *
    * Create a compact presentation of the sd-jwt.

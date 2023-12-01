@@ -26,7 +26,7 @@ export class OpenId4VcIssuerModule implements Module {
     dependencyManager
       .resolve(AgentConfig)
       .logger.warn(
-        "The '@aries-framework/openid4vc-issuer' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages."
+        "The '@aries-framework/openid4vc-issuer' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages. Multi-Tenancy is not supported."
       )
 
     // Register config

@@ -12,7 +12,7 @@ const dependencyManager = {
   resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
 } as unknown as DependencyManager
 
-describe('OpenId4VcIssuerModule', () => {
+describe('OpenId4VcVerifierModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const openId4VcClientModule = new OpenId4VcVerifierModule({})
     openId4VcClientModule.register(dependencyManager)

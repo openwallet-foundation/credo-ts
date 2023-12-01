@@ -1,5 +1,6 @@
 import type { ResolvedCredentialOffer, ResolvedPresentationRequest } from '@aries-framework/openid4vc-holder'
 
+import { OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'
@@ -90,9 +91,7 @@ export class HolderInquirer extends BaseInquirer {
 
     console.log(greenText(`Received credential offer for the following credentials.`))
     console.log(
-      greenText(
-        resolvedCredentialOffer.credentialsToRequest.map((credential) => credential.types.join(', ')).join('\n')
-      )
+      greenText(resolvedCredentialOffer.offeredCredentials.map((credential) => credential.types.join(', ')).join('\n'))
     )
   }
 
@@ -101,26 +100,36 @@ export class HolderInquirer extends BaseInquirer {
       throw new Error('No credential offer resolved yet.')
     }
 
-    const credentialsThatCanBeRequested = this.resolvedCredentialOffer.credentialsToRequest.map((credential) =>
+    const credentialsThatCanBeRequested = this.resolvedCredentialOffer.offeredCredentials.map((credential) =>
       credential.types.join(', ')
     )
 
     const choice = await prompt([this.inquireOptions(credentialsThatCanBeRequested)])
 
-    const credentialToRequest = this.resolvedCredentialOffer.credentialsToRequest.find(
+    const credentialToRequest = this.resolvedCredentialOffer.offeredCredentials.find(
       (credential) => credential.types.join(', ') == choice.options
     )
     if (!credentialToRequest) throw new Error('Credential to request not found.')
 
     console.log(greenText(`Requesting the following credential '${credentialToRequest.types.join(', ')}'`))
 
-    const credentials = await this.holder.requestAndStoreCredential(
+    const credentials = await this.holder.requestAndStoreCredentials(
       this.resolvedCredentialOffer,
-      this.resolvedCredentialOffer.credentialsToRequest
+      this.resolvedCredentialOffer.offeredCredentials
     )
 
     console.log(greenText(`Received and stored the following credentials.`))
-    console.log(greenText(credentials.map((credential) => credential.credential.type.join(', ')).join('\n')))
+    console.log(
+      greenText(
+        credentials
+          .map((credential) => {
+            if (credential.type === 'W3cCredentialRecord')
+              return credential.credential.type.join(', ') + `, CredentialType: 'W3CVerifiableCredential'`
+            else return credential.sdJwtVc.payload.type + `, CredentialType: 'SdJwtVc'`
+          })
+          .join('\n')
+      )
+    )
   }
 
   public async resolveProofRequest() {

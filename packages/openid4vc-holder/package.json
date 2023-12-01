@@ -26,6 +26,7 @@
   "dependencies": {
     "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.2",
+    "@aries-framework/sd-jwt-vc": "^0.4.2",
     "@aries-framework/openid4vc-verifier": "0.4.2",
     "@aries-framework/openid4vc-issuer": "0.4.2"
   },

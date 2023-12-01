@@ -26,6 +26,7 @@
   "dependencies": {
     "@aries-framework/askar": "^0.4.2",
     "@aries-framework/core": "0.4.2",
+    "@aries-framework/sd-jwt-vc": "^0.4.2",
     "@sphereon/did-auth-siop": "^0.5.0-unstable.7",
     "@sphereon/pex": "2.2.0",
     "@sphereon/pex-models": "^2.1.1",

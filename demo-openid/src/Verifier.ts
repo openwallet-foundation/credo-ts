@@ -69,7 +69,7 @@ export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModul
 
   public static async build(): Promise<Verifier> {
     const verifier = new Verifier(4000, 'OpenId4VcVerifier ' + Math.random().toString())
-    await verifier.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
+    await verifier.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598g')
 
     return verifier
   }

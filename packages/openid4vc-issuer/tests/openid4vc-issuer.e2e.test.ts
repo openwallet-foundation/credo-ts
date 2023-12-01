@@ -39,25 +39,34 @@ import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { cleanAll, enableNetConnect } from 'nock'
 
 import { equalsIgnoreOrder } from '../../core/src/utils/deepEquality'
-import { OpenId4VcIssuerModule, OpenId4VcIssuerService } from '../src'
+import { SdJwtVcModule } from '../../sd-jwt-vc/src/SdJwtVcModule'
+import { OpenIdCredentialFormatProfile, OpenId4VcIssuerModule, OpenId4VcIssuerService } from '../src'
 
-const openBadgeCredential: CredentialSupported & { id: string } = {
+const openBadgeCredential = {
   id: 'https://openid4vc-issuer.com/credentials/OpenBadgeCredential',
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
-}
+} satisfies CredentialSupported & { id: string }
 
-const universityDegreeCredential: CredentialSupported & { id: string } = {
+const universityDegreeCredential = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredential',
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-}
+} satisfies CredentialSupported & { id: string }
 
-const universityDegreeCredentialLd: CredentialSupported & { id: string } = {
+const universityDegreeCredentialLd = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialLd',
-  format: 'jwt_vc_json-ld',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-}
+} satisfies CredentialSupported & { id: string }
+
+const universityDegreeCredentialSdJwt = {
+  id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
+  format: OpenIdCredentialFormatProfile.SdJwtVc,
+  credential_definition: {
+    vct: 'UniversityDegreeCredential',
+  },
+} satisfies CredentialSupported & { id: string }
 
 const baseCredentialRequestOptions = {
   scheme: 'openid-credential-offer',
@@ -68,11 +77,12 @@ const issuerMetadata: IssuerMetadata = {
   credentialIssuer: 'https://openid4vc-issuer.com',
   credentialEndpoint: 'https://openid4vc-issuer.com/credentials',
   tokenEndpoint: 'https://openid4vc-issuer.com/token',
-  credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd],
+  credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd, universityDegreeCredentialSdJwt],
 }
 
 const modules = {
   openId4VcIssuer: new OpenId4VcIssuerModule({ issuerMetadata }),
+  sdJwtVc: new SdJwtVcModule(),
   askar: new AskarModule({ ariesAskar }),
 }
 
@@ -82,7 +92,7 @@ const createCredentialRequestFromKid = async (
   agentContext: AgentContext,
   options: {
     issuerMetadata: IssuerMetadata
-    format: 'jwt_vc_json' | 'jwt_vc_json-ld'
+    format: OpenIdCredentialFormatProfile
     types: string[]
     nonce: string
     kid: string
@@ -120,46 +130,23 @@ const createCredentialRequestFromKid = async (
     key,
   })
 
-  return {
-    format,
-    types,
-    proof: { jwt: jws, proof_type: 'jwt' },
-  }
-}
-
-async function handleCredentialResponse(
-  agentContext: AgentContext,
-  sphereonVerifiableCredential: SphereonW3cVerifiableCredential,
-  format: string,
-  types: string[]
-) {
-  const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-
-  let result: W3cVerifyCredentialResult
-  let w3cVerifiableCredential: W3cVerifiableCredential
-
-  if (typeof sphereonVerifiableCredential === 'string') {
-    if (format !== 'jwt_vc_json' && format !== 'jwt_vc_json-ld') throw new Error('Invalid format')
-    // validate json-ld credentials
-    w3cVerifiableCredential = W3cJwtVerifiableCredential.fromSerializedJwt(sphereonVerifiableCredential)
-    result = await w3cCredentialService.verifyCredential(agentContext, { credential: w3cVerifiableCredential })
-  } else if (format === 'ldp_vc') {
-    if (format !== 'ldp_vc') throw new Error('Invalid format')
-    // validate jwt credentials
-
-    w3cVerifiableCredential = JsonTransformer.fromJSON(sphereonVerifiableCredential, W3cJsonLdVerifiableCredential)
-    result = await w3cCredentialService.verifyCredential(agentContext, { credential: w3cVerifiableCredential })
-  } else {
-    throw new AriesFrameworkError(`Unsupported credential format`)
+  if (format === OpenIdCredentialFormatProfile.JwtVcJson) {
+    return { format, types, proof: { jwt: jws, proof_type: 'jwt' } }
+  } else if (format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
+    return {
+      format,
+      proof: { jwt: jws, proof_type: 'jwt' },
+      credential_definition: {
+        // TODO:
+        '@context': ['something'],
+        types,
+      },
+    }
+  } else if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
+    return { format: format, proof: { jwt: jws, proof_type: 'jwt' }, credential_definition: { vct: types[0] } }
   }
 
-  if (!result.isValid) {
-    agentContext.config.logger.error('Failed to validate credential', { result })
-    throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
-  }
-
-  if (equalsIgnoreOrder(w3cVerifiableCredential.type, types) === false) throw new Error('Invalid credential type')
-  return w3cVerifiableCredential
+  throw new Error('Unsupported format')
 }
 
 describe('OpenId4VcIssuer', () => {
@@ -169,6 +156,7 @@ describe('OpenId4VcIssuer', () => {
 
   let holder: Agent<typeof modules>
   let holderKid: string
+  let holderVerificationMethod: VerificationMethod
   let holderDid: string
 
   let issuerService: OpenId4VcIssuerService
@@ -210,6 +198,11 @@ describe('OpenId4VcIssuer', () => {
     holderDid = holderDidCreateResult.didState.did as string
     const holderDidKey = DidKey.fromDid(holderDid)
     holderKid = `${holderDid}#${holderDidKey.key.fingerprint}`
+    const _holderVerificationMethod = holderDidCreateResult.didState.didDocument?.dereferenceKey(holderKid, [
+      'authentication',
+    ])
+    if (!_holderVerificationMethod) throw new Error('No verification method found')
+    holderVerificationMethod = _holderVerificationMethod
 
     const issuerDidCreateResult = await issuer.dids.create<KeyDidCreateOptions>({
       method: 'key',
@@ -241,7 +234,100 @@ describe('OpenId4VcIssuer', () => {
     enableNetConnect()
   })
 
-  it('pre authorized code flow', async () => {
+  async function handleCredentialResponse(
+    sphereonVerifiableCredential: SphereonW3cVerifiableCredential,
+    format: string,
+    types: string[]
+  ) {
+    if (format === 'vc+sd-jwt' && typeof sphereonVerifiableCredential === 'string') {
+      const r = await holder.modules.sdJwtVc.verify(sphereonVerifiableCredential, {
+        holderDidUrl: holderKid,
+        challenge: { verifierDid: holderDid },
+        requiredClaimKeys: ['university', 'degree'],
+      })
+
+      if (r.validation.isValid) throw new Error('Invalid SdJwtVc received')
+      return
+    }
+
+    const w3cCredentialService = holder.context.dependencyManager.resolve(W3cCredentialService)
+
+    let result: W3cVerifyCredentialResult
+    let w3cVerifiableCredential: W3cVerifiableCredential
+
+    if (typeof sphereonVerifiableCredential === 'string') {
+      if (format !== 'jwt_vc_json' && format !== 'jwt_vc_json-ld') throw new Error(`Invalid format. ${format}`)
+      w3cVerifiableCredential = W3cJwtVerifiableCredential.fromSerializedJwt(sphereonVerifiableCredential)
+      result = await w3cCredentialService.verifyCredential(holder.context, { credential: w3cVerifiableCredential })
+    } else if (format === 'ldp_vc') {
+      if (format !== 'ldp_vc') throw new Error('Invalid format')
+      // validate jwt credentials
+
+      w3cVerifiableCredential = JsonTransformer.fromJSON(sphereonVerifiableCredential, W3cJsonLdVerifiableCredential)
+      result = await w3cCredentialService.verifyCredential(holder.context, { credential: w3cVerifiableCredential })
+    } else {
+      throw new AriesFrameworkError(`Unsupported credential format`)
+    }
+
+    if (!result.isValid) {
+      holder.context.config.logger.error('Failed to validate credential', { result })
+      throw new AriesFrameworkError(`Failed to validate credential, error = ${result.error?.message ?? 'Unknown'}`)
+    }
+
+    if (equalsIgnoreOrder(w3cVerifiableCredential.type, types) === false) throw new Error('Invalid credential type')
+    return w3cVerifiableCredential
+  }
+
+  it('pre authorized code flow (sdjwt)', async () => {
+    const cNonce = '1234'
+    const preAuthorizedCode = '1234567890'
+
+    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+
+    const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
+
+    const result = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(
+      [universityDegreeCredentialSdJwt.id],
+      {
+        preAuthorizedCodeFlowConfig,
+        ...baseCredentialRequestOptions,
+      }
+    )
+
+    expect(result.credentialOfferRequest).toEqual(
+      'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
+    )
+
+    const { compact } = await issuer.modules.sdJwtVc.create(
+      { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+      {
+        holderDidUrl: holderVerificationMethod.id,
+        issuerDidUrl: issuerVerificationMethod.id,
+        disclosureFrame: { university: true, degree: true },
+      }
+    )
+
+    const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
+      credential: compact,
+      verificationMethod: issuerVerificationMethod,
+      credentialRequest: await createCredentialRequestFromKid(holder.context, {
+        format: universityDegreeCredentialSdJwt.format,
+        types: [universityDegreeCredentialSdJwt.credential_definition.vct],
+        issuerMetadata,
+        kid: holderKid,
+        nonce: cNonce,
+      }),
+    })
+
+    const sphereonW3cCredential = issueCredentialResponse.credential
+    if (!sphereonW3cCredential) throw new Error('No credential found')
+
+    await handleCredentialResponse(sphereonW3cCredential, universityDegreeCredentialSdJwt.format, [
+      universityDegreeCredentialSdJwt.credential_definition.vct,
+    ])
+  })
+
+  it('pre authorized code flow (jwtvcjson)', async () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
@@ -280,12 +366,7 @@ describe('OpenId4VcIssuer', () => {
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
-    await handleCredentialResponse(
-      holder.context,
-      sphereonW3cCredential,
-      openBadgeCredential.format,
-      openBadgeCredential.types
-    )
+    await handleCredentialResponse(sphereonW3cCredential, openBadgeCredential.format, openBadgeCredential.types)
   })
 
   it('credential id not in credential supported errors', async () => {
@@ -390,7 +471,6 @@ describe('OpenId4VcIssuer', () => {
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
     await handleCredentialResponse(
-      holder.context,
       sphereonW3cCredential,
       universityDegreeCredentialLd.format,
       universityDegreeCredential.types
@@ -479,12 +559,7 @@ describe('OpenId4VcIssuer', () => {
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
-    await handleCredentialResponse(
-      holder.context,
-      sphereonW3cCredential,
-      openBadgeCredential.format,
-      openBadgeCredential.types
-    )
+    await handleCredentialResponse(sphereonW3cCredential, openBadgeCredential.format, openBadgeCredential.types)
   })
 
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
@@ -582,12 +657,7 @@ describe('OpenId4VcIssuer', () => {
     const sphereonW3cCredential = issueCredentialResponse.credential
     if (!sphereonW3cCredential) throw new Error('No credential found')
 
-    await handleCredentialResponse(
-      holder.context,
-      sphereonW3cCredential,
-      openBadgeCredential.format,
-      openBadgeCredential.types
-    )
+    await handleCredentialResponse(sphereonW3cCredential, openBadgeCredential.format, openBadgeCredential.types)
 
     const credential2 = new W3cCredential({
       type: universityDegreeCredential.types,
@@ -612,7 +682,6 @@ describe('OpenId4VcIssuer', () => {
     if (!sphereonW3cCredential2) throw new Error('No credential found')
 
     await handleCredentialResponse(
-      holder.context,
       sphereonW3cCredential2,
       universityDegreeCredential.format,
       universityDegreeCredential.types

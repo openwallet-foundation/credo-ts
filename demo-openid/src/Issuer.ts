@@ -8,29 +8,43 @@ import type e from 'express'
 
 import { AskarModule } from '@aries-framework/askar'
 import { W3cCredential, W3cCredentialSubject, W3cIssuer, w3cDate } from '@aries-framework/core'
-import { OpenId4VcIssuerModule } from '@aries-framework/openid4vc-issuer'
+import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
+import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
-export const universityDegreeCredential: CredentialSupported & { id: string } = {
+export const universityDegreeCredential = {
   id: 'UniversityDegreeCredential',
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
-}
+} satisfies CredentialSupported & { id: string }
 
-export const openBadgeCredential: CredentialSupported & { id: string } = {
+export const openBadgeCredential = {
   id: 'OpenBadgeCredential',
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
-}
+} satisfies CredentialSupported & { id: string }
 
-export const credentialsSupported = [universityDegreeCredential, openBadgeCredential]
+export const universityDegreeCredentialSdJwt = {
+  id: 'UniversityDegreeCredential-sdjwt',
+  format: OpenIdCredentialFormatProfile.SdJwtVc,
+  credential_definition: {
+    vct: 'UniversityDegreeCredential',
+  },
+} satisfies CredentialSupported & { id: string }
+
+export const credentialsSupported = [
+  universityDegreeCredential,
+  openBadgeCredential,
+  universityDegreeCredentialSdJwt,
+] satisfies CredentialSupported[]
 
 function getOpenIdIssuerModules() {
   return {
+    sdJwtVc: new SdJwtVcModule(),
     askar: new AskarModule({ ariesAskar }),
     openId4VcIssuer: new OpenId4VcIssuerModule({
       issuerMetadata: {
@@ -50,7 +64,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
 
   public static async build(): Promise<Issuer> {
     const issuer = new Issuer(2000, 'OpenId4VcIssuer ' + Math.random().toString())
-    await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598g')
+    await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
 
     return issuer
   }
@@ -76,7 +90,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
   }
 
   public getCredentialRequestToCredentialMapper(): CredentialRequestToCredentialMapper {
-    return async (credentialRequest, holderDid) => {
+    return async (credentialRequest, holderDid, holderKid) => {
       if (
         credentialRequest.format === 'jwt_vc_json' &&
         credentialRequest.types.includes('UniversityDegreeCredential')
@@ -97,6 +111,22 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
           issuanceDate: w3cDate(Date.now()),
         })
       }
+
+      if (
+        credentialRequest.format === 'vc+sd-jwt' &&
+        credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
+      ) {
+        const { compact } = await this.agent.modules.sdJwtVc.create(
+          { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+          {
+            holderDidUrl: holderKid,
+            issuerDidUrl: this.kid,
+            disclosureFrame: { university: true, degree: true },
+          }
+        )
+        return compact
+      }
+
       throw new Error('Invalid request')
     }
   }

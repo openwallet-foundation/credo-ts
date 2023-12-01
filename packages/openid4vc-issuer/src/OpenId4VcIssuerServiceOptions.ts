@@ -1,23 +1,19 @@
-import type { SupportedCredentialFormats } from './issuance'
 import type { VerificationMethod, W3cCredential } from '@aries-framework/core'
 import type {
-  CommonCredentialSupported,
+  CredentialOfferFormat,
   CredentialOfferPayloadV1_0_11,
   CredentialRequestV1_0_11,
+  CredentialSupported,
   MetadataDisplay,
   ProofOfPossession,
 } from '@sphereon/oid4vci-common'
 
-export type { MetadataDisplay, ProofOfPossession, CredentialOfferPayloadV1_0_11 }
-
-export interface CredentialOfferFormat {
-  format: SupportedCredentialFormats
-  types: string[]
-}
-
-export interface CredentialSupported extends CommonCredentialSupported {
-  format: SupportedCredentialFormats
-  types: string[]
+export type {
+  MetadataDisplay,
+  ProofOfPossession,
+  CredentialOfferPayloadV1_0_11,
+  CredentialSupported,
+  CredentialOfferFormat,
 }
 
 // If the entry is an object, the object contains the data related to a certain credential type
@@ -67,7 +63,7 @@ export type CredentialOfferAndRequest = {
 
 export interface CreateIssueCredentialResponseOptions {
   credentialRequest: CredentialRequestV1_0_11
-  credential: W3cCredential
+  credential: W3cCredential | string
   verificationMethod: VerificationMethod
   issuerMetadata?: IssuerMetadata
 }
@@ -108,8 +104,9 @@ export interface AccessTokenEndpointConfig {
 
 export type CredentialRequestToCredentialMapper = (
   credentialRequest: CredentialRequestV1_0_11,
-  holderDid: string
-) => Promise<W3cCredential>
+  holderDid: string,
+  holderDidUrl: string
+) => Promise<W3cCredential | string>
 
 export interface CredentialEndpointConfig {
   /**

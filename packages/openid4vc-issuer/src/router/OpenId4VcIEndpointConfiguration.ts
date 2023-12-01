@@ -4,6 +4,7 @@ import type {
   MetadataEndpointConfig,
   CredentialEndpointConfig,
   AccessTokenEndpointConfig,
+  CredentialSupported,
 } from '../OpenId4VcIssuerServiceOptions'
 import type {
   CNonceState,
@@ -11,7 +12,6 @@ import type {
   CredentialOfferSession,
   CredentialRequestV1_0_11,
   CredentialResponse,
-  CredentialSupported,
   IStateManager,
 } from '@sphereon/oid4vci-common'
 import type { Router, Request, Response } from 'express'
@@ -117,7 +117,7 @@ export function configureCredentialEndpoint(
       const didDocument = await didsApi.resolveDidDocument(kid)
       const holderDid = didDocument.id
 
-      const credential = await credentialRequestToCredentialMapper(credentialRequest, holderDid)
+      const credential = await credentialRequestToCredentialMapper(credentialRequest, holderDid, kid)
 
       const issueCredentialResponse = await config.createIssueCredentialResponse(agentContext, {
         credentialRequest,

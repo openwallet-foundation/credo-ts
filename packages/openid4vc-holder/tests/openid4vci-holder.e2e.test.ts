@@ -22,6 +22,7 @@ import {
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
 import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
+import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express, { Router, type Express } from 'express'
 import nock, { cleanAll, enableNetConnect } from 'nock'
@@ -40,21 +41,30 @@ const credentialIssuer = `http://localhost:${issuerPort}`
 
 const openBadgeCredential: CredentialSupported & { id: string } = {
   id: `${credentialIssuer}/credentials/OpenBadgeCredential`,
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'OpenBadgeCredential'],
 }
 
 const universityDegreeCredential: CredentialSupported & { id: string } = {
   id: `${credentialIssuer}/credentials/UniversityDegreeCredential`,
-  format: 'jwt_vc_json',
+  format: OpenIdCredentialFormatProfile.JwtVcJson,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
 }
 
 const universityDegreeCredentialLd: CredentialSupported & { id: string } = {
   id: `${credentialIssuer}/credentials/UniversityDegreeCredentialLd`,
-  format: 'jwt_vc_json-ld',
+  format: OpenIdCredentialFormatProfile.JwtVcJsonLd,
   types: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  '@context': ['context'],
 }
+
+const universityDegreeCredentialSdJwt = {
+  id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt',
+  format: OpenIdCredentialFormatProfile.SdJwtVc,
+  credential_definition: {
+    vct: 'UniversityDegreeCredential',
+  },
+} satisfies CredentialSupported & { id: string }
 
 const baseCredentialRequestOptions = {
   scheme: 'openid-credential-offer',
@@ -65,16 +75,18 @@ const issuerMetadata: IssuerMetadata = {
   credentialIssuer,
   credentialEndpoint: `${credentialIssuer}/credentials`,
   tokenEndpoint: `${credentialIssuer}/token`,
-  credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd],
+  credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd, universityDegreeCredentialSdJwt],
 }
 
 const holderModules = {
   openId4VcHolder: new OpenId4VcHolderModule(),
+  sdJwtVc: new SdJwtVcModule(),
   askar: new AskarModule({ ariesAskar }),
 }
 
 const issuerModules = {
   openId4VcIssuer: new OpenId4VcIssuerModule({ issuerMetadata }),
+  sdJwtVc: new SdJwtVcModule(),
   askar: new AskarModule({ ariesAskar }),
 }
 
@@ -233,7 +245,7 @@ describe('OpenId4VcHolder', () => {
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialsToRequest: resolved.credentialsToRequest.filter((c) => c.format === 'ldp_vc'),
+          credentialsToRequest: resolved.offeredCredentials.filter((c) => c.format === 'ldp_vc'),
           proofOfPossessionVerificationMethodResolver: () => holderVerificationMethod,
         }
       )
@@ -277,7 +289,7 @@ describe('OpenId4VcHolder', () => {
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.ES256],
           proofOfPossessionVerificationMethodResolver: () => holderP256VerificationMethod,
           verifyCredentialStatus: false,
-          credentialsToRequest: resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+          credentialsToRequest: resolvedCredentialOffer.offeredCredentials.filter((credential) => {
             return credential.format === 'jwt_vc_json'
           }),
         }
@@ -425,9 +437,9 @@ describe('OpenId4VcHolder', () => {
         httpMock.post('/credential').reply(200, fixture.credentialResponse)
 
         const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
-        expect(resolved.credentialsToRequest).toHaveLength(2)
+        expect(resolved.offeredCredentials).toHaveLength(2)
 
-        const selectedCredentialsForRequest = resolved.credentialsToRequest.filter((credential) => {
+        const selectedCredentialsForRequest = resolved.offeredCredentials.filter((credential) => {
           return credential.format === 'jwt_vc_json' && credential.types.includes('VerifiableId')
         })
 
@@ -475,8 +487,8 @@ describe('OpenId4VcHolder', () => {
           fixture.credentialOffer
         )
 
-        expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
-        const selectedCredentialsForRequest = resolvedCredentialOffer.credentialsToRequest.filter((credential) => {
+        expect(resolvedCredentialOffer.offeredCredentials).toHaveLength(2)
+        const selectedCredentialsForRequest = resolvedCredentialOffer.offeredCredentials.filter((credential) => {
           return (
             credential.format === OpenIdCredentialFormatProfile.LdpVc && credential.types.includes('VerifiableDiploma')
           )
@@ -523,7 +535,7 @@ describe('OpenId4VcHolder', () => {
           fixture.credentialOffer
         )
 
-        expect(resolvedCredentialOffer.credentialsToRequest).toHaveLength(2)
+        expect(resolvedCredentialOffer.offeredCredentials).toHaveLength(2)
 
         const w3cCredentialRecords = await holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
           resolvedCredentialOffer,
@@ -683,6 +695,9 @@ describe('OpenId4VcHolder', () => {
 
         expect(credentials).toHaveLength(2)
         expect(credentials[0]).toBeInstanceOf(W3cCredentialRecord)
+        if (credentials[0].type === 'SdJwtVcRecord') throw new Error('Invalid credential type')
+        if (credentials[1].type === 'SdJwtVcRecord') throw new Error('Invalid credential type')
+
         expect(credentials[0].credential.type).toHaveLength(2)
         expect(credentials[1].credential.type).toHaveLength(2)
 
@@ -694,6 +709,66 @@ describe('OpenId4VcHolder', () => {
           expect(credentials[0].credential.type).toEqual(['VerifiableCredential', 'UniversityDegreeCredential'])
         }
       })
+    })
+
+    it('e2e flow with issuer endpoints requesting sdjwtvc', async () => {
+      const router = Router()
+      await issuer.modules.openId4VcIssuer.configureRouter(router, {
+        metadataEndpointConfig: { enabled: true },
+        accessTokenEndpointConfig: {
+          enabled: true,
+          preAuthorizedCodeExpirationDuration: 50,
+          verificationMethod: issuerVerificationMethod,
+        },
+        credentialEndpointConfig: {
+          enabled: true,
+          verificationMethod: issuerVerificationMethod,
+          credentialRequestToCredentialMapper: async (credentialRequest, _holderDid, holderKid) => {
+            if (
+              credentialRequest.format === 'vc+sd-jwt' &&
+              credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
+            ) {
+              if (_holderDid !== holderDid) throw new Error('Invalid holder did')
+
+              const { compact } = await issuer.modules.sdJwtVc.create(
+                { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+                {
+                  holderDidUrl: holderKid,
+                  issuerDidUrl: issuerVerificationMethod.id,
+                  disclosureFrame: { university: true, degree: true },
+                }
+              )
+              return compact
+            }
+            throw new Error('Invalid request')
+          },
+        },
+      })
+
+      issuerApp.use('/', router)
+      issuerServer = issuerApp.listen(issuerPort)
+
+      const { credentialOfferRequest } = await issuer.modules.openId4VcIssuer.createCredentialOfferAndRequest(
+        [universityDegreeCredentialSdJwt.id],
+        { preAuthorizedCodeFlowConfig: { userPinRequired: false }, ...baseCredentialRequestOptions }
+      )
+
+      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
+        credentialOfferRequest
+      )
+
+      const credentials = await holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(
+        resolvedCredentialOffer,
+        {
+          proofOfPossessionVerificationMethodResolver: async () => {
+            return holderVerificationMethod
+          },
+        }
+      )
+
+      expect(credentials).toHaveLength(1)
+      if (credentials[0].type === 'W3cCredentialRecord') throw new Error('Invalid credential type')
+      expect(credentials[0].sdJwtVc.payload['type']).toEqual('UniversityDegreeCredential')
     })
 
     //it('authorization code flow https://portal.walt.id/', async () => {

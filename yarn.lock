@@ -2570,14 +2570,14 @@
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
 "@sphereon/did-auth-siop@^0.5.0-unstable.7":
-  version "0.5.0-unstable.7"
-  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.5.0-unstable.7.tgz#3867ffe44f9289ce85f1f41241d98464e0acb4c4"
-  integrity sha512-Yq/NqrRTin85zkJA1//EzZ8j+hwt1Aw5YK2crN0MRhW6Oo3eoAuhLygCJNvy81hkwgawd8MuP9Bf6rk9vHsFsA==
+  version "0.5.0-unstable.8"
+  resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.5.0-unstable.8.tgz#5bc9d66d6cedce5c6a39a54059e214c6046a83a9"
+  integrity sha512-p7tuv9EaGv+U0lj8nBEZYotnUKrySh/rTYrGTH4c+gwJRZqiJCNoiLqfheC4lrMk0dnULd2WuuBe67qlxSaafQ==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
     "@sphereon/did-uni-client" "^0.6.0"
-    "@sphereon/pex" "2.2.1-unstable.0"
-    "@sphereon/pex-models" "^2.1.1"
+    "@sphereon/pex" "2.2.2"
+    "@sphereon/pex-models" "^2.1.2"
     "@sphereon/ssi-types" "^0.17.5"
     "@sphereon/wellknown-dids-client" "^0.1.3"
     cross-fetch "^3.1.8"
@@ -2599,38 +2599,32 @@
     cross-fetch "^3.1.5"
     did-resolver "^4.1.0"
 
-"@sphereon/oid4vci-client@^0.8.1":
+"@sphereon/oid4vci-client@file:../Sphereon/sphereon-oidvci-client-0.8.1":
   version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-client/-/oid4vci-client-0.8.1.tgz#e05ce5d0f9d5227492b7e5264864cea88a4e10a4"
-  integrity sha512-NhIxBDTvXRDl7du+z3Mnpm0VkxI1L/r1r4hJzz2Xdh1NKruzk5lkoLbRyq9uCc3rMg/RH8U+nkThrOE0TiwnRg==
   dependencies:
-    "@sphereon/oid4vci-common" "0.8.1"
+    "@sphereon/oid4vci-common" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-client-0.8.1-301170cf-5685-4f6d-bb5d-6b488d8f7353-1701331237986/node_modules/@sphereon/sphereon-oid4vci-common-0.8.1"
     "@sphereon/ssi-types" "0.17.2"
     cross-fetch "^3.1.8"
     debug "^4.3.4"
 
-"@sphereon/oid4vci-common@0.8.1", "@sphereon/oid4vci-common@^0.8.1":
+"@sphereon/oid4vci-common@0.8.1", "@sphereon/oid4vci-common@file:../Sphereon/sphereon-oid4vci-common-0.8.1":
   version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-common/-/oid4vci-common-0.8.1.tgz#2623f467c3765a96f3330691d6a0946f04360106"
-  integrity sha512-lKdVjUIkd04Tpt9BLZ+N5mv2uhm4x1Qu5TFrYHBPzXCc0jNMnSWCN3yD0HjfdsW++unLaqAqifvM4iYY5NKSZg==
   dependencies:
     "@sphereon/ssi-types" "0.17.2"
     cross-fetch "^3.1.8"
     jwt-decode "^3.1.2"
 
-"@sphereon/oid4vci-issuer@^0.8.1":
+"@sphereon/oid4vci-issuer@file:../Sphereon/sphereon-oid4vci-issuer-0.8.1":
   version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/oid4vci-issuer/-/oid4vci-issuer-0.8.1.tgz#7682b133982097d84018b4a4d3a8c903b296f214"
-  integrity sha512-2IK0XdO3djGPeLFmPI5zYcHRfsZG9ZugQ+VyJUNtEO/nfcwXGxd4pCxzaUxqHRCTXEStCxXRnvf4mntYuhnpIQ==
   dependencies:
     "@sphereon/oid4vci-common" "0.8.1"
     "@sphereon/ssi-types" "0.17.2"
     uuid "^9.0.0"
 
-"@sphereon/pex-models@^2.1.1":
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.1.tgz#399e529db2a7e3b9abbd7314cdba619ceb6cb758"
-  integrity sha512-0UX/CMwgiJSxzuBn6SLOTSKkm+uPq3dkNjl8w4EtppXp6zBB4lQMd1mJX7OifX5Bp5vPUfoz7bj2B+yyDtbZww==
+"@sphereon/pex-models@^2.1.1", "@sphereon/pex-models@^2.1.2":
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex-models/-/pex-models-2.1.2.tgz#e1a0ce16ccc6b32128fc8c2da79d65fc35f6d10f"
+  integrity sha512-Ec1qZl8tuPd+s6E+ZM7v+HkGkSOjGDMLNN1kqaxAfWpITBYtTLb+d5YvwjvBZ1P2upZ7zwNER97FfW5n/30y2w==
 
 "@sphereon/pex@2.2.0":
   version "2.2.0"
@@ -2646,13 +2640,13 @@
     nanoid "^3.3.6"
     string.prototype.matchall "^4.0.8"
 
-"@sphereon/pex@2.2.1-unstable.0":
-  version "2.2.1-unstable.0"
-  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-2.2.1-unstable.0.tgz#58c339f578d487db5e7ac54a79871c58bdbe63ff"
-  integrity sha512-gAO4+pUSdN+kDHaB1D7oCSn1AZcKOeH3IXv7NdPkf1U4J/sJpLEXA46gsG8SBTX4e45CRGwt8c5F7vPmIwX7XQ==
+"@sphereon/pex@2.2.2":
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/@sphereon/pex/-/pex-2.2.2.tgz#3df9ed75281b46f0899256774060ed2ff982fade"
+  integrity sha512-NkR8iDTC2PSnYsOHlG2M2iOpFTTbzszs2/pL3iK3Dlv9QYLqX7NtPAlmeSwaoVP1NB1ewcs6U1DtemQAD+90yQ==
   dependencies:
     "@astronautlabs/jsonpath" "^1.1.2"
-    "@sphereon/pex-models" "^2.1.1"
+    "@sphereon/pex-models" "^2.1.2"
     "@sphereon/ssi-types" "^0.17.5"
     ajv "^8.12.0"
     ajv-formats "^2.1.1"

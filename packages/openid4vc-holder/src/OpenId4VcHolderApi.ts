@@ -7,6 +7,7 @@ import type {
 } from './issuance'
 import type { AuthenticationRequest, PresentationRequest, PresentationSubmission } from './presentation'
 import type { VerificationMethod, W3cCredentialRecord } from '@aries-framework/core'
+import type { SdJwtVcRecord } from '@aries-framework/sd-jwt-vc'
 
 import { injectable, AgentContext } from '@aries-framework/core'
 import { OpenId4VciHolderService } from '@aries-framework/openid4vc-issuer'
@@ -89,7 +90,7 @@ export class OpenId4VcHolderApi {
    * into a unified format.
    *
    * @param credentialOffer the credential offer to resolve
-   * @returns The uniform credential offer payload, the issuer metadata, protocol version, and credentials that can be requested.
+   * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.
    */
   public async resolveCredentialOffer(credentialOffer: string | CredentialOfferPayloadV1_0_11) {
     return await this.openId4VciHolderService.resolveCredentialOffer(credentialOffer)
@@ -123,12 +124,12 @@ export class OpenId4VcHolderApi {
    * Accepts a credential offer using the pre-authorized code flow.
    * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param acceptCredentialOfferOptions
-   * @returns W3cCredentialRecord[]
+   * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingPreAuthorizedCode(
     resolvedCredentialOffer: ResolvedCredentialOffer,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-  ): Promise<W3cCredentialRecord[]> {
+  ): Promise<(W3cCredentialRecord | SdJwtVcRecord)[]> {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       acceptCredentialOfferOptions,
@@ -141,14 +142,14 @@ export class OpenId4VcHolderApi {
    * @param resolvedAuthorizationRequest Obtained through @see resolveAuthorizationRequest
    * @param code The authorization code obtained via the authorization request URI
    * @param acceptCredentialOfferOptions
-   * @returns W3cCredentialRecord[]
+   * @returns ( @see W3cCredentialRecord | @see SdJwtRecord )[]
    */
   public async acceptCredentialOfferUsingAuthorizationCode(
     resolvedCredentialOffer: ResolvedCredentialOffer,
     resolvedAuthorizationRequest: ResolvedAuthorizationRequest,
     code: string,
     acceptCredentialOfferOptions: AcceptCredentialOfferOptions
-  ): Promise<W3cCredentialRecord[]> {
+  ): Promise<(W3cCredentialRecord | SdJwtVcRecord)[]> {
     return this.openId4VciHolderService.acceptCredentialOffer(this.agentContext, {
       resolvedCredentialOffer,
       resolvedAuthorizationRequestWithCode: { ...resolvedAuthorizationRequest, code },

@@ -37,9 +37,5 @@ describe('claimFormatMapping', () => {
     expect(fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenIdCredentialFormatProfile.LdpVc)).toStrictEqual(
       ClaimFormat.LdpVc
     )
-
-    expect(() => fromOpenIdCredentialFormatProfileToDifClaimFormat(OpenIdCredentialFormatProfile.MsoMdoc)).toThrow(
-      AriesFrameworkError
-    )
   })
 })

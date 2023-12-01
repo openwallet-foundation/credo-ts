@@ -1,27 +1,32 @@
-import type { OfferedCredentialType } from './utils/IssuerMetadataUtils'
-import type { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
+import type { OfferedCredentialWithMetadata } from './utils/IssuerMetadataUtils'
 import type { JwaSignatureAlgorithm, KeyType, VerificationMethod } from '@aries-framework/core'
-import type { CredentialOfferPayloadV1_0_11, EndpointMetadataResult, OpenId4VCIVersion } from '@sphereon/oid4vci-common'
+import type {
+  CredentialOfferPayloadV1_0_11,
+  EndpointMetadataResult,
+  OpenId4VCIVersion,
+  AuthorizationDetails,
+} from '@sphereon/oid4vci-common'
 
-export type SupportedCredentialFormats = 'jwt_vc_json' | 'jwt_vc_json-ld'
+import { OpenIdCredentialFormatProfile } from './utils/claimFormatMapping'
 
-export type { OfferedCredentialType, OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11 }
+export type SupportedCredentialFormats =
+  | OpenIdCredentialFormatProfile.JwtVcJson
+  | OpenIdCredentialFormatProfile.JwtVcJsonLd
+  | OpenIdCredentialFormatProfile.SdJwtVc
 
-export type CredentialToRequest = { format: OpenIdCredentialFormatProfile; types: string[] } & (
-  | { offerType: OfferedCredentialType.InlineCredentialOffer }
-  | {
-      offerType: OfferedCredentialType.CredentialSupported
-      id: string | undefined
-      cryptographic_binding_methods_supported: string[] | undefined
-      cryptographic_suites_supported: string[] | undefined
-    }
-)
+export const supportedCredentialFormats: SupportedCredentialFormats[] = [
+  OpenIdCredentialFormatProfile.JwtVcJson,
+  OpenIdCredentialFormatProfile.JwtVcJsonLd,
+  OpenIdCredentialFormatProfile.SdJwtVc,
+]
+
+export type { OpenId4VCIVersion, EndpointMetadataResult, CredentialOfferPayloadV1_0_11, AuthorizationDetails }
 
 export interface ResolvedCredentialOffer {
   metadata: EndpointMetadataResult
   credentialOfferPayload: CredentialOfferPayloadV1_0_11
   version: OpenId4VCIVersion
-  credentialsToRequest: CredentialToRequest[]
+  offeredCredentials: OfferedCredentialWithMetadata[]
 }
 
 export interface ResolvedAuthorizationRequest extends AuthCodeFlowOptions {
@@ -47,7 +52,7 @@ export interface AcceptCredentialOfferOptions {
    * This is the list of credentials that will be requested from the issuer.
    * If not provided all offered credentials will be requested.
    */
-  credentialsToRequest?: CredentialToRequest[]
+  credentialsToRequest?: OfferedCredentialWithMetadata[]
 
   verifyCredentialStatus?: boolean
 

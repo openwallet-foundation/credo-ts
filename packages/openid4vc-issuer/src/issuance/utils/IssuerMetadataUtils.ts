@@ -1,10 +1,17 @@
-import type { OpenIdCredentialFormatProfile } from './claimFormatMapping'
-import type { AuthDetails } from '../OpenId4VciHolderService'
 import type {
+  AuthorizationDetails,
+  CommonCredentialOfferFormat,
+  CommonCredentialSupported,
   CredentialIssuerMetadata,
   CredentialOfferFormat,
+  CredentialOfferFormatJwtVcJson,
+  CredentialOfferFormatJwtVcJsonLdAndLdpVc,
+  CredentialOfferFormatSdJwtVc,
   CredentialOfferPayloadV1_0_11,
   CredentialSupported,
+  CredentialSupportedJwtVcJson,
+  CredentialSupportedJwtVcJsonLdAndLdpVc,
+  CredentialSupportedSdJwtVc,
   CredentialSupportedTypeV1_0_08,
   CredentialSupportedV1_0_08,
   EndpointMetadataResult,
@@ -16,6 +23,7 @@ import { MetadataClient } from '@sphereon/oid4vci-client'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
 import { getUniformFormat } from './Formats'
+import { OpenIdCredentialFormatProfile } from './claimFormatMapping'
 
 /**
  * The type of a credential offer entry. For each item in `credentials` array, the type MUST be one of the following:
@@ -29,15 +37,39 @@ export enum OfferedCredentialType {
 
 export type OfferedCredentialWithMetadata =
   | {
-      credentialSupported: CredentialSupported
       offerType: OfferedCredentialType.CredentialSupported
-      format: OpenIdCredentialFormatProfile
+      format: OpenIdCredentialFormatProfile.JwtVcJson
+      credentialSupported: CommonCredentialSupported & CredentialSupportedJwtVcJson
       types: string[]
     }
   | {
-      inlineCredentialOffer: CredentialOfferFormat
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      credentialSupported: CommonCredentialSupported & CredentialSupportedJwtVcJsonLdAndLdpVc
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.CredentialSupported
+      format: OpenIdCredentialFormatProfile.SdJwtVc
+      credentialSupported: CommonCredentialSupported & CredentialSupportedSdJwtVc
+      types: string[]
+    }
+  | {
       offerType: OfferedCredentialType.InlineCredentialOffer
-      format: OpenIdCredentialFormatProfile
+      format: OpenIdCredentialFormatProfile.JwtVcJson
+      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatJwtVcJson
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OpenIdCredentialFormatProfile.JwtVcJsonLd | OpenIdCredentialFormatProfile.LdpVc
+      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatJwtVcJsonLdAndLdpVc
+      types: string[]
+    }
+  | {
+      offerType: OfferedCredentialType.InlineCredentialOffer
+      format: OpenIdCredentialFormatProfile.SdJwtVc
+      credentialOffer: CommonCredentialOfferFormat & CredentialOfferFormatSdJwtVc
       types: string[]
     }
 
@@ -50,15 +82,12 @@ export type OfferedCredentialWithMetadata =
  * id will be the `<credentialId>-<format>`.
  */
 export function getOfferedCredentialsWithMetadata(
-  credentialOfferPayload: CredentialOfferPayloadV1_0_11,
-  issuerMetadata: CredentialIssuerMetadata | IssuerMetadataV1_0_08,
-  version: OpenId4VCIVersion
+  credentialOffers: (CredentialOfferFormat | string)[],
+  supportedCredentials: CredentialSupported[]
 ) {
-  const offeredCredentials: OfferedCredentialWithMetadata[] = []
+  const offeredCredentialsWithMetadata: OfferedCredentialWithMetadata[] = []
 
-  const supportedCredentials = getSupportedCredentials({ issuerMetadata, version })
-
-  for (const offeredCredential of credentialOfferPayload.credentials) {
+  for (const offeredCredential of credentialOffers) {
     // If the offeredCredential is a string, it has to reference a supported credential in the issuer metadata
     if (typeof offeredCredential === 'string') {
       const foundSupportedCredentials = supportedCredentials.filter(
@@ -75,26 +104,46 @@ export function getOfferedCredentialsWithMetadata(
       }
 
       for (const foundSupportedCredential of foundSupportedCredentials) {
-        offeredCredentials.push({
-          credentialSupported: foundSupportedCredential,
-          offerType: OfferedCredentialType.CredentialSupported,
-          format: getUniformFormat(foundSupportedCredential.format),
-          types: foundSupportedCredential.types,
-        })
+        if (foundSupportedCredential.format === 'vc+sd-jwt') {
+          offeredCredentialsWithMetadata.push({
+            offerType: OfferedCredentialType.CredentialSupported,
+            credentialSupported: foundSupportedCredential,
+            format: OpenIdCredentialFormatProfile.SdJwtVc,
+            types: [foundSupportedCredential.credential_definition.vct],
+          })
+        } else {
+          offeredCredentialsWithMetadata.push({
+            offerType: OfferedCredentialType.CredentialSupported,
+            credentialSupported: foundSupportedCredential,
+            format: getUniformFormat(foundSupportedCredential.format),
+            types: foundSupportedCredential.types,
+          } as OfferedCredentialWithMetadata)
+        }
       }
     }
     // Otherwise it's an inline credential offer that does not reference a supported credential in the issuer metadata
     else {
-      offeredCredentials.push({
-        inlineCredentialOffer: offeredCredential,
+      let types: string[]
+      if (offeredCredential.format === 'jwt_vc_json') {
+        types = offeredCredential.types
+      } else if (offeredCredential.format === 'jwt_vc_json-ld' || offeredCredential.format === 'ldp_vc') {
+        types = offeredCredential.credential_definition.types
+      } else if (offeredCredential.format === 'vc+sd-jwt') {
+        types = [offeredCredential.credential_definition.vct]
+      } else {
+        throw new AriesFrameworkError(`Unknown format received ${JSON.stringify(offeredCredential.format)}`)
+      }
+
+      offeredCredentialsWithMetadata.push({
         offerType: OfferedCredentialType.InlineCredentialOffer,
         format: getUniformFormat(offeredCredential.format),
-        types: offeredCredential.types,
-      })
+        types: types,
+        credentialOffer: offeredCredential,
+      } as OfferedCredentialWithMetadata)
     }
   }
 
-  return offeredCredentials
+  return offeredCredentialsWithMetadata
 }
 
 export async function getMetadataFromCredentialOffer(
@@ -103,8 +152,9 @@ export async function getMetadataFromCredentialOffer(
 ) {
   const issuer = credentialOfferPayload.credential_issuer
 
-  const resolvedMetadata =
-    metadata && metadata.credentialIssuerMetadata ? metadata : await MetadataClient.retrieveAllMetadata(issuer)
+  const resolvedMetadata = metadata?.credentialIssuerMetadata
+    ? metadata
+    : await MetadataClient.retrieveAllMetadata(issuer)
 
   if (!resolvedMetadata) {
     throw new AriesFrameworkError(`Could not retrieve metadata for OpenId4Vci issuer: ${issuer}`)
@@ -143,21 +193,21 @@ export function getSupportedCredentials(opts: {
 
 export function credentialsSupportedV8ToV11(supportedV8: CredentialSupportedTypeV1_0_08): CredentialSupported[] {
   return Object.entries(supportedV8).flatMap((entry) => {
-    const type = entry[0]
+    const credentialId = entry[0]
     const supportedV8 = entry[1]
-    return credentialSupportedV8ToV11(type, supportedV8)
+    return credentialSupportedV8ToV11(credentialId, supportedV8)
   })
 }
 
 export function credentialSupportedV8ToV11(
-  key: string,
+  credentialId: string,
   supportedV8: CredentialSupportedV1_0_08
 ): CredentialSupported[] {
   const v8FormatEntries = Object.entries(supportedV8.formats)
 
   return v8FormatEntries.map((entry) => {
     const format = entry[0]
-    const credentialSupportBrief = entry[1]
+    const credentialSupportedV8 = entry[1]
     if (typeof format !== 'string') {
       throw Error(`Unknown format received ${JSON.stringify(format)}`)
     }
@@ -166,25 +216,28 @@ export function credentialSupportedV8ToV11(
     // v11 format has an array where each entry only supports one format, and can only have an `id` property. We include the
     // key from the v8 object as the id for the v11 object, but to prevent collisions (as multiple formats can be supported under
     // one key), we append the format to the key IF there's more than one format supported under the key.
-    const id = v8FormatEntries.length > 1 ? `${key}-${format}` : key
+    const id = v8FormatEntries.length > 1 ? `${credentialId}-${format}` : credentialId
 
     let credentialSupported: CredentialSupported
-    if (format === 'jwt_vc_json') {
+    const v11Format = getUniformFormat(format)
+    if (v11Format === OpenIdCredentialFormatProfile.JwtVcJson) {
       credentialSupported = {
-        format,
+        format: OpenIdCredentialFormatProfile.JwtVcJson,
         display: supportedV8.display,
-        ...credentialSupportBrief,
+        ...credentialSupportedV8,
         credentialSubject: supportedV8.claims,
         id,
       }
-    } else {
+    } else if (v11Format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
       credentialSupported = {
-        format,
+        format: v11Format,
         display: supportedV8.display,
-        ...credentialSupportBrief,
+        ...credentialSupportedV8,
         id,
         '@context': ['VerifiableCredential'], // NOTE: V8 credentials don't come with @context
       }
+    } else {
+      throw new AriesFrameworkError(`Invalid format received for OpenId4Vci V8 '${format}'`)
     }
 
     return credentialSupported
@@ -193,20 +246,21 @@ export function credentialSupportedV8ToV11(
 
 // copied from sphereon
 export function handleAuthorizationDetails(
-  authorizationDetails: AuthDetails | AuthDetails[],
+  authorizationDetails: AuthorizationDetails | AuthorizationDetails[],
   metadata: EndpointMetadataResult
-): AuthDetails | AuthDetails[] | undefined {
+): AuthorizationDetails | AuthorizationDetails[] | undefined {
   if (Array.isArray(authorizationDetails)) {
-    return authorizationDetails.map((value) => handleLocations({ ...value }, metadata))
+    return authorizationDetails.map((value) => handleLocations(value, metadata))
   } else {
-    return handleLocations({ ...authorizationDetails }, metadata)
+    return handleLocations(authorizationDetails, metadata)
   }
 }
 
 // copied from sphereon
-export function handleLocations(authorizationDetails: AuthDetails, metadata: EndpointMetadataResult) {
+export function handleLocations(authorizationDetails: AuthorizationDetails, metadata: EndpointMetadataResult) {
+  if (typeof authorizationDetails === 'string') return authorizationDetails
   if (metadata.credentialIssuerMetadata?.authorization_server || metadata.authorization_endpoint) {
-    if (!authorizationDetails.locations) authorizationDetails.locations = metadata.issuer
+    if (!authorizationDetails.locations) authorizationDetails.locations = [metadata.issuer]
     else if (Array.isArray(authorizationDetails.locations)) authorizationDetails.locations.push(metadata.issuer)
     else authorizationDetails.locations = [authorizationDetails.locations as string, metadata.issuer]
   }

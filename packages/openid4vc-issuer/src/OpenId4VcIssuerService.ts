@@ -8,6 +8,7 @@ import type {
   CredentialOfferAndRequest,
   EndpointConfig,
 } from './OpenId4VcIssuerServiceOptions'
+import type { OfferedCredentialWithMetadata } from './issuance/utils/IssuerMetadataUtils'
 import type {
   AgentContext,
   VerificationMethod,
@@ -16,15 +17,11 @@ import type {
   JwaSignatureAlgorithm,
 } from '@aries-framework/core'
 import type {
-  CredentialRequestJwtVc,
-  CredentialRequestLdpVc,
   Grant,
   MetadataDisplay,
   JWTVerifyCallback,
-  CredentialOfferFormat,
   CredentialRequestV1_0_11,
   CredentialOfferPayloadV1_0_11,
-  CredentialSupported as SphereonCredentialSupported,
 } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
@@ -57,6 +54,8 @@ import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
 import bodyParser from 'body-parser'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenIdCredentialFormatProfile } from './issuance'
+import { getOfferedCredentialsWithMetadata } from './issuance/utils/IssuerMetadataUtils'
 import {
   configureAccessTokenEndpoint,
   configureCredentialEndpoint,
@@ -170,7 +169,15 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  private getCredentialSigningCallback = (
+  private getSdJwtVcCredentialSigningCallback = (): CredentialSignerCallback<DidDocument> => {
+    return async (opts) => {
+      const { credential } = opts
+      // TODO: sdjwt
+      return credential as any
+    }
+  }
+
+  private getW3cCredentialSigningCallback = (
     agentContext: AgentContext,
     issuerVerificationMethod: VerificationMethod
   ): CredentialSignerCallback<DidDocument> => {
@@ -179,24 +186,22 @@ export class OpenId4VcIssuerService {
 
       const { alg, kid, didDocument: holderDidDocument } = jwtVerifyResult
 
-      if (!kid) throw new AriesFrameworkError('No KID present for binding the credential to a holder.')
-      if (!holderDidDocument) {
-        throw new AriesFrameworkError('No DID document present for binding the credential to a holder.')
-      }
+      if (!kid) throw new AriesFrameworkError('Missing Kid. Cannot create the holder binding')
+      if (!holderDidDocument) throw new AriesFrameworkError('Missing did document. Cannot create the holder binding.')
 
       // If the Credential shall be bound to a DID, the kid refers to a DID URL which identifies a
       // particular key in the DID Document that the Credential shall be bound to.
       const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod'])
 
       let signed: W3cVerifiableCredential<ClaimFormat.JwtVc | ClaimFormat.LdpVc>
-      if (format === 'jwt_vc_json' || format === 'jwt_vc_json-ld') {
+      if (format === OpenIdCredentialFormatProfile.JwtVcJson || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
         signed = await this.w3cCredentialService.signCredential(agentContext, {
           format: ClaimFormat.JwtVc,
           credential: W3cCredential.fromJson(credential),
           verificationMethod: issuerVerificationMethod.id,
           alg: alg as JwaSignatureAlgorithm,
         })
-      } else {
+      } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
         signed = await this.w3cCredentialService.signCredential(agentContext, {
           format: ClaimFormat.LdpVc,
           credential: W3cCredential.fromJson(credential),
@@ -204,6 +209,8 @@ export class OpenId4VcIssuerService {
           proofPurpose: 'assertionMethod',
           proofType: this.getProofTypeForLdpVc(agentContext, holderVerificationMethod),
         })
+      } else {
+        throw new AriesFrameworkError(`Unsupported credential format '${format}' for W3C credential signing callback.`)
       }
 
       return getSphereonW3cVerifiableCredential(signed)
@@ -226,8 +233,7 @@ export class OpenId4VcIssuerService {
       .withCredentialIssuer(credentialIssuer)
       .withCredentialEndpoint(credentialEndpoint)
       .withTokenEndpoint(tokenEndpoint)
-      // FIXME: currently credentialsSupported is not typed correctly
-      .withCredentialsSupported(credentialsSupported as SphereonCredentialSupported[])
+      .withCredentialsSupported(credentialsSupported)
       .withCNonceExpiresIn(this.openId4VcIssuerModuleConfig.cNonceExpiresIn)
       .withCNonceStateManager(this.cNonceStateManager)
       .withCredentialOfferStateManager(this.credentialOfferSessionManager)
@@ -259,72 +265,19 @@ export class OpenId4VcIssuerService {
       )
     }
 
-    let grants: Grant = {}
-    if (preAuthorizedCodeFlowConfig) {
-      grants = {
-        ...grants,
-        'urn:ietf:params:oauth:grant-type:pre-authorized_code': {
-          /**
-           * REQUIRED. The code representing the Credential Issuer's authorization for the Wallet to obtain Credentials of a certain type.
-           */
-          'pre-authorized_code':
-            preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
-          /**
-           * OPTIONAL. Boolean value specifying whether the Credential Issuer expects presentation of a user PIN along with the Token Request
-           * in a Pre-Authorized Code Flow. Default is false.
-           */
-          user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
-        },
-      }
-    }
+    const grants: Grant = {
+      'urn:ietf:params:oauth:grant-type:pre-authorized_code': preAuthorizedCodeFlowConfig && {
+        'pre-authorized_code':
+          preAuthorizedCodeFlowConfig.preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+        user_pin_required: preAuthorizedCodeFlowConfig.userPinRequired ?? false,
+      },
 
-    if (authorizationCodeFlowConfig) {
-      grants = {
-        ...grants,
-        authorization_code: {
-          issuer_state: authorizationCodeFlowConfig.issuerState ?? (await agentContext.wallet.generateNonce()),
-        },
-      }
+      authorization_code: authorizationCodeFlowConfig && {
+        issuer_state: authorizationCodeFlowConfig.issuerState ?? (await agentContext.wallet.generateNonce()),
+      },
     }
 
     return grants
-  }
-
-  private mapInlineCredentialOfferIdToCredentialSupported(id: string, credentialsSupported: CredentialSupported[]) {
-    const credentialSupported = credentialsSupported.find((cs) => cs.id === id)
-    if (!credentialSupported) throw new AriesFrameworkError(`Credential supported with id '${id}' not found.`)
-
-    return credentialSupported
-  }
-
-  private getCredentialMetadata(
-    credential: CredentialSupported | CredentialOfferFormat
-  ): CredentialRequestJwtVc | CredentialRequestLdpVc {
-    if (credential.format === 'jwt_vc_json' || credential.format === 'jwt_vc_json-ld') {
-      return {
-        format: credential.format,
-        types: credential.types,
-      }
-    } else {
-      // TODO:
-      throw new AriesFrameworkError('Unsupported credential format')
-    }
-  }
-
-  private getOfferedCredentialsMetadata(
-    credentials: (CredentialOfferFormat | string)[],
-    credentialsSupported: CredentialSupported[]
-  ) {
-    const credentialsReferencingCredentialsSupported = credentials
-      .filter((credential): credential is string => typeof credential === 'string')
-      .map((credentialId) => this.mapInlineCredentialOfferIdToCredentialSupported(credentialId, credentialsSupported))
-      .map((credentialSupported) => this.getCredentialMetadata(credentialSupported))
-
-    const inlineCredentialOffers = credentials
-      .filter((credential): credential is CredentialOfferFormat => typeof credential !== 'string')
-      .map((credential) => this.getCredentialMetadata(credential))
-
-    return [...credentialsReferencingCredentialsSupported, ...inlineCredentialOffers]
   }
 
   public async createCredentialOfferAndRequest(
@@ -338,7 +291,7 @@ export class OpenId4VcIssuerService {
 
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    this.getOfferedCredentialsMetadata(offeredCredentials, issuerMetadata.credentialsSupported)
+    getOfferedCredentialsWithMetadata(offeredCredentials, issuerMetadata.credentialsSupported)
 
     const vcIssuer = this.getVcIssuer(agentContext, issuerMetadata)
 
@@ -348,7 +301,6 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: options.credentialOfferUri,
       scheme: options.scheme ?? 'https',
       baseUri: options.baseUri ?? '',
-      // TODO: THIS IS WRONG HOW TO SPECIFY ldp_ creds?
       // credentialDefinition,
     })
 
@@ -393,26 +345,28 @@ export class OpenId4VcIssuerService {
     credentialOffer: CredentialOfferPayloadV1_0_11,
     credentialRequest: CredentialRequestV1_0_11,
     credentialsSupported: CredentialSupported[]
-  ) {
-    const offeredCredentials = this.getOfferedCredentialsMetadata(credentialOffer.credentials, credentialsSupported)
+  ): OfferedCredentialWithMetadata[] {
+    const offeredCredentials = getOfferedCredentialsWithMetadata(credentialOffer.credentials, credentialsSupported)
 
     return offeredCredentials.filter((offeredCredential) => {
-      if (credentialRequest.format === 'jwt_vc_json' && offeredCredential.format === 'jwt_vc_json') {
+      if (offeredCredential.format !== credentialRequest.format) return false
+
+      if (credentialRequest.format === OpenIdCredentialFormatProfile.JwtVcJson) {
         return equalsIgnoreOrder(offeredCredential.types, credentialRequest.types)
-      } else if (credentialRequest.format === 'jwt_vc_json-ld' && offeredCredential.format === 'jwt_vc_json-ld') {
-        return equalsIgnoreOrder(offeredCredential.types, credentialRequest.types)
-      } else if (credentialRequest.format === 'ldp_vc' && offeredCredential.format === 'ldp_vc') {
-        return equalsIgnoreOrder(
-          offeredCredential.credential_definition.types,
-          credentialRequest.credential_definition.types
-        )
+      } else if (
+        credentialRequest.format === OpenIdCredentialFormatProfile.JwtVcJsonLd ||
+        credentialRequest.format === OpenIdCredentialFormatProfile.LdpVc
+      ) {
+        return equalsIgnoreOrder(offeredCredential.types, credentialRequest.credential_definition.types)
+      } else if (credentialRequest.format === OpenIdCredentialFormatProfile.SdJwtVc) {
+        return equalsIgnoreOrder(offeredCredential.types, [credentialRequest.credential_definition.vct])
       }
     })
   }
 
   private getCredentialDataSupplier = (
     agentContext: AgentContext,
-    credential: W3cCredential,
+    credential: string | W3cCredential,
     credentialsSupported: CredentialSupported[],
     issuerVerificationMethod: VerificationMethod
   ): CredentialDataSupplier => {
@@ -429,24 +383,32 @@ export class OpenId4VcIssuerService {
         throw new AriesFrameworkError('No offered credential matches the requested credential.')
       }
 
+      if (credentialRequest.format === OpenIdCredentialFormatProfile.SdJwtVc) {
+        return {
+          format: credentialRequest.format,
+          credential: credential as any, // TODO: sdjwt
+          signCallback: this.getSdJwtVcCredentialSigningCallback(),
+        }
+      }
+
+      if (typeof credential === 'string') {
+        throw new AriesFrameworkError(
+          `Credential must be a W3C credential if not using '${OpenIdCredentialFormatProfile.SdJwtVc}' format.`
+        )
+      }
+
       const issuedCredentialMatchesRequest = offeredCredentialsMatchingRequest.find(
-        (offeredCredential) =>
-          ((offeredCredential.format === 'jwt_vc_json-ld' || offeredCredential.format === 'jwt_vc_json') &&
-            equalsIgnoreOrder(offeredCredential.types, credential.type)) ||
-          (offeredCredential.format === 'ldp_vc' &&
-            equalsIgnoreOrder(offeredCredential.credential_definition.types, credential.type))
+        (offeredCredential) => offeredCredential.types === credential.type
       )
 
       if (!issuedCredentialMatchesRequest) {
         throw new AriesFrameworkError('The credential to be issued does not match the request.')
       }
 
-      const sphereonICredential = JsonTransformer.toJSON(credential) as ICredential
-
       return {
         format: credentialRequest.format,
-        credential: sphereonICredential,
-        signCallback: this.getCredentialSigningCallback(agentContext, issuerVerificationMethod),
+        credential: JsonTransformer.toJSON(credential) as ICredential,
+        signCallback: this.getW3cCredentialSigningCallback(agentContext, issuerVerificationMethod),
       }
     }
   }
@@ -494,7 +456,6 @@ export class OpenId4VcIssuerService {
   public configureRouter = (agentContext: AgentContext, router: Router, endpointConfig: EndpointConfig) => {
     // parse application/x-www-form-urlencoded
     router.use(bodyParser.urlencoded({ extended: false }))
-
     // parse application/json
     router.use(bodyParser.json())
 

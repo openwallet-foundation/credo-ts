@@ -1,10 +1,10 @@
 import type { Issuance } from '@aries-framework/openid4vc-issuer'
 
 export type AcceptCredentialOfferOptions = Issuance.AcceptCredentialOfferOptions
+export type OfferedCredentialWithMetadata = Issuance.OfferedCredentialWithMetadata
 export type AuthCodeFlowOptions = Issuance.AuthCodeFlowOptions
-export type AuthDetails = Issuance.AuthDetails
+export type AuthDetails = Issuance.AuthorizationDetails
 export type CredentialOfferPayloadV1_0_11 = Issuance.CredentialOfferPayloadV1_0_11
-export type CredentialToRequest = Issuance.CredentialToRequest
 export type EndpointMetadataResult = Issuance.EndpointMetadataResult
 export type OfferedCredentialType = Issuance.OfferedCredentialType
 export type OpenId4VCIVersion = Issuance.OpenId4VCIVersion
