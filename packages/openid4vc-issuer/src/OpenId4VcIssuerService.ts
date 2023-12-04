@@ -470,9 +470,9 @@ export class OpenId4VcIssuerService {
       configureAccessTokenEndpoint(agentContext, router, this.logger, {
         ...endpointConfig.accessTokenEndpointConfig,
         issuerMetadata: this.issuerMetadata,
-        cNonceStateManager: this.cNonceStateManager,
         cNonceExpiresIn: this.openId4VcIssuerModuleConfig.cNonceExpiresIn,
         tokenExpiresIn: this.openId4VcIssuerModuleConfig.tokenExpiresIn,
+        cNonceStateManager: this.cNonceStateManager,
         credentialOfferSessionManager: this.credentialOfferSessionManager,
       })
     }
@@ -481,6 +481,8 @@ export class OpenId4VcIssuerService {
       configureCredentialEndpoint(agentContext, router, this.logger, {
         ...endpointConfig.credentialEndpointConfig,
         issuerMetadata: this.issuerMetadata,
+        cNonceStateManager: this.cNonceStateManager,
+        credentialOfferSessionManager: this.credentialOfferSessionManager,
         createIssueCredentialResponse: (agentContext, options) => {
           const issuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
           return issuerService.createIssueCredentialResponse(agentContext, options)

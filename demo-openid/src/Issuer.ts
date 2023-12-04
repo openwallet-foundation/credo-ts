@@ -90,7 +90,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
   }
 
   public getCredentialRequestToCredentialMapper(): CredentialRequestToCredentialMapper {
-    return async (credentialRequest, holderDid, holderKid) => {
+    return async (credentialRequest, { holderDid, holderDidUrl }) => {
       if (
         credentialRequest.format === 'jwt_vc_json' &&
         credentialRequest.types.includes('UniversityDegreeCredential')
@@ -119,7 +119,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
         const { compact } = await this.agent.modules.sdJwtVc.create(
           { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
           {
-            holderDidUrl: holderKid,
+            holderDidUrl,
             issuerDidUrl: this.kid,
             disclosureFrame: { university: true, degree: true },
           }

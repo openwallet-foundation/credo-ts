@@ -129,10 +129,10 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
     verifierApp = express()
     verifier = new Agent({
       config: {
-        label: 'OpenId4VcRp OpenID4VP Test42',
+        label: 'OpenId4VcRp OpenID4VP Test43',
         walletConfig: {
-          id: 'openid4vc-rp-openid4vp-test42',
-          key: 'openid4vc-rp-openid4vp-test42',
+          id: 'openid4vc-rp-openid4vp-test43',
+          key: 'openid4vc-rp-openid4vp-test43',
         },
       },
       dependencies: agentDependencies,
@@ -141,10 +141,10 @@ describe('OpenId4VcHolder | OpenID4VP', () => {
 
     holder = new Agent({
       config: {
-        label: 'OpenId4VcOp OpenID4VP Test42',
+        label: 'OpenId4VcOp OpenID4VP Test43',
         walletConfig: {
-          id: 'openid4vc-op-openid4vp-test42',
-          key: 'openid4vc-op-openid4vp-test42',
+          id: 'openid4vc-op-openid4vp-test43',
+          key: 'openid4vc-op-openid4vp-test43',
         },
       },
       dependencies: agentDependencies,

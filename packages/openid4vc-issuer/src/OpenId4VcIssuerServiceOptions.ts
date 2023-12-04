@@ -1,7 +1,9 @@
 import type { VerificationMethod, W3cCredential } from '@aries-framework/core'
 import type {
+  CNonceState,
   CredentialOfferFormat,
   CredentialOfferPayloadV1_0_11,
+  CredentialOfferSession,
   CredentialRequestV1_0_11,
   CredentialSupported,
   MetadataDisplay,
@@ -102,10 +104,16 @@ export interface AccessTokenEndpointConfig {
   preAuthorizedCodeExpirationDuration: number
 }
 
+export type CredentialRequestToCredentialMetadata = {
+  holderDid: string
+  holderDidUrl: string
+  cNonceState: CNonceState
+  credentialOfferSession: CredentialOfferSession
+}
+
 export type CredentialRequestToCredentialMapper = (
   credentialRequest: CredentialRequestV1_0_11,
-  holderDid: string,
-  holderDidUrl: string
+  metadata: CredentialRequestToCredentialMetadata
 ) => Promise<W3cCredential | string>
 
 export interface CredentialEndpointConfig {

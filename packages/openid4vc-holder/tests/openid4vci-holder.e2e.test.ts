@@ -114,7 +114,7 @@ describe('OpenId4VcHolder', () => {
 
     issuer = new Agent({
       config: {
-        label: 'OpenId4VcIssuer Test27',
+        label: 'OpenId4VcIssuer Test28',
         walletConfig: { id: 'openid4vc-issuer-test27', key: 'openid4vc-issuer-test27' },
       },
       dependencies: agentDependencies,
@@ -123,7 +123,7 @@ describe('OpenId4VcHolder', () => {
 
     holder = new Agent({
       config: {
-        label: 'OpenId4VcHolder Test27',
+        label: 'OpenId4VcHolder Test28',
         walletConfig: { id: 'openid4vc-holder-test27', key: 'openid4vc-holder-test27' },
       },
       dependencies: agentDependencies,
@@ -626,17 +626,17 @@ describe('OpenId4VcHolder', () => {
           credentialEndpointConfig: {
             enabled: true,
             verificationMethod: issuerVerificationMethod,
-            credentialRequestToCredentialMapper: async (credentialRequest, _holderDid) => {
+            credentialRequestToCredentialMapper: async (credentialRequest, metadata) => {
               if (
                 credentialRequest.format === 'jwt_vc_json' &&
                 credentialRequest.types.includes('OpenBadgeCredential')
               ) {
-                if (_holderDid !== holderDid) throw new Error('Invalid holder did')
+                if (metadata.holderDid !== holderDid) throw new Error('Invalid holder did')
 
                 return new W3cCredential({
                   type: openBadgeCredential.types,
                   issuer: new W3cIssuer({ id: issuerDid }),
-                  credentialSubject: new W3cCredentialSubject({ id: _holderDid }),
+                  credentialSubject: new W3cCredentialSubject({ id: metadata.holderDid }),
                   issuanceDate: w3cDate(Date.now()),
                 })
               }
@@ -723,18 +723,18 @@ describe('OpenId4VcHolder', () => {
         credentialEndpointConfig: {
           enabled: true,
           verificationMethod: issuerVerificationMethod,
-          credentialRequestToCredentialMapper: async (credentialRequest, _holderDid, holderKid) => {
+          credentialRequestToCredentialMapper: async (credentialRequest, metadata) => {
             if (
               credentialRequest.format === 'vc+sd-jwt' &&
               credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
             ) {
-              if (_holderDid !== holderDid) throw new Error('Invalid holder did')
+              if (metadata.holderDid !== holderDid) throw new Error('Invalid holder did')
 
               const { compact } = await issuer.modules.sdJwtVc.create(
                 { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
                 {
-                  holderDidUrl: holderKid,
-                  issuerDidUrl: issuerVerificationMethod.id,
+                  holderDidUrl: metadata.holderDidUrl,
+                  issuerDidUrl: issuerKid,
                   disclosureFrame: { university: true, degree: true },
                 }
               )

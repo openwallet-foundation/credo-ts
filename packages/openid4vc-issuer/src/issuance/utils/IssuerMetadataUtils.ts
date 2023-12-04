@@ -22,7 +22,7 @@ import { AriesFrameworkError } from '@aries-framework/core'
 import { MetadataClient } from '@sphereon/oid4vci-client'
 import { OpenId4VCIVersion } from '@sphereon/oid4vci-common'
 
-import { getUniformFormat } from './Formats'
+import { getUniformFormat, getFormatForVersion } from './Formats'
 import { OpenIdCredentialFormatProfile } from './claimFormatMapping'
 
 /**
@@ -93,7 +93,8 @@ export function getOfferedCredentialsWithMetadata(
       const foundSupportedCredentials = supportedCredentials.filter(
         (supportedCredential) =>
           supportedCredential.id === offeredCredential ||
-          supportedCredential.id === `${offeredCredential}-${supportedCredential.format}`
+          supportedCredential.id ===
+            `${offeredCredential}-${getFormatForVersion(supportedCredential.format, OpenId4VCIVersion.VER_1_0_08)}`
       )
 
       // Make sure the issuer metadata includes the offered credential.
@@ -228,7 +229,10 @@ export function credentialSupportedV8ToV11(
         credentialSubject: supportedV8.claims,
         id,
       }
-    } else if (v11Format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
+    } else if (
+      v11Format === OpenIdCredentialFormatProfile.JwtVcJsonLd ||
+      v11Format === OpenIdCredentialFormatProfile.LdpVc
+    ) {
       credentialSupported = {
         format: v11Format,
         display: supportedV8.display,

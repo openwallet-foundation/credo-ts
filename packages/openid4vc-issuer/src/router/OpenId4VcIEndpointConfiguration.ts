@@ -84,6 +84,8 @@ export function configureAccessTokenEndpoint(
 
 export interface InternalCredentialEndpointConfig extends CredentialEndpointConfig {
   issuerMetadata: IssuerMetadata
+  cNonceStateManager: IStateManager<CNonceState>
+  credentialOfferSessionManager: IStateManager<CredentialOfferSession>
   createIssueCredentialResponse: (
     agentContext: AgentContext,
     options: CreateIssueCredentialResponseOptions
@@ -96,7 +98,13 @@ export function configureCredentialEndpoint(
   logger: Logger,
   config: InternalCredentialEndpointConfig
 ): void {
-  const { issuerMetadata, credentialRequestToCredentialMapper, verificationMethod } = config
+  const {
+    issuerMetadata,
+    credentialRequestToCredentialMapper,
+    verificationMethod,
+    cNonceStateManager,
+    credentialOfferSessionManager,
+  } = config
 
   const { path, url } = getEndpointMetadata(issuerMetadata.credentialEndpoint, issuerMetadata.credentialIssuer)
   logger.info(`[OID4VCI] Token endpoint running at '${url.toString()}'.`)
@@ -117,7 +125,33 @@ export function configureCredentialEndpoint(
       const didDocument = await didsApi.resolveDidDocument(kid)
       const holderDid = didDocument.id
 
-      const credential = await credentialRequestToCredentialMapper(credentialRequest, holderDid, kid)
+      const requestNonce = jwt.payload.additionalClaims.nonce
+      if (!requestNonce || typeof requestNonce !== 'string') {
+        throw new AriesFrameworkError(`Received a credential request without a valid nonce. ${requestNonce}`)
+      }
+
+      const cNonceState = await cNonceStateManager.get(requestNonce)
+
+      const credentialOfferSessionId = cNonceState?.preAuthorizedCode ?? cNonceState?.issuerState
+
+      if (!cNonceState || !credentialOfferSessionId) {
+        throw new AriesFrameworkError(
+          `Request nonce '${requestNonce}' is not associated with a preAuthorizedCode or issuerState.`
+        )
+      }
+
+      const credentialOfferSession = await credentialOfferSessionManager.get(credentialOfferSessionId)
+      if (!credentialOfferSession)
+        throw new AriesFrameworkError(
+          `Credential offer session for request nonce '${requestNonce}' with id '${credentialOfferSessionId}' not found.`
+        )
+
+      const credential = await credentialRequestToCredentialMapper(credentialRequest, {
+        holderDid,
+        holderDidUrl: kid,
+        cNonceState,
+        credentialOfferSession,
+      })
 
       const issueCredentialResponse = await config.createIssueCredentialResponse(agentContext, {
         credentialRequest,

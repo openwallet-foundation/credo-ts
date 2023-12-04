@@ -2,6 +2,7 @@ import type {
   SdJwtVcCreateOptions,
   SdJwtVcPresentOptions,
   SdJwtVcReceiveOptions,
+  SdJwtVcFromStringOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { AgentContext, JwkJson, Query } from '@aries-framework/core'
@@ -183,15 +184,32 @@ export class SdJwtVcService {
   >(
     agentContext: AgentContext,
     sdJwtVcCompact: string,
-    { issuerDidUrl, holderDidUrl }: SdJwtVcReceiveOptions
+    { issuerDidUrl, holderDidUrl }: SdJwtVcFromStringOptions
   ): Promise<SdJwtVcRecord> {
     const sdJwtVc = SdJwtVc.fromCompact<Header, Payload>(sdJwtVcCompact)
+
+    let url: string | undefined
+    if (issuerDidUrl) {
+      url = issuerDidUrl
+    } else {
+      const iss = sdJwtVc.payload?.iss
+      if (typeof iss === 'string' && iss.startsWith('did')) {
+        const kid = sdJwtVc.header?.kid
+        if (!kid || typeof kid !== 'string') throw new SdJwtVcError(`Missing 'kid' in header of SdJwtVc.`)
+        if (kid.startsWith('did:')) url = kid
+        else url = `${iss}#${kid}`
+      } else if (typeof iss === 'string' && URL.canParse(iss)) {
+        throw new SdJwtVcError(`Resolving the key material from the 'iss' claim is not supported yet.`)
+      } else {
+        throw new SdJwtVcError(`Invalid iss claim '${iss}' in SdJwtVc.`)
+      }
+    }
 
     if (!sdJwtVc.signature) {
       throw new SdJwtVcError('A signature must be included for an sd-jwt-vc')
     }
 
-    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, issuerDidUrl)
+    const { verificationMethod: issuerVerificationMethod } = await this.resolveDidUrl(agentContext, url)
     const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
 
     const { isSignatureValid } = await sdJwtVc.verify(this.verifier(agentContext, issuerKey))

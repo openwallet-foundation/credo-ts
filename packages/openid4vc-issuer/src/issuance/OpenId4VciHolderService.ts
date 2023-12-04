@@ -306,8 +306,8 @@ export class OpenId4VciHolderService {
 
       const credential_definition = {
         '@context': credentialWithMetadata.credentialSupported['@context'],
-        types,
         credentialSubject: credentialWithMetadata.credentialSupported.credentialSubject,
+        types,
       }
 
       return { type, format, locations, credential_definition }
@@ -539,7 +539,6 @@ export class OpenId4VciHolderService {
       const credentialRecord = await this.handleCredentialResponse(agentContext, credentialResponse, {
         verifyCredentialStatus: verifyCredentialStatus ?? false,
         holderDidUrl: verificationMethod.id,
-        issuerDidUrl: verificationMethod.controller, // TODO: how to figure this out?
       })
 
       this.logger.debug('Full credential', credentialRecord)
@@ -712,7 +711,7 @@ export class OpenId4VciHolderService {
   private async handleCredentialResponse(
     agentContext: AgentContext,
     credentialResponse: OpenIDResponse<CredentialResponse>,
-    options: { verifyCredentialStatus: boolean; holderDidUrl: string; issuerDidUrl: string }
+    options: { verifyCredentialStatus: boolean; holderDidUrl: string }
   ): Promise<W3cCredentialRecord | SdJwtVcRecord> {
     const { verifyCredentialStatus, holderDidUrl } = options
     this.logger.debug('Credential request response', credentialResponse)
@@ -735,11 +734,8 @@ export class OpenId4VciHolderService {
           }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
         )
 
-      // TODO
       const sdJwtVcRecord = await sdJwtVcService.fromString(agentContext, credentialResponse.successBody.credential, {
         holderDidUrl,
-        issuerDidUrl:
-          'did:key:z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
       })
 
       return sdJwtVcRecord
@@ -747,11 +743,11 @@ export class OpenId4VciHolderService {
 
     let credential: W3cVerifiableCredential
     let result: W3cVerifyCredentialResult
-    if (format === OpenIdCredentialFormatProfile.JwtVcJson || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
+    if (format === OpenIdCredentialFormatProfile.LdpVc || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
       // validate json-ld credentials
       credential = JsonTransformer.fromJSON(credentialResponse.successBody.credential, W3cJsonLdVerifiableCredential)
       result = await this.w3cCredentialService.verifyCredential(agentContext, { credential, verifyCredentialStatus })
-    } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
+    } else if (format === OpenIdCredentialFormatProfile.JwtVcJson) {
       // validate jwt credentials
       credential = W3cJwtVerifiableCredential.fromSerializedJwt(credentialResponse.successBody.credential as string)
       result = await this.w3cCredentialService.verifyCredential(agentContext, { credential, verifyCredentialStatus })
