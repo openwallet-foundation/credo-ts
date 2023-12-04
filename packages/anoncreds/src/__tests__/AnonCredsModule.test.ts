@@ -9,6 +9,8 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsKeyCorrectnessProofRepository,
   AnonCredsLinkSecretRepository,
+  AnonCredsRevocationRegistryDefinitionPrivateRepository,
+  AnonCredsRevocationRegistryDefinitionRepository,
 } from '../repository'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 
@@ -26,13 +28,17 @@ describe('AnonCredsModule', () => {
     })
     anonCredsModule.register(dependencyManager)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(6)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(8)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRegistryService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsSchemaRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsCredentialDefinitionPrivateRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsKeyCorrectnessProofRepository)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsLinkSecretRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(AnonCredsRevocationRegistryDefinitionRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
+      AnonCredsRevocationRegistryDefinitionPrivateRepository
+    )
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(AnonCredsModuleConfig, anonCredsModule.config)

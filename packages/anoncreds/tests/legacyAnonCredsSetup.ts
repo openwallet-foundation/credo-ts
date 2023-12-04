@@ -511,11 +511,14 @@ async function registerSchema(
 
 async function registerCredentialDefinition(
   agent: AnonCredsTestsAgent,
-  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions
+  credentialDefinition: AnonCredsRegisterCredentialDefinitionOptions,
+  supportRevocation?: boolean
 ): Promise<RegisterCredentialDefinitionReturnStateFinished> {
   const { credentialDefinitionState } = await agent.modules.anoncreds.registerCredentialDefinition({
     credentialDefinition,
-    options: {},
+    options: {
+      supportRevocation: supportRevocation ?? false,
+    },
   })
 
   if (credentialDefinitionState.state !== 'finished') {
