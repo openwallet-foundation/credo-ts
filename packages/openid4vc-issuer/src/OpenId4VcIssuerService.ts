@@ -397,9 +397,10 @@ export class OpenId4VcIssuerService {
         )
       }
 
-      const issuedCredentialMatchesRequest = offeredCredentialsMatchingRequest.find(
-        (offeredCredential) => offeredCredential.types === credential.type
-      )
+      // TODO: Valide SdJwtVc Types
+      const issuedCredentialMatchesRequest = offeredCredentialsMatchingRequest.find((offeredCredential) => {
+        return equalsIgnoreOrder(offeredCredential.types, credential.type)
+      })
 
       if (!issuedCredentialMatchesRequest) {
         throw new AriesFrameworkError('The credential to be issued does not match the request.')

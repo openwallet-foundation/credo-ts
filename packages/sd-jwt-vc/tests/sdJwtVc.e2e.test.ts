@@ -11,10 +11,10 @@ import {
   TypedArrayEncoder,
   utils,
 } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
-import { agentDependencies } from '../../core/tests'
-import { SdJwtVcModule } from '../src'
+import { SdJwtVcModule, SdJwtVcService } from '../src'
 
 const getAgent = (label: string) =>
   new Agent({
@@ -104,7 +104,12 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const sdJwtVcRecord = await holder.modules.sdJwt.storeCredential(compact, { issuerDidUrl, holderDidUrl })
+    const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(issuer.context, compact, {
+      issuerDidUrl,
+      holderDidUrl,
+    })
+
+    await holder.modules.sdJwt.storeCredential(sdJwtVcRecord)
 
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {

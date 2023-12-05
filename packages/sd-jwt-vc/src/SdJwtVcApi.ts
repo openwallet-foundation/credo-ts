@@ -1,7 +1,7 @@
 import type {
   SdJwtVcCreateOptions,
+  SdJwtVcFromSerializedJwtOptions,
   SdJwtVcPresentOptions,
-  SdJwtVcReceiveOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 import type { SdJwtVcVerificationResult } from './SdJwtVcService'
@@ -34,15 +34,19 @@ export class SdJwtVcApi {
 
   /**
    *
-   * Validates and stores an sd-jwt-vc from the perspective of an holder
-   *
+   * Get and validate a sd-jwt-vc from a serialized JWT.
    */
-  public async storeCredential(sdJwtVcCompact: string, options: SdJwtVcReceiveOptions): Promise<SdJwtVcRecord> {
-    return await this.sdJwtVcService.storeCredential(this.agentContext, sdJwtVcCompact, options)
+  public async fromSerializedJwt(sdJwtVcCompact: string, options: SdJwtVcFromSerializedJwtOptions) {
+    return await this.sdJwtVcService.fromSerializedJwt(this.agentContext, sdJwtVcCompact, options)
   }
 
-  public async storeCredential2(sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
-    return await this.sdJwtVcService.storeCredential2(this.agentContext, sdJwtVcRecord)
+  /**
+   *
+   * Stores and sd-jwt-vc record
+   *
+   */
+  public async storeCredential(sdJwtVcRecord: SdJwtVcRecord): Promise<SdJwtVcRecord> {
+    return await this.sdJwtVcService.storeCredential(this.agentContext, sdJwtVcRecord)
   }
 
   /**

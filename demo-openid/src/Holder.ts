@@ -54,7 +54,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         if (record.type === 'W3cCredentialRecord') {
           return this.agent.w3cCredentials.storeCredential({ credential: record.credential })
         }
-        return this.agent.modules.sdJwtVc.storeCredential2(record)
+        return this.agent.modules.sdJwtVc.storeCredential(record)
       })
     )
 

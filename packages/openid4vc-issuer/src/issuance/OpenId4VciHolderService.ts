@@ -6,6 +6,7 @@ import type {
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@aries-framework/core'
+import type { SdJwtVcRecord, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import type {
   AccessTokenResponse,
   CredentialOfferPayloadV1_0_11,
@@ -41,8 +42,8 @@ import {
   parseDid,
   equalsIgnoreOrder,
   getJwkClassFromKeyType,
+  getApiForModuleByName,
 } from '@aries-framework/core'
-import { SdJwtVcService, type SdJwtVcRecord } from '@aries-framework/sd-jwt-vc'
 import {
   AccessTokenClient,
   CredentialOfferClient,
@@ -254,33 +255,6 @@ export class OpenId4VciHolderService {
     }
   }
 
-  private getScopeForOfferedCredential(
-    credentialWithMetadata: OfferedCredentialWithMetadata,
-    version: OpenId4VCIVersion
-  ): string | undefined {
-    const { format, offerType } = credentialWithMetadata
-
-    // TODO: sdjwt
-    if (version <= OpenId4VCIVersion.VER_1_0_11) {
-      return undefined
-    }
-
-    // TODO: sdjwt
-    if (offerType === OfferedCredentialType.CredentialSupported) {
-      const scope =
-        'scope' in credentialWithMetadata.credentialSupported
-          ? credentialWithMetadata.credentialSupported.scope
-          : undefined
-      if (format === OpenIdCredentialFormatProfile.SdJwtVc && !scope) {
-        throw new AriesFrameworkError('Scope is required the request the issuance of a SdJwtVc')
-      }
-
-      return scope as string
-    }
-
-    return undefined
-  }
-
   private getAuthDetailsFromOfferedCredential(
     credentialWithMetadata: OfferedCredentialWithMetadata,
     authDetailsLocation: string | undefined,
@@ -361,10 +335,6 @@ export class OpenId4VciHolderService {
       .map((credential) => this.getAuthDetailsFromOfferedCredential(credential, authDetailsLocation, version))
       .filter((authDetail): authDetail is AuthorizationDetails => authDetail !== undefined)
 
-    const scopes = offeredCredentialsWithMetadata
-      .map((credential) => this.getScopeForOfferedCredential(credential, version))
-      .filter((scope): scope is string => scope !== undefined)
-
     const { clientId, redirectUri, scope } = authCodeFlowOptions
     const authorizationRequestUri = await createAuthorizationRequestUri({
       clientId,
@@ -372,9 +342,9 @@ export class OpenId4VciHolderService {
       redirectUri,
       credentialOffer: credentialOfferPayload,
       codeChallengeMethod: CodeChallengeMethod.SHA256,
-      // TODO: sdjwt don't pass scope, it is always obtained from the metadata now
-      scope: [...(scope ?? []), ...scopes],
+      // TODO: Read HAIP SdJwtVc's should always be requested via scopes
       // TODO: should we now always use scopes instead of authDetails? or both????
+      scope: [...(scope ?? [])],
       authDetails,
       metadata,
     })
@@ -723,10 +693,6 @@ export class OpenId4VciHolderService {
     const format = getUniformFormat(credentialResponse.successBody.format)
 
     if (format === OpenIdCredentialFormatProfile.SdJwtVc) {
-      const sdJwtVcService = agentContext.dependencyManager.resolve(SdJwtVcService)
-      if (!sdJwtVcService)
-        throw new AriesFrameworkError('Received an SdJwtVc but no SdJwtVc-Module available for the agent.')
-
       if (typeof credentialResponse.successBody.credential !== 'string')
         throw new AriesFrameworkError(
           `Received a credential of format ${
@@ -734,7 +700,9 @@ export class OpenId4VciHolderService {
           }, but the credential is not a string. ${JSON.stringify(credentialResponse.successBody.credential)}`
         )
 
-      const sdJwtVcRecord = await sdJwtVcService.fromString(agentContext, credentialResponse.successBody.credential, {
+      const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
+      if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
+      const sdJwtVcRecord = await sdJwtVcApi.fromSerializedJwt(credentialResponse.successBody.credential, {
         holderDidUrl,
       })
 

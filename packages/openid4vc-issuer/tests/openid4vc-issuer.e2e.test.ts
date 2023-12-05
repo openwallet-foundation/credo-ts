@@ -36,7 +36,7 @@ import {
   equalsIgnoreOrder,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { SdJwtVcModule, SdJwtVcService } from '@aries-framework/sd-jwt-vc'
+import { SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { cleanAll, enableNetConnect } from 'nock'
 
@@ -241,10 +241,8 @@ describe('OpenId4VcIssuer', () => {
     credentialSupported: CredentialSupportedWithId
   ) {
     if (credentialSupported.format === 'vc+sd-jwt' && typeof sphereonVerifiableCredential === 'string') {
-      const sdJwtVcService = holder.context.dependencyManager.resolve(SdJwtVcService)
-
-      // this throws if invalid
-      await sdJwtVcService.fromString(agentContext, sphereonVerifiableCredential, { holderDidUrl: holderKid })
+      const api = agentContext.dependencyManager.resolve(SdJwtVcApi)
+      await api.fromSerializedJwt(sphereonVerifiableCredential, { holderDidUrl: holderKid })
       return
     }
 

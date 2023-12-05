@@ -12,9 +12,9 @@ import {
   Agent,
   TypedArrayEncoder,
 } from '@aries-framework/core'
+import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
-import { agentDependencies } from '../../../core/tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -251,10 +251,12 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -276,10 +278,12 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -308,7 +312,12 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       expect(sdJwtVcRecord.sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -373,7 +382,12 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { issuerDidUrl, holderDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
@@ -389,7 +403,12 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
@@ -406,7 +425,12 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
@@ -425,7 +449,12 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
@@ -453,7 +482,12 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
@@ -482,7 +516,12 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await sdJwtVcService.storeCredential(agent.context, sdJwtVc, { holderDidUrl, issuerDidUrl })
+      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+        issuerDidUrl,
+        holderDidUrl,
+      })
+
+      await sdJwtVcService.storeCredential(agent.context, sdJwtVcRecord)
 
       const presentation = await sdJwtVcService.present(agent.context, sdJwtVcRecord, {
         verifierMetadata: {
