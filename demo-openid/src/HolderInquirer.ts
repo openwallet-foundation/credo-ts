@@ -1,6 +1,5 @@
-import type { ResolvedCredentialOffer, ResolvedPresentationRequest } from '@aries-framework/openid4vc-holder'
+import type { ResolvedCredentialOffer, ResolvedPresentationRequest } from '@aries-framework/openid4vc'
 
-import { OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
 import { clear } from 'console'
 import { textSync } from 'figlet'
 import { prompt } from 'inquirer'

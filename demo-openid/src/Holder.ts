@@ -3,10 +3,10 @@ import type {
   OfferedCredentialWithMetadata,
   ResolvedPresentationRequest,
   ResolvedCredentialOffer,
-} from '@aries-framework/openid4vc-holder'
+} from '@aries-framework/openid4vc'
 
 import { AskarModule } from '@aries-framework/askar'
-import { OpenId4VcHolderModule } from '@aries-framework/openid4vc-holder'
+import { OpenId4VcHolderModule } from '@aries-framework/openid4vc'
 import { SdJwtVcModule, type SdJwtVcRecord } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 

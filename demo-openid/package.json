@@ -15,6 +15,7 @@
     "refresh": "rm -rf ./node_modules ./yarn.lock && yarn"
   },
   "dependencies": {
+    "@aries-framework/openid4vc": "*",
     "@hyperledger/anoncreds-nodejs": "^0.2.0-dev.4",
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.1",
     "@hyperledger/indy-vdr-nodejs": "^0.2.0-dev.5",
@@ -25,9 +26,6 @@
     "@aries-framework/askar": "*",
     "@aries-framework/core": "*",
     "@aries-framework/node": "*",
-    "@aries-framework/openid4vc-holder": "*",
-    "@aries-framework/openid4vc-issuer": "*",
-    "@aries-framework/openid4vc-verifier": "*",
     "@aries-framework/sd-jwt-vc": "^0.4.2",
     "@types/express": "^4.17.13",
     "@types/figlet": "^1.5.4",

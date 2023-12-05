@@ -1,14 +1,14 @@
 import type {
   CredentialRequestToCredentialMapper,
   CredentialSupported,
-  EndpointConfig,
   OfferedCredential,
-} from '@aries-framework/openid4vc-issuer'
+  IssuerEndpointConfig,
+} from '@aries-framework/openid4vc'
 import type e from 'express'
 
 import { AskarModule } from '@aries-framework/askar'
 import { W3cCredential, W3cCredentialSubject, W3cIssuer, w3cDate } from '@aries-framework/core'
-import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc-issuer'
+import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc'
 import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
@@ -70,7 +70,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
   }
 
   public async configureRouter(): Promise<e.Router> {
-    const endpointConfig: EndpointConfig = {
+    const endpointConfig: IssuerEndpointConfig = {
       metadataEndpointConfig: { enabled: true },
       accessTokenEndpointConfig: {
         enabled: true,

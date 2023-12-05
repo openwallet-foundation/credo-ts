@@ -251,7 +251,7 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -278,7 +278,7 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -312,7 +312,7 @@ describe('SdJwtVcService', () => {
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -382,7 +382,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -403,7 +403,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -425,7 +425,7 @@ describe('SdJwtVcService', () => {
     test('Present sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -449,7 +449,7 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
       const sdJwtVc = simpleJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -482,7 +482,7 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with a disclosure', async () => {
       const sdJwtVc = sdJwtVcWithSingleDisclosure
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })
@@ -516,7 +516,7 @@ describe('SdJwtVcService', () => {
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
       const sdJwtVc = complexSdJwtVc
 
-      const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
+      const sdJwtVcRecord = await sdJwtVcService.fromSerializedJwt(agent.context, sdJwtVc, {
         issuerDidUrl,
         holderDidUrl,
       })

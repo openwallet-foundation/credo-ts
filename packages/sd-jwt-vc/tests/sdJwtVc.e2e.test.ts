@@ -14,7 +14,7 @@ import {
 import { agentDependencies } from '@aries-framework/node'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
-import { SdJwtVcModule, SdJwtVcService } from '../src'
+import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
   new Agent({
@@ -104,7 +104,7 @@ describe('sd-jwt-vc end to end test', () => {
       },
     })
 
-    const sdJwtVcRecord = await SdJwtVcService.fromSerializedJwt(issuer.context, compact, {
+    const sdJwtVcRecord = await holder.modules.sdJwt.fromSerializedJwt(compact, {
       issuerDidUrl,
       holderDidUrl,
     })

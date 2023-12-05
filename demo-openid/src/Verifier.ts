@@ -1,15 +1,13 @@
 import type {
   ProofResponseHandler,
   CreateProofRequestOptions,
-  EndpointConfig,
+  VerifierEndpointConfig,
   PresentationDefinitionV2,
-} from '@aries-framework/openid4vc-verifier'
+} from '@aries-framework/openid4vc'
 import type e from 'express'
 
 import { AskarModule } from '@aries-framework/askar'
-import { SigningAlgo } from '@aries-framework/openid4vc-verifier'
-import { OpenId4VcVerifierModule } from '@aries-framework/openid4vc-verifier/src/OpenId4VcVerifierModule'
-import { staticOpOpenIdConfig } from '@aries-framework/openid4vc-verifier/src/OpenId4VcVerifierServiceOptions'
+import { SigningAlgo, OpenId4VcVerifierModule, staticOpOpenIdConfig } from '@aries-framework/openid4vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
@@ -75,7 +73,7 @@ export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModul
   }
 
   public async configureVerifierRouter(): Promise<e.Router> {
-    const endpointConfig: EndpointConfig = {
+    const endpointConfig: VerifierEndpointConfig = {
       verificationEndpointConfig: {
         enabled: true,
         verificationEndpointPath: Verifier.verificationEndpointPath,
