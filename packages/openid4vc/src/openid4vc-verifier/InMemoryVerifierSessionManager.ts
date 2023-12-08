@@ -28,7 +28,7 @@ export type PresentationDefinitionForCorrelationId =
     }
 
 export interface IInMemoryVerifierSessionManager extends SphereonRPSessionManager {
-  getVerifiyProofResponseOptions(correlationId: string): Promise<VerifyProofResponseOptions | undefined>
+  getVerifyProofResponseOptions(correlationId: string): Promise<VerifyProofResponseOptions | undefined>
   saveVerifyProofResponseOptions(
     correlationId: string,
     presentationDefinitionForCorrelationId: VerifyProofResponseOptions
@@ -60,37 +60,19 @@ export class InMemoryVerifierSessionManager implements IInMemoryVerifierSessionM
       .map((filtered) => Number.parseInt(filtered[0]))
   }
 
-  public constructor(eventEmitter: EventEmitter, logger: Logger, opts?: { maxAgeInSeconds?: number }) {
+  public constructor(ee: EventEmitter, logger: Logger, opts?: { maxAgeInSeconds?: number }) {
     this.logger = logger
     this.maxAgeInSeconds = opts?.maxAgeInSeconds ?? 5 * 60
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_REQUEST_CREATED_SUCCESS,
-      this.onAuthorizationRequestCreatedSuccess.bind(this)
-    )
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_REQUEST_CREATED_FAILED,
-      this.onAuthorizationRequestCreatedFailed.bind(this)
-    )
-    eventEmitter.on(AuthorizationEvents.ON_AUTH_REQUEST_SENT_SUCCESS, this.onAuthorizationRequestSentSuccess.bind(this))
-    eventEmitter.on(AuthorizationEvents.ON_AUTH_REQUEST_SENT_FAILED, this.onAuthorizationRequestSentFailed.bind(this))
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_RESPONSE_RECEIVED_SUCCESS,
-      this.onAuthorizationResponseReceivedSuccess.bind(this)
-    )
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_RESPONSE_RECEIVED_FAILED,
-      this.onAuthorizationResponseReceivedFailed.bind(this)
-    )
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_SUCCESS,
-      this.onAuthorizationResponseVerifiedSuccess.bind(this)
-    )
-    eventEmitter.on(
-      AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_FAILED,
-      this.onAuthorizationResponseVerifiedFailed.bind(this)
-    )
+    ee.on(AuthorizationEvents.ON_AUTH_REQUEST_CREATED_SUCCESS, this.onAuthorizationRequestCreatedSuccess.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_REQUEST_CREATED_FAILED, this.onAuthorizationRequestCreatedFailed.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_REQUEST_SENT_SUCCESS, this.onAuthorizationRequestSentSuccess.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_REQUEST_SENT_FAILED, this.onAuthorizationRequestSentFailed.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_RESPONSE_RECEIVED_SUCCESS, this.onAuthorizationResponseReceivedSuccess.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_RESPONSE_RECEIVED_FAILED, this.onAuthorizationResponseReceivedFailed.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_SUCCESS, this.onAuthorizationResponseVerifiedSuccess.bind(this))
+    ee.on(AuthorizationEvents.ON_AUTH_RESPONSE_VERIFIED_FAILED, this.onAuthorizationResponseVerifiedFailed.bind(this))
   }
-  public async getVerifiyProofResponseOptions(correlationId: string): Promise<VerifyProofResponseOptions | undefined> {
+  public async getVerifyProofResponseOptions(correlationId: string): Promise<VerifyProofResponseOptions | undefined> {
     return this.correlationIdToVerifyProofResponseOptions[correlationId]
   }
 

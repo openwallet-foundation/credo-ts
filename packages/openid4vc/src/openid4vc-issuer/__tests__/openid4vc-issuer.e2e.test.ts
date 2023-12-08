@@ -36,11 +36,11 @@ import {
   w3cDate,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import { SdJwtCredential, SdJwtVcApi, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { cleanAll, enableNetConnect } from 'nock'
 
-import { OpenId4VcIssuerModule, OpenId4VcIssuerService } from '..'
+import { OpenId4VcIssuerModule, OpenId4VcIssuerModuleConfig } from '..'
 import { OpenIdCredentialFormatProfile } from '../../openid4vc-holder'
 
 type CredentialSupportedWithId = CredentialSupported & { id: string }
@@ -78,9 +78,9 @@ const baseCredentialRequestOptions = {
 }
 
 const issuerMetadata: IssuerMetadata = {
-  credentialIssuer: 'https://openid4vc-issuer.com',
-  credentialEndpoint: 'https://openid4vc-issuer.com/credentials',
-  tokenEndpoint: 'https://openid4vc-issuer.com/token',
+  issuerBaseUrl: 'https://openid4vc-issuer.com',
+  tokenEndpointPath: '/token',
+  credentialEndpointPath: '/credentials',
   credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd, universityDegreeCredentialSdJwt],
 }
 
@@ -104,7 +104,7 @@ const createCredentialRequest = async (
 ): Promise<CredentialRequestV1_0_11> => {
   const { credentialSupported, kid, nonce, issuerMetadata, clientId } = options
 
-  const aud = issuerMetadata.credentialIssuer
+  const aud = issuerMetadata.issuerBaseUrl
 
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
   const didDocument = await didsApi.resolveDidDocument(kid)
@@ -161,15 +161,13 @@ describe('OpenId4VcIssuer', () => {
   let holderVerificationMethod: VerificationMethod
   let holderDid: string
 
-  let issuerService: OpenId4VcIssuerService
-
   beforeEach(async () => {
     issuer = new Agent({
       config: {
-        label: 'OpenId4VcIssuer Test321',
+        label: 'OpenId4VcIssuer Test323',
         walletConfig: {
-          id: 'openid4vc-Issuer-test321',
-          key: 'openid4vc-Issuer-test321',
+          id: 'openid4vc-Issuer-test323',
+          key: 'openid4vc-Issuer-test323',
         },
       },
       dependencies: agentDependencies,
@@ -178,10 +176,10 @@ describe('OpenId4VcIssuer', () => {
 
     holder = new Agent({
       config: {
-        label: 'OpenId4VciIssuer(Holder) Test321',
+        label: 'OpenId4VciIssuer(Holder) Test323',
         walletConfig: {
-          id: 'openid4vc-Issuer(Holder)-test321',
-          key: 'openid4vc-Issuer(Holder)-test321',
+          id: 'openid4vc-Issuer(Holder)-test323',
+          key: 'openid4vc-Issuer(Holder)-test323',
         },
       },
       dependencies: agentDependencies,
@@ -221,8 +219,6 @@ describe('OpenId4VcIssuer', () => {
     ])
     if (!_issuerVerificationMethod) throw new Error('No verification method found')
     issuerVerificationMethod = _issuerVerificationMethod
-
-    issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
   })
 
   afterEach(async () => {
@@ -283,7 +279,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 
@@ -299,18 +298,15 @@ describe('OpenId4VcIssuer', () => {
       'openid-credential-offer://openid4vc-issuer.com?credential_offer=%7B%22grants%22%3A%7B%22urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Apre-authorized_code%22%3A%7B%22pre-authorized_code%22%3A%221234567890%22%2C%22user_pin_required%22%3Afalse%7D%7D%2C%22credentials%22%3A%5B%22https%3A%2F%2Fopenid4vc-issuer.com%2Fcredentials%2FUniversityDegreeCredentialSdJwt%22%5D%2C%22credential_issuer%22%3A%22https%3A%2F%2Fopenid4vc-issuer.com%22%7D'
     )
 
-    // TODO:
-    const { compact } = await issuer.modules.sdJwtVc.create(
-      { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
-      {
-        holderDidUrl: holderVerificationMethod.id,
-        issuerDidUrl: issuerVerificationMethod.id,
-        disclosureFrame: { university: true, degree: true },
-      }
-    )
+    const sdJwtCredential = new SdJwtCredential({
+      payload: { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+      holderDidUrl: holderVerificationMethod.id,
+      issuerDidUrl: issuerVerificationMethod.id,
+      disclosureFrame: { university: true, degree: true },
+    })
 
     const issueCredentialResponse = await issuer.modules.openId4VcIssuer.createIssueCredentialResponse({
-      credential: compact,
+      credential: sdJwtCredential,
       verificationMethod: issuerVerificationMethod,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialSupported: universityDegreeCredentialSdJwt,
@@ -330,7 +326,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 
@@ -371,7 +370,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 
@@ -391,7 +393,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 
@@ -429,7 +434,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 
@@ -473,7 +481,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = {
       preAuthorizedCode,
@@ -518,7 +529,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const issuerState = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), issuerState })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), issuerState })
 
     const authorizationCodeFlowConfig: AuthorizationCodeFlowConfig = { issuerState }
 
@@ -607,7 +621,10 @@ describe('OpenId4VcIssuer', () => {
     const cNonce = '1234'
     const preAuthorizedCode = '1234567890'
 
-    await issuerService.cNonceStateManager.set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
+    await issuer.context.dependencyManager
+      .resolve(OpenId4VcIssuerModuleConfig)
+      .getCNonceStateManager(issuer.context)
+      .set(cNonce, { cNonce: cNonce, createdAt: Date.now(), preAuthorizedCode })
 
     const preAuthorizedCodeFlowConfig: PreAuthorizedCodeFlowConfig = { preAuthorizedCode, userPinRequired: false }
 

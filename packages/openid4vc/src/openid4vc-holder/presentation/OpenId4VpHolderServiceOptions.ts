@@ -7,11 +7,18 @@ import type {
 
 export type AuthenticationRequest = VerifiedAuthorizationRequest
 
-/**
- * SIOPv2 Authorization Request with a single v1 / v2 presentation definition
- */
 export type PresentationRequest = VerifiedAuthorizationRequest & {
   presentationDefinitions: [PresentationDefinitionWithLocation]
+}
+
+export function isVerifiedAuthorizationRequestWithPresentationDefinition(
+  request: VerifiedAuthorizationRequest
+): request is PresentationRequest {
+  return (
+    request.presentationDefinitions !== undefined &&
+    request.presentationDefinitions.length === 1 &&
+    request.presentationDefinitions?.[0]?.definition !== undefined
+  )
 }
 
 export type ResolvedPresentationRequest = {

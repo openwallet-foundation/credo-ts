@@ -14,9 +14,9 @@ import type {
   VerifiablePresentationResult,
 } from '@sphereon/pex'
 import type {
-  PresentationDefinitionV1,
-  PresentationSubmission as PexPresentationSubmission,
   InputDescriptorV2,
+  PresentationSubmission as PexPresentationSubmission,
+  PresentationDefinitionV1,
 } from '@sphereon/pex-models'
 import type { OriginalVerifiableCredential } from '@sphereon/ssi-types'
 
@@ -24,23 +24,24 @@ import {
   AriesFrameworkError,
   ClaimFormat,
   DidsApi,
+  JsonTransformer,
+  SignatureSuiteRegistry,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cPresentation,
   getJwkFromKey,
   getKeyFromVerificationMethod,
   injectable,
-  JsonTransformer,
-  W3cCredentialService,
-  W3cPresentation,
-  W3cCredentialRepository,
-  SignatureSuiteRegistry,
 } from '@aries-framework/core'
 import { PEVersion, PEX, PresentationSubmissionLocation } from '@sphereon/pex'
 
-import { selectCredentialsForRequest } from './selection/PexCredentialSelection'
 import {
-  getSphereonW3cVerifiableCredential,
+  getSphereonOriginalVerifiableCredential,
   getSphereonW3cVerifiablePresentation,
   getW3cVerifiablePresentationInstance,
-} from './transform'
+} from '../../shared/transform'
+
+import { selectCredentialsForRequest } from './selection/PexCredentialSelection'
 
 type ProofStructure = {
   [subjectId: string]: {
@@ -213,7 +214,7 @@ export class PresentationExchangeService {
       // Get all the credentials associated with the input descriptors
       const credentialsForSubject = Object.values(subjectInputDescriptorsToCredentials)
         .flatMap((credentials) => credentials)
-        .map(getSphereonW3cVerifiableCredential)
+        .map(getSphereonOriginalVerifiableCredential)
 
       const presentationDefinitionForSubject: IPresentationDefinition = {
         ...presentationDefinition,

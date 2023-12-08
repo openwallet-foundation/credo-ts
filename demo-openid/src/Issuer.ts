@@ -9,7 +9,7 @@ import type e from 'express'
 import { AskarModule } from '@aries-framework/askar'
 import { W3cCredential, W3cCredentialSubject, W3cIssuer, w3cDate } from '@aries-framework/core'
 import { OpenId4VcIssuerModule, OpenIdCredentialFormatProfile } from '@aries-framework/openid4vc'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import { SdJwtCredential, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import { Router } from 'express'
 
@@ -48,9 +48,9 @@ function getOpenIdIssuerModules() {
     askar: new AskarModule({ ariesAskar }),
     openId4VcIssuer: new OpenId4VcIssuerModule({
       issuerMetadata: {
-        credentialIssuer: 'http://localhost:2000',
-        tokenEndpoint: 'http://localhost:2000/token',
-        credentialEndpoint: 'http://localhost:2000/credentials',
+        issuerBaseUrl: 'http://localhost:2000',
+        tokenEndpointPath: 'http://localhost:2000/token',
+        credentialEndpointPath: 'http://localhost:2000/credentials',
         credentialsSupported,
       },
     }),
@@ -71,6 +71,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
 
   public async configureRouter(): Promise<e.Router> {
     const endpointConfig: IssuerEndpointConfig = {
+      basePath: '/',
       metadataEndpointConfig: { enabled: true },
       accessTokenEndpointConfig: {
         enabled: true,
@@ -90,7 +91,7 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
   }
 
   public getCredentialRequestToCredentialMapper(): CredentialRequestToCredentialMapper {
-    return async (credentialRequest, { holderDid, holderDidUrl }) => {
+    return async ({ credentialRequest, holderDid, holderDidUrl }) => {
       if (
         credentialRequest.format === 'jwt_vc_json' &&
         credentialRequest.types.includes('UniversityDegreeCredential')
@@ -116,15 +117,12 @@ export class Issuer extends BaseAgent<ReturnType<typeof getOpenIdIssuerModules>>
         credentialRequest.format === 'vc+sd-jwt' &&
         credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
       ) {
-        const { compact } = await this.agent.modules.sdJwtVc.create(
-          { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
-          {
-            holderDidUrl,
-            issuerDidUrl: this.kid,
-            disclosureFrame: { university: true, degree: true },
-          }
-        )
-        return compact
+        return new SdJwtCredential({
+          payload: { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+          holderDidUrl,
+          issuerDidUrl: this.kid,
+          disclosureFrame: { university: true, degree: true },
+        })
       }
 
       throw new Error('Invalid request')

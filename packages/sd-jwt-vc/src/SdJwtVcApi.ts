@@ -1,3 +1,4 @@
+import type { SdJwtCredential } from './SdJwtCredential'
 import type {
   SdJwtVcCreateOptions,
   SdJwtVcFromSerializedJwtOptions,
@@ -30,6 +31,12 @@ export class SdJwtVcApi {
     options: SdJwtVcCreateOptions<Payload>
   ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
     return await this.sdJwtVcService.create<Payload>(this.agentContext, payload, options)
+  }
+
+  public async signCredential<Payload extends Record<string, unknown> = Record<string, unknown>>(
+    credential: SdJwtCredential<Payload>
+  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
+    return await this.sdJwtVcService.signCredential<Payload>(this.agentContext, credential)
   }
 
   /**

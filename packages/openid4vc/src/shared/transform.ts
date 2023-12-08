@@ -1,6 +1,7 @@
 import type { W3cVerifiableCredential, W3cVerifiablePresentation } from '@aries-framework/core'
 import type {
-  OriginalVerifiableCredential as SphereonW3cVerifiableCredential,
+  OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
+  W3CVerifiableCredential as SphereonW3cVerifiableCredential,
   W3CVerifiablePresentation as SphereonW3cVerifiablePresentation,
 } from '@sphereon/ssi-types'
 
@@ -13,6 +14,20 @@ import {
   W3cJwtVerifiableCredential,
   W3cJsonLdVerifiableCredential,
 } from '@aries-framework/core'
+
+export function getSphereonOriginalVerifiableCredential(
+  w3cVerifiableCredential: W3cVerifiableCredential
+): SphereonOriginalVerifiableCredential {
+  if (w3cVerifiableCredential.claimFormat === ClaimFormat.LdpVc) {
+    return JsonTransformer.toJSON(w3cVerifiableCredential) as SphereonOriginalVerifiableCredential
+  } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
+    return w3cVerifiableCredential.serializedJwt
+  } else {
+    throw new AriesFrameworkError(
+      `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
+    )
+  }
+}
 
 export function getSphereonW3cVerifiableCredential(
   w3cVerifiableCredential: W3cVerifiableCredential

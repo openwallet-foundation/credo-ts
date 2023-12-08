@@ -8,14 +8,14 @@ import { PEX } from '@sphereon/pex'
 import { Rules } from '@sphereon/pex-models'
 import { default as jp } from 'jsonpath'
 
-import { getSphereonW3cVerifiableCredential } from '../transform'
+import { getSphereonOriginalVerifiableCredential } from '../../../shared/transform'
 
 export async function selectCredentialsForRequest(
   presentationDefinition: IPresentationDefinition,
   credentialRecords: W3cCredentialRecord[],
   holderDIDs: string[]
 ): Promise<PresentationSubmission> {
-  const encodedCredentials = credentialRecords.map((c) => getSphereonW3cVerifiableCredential(c.credential))
+  const encodedCredentials = credentialRecords.map((c) => getSphereonOriginalVerifiableCredential(c.credential))
 
   if (!presentationDefinition) {
     throw new AriesFrameworkError('Presentation Definition is required to select credentials for submission.')

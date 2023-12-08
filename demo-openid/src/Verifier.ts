@@ -54,13 +54,16 @@ export const presentationDefinitions = [
 function getOpenIdVerifierModules() {
   return {
     askar: new AskarModule({ ariesAskar }),
-    openId4VcVerifier: new OpenId4VcVerifierModule({}),
+    openId4VcVerifier: new OpenId4VcVerifierModule({
+      verifierMetadata: {
+        verifierBaseUrl: 'http://localhost:4000',
+        verificationEndpointPath: '/verify',
+      },
+    }),
   } as const
 }
 
 export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModules>> {
-  private static verificationEndpointPath = '/verify'
-
   public constructor(port: number, name: string) {
     super({ port, name, modules: getOpenIdVerifierModules() })
   }
@@ -74,9 +77,9 @@ export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModul
 
   public async configureVerifierRouter(): Promise<e.Router> {
     const endpointConfig: VerifierEndpointConfig = {
+      basePath: '/',
       verificationEndpointConfig: {
         enabled: true,
-        verificationEndpointPath: Verifier.verificationEndpointPath,
         proofResponseHandler: Verifier.proofResponseHandler,
       },
     }
@@ -88,7 +91,6 @@ export class Verifier extends BaseAgent<ReturnType<typeof getOpenIdVerifierModul
 
   public async createProofRequest(presentationDefinition: PresentationDefinitionV2) {
     const createProofRequestOptions: CreateProofRequestOptions = {
-      redirectUri: `http://localhost:${this.port}${Verifier.verificationEndpointPath}`,
       verificationMethod: this.verificationMethod,
       presentationDefinition,
       holderMetadata: {

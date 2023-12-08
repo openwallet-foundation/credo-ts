@@ -19,11 +19,21 @@ export type HolderMetadata = ClientMetadataOpts & { authorization_endpoint?: str
 
 export type { PresentationDefinitionV1, PresentationDefinitionV2, VerifiedOpenID4VPSubmission, IDTokenPayload }
 
+export interface VerifierMetadata {
+  verifierBaseUrl: string
+  verificationEndpointPath: string
+}
+
 export interface CreateProofRequestOptions {
   verificationMethod: VerificationMethod
-  redirectUri: string
-  holderMetadata?: HolderMetadata
-  holderIdentifier?: string
+  verificationEndpointUrl?: string
+
+  /**
+   * The holder metadata to use for the proof request.
+   * If not provided, a static set of configuration values defined in the spec will be used.
+   * If provided as a string (url), it will try to retrieve the metadata from the given url.
+   */
+  holderMetadata?: HolderMetadata | string
   presentationDefinition?: PresentationDefinitionV1 | PresentationDefinitionV2
 }
 
@@ -82,10 +92,10 @@ export interface VerificationEndpointConfig {
    */
   enabled: boolean
 
-  verificationEndpointPath: string
   proofResponseHandler?: ProofResponseHandler
 }
 
 export interface VerifierEndpointConfig {
+  basePath: string
   verificationEndpointConfig: VerificationEndpointConfig
 }

@@ -1,3 +1,4 @@
+import type { SdJwtCredential } from './SdJwtCredential'
 import type {
   SdJwtVcCreateOptions,
   SdJwtVcPresentOptions,
@@ -95,6 +96,78 @@ export class SdJwtVcService {
         key: key,
         data: TypedArrayEncoder.fromString(message),
       })
+    }
+  }
+
+  public async signCredential<Payload extends Record<string, unknown> = Record<string, unknown>>(
+    agentContext: AgentContext,
+    sdJwtCredential: SdJwtCredential<Payload>
+  ): Promise<{ sdJwtVcRecord: SdJwtVcRecord; compact: string }> {
+    const { holderDidUrl, issuerDidUrl, payload, disclosureFrame, hashingAlgorithm, jsonWebAlgorithm } = sdJwtCredential
+
+    if (hashingAlgorithm !== 'sha2-256') {
+      throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
+    }
+
+    const parsedDid = parseDid(issuerDidUrl)
+    if (!parsedDid.fragment) {
+      throw new SdJwtVcError(
+        `issuer did url '${issuerDidUrl}' does not contain a '#'. Unable to derive key from did document`
+      )
+    }
+
+    const { verificationMethod: issuerVerificationMethod, didDocument: issuerDidDocument } = await this.resolveDidUrl(
+      agentContext,
+      issuerDidUrl
+    )
+    const issuerKey = getKeyFromVerificationMethod(issuerVerificationMethod)
+    const alg = jsonWebAlgorithm ?? getJwkFromKey(issuerKey).supportedSignatureAlgorithms[0]
+
+    const { verificationMethod: holderVerificationMethod } = await this.resolveDidUrl(agentContext, holderDidUrl)
+    const holderKey = getKeyFromVerificationMethod(holderVerificationMethod)
+    const holderKeyJwk = getJwkFromKey(holderKey).toJson()
+
+    const header = {
+      alg: alg.toString(),
+      typ: 'vc+sd-jwt',
+      kid: parsedDid.fragment,
+    }
+
+    const sdJwtVc = new SdJwtVc<typeof header, Payload>({}, { disclosureFrame })
+      .withHasher(this.hasher)
+      .withSigner(this.signer(agentContext, issuerKey))
+      .withSaltGenerator(agentContext.wallet.generateNonce)
+      .withHeader(header)
+      .withPayload({ ...payload })
+
+    // Add the `cnf` claim for the holder key binding
+    sdJwtVc.addPayloadClaim('cnf', { jwk: holderKeyJwk })
+
+    // Add the issuer DID as the `iss` claim
+    sdJwtVc.addPayloadClaim('iss', issuerDidDocument.id)
+
+    // Add the issued at (iat) claim
+    sdJwtVc.addPayloadClaim('iat', Math.floor(new Date().getTime() / 1000))
+
+    const compact = await sdJwtVc.toCompact()
+
+    if (!sdJwtVc.signature) {
+      throw new SdJwtVcError('Invalid sd-jwt-vc state. Signature should have been set when calling `toCompact`.')
+    }
+
+    const sdJwtVcRecord = new SdJwtVcRecord<typeof header, Payload>({
+      sdJwtVc: {
+        header: sdJwtVc.header,
+        payload: sdJwtVc.payload,
+        signature: sdJwtVc.signature,
+        disclosures: sdJwtVc.disclosures?.map((d) => d.decoded),
+        holderDidUrl,
+      },
+    })
+
+    return {
+      sdJwtVcRecord,
+      compact,
     }
   }
 

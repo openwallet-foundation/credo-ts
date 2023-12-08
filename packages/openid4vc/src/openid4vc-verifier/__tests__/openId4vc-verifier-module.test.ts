@@ -14,7 +14,12 @@ const dependencyManager = {
 
 describe('OpenId4VcVerifierModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const openId4VcClientModule = new OpenId4VcVerifierModule({})
+    const verifierMetadata = {
+      verifierBaseUrl: 'http://redirect-uri',
+      verificationEndpointPath: '',
+    }
+    const openId4VcClientModule = new OpenId4VcVerifierModule({ verifierMetadata })
+
     openId4VcClientModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)

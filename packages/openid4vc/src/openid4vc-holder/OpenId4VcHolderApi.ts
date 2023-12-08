@@ -36,11 +36,11 @@ export class OpenId4VcHolderApi {
   /**
    * Resolves the authentication request given as URI or JWT to a unified format, and
    * verifies the validity of the request.
-   * The resolved request can be accepted with either @see acceptAuthenticationRequest if it is a
+   * The resolved request can be accepted with either @see acceptAuthenticationRequest if it is an
    * authentication request or with @see acceptPresentationRequest if it is a proofRequest.
    *
    * @param requestJwtOrUri JWT or an openid:// URI
-   * @returns the resolved and verified authentication request or presentation request alongside the data required to fulfill the presentation request.
+   * @returns the resolved and verified authentication request or presentation request alongside the data required to fulfill the presentation request if possible.
    */
   public async resolveProofRequest(requestJwtOrUri: string) {
     return await this.openId4VpHolderService.resolveProofRequest(this.agentContext, requestJwtOrUri)
@@ -88,7 +88,7 @@ export class OpenId4VcHolderApi {
 
   /**
    * Resolves a credential offer given as payload, credential offer URL, or issuance initiation URL,
-   * into a unified format.
+   * into a unified format with metadata.
    *
    * @param credentialOffer the credential offer to resolve
    * @returns The uniform credential offer payload, the issuer metadata, protocol version, and the offered credentials with metadata.

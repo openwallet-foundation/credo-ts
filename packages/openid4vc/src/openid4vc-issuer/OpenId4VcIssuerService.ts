@@ -1,53 +1,56 @@
 import type {
-  CreateCredentialOfferAndRequestOptions,
   AuthorizationCodeFlowConfig,
-  PreAuthorizedCodeFlowConfig,
-  OfferedCredential,
+  CreateCredentialOfferAndRequestOptions,
   CreateIssueCredentialResponseOptions,
-  CredentialSupported,
   CredentialOfferAndRequest,
+  CredentialSupported,
   IssuerEndpointConfig,
+  IssuerMetadata,
+  OfferedCredential,
+  PreAuthorizedCodeFlowConfig,
 } from './OpenId4VcIssuerServiceOptions'
+import type { IssuanceRequest } from './router/OpenId4VcIEndpointConfiguration'
 import type { OfferedCredentialWithMetadata } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
 import type {
   AgentContext,
-  VerificationMethod,
-  W3cVerifiableCredential,
   DidDocument,
   JwaSignatureAlgorithm,
+  VerificationMethod,
+  W3cVerifiableCredential,
 } from '@aries-framework/core'
+import type { SdJwtCredential, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import type {
-  Grant,
-  MetadataDisplay,
-  JWTVerifyCallback,
-  CredentialRequestV1_0_11,
   CredentialOfferPayloadV1_0_11,
+  CredentialRequestV1_0_11,
+  Grant,
+  JWTVerifyCallback,
 } from '@sphereon/oid4vci-common'
 import type {
   CredentialDataSupplier,
   CredentialDataSupplierArgs,
   CredentialSignerCallback,
 } from '@sphereon/oid4vci-issuer'
-import type { ICredential, W3CVerifiableCredential as SphereonW3cVerifiableCredential } from '@sphereon/ssi-types'
-import type { Router } from 'express'
+import type { ICredential } from '@sphereon/ssi-types'
+import type { NextFunction, Response, Router } from 'express'
 
 import {
+  AgentContextProvider,
   AriesFrameworkError,
   ClaimFormat,
+  DidsApi,
   InjectionSymbols,
+  JsonTransformer,
   JwsService,
+  Jwt,
   Logger,
+  W3cCredential,
   W3cCredentialService,
+  equalsIgnoreOrder,
+  getApiForModuleByName,
+  getJwkFromKey,
+  getKeyFromVerificationMethod,
   inject,
   injectable,
-  JsonTransformer,
-  W3cCredential,
-  Jwt,
-  SignatureSuiteRegistry,
-  DidsApi,
-  getKeyFromVerificationMethod,
-  getJwkFromKey,
-  equalsIgnoreOrder,
 } from '@aries-framework/core'
 import { IssueStatus } from '@sphereon/oid4vci-common'
 import { VcIssuerBuilder } from '@sphereon/oid4vci-issuer'
@@ -55,28 +58,13 @@ import bodyParser from 'body-parser'
 
 import { OpenIdCredentialFormatProfile } from '../openid4vc-holder'
 import { getOfferedCredentialsWithMetadata } from '../openid4vc-holder/reception/utils/IssuerMetadataUtils'
+import { getEndpointUrl, initializeAgentFromContext, getRequestContext } from '../shared/router'
+import { getSphereonW3cVerifiableCredential } from '../shared/transform'
+import { getProofTypeFromVerificationMethod } from '../shared/utils'
 
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import {
-  configureAccessTokenEndpoint,
-  configureCredentialEndpoint,
-  configureIssuerMetadataEndpoint,
-} from './router/OpenId4VcIEndpointConfiguration'
-
-// TODO: duplicate
-function getSphereonW3cVerifiableCredential(
-  w3cVerifiableCredential: W3cVerifiableCredential
-): SphereonW3cVerifiableCredential {
-  if (w3cVerifiableCredential.claimFormat === ClaimFormat.LdpVc) {
-    return JsonTransformer.toJSON(w3cVerifiableCredential) as SphereonW3cVerifiableCredential
-  } else if (w3cVerifiableCredential.claimFormat === ClaimFormat.JwtVc) {
-    return w3cVerifiableCredential.serializedJwt
-  } else {
-    throw new AriesFrameworkError(
-      `Unsupported claim format. Only ${ClaimFormat.LdpVc} and ${ClaimFormat.JwtVc} are supported.`
-    )
-  }
-}
+import { configureAccessTokenEndpoint, configureCredentialEndpoint } from './router/OpenId4VcIEndpointConfiguration'
+import { configureIssuerMetadataEndpoint } from './router/metadataEndpoint'
 
 /**
  * @internal
@@ -86,47 +74,45 @@ export class OpenId4VcIssuerService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
   private jwsService: JwsService
-  private openId4VcIssuerModuleConfig: OpenId4VcIssuerModuleConfig
+  private _openId4VcIssuerModuleConfig: OpenId4VcIssuerModuleConfig
+  private agentContextProvider: AgentContextProvider
+
+  public get openId4VcIssuerModuleConfig() {
+    return this._openId4VcIssuerModuleConfig
+  }
 
   public get issuerMetadata() {
     return this.openId4VcIssuerModuleConfig.issuerMetadata
   }
 
-  public get cNonceStateManager() {
-    return this.openId4VcIssuerModuleConfig.cNonceStateManager
-  }
-
-  public get credentialOfferSessionManager() {
-    return this.openId4VcIssuerModuleConfig.credentialOfferSessionManager
-  }
-
-  public get uriStateManager() {
-    return this.openId4VcIssuerModuleConfig.uriStateManager
-  }
-
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     openId4VcIssuerModuleConfig: OpenId4VcIssuerModuleConfig,
     w3cCredentialService: W3cCredentialService,
     jwsService: JwsService
   ) {
+    this.agentContextProvider = agentContextProvider
     this.w3cCredentialService = w3cCredentialService
     this.logger = logger
-    this.openId4VcIssuerModuleConfig = openId4VcIssuerModuleConfig
+    this._openId4VcIssuerModuleConfig = openId4VcIssuerModuleConfig
     this.jwsService = jwsService
   }
 
-  private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
-    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+  public expandEndpointsWithBase(agentContext: AgentContext): IssuerMetadata {
+    const issuerMetadata = this.issuerMetadata
+    const basePath = this.openId4VcIssuerModuleConfig.getBasePath(agentContext)
 
-    const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
-    if (!supportedSignatureSuite) {
-      throw new AriesFrameworkError(
-        `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'.`
-      )
+    const credentialIssuer = getEndpointUrl(issuerMetadata.issuerBaseUrl, basePath)
+    const tokenEndpoint = getEndpointUrl(credentialIssuer, basePath, issuerMetadata.tokenEndpointPath)
+    const credentialEndpoint = getEndpointUrl(credentialIssuer, basePath, issuerMetadata.credentialEndpointPath)
+
+    return {
+      ...issuerMetadata,
+      issuerBaseUrl: credentialIssuer,
+      tokenEndpointPath: tokenEndpoint,
+      credentialEndpointPath: credentialEndpoint,
     }
-
-    return supportedSignatureSuite.proofType
   }
 
   private getJwtVerifyCallback = (agentContext: AgentContext): JWTVerifyCallback<DidDocument> => {
@@ -170,86 +156,37 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  private getSdJwtVcCredentialSigningCallback = (): CredentialSignerCallback<DidDocument> => {
-    return async (opts) => {
-      const { credential } = opts
-      // TODO: sdjwt
-      return credential as any
-    }
-  }
+  private getVcIssuer(agentContext: AgentContext) {
+    const issuerMetadata = this.expandEndpointsWithBase(agentContext)
+    const {
+      issuerBaseUrl: credentialIssuer,
+      tokenEndpointPath: tokenEndpoint,
+      credentialEndpointPath: credentialEndpoint,
+      credentialsSupported,
+    } = issuerMetadata
 
-  private getW3cCredentialSigningCallback = (
-    agentContext: AgentContext,
-    issuerVerificationMethod: VerificationMethod
-  ): CredentialSignerCallback<DidDocument> => {
-    return async (opts) => {
-      const { credential, jwtVerifyResult, format } = opts
-
-      const { alg, kid, didDocument: holderDidDocument } = jwtVerifyResult
-
-      if (!kid) throw new AriesFrameworkError('Missing Kid. Cannot create the holder binding')
-      if (!holderDidDocument) throw new AriesFrameworkError('Missing did document. Cannot create the holder binding.')
-
-      // If the Credential shall be bound to a DID, the kid refers to a DID URL which identifies a
-      // particular key in the DID Document that the Credential shall be bound to.
-      const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod'])
-
-      let signed: W3cVerifiableCredential<ClaimFormat.JwtVc | ClaimFormat.LdpVc>
-      if (format === OpenIdCredentialFormatProfile.JwtVcJson || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
-        signed = await this.w3cCredentialService.signCredential(agentContext, {
-          format: ClaimFormat.JwtVc,
-          credential: W3cCredential.fromJson(credential),
-          verificationMethod: issuerVerificationMethod.id,
-          alg: alg as JwaSignatureAlgorithm,
-        })
-      } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
-        signed = await this.w3cCredentialService.signCredential(agentContext, {
-          format: ClaimFormat.LdpVc,
-          credential: W3cCredential.fromJson(credential),
-          verificationMethod: issuerVerificationMethod.id,
-          proofPurpose: 'assertionMethod',
-          proofType: this.getProofTypeForLdpVc(agentContext, holderVerificationMethod),
-        })
-      } else {
-        throw new AriesFrameworkError(`Unsupported credential format '${format}' for W3C credential signing callback.`)
-      }
-
-      return getSphereonW3cVerifiableCredential(signed)
-    }
-  }
-
-  private getVcIssuer(
-    agentContext: AgentContext,
-    options: {
-      credentialIssuer: string
-      credentialEndpoint: string
-      tokenEndpoint: string
-      credentialsSupported: CredentialSupported[]
-      authorizationServer?: string
-      issuerDisplay?: MetadataDisplay | MetadataDisplay[]
-    }
-  ) {
-    const { credentialIssuer, tokenEndpoint, credentialEndpoint, credentialsSupported } = options
     const builder = new VcIssuerBuilder()
-      .withCredentialIssuer(credentialIssuer)
-      .withCredentialEndpoint(credentialEndpoint)
-      .withTokenEndpoint(tokenEndpoint)
+      .withCredentialIssuer(credentialIssuer.toString())
+      .withCredentialEndpoint(credentialEndpoint.toString())
+      .withTokenEndpoint(tokenEndpoint.toString())
       .withCredentialsSupported(credentialsSupported)
       .withCNonceExpiresIn(this.openId4VcIssuerModuleConfig.cNonceExpiresIn)
-      .withCNonceStateManager(this.cNonceStateManager)
-      .withCredentialOfferStateManager(this.credentialOfferSessionManager)
-      .withCredentialOfferURIStateManager(this.uriStateManager)
+      .withCNonceStateManager(this.openId4VcIssuerModuleConfig.getCNonceStateManager(agentContext))
+      .withCredentialOfferStateManager(
+        this.openId4VcIssuerModuleConfig.getCredentialOfferSessionStateManager(agentContext)
+      )
+      .withCredentialOfferURIStateManager(this.openId4VcIssuerModuleConfig.getUriStateManager(agentContext))
       .withJWTVerifyCallback(this.getJwtVerifyCallback(agentContext))
       .withCredentialSignerCallback(() => {
         throw new AriesFrameworkError('this should never ba called')
       })
 
-    if (options.authorizationServer) {
-      builder.withAuthorizationServer(options.authorizationServer)
+    if (issuerMetadata.authorizationServerUrl) {
+      builder.withAuthorizationServer(issuerMetadata.authorizationServerUrl.toString())
     }
 
-    if (options.issuerDisplay) {
-      builder.withIssuerDisplay(options.issuerDisplay)
+    if (issuerMetadata.issuerDisplay) {
+      builder.withIssuerDisplay(issuerMetadata.issuerDisplay)
     }
 
     return builder.build()
@@ -288,13 +225,11 @@ export class OpenId4VcIssuerService {
   ): Promise<CredentialOfferAndRequest> {
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig } = options
 
-    const issuerMetadata = options.issuerMetadata ?? this.issuerMetadata
-
     // this checks if the structure of the credentials is correct
     // it throws an error if a offered credential cannot be found in the credentialsSupported
-    getOfferedCredentialsWithMetadata(offeredCredentials, issuerMetadata.credentialsSupported)
+    getOfferedCredentialsWithMetadata(offeredCredentials, this.issuerMetadata.credentialsSupported)
 
-    const vcIssuer = this.getVcIssuer(agentContext, issuerMetadata)
+    const vcIssuer = this.getVcIssuer(agentContext)
 
     const { uri, session } = await vcIssuer.createCredentialOfferURI({
       grants: await this.getGrantsFromConfig(agentContext, preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig),
@@ -311,19 +246,20 @@ export class OpenId4VcIssuerService {
     }
   }
 
-  private async getCredentialOfferSessionFromUri(uri: string) {
-    const uriState = await this.uriStateManager.get(uri)
+  private async getCredentialOfferSessionFromUri(agentContext: AgentContext, uri: string) {
+    const uriState = await this.openId4VcIssuerModuleConfig.getUriStateManager(agentContext).get(uri)
     if (!uriState) throw new AriesFrameworkError(`Credential offer uri '${uri}' not found.`)
 
     const credentialOfferSessionId = uriState.preAuthorizedCode ?? uriState.issuerState
-
     if (!credentialOfferSessionId) {
       throw new AriesFrameworkError(
         `Credential offer uri '${uri}' is not associated with a preAuthorizedCode or issuerState.`
       )
     }
 
-    const credentialOfferSession = await this.credentialOfferSessionManager.get(credentialOfferSessionId)
+    const credentialOfferSession = await this.openId4VcIssuerModuleConfig
+      .getCredentialOfferSessionStateManager(agentContext)
+      .get(credentialOfferSessionId)
     if (!credentialOfferSession)
       throw new AriesFrameworkError(
         `Credential offer session for '${uri}' with id '${credentialOfferSessionId}' not found.`
@@ -332,12 +268,17 @@ export class OpenId4VcIssuerService {
     return { credentialOfferSessionId, credentialOfferSession }
   }
 
-  public async getCredentialOfferFromUri(uri: string) {
-    const { credentialOfferSession, credentialOfferSessionId } = await this.getCredentialOfferSessionFromUri(uri)
+  public async getCredentialOfferFromUri(agentContext: AgentContext, uri: string) {
+    const { credentialOfferSessionId, credentialOfferSession } = await this.getCredentialOfferSessionFromUri(
+      agentContext,
+      uri
+    )
 
     credentialOfferSession.lastUpdatedAt = +new Date()
     credentialOfferSession.status = IssueStatus.OFFER_URI_RETRIEVED
-    await this.credentialOfferSessionManager.set(credentialOfferSessionId, credentialOfferSession)
+    await this.openId4VcIssuerModuleConfig
+      .getCredentialOfferSessionStateManager(agentContext)
+      .set(credentialOfferSessionId, credentialOfferSession)
 
     return credentialOfferSession.credentialOffer.credential_offer
   }
@@ -365,10 +306,61 @@ export class OpenId4VcIssuerService {
     })
   }
 
+  private getSdJwtVcCredentialSigningCallback = (agentContext: AgentContext): CredentialSignerCallback<DidDocument> => {
+    return async (opts) => {
+      const { credential } = opts
+
+      const sdJwtVcApi = getApiForModuleByName<SdJwtVcModule>(agentContext, 'SdJwtVcModule')
+      if (!sdJwtVcApi) throw new AriesFrameworkError(`Could not find the SdJwtVcApi`)
+      const { compact } = await sdJwtVcApi.signCredential(credential as any)
+
+      return compact as any
+    }
+  }
+
+  private getW3cCredentialSigningCallback = (
+    agentContext: AgentContext,
+    issuerVerificationMethod: VerificationMethod
+  ): CredentialSignerCallback<DidDocument> => {
+    return async (opts) => {
+      const { credential, jwtVerifyResult, format } = opts
+
+      const { alg, kid, didDocument: holderDidDocument } = jwtVerifyResult
+
+      if (!kid) throw new AriesFrameworkError('Missing Kid. Cannot create the holder binding')
+      if (!holderDidDocument) throw new AriesFrameworkError('Missing did document. Cannot create the holder binding.')
+
+      // If the Credential shall be bound to a DID, the kid refers to a DID URL which identifies a
+      // particular key in the DID Document that the Credential shall be bound to.
+      const holderVerificationMethod = holderDidDocument.dereferenceKey(kid, ['assertionMethod'])
+
+      let signed: W3cVerifiableCredential<ClaimFormat.JwtVc | ClaimFormat.LdpVc>
+      if (format === OpenIdCredentialFormatProfile.JwtVcJson || format === OpenIdCredentialFormatProfile.JwtVcJsonLd) {
+        signed = await this.w3cCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.JwtVc,
+          credential: W3cCredential.fromJson(credential),
+          verificationMethod: issuerVerificationMethod.id,
+          alg: alg as JwaSignatureAlgorithm,
+        })
+      } else if (format === OpenIdCredentialFormatProfile.LdpVc) {
+        signed = await this.w3cCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential: W3cCredential.fromJson(credential),
+          verificationMethod: issuerVerificationMethod.id,
+          proofPurpose: 'assertionMethod',
+          proofType: getProofTypeFromVerificationMethod(agentContext, holderVerificationMethod),
+        })
+      } else {
+        throw new AriesFrameworkError(`Unsupported credential format '${format}' for W3C credential signing callback.`)
+      }
+
+      return getSphereonW3cVerifiableCredential(signed)
+    }
+  }
+
   private getCredentialDataSupplier = (
     agentContext: AgentContext,
-    credential: string | W3cCredential,
-    credentialsSupported: CredentialSupported[],
+    credential: SdJwtCredential | W3cCredential,
     issuerVerificationMethod: VerificationMethod
   ): CredentialDataSupplier => {
     return async (args: CredentialDataSupplierArgs) => {
@@ -377,40 +369,55 @@ export class OpenId4VcIssuerService {
       const offeredCredentialsMatchingRequest = this.findOfferedCredentialsMatchingRequest(
         credentialOffer.credential_offer,
         credentialRequest,
-        credentialsSupported
+        this.issuerMetadata.credentialsSupported
       )
 
       if (offeredCredentialsMatchingRequest.length === 0) {
-        throw new AriesFrameworkError('No offered credential matches the requested credential.')
+        throw new AriesFrameworkError('No offered credentials match the credential request.')
       }
 
-      if (credentialRequest.format === OpenIdCredentialFormatProfile.SdJwtVc) {
+      if (credential instanceof W3cCredential) {
+        if (
+          credentialRequest.format !== OpenIdCredentialFormatProfile.JwtVcJson &&
+          credentialRequest.format !== OpenIdCredentialFormatProfile.JwtVcJsonLd &&
+          credentialRequest.format !== OpenIdCredentialFormatProfile.LdpVc
+        ) {
+          throw new AriesFrameworkError(
+            `The credential to be issued does not match the request. Cannot issue a W3cCredential if the client expects a credential of format '${credentialRequest.format}'.`
+          )
+        }
+        const issuedCredentialMatchesRequest = offeredCredentialsMatchingRequest.find((offeredCredential) => {
+          return equalsIgnoreOrder(offeredCredential.types, credential.type)
+        })
+
+        if (!issuedCredentialMatchesRequest) {
+          throw new AriesFrameworkError(
+            `The types of the offered credentials do not match the types of the requested credential. Requested '${credential.type}'.`
+          )
+        }
+
+        return {
+          format: credentialRequest.format,
+          credential: JsonTransformer.toJSON(credential) as ICredential,
+          signCallback: this.getW3cCredentialSigningCallback(agentContext, issuerVerificationMethod),
+        }
+      } else {
+        if (credentialRequest.format !== OpenIdCredentialFormatProfile.SdJwtVc) {
+          throw new AriesFrameworkError(
+            `Invalid credential format. Expected '${OpenIdCredentialFormatProfile.SdJwtVc}', received '${credentialRequest.format}'.`
+          )
+        }
+        if (credentialRequest.credential_definition.vct !== credential.payload.type) {
+          throw new AriesFrameworkError(
+            `The types of the offered credentials do not match the types of the requested credential. Offered '${credential.payload.vct}' Requested '${credentialRequest.credential_definition.vct}'.`
+          )
+        }
+
         return {
           format: credentialRequest.format,
           credential: credential as any, // TODO: sdjwt
-          signCallback: this.getSdJwtVcCredentialSigningCallback(),
+          signCallback: this.getSdJwtVcCredentialSigningCallback(agentContext),
         }
-      }
-
-      if (typeof credential === 'string') {
-        throw new AriesFrameworkError(
-          `Credential must be a W3C credential if not using '${OpenIdCredentialFormatProfile.SdJwtVc}' format.`
-        )
-      }
-
-      // TODO: Valide SdJwtVc Types
-      const issuedCredentialMatchesRequest = offeredCredentialsMatchingRequest.find((offeredCredential) => {
-        return equalsIgnoreOrder(offeredCredential.types, credential.type)
-      })
-
-      if (!issuedCredentialMatchesRequest) {
-        throw new AriesFrameworkError('The credential to be issued does not match the request.')
-      }
-
-      return {
-        format: credentialRequest.format,
-        credential: JsonTransformer.toJSON(credential) as ICredential,
-        signCallback: this.getW3cCredentialSigningCallback(agentContext, issuerVerificationMethod),
       }
     }
   }
@@ -420,24 +427,14 @@ export class OpenId4VcIssuerService {
     options: CreateIssueCredentialResponseOptions
   ) {
     const { credentialRequest, credential, verificationMethod } = options
+    if (!credentialRequest.proof) throw new AriesFrameworkError('No proof defined in the credentialRequest.')
 
-    if (!credentialRequest.proof) {
-      throw new AriesFrameworkError('No proof defined in the credentialRequest.')
-    }
-
-    const issuerMetadata = options.issuerMetadata ?? this.issuerMetadata
-    const vcIssuer = this.getVcIssuer(agentContext, issuerMetadata)
-
+    const vcIssuer = this.getVcIssuer(agentContext)
     const issueCredentialResponse = await vcIssuer.issueCredential({
       credentialRequest,
       tokenExpiresIn: this.openId4VcIssuerModuleConfig.tokenExpiresIn,
       cNonceExpiresIn: this.openId4VcIssuerModuleConfig.cNonceExpiresIn,
-      credentialDataSupplier: this.getCredentialDataSupplier(
-        agentContext,
-        credential,
-        issuerMetadata.credentialsSupported,
-        verificationMethod
-      ),
+      credentialDataSupplier: this.getCredentialDataSupplier(agentContext, credential, verificationMethod),
       credential: undefined,
       newCNonce: undefined,
       credentialDataSupplierInput: undefined,
@@ -445,7 +442,7 @@ export class OpenId4VcIssuerService {
     })
 
     if (!issueCredentialResponse.credential) {
-      throw new AriesFrameworkError('No credential defined in the issueCredentialResponse.')
+      throw new AriesFrameworkError('No credential found in the issueCredentialResponse.')
     }
 
     if (issueCredentialResponse.acceptance_token) {
@@ -455,42 +452,69 @@ export class OpenId4VcIssuerService {
     return issueCredentialResponse
   }
 
-  public configureRouter = (agentContext: AgentContext, router: Router, endpointConfig: IssuerEndpointConfig) => {
+  public configureRouter = (
+    initializationContext: AgentContext,
+    router: Router,
+    endpointConfig: IssuerEndpointConfig
+  ) => {
+    const { basePath } = endpointConfig
+    this.openId4VcIssuerModuleConfig.setBasePath(initializationContext, basePath)
+
     // parse application/x-www-form-urlencoded
     router.use(bodyParser.urlencoded({ extended: false }))
     // parse application/json
     router.use(bodyParser.json())
+    // initialize the agent and set the request context
+    router.use(async (req: IssuanceRequest, _res: Response, next: NextFunction) => {
+      const agentContext = await initializeAgentFromContext(
+        initializationContext.contextCorrelationId,
+        this.agentContextProvider
+      )
+
+      req.requestContext = {
+        agentContext,
+        openId4vcIssuerService: agentContext.dependencyManager.resolve(OpenId4VcIssuerService),
+        logger: agentContext.dependencyManager.resolve(InjectionSymbols.Logger),
+      }
+
+      next()
+    })
 
     if (endpointConfig.metadataEndpointConfig?.enabled) {
-      configureIssuerMetadataEndpoint(router, this.logger, {
-        ...endpointConfig.metadataEndpointConfig,
-        issuerMetadata: this.issuerMetadata,
-      })
+      const wellKnownPath = `/.well-known/openid-credential-issuer`
+      configureIssuerMetadataEndpoint(router, wellKnownPath)
+
+      const endpointPath = getEndpointUrl(this.issuerMetadata.issuerBaseUrl, basePath, wellKnownPath)
+      this.logger.info(`[OID4VCI] Metadata endpoint running at '${endpointPath}'.`)
     }
 
     if (endpointConfig.accessTokenEndpointConfig?.enabled) {
-      configureAccessTokenEndpoint(agentContext, router, this.logger, {
+      const accessTokenEndpointPath = this.issuerMetadata.tokenEndpointPath
+      configureAccessTokenEndpoint(router, accessTokenEndpointPath, {
         ...endpointConfig.accessTokenEndpointConfig,
-        issuerMetadata: this.issuerMetadata,
         cNonceExpiresIn: this.openId4VcIssuerModuleConfig.cNonceExpiresIn,
         tokenExpiresIn: this.openId4VcIssuerModuleConfig.tokenExpiresIn,
-        cNonceStateManager: this.cNonceStateManager,
-        credentialOfferSessionManager: this.credentialOfferSessionManager,
       })
+
+      const endpointPath = getEndpointUrl(this.issuerMetadata.issuerBaseUrl, basePath, accessTokenEndpointPath)
+      this.logger.info(`[OID4VCI] Token endpoint running at '${endpointPath}'.`)
     }
 
     if (endpointConfig.credentialEndpointConfig?.enabled) {
-      configureCredentialEndpoint(agentContext, router, this.logger, {
+      const credentialEndpointPath = this.issuerMetadata.credentialEndpointPath
+      configureCredentialEndpoint(router, credentialEndpointPath, {
         ...endpointConfig.credentialEndpointConfig,
-        issuerMetadata: this.issuerMetadata,
-        cNonceStateManager: this.cNonceStateManager,
-        credentialOfferSessionManager: this.credentialOfferSessionManager,
-        createIssueCredentialResponse: (agentContext, options) => {
-          const issuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-          return issuerService.createIssueCredentialResponse(agentContext, options)
-        },
       })
+
+      const endpointUrl = getEndpointUrl(this.issuerMetadata.issuerBaseUrl, basePath, credentialEndpointPath)
+      this.logger.info(`[OID4VCI] Credential endpoint running at '${endpointUrl}'.`)
     }
+
+    router.use(async (req: IssuanceRequest, _res, next) => {
+      const { agentContext } = getRequestContext(req)
+      await agentContext.endSession()
+      next()
+    })
 
     return router
   }

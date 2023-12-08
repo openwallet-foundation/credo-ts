@@ -2569,7 +2569,7 @@
   resolved "https://registry.yarnpkg.com/@sovpro/delimited-stream/-/delimited-stream-1.1.0.tgz#4334bba7ee241036e580fdd99c019377630d26b4"
   integrity sha512-kQpk267uxB19X3X2T1mvNMjyvIEonpNSHrMlK5ZaBU6aZxw7wPbpgKJOjHN3+/GPVpXgAV9soVT2oyHpLkLtyw==
 
-"@sphereon/did-auth-siop@^0.5.0-unstable.7":
+"@sphereon/did-auth-siop@^0.5.0-unstable.8":
   version "0.5.0-unstable.8"
   resolved "https://registry.yarnpkg.com/@sphereon/did-auth-siop/-/did-auth-siop-0.5.0-unstable.8.tgz#5bc9d66d6cedce5c6a39a54059e214c6046a83a9"
   integrity sha512-p7tuv9EaGv+U0lj8nBEZYotnUKrySh/rTYrGTH4c+gwJRZqiJCNoiLqfheC4lrMk0dnULd2WuuBe67qlxSaafQ==
@@ -2602,7 +2602,7 @@
 "@sphereon/oid4vci-client@file:../Sphereon/sphereon-oidvci-client-0.8.1":
   version "0.8.1"
   dependencies:
-    "@sphereon/oid4vci-common" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-client-0.8.1-ac00cd04-8774-4637-b885-eccc4730bff5-1701786850804/node_modules/@sphereon/sphereon-oid4vci-common-0.8.1"
+    "@sphereon/oid4vci-common" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-client-0.8.1-9e507f08-cbb1-4d9a-b896-929b2cd56c8c-1702036843167/node_modules/@sphereon/sphereon-oid4vci-common-0.8.1"
     "@sphereon/ssi-types" "0.17.2"
     cross-fetch "^3.1.8"
     debug "^4.3.4"
@@ -2617,8 +2617,8 @@
 "@sphereon/oid4vci-issuer-server@file:../Sphereon/sphereon-oid4vci-issuer-server-0.8.1":
   version "0.8.1"
   dependencies:
-    "@sphereon/oid4vci-common" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-issuer-server-0.8.1-f2353e87-1560-4059-8ec7-6727944a622f-1701786850800/node_modules/@sphereon/sphereon-oid4vci-common-0.8.1"
-    "@sphereon/oid4vci-issuer" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-issuer-server-0.8.1-f2353e87-1560-4059-8ec7-6727944a622f-1701786850800/node_modules/@sphereon/sphereon-oid4vci-issuer-0.8.1"
+    "@sphereon/oid4vci-common" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-issuer-server-0.8.1-59950255-e85d-4321-ab13-55be7622189a-1702036843161/node_modules/@sphereon/sphereon-oid4vci-common-0.8.1"
+    "@sphereon/oid4vci-issuer" "file:../../../Library/Caches/Yarn/v6/npm-@sphereon-oid4vci-issuer-server-0.8.1-59950255-e85d-4321-ab13-55be7622189a-1702036843161/node_modules/@sphereon/sphereon-oid4vci-issuer-0.8.1"
     "@sphereon/ssi-express-support" "0.17.2"
     "@sphereon/ssi-types" "0.17.2"
     body-parser "^1.20.2"

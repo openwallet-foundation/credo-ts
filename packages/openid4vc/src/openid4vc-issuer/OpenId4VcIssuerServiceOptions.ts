@@ -1,4 +1,5 @@
-import type { VerificationMethod, W3cCredential } from '@aries-framework/core'
+import type { AgentContext, VerificationMethod, W3cCredential } from '@aries-framework/core'
+import type { SdJwtCredential } from '@aries-framework/sd-jwt-vc'
 import type {
   CNonceState,
   CredentialOfferFormat,
@@ -28,10 +29,10 @@ export type AuthorizationCodeFlowConfig = {
 
 export type IssuerMetadata = {
   // The Credential Issuer's identifier. (URL using the https scheme)
-  credentialIssuer: string
-  credentialEndpoint: string
-  tokenEndpoint: string
-  authorizationServer?: string
+  issuerBaseUrl: string
+  credentialEndpointPath: string
+  tokenEndpointPath: string
+  authorizationServerUrl?: string
   issuerDisplay?: MetadataDisplay
 
   credentialsSupported: CredentialSupported[]
@@ -48,8 +49,6 @@ export interface CreateCredentialOfferAndRequestOptions {
   authorizationCodeFlowConfig?: AuthorizationCodeFlowConfig
 
   credentialOfferUri?: string
-
-  issuerMetadata?: IssuerMetadata
 }
 
 export type CredentialOfferAndRequest = {
@@ -59,9 +58,8 @@ export type CredentialOfferAndRequest = {
 
 export interface CreateIssueCredentialResponseOptions {
   credentialRequest: CredentialRequestV1_0_11
-  credential: W3cCredential | string
+  credential: W3cCredential | SdJwtCredential
   verificationMethod: VerificationMethod
-  issuerMetadata?: IssuerMetadata
 }
 
 export { CredentialRequestV1_0_11 }
@@ -70,7 +68,7 @@ export { CredentialResponse } from '@sphereon/oid4vci-common'
 
 export interface MetadataEndpointConfig {
   /**
-   * Configures the router to expose the m3tadata endpoint.
+   * Configures the router to expose the metadata endpoint.
    */
   enabled: boolean
 }
@@ -98,17 +96,14 @@ export interface AccessTokenEndpointConfig {
   preAuthorizedCodeExpirationDuration: number
 }
 
-export type CredentialRequestToCredentialMetadata = {
+export type CredentialRequestToCredentialMapper = (options: {
+  agentContext: AgentContext
+  credentialRequest: CredentialRequestV1_0_11
   holderDid: string
   holderDidUrl: string
   cNonceState: CNonceState
   credentialOfferSession: CredentialOfferSession
-}
-
-export type CredentialRequestToCredentialMapper = (
-  credentialRequest: CredentialRequestV1_0_11,
-  metadata: CredentialRequestToCredentialMetadata
-) => Promise<W3cCredential | string>
+}) => Promise<W3cCredential | SdJwtCredential>
 
 export interface CredentialEndpointConfig {
   /**
@@ -128,6 +123,7 @@ export interface CredentialEndpointConfig {
 }
 
 export interface IssuerEndpointConfig {
+  basePath: string
   metadataEndpointConfig?: MetadataEndpointConfig
   accessTokenEndpointConfig?: AccessTokenEndpointConfig
   credentialEndpointConfig?: CredentialEndpointConfig

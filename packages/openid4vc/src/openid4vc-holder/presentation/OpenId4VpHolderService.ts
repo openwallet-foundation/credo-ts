@@ -1,13 +1,6 @@
-import type {
-  AuthenticationRequest,
-  PresentationRequest,
-  ProofSubmissionResponse,
-  ResolvedProofRequest,
-} from './OpenId4VpHolderServiceOptions'
 import type { PresentationSubmission } from './selection'
 import type { InputDescriptorToCredentials } from './selection/types'
 import type { AgentContext, VerificationMethod, W3cVerifiablePresentation } from '@aries-framework/core'
-import type { VerifiedAuthorizationRequest } from '@sphereon/did-auth-siop'
 import type { W3CVerifiablePresentation } from '@sphereon/ssi-types'
 
 import {
@@ -31,23 +24,16 @@ import {
   VerificationMode,
 } from '@sphereon/did-auth-siop'
 
+import { getResolver, getSuppliedSignatureFromVerificationMethod, getSupportedDidMethods } from '../../shared/utils'
+
 import {
-  getResolver,
-  getSuppliedSignatureFromVerificationMethod,
-  getSupportedDidMethods,
-} from '../../openid4vc-verifier/utils'
-
+  isVerifiedAuthorizationRequestWithPresentationDefinition,
+  type AuthenticationRequest,
+  type PresentationRequest,
+  type ProofSubmissionResponse,
+  type ResolvedProofRequest,
+} from './OpenId4VpHolderServiceOptions'
 import { PresentationExchangeService } from './PresentationExchangeService'
-
-function isVerifiedAuthorizationRequestWithPresentationDefinition(
-  request: VerifiedAuthorizationRequest
-): request is PresentationRequest {
-  return (
-    request.presentationDefinitions !== undefined &&
-    request.presentationDefinitions.length === 1 &&
-    request.presentationDefinitions?.[0]?.definition !== undefined
-  )
-}
 
 @injectable()
 export class OpenId4VpHolderService {
@@ -130,11 +116,9 @@ export class OpenId4VpHolderService {
       )
     }
 
-    const presentationDefinition = verifiedAuthorizationRequest.presentationDefinitions[0].definition
-
     const presentationSubmission = await this.presentationExchangeService.selectCredentialsForRequest(
       agentContext,
-      presentationDefinition
+      verifiedAuthorizationRequest.presentationDefinitions[0].definition
     )
 
     return { proofType: 'presentation', presentationRequest: verifiedAuthorizationRequest, presentationSubmission }
@@ -165,12 +149,10 @@ export class OpenId4VpHolderService {
       }
     }
 
-    const suppliedSignature = await getSuppliedSignatureFromVerificationMethod(agentContext, verificationMethod)
-
     const authorizationResponseWithCorrelationId = await openidProvider.createAuthorizationResponse(
       authenticationRequest,
       {
-        signature: suppliedSignature,
+        signature: await getSuppliedSignatureFromVerificationMethod(agentContext, verificationMethod),
         issuer: verificationMethod.controller,
         verification: {
           resolveOpts: { resolver: getResolver(agentContext), noUniversalResolverFallback: true },
@@ -232,12 +214,10 @@ export class OpenId4VpHolderService {
 
     const openidProvider = await this.getOpenIdProvider(agentContext, { verificationMethod })
 
-    const suppliedSignature = await getSuppliedSignatureFromVerificationMethod(agentContext, verificationMethod)
-
     const authorizationResponseWithCorrelationId = await openidProvider.createAuthorizationResponse(
       presentationRequest,
       {
-        signature: suppliedSignature,
+        signature: await getSuppliedSignatureFromVerificationMethod(agentContext, verificationMethod),
         issuer: verificationMethod.controller,
         // https://openid.net/specs/openid-connect-self-issued-v2-1_0.html#name-aud-of-a-request-object
         audience: presentationRequest.authorizationRequestPayload.client_id,

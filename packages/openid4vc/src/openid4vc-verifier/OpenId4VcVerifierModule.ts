@@ -24,11 +24,10 @@ export class OpenId4VcVerifierModule implements Module {
    */
   public register(dependencyManager: DependencyManager) {
     // Warn about experimental module
-    dependencyManager
-      .resolve(AgentConfig)
-      .logger.warn(
-        "The '@aries-framework/openid4vc-verifier' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages. Multi-Tenancy is not supported. "
-      )
+    const logger = dependencyManager.resolve(AgentConfig).logger
+    logger.warn(
+      "The '@aries-framework/openid4vc-verifier' module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @aries-framework packages. Multi-Tenancy is not supported. "
+    )
 
     // Register config
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)

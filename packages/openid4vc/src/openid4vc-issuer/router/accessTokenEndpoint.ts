@@ -1,15 +1,15 @@
-import type { InternalAccessTokenEndpointConfig } from './OpenId4VcIEndpointConfiguration'
-import type { AgentContext, Logger, VerificationMethod, JwkJson } from '@aries-framework/core'
-import type { CredentialOfferSession, IStateManager, JWTSignerCallback } from '@sphereon/oid4vci-common'
-import type { NextFunction, Request, Response } from 'express'
+import type { InternalAccessTokenEndpointConfig, IssuanceRequest } from './OpenId4VcIEndpointConfiguration'
+import type { AgentContext, JwkJson, VerificationMethod } from '@aries-framework/core'
+import type { JWTSignerCallback } from '@sphereon/oid4vci-common'
+import type { NextFunction, Response } from 'express'
 
 import {
   AriesFrameworkError,
   JwsService,
-  getJwkFromJson,
-  getKeyFromVerificationMethod,
   JwtPayload,
   getJwkClassFromKeyType,
+  getJwkFromJson,
+  getKeyFromVerificationMethod,
 } from '@aries-framework/core'
 import {
   GrantTypes,
@@ -19,7 +19,7 @@ import {
 } from '@sphereon/oid4vci-common'
 import { assertValidAccessTokenRequest, createAccessTokenResponse } from '@sphereon/oid4vci-issuer'
 
-import { sendErrorResponse } from './utils'
+import { getRequestContext, sendErrorResponse } from '../../shared/router'
 
 const getJwtSignerCallback = (
   agentContext: AgentContext,
@@ -46,15 +46,14 @@ const getJwtSignerCallback = (
   }
 }
 
-export const handleTokenRequest = (
-  agentContext: AgentContext,
-  logger: Logger,
-  config: InternalAccessTokenEndpointConfig
-) => {
+export const handleTokenRequest = (config: InternalAccessTokenEndpointConfig) => {
   const { tokenExpiresIn, cNonceExpiresIn, interval } = config
 
-  return async (request: Request, response: Response) => {
+  return async (request: IssuanceRequest, response: Response) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
+
+    const requestContext = getRequestContext(request)
+    const { agentContext, openId4vcIssuerService, logger } = requestContext
 
     if (request.body.grant_type !== GrantTypes.PRE_AUTHORIZED_CODE) {
       return response.status(400).json({
@@ -65,12 +64,13 @@ export const handleTokenRequest = (
 
     try {
       const accessTokenResponse = await createAccessTokenResponse(request.body, {
-        credentialOfferSessions: config.credentialOfferSessionManager,
+        credentialOfferSessions:
+          openId4vcIssuerService.openId4VcIssuerModuleConfig.getCredentialOfferSessionStateManager(agentContext),
         tokenExpiresIn,
-        accessTokenIssuer: config.issuerMetadata.credentialIssuer,
+        accessTokenIssuer: openId4vcIssuerService.expandEndpointsWithBase(agentContext).issuerBaseUrl,
         cNonce: await agentContext.wallet.generateNonce(),
         cNonceExpiresIn,
-        cNonces: config.cNonceStateManager,
+        cNonces: openId4vcIssuerService.openId4VcIssuerModuleConfig.getCNonceStateManager(agentContext),
         accessTokenSignerCallback: getJwtSignerCallback(agentContext, config.verificationMethod),
         interval,
       })
@@ -81,18 +81,18 @@ export const handleTokenRequest = (
   }
 }
 
-export const verifyTokenRequest = (options: {
-  preAuthorizedCodeExpirationDuration: number
-  credentialOfferSessionManager: IStateManager<CredentialOfferSession>
-  logger: Logger
-}) => {
-  const { preAuthorizedCodeExpirationDuration, credentialOfferSessionManager, logger } = options
-  return async (request: Request, response: Response, next: NextFunction) => {
+export const verifyTokenRequest = (options: { preAuthorizedCodeExpirationDuration: number }) => {
+  const { preAuthorizedCodeExpirationDuration } = options
+  return async (request: IssuanceRequest, response: Response, next: NextFunction) => {
+    const requestContext = getRequestContext(request)
+    const { agentContext, openId4vcIssuerService, logger } = requestContext
+
     try {
       await assertValidAccessTokenRequest(request.body, {
         // we use seconds instead of milliseconds for consistency
         expirationDuration: preAuthorizedCodeExpirationDuration * 1000,
-        credentialOfferSessions: credentialOfferSessionManager,
+        credentialOfferSessions:
+          openId4vcIssuerService.openId4VcIssuerModuleConfig.getCredentialOfferSessionStateManager(agentContext),
       })
     } catch (error) {
       if (error instanceof TokenError) {

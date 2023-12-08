@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
+import type { IssuerMetadata } from '../OpenId4VcIssuerServiceOptions'
 import type { DependencyManager } from '@aries-framework/core'
 
 import { OpenId4VcIssuerApi } from '../OpenId4VcIssuerApi'
@@ -15,10 +16,10 @@ const dependencyManager = {
 
 describe('OpenId4VcIssuerModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const issuerMetadata = {
-      credentialIssuer: 'https://example.com',
-      credentialEndpoint: 'https://example.com/credentials',
-      tokenEndpoint: 'https://example.com/token',
+    const issuerMetadata: IssuerMetadata = {
+      issuerBaseUrl: 'https://example.com',
+      credentialEndpointPath: 'https://example.com/credentials',
+      tokenEndpointPath: 'https://example.com/token',
       credentialsSupported: [],
     }
     const openId4VcClientModule = new OpenId4VcIssuerModule({

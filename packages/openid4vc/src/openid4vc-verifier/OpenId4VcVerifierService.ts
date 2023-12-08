@@ -1,19 +1,19 @@
-import type { IInMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
 import type {
   ProofRequestWithMetadata,
   CreateProofRequestOptions,
   ProofRequestMetadata,
   VerifiedProofResponse,
   VerifierEndpointConfig,
+  HolderMetadata,
 } from './OpenId4VcVerifierServiceOptions'
+import type { VerificationRequest } from './router/OpenId4VpEndpointConfiguration'
 import type { AgentContext, W3cVerifyPresentationResult } from '@aries-framework/core'
 import type {
   AuthorizationResponsePayload,
-  ClientMetadataOpts,
   PresentationVerificationCallback,
   SigningAlgo,
 } from '@sphereon/did-auth-siop'
-import type { Router } from 'express'
+import type { NextFunction, Response, Router } from 'express'
 
 import {
   InjectionSymbols,
@@ -24,6 +24,7 @@ import {
   AriesFrameworkError,
   W3cJsonLdVerifiablePresentation,
   JsonTransformer,
+  AgentContextProvider,
 } from '@aries-framework/core'
 import {
   RP,
@@ -40,17 +41,19 @@ import {
   AuthorizationResponse,
 } from '@sphereon/did-auth-siop'
 import bodyParser from 'body-parser'
-import { EventEmitter } from 'events'
 
-import { InMemoryVerifierSessionManager } from './InMemoryVerifierSessionManager'
-import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
-import { staticOpOpenIdConfig, staticOpSiopConfig } from './OpenId4VcVerifierServiceOptions'
+import { getRequestContext, getEndpointUrl, initializeAgentFromContext } from '../shared/router'
 import {
+  generateRandomValues,
   getSupportedDidMethods,
   getSuppliedSignatureFromVerificationMethod,
   getResolver,
   getSupportedJwaSignatureAlgorithms,
-} from './utils'
+} from '../shared/utils'
+
+import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
+import { staticOpOpenIdConfig, staticOpSiopConfig } from './OpenId4VcVerifierServiceOptions'
+import { configureVerificationEndpoint } from './router/OpenId4VpEndpointConfiguration'
 
 /**
  * @internal
@@ -60,20 +63,22 @@ export class OpenId4VcVerifierService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
   private openId4VcVerifierModuleConfig: OpenId4VcVerifierModuleConfig
-  private sessionManager: IInMemoryVerifierSessionManager
-  private eventEmitter: EventEmitter
+  private agentContextProvider: AgentContextProvider
+
+  public get verifierMetadata() {
+    return this.openId4VcVerifierModuleConfig.verifierMetadata
+  }
 
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
+    @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
     w3cCredentialService: W3cCredentialService,
     openId4VcVerifierModuleConfig: OpenId4VcVerifierModuleConfig
   ) {
+    this.agentContextProvider = agentContextProvider
     this.w3cCredentialService = w3cCredentialService
     this.logger = logger
     this.openId4VcVerifierModuleConfig = openId4VcVerifierModuleConfig
-    this.eventEmitter = new EventEmitter()
-    this.sessionManager =
-      openId4VcVerifierModuleConfig.sessionManager ?? new InMemoryVerifierSessionManager(this.eventEmitter, logger)
   }
 
   public async getRelyingParty(
@@ -82,8 +87,7 @@ export class OpenId4VcVerifierService {
     proofRequestMetadata?: ProofRequestMetadata
   ) {
     const {
-      holderIdentifier,
-      redirectUri,
+      verificationEndpointUrl,
       presentationDefinition,
       verificationMethod,
       holderMetadata: _holderClientMetadata,
@@ -91,23 +95,25 @@ export class OpenId4VcVerifierService {
 
     const isVpRequest = presentationDefinition !== undefined
 
-    let holderClientMetadata: ClientMetadataOpts
-    if (_holderClientMetadata) {
-      // use the provided client metadata
-      holderClientMetadata = _holderClientMetadata
-    } else if (holderIdentifier) {
-      // Use OpenId Discovery to get the client metadata
-      let reference_uri = holderIdentifier
-      if (!holderIdentifier.endsWith('/.well-known/openid-configuration')) {
-        reference_uri = holderIdentifier + '/.well-known/openid-configuration'
+    let holderClientMetadata: HolderMetadata
+    if (!_holderClientMetadata) {
+      // use a static set of configuration values defined in the spec
+      if (isVpRequest) {
+        holderClientMetadata = staticOpOpenIdConfig
+      } else {
+        holderClientMetadata = staticOpSiopConfig
       }
-      holderClientMetadata = { reference_uri, passBy: PassBy.REFERENCE, targets: PropertyTarget.REQUEST_OBJECT }
-    } else if (isVpRequest) {
-      // if neither clientMetadata nor issuer is provided, use a static config
-      holderClientMetadata = staticOpOpenIdConfig
     } else {
-      // if neither clientMetadata nor issuer is provided, use a static config
-      holderClientMetadata = staticOpSiopConfig
+      if (typeof _holderClientMetadata === 'string') {
+        // Use OpenId Discovery to get the client metadata
+        let reference_uri = _holderClientMetadata
+        if (!reference_uri.endsWith('/.well-known/openid-configuration')) {
+          reference_uri = reference_uri + '/.well-known/openid-configuration'
+        }
+        holderClientMetadata = { reference_uri, passBy: PassBy.REFERENCE, targets: PropertyTarget.REQUEST_OBJECT }
+      } else {
+        holderClientMetadata = _holderClientMetadata
+      }
     }
 
     const { signature, did, kid, alg } = await getSuppliedSignatureFromVerificationMethod(
@@ -128,12 +134,14 @@ export class OpenId4VcVerifierService {
 
     // Check if the Relying Party (Verifier) can validate the IdToken provided by the OpenId Provider (Holder)
     const idTokenSigningAlgValuesSupported = holderClientMetadata.idTokenSigningAlgValuesSupported
-    const rpSupportedSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext) as unknown as SigningAlgo[]
-
     if (idTokenSigningAlgValuesSupported) {
+      const rpSupportedSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(
+        agentContext
+      ) as unknown as SigningAlgo[]
+
       const possibleIdTokenSigningAlgValues = Array.isArray(idTokenSigningAlgValuesSupported)
         ? idTokenSigningAlgValuesSupported.filter((value) => rpSupportedSignatureAlgorithms.includes(value))
-        : [idTokenSigningAlgValuesSupported].filter((value) => rpSupportedSignatureAlgorithms.includes(value))
+        : rpSupportedSignatureAlgorithms.includes(idTokenSigningAlgValuesSupported)
 
       if (!possibleIdTokenSigningAlgValues) {
         throw new AriesFrameworkError(
@@ -146,9 +154,17 @@ export class OpenId4VcVerifierService {
       }
     }
 
-    const authorizationEndpoint = holderClientMetadata.authorization_endpoint ?? (isVpRequest ? 'openid:' : 'siopv2:')
+    const authorizationEndpoint = holderClientMetadata?.authorization_endpoint ?? (isVpRequest ? 'openid:' : 'siopv2:')
 
-    // Check: audience must be set to the issuer with dynamic disc otherwise self-issed.me/v2.
+    const redirectUri =
+      verificationEndpointUrl ??
+      getEndpointUrl(
+        this.verifierMetadata.verifierBaseUrl,
+        this.openId4VcVerifierModuleConfig.getBasePath(agentContext),
+        this.verifierMetadata.verificationEndpointPath
+      )
+
+    // Check: audience must be set to the issuer with dynamic disc otherwise self-issued.me/v2.
     const builder = RP.builder()
       .withClientId(verificationMethod.id)
       .withRedirectUri(redirectUri)
@@ -164,8 +180,8 @@ export class OpenId4VcVerifierService {
       .withAuthorizationEndpoint(authorizationEndpoint)
       .withCheckLinkedDomain(CheckLinkedDomain.NEVER)
       .withRevocationVerification(RevocationVerification.NEVER)
-      .withSessionManager(this.sessionManager)
-      .withEventEmitter(this.eventEmitter)
+      .withSessionManager(this.openId4VcVerifierModuleConfig.getSessionManager(agentContext))
+      .withEventEmitter(this.openId4VcVerifierModuleConfig.getEventEmitter(agentContext))
     // .withWellknownDIDVerifyCallback
 
     if (proofRequestMetadata) {
@@ -209,10 +225,12 @@ export class OpenId4VcVerifierService {
 
     const proofRequestMetadata = { correlationId, challenge, state }
 
-    await this.sessionManager.saveVerifyProofResponseOptions(correlationId, {
-      createProofRequestOptions: options,
-      proofRequestMetadata,
-    })
+    await this.openId4VcVerifierModuleConfig
+      .getSessionManager(agentContext)
+      .saveVerifyProofResponseOptions(correlationId, {
+        createProofRequestOptions: options,
+        proofRequestMetadata,
+      })
 
     return {
       proofRequest: encodedAuthorizationRequestUri,
@@ -233,33 +251,28 @@ export class OpenId4VcVerifierService {
       )
     }
 
-    let correlationId: string | undefined
     const resNonce = (await authorizationResponse.getMergedProperty('nonce', false)) as string
     const resState = (await authorizationResponse.getMergedProperty('state', false)) as string
-    correlationId = await this.sessionManager.getCorrelationIdByNonce(resNonce, false)
-    if (!correlationId) {
-      correlationId = await this.sessionManager.getCorrelationIdByState(resState, false)
-    }
+    const sessionManager = this.openId4VcVerifierModuleConfig.getSessionManager(agentContext)
 
+    const correlationId =
+      (await sessionManager.getCorrelationIdByNonce(resNonce, false)) ??
+      (await sessionManager.getCorrelationIdByState(resState, false))
     if (!correlationId) {
       throw new AriesFrameworkError(`Unable to find correlationId for nonce '${resNonce}' or state '${resState}'`)
     }
-    const result = await this.sessionManager.getVerifiyProofResponseOptions(correlationId)
 
-    if (!result) {
+    const verifyProofResponseOptions = await sessionManager.getVerifyProofResponseOptions(correlationId)
+    if (!verifyProofResponseOptions) {
       throw new AriesFrameworkError(`Unable to associate a request to the response correlationId '${correlationId}'`)
     }
 
-    const { createProofRequestOptions, proofRequestMetadata } = result
+    const { createProofRequestOptions, proofRequestMetadata } = verifyProofResponseOptions
     const presentationDefinition = createProofRequestOptions.presentationDefinition
 
+    // For now we always use the VP_TOKEN
     const presentationDefinitionsWithLocation = presentationDefinition
-      ? [
-          {
-            definition: presentationDefinition,
-            location: PresentationDefinitionLocation.CLAIMS_VP_TOKEN, // For now we always use the VP_TOKEN
-          },
-        ]
+      ? [{ definition: presentationDefinition, location: PresentationDefinitionLocation.CLAIMS_VP_TOKEN }]
       : undefined
 
     const relyingParty = await this.getRelyingParty(agentContext, createProofRequestOptions, proofRequestMetadata)
@@ -293,21 +306,17 @@ export class OpenId4VcVerifierService {
       this.logger.debug(`Presentation response`, JsonTransformer.toJSON(encodedPresentation))
       this.logger.debug(`Presentation submission`, presentationSubmission)
 
-      if (!encodedPresentation) {
-        throw new AriesFrameworkError('Did not receive a presentation for verification')
-      }
+      if (!encodedPresentation) throw new AriesFrameworkError('Did not receive a presentation for verification.')
 
       let verificationResult: W3cVerifyPresentationResult
       if (typeof encodedPresentation === 'string') {
-        const presentation = encodedPresentation
         verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: presentation,
+          presentation: encodedPresentation,
           challenge,
         })
       } else {
-        const presentation = JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation)
         verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
-          presentation: presentation,
+          presentation: JsonTransformer.fromJSON(encodedPresentation, W3cJsonLdVerifiablePresentation),
           challenge,
         })
       }
@@ -316,46 +325,52 @@ export class OpenId4VcVerifierService {
     }
   }
 
-  public configureRouter = (agentContext: AgentContext, router: Router, endpointConfig: VerifierEndpointConfig) => {
+  public configureRouter = (
+    initializationContext: AgentContext,
+    router: Router,
+    endpointConfig: VerifierEndpointConfig
+  ) => {
+    const { basePath } = endpointConfig
+    this.openId4VcVerifierModuleConfig.setBasePath(initializationContext, basePath)
+
     // parse application/x-www-form-urlencoded
     router.use(bodyParser.urlencoded({ extended: false }))
 
     // parse application/json
     router.use(bodyParser.json())
 
-    if (endpointConfig.verificationEndpointConfig?.enabled) {
-      router.post(
-        endpointConfig.verificationEndpointConfig.verificationEndpointPath,
-        async (request, response, next) => {
-          try {
-            const isVpRequest = request.body.presentation_submission !== undefined
-            const verifierService = await agentContext.dependencyManager.resolve(OpenId4VcVerifierService)
-
-            const authorizationResponse: AuthorizationResponsePayload = request.body
-            if (isVpRequest)
-              authorizationResponse.presentation_submission = JSON.parse(request.body.presentation_submission)
-
-            const verifiedProofResponse = await verifierService.verifyProofResponse(agentContext, request.body)
-            if (!endpointConfig.verificationEndpointConfig.proofResponseHandler) return response.status(200).send()
-
-            const { status } = await endpointConfig.verificationEndpointConfig.proofResponseHandler(
-              verifiedProofResponse
-            )
-            return response.status(status).send()
-          } catch (error: unknown) {
-            next(error)
-          }
-
-          return response.status(200).send()
-        }
+    // initialize the agent and set the request context
+    router.use(async (req: VerificationRequest, _res: Response, next: NextFunction) => {
+      const agentContext = await initializeAgentFromContext(
+        initializationContext.contextCorrelationId,
+        this.agentContextProvider
       )
+
+      req.requestContext = {
+        agentContext,
+        openId4VcVerifierService: agentContext.dependencyManager.resolve(OpenId4VcVerifierService),
+        logger: agentContext.dependencyManager.resolve(InjectionSymbols.Logger),
+      }
+
+      next()
+    })
+
+    if (endpointConfig.verificationEndpointConfig?.enabled) {
+      const verificationEndpointPath = this.verifierMetadata.verificationEndpointPath
+      configureVerificationEndpoint(router, verificationEndpointPath, {
+        ...endpointConfig.verificationEndpointConfig,
+      })
+
+      const endPointUrl = getEndpointUrl(this.verifierMetadata.verifierBaseUrl, basePath, verificationEndpointPath)
+      this.logger.info(`[OID4VP] Verification endpoint running at '${endPointUrl}'.`)
     }
+
+    router.use(async (req: VerificationRequest, _res, next) => {
+      const { agentContext } = getRequestContext(req)
+      await agentContext.endSession()
+      next()
+    })
 
     return router
   }
-}
-
-async function generateRandomValues(agentContext: AgentContext, count: number) {
-  const randomValuesPromises = Array.from({ length: count }, () => agentContext.wallet.generateNonce())
-  return await Promise.all(randomValuesPromises)
 }

@@ -17,7 +17,7 @@ import {
   w3cDate,
 } from '@aries-framework/core'
 import { agentDependencies } from '@aries-framework/node'
-import { SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
+import { SdJwtCredential, SdJwtVcModule } from '@aries-framework/sd-jwt-vc'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 import express, { Router, type Express } from 'express'
 import nock, { cleanAll, enableNetConnect } from 'nock'
@@ -69,9 +69,9 @@ const baseCredentialRequestOptions = {
 }
 
 const issuerMetadata: IssuerMetadata = {
-  credentialIssuer,
-  credentialEndpoint: `${credentialIssuer}/credentials`,
-  tokenEndpoint: `${credentialIssuer}/token`,
+  issuerBaseUrl: credentialIssuer,
+  credentialEndpointPath: `/credentials`,
+  tokenEndpointPath: `/token`,
   credentialsSupported: [openBadgeCredential, universityDegreeCredentialLd, universityDegreeCredentialSdJwt],
 }
 
@@ -614,6 +614,7 @@ describe('OpenId4VcHolder', () => {
       it('e2e flow with issuer endpoints requesting multiple credentials', async () => {
         const router = Router()
         await issuer.modules.openId4VcIssuer.configureRouter(router, {
+          basePath: '/',
           metadataEndpointConfig: { enabled: true },
           accessTokenEndpointConfig: {
             enabled: true,
@@ -623,17 +624,17 @@ describe('OpenId4VcHolder', () => {
           credentialEndpointConfig: {
             enabled: true,
             verificationMethod: issuerVerificationMethod,
-            credentialRequestToCredentialMapper: async (credentialRequest, metadata) => {
+            credentialRequestToCredentialMapper: async ({ credentialRequest, holderDid }) => {
               if (
                 credentialRequest.format === 'jwt_vc_json' &&
                 credentialRequest.types.includes('OpenBadgeCredential')
               ) {
-                if (metadata.holderDid !== holderDid) throw new Error('Invalid holder did')
+                if (holderDid !== holderDid) throw new Error('Invalid holder did')
 
                 return new W3cCredential({
                   type: openBadgeCredential.types,
                   issuer: new W3cIssuer({ id: issuerDid }),
-                  credentialSubject: new W3cCredentialSubject({ id: metadata.holderDid }),
+                  credentialSubject: new W3cCredentialSubject({ id: holderDid }),
                   issuanceDate: w3cDate(Date.now()),
                 })
               }
@@ -711,6 +712,7 @@ describe('OpenId4VcHolder', () => {
     it('e2e flow with issuer endpoints requesting sdjwtvc', async () => {
       const router = Router()
       await issuer.modules.openId4VcIssuer.configureRouter(router, {
+        basePath: '/',
         metadataEndpointConfig: { enabled: true },
         accessTokenEndpointConfig: {
           enabled: true,
@@ -720,22 +722,19 @@ describe('OpenId4VcHolder', () => {
         credentialEndpointConfig: {
           enabled: true,
           verificationMethod: issuerVerificationMethod,
-          credentialRequestToCredentialMapper: async (credentialRequest, metadata) => {
+          credentialRequestToCredentialMapper: async ({ credentialRequest, holderDid, holderDidUrl }) => {
             if (
               credentialRequest.format === 'vc+sd-jwt' &&
               credentialRequest.credential_definition.vct === 'UniversityDegreeCredential'
             ) {
-              if (metadata.holderDid !== holderDid) throw new Error('Invalid holder did')
+              if (holderDid !== holderDid) throw new Error('Invalid holder did')
 
-              const { compact } = await issuer.modules.sdJwtVc.create(
-                { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
-                {
-                  holderDidUrl: metadata.holderDidUrl,
-                  issuerDidUrl: issuerKid,
-                  disclosureFrame: { university: true, degree: true },
-                }
-              )
-              return compact
+              return new SdJwtCredential({
+                payload: { type: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
+                holderDidUrl: holderDidUrl,
+                issuerDidUrl: issuerKid,
+                disclosureFrame: { university: true, degree: true },
+              })
             }
             throw new Error('Invalid request')
           },

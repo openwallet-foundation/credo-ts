@@ -7,6 +7,7 @@ import {
   TypedArrayEncoder,
   getKeyFromVerificationMethod,
   getJwkClassFromKeyType,
+  SignatureSuiteRegistry,
 } from '@aries-framework/core'
 
 /**
@@ -83,4 +84,25 @@ export function getResolver(agentContext: AgentContext) {
       }
     },
   }
+}
+
+export async function generateRandomValues(agentContext: AgentContext, count: number) {
+  const randomValuesPromises = Array.from({ length: count }, () => agentContext.wallet.generateNonce())
+  return await Promise.all(randomValuesPromises)
+}
+
+export const getProofTypeFromVerificationMethod = (
+  agentContext: AgentContext,
+  verificationMethod: VerificationMethod
+) => {
+  const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+
+  const supportedSignatureSuite = signatureSuiteRegistry.getByVerificationMethodType(verificationMethod.type)
+  if (!supportedSignatureSuite) {
+    throw new AriesFrameworkError(
+      `Couldn't find a supported signature suite for the given verification method type '${verificationMethod.type}'.`
+    )
+  }
+
+  return supportedSignatureSuite.proofType
 }

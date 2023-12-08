@@ -41,7 +41,6 @@ import {
   injectable,
   parseDid,
   equalsIgnoreOrder,
-  getJwkClassFromKeyType,
   getApiForModuleByName,
 } from '@aries-framework/core'
 import {
@@ -59,6 +58,8 @@ import {
   convertJsonToURI,
   JsonURIMode,
 } from '@sphereon/oid4vci-common'
+
+import { getSupportedJwaSignatureAlgorithms } from '../../shared/utils'
 
 import {
   type AuthCodeFlowOptions,
@@ -80,30 +81,6 @@ import {
   handleAuthorizationDetails,
   OfferedCredentialType,
 } from './utils/IssuerMetadataUtils'
-
-// TODO: duplicate
-/**
- * Returns the JWA Signature Algorithms that are supported by the wallet.
- *
- * This is an approximation based on the supported key types of the wallet.
- * This is not 100% correct as a supporting a key type does not mean you support
- * all the algorithms for that key type. However, this needs refactoring of the wallet
- * that is planned for the 0.5.0 release.
- */
-export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): JwaSignatureAlgorithm[] {
-  const supportedKeyTypes = agentContext.wallet.supportedKeyTypes
-
-  // Extract the supported JWS algs based on the key types the wallet support.
-  const supportedJwaSignatureAlgorithms = supportedKeyTypes
-    // Map the supported key types to the supported JWK class
-    .map(getJwkClassFromKeyType)
-    // Filter out the undefined values
-    .filter((jwkClass): jwkClass is Exclude<typeof jwkClass, undefined> => jwkClass !== undefined)
-    // Extract the supported JWA signature algorithms from the JWK class
-    .flatMap((jwkClass) => jwkClass.supportedSignatureAlgorithms)
-
-  return supportedJwaSignatureAlgorithms
-}
 
 function getV8CredentialType(offeredCredentialWithMetadata: OfferedCredentialWithMetadata, version: OpenId4VCIVersion) {
   if (offeredCredentialWithMetadata.offerType === OfferedCredentialType.InlineCredentialOffer) {

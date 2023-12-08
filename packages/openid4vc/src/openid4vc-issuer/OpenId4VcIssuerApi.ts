@@ -34,13 +34,13 @@ export class OpenId4VcIssuerApi {
    *
    * @param  offeredCredentials - The credentials to be offered.
    * @param  options.issuerMetadata - Metadata about the issuer.
-   * @param  options.credentialOfferUri - The URI to retrieve the credential offer if the offer is passed by reference.
-   * @param  options.scheme - The credential offer request scheme. Default is 'https'.
-   * @param  options.baseUri - The base URI of the credential offer request. Default is ''.
+   * @param  options.credentialOfferUri - The URI which references the created credential offer if the offer is passed by reference.
    * @param  options.preAuthorizedCodeFlowConfig - The configuration for the pre-authorized code flow. This or the authorizationCodeFlowConfig must be provided.
    * @param  options.authorizationCodeFlowConfig - The configuration for the authorization code flow. This or the preAuthorizedCodeFlowConfig must be provided.
+   * @param  options.scheme - The credential offer request scheme. Default is 'https'.
+   * @param  options.baseUri - The base URI of the credential offer request. Default is ''.
    *
-   * @returns Object containing the payload of the credential offer and the credential offer request, which is to be sent to the wallet.
+   * @returns Object containing the payload of the credential offer and the credential offer request, which can be sent to the wallet.
    */
   public async createCredentialOfferAndRequest(
     offeredCredentials: OfferedCredential[],
@@ -54,16 +54,16 @@ export class OpenId4VcIssuerApi {
   }
 
   /**
-   * This function retrieves a credential offer from a given URI.
+   * This function retrieves the credential offer referenced by the given URI.
    * Retrieving a credential offer from a URI is possible after a credential offer was created with
    * @see createCredentialOfferAndRequest and the credentialOfferUri option.
    *
    * @throws if no credential offer can found for the given URI.
-   * @param uri - The URI for which to retrieve the credential offer.
+   * @param uri - The URI referencing the credential offer.
    * @returns The credential offer payload associated with the given URI.
    */
   public async getCredentialOfferFromUri(uri: string): Promise<CredentialOfferPayloadV1_0_11> {
-    return await this.openId4VcIssuerService.getCredentialOfferFromUri(uri)
+    return await this.openId4VcIssuerService.getCredentialOfferFromUri(this.agentContext, uri)
   }
 
   /**
@@ -71,7 +71,7 @@ export class OpenId4VcIssuerApi {
    *
    * @param options.credentialRequest - The credential request, for which to create a response.
    * @param options.credential - The credential to be issued.
-   * @param options.issuerMetadata - Metadata about the issuer.
+   * @param options.verificationMethod - The verification method used for signing the credential.
    */
   public async createIssueCredentialResponse(options: CreateIssueCredentialResponseOptions) {
     return await this.openId4VcIssuerService.createIssueCredentialResponse(this.agentContext, options)
