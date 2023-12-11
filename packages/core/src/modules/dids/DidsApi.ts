@@ -157,6 +157,7 @@ export class DidsApi {
       existingDidRecord.didDocument = didDocument
       existingDidRecord.setTags({
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alsoKnownAs: didDocument.alsoKnownAs,
       })
 
       await this.didRepository.update(this.agentContext, existingDidRecord)
@@ -169,6 +170,7 @@ export class DidsApi {
       didDocument,
       tags: {
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alsoKnownAs: didDocument.alsoKnownAs,
       },
     })
   }

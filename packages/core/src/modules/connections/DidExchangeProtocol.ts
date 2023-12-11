@@ -177,7 +177,7 @@ export class DidExchangeProtocol {
     const didDocument = await this.resolveDidDocument(agentContext, message)
 
     const didRecord = new DidRecord({
-      did: message.did,
+      did: didDocument.id,
       role: DidDocumentRole.Received,
       // It is important to take the did document from the PeerDid class
       // as it will have the id property
@@ -186,6 +186,7 @@ export class DidExchangeProtocol {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alsoKnownAs: didDocument.alsoKnownAs,
       },
     })
 
@@ -330,13 +331,14 @@ export class DidExchangeProtocol {
     )
 
     const didRecord = new DidRecord({
-      did: message.did,
+      did: didDocument.id,
       role: DidDocumentRole.Received,
       didDocument,
       tags: {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
+        alsoKnownAs: didDocument.alsoKnownAs,
       },
     })
 

@@ -66,6 +66,21 @@ describe('Did Exchange numalgo settings', () => {
     })
   })
 
+  test('Connect using default setting for requester and numalgo 4 for responder', async () => {
+    await didExchangeNumAlgoBaseTest({ responderNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm })
+  })
+
+  test('Connect using numalgo 4 for requester and default setting for responder', async () => {
+    await didExchangeNumAlgoBaseTest({ requesterNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm })
+  })
+
+  test.only('Connect using numalgo 4 for both requester and responder', async () => {
+    await didExchangeNumAlgoBaseTest({
+      requesterNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm,
+      responderNumAlgoSetting: PeerDidNumAlgo.ShortFormAndLongForm,
+    })
+  })
+
   test('Connect using an externally defined did for the requested', async () => {
     await didExchangeNumAlgoBaseTest({
       createExternalDidForRequester: true,
@@ -140,7 +155,11 @@ async function didExchangeNumAlgoBaseTest(options: {
     ])
     didDocument.id = ourDid
 
-    await didRegistry.create(aliceAgent.context, { did: ourDid, didDocument })
+    await aliceAgent.dids.create({
+      method: 'inmemory',
+      did: ourDid,
+      didDocument,
+    })
   }
 
   let { connectionRecord: aliceConnectionRecord } = await aliceAgent.oob.receiveInvitation(
