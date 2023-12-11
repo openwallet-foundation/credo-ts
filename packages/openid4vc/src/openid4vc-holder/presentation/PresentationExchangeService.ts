@@ -92,7 +92,6 @@ export class PresentationExchangeService {
       // The schema.uri can contain either an expanded type, or a context uri
       for (const inputDescriptor of pd.input_descriptors) {
         for (const schema of inputDescriptor.schema) {
-          // TODO: write migration
           query.push({
             $or: [{ expandedType: [schema.uri] }, { contexts: [schema.uri] }, { type: [schema.uri] }],
           })

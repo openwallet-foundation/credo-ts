@@ -5,13 +5,7 @@ import { SigningAlgo } from '@sphereon/did-auth-siop'
 
 import { staticOpOpenIdConfig } from '../src'
 import { staticOpSiopConfig } from '../src/openid4vc-verifier/OpenId4VcVerifierServiceOptions'
-// id id%22%3A%22test%22%2C%22
-// * = %2A
-// TODO: error on sphereon lib PR opened
-// TODO: walt issued credentials verification fails due to some time issue || //throw new Error(`Inconsistent issuance dates between JWT claim (${nbfDateAsStr}) and VC value (${issuanceDate})`);
-// TODO: error walt no id in presentation definition
-// TODO: error walt vc.type is an array not a string thus the filter does not work $.type (should be array according to vc data 1.1)
-// TODO: jwt_vc vs jwt_vc_json
+
 export const waltPortalOpenBadgeJwt =
   'eyJ0eXAiOiJKV1QiLCJhbGciOiJFZERTQSIsImtpZCI6ImRpZDprZXk6ejZNa3RpUVFFcW0yeWFwWEJEdDFXRVZCM2RxZ3Z5emk5NkZ1RkFOWW1yZ1RyS1Y5I3o2TWt0aVFRRXFtMnlhcFhCRHQxV0VWQjNkcWd2eXppOTZGdUZBTlltcmdUcktWOSJ9.eyJ2YyI6eyJAY29udGV4dCI6WyJodHRwczovL3d3dy53My5vcmcvMjAxOC9jcmVkZW50aWFscy92MSJdLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiT3BlbkJhZGdlQ3JlZGVudGlhbCJdLCJjcmVkZW50aWFsU3ViamVjdCI6e319LCJpc3MiOiJkaWQ6a2V5Ono2TWt0aVFRRXFtMnlhcFhCRHQxV0VWQjNkcWd2eXppOTZGdUZBTlltcmdUcktWOSIsInN1YiI6ImRpZDprZXk6ejZNa3BHUjRnczRSYzNacGg0dmo4d1Juam5BeGdBUFN4Y1I4TUFWS3V0V3NwUXpjIiwibmJmIjoxNzAwNzQzMzM1fQ.OcKPyaWeVV-78BWr8N4h2Cyvjtc9jzknAqvTA77hTbKCNCEbhGboo-S6yXHLC-3NWYQ1vVcqZmdPlIOrHZ7MDw'
 
