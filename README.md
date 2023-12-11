@@ -44,8 +44,8 @@ Aries Framework JavaScript is a framework written in TypeScript for building **S
 > The Aries Framework JavaScript project has recently been moved from the Hyperledger Foundation to the Open Wallet Foundation.
 > We are currently in the process of changing the name of the project, and updating all the documentation and links to reflect this change.
 > You may encounter some broken links, or references to the old name, but we are working hard to fix this. Once the new name has been decided
-> we will update this README and all the documentation to reflect this change. 
-> You can follow this discussion for updates about the name: https://github.com/openwallet-foundation/agent-framework-javascript/discussions/1668 
+> we will update this README and all the documentation to reflect this change.
+> You can follow this discussion for updates about the name: https://github.com/openwallet-foundation/agent-framework-javascript/discussions/1668
 
 ## Features
 
