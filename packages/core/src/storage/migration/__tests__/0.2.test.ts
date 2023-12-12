@@ -10,7 +10,7 @@ import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
-const backupDate = new Date('2022-01-21T22:50:20.522Z')
+const backupDate = new Date('2023-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
 
 const walletConfig = {

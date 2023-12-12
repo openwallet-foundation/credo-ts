@@ -1,9 +1,9 @@
-import { Agent, KeyDerivationMethod, KeyType, TypedArrayEncoder } from '@aries-framework/core'
-import { agentDependencies } from '@aries-framework/node'
+import { Agent, KeyType, TypedArrayEncoder } from '@aries-framework/core'
 
 import { AnonCredsRsModule } from '../../anoncreds-rs/src'
 import { anoncreds } from '../../anoncreds-rs/tests/helpers'
 import { askarModule } from '../../askar/tests/helpers'
+import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
@@ -72,31 +72,26 @@ const existingRevocationStatusLists = {
   },
 }
 
-const agent = new Agent({
-  config: {
-    label: '@aries-framework/anoncreds',
-    walletConfig: {
-      id: '@aries-framework/anoncreds',
-      key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
-  },
-  modules: {
-    anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),
-    askar: askarModule,
-    anoncreds: new AnonCredsModule({
-      registries: [
-        new InMemoryAnonCredsRegistry({
-          existingSchemas,
-          existingCredentialDefinitions,
-          existingRevocationRegistryDefinitions,
-          existingRevocationStatusLists,
-        }),
-      ],
-    }),
-  },
-  dependencies: agentDependencies,
-})
+const agent = new Agent(
+  getAgentOptions(
+    'aries-framework-anoncreds-package',
+    {},
+    {
+      anoncredsRs: new AnonCredsRsModule({ anoncreds, autoCreateLinkSecret: false }),
+      askar: askarModule,
+      anoncreds: new AnonCredsModule({
+        registries: [
+          new InMemoryAnonCredsRegistry({
+            existingSchemas,
+            existingCredentialDefinitions,
+            existingRevocationRegistryDefinitions,
+            existingRevocationStatusLists,
+          }),
+        ],
+      }),
+    }
+  )
+)
 
 describe('AnonCreds API', () => {
   beforeEach(async () => {

@@ -6,26 +6,20 @@ import { agentDependencies } from '@aries-framework/node'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { askarModule } from '../../askar/tests/helpers'
-import { testLogger } from '../../core/tests'
+import { getAskarWalletConfig, testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
-  walletConfig: {
-    id: 'Wallet: tenants e2e agent 1',
-    key: 'Wallet: tenants e2e agent 1',
-  },
+  walletConfig: getAskarWalletConfig('tenants e2e agent 1'),
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
 }
 
 const agent2Config: InitConfig = {
   label: 'Tenant Agent 2',
-  walletConfig: {
-    id: 'Wallet: tenants e2e agent 2',
-    key: 'Wallet: tenants e2e agent 2',
-  },
+  walletConfig: getAskarWalletConfig('tenants e2e agent 2'),
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent2'],
 }

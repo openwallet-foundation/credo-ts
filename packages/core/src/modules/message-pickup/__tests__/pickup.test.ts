@@ -6,13 +6,21 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions, waitForBasicMessage, waitForTrustPingReceivedEvent } from '../../../../tests/helpers'
+import {
+  getAgentOptions,
+  getAskarWalletConfig,
+  waitForBasicMessage,
+  waitForTrustPingReceivedEvent,
+} from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { HandshakeProtocol } from '../../connections'
 
 const recipientOptions = getAgentOptions(
   'Mediation: Recipient Pickup',
-  {},
+  {
+    // Agent is shutdown during test, so we can't use in-memory wallet
+    walletConfig: getAskarWalletConfig('Mediation: Recipient Pickup', { inMemory: false }),
+  },
   {
     askar: askarModule,
   }
@@ -20,6 +28,8 @@ const recipientOptions = getAgentOptions(
 const mediatorOptions = getAgentOptions(
   'Mediation: Mediator Pickup',
   {
+    // Agent is shutdown during test, so we can't use in-memory wallet
+    walletConfig: getAskarWalletConfig('Mediation: Mediator Pickup', { inMemory: false }),
     endpoints: ['wss://mediator'],
   },
   {

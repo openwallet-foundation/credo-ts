@@ -9,26 +9,27 @@ import {
   KeyDidResolver,
   KeyType,
   TypedArrayEncoder,
-  utils,
 } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
-import { agentDependencies } from '../../core/tests'
+import { getAgentOptions } from '../../core/tests'
 import { SdJwtVcModule } from '../src'
 
 const getAgent = (label: string) =>
-  new Agent({
-    config: { label, walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-    modules: {
-      sdJwt: new SdJwtVcModule(),
-      askar: new AskarModule({ ariesAskar }),
-      dids: new DidsModule({
-        resolvers: [new KeyDidResolver()],
-        registrars: [new KeyDidRegistrar()],
-      }),
-    },
-    dependencies: agentDependencies,
-  })
+  new Agent(
+    getAgentOptions(
+      label,
+      {},
+      {
+        sdJwt: new SdJwtVcModule(),
+        askar: new AskarModule({ ariesAskar }),
+        dids: new DidsModule({
+          resolvers: [new KeyDidResolver()],
+          registrars: [new KeyDidRegistrar()],
+        }),
+      }
+    )
+  )
 
 describe('sd-jwt-vc end to end test', () => {
   const issuer = getAgent('sdjwtvcissueragent')

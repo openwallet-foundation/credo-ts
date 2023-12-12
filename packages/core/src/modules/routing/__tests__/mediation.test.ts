@@ -9,7 +9,7 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { askarModule } from '../../../../../askar/tests/helpers'
-import { getAgentOptions, waitForBasicMessage } from '../../../../tests/helpers'
+import { getAgentOptions, getAskarWalletConfig, waitForBasicMessage } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { sleep } from '../../../utils/sleep'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
@@ -18,11 +18,18 @@ import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const recipientAgentOptions = getAgentOptions('Mediation: Recipient', {}, { askar: askarModule })
+const recipientAgentOptions = getAgentOptions(
+  'Mediation: Recipient',
+  {
+    walletConfig: getAskarWalletConfig('Mediation: Recipient', { inMemory: false }),
+  },
+  { askar: askarModule }
+)
 const mediatorAgentOptions = getAgentOptions(
   'Mediation: Mediator',
   {
     endpoints: ['rxjs:mediator'],
+    walletConfig: getAskarWalletConfig('Mediation: Mediator', { inMemory: false }),
   },
   {
     askar: askarModule,
@@ -36,6 +43,7 @@ const senderAgentOptions = getAgentOptions(
   'Mediation: Sender',
   {
     endpoints: ['rxjs:sender'],
+    walletConfig: getAskarWalletConfig('Mediation: Sender', { inMemory: false }),
   },
   { askar: askarModule }
 )

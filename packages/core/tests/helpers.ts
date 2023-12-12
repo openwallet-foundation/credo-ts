@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
   AgentDependencies,
   BaseEvent,
@@ -73,6 +74,29 @@ export const taaVersion = (process.env.TEST_AGENT_TAA_VERSION ?? '1') as `${numb
 export const taaAcceptanceMechanism = process.env.TEST_AGENT_TAA_ACCEPTANCE_MECHANISM ?? 'accept'
 export { agentDependencies }
 
+export function getAskarWalletConfig(
+  name: string,
+  {
+    inMemory = true,
+    random = uuid().slice(0, 4),
+    maxConnections,
+  }: { inMemory?: boolean; random?: string; maxConnections?: number } = {}
+) {
+  return {
+    id: `Wallet: ${name} - ${random}`,
+    key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
+    keyDerivationMethod: KeyDerivationMethod.Raw,
+    // Use in memory by default
+    storage: {
+      type: 'sqlite',
+      config: {
+        inMemory,
+        maxConnections,
+      },
+    } satisfies AskarWalletSqliteStorageConfig,
+  } satisfies WalletConfig
+}
+
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
   extraConfig: Partial<InitConfig> = {},
@@ -81,11 +105,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
-    walletConfig: {
-      id: `Wallet: ${name} - ${random}`,
-      key: 'DZ9hPqFWTPxemcGea72C1X1nusqk5wFNLq6QPjwXGqAa', // generated using indy.generateWalletKey
-      keyDerivationMethod: KeyDerivationMethod.Raw,
-    },
+    walletConfig: getAskarWalletConfig(name, { inMemory: true, random }),
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),

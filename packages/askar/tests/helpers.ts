@@ -28,6 +28,17 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
+export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
+  type: 'postgres',
+  config: {
+    host: 'localhost:5432',
+  },
+  credentials: {
+    account: 'postgres',
+    password: 'postgres',
+  },
+}
+
 export function getPostgresAgentOptions(
   name: string,
   storageConfig: AskarWalletPostgresStorageConfig,

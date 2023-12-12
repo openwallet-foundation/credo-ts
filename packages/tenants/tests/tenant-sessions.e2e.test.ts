@@ -5,16 +5,13 @@ import { agentDependencies } from '@aries-framework/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
 import { ariesAskar } from '../../askar/tests/helpers'
-import { testLogger } from '../../core/tests'
+import { getAskarWalletConfig, testLogger } from '../../core/tests'
 
 import { TenantsModule } from '@aries-framework/tenants'
 
 const agentConfig: InitConfig = {
   label: 'Tenant Agent 1',
-  walletConfig: {
-    id: 'Wallet: tenant sessions e2e agent 1',
-    key: 'Wallet: tenant sessions e2e agent 1',
-  },
+  walletConfig: getAskarWalletConfig('tenant sessions e2e agent 1', { inMemory: false, maxConnections: 100 }),
   logger: testLogger,
   endpoints: ['rxjs:tenant-agent1'],
 }
@@ -65,24 +62,24 @@ describe('Tenants Sessions E2E', () => {
     await Promise.all(tenantAgents.map((tenantAgent) => tenantAgent.endSession()))
   })
 
-  // FIXME: this test is somehow failing? It first creates the TenantRecord,
-  // and then it can't fine the profile (of the root wallet) when it fetches it?
+  // FIXME: when creating the 100 tenants in parallel, it will error out with askar.
+  // For now I've fixed it by creating the tenants sequentially, but still opening all
+  // the sessions in parallel. However it should be fine to create the tenants in parallel
+  // as well, and this should be fixed in askar / AFJs wallet implementation around askar
   test('create 5 sessions each for 20 tenants in parallel and close them', async () => {
     const numberOfTenants = 20
     const numberOfSessions = 5
 
-    const tenantRecordPromises = []
+    const tenantRecords = []
     for (let tenantNo = 0; tenantNo < numberOfTenants; tenantNo++) {
-      const tenantRecord = agent.modules.tenants.createTenant({
+      const tenantRecord = await agent.modules.tenants.createTenant({
         config: {
           label: 'Agent 1 Tenant 1',
         },
       })
 
-      tenantRecordPromises.push(tenantRecord)
+      tenantRecords.push(tenantRecord)
     }
-
-    const tenantRecords = await Promise.all(tenantRecordPromises)
 
     const tenantAgentPromises = []
     for (const tenantRecord of tenantRecords) {

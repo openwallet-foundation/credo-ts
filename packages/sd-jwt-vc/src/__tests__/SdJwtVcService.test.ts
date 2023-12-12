@@ -7,14 +7,13 @@ import {
   DidsModule,
   KeyDidRegistrar,
   KeyDidResolver,
-  utils,
   KeyType,
   Agent,
   TypedArrayEncoder,
 } from '@aries-framework/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
 
-import { agentDependencies } from '../../../core/tests'
+import { getAgentOptions } from '../../../core/tests'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
 
@@ -27,17 +26,19 @@ import {
   simpleJwtVcPresentation,
 } from './sdjwtvc.fixtures'
 
-const agent = new Agent({
-  config: { label: 'sdjwtvcserviceagent', walletConfig: { id: utils.uuid(), key: utils.uuid() } },
-  modules: {
-    askar: new AskarModule({ ariesAskar }),
-    dids: new DidsModule({
-      resolvers: [new KeyDidResolver()],
-      registrars: [new KeyDidRegistrar()],
-    }),
-  },
-  dependencies: agentDependencies,
-})
+const agent = new Agent(
+  getAgentOptions(
+    'sdjwtvcserviceagent',
+    {},
+    {
+      askar: new AskarModule({ ariesAskar }),
+      dids: new DidsModule({
+        resolvers: [new KeyDidResolver()],
+        registrars: [new KeyDidRegistrar()],
+      }),
+    }
+  )
+)
 
 const logger = jest.fn() as unknown as Logger
 agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))

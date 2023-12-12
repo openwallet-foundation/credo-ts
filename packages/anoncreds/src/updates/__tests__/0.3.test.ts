@@ -4,7 +4,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
-import { agentDependencies } from '../../../../core/tests'
+import { agentDependencies, getAskarWalletConfig } from '../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
@@ -41,10 +41,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       {
         config: {
           label: 'Test Agent',
-          walletConfig: {
-            id: `Wallet: 0.3 Update AnonCreds - Holder`,
-            key: `Key: 0.3 Update AnonCreds - Holder`,
-          },
+          walletConfig: getAskarWalletConfig('0.3 Update AnonCreds - Holder', { inMemory: false, random: 'static' }),
         },
         dependencies: agentDependencies,
         modules: {
@@ -116,10 +113,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       {
         config: {
           label: 'Test Agent',
-          walletConfig: {
-            id: `Wallet: 0.3 Update AnonCreds - Issuer`,
-            key: `Key: 0.3 Update AnonCreds - Issuer`,
-          },
+          walletConfig: getAskarWalletConfig('0.3 Update AnonCreds - Issuer', { inMemory: false, random: 'static' }),
         },
         dependencies: agentDependencies,
         modules: {

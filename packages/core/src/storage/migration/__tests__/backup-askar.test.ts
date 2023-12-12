@@ -6,7 +6,7 @@ import path from 'path'
 
 import { AskarModule } from '../../../../../askar/src'
 import { askarModuleConfig } from '../../../../../askar/tests/helpers'
-import { getAgentOptions } from '../../../../tests/helpers'
+import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { AriesFrameworkError } from '../../../error'
@@ -17,7 +17,9 @@ import { UpdateAssistant } from '../UpdateAssistant'
 
 const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup | Aries Askar',
-  {},
+  {
+    walletConfig: getAskarWalletConfig('UpdateAssistant | Backup | Aries Askar', { inMemory: false }),
+  },
   {
     askar: new AskarModule(askarModuleConfig),
   }
