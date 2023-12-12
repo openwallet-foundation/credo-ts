@@ -17,6 +17,7 @@ import { DidKey } from '../key'
 
 const LONG_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46}):(z[1-9a-km-zA-HJ-NP-Z]{6,})$`)
 const SHORT_RE = new RegExp(`^did:peer:4(z[1-9a-km-zA-HJ-NP-Z]{46})$`)
+const JSON_MULTICODEC_VARINT = 0x0200
 
 export const isShortFormDidPeer4 = (did: string) => SHORT_RE.test(did)
 export const isLongFormDidPeer4 = (did: string) => LONG_RE.test(did)
@@ -41,8 +42,8 @@ export function didToNumAlgo4DidDocument(did: string) {
 
   const { data } = MultiBaseEncoder.decode(encodedDocument)
   const [multiCodecValue] = VarintEncoder.decode(data.subarray(0, 2))
-  if (multiCodecValue !== 0x0200) {
-    throw new AriesFrameworkError(`Not a JSON multicodec`)
+  if (multiCodecValue !== JSON_MULTICODEC_VARINT) {
+    throw new AriesFrameworkError(`Not a JSON multicodec data`)
   }
   const didDocumentJson = JsonEncoder.fromBuffer(data.subarray(2))
 
@@ -72,6 +73,8 @@ export function didToNumAlgo4DidDocument(did: string) {
 export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   const didDocumentJson = didDocument.toJSON()
 
+  // Build input document based on did document, without any
+  // reference to controller
   const deleteControllerIfPresent = (item: unknown) => {
     if (Array.isArray(item)) {
       item.forEach((method: { controller?: string }) => {
@@ -88,7 +91,11 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   deleteControllerIfPresent(didDocumentJson.capabilityDelegation)
   deleteControllerIfPresent(didDocumentJson.capabilityInvocation)
 
-  const buffer = Buffer.concat([VarintEncoder.encode(0x0200), Buffer.from(JSON.stringify(didDocumentJson))])
+  // Construct encoded document by prefixing did document with multicodec prefix for JSON
+  const buffer = Buffer.concat([
+    VarintEncoder.encode(JSON_MULTICODEC_VARINT),
+    Buffer.from(JSON.stringify(didDocumentJson)),
+  ])
 
   const encodedDocument = MultiBaseEncoder.encode(buffer, 'base58btc')
 

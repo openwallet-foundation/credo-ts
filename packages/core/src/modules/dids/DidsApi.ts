@@ -15,6 +15,7 @@ import { injectable } from '../../plugins'
 import { WalletKeyExistsError } from '../../wallet/error'
 
 import { DidsModuleConfig } from './DidsModuleConfig'
+import { isValidPeerDid } from './methods'
 import { DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 
@@ -157,7 +158,7 @@ export class DidsApi {
       existingDidRecord.didDocument = didDocument
       existingDidRecord.setTags({
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-        alsoKnownAs: didDocument.alsoKnownAs,
+        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
       })
 
       await this.didRepository.update(this.agentContext, existingDidRecord)
@@ -170,7 +171,7 @@ export class DidsApi {
       didDocument,
       tags: {
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-        alsoKnownAs: didDocument.alsoKnownAs,
+        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
       },
     })
   }

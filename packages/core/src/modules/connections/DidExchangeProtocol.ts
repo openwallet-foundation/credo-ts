@@ -35,6 +35,7 @@ import { didKeyToInstanceOfKey } from '../dids/helpers'
 import { DidRecord, DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
+import { MediationRecipientService } from '../routing/services/MediationRecipientService'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
@@ -48,7 +49,7 @@ interface DidExchangeRequestParams {
   alias?: string
   goal?: string
   goalCode?: string
-  routing: Routing
+  routing?: Routing
   autoAcceptConnection?: boolean
   ourDid?: string
 }
@@ -89,32 +90,34 @@ export class DidExchangeProtocol {
     // We take just the first one for now.
     const [invitationDid] = outOfBandInvitation.invitationDids
 
-    const connectionRecord = await this.connectionService.createConnection(agentContext, {
-      protocol: HandshakeProtocol.DidExchange,
-      role: DidExchangeRole.Requester,
-      alias,
-      state: DidExchangeState.InvitationReceived,
-      theirLabel: outOfBandInvitation.label,
-      mediatorId: routing.mediatorId,
-      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
-      outOfBandId: outOfBandRecord.id,
-      invitationDid,
-      imageUrl: outOfBandInvitation.imageUrl,
-    })
-
-    DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
-
     // Create message
     const label = params.label ?? agentContext.config.label
 
+    let didDocument, mediatorId
+
     // If our did is specified, make sure we have all key material for it
-    const didDocument = did
-      ? await this.getDidDocumentForCreatedDid(agentContext, did)
-      : await this.createPeerDidDoc(
-          agentContext,
-          this.routingToServices(routing),
-          config.peerNumAlgoForDidExchangeRequests
-        )
+    if (did) {
+      if (routing) throw new AriesFrameworkError(`'routing' is disallowed when defining 'ourDid'`)
+
+      didDocument = await this.getDidDocumentForCreatedDid(agentContext, did)
+      const [mediatorRecord] = await agentContext.dependencyManager
+        .resolve(MediationRecipientService)
+        .findAllMediatorsByQuery(agentContext, {
+          recipientKeys: didDocument.recipientKeys.map((key) => key.publicKeyBase58),
+        })
+      mediatorId = mediatorRecord?.id
+      // Otherwise, create a did:peer based on the provided routing
+    } else {
+      if (!routing) throw new AriesFrameworkError(`'routing' must be defined if 'ourDid' is not specified`)
+
+      didDocument = await this.createPeerDidDoc(
+        agentContext,
+        this.routingToServices(routing),
+        config.peerNumAlgoForDidExchangeRequests
+      )
+      mediatorId = routing.mediatorId
+    }
+
     const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
@@ -128,6 +131,21 @@ export class DidExchangeProtocol {
       )
       message.didDoc = didDocAttach
     }
+
+    const connectionRecord = await this.connectionService.createConnection(agentContext, {
+      protocol: HandshakeProtocol.DidExchange,
+      role: DidExchangeRole.Requester,
+      alias,
+      state: DidExchangeState.InvitationReceived,
+      theirLabel: outOfBandInvitation.label,
+      mediatorId,
+      autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
+      outOfBandId: outOfBandRecord.id,
+      invitationDid,
+      imageUrl: outOfBandInvitation.imageUrl,
+    })
+
+    DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
@@ -186,7 +204,10 @@ export class DidExchangeProtocol {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-        alsoKnownAs: didDocument.alsoKnownAs,
+
+        // For did:peer, store any alternative dids (like short form did:peer:4),
+        // it may have in order to relate any message referencing it
+        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
       },
     })
 
@@ -338,7 +359,10 @@ export class DidExchangeProtocol {
         // We need to save the recipientKeys, so we can find the associated did
         // of a key when we receive a message from another connection.
         recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-        alsoKnownAs: didDocument.alsoKnownAs,
+
+        // For did:peer, store any alternative dids (like short form did:peer:4),
+        // it may have in order to relate any message referencing it
+        alternativeDids: isValidPeerDid(didDocument.id) ? didDocument.alsoKnownAs : undefined,
       },
     })
 
@@ -600,7 +624,7 @@ export class DidExchangeProtocol {
 
     // Now resolve the document related to the did (which can be either a public did or an inline did)
     try {
-      return agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(message.did)
+      return await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(message.did)
     } catch (error) {
       const problemCode =
         message instanceof DidExchangeRequestMessage

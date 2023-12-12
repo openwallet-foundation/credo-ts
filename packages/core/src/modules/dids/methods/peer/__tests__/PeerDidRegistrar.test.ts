@@ -407,7 +407,7 @@ describe('DidRegistrar', () => {
           role: DidDocumentRole.Created,
           _tags: {
             recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-            alsoKnownAs: [shortFormDid],
+            alternativeDids: [shortFormDid],
           },
           didDocument: undefined,
         })
@@ -415,10 +415,10 @@ describe('DidRegistrar', () => {
     })
 
     it('should return an error state if an unsupported numAlgo is provided', async () => {
+      // @ts-expect-error - this is not a valid numAlgo
       const result = await peerDidRegistrar.create(agentContext, {
         method: 'peer',
         options: {
-          // @ts-expect-error - this is not a valid numAlgo
           numAlgo: 5,
         },
       })

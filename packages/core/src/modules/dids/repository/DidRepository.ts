@@ -48,19 +48,19 @@ export class DidRepository extends Repository<DidRecord> {
   }
 
   public findAllByDid(agentContext: AgentContext, did: string) {
-    return this.findByQuery(agentContext, { $or: [{ alsoKnownAs: [did] }, { did }] })
+    return this.findByQuery(agentContext, { $or: [{ alternativeDids: [did] }, { did }] })
   }
 
   public findReceivedDid(agentContext: AgentContext, receivedDid: string) {
     return this.findSingleByQuery(agentContext, {
-      $or: [{ alsoKnownAs: [receivedDid] }, { did: receivedDid }],
+      $or: [{ alternativeDids: [receivedDid] }, { did: receivedDid }],
       role: DidDocumentRole.Received,
     })
   }
 
   public findCreatedDid(agentContext: AgentContext, createdDid: string) {
     return this.findSingleByQuery(agentContext, {
-      $or: [{ alsoKnownAs: [createdDid] }, { did: createdDid }],
+      $or: [{ alternativeDids: [createdDid] }, { did: createdDid }],
       role: DidDocumentRole.Created,
     })
   }
@@ -69,7 +69,7 @@ export class DidRepository extends Repository<DidRecord> {
     return this.findByQuery(agentContext, {
       role: DidDocumentRole.Created,
       method,
-      $or: did ? [{ alsoKnownAs: [did] }, { did }] : undefined,
+      $or: did ? [{ alternativeDids: [did] }, { did }] : undefined,
     })
   }
 

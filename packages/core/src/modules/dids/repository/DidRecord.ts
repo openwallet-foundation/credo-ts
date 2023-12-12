@@ -23,7 +23,7 @@ export interface DidRecordProps {
 
 export interface CustomDidTags extends TagsBase {
   recipientKeyFingerprints?: string[]
-  alsoKnownAs?: string[]
+  alternativeDids?: string[]
 }
 
 type DefaultDidTags = {

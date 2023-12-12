@@ -98,7 +98,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
           recipientKeyFingerprints: didDocument.recipientKeys.map((key) => key.fingerprint),
-          alsoKnownAs: didDocument.alsoKnownAs,
+          alternativeDids: didDocument.alsoKnownAs,
         },
       })
       await didRepository.save(agentContext, didRecord)
